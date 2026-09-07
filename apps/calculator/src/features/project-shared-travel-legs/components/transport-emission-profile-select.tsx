@@ -38,7 +38,7 @@ export function TransportEmissionProfileSelect({
           onValueChange(parsedProfile.data);
         }
       }}
-      value={value}
+      value={value ?? ""}
     >
       <SelectTrigger id={id}>
         <SelectValue
