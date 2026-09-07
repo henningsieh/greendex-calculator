@@ -99,6 +99,13 @@
       "when": 1787764131286,
       "tag": "0013_remove_project_activity_compatibility_view",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788762042689,
+      "tag": "0014_fat_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

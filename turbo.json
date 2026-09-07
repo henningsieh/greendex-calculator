@@ -39,6 +39,9 @@
     "db:seed": {
       "cache": false
     },
+    "auth:generate": {
+      "cache": false
+    },
     "db:studio": {
       "cache": false,
       "persistent": true

@@ -165,7 +165,6 @@ async function seed() {
     await db.insert(account).values({
       id: createId(),
       userId,
-      issuer: "local:credential",
       accountId: userId,
       providerId: "credential",
       accessToken: null,
