@@ -1,4 +1,11 @@
-import type { Partner } from "@greendex/calculator/features/landingpage/types";
+export interface Partner {
+  id: string;
+  name: string;
+  countryCode?: string;
+  website?: string;
+  logo: string;
+  description?: string;
+}
 
 export const PARTNERS: Partner[] = [
   {
