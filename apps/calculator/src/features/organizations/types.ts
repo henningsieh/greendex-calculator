@@ -35,7 +35,6 @@ export const MEMBER_ROLES = {
   OrganizationAdministrator: "owner",
   ProjectCoordinator: "admin",
   Participant: "participant",
-  Member: "member",
 } as const;
 
 /**

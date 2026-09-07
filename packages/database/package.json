@@ -17,9 +17,7 @@
     "db:generate": "pnpm exec drizzle-kit generate",
     "db:migrate": "TERM=dumb NO_COLOR=1 FORCE_COLOR=0 pnpm exec drizzle-kit migrate",
     "db:studio": "pnpm exec drizzle-kit studio",
-    "clean": "rm -rf node_modules .turbo",
-    "test": "vitest",
-    "test:run": "vitest run"
+    "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
     "@greendex/config": "workspace:*",
@@ -34,7 +32,6 @@
     "drizzle-kit": "^0.31.10",
     "oxfmt": "^0.66.0",
     "oxlint": "^1.81.0",
-    "typescript": "catalog:",
-    "vitest": "^4.1.11"
+    "typescript": "catalog:"
   }
 }

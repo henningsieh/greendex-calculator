@@ -609,15 +609,9 @@ export const getProjectParticipants = authorized
       .select({
         id: projectParticipantsTable.id,
         projectId: projectParticipantsTable.projectId,
-        representedOrganizationId:
-          projectParticipantsTable.representedOrganizationId,
-        displayName: projectParticipantsTable.displayName,
-        email: projectParticipantsTable.email,
+        memberId: projectParticipantsTable.memberId,
         userId: projectParticipantsTable.userId,
         country: projectParticipantsTable.country,
-        mergedIntoParticipantId: projectParticipantsTable.mergedIntoParticipantId,
-        mergedAt: projectParticipantsTable.mergedAt,
-        mergedByUserId: projectParticipantsTable.mergedByUserId,
         createdAt: projectParticipantsTable.createdAt,
         updatedAt: projectParticipantsTable.updatedAt,
         user: {

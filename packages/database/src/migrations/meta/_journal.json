@@ -106,34 +106,6 @@
       "when": 1788762042689,
       "tag": "0014_fat_doctor_spectrum",
       "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1788809238277,
-      "tag": "0015_add_project_partnership_foundation",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1788809244987,
-      "tag": "0016_backfill_project_participation",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1788809354482,
-      "tag": "0017_finalize_project_participation",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1788809372567,
-      "tag": "0018_enforce_project_organization_invariants",
-      "breakpoints": true
     }
   ]
 }
