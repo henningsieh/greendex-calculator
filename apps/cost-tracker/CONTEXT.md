@@ -1,6 +1,6 @@
 # Cost Tracking
 
-Cost Tracker records journey-ticket costs for Project Participants. It adds Project-specific Partner Organizations without exposing that distinction to Calculator.
+Cost Tracker records journey-ticket costs for Project Participants. It adds Project-specific Partner Organizations without exposing that distinction to Calculator. It uses the shared Greendex language in [`DOMAIN-GLOSSARY.md`](../../DOMAIN-GLOSSARY.md).
 
 ## Language
 
@@ -33,5 +33,5 @@ The exact EUR cost recorded for one configured transport choice. One entry may c
 _Avoid_: Ticket (when referring to the cost record), Participant Travel Leg
 
 **Cost Allocation**:
-The association between one Travel Cost Entry and the Project Participations it covers, using one allocation method for the whole entry.
+The association between one Travel Cost Entry and one covered Project Participation. The Travel Cost Entry selects one allocation method for all of its Cost Allocations.
 _Avoid_: Beneficiary, Claimant

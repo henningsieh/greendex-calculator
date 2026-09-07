@@ -16,12 +16,7 @@ Each Partner Organization assignment belongs only to that Project. The same Orga
 
 ## Cost Submission Window
 
-Each Project has one manually controlled open/closed Cost Submission Window.
-
-- Open: Participants may create Cost Submissions; logged-in Participants may edit submissions they entered.
-- Closed: Participants cannot create or edit submissions.
-- Hosting Organization staff may create and correct submissions in either state.
-- Window changes never alter Better Auth Memberships or roles.
+Each Project has one manually controlled open/closed Cost Submission Window. Cost Tracker owns its state and the complete [editing and authorization rules](../domain-model.md#editing-and-authorization). Window changes never alter Better Auth Memberships or roles.
 
 ## Related documentation
 

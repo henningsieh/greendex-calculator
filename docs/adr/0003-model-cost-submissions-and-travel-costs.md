@@ -18,7 +18,8 @@ Cost allocations must support an equal default and manual overrides without stor
 
 - Each Project has one manually controlled open/closed Cost Submission Window.
 - While open, Participants may create Cost Submissions and authenticated Participants may edit submissions they entered.
-- A Participant who has not accepted the Better Auth invitation may create a submission but cannot reopen existing data.
+- A Participant who has not accepted the Better Auth invitation may complete an unsubmitted form and persist it once, but cannot reopen or edit the persisted submission.
+- Authenticated personal access requires both Membership in the Project's Hosting Organization and the relevant Project Participation linked to the User.
 - After closure, Participants cannot create or edit submissions.
 - Authorized Hosting Organization staff may create and correct submissions whether the window is open or closed.
 - Window state has no effect on Better Auth Memberships or roles.
@@ -60,7 +61,7 @@ Cost allocations must support an equal default and manual overrides without stor
 
 ### Duplicate Project Participations
 
-When duplicate Project Participations are merged, every cost-entry allocation and entering-Participant reference moves to the survivor in one transaction. The duplicate remains as merge history.
+When duplicate Project Participations are merged, every cost-entry allocation and entering-Participant reference moves to the survivor in one transaction. If both participations occur on the same Travel Cost Entry, their allocations are consolidated before reassignment: retain one row for `equal`, add exact percentages for `percentage`, or add exact EUR values for `amount`. This preserves the original entry total and avoids a duplicate composite key. The duplicate remains as merge history.
 
 ## Considered options
 

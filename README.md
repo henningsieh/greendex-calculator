@@ -18,7 +18,6 @@ This monorepo contains the multilingual Greendex Calculator for measuring the ca
 - Seven UI locales with a searchable language switcher
 - Internal type-safe oRPC plus REST/OpenAPI and interactive Scalar documentation
 - A separate Socket.IO proof of concept for future real-time features
-- A Fumadocs application for project/user documentation
 
 The broader Greendex initiative also includes workshop formats, educational
 resources, sustainability challenges, and the Greendex E-Forest. Learn more at
@@ -40,12 +39,12 @@ These terms are the product language. Start with [`CONTEXT-MAP.md`](CONTEXT-MAP.
 
 | Area                 | Technology                                         |
 | -------------------- | -------------------------------------------------- |
-| Web applications     | Next.js, React, App Router, React Compiler          |
+| Web applications     | Next.js, React, App Router, React Compiler         |
 | Language             | TypeScript                                         |
 | Monorepo             | Turborepo and pnpm workspaces/catalog              |
-| UI                   | shadcn/ui, Radix UI, cmdk, Tailwind CSS             |
+| UI                   | shadcn/ui, Base UI, Radix UI, cmdk, Tailwind CSS   |
 | Authentication       | Better Auth with organization and social providers |
-| API                  | oRPC, TanStack Query, OpenAPI/Scalar                |
+| API                  | oRPC, TanStack Query, OpenAPI/Scalar               |
 | Database             | PostgreSQL and Drizzle ORM/Kit                     |
 | Tables               | TanStack Table                                     |
 | Internationalization | next-intl                                          |
@@ -130,6 +129,7 @@ Each application owns its local environment file:
 
 ```bash
 cp apps/calculator/.env.example apps/calculator/.env
+cp apps/cost-tracker/.env.example apps/cost-tracker/.env
 cp apps/documentation/.env.example apps/documentation/.env
 ```
 
@@ -143,9 +143,10 @@ its variables with `@t3-oss/env-nextjs`; the development configuration includes:
 - SMTP connection credentials
 - `NEXT_PUBLIC_SOCKET_URL`
 
-Calculator scripts load its app-local file where needed; Next.js loads the
-Documentation file. In Coolify, each application receives only its own values
-from the platform, and those values remain outside Git.
+Cost Tracker currently requires `COST_TRACKER_PORT`; its example defaults to
+`3002`. Application scripts load their app-local files where needed, while
+Next.js loads the Documentation file. In Coolify, each application receives
+only its own values from the platform, and those values remain outside Git.
 
 ### Prepare the database
 
@@ -186,6 +187,7 @@ The root Turbo task starts:
 | ----------------- | ----------------------- |
 | Calculator        | <http://localhost:3000> |
 | Documentation app | <http://localhost:3001> |
+| Cost Tracker      | <http://localhost:3002> |
 | Socket.IO         | <http://localhost:4000> |
 
 ---
@@ -210,15 +212,11 @@ Run these from the repository root:
 | `pnpm run db:migrate`                              | Apply Drizzle migrations                      |
 | `pnpm run db:seed`                                 | Seed local development data                   |
 
-> **Deployment migration guarantee:** the calculator's `prestart` runs
-> `pnpm --filter @greendex/database run db:migrate` before `start`. This uses
-> the committed Drizzle migration history and the shell `&&` chain stops the
-> application start if migration fails. A Coolify deployment therefore cannot
-> make a new calculator container healthy with a database schema behind its
-> shipped code. Before any local `pnpm run start`, verify that `DATABASE_URL`
-> points at the database you intend to migrate.
->
-> The calculator's `prebuild` only generates/checks Scalar SRI data.
+> **Database side effect:** Calculator's `prebuild` and `prestart` both apply
+> committed Drizzle migrations. Consequently, `pnpm run build` and
+> `pnpm run start` may modify the database selected by `DATABASE_URL`. Verify
+> that value before either command. See [Deployment](#deployment) for the exact
+> lifecycle contract.
 
 ---
 
@@ -270,8 +268,10 @@ It provides:
 - Password reset and magic-link flows
 - Google, GitHub, and Discord OAuth
 - Organization membership and invitations
-- Organization Administrator, Project Coordinator, and Participant access control (implemented with Better Auth roles)
+- Organization Administrator, Project Coordinator, and Participant access control; the current stored roles are `owner`, `admin`, and `member`, respectively
 - Active organization/project session fields
+
+The accepted target introduces a distinct `participant` role and supports several roles on one Membership. See [shared Project permissions](docs/projects/permissions.md); this target is not implemented yet.
 
 The database schema generated for Better Auth is stored in
 `packages/database/src/schemas/auth-schema.ts`.
@@ -317,7 +317,7 @@ locale code.
 
 The repository contains a reusable `@greendex/email` workspace package and
 calculator-specific email orchestration under
-`apps/calculator/src/lib/email/`. Templates use the current `react-email`
+`apps/calculator/src/lib/email.ts`. Templates use the current `react-email`
 package API; transport uses Nodemailer.
 
 ### Real-time proof of concept
@@ -341,18 +341,15 @@ socket hostname do not need URL-rewriting logic.
 - Browser runner: Playwright
 - Lint/format: Oxlint and Oxfmt
 
-Recent compatibility work strengthened OpenAPI/Scalar UI checks, project
-statistics typing, invalid activity diagnostics, Next.js layout semantics, and
-TanStack Table v9 behavior. A dedicated Playwright regression spec
-(`src/__tests__/e2e/project-routing.spec.ts`) guards the SSR oRPC routing fix:
-an authenticated user can open an existing internal project page, and a public
-participation page loads for an existing project instead of returning 404.
-The full Playwright suite (12 tests) is currently green when run against a
-seeded local development server.
+A dedicated Playwright regression spec
+(`apps/calculator/src/__tests__/e2e/project-routing.spec.ts`) guards the SSR
+oRPC routing fix: an authenticated user can open an existing internal Project
+page, and a public participation page loads for an existing Project instead of
+returning 404.
 
 > **Current test-suite caveat:** `openapi-rest.test.ts` is an integration suite
-> that expects the calculator server on `localhost:3000`. Its no-server skip
-> path is not compatible with Vitest 4 yet. The remaining tests can be run with
+> that expects a running Calculator server. Its no-server branch does not
+> reliably skip the suite. Run the remaining tests without a server with
 > `pnpm --filter @greendex/calculator exec vitest run --exclude
 src/__tests__/openapi-rest.test.ts`.
 
@@ -373,10 +370,18 @@ application processes. The `"env": ["*"]` setting on the `build` and `start`
 tasks in [`turbo.json`](turbo.json) is critical for forwarding those variables
 to workspace processes.
 
-Every calculator deployment runs the existing Drizzle `db:migrate` command in
-`prestart`, before Next.js and Socket.IO start. If a migration fails, the
-process exits non-zero and Coolify cannot mark the new calculator container
-healthy. This is the repository's database-as-code deployment contract.
+Calculator applies committed Drizzle migrations during both lifecycle stages:
+
+- `prebuild` generates and checks Scalar SRI data, then runs the Turbo
+  `db:migrate` task;
+- `prestart` prepares the configured ports, then runs
+  `pnpm --filter @greendex/database run db:migrate` before Next.js and Socket.IO
+  start.
+
+Both stages use `DATABASE_URL` and fail if migration fails. A Calculator build
+or start can therefore modify the selected database, while a failed deployment
+start cannot make the new container healthy. This is the repository's
+current database-as-code lifecycle contract.
 
 Deployment secrets, database credentials, and infrastructure identifiers are
 managed outside source control. Operational details for authorized maintainers

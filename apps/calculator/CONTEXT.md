@@ -21,5 +21,5 @@ A journey segment owned by the Project and included once in the Project's carbon
 _Avoid_: Project Activity
 
 **Transport Emission Profile**:
-A configured transport choice and its calculation behavior. Calculator and Cost Tracker share the selectable profile set in the MVP.
+A configured transport choice and its calculation behavior. Cost Tracker reuses Calculator's Participant profile set (`PARTICIPANT_TRANSPORT_EMISSION_PROFILES`); Calculator's Project Shared Travel profile set remains narrower.
 _Avoid_: Cost category

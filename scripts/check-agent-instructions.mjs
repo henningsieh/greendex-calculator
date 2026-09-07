@@ -25,6 +25,7 @@ const referenceFiles = [
   path.join(root, "apps", "cost-tracker", "CONTEXT.md"),
   path.join(root, "apps", "cost-tracker", "docs", "README.md"),
   path.join(root, "apps", "cost-tracker", "docs", "domain-model.md"),
+  path.join(root, "apps", "cost-tracker", "docs", "projects", "README.md"),
   path.join(
     root,
     "docs",
@@ -149,6 +150,7 @@ const requiredRepositoryPaths = [
   "apps/cost-tracker/CONTEXT.md",
   "apps/cost-tracker/docs/README.md",
   "apps/cost-tracker/docs/domain-model.md",
+  "apps/cost-tracker/docs/projects/README.md",
   "docs/adr",
   "docs/projects/README.md",
   "docs/projects/model.md",

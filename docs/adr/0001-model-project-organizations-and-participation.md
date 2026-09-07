@@ -27,7 +27,12 @@ Participants introduce a second ambiguity. The person may participate in several
 - A non-empty normalized email identifies at most one Project Participation per Project. The same email cannot represent two Partner Organizations in that Project.
 - Email remains optional, so email-less duplicate records remain possible.
 - A linked User identifies at most one retained Project Participation per Project.
-- Duplicate Project Participations are merged by moving dependent records to one survivor and recording the survivor on the duplicate. Merge history is retained; duplicates are not hard-deleted.
+- Strong User/email conflicts and manual staff flags create required but non-blocking duplicate-review tasks; name similarity alone does not.
+- Responsible Hosting Organization staff receive task-list, badge, in-app, and email notifications and decide whether the records are the same person or different people.
+- A different-person decision retains both records and requires correction of any conflicting User or email link.
+- Only records from the same Project and represented Organization may be merged as duplicates.
+- A confirmed merge combines complementary values, requires staff selection for contradictory values, and moves or consolidates dependent records onto one retained record.
+- The duplicate stores the retained record, merge time, and responsible User. It is not hard-deleted; the MVP provides neither a full before/after audit nor an undo operation.
 
 ## Considered options
 
@@ -58,6 +63,7 @@ Rejected because one participation represents exactly one Organization. A group 
 - The represented-Organization invariant spans Project and partnership records. The migration must enforce it transactionally and at the database level where feasible.
 - Project-specific data belongs behind Project Participation even when several participations later link to one User.
 - Email supports matching and invitation initiation but never authorizes access.
-- Merge operations must update every Calculator and Cost Tracker reference atomically while preserving the duplicate record and merge metadata.
+- Merge operations must update every Calculator and Cost Tracker reference atomically while preserving the duplicate record and minimal merge metadata.
+- A dedicated review UI and all four notification surfaces are required before duplicate review can be considered implemented.
 
 The detailed target model is maintained in [the shared Projects documentation](../projects/model.md).

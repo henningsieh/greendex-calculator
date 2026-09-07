@@ -53,16 +53,29 @@ The MVP has no global Person record. A person participating in several Projects 
 - A linked User identifies at most one retained Project Participation per Project.
 - Knowing an email never grants access to an existing Project Participation or its data.
 
-### Merge behavior
+### Duplicate review and merge behavior
 
-Duplicate Project Participations are merged explicitly:
+A possible duplicate creates a required but non-blocking review task. The Project and its submissions remain usable while the task is open.
 
-1. choose one surviving record;
-2. move Calculator and Cost Tracker references to it in one transaction;
-3. mark the duplicate as merged into the survivor;
-4. retain the duplicate as merge history.
+Tasks are created only from strong signals—an attempted second link to the same verified User or normalized email in one Project—or when authorized Hosting Organization staff mark two records for review. Similar names alone never create a task.
 
-A merge never hard-deletes the duplicate.
+Responsible staff see open tasks through a dedicated task list, badge, in-app notification, and email. The review UI supports two outcomes:
+
+- **same person**: confirm the merge;
+- **different people**: retain both Project Participations and correct or remove any conflicting User or email link.
+
+Only records from the same Project and represented Organization may be merged. Authorized Hosting Organization staff may perform the merge even when the Cost Submission Window is closed.
+
+The merge transaction:
+
+1. combines non-conflicting values from both records;
+2. asks the responsible staff member to choose between contradictory field values;
+3. moves Calculator and Cost Tracker references to one retained record;
+4. consolidates dependent records when both participations are referenced by the same parent record;
+5. marks the duplicate with the retained record, merge time, and responsible User;
+6. removes the completed review task.
+
+The retained internal ID is an implementation detail and is not presented as a choice to staff. A merge never hard-deletes the duplicate, cannot be undone in the MVP, and has no full before/after audit. Cost Allocation key collisions follow the [Cost Tracker consolidation rules](../../apps/cost-tracker/docs/domain-model.md#duplicate-project-participations).
 
 ## Proposed shared Drizzle schema
 
@@ -97,6 +110,7 @@ Keep the existing physical table name while treating it as Project Participation
 - Calculator-owned fields such as `country` nullable when participation may be created before the questionnaire
 - `merged_into_participant_id` nullable self-reference
 - `merged_at` nullable timestamp
+- `merged_by_user_id` nullable foreign key to Better Auth `user`
 - creation and update timestamps
 
 Remove the existing required `member_id`. The Hosting Organization Membership is found from the linked User and `project.organization_id`; storing both `member_id` and `user_id` would allow contradictory identity links.
@@ -106,10 +120,26 @@ Required constraints and indexes:
 - unique `(project_id, email)` when email is not null
 - unique `(project_id, user_id)` when user is not null
 - a record cannot merge into itself
+- `merged_into_participant_id`, `merged_at`, and `merged_by_user_id` are either all null or all present
 - normal reads exclude merged duplicates
 - represented Organization equals `project.organization_id` or occurs in `project_partner_organization`
 
 The represented-Organization rule spans tables. Schema implementation must validate it in the write transaction and enforce it with a PostgreSQL constraint trigger or an equivalent database mechanism.
+
+### `project_participant_merge_task`
+
+An operational record for an unresolved duplicate review:
+
+- `id` primary key
+- `project_id` required foreign key
+- two required, distinct `project_participant` foreign keys stored in canonical order
+- `detection_reason` required enum: `same_user`, `same_email`, or `manual`
+- `created_by_user_id` nullable foreign key for manual tasks
+- `notification_sent_at` nullable timestamp
+- creation timestamp
+- unique canonical Participant pair
+
+Only open tasks are retained. Resolving the conflict deletes the task: a confirmed merge is represented by the duplicate's merge fields, while a different-person decision requires correction of any conflicting identity link. This is task state, not a full merge audit.
 
 ### `project_participation_link`
 

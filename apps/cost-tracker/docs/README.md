@@ -18,4 +18,4 @@ These documents describe behavior owned by the Cost Tracker application.
 
 ## Scope
 
-Cost Tracker owns Project Partnerships, Cost Submission Windows, Cost Submissions, Proof Documents, Travel Cost Entries, and Cost Allocations. Shared Organizations, Projects, Users, Project Participations, database persistence, and transport configuration remain repository-level concerns.
+Cost Tracker owns the rules for Project Partnerships, Cost Submission Windows, Cost Submissions, Proof Documents, Travel Cost Entries, and Cost Allocations. Shared Organizations, Projects, Users, Project Participations, and transport configuration remain repository-level concerns. The Cost Tracker model defines its persistence semantics; `@greendex/database` owns their future Drizzle implementation and migrations.

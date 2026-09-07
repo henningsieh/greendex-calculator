@@ -17,7 +17,7 @@ Cost Tracker records journey-ticket costs for shared Project Participations.
 
 - Calculator owns questionnaire answers, Participant Travel Legs, Project Shared Travel Legs, and carbon-footprint calculation.
 - Cost Tracker owns Cost Submission Windows, Cost Submissions, Proof Documents, Travel Cost Entries, and Cost Allocations.
-- Both applications use the same configured Participant transport choices.
+- Cost Tracker reuses Calculator's [`PARTICIPANT_TRANSPORT_EMISSION_PROFILES`](../../../packages/config/src/transport-emission-profiles.ts) instead of defining a competing transport list.
 - Cost records and Calculator journey records remain independent in the MVP.
 
 ## Cost Submission Window
@@ -26,9 +26,9 @@ Each Project has one manually controlled open/closed Cost Submission Window.
 
 ### Open
 
-- Participants may create completed Cost Submissions.
-- Logged-in Participants may edit submissions they entered.
-- Participants who have not accepted their Better Auth invitation may create a new submission but cannot reopen existing data.
+- Participants may complete and submit new Cost Submissions.
+- Logged-in Participants may edit persisted submissions they entered.
+- Participants who have not accepted their Better Auth invitation may edit their unsubmitted form and submit it once, but cannot reopen or edit the persisted Cost Submission.
 - Hosting Organization staff may create and correct submissions.
 
 ### Closed
@@ -53,8 +53,8 @@ The MVP has no unfinished drafts. Persisting a Cost Submission is one transactio
 
 The submission records who entered the form separately from everyone covered by its entries:
 
-- Participant entry references the entering Project Participation.
-- Staff entry references the authenticated Hosting Organization User.
+- Participant entry references an entering Project Participation from the same Project as the Cost Submission.
+- Staff entry references an authenticated User authorized to manage the Hosting Organization's Project.
 - Exactly one entry source is recorded.
 
 A group ticket may cover the entering Participant and any number of other Project Participations. The Cost Allocations—not the entry-source field—identify everyone covered.
@@ -70,7 +70,7 @@ The relational model stores document identity and entry-to-document associations
 One Travel Cost Entry records:
 
 - one Cost Submission;
-- one transport choice from the shared Calculator/Cost Tracker configuration;
+- one transport choice from the shared Participant Transport Emission Profile set;
 - one exact EUR total;
 - one allocation method;
 - one or more covered Project Participations.
@@ -103,25 +103,31 @@ Percentage and EUR inputs cannot be mixed within one entry. Plausibility checks 
 
 ## Editing and authorization
 
-| Action                                          | Participant without login   | Logged-in Participant | Hosting Organization staff    |
-| ----------------------------------------------- | --------------------------- | --------------------- | ----------------------------- |
-| Create while window open                        | yes                         | yes                   | yes                           |
-| Reopen existing submission                      | no                          | own submissions       | yes                           |
-| Edit while window open                          | current new submission only | own submissions       | yes                           |
-| Create or edit after closure                    | no                          | no                    | yes                           |
-| View another Participant's personal submissions | no                          | no                    | according to staff permission |
+| Action                                           | Participant without login | Logged-in Participant | Hosting Organization staff    |
+| ------------------------------------------------ | ------------------------- | --------------------- | ----------------------------- |
+| Complete an unsubmitted form while open          | yes                       | yes                   | yes                           |
+| Persist a new submission while open              | yes, once                 | yes                   | yes                           |
+| Reopen or edit a persisted submission while open | no                        | own submissions       | yes                           |
+| Create or edit after closure                     | no                        | no                    | yes                           |
+| View another Participant's personal submissions  | no                        | no                    | according to staff permission |
 
-Email matching never unlocks a submission. Logged-in personal access requires the shared Project Participation to be linked to the authenticated User.
+Submitting without login grants no capability over the persisted record. Email matching never unlocks a submission. Logged-in personal access requires both Membership in the Project's Hosting Organization and the relevant Project Participation linked to the authenticated User.
 
 ## Duplicate Project Participations
 
 The shared [merge process](../../../docs/projects/model.md#merge-behavior) moves Cost Tracker references to the surviving Project Participation in one transaction:
 
-- Cost Allocation references;
 - the Participant entry-source reference on Cost Submission;
+- Cost Allocations;
 - any future Cost Tracker reference to Project Participation.
 
-The duplicate remains as merge history.
+If only the duplicate has an allocation on a Travel Cost Entry, reassign it to the survivor. If both records have allocations on the same entry, consolidate them before marking the duplicate as merged:
+
+- `equal`: keep one survivor allocation; the entry's equal shares are then derived using the deduplicated covered-Participant count;
+- `percentage`: add both exact percentages and store the result on the survivor allocation;
+- `amount`: add both exact EUR amounts and store the result on the survivor allocation.
+
+Consolidation preserves the entry's percentage or amount total and avoids violating the composite allocation key. The duplicate remains as merge history.
 
 ## Proposed Cost Tracker Drizzle schema
 
@@ -136,7 +142,7 @@ This section is the approved migration blueprint, not current schema. Shared Pro
 - `submitted_at` required timestamp
 - creation and update timestamps
 
-Exactly one `entered_by_*` field is present. There is no draft status in the MVP.
+Exactly one `entered_by_*` field is present. A Participant entry source belongs to the submission's Project; a staff User is authorized for that Project's Hosting Organization. There is no draft status in the MVP.
 
 Completion requires at least one Travel Cost Entry and at least one Proof Document in the same transaction.
 

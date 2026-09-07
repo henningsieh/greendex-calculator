@@ -51,6 +51,14 @@ Several accepted invitations for Projects owned by the same Organization reuse o
 - Reopening requires invitation acceptance, login, and a Project Participation linked to the User.
 - Client-side permission checks control presentation only; server-side checks are authoritative.
 
+## Duplicate-review authorization
+
+- Organization Administrators and Project Coordinators authorized for the affected Project may create and resolve duplicate-review tasks.
+- Participants cannot mark, merge, or separate Project Participations.
+- Review and merge remain available after the Cost Submission Window closes because they are staff corrections.
+- Open tasks do not block Project or submission work.
+- Responsible staff receive an in-app task-list entry, badge, in-app notification, and email.
+
 ## Current-to-target migration
 
 The target implementation must:
