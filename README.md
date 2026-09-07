@@ -1,16 +1,13 @@
-# Greendex Calculator
+# Greendex
 
-Greendex Calculator is a multilingual participant and organization portal for
-measuring the carbon footprint of Erasmus+ mobility projects. It combines
-project administration, participant journeys, emissions calculations,
-workshops, and sustainability education in one application.
+This monorepo contains the multilingual Greendex Calculator for measuring the carbon footprint of Erasmus+ mobility Projects, the developing Cost Tracker for journey-ticket costs, and the published documentation application. Shared packages provide authentication, Organization and Project persistence, email, configuration, and internationalization.
 
 > **Current stage:** active development. The only shared deployment is the
 > Coolify `development` environment at
 > [greendex.apps.sieh.org](https://greendex.apps.sieh.org). No separate
 > production environment is configured yet.
 
-## What the application supports
+## What Calculator currently supports
 
 - Organization onboarding, user membership, invitations, and role-based permissions
 - Project creation, editing, filtering, sorting, archiving, and batch actions
@@ -35,8 +32,7 @@ Greendex uses these canonical terms for people in the system:
 - **Project Coordinator** — manages projects and coordinates Participants
 - **Participant** — takes part in a project and submits participation data
 
-These terms are the product language. The complete wording glossary, including
-terms to avoid, is in [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md).
+These terms are the product language. Start with [`CONTEXT-MAP.md`](CONTEXT-MAP.md), then use the shared wording in [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md) and the owning application's context.
 
 ---
 
@@ -72,7 +68,8 @@ online documentation, and skill choices.
 ```text
 .
 ├── apps/
-│   ├── calculator/          # Main Next.js app, APIs, auth integration, tests, Socket.IO
+│   ├── calculator/          # Carbon-footprint app, APIs, auth, tests, Socket.IO
+│   ├── cost-tracker/        # Journey-cost tracking application
 │   └── documentation/       # Fumadocs app (local port 3001)
 ├── packages/
 │   ├── auth/                # Shared Better Auth client types/utilities
@@ -399,8 +396,11 @@ For each vendor integration, use the [online reference registry](docs/agents/int
 - `docs/agents/instructions/better-auth.md` — authentication and organizations
 - `docs/agents/instructions/drizzle.md` and `coolify.md` — database and deployment boundaries
 - `docs/agents/instructions/i18n.md` — locale and country handling
-- `docs/participate/` — questionnaire and emissions flows
-- `docs/projects/` — permissions and project behavior
+- `docs/projects/` — shared Project identity, Project Participation, and permissions
+- `apps/calculator/docs/participate/` — Calculator questionnaire and emissions flows
+- `apps/calculator/docs/projects/` — Calculator-specific Project behavior
+- `apps/cost-tracker/docs/projects/` — Cost Tracker-specific Project behavior
+- `apps/cost-tracker/docs/domain-model.md` — Cost Tracker cost model and schema blueprint
 - `docs/agents/instructions/email.md` — templates and transport
 - `docs/agents/instructions/shadcn.md` — UI patterns
 - `docs/agents/instructions/conventions.md` — linting and formatting

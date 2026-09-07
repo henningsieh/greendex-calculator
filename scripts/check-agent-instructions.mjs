@@ -9,15 +9,46 @@ const workflowPath = path.join(root, "docs", "agents", "agent-workflows.md");
 const legacyWorkflowPath = path.join(root, "docs", "agent-workflows.md");
 const referenceFiles = [
   path.join(root, "README.md"),
+  path.join(root, "CONTEXT-MAP.md"),
+  path.join(root, "DOMAIN-GLOSSARY.md"),
   path.join(root, "docs", "README.md"),
-  workflowPath,
-  path.join(root, "apps", "calculator", "src", "lib", "orpc", "README.md"),
   path.join(root, "docs", "projects", "README.md"),
+  path.join(root, "docs", "projects", "model.md"),
+  path.join(root, "docs", "projects", "permissions.md"),
+  workflowPath,
+  path.join(root, "apps", "calculator", "CONTEXT.md"),
+  path.join(root, "apps", "calculator", "docs", "README.md"),
+  path.join(root, "apps", "calculator", "docs", "participate", "README.md"),
+  path.join(root, "apps", "calculator", "docs", "projects", "README.md"),
+  path.join(root, "apps", "calculator", "docs", "projects", "permissions.md"),
+  path.join(root, "apps", "calculator", "src", "lib", "orpc", "README.md"),
+  path.join(root, "apps", "cost-tracker", "CONTEXT.md"),
+  path.join(root, "apps", "cost-tracker", "docs", "README.md"),
+  path.join(root, "apps", "cost-tracker", "docs", "domain-model.md"),
+  path.join(
+    root,
+    "docs",
+    "adr",
+    "0001-model-project-organizations-and-participation.md",
+  ),
+  path.join(
+    root,
+    "docs",
+    "adr",
+    "0002-integrate-participants-with-better-auth.md",
+  ),
+  path.join(
+    root,
+    "docs",
+    "adr",
+    "0003-model-cost-submissions-and-travel-costs.md",
+  ),
   path.join(root, "docs", "database", "README.md"),
   path.join(root, "docs", "agents", "integrations.md"),
 ];
 const retiredDocumentationRoots = [
   "better-auth",
+  "participate",
   "clickdummy",
   "fumadocs",
   "i18n",
@@ -111,6 +142,17 @@ const requiredIntegrationAnchors = [
 
 const requiredRepositoryPaths = [
   ".node-version",
+  "CONTEXT-MAP.md",
+  "DOMAIN-GLOSSARY.md",
+  "apps/calculator/CONTEXT.md",
+  "apps/calculator/docs/README.md",
+  "apps/cost-tracker/CONTEXT.md",
+  "apps/cost-tracker/docs/README.md",
+  "apps/cost-tracker/docs/domain-model.md",
+  "docs/adr",
+  "docs/projects/README.md",
+  "docs/projects/model.md",
+  "docs/projects/permissions.md",
   "apps/calculator/.env.example",
   "apps/documentation/.env.example",
   ".oxfmtrc.json",
@@ -357,7 +399,8 @@ for (const fileName of instructionFiles) {
 
   const frontmatter = parseFrontmatter(content, fileName);
   for (const requiredKey of ["name", "description", "applyTo"]) {
-    if (!frontmatter[requiredKey]) addError(`${fileName}: missing ${requiredKey} frontmatter`);
+    if (!frontmatter[requiredKey])
+      addError(`${fileName}: missing ${requiredKey} frontmatter`);
   }
   if (frontmatter.applyTo !== expectedScopes[fileName]) {
     addError(
@@ -377,7 +420,9 @@ const integrationRegistry = await readUtf8(
 );
 for (const anchor of requiredIntegrationAnchors) {
   if (!integrationRegistry.includes(`<a id="${anchor}"></a>`)) {
-    addError(`docs/agents/integrations.md: missing integration anchor #${anchor}`);
+    addError(
+      `docs/agents/integrations.md: missing integration anchor #${anchor}`,
+    );
   }
 }
 
@@ -393,9 +438,7 @@ for (const [fileName, routes] of Object.entries(requiredOnlineRoutes)) {
   }
 }
 
-const skillLock = JSON.parse(
-  await readUtf8(path.join(root, "skills-lock.json")),
-);
+const skillLock = JSON.parse(await readUtf8(path.join(root, "skills-lock.json")));
 const officialSkillSources = {
   "better-auth-best-practices": "better-auth/skills",
   shadcn: "shadcn-ui/ui",
@@ -438,7 +481,9 @@ const instrumentation = await readUtf8(
   path.join(root, "apps/calculator/src/instrumentation.ts"),
 );
 if (!instrumentation.includes('await import("@/lib/orpc/client.server")')) {
-  addError("calculator instrumentation no longer initializes the server oRPC client");
+  addError(
+    "calculator instrumentation no longer initializes the server oRPC client",
+  );
 }
 
 const localeLayout = await readUtf8(

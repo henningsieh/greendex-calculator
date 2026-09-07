@@ -12,7 +12,8 @@ Use this instruction when placing code, crossing workspace boundaries, or changi
 
 | Area              | Source of truth           | Responsibility                                                                |
 | ----------------- | ------------------------- | ----------------------------------------------------------------------------- |
-| Calculator app    | `apps/calculator/src/`    | Next.js routes, feature modules, oRPC adapters, Better Auth wiring, Socket.IO |
+| Calculator app    | `apps/calculator/src/`    | Carbon-footprint routes, features, adapters, Better Auth wiring, Socket.IO     |
+| Cost Tracker app  | `apps/cost-tracker/src/`  | Journey-cost routes and Cost Tracker-owned behavior                            |
 | Documentation app | `apps/documentation/src/` | Fumadocs application                                                          |
 | Auth package      | `packages/auth/src/`      | Shared Better Auth client types and utilities                                 |
 | Config package    | `packages/config/src/`    | Shared domain and locale configuration                                        |
@@ -31,7 +32,7 @@ Keep environment-specific integration in the consuming app. For example, `apps/c
 - Unit/integration tests: `apps/calculator/src/__tests__/` and feature-local `__tests__/`
 - Browser tests: `apps/calculator/src/__tests__/e2e/`
 
-Add business procedures to the owning feature, then register them in `apps/calculator/src/lib/orpc/router.ts`. Put reusable cross-app behavior in a workspace package only when it has a clear package-level API.
+Add business behavior to the owning application's feature. Calculator procedures are registered in `apps/calculator/src/lib/orpc/router.ts`. Keep Project Partnerships and Cost Submissions in Cost Tracker; share only the agreed Organization, Project, Project Participation, persistence, and transport interfaces. Put reusable cross-app behavior in a workspace package only when it has a clear package-level interface.
 
 ## Critical SSR oRPC invariant
 

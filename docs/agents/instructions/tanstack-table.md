@@ -18,6 +18,6 @@ The [integration registry](../integrations.md#tanstack-table) is the aggregate n
 ## Greendex rules
 
 - The project uses TanStack Table v9. Do not reintroduce v8 `useReactTable` examples or APIs.
-- A table's feature registry, columns, controls, and tests remain owned by its feature. Project-table sources are documented in `docs/projects/README.md`.
+- A table's feature registry, columns, controls, and tests remain owned by its feature. Calculator Project-table sources are documented in [`apps/calculator/docs/projects/README.md`](../../../apps/calculator/docs/projects/README.md).
 - Keep table state, accessibility, server-query ownership, and mutations in the owning feature; use [TanStack Query](tanstack-query.md) when table state participates in remote data.
 - Verify the table's enabled interaction paths with its existing feature tests.
