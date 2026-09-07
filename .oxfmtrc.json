@@ -30,6 +30,18 @@
       }
     },
     {
+      "files": ["apps/cost-tracker/**"],
+      "options": {
+        "sortTailwindcss": {
+          "stylesheet": "apps/cost-tracker/src/app/globals.css",
+          "attributes": ["class", "className"],
+          "functions": ["clsx", "cn", "cva", "twMerge"],
+          "preserveDuplicates": false,
+          "preserveWhitespace": false
+        }
+      }
+    },
+    {
       "files": ["apps/documentation/**"],
       "options": {
         "sortTailwindcss": {
