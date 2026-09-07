@@ -12,6 +12,7 @@
   "scripts": {
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
+    "type-check": "tsc --noEmit",
     "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
@@ -20,8 +21,9 @@
   "devDependencies": {
     "next": "catalog:",
     "next-intl": "catalog:",
-    "oxfmt": "^0.64.0",
-    "oxlint": "^1.79.0"
+    "oxfmt": "^0.66.0",
+    "oxlint": "^1.81.0",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "next": "catalog:",

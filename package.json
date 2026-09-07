@@ -17,6 +17,7 @@
     "db:migrate": "turbo run db:migrate",
     "db:studio": "turbo run db:studio",
     "db:seed": "turbo run db:seed",
+    "auth:generate": "turbo run auth:generate",
     "clean": "turbo run clean && rm -rf node_modules",
     "prepare": "husky",
     "test:e2e": "turbo run test:e2e --",
@@ -34,15 +35,15 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "husky": "^9.1.7",
-    "oxfmt": "^0.64.0",
-    "oxlint": "^1.79.0",
+    "oxfmt": "^0.66.0",
+    "oxlint": "^1.81.0",
     "oxlint-tsgolint": "^7.0.2001",
     "typescript": "catalog:"
   },
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@11.25.0",
+  "packageManager": "pnpm@12.3.4",
   "intent": {
     "skills": [
       "workspace:@greendex/config",

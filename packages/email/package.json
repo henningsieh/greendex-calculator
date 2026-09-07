@@ -14,15 +14,16 @@
     "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
-    "nodemailer": "^9.0.6",
+    "nodemailer": "^10.0.0",
     "react-email": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "oxfmt": "^0.64.0",
-    "oxlint": "^1.79.0",
+    "oxfmt": "^0.66.0",
+    "oxlint": "^1.81.0",
     "typescript": "catalog:"
   },
   "peerDependencies": {
