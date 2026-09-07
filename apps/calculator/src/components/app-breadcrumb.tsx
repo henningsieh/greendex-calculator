@@ -12,10 +12,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ORGANIZATION_ICONS } from "@/features/organizations/organization-icons";
 import { PROJECT_ICONS } from "@/features/projects/components/project-icons";
 import { Link, usePathname } from "@/lib/i18n/routing";
-
-import { ORGANIZATION_ICONS } from "../features/organizations/organization-icons";
 
 /**
  * AppBreadcrumb
