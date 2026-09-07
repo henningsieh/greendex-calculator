@@ -3,6 +3,9 @@
 
 import { vi } from "vitest";
 
+// Tell React that this test environment supports act().
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
 // Environment variables are loaded in global-setup.ts
 
 // Mock the auth client to avoid environment variable validation during tests

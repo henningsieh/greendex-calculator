@@ -8,8 +8,16 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
+    // Reuse workers across files to avoid jsdom startup for every test file.
+    // Tests must reset shared state in their hooks.
+    isolate: false,
     environment: "jsdom",
     globals: true,
+    experimental: {
+      diagnostics: {
+        environment: false,
+      },
+    },
     globalSetup: ["./src/__tests__/global-setup.ts"],
     setupFiles: ["./src/__tests__/setup.ts"],
     // Increase test timeout to 20 seconds for Next.js dev server startup
