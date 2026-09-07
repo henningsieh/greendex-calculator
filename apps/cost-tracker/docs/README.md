@@ -9,6 +9,7 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Shared Projects documentation](../../../docs/projects/README.md)
 - [Cost Tracker Projects](projects/README.md)
 - [Cost model and schema blueprint](domain-model.md)
+- [Garage S3 infrastructure](infrastructure/garage.md)
 
 ## Decisions
 
