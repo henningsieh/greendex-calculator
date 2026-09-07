@@ -483,6 +483,21 @@ importers:
       '@base-ui/react':
         specifier: ^1.8.0
         version: 1.8.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@greendex/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@greendex/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@greendex/email':
+        specifier: workspace:*
+        version: link:../../packages/email
+      '@t3-oss/env-nextjs':
+        specifier: ^0.13.11
+        version: 0.13.11(typescript@7.0.2)(zod@4.5.4)
+      better-auth:
+        specifier: 'catalog:'
+        version: 1.7.3(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0))(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -492,6 +507,9 @@ importers:
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2
       lucide-react:
         specifier: 1.41.0
         version: 1.41.0(react@19.2.8)
@@ -513,6 +531,9 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
     devDependencies:
       '@tailwindcss/postcss':
         specifier: 4.3.3
