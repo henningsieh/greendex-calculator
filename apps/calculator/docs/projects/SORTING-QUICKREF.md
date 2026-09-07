@@ -1,6 +1,6 @@
 ---
-applyTo: 'apps/calculator/src/features/projects/**'
-description: 'Current project-list sorting and TanStack Table V9 reference'
+applyTo: "apps/calculator/src/features/projects/**"
+description: "Current project-list sorting and TanStack Table V9 reference"
 ---
 
 # Project Sorting: Quick Reference
@@ -32,11 +32,11 @@ export const DEFAULT_PROJECT_SORT = {
 
 ## Consumers
 
-| Consumer | Ownership | Source |
-| --- | --- | --- |
-| Project grid | Client-side filtering and sorting | `components/dashboard/projects-grid.tsx` |
-| Project table | Client-side filtering, sorting, pagination, visibility, and selection | `components/dashboard/projects-table.tsx` |
-| Project list procedure | Database ordering and organization scoping | `procedures.ts` |
+| Consumer               | Ownership                                                             | Source                                    |
+| ---------------------- | --------------------------------------------------------------------- | ----------------------------------------- |
+| Project grid           | Client-side filtering and sorting                                     | `components/dashboard/projects-grid.tsx`  |
+| Project table          | Client-side filtering, sorting, pagination, visibility, and selection | `components/dashboard/projects-table.tsx` |
+| Project list procedure | Database ordering and organization scoping                            | `procedures.ts`                           |
 
 The grid uses `createProjectComparator(sortBy, sortDesc)`. The list procedure uses `computeSortDesc(input)` and `orderByClauseFor(sortField, sortDesc)`. Keep each consumer on those helpers so the default field and direction remain aligned.
 
@@ -109,13 +109,13 @@ const table = useTable({
 
 In V9, row models and named built-ins belong in `tableFeatures()`, not in `useTable()` options. The core row model is automatic.
 
-| Capability | Feature and slot |
-| --- | --- |
-| Name filter | `columnFilteringFeature`, `filteredRowModel`, `filterFns.includesString` |
-| Sorting | `rowSortingFeature`, `sortedRowModel`, `sortFns` |
-| Pagination | `rowPaginationFeature`, `paginatedRowModel` |
-| Column visibility | `columnVisibilityFeature` |
-| Row selection | `rowSelectionFeature` |
+| Capability        | Feature and slot                                                         |
+| ----------------- | ------------------------------------------------------------------------ |
+| Name filter       | `columnFilteringFeature`, `filteredRowModel`, `filterFns.includesString` |
+| Sorting           | `rowSortingFeature`, `sortedRowModel`, `sortFns`                         |
+| Pagination        | `rowPaginationFeature`, `paginatedRowModel`                              |
+| Column visibility | `columnVisibilityFeature`                                                |
+| Row selection     | `rowSelectionFeature`                                                    |
 
 `name` has no explicit `sortFn`, so V9 selects a built-in automatically. Register both `text` and `alphanumeric`: plain names use `text`; names containing numeric segments can use `alphanumeric`. A function supplied directly as a column's `sortFn` needs no registry entry.
 

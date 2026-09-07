@@ -1,6 +1,6 @@
 ---
-applyTo: 'apps/calculator/src/features/projects/**'
-description: 'Project-list sorting architecture across the grid, TanStack Table V9, and database procedure'
+applyTo: "apps/calculator/src/features/projects/**"
+description: "Project-list sorting architecture across the grid, TanStack Table V9, and database procedure"
 ---
 
 # Project Sorting Architecture
