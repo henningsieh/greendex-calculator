@@ -7,7 +7,13 @@ import {
 import { createAuthClient } from "better-auth/react";
 
 import { env } from "@/env";
-import { ac, admin, member, owner } from "@/features/projects/permissions";
+import {
+  ac,
+  admin,
+  member,
+  owner,
+  participant,
+} from "@/features/projects/permissions";
 import type { auth } from "@/lib/better-auth";
 
 const clientBaseURL = env.NEXT_PUBLIC_BASE_URL;
@@ -22,6 +28,7 @@ export const authClient = createAuthClient({
         owner,
         admin,
         member,
+        participant,
       },
     }),
     magicLinkClient(),

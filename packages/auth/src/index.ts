@@ -13,3 +13,19 @@ export type { Session, User } from "better-auth/types";
 
 // Export auth client utilities
 export { createAuthClient } from "./auth-client";
+
+export {
+  accessControl,
+  hasOrganizationRole,
+  memberRole,
+  ORGANIZATION_ROLES,
+  organizationAdministratorRole,
+  organizationRoles,
+  parseOrganizationRoles,
+  participantRole,
+  projectCoordinatorRole,
+  type OrganizationRole,
+  type ProjectParticipationPermission,
+  type ProjectPartnershipPermission,
+  type ProjectPermission,
+} from "./permissions";

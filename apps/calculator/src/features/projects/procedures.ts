@@ -1,3 +1,4 @@
+import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   projectSharedTravelLegsTable,
@@ -349,10 +350,12 @@ export const deleteProject = authorized
     });
 
     // Organization Administrators can delete any project; Project Coordinators can delete only their own.
-    const isOrganizationAdministrator =
-      role === MEMBER_ROLES.OrganizationAdministrator;
+    const isOrganizationAdministrator = hasOrganizationRole(
+      role,
+      MEMBER_ROLES.OrganizationAdministrator,
+    );
     const isResponsibleProjectCoordinator =
-      role === MEMBER_ROLES.ProjectCoordinator &&
+      hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
       existingProject.responsibleUserId === context.user.id;
 
     if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
@@ -428,10 +431,12 @@ export const archiveProject = authorized
     }
 
     // Organization Administrators can archive any project; Project Coordinators can archive only their own.
-    const isOrganizationAdministrator =
-      role === MEMBER_ROLES.OrganizationAdministrator;
+    const isOrganizationAdministrator = hasOrganizationRole(
+      role,
+      MEMBER_ROLES.OrganizationAdministrator,
+    );
     const isResponsibleProjectCoordinator =
-      role === MEMBER_ROLES.ProjectCoordinator &&
+      hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
       existingProject.responsibleUserId === context.user.id;
 
     if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
@@ -502,8 +507,8 @@ export const setActiveProject = authorized
       });
 
       if (
-        role !== MEMBER_ROLES.ProjectCoordinator &&
-        role !== MEMBER_ROLES.OrganizationAdministrator
+        !hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
+        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdministrator)
       ) {
         throw errors.FORBIDDEN({
           message: "You don't have permission to set an active project",
@@ -686,11 +691,13 @@ export const batchDeleteProjects = authorized
     }
 
     // Organization Administrators can delete any project; Project Coordinators only their own.
-    const isOrganizationAdministrator =
-      role === MEMBER_ROLES.OrganizationAdministrator;
+    const isOrganizationAdministrator = hasOrganizationRole(
+      role,
+      MEMBER_ROLES.OrganizationAdministrator,
+    );
     for (const project of projectsToDelete) {
       const isResponsibleProjectCoordinator =
-        role === MEMBER_ROLES.ProjectCoordinator &&
+        hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
         project.responsibleUserId === context.user.id;
 
       if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
