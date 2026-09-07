@@ -1,5 +1,6 @@
 "use client";
 
+import { GoogleIcon } from "@greendex/auth/oauth-icons";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -79,6 +80,7 @@ export function AuthForm() {
           authClient.signIn.social({ provider: "google", callbackURL: "/" })
         }
       >
+        <GoogleIcon data-icon="inline-start" />
         Continue with Google
       </Button>
       <Button

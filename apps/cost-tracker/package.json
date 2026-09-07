@@ -10,7 +10,8 @@
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
     "type-check": "next typegen && tsc --noEmit",
-    "clean": "rm -rf .next .turbo node_modules"
+    "clean": "rm -rf .next .turbo node_modules",
+    "test:email-delivery": "dotenv -e .env -- tsx scripts/verify-email-delivery.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -38,9 +39,11 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "babel-plugin-react-compiler": "1.0.0",
+    "imapflow": "^1.7.8",
     "oxfmt": "^0.66.0",
     "oxlint": "^1.81.0",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.13",
     "typescript": "catalog:"
   }
 }

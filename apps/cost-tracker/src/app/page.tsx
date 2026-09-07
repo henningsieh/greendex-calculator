@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 
 import { AuthForm } from "@/components/auth-form";
+import { SignOutButton } from "@/components/sign-out-button";
 import { auth } from "@/lib/auth";
 
 export default async function HomePage() {
@@ -34,9 +35,7 @@ export default async function HomePage() {
         <Link className="font-heading text-xl font-semibold" href="/">
           Cost Tracker
         </Link>
-        <form action="/api/auth/sign-out" method="post">
-          <button className="text-sm text-muted-foreground">Sign out</button>
-        </form>
+        <SignOutButton />
       </header>
       <div className="mx-auto grid max-w-6xl gap-6 p-6 md:grid-cols-[220px_1fr]">
         <aside className="rounded-xl border bg-card p-4">

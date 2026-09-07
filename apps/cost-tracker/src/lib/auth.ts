@@ -35,4 +35,32 @@ export const auth = betterAuth({
     organization({ ac: accessControl, roles: organizationRoles }),
     nextCookies(),
   ],
+  databaseHooks: {
+    /**
+     * Initializes every new session with the user's most recently created
+     * Organization Membership. Cost Tracker uses `activeOrganizationId` as its
+     * tenant boundary for Project and Partner Organization queries. This hook
+     * only selects that default tenant; it never changes memberships, roles,
+     * Projects, or other persisted domain data.
+     */
+    session: {
+      create: {
+        before: async (userSession) => {
+          const membership = await db.query.member.findFirst({
+            where: (membership, { eq }) =>
+              eq(membership.userId, userSession.userId),
+            orderBy: (membership, { desc }) => [desc(membership.createdAt)],
+            columns: { organizationId: true },
+          });
+
+          return {
+            data: {
+              ...userSession,
+              activeOrganizationId: membership?.organizationId,
+            },
+          };
+        },
+      },
+    },
+  },
 });
