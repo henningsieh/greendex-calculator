@@ -2,15 +2,27 @@
 
 import {
   Building2Icon,
+  ChevronDownIcon,
   FolderKanbanIcon,
   LayoutDashboardIcon,
-  UserRoundIcon,
+  LoaderCircleIcon,
+  LogOutIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { SignOutButton } from "@/components/sign-out-button";
+import { useSignOut } from "@/components/sign-out-button";
 import { SiteBrand } from "@/components/site-brand";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
@@ -36,8 +48,7 @@ export function AppNavigation({ email, name }: AppNavigationProps) {
       <div className="flex h-18 items-center justify-between">
         <SiteBrand href="/dashboard" />
         <div className="flex items-center gap-2 lg:hidden">
-          <SessionLink compact email={email} name={name} pathname={pathname} />
-          <SignOutButton compact />
+          <AccountMenu compact email={email} name={name} pathname={pathname} />
         </div>
       </div>
 
@@ -69,48 +80,117 @@ export function AppNavigation({ email, name }: AppNavigationProps) {
           })}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 pb-2 lg:flex">
-          <SessionLink email={email} name={name} pathname={pathname} />
-          <SignOutButton />
+        <div className="hidden shrink-0 pb-2 lg:block">
+          <AccountMenu email={email} name={name} pathname={pathname} />
         </div>
       </div>
     </div>
   );
 }
 
-type SessionLinkProps = AppNavigationProps & {
+type AccountMenuProps = AppNavigationProps & {
   compact?: boolean;
   pathname: string;
 };
 
-function SessionLink({
+function getInitials(name: string) {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  return initials || "?";
+}
+
+function AccountMenu({
   compact = false,
   email,
   name,
   pathname,
-}: SessionLinkProps) {
+}: AccountMenuProps) {
   const active = pathname === "/user-settings";
+  const { pending, signOut } = useSignOut();
 
   return (
-    <Link
-      aria-current={active ? "page" : undefined}
-      aria-label={compact ? `User settings for ${name}` : undefined}
-      className={cn(
-        "flex min-w-0 items-center gap-3 border px-3 py-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none",
-        active && "bg-muted",
-        compact && "size-9 justify-center p-0",
-      )}
-      href="/user-settings"
-    >
-      <UserRoundIcon aria-hidden="true" className="size-4 shrink-0" />
-      <span className={cn("min-w-0", compact && "sr-only")}>
-        <span className="block max-w-44 truncate text-sm font-medium">
-          {name}
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            aria-label={compact ? `Open account menu for ${name}` : undefined}
+            className={cn(
+              "group h-11 gap-3 rounded-lg px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
+              active && "bg-muted",
+              compact &&
+                "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
+            )}
+            size={compact ? "icon-sm" : "sm"}
+            variant="ghost"
+          />
+        }
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-xs font-semibold text-primary"
+        >
+          {getInitials(name)}
         </span>
-        <span className="block max-w-44 truncate text-xs text-muted-foreground">
-          {email}
+        <span className={cn("min-w-0", compact && "sr-only")}>
+          <span className="block max-w-44 truncate text-sm leading-5 font-semibold">
+            {name}
+          </span>
+          <span className="block max-w-44 truncate text-xs leading-4 text-muted-foreground">
+            {email}
+          </span>
         </span>
-      </span>
-    </Link>
+        {!compact && <ChevronDownIcon aria-hidden="true" />}
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="px-3 py-2">
+            <span className="block truncate text-sm font-semibold text-foreground">
+              {name}
+            </span>
+            <span className="block truncate text-xs font-normal tracking-normal text-muted-foreground normal-case">
+              {email}
+            </span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            className="rounded-md text-sm tracking-normal normal-case"
+            render={
+              <Link
+                aria-current={active ? "page" : undefined}
+                href="/user-settings"
+              />
+            }
+          >
+            Account settings
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="rounded-md text-sm tracking-normal normal-case"
+            disabled={pending}
+            onClick={signOut}
+            variant="destructive"
+          >
+            {pending ? (
+              <LoaderCircleIcon
+                className="animate-spin"
+                data-icon="inline-start"
+              />
+            ) : (
+              <LogOutIcon data-icon="inline-start" />
+            )}
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

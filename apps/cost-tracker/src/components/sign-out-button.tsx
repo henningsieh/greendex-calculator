@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
 type SignOutButtonProps = {
+  className?: string;
   compact?: boolean;
 };
 
-export function SignOutButton({ compact = false }: SignOutButtonProps) {
+export function useSignOut() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -28,13 +29,23 @@ export function SignOutButton({ compact = false }: SignOutButtonProps) {
     router.refresh();
   }
 
+  return { pending, signOut };
+}
+
+export function SignOutButton({
+  className,
+  compact = false,
+}: SignOutButtonProps) {
+  const { pending, signOut } = useSignOut();
+
   return (
     <Button
       aria-label={compact ? "Sign out" : undefined}
+      className={className ?? (compact ? undefined : "h-11 rounded-none px-4")}
       disabled={pending}
       onClick={signOut}
       size={compact ? "icon-sm" : "sm"}
-      variant="outline"
+      variant="ghost"
     >
       {pending ? (
         <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
