@@ -36,6 +36,7 @@ const foreignOrganizationId = randomUUID();
 const partnerOrganizationId = randomUUID();
 const foreignPartnerOrganizationId = randomUUID();
 const archivedPartnerOrganizationId = randomUUID();
+const secondPartnerOrganizationId = randomUUID();
 const projectId = randomUUID();
 const laterProjectId = randomUUID();
 const foreignProjectId = randomUUID();
@@ -44,6 +45,7 @@ const partnershipId = randomUUID();
 const laterPartnershipId = randomUUID();
 const foreignPartnershipId = randomUUID();
 const archivedPartnershipId = randomUUID();
+const secondPartnershipId = randomUUID();
 const headers = new Headers();
 const client = createRouterClient(router, { context: async () => ({ headers }) });
 
@@ -85,6 +87,12 @@ beforeAll(async () => {
       id: archivedPartnerOrganizationId,
       name: "Archived Partner Organization",
       slug: `archived-partner-${archivedPartnerOrganizationId}`,
+      createdAt: new Date(),
+    },
+    {
+      id: secondPartnerOrganizationId,
+      name: "Active Partner Organization",
+      slug: `active-partner-${secondPartnerOrganizationId}`,
       createdAt: new Date(),
     },
   ]);
@@ -152,6 +160,11 @@ beforeAll(async () => {
       projectId: archivedProjectId,
       organizationId: archivedPartnerOrganizationId,
     },
+    {
+      id: secondPartnershipId,
+      projectId,
+      organizationId: secondPartnerOrganizationId,
+    },
   ]);
 });
 
@@ -181,6 +194,9 @@ afterAll(async () => {
   await db
     .delete(projectPartnerOrganizationsTable)
     .where(eq(projectPartnerOrganizationsTable.id, archivedPartnershipId));
+  await db
+    .delete(projectPartnerOrganizationsTable)
+    .where(eq(projectPartnerOrganizationsTable.id, secondPartnershipId));
   await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
   await db.delete(projectsTable).where(eq(projectsTable.id, laterProjectId));
   await db.delete(projectsTable).where(eq(projectsTable.id, foreignProjectId));
@@ -194,6 +210,9 @@ afterAll(async () => {
   await db
     .delete(organization)
     .where(eq(organization.id, archivedPartnerOrganizationId));
+  await db
+    .delete(organization)
+    .where(eq(organization.id, secondPartnerOrganizationId));
   await db.delete(user).where(eq(user.id, userId));
 });
 
@@ -209,7 +228,7 @@ describe("Cost Tracker Project procedures", () => {
         endDate: new Date("2026-05-03T00:00:00.000Z"),
         location: "Berlin",
         costSubmissionWindowOpen: false,
-        partnerOrganizationCount: 1,
+        partnerOrganizationCount: 2,
       },
       {
         id: laterProjectId,
@@ -233,6 +252,11 @@ describe("Cost Tracker Project procedures", () => {
     const partners = await client.partnerOrganizations.list();
 
     expect(partners).toEqual([
+      {
+        id: secondPartnerOrganizationId,
+        name: "Active Partner Organization",
+        projectNames: ["Zebra Active Organization Project"],
+      },
       {
         id: partnerOrganizationId,
         name: "Assigned Partner Organization",

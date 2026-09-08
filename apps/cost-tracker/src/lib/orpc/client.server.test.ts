@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   hasPermission: vi.fn(),
   headers: vi.fn(),
+  listOrganizations: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -16,6 +17,7 @@ vi.mock("@/lib/auth", () => ({
     api: {
       getSession: mocks.getSession,
       hasPermission: mocks.hasPermission,
+      listOrganizations: mocks.listOrganizations,
     },
   },
 }));
@@ -24,6 +26,9 @@ vi.mock("@greendex/database", () => ({
 }));
 
 import "@/lib/orpc/client.server";
+import DashboardPage from "@/app/(protected)/dashboard/page";
+import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
+import ProjectsPage from "@/app/(protected)/projects/page";
 import { orpc } from "@/lib/orpc/orpc";
 
 const firstRequestHeaders = new Headers({ cookie: "session=first" });
@@ -50,6 +55,7 @@ describe("Cost Tracker server oRPC client", () => {
       },
     });
     mocks.hasPermission.mockResolvedValue({ success: true });
+    mocks.listOrganizations.mockResolvedValue([{ id: "organization-id" }]);
   });
 
   it("uses the direct router client without making an RPC request", async () => {
@@ -79,5 +85,22 @@ describe("Cost Tracker server oRPC client", () => {
     expect(mocks.getSession).toHaveBeenNthCalledWith(2, {
       headers: secondRequestHeaders,
     });
+  });
+
+  it("prefetches every Project-data route through the direct router client", async () => {
+    mocks.headers.mockResolvedValue(firstRequestHeaders);
+    const fetch = vi.spyOn(globalThis, "fetch");
+
+    await expect(ProjectsPage()).resolves.toBeTruthy();
+    expect(mocks.findMany).toHaveBeenCalledOnce();
+
+    mocks.findMany.mockClear();
+    await expect(PartnerOrganizationsPage()).resolves.toBeTruthy();
+    expect(mocks.findMany).toHaveBeenCalledOnce();
+
+    mocks.findMany.mockClear();
+    await expect(DashboardPage()).resolves.toBeTruthy();
+    expect(mocks.findMany).toHaveBeenCalledTimes(2);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
