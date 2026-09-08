@@ -1,45 +1,37 @@
 "use client";
 
 import { LoaderCircleIcon, LogOutIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import type { ComponentProps } from "react";
 
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
+import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 
-type SignOutButtonProps = {
-  className?: string;
+type ButtonClickEvent = Parameters<
+  NonNullable<ComponentProps<typeof Button>["onClick"]>
+>[0];
+
+type SignOutButtonProps = Omit<
+  ComponentProps<typeof Button>,
+  "children" | "disabled" | "size" | "variant"
+> & {
   compact?: boolean;
 };
-
-export function useSignOut() {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-
-  async function signOut() {
-    setPending(true);
-    const result = await authClient.signOut();
-
-    if (result.error) {
-      setPending(false);
-      return;
-    }
-
-    router.replace("/");
-    router.refresh();
-  }
-
-  return { pending, signOut };
-}
 
 export function SignOutButton({
   className,
   compact = false,
+  ...props
 }: SignOutButtonProps) {
-  const { pending, signOut } = useSignOut();
+  const { pending, signOut: signOutAction } = useSignOut();
+
+  function signOut(event: ButtonClickEvent) {
+    void signOutAction();
+    props.onClick?.(event);
+  }
 
   return (
     <Button
+      {...props}
       aria-label={compact ? "Sign out" : undefined}
       className={className ?? (compact ? undefined : "h-11 rounded-none px-4")}
       disabled={pending}

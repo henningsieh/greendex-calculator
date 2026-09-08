@@ -5,13 +5,10 @@ import {
   ChevronDownIcon,
   FolderKanbanIcon,
   LayoutDashboardIcon,
-  LoaderCircleIcon,
-  LogOutIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useSignOut } from "@/components/sign-out-button";
 import { SiteBrand } from "@/components/site-brand";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
@@ -113,7 +111,6 @@ function AccountMenu({
   pathname,
 }: AccountMenuProps) {
   const active = pathname === "/user-settings";
-  const { pending, signOut } = useSignOut();
 
   return (
     <DropdownMenu>
@@ -174,21 +171,12 @@ function AccountMenu({
             Account settings
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="rounded-md text-sm tracking-normal normal-case"
-            disabled={pending}
-            onClick={signOut}
+            className="rounded-md p-0 text-sm tracking-normal normal-case"
+            render={
+              <SignOutButton className="h-9 w-full justify-start rounded-md px-3 text-sm tracking-normal text-destructive normal-case hover:bg-destructive/10 hover:text-destructive" />
+            }
             variant="destructive"
-          >
-            {pending ? (
-              <LoaderCircleIcon
-                className="animate-spin"
-                data-icon="inline-start"
-              />
-            ) : (
-              <LogOutIcon data-icon="inline-start" />
-            )}
-            Sign out
-          </DropdownMenuItem>
+          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
