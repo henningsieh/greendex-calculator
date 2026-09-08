@@ -5,7 +5,7 @@ import {
   ArrowDownZAIcon,
   ArrowUp01Icon,
   ArrowUpAZIcon,
-  ArrowUpDown,
+  ArrowUpDownIcon,
 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -43,7 +43,7 @@ const getSortIcon = (state: "asc" | "desc" | false, numeric: boolean) => {
     );
   }
 
-  return <ArrowUpDown className="ml-2 size-4 opacity-50" />;
+  return <ArrowUpDownIcon className="ml-2 size-4 opacity-50" />;
 };
 
 /**

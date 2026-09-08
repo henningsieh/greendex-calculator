@@ -7,9 +7,9 @@ import {
 } from "fumadocs-ui/components/ui/popover";
 import { useCopyButton } from "fumadocs-ui/utils/use-copy-button";
 import {
-  Check,
-  ChevronDown,
-  Copy,
+  CheckIcon,
+  ChevronDownIcon,
+  CopyIcon,
   ExternalLinkIcon,
   MessageCircleIcon,
 } from "lucide-react";
@@ -62,7 +62,7 @@ export function LLMCopyButton({
       )}
       onClick={onClick}
     >
-      {checked ? <Check /> : <Copy />}
+      {checked ? <CheckIcon /> : <CopyIcon />}
       Copy Markdown
     </button>
   );
@@ -221,7 +221,7 @@ export function ViewOptions({
         )}
       >
         Open
-        <ChevronDown className="size-3.5 text-fd-muted-foreground" />
+        <ChevronDownIcon className="size-3.5 text-fd-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent className="flex flex-col">
         {items.map((item) => (

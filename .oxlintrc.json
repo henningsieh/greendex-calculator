@@ -193,7 +193,7 @@
       "files": ["apps/calculator/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
       "rules": {
         "no-restricted-imports": [
-          "warn",
+          "error",
           {
             "patterns": [
               {

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ChevronDown, LogOutIcon, Settings } from "lucide-react";
+import { ChevronDownIcon, LogOutIcon, SettingsIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -102,7 +102,7 @@ export function UserMenu() {
                   {user.email}
                 </span>
               </div>
-              <ChevronDown className="ml-auto" />
+              <ChevronDownIcon className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -128,7 +128,7 @@ export function UserMenu() {
             {/* User Settings */}
             <DropdownMenuItem asChild>
               <Link href={USER_SETTINGS_PATH}>
-                <Settings className="mr-2 size-4" />
+                <SettingsIcon className="mr-2 size-4" />
                 <span>{t("settings")}</span>
               </Link>
             </DropdownMenuItem>

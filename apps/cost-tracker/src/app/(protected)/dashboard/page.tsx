@@ -1,4 +1,5 @@
 import { DashboardOverview } from "@/features/projects/components/dashboard-overview";
+import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { requireSession } from "@/lib/session";
 import {
@@ -22,7 +23,9 @@ export default async function DashboardPage() {
 
   return (
     <HydrateClient client={queryClient}>
-      <DashboardOverview userName={session.user.name} />
+      <ProjectDataErrorBoundary resource="the dashboard">
+        <DashboardOverview userName={session.user.name} />
+      </ProjectDataErrorBoundary>
     </HydrateClient>
   );
 }

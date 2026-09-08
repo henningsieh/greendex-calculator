@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { ArrowUpDown, ChevronDownIcon } from "lucide-react";
+import { ArrowUpDownIcon, ChevronDownIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -109,7 +109,7 @@ export function ProjectsGrid({
             size="sm"
             variant="outline"
           >
-            <ArrowUpDown className={sortDesc ? "rotate-180" : ""} />
+            <ArrowUpDownIcon className={sortDesc ? "rotate-180" : ""} />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

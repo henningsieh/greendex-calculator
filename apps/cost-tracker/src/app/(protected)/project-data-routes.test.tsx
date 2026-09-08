@@ -8,6 +8,13 @@ const mocks = vi.hoisted(() => ({
   partnerOrganizationsQueryOptions: vi.fn(() => ({
     queryKey: ["partner-organizations", "list"],
   })),
+  projectDataErrorBoundary: vi.fn(
+    ({ children, resource }: { children: React.ReactNode; resource: string }) => (
+      <div data-resource={resource} data-testid="project-data-error-boundary">
+        {children}
+      </div>
+    ),
+  ),
   projectsQueryOptions: vi.fn(() => ({ queryKey: ["projects", "list"] })),
   query: vi.fn().mockResolvedValue(undefined),
   swallowPrefetchError: vi.fn(),
@@ -25,6 +32,9 @@ vi.mock("@/features/projects/components/dashboard-overview", () => ({
 }));
 vi.mock("@/features/projects/components/partner-organizations-list", () => ({
   PartnerOrganizationsList: () => <p>Partner Organizations view</p>,
+}));
+vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
+  ProjectDataErrorBoundary: mocks.projectDataErrorBoundary,
 }));
 vi.mock("@/features/projects/components/projects-list", () => ({
   ProjectsList: () => <p>Projects view</p>,
@@ -66,6 +76,11 @@ describe("Cost Tracker Project data routes", () => {
     });
     expect(mocks.hydrateClient.mock.calls[0]?.[0].client).toBe(queryClient);
     expect(screen.getByText("Dashboard for Cost Tracker User")).toBeTruthy();
+    expect(
+      screen
+        .getByTestId("project-data-error-boundary")
+        .getAttribute("data-resource"),
+    ).toBe("the dashboard");
   });
 
   it("prefetches the Project list before hydrating its view", async () => {
@@ -76,6 +91,11 @@ describe("Cost Tracker Project data routes", () => {
     });
     expect(mocks.hydrateClient.mock.calls[0]?.[0].client).toBe(queryClient);
     expect(screen.getByText("Projects view")).toBeTruthy();
+    expect(
+      screen
+        .getByTestId("project-data-error-boundary")
+        .getAttribute("data-resource"),
+    ).toBe("Projects");
   });
 
   it("prefetches Partner Organizations before hydrating their view", async () => {
@@ -86,5 +106,10 @@ describe("Cost Tracker Project data routes", () => {
     });
     expect(mocks.hydrateClient.mock.calls[0]?.[0].client).toBe(queryClient);
     expect(screen.getByText("Partner Organizations view")).toBeTruthy();
+    expect(
+      screen
+        .getByTestId("project-data-error-boundary")
+        .getAttribute("data-resource"),
+    ).toBe("Partner Organizations");
   });
 });

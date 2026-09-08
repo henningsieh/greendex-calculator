@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { ChevronDown, MenuIcon } from "lucide-react";
+import { ChevronDownIcon, MenuIcon } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -110,7 +110,7 @@ export const LandingHeader = () => {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                     {t("navigation.resources")}
-                    <ChevronDown className="size-4" />
+                    <ChevronDownIcon className="size-4" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-40">
@@ -129,7 +129,7 @@ export const LandingHeader = () => {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                     {t("navigation.about")}
-                    <ChevronDown className="size-4" />
+                    <ChevronDownIcon className="size-4" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-40">

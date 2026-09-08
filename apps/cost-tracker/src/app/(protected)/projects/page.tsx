@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { ProjectsList } from "@/features/projects/components/projects-list";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import {
@@ -30,7 +31,9 @@ export default async function ProjectsPage() {
       </header>
 
       <HydrateClient client={queryClient}>
-        <ProjectsList />
+        <ProjectDataErrorBoundary resource="Projects">
+          <ProjectsList />
+        </ProjectDataErrorBoundary>
       </HydrateClient>
     </div>
   );

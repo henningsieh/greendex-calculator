@@ -1,6 +1,6 @@
 import { WORKSHOPS } from "@greendex/config/workshops";
 import { getTranslations } from "@greendex/i18n/server";
-import { ArrowRight, ClockIcon } from "lucide-react";
+import { ArrowRightIcon, ClockIcon } from "lucide-react";
 import Image from "next/image";
 
 import { Badge } from "@/components/ui/badge";
@@ -115,7 +115,7 @@ export async function WorkshopsHeroSection() {
                     {/* CTA */}
                     <div className="flex items-center gap-2 text-sm font-semibold text-primary">
                       <span>{t("workshops.card.learnMore")}</span>
-                      <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                      <ArrowRightIcon className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </div>
                   </div>
 

@@ -1,6 +1,6 @@
 import { eForestConfig } from "@greendex/config/e-forest";
 import { useTranslations } from "@greendex/i18n/client";
-import { ExternalLink, MapPin, Trees } from "lucide-react";
+import { ExternalLinkIcon, MapPinIcon, TreesIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,13 +40,13 @@ export function DreamSection() {
               <Card className="text-left transition-shadow hover:shadow-lg">
                 <CardHeader>
                   <div className="mb-2 flex items-center gap-2">
-                    <Trees className="size-5 text-green-600" />
+                    <TreesIcon className="size-5 text-green-600" />
                     <Badge className="bg-green-600/10 text-green-700 dark:bg-green-400/10 dark:text-green-400">
                       {t("ourForests.portugal.status")}
                     </Badge>
                   </div>
                   <CardTitle className="flex items-center gap-2 text-xl">
-                    <MapPin className="size-4" />
+                    <MapPinIcon className="size-4" />
                     {t("ourForests.portugal.location")}
                   </CardTitle>
                   <CardDescription className="text-base">
@@ -68,7 +68,7 @@ export function DreamSection() {
                 <CardFooter className="flex flex-col gap-2">
                   <Button asChild className="w-full" variant="outline">
                     <Link href={eForestConfig.links.article1} target="_blank">
-                      <ExternalLink className="mr-2 size-4" />
+                      <ExternalLinkIcon className="mr-2 size-4" />
                       {t("ourForests.readArticle")}
                     </Link>
                   </Button>
@@ -84,7 +84,7 @@ export function DreamSection() {
               <Card className="text-left transition-shadow hover:shadow-lg">
                 <CardHeader>
                   <div className="mb-2 flex items-center gap-2">
-                    <Trees className="size-5 text-emerald-600" />
+                    <TreesIcon className="size-5 text-emerald-600" />
                     <Badge className="bg-emerald-600/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-400">
                       {t("ourForests.expanding.status")}
                     </Badge>
@@ -98,19 +98,19 @@ export function DreamSection() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <MapPin className="size-4 text-muted-foreground" />
+                    <MapPinIcon className="size-4 text-muted-foreground" />
                     <span className="text-sm">
                       {t("ourForests.expanding.slovenia")}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <MapPin className="size-4 text-muted-foreground" />
+                    <MapPinIcon className="size-4 text-muted-foreground" />
                     <span className="text-sm">
                       {t("ourForests.expanding.cyprus")}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <MapPin className="size-4 text-muted-foreground" />
+                    <MapPinIcon className="size-4 text-muted-foreground" />
                     <span className="text-sm">
                       {t("ourForests.expanding.netherlands")}
                     </span>

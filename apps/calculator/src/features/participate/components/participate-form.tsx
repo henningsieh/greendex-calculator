@@ -13,7 +13,7 @@ import {
   ROOM_OCCUPANCY_OPTIONS,
 } from "@greendex/config/participate";
 import { useTranslations } from "@greendex/i18n/client";
-import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircle2Icon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 
@@ -528,7 +528,7 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                   size="lg"
                 >
                   {t("welcome.start-button")}
-                  <ArrowRight className="ml-2 size-5" />
+                  <ArrowRightIcon className="ml-2 size-5" />
                 </Button>
               </div>
             )}
@@ -920,7 +920,7 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                   type="button"
                   variant="outline"
                 >
-                  <ArrowLeft className="mr-2 size-4" />
+                  <ArrowLeftIcon className="mr-2 size-4" />
                   {t("navigation.back")}
                 </Button>
                 <Button
@@ -933,13 +933,13 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                 >
                   {renderedStep === 15 ? (
                     <>
-                      <CheckCircle2 className="mr-2 size-5" />
+                      <CheckCircle2Icon className="mr-2 size-5" />
                       {t("navigation.complete")}
                     </>
                   ) : (
                     <>
                       {t("navigation.continue")}
-                      <ArrowRight className="ml-2 size-5" />
+                      <ArrowRightIcon className="ml-2 size-5" />
                     </>
                   )}
                 </Button>

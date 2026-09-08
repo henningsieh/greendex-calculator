@@ -2,7 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserPlus } from "lucide-react";
+import { UserPlusIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -116,7 +116,7 @@ export function SignupForm({
       >
         <CardHeader className="flex flex-col items-center gap-3 px-0 text-center">
           <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
-            <UserPlus className="size-7 text-primary" />
+            <UserPlusIcon className="size-7 text-primary" />
           </div>
           <CardTitle className="space-y-1">
             <h1 className="text-xl font-bold">{t("signup.title")}</h1>

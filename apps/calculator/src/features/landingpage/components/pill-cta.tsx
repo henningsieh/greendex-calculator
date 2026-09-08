@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 
 import { AppRoute } from "@/app/routes";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +69,7 @@ export function PillCTA({
         </Badge>
       )}
       <span className="relative">{children}</span>
-      <ArrowRight
+      <ArrowRightIcon
         className="relative size-4 transition-transform duration-300 group-hover:translate-x-2"
         strokeWidth={2.5}
       />
