@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
+  swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
 export default async function DashboardPage() {
@@ -11,8 +12,12 @@ export default async function DashboardPage() {
   const queryClient = getQueryClient();
 
   await Promise.all([
-    queryClient.prefetchQuery(orpcQuery.projects.list.queryOptions()),
-    queryClient.prefetchQuery(orpcQuery.partnerOrganizations.list.queryOptions()),
+    queryClient
+      .query(orpcQuery.projects.list.queryOptions())
+      .catch(swallowPrefetchError),
+    queryClient
+      .query(orpcQuery.partnerOrganizations.list.queryOptions())
+      .catch(swallowPrefetchError),
   ]);
 
   return (

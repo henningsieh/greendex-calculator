@@ -5,13 +5,16 @@ import { orpcQuery } from "@/lib/orpc/orpc";
 import {
   getQueryClient,
   HydrateClient,
+  swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
 export const metadata: Metadata = { title: "Projects" };
 
 export default async function ProjectsPage() {
   const queryClient = getQueryClient();
-  await queryClient.prefetchQuery(orpcQuery.projects.list.queryOptions());
+  await queryClient
+    .query(orpcQuery.projects.list.queryOptions())
+    .catch(swallowPrefetchError);
 
   return (
     <div>

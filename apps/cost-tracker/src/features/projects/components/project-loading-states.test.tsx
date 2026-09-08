@@ -9,11 +9,11 @@ import {
 
 describe("Cost Tracker Project loading states", () => {
   it.each([
-    ["dashboard", <DashboardSkeleton />, "Loading dashboard"],
-    ["Projects", <ProjectsSkeleton />, "Loading Projects"],
+    ["dashboard", <DashboardSkeleton key="dashboard" />, "Loading dashboard"],
+    ["Projects", <ProjectsSkeleton key="projects" />, "Loading Projects"],
     [
       "Partner Organizations",
-      <PartnerOrganizationsSkeleton />,
+      <PartnerOrganizationsSkeleton key="partner-organizations" />,
       "Loading Partner Organizations",
     ],
   ])("renders an accessible %s skeleton", (_name, skeleton, accessibleName) => {
