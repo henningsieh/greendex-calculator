@@ -613,7 +613,7 @@ describe("OpenAPI Specification", () => {
     const response = await fetch(specUrl);
     expect(response.status).toBe(200);
 
-    const spec: Record<string, unknown> = await response.json();
+    const spec = await response.json();
 
     // Verify it's a valid OpenAPI spec
     expect(spec).toHaveProperty("openapi");
@@ -630,17 +630,7 @@ describe("OpenAPI Specification", () => {
     // Scalar can resolve the correct base URL for endpoint examples.
     expect(spec).toHaveProperty("servers");
     expect(Array.isArray(spec.servers)).toBe(true);
-    const serverUrls = Array.isArray(spec.servers)
-      ? spec.servers.flatMap((server) =>
-          typeof server === "object" &&
-          server !== null &&
-          "url" in server &&
-          typeof server.url === "string"
-            ? [server.url]
-            : [],
-        )
-      : [];
-    expect(serverUrls).toContain("/api/openapi");
+    expect(spec.servers.map((s: any) => s.url)).toContain("/api/openapi");
 
     // Check that some of our endpoints are documented
     expect(spec.paths).toHaveProperty("/health");

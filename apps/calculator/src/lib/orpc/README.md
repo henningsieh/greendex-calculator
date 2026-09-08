@@ -13,16 +13,16 @@ Greendex exposes one router through two protocol surfaces and two documentation 
 
 ## Source ownership
 
-| Concern                                  | Source                                                 |
-| ---------------------------------------- | ------------------------------------------------------ |
-| Context and typed errors                 | `context.ts`                                           |
-| Authentication and permission middleware | `middleware.ts`                                        |
-| Shared procedures                        | `procedures.ts`                                        |
-| Feature procedures                       | `apps/calculator/src/features/<feature>/procedures.ts` |
-| Router registration                      | `router.ts`                                            |
-| Direct server client                     | `client.server.ts`                                     |
-| Universal client and Query utilities     | `orpc.ts`                                              |
-| OpenAPI/Scalar configuration             | `openapi-handler.ts`                                   |
+| Concern                                  | Source                                   |
+| ---------------------------------------- | ---------------------------------------- |
+| Context and typed errors                 | `context.ts`                             |
+| Authentication and permission middleware | `middleware.ts`                          |
+| Shared procedures                        | `procedures.ts`                          |
+| Feature procedures                       | `../../features/<feature>/procedures.ts` |
+| Router registration                      | `router.ts`                              |
+| Direct server client                     | `client.server.ts`                       |
+| Universal client and Query utilities     | `orpc.ts`                                |
+| OpenAPI/Scalar configuration             | `openapi-handler.ts`                     |
 
 `instrumentation.ts` and `app/[locale]/layout.tsx` must initialize `client.server.ts` before server consumers evaluate `orpc.ts`. The server client resolves request headers inside its context function.
 

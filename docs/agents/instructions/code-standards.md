@@ -65,5 +65,5 @@ Document reasons and invariants that are not obvious from configuration. Avoid c
 References:
 
 - [Official Oxc index](https://oxc.rs/llms.txt)
-- [Calculator participation testing](../../../apps/calculator/docs/participate/testing.md)
+- [`docs/participate/testing.md`](../../participate/testing.md)
 - [Architecture instructions](architecture.md)

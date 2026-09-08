@@ -14,8 +14,6 @@ import {
   type ColumnFiltersState,
   type ColumnVisibilityState,
   flexRender,
-  type OnChangeFn,
-  type PaginationState,
   type SortingState,
   useTable,
 } from "@tanstack/react-table";
@@ -138,9 +136,7 @@ export function ProjectsTable({ projects }: { projects: ProjectType[] }) {
     pageSize: DEFAULT_PAGE_SIZE,
   });
 
-  const handlePaginationChange: OnChangeFn<PaginationState> = (
-    updaterOrValue,
-  ) => {
+  const handlePaginationChange = (updaterOrValue: any) => {
     setPagination((prev) => {
       const newPagination =
         typeof updaterOrValue === "function"

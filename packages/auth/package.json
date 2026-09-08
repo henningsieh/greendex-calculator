@@ -8,16 +8,13 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/auth-client.ts",
-    "./oauth-icons": "./src/oauth-icons.tsx"
+    "./client": "./src/auth-client.ts"
   },
   "scripts": {
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules .turbo",
-    "test": "vitest",
-    "test:run": "vitest run"
+    "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
     "@greendex/database": "workspace:*",
@@ -27,8 +24,7 @@
   "devDependencies": {
     "oxfmt": "^0.66.0",
     "oxlint": "^1.81.0",
-    "typescript": "catalog:",
-    "vitest": "^4.1.11"
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "react": "^19.0.0"

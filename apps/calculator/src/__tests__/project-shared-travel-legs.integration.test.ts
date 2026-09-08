@@ -172,7 +172,6 @@ describe("Project Shared Travel Legs integration", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         archived: false,
-        costSubmissionWindowOpen: false,
       } satisfies ProjectType;
 
       // Insert project directly
@@ -205,7 +204,6 @@ describe("Project Shared Travel Legs integration", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         archived: false,
-        costSubmissionWindowOpen: false,
       } satisfies ProjectType;
 
       // Insert project
@@ -475,7 +473,6 @@ describe("Project Shared Travel Legs integration", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         archived: false,
-        costSubmissionWindowOpen: false,
       } satisfies ProjectType;
 
       // Create project

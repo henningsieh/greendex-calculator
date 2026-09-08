@@ -8,11 +8,10 @@
 
 ### Forbidden Commands
 
-Never start a development server, pass `--force`, or run destructive Git commands:
+Never execute commands that start the development server or any forced/hard git commands:
 
 - `pnpm run dev`, `npm run dev`, `yarn dev`, or any dev server! Most of the time there is already a dev server running on port 3000.
-- The `--force` parameter with any command. Use the normal non-forcing workflow or stop and ask the developer for direction.
-- `git reset --hard` or destructive git operations
+- `git push --force`, `git reset --hard`, or destructive git operations
 
 ### Allowed Commands
 
@@ -27,7 +26,7 @@ Never start a development server, pass `--force`, or run destructive Git command
 
 ## Commit Conventions
 
-**Commit gate:** Every Git commit, without exception, must follow the [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) specification.
+Every commit message must follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) as maintained by the [conventionalcommits.org project](https://github.com/conventional-commits/conventionalcommits.org).
 
 Use this structure:
 
@@ -117,9 +116,8 @@ The live database has SSL disabled because Coolify’s generated SSL mount was i
 
 | Layer                | Location                               | Entry point / ownership                                  |
 | -------------------- | -------------------------------------- | -------------------------------------------------------- |
-| Calculator routes    | `apps/calculator/src/app/`             | Carbon-footprint pages, layouts, and route handlers      |
-| Calculator features  | `apps/calculator/src/features/`        | Calculator procedures, components, and schemas           |
-| Cost Tracker         | `apps/cost-tracker/src/`               | Journey-cost routes and application-owned behavior       |
+| Calculator routes    | `apps/calculator/src/app/`             | Next.js pages, layouts, route handlers                   |
+| Calculator features  | `apps/calculator/src/features/`        | Domain procedures, components, schemas                   |
 | oRPC                 | `apps/calculator/src/lib/orpc/`        | Router plus internal RPC/OpenAPI adapters                |
 | Better Auth          | `apps/calculator/src/lib/better-auth/` | `apps/calculator/src/app/api/auth/[...all]/route.ts`     |
 | Database             | `packages/database/`                   | Drizzle client, schemas, migrations                      |
@@ -176,7 +174,7 @@ The default five-role label vocabulary is used. See `docs/agents/triage-labels.m
 
 ### Domain docs
 
-This repository has shared domain language and application-specific contexts. Before changing domain language, read `docs/agents/domain.md`, `CONTEXT-MAP.md`, `DOMAIN-GLOSSARY.md`, and the owning application's `CONTEXT.md`.
+This repository has one domain context. Before changing domain language, read `docs/agents/domain.md` and the canonical `DOMAIN-GLOSSARY.md`.
 
 ### Primary documentation
 
@@ -191,10 +189,8 @@ This repository has shared domain language and application-specific contexts. Be
 | Internationalization | [Internationalization instruction](docs/agents/instructions/i18n.md) |
 | Database schemas and migrations | [Drizzle instruction](docs/agents/instructions/drizzle.md) and `packages/database/` |
 | Deployment and managed resources | [Coolify instruction](docs/agents/instructions/coolify.md) |
-| Shared Project model, participation, and permissions | `docs/projects/` |
-| Calculator questionnaire flows and calculations | `apps/calculator/docs/participate/` |
-| Calculator Projects feature | `apps/calculator/docs/projects/` |
-| Cost Tracker Projects and planned cost schema | `apps/cost-tracker/docs/projects/` and `apps/cost-tracker/docs/domain-model.md` |
+| Questionnaire flows and calculations | `docs/participate/` |
+| Permissions and access control | `docs/projects/permissions.md` |
 | Email templates and transport | [Email instruction](docs/agents/instructions/email.md) |
 | Code standards and tooling | [Repository conventions](docs/agents/instructions/conventions.md) |
 

@@ -18,7 +18,6 @@ import {
   admin,
   member as memberRole,
   owner,
-  participant,
 } from "@/features/projects/permissions";
 import { emailSender } from "@/lib/email";
 
@@ -95,7 +94,6 @@ export const auth = betterAuth({
         owner,
         admin,
         member: memberRole,
-        participant,
       },
       async sendInvitationEmail(data) {
         try {

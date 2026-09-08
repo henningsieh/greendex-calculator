@@ -106,7 +106,7 @@ export function EditOrganizationForm() {
     <Card>
       <CardHeader>
         <CardTitle>Edit Organization</CardTitle>
-        <CardDescription>Update your organization&apos;s name.</CardDescription>
+        <CardDescription>Update your organization's name.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

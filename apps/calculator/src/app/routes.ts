@@ -10,6 +10,7 @@
 //   - Use AppRoute type for type-safe route parameters
 // ============================================================================
 
+// @ts-ignore TS2307: module '#next-routes/routes' is generated at build time
 import type { AppRoutes } from "#next-routes/routes";
 
 // ============================================================================

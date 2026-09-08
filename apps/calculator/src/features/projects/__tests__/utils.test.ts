@@ -37,14 +37,9 @@ describe("getProjectStatistics", () => {
       {
         id: "participant-1",
         projectId: "project-1",
-        representedOrganizationId: "organization-1",
-        displayName: "Participant One",
-        email: "participant-1@example.com",
+        memberId: "member-1",
         userId: "user-1",
         country: "DE",
-        mergedIntoParticipantId: null,
-        mergedAt: null,
-        mergedByUserId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         user: {
@@ -57,14 +52,9 @@ describe("getProjectStatistics", () => {
       {
         id: "participant-2",
         projectId: "project-1",
-        representedOrganizationId: "organization-1",
-        displayName: "Participant Two",
-        email: "participant-2@example.com",
+        memberId: "member-2",
         userId: "user-2",
         country: "DE",
-        mergedIntoParticipantId: null,
-        mergedAt: null,
-        mergedByUserId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         user: {
@@ -77,14 +67,9 @@ describe("getProjectStatistics", () => {
       {
         id: "participant-3",
         projectId: "project-1",
-        representedOrganizationId: "organization-1",
-        displayName: "Participant Three",
-        email: "participant-3@example.com",
+        memberId: "member-3",
         userId: "user-3",
         country: "DE",
-        mergedIntoParticipantId: null,
-        mergedAt: null,
-        mergedByUserId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         user: {

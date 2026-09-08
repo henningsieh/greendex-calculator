@@ -1,9 +1,0 @@
-{
-  "$schema": "https://turborepo.dev/schema.v2.json",
-  "extends": ["//"],
-  "tasks": {
-    "dev": {
-      "env": ["COST_TRACKER_PORT", "NODE_ENV"]
-    }
-  }
-}
