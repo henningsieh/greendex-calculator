@@ -16,6 +16,7 @@ export { createAuthClient } from "./auth-client";
 
 export {
   accessControl,
+  addOrganizationRole,
   hasOrganizationRole,
   memberRole,
   ORGANIZATION_ROLES,

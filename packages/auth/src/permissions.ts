@@ -74,6 +74,20 @@ export function parseOrganizationRoles(role: string): OrganizationRole[] {
     );
 }
 
+export function addOrganizationRole(
+  role: string,
+  addedRole: OrganizationRole,
+): string {
+  const roles = role
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  if (!roles.includes(addedRole)) roles.push(addedRole);
+
+  return roles.join(",");
+}
+
 export function hasOrganizationRole(
   role: string,
   expectedRole: OrganizationRole,

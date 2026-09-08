@@ -1,20 +1,13 @@
 import { createEnv } from "@t3-oss/env-nextjs";
-import { z } from "zod";
+
+import {
+  CostTrackerClientEnvironmentSchema,
+  CostTrackerServerEnvironmentSchema,
+} from "@/environment-schemas";
 
 export const env = createEnv({
-  server: {
-    DATABASE_URL: z.url(),
-    BETTER_AUTH_SECRET: z.string().min(32),
-    GOOGLE_CLIENT_ID: z.string().min(1),
-    GOOGLE_CLIENT_SECRET: z.string().min(1),
-    SMTP_HOST: z.string().min(1),
-    SMTP_PORT: z.coerce.number().int().positive(),
-    SMTP_SENDER: z.email(),
-    SMTP_USERNAME: z.string().min(1),
-    SMTP_PASSWORD: z.string().min(1),
-    SMTP_SECURE: z.enum(["true", "false"]).transform((value) => value === "true"),
-  },
-  client: { NEXT_PUBLIC_BASE_URL: z.url() },
+  server: CostTrackerServerEnvironmentSchema.shape,
+  client: CostTrackerClientEnvironmentSchema.shape,
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
