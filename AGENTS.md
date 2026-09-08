@@ -26,7 +26,7 @@ Never execute commands that start the development server or any forced/hard git 
 
 ## Commit Conventions
 
-Every commit message must follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) as maintained by the [conventionalcommits.org project](https://github.com/conventional-commits/conventionalcommits.org).
+**Commit gate:** Every Git commit, without exception, must follow the [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 
 Use this structure:
 
