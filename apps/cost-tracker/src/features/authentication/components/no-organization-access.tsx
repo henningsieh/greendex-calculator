@@ -3,7 +3,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Building2Icon, LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type SyntheticEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,7 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
 
-  async function createOrganization(event: React.FormEvent<HTMLFormElement>) {
+  async function createOrganization(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(undefined);
     setPending(true);
@@ -96,7 +96,7 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
                     </FieldLabel>
                     <Input
                       aria-invalid={Boolean(error)}
-                      autoFocus
+
                       id="organization-name"
                       minLength={2}
                       onChange={(event) => setName(event.target.value)}
