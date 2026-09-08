@@ -16,3 +16,11 @@ export async function requireSession() {
 
   return session;
 }
+
+export const hasOrganizationMembership = cache(async () => {
+  const organizations = await auth.api.listOrganizations({
+    headers: await headers(),
+  });
+
+  return organizations.length > 0;
+});

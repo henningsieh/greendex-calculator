@@ -1,7 +1,7 @@
 import { DashboardOverview } from "@/features/projects/components/dashboard-overview";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
-import { requireSession } from "@/lib/session";
+import { hasOrganizationMembership, requireSession } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -10,6 +10,8 @@ import {
 
 export default async function DashboardPage() {
   const session = await requireSession();
+  if (!(await hasOrganizationMembership())) return null;
+
   const queryClient = getQueryClient();
 
   await Promise.all([

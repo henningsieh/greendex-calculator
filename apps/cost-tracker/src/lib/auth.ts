@@ -1,10 +1,16 @@
 import { organizationRoles, accessControl } from "@greendex/auth";
 import { db } from "@greendex/database";
+import {
+  member,
+  organization as organizationTable,
+} from "@greendex/database/schema";
 import * as schema from "@greendex/database/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
+import { desc, eq, ilike } from "drizzle-orm";
 
 import { env } from "@/env";
 import { emailSender } from "@/lib/email";
@@ -32,7 +38,41 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    organization({ ac: accessControl, roles: organizationRoles }),
+    organization({
+      ac: accessControl,
+      roles: organizationRoles,
+      allowUserToCreateOrganization: async (user) => {
+        const membership = await db.query.member.findFirst({
+          where: eq(member.userId, user.id),
+          columns: { id: true },
+        });
+
+        return !membership;
+      },
+      organizationHooks: {
+        beforeCreateOrganization: async ({ organization }) => {
+          const organizationName = organization.name;
+          if (!organizationName) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Organization name is required.",
+            });
+          }
+
+          const existingOrganization = await db.query.organization.findFirst({
+            where: ilike(organizationTable.name, organizationName),
+            columns: { id: true },
+          });
+
+          if (existingOrganization) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Choose a different Organization name.",
+            });
+          }
+
+          return { data: organization };
+        },
+      },
+    }),
     nextCookies(),
   ],
   databaseHooks: {
@@ -47,9 +87,8 @@ export const auth = betterAuth({
       create: {
         before: async (userSession) => {
           const membership = await db.query.member.findFirst({
-            where: (membership, { eq }) =>
-              eq(membership.userId, userSession.userId),
-            orderBy: (membership, { desc }) => [desc(membership.createdAt)],
+            where: eq(member.userId, userSession.userId),
+            orderBy: desc(member.createdAt),
             columns: { organizationId: true },
           });
 

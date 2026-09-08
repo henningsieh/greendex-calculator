@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  hasOrganizationMembership: vi.fn().mockResolvedValue(true),
   hydrateClient: vi.fn(
     ({ children }: { children: React.ReactNode; client: unknown }) => children,
   ),
@@ -47,7 +48,10 @@ vi.mock("@/lib/orpc/orpc", () => ({
     },
   },
 }));
-vi.mock("@/lib/session", () => ({ requireSession: mocks.requireSession }));
+vi.mock("@/lib/session", () => ({
+  hasOrganizationMembership: mocks.hasOrganizationMembership,
+  requireSession: mocks.requireSession,
+}));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => queryClient,
   HydrateClient: mocks.hydrateClient,

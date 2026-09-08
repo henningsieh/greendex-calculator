@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PartnerOrganizationsList } from "@/features/projects/components/partner-organizations-list";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -12,6 +13,8 @@ import {
 export const metadata: Metadata = { title: "Partner Organizations" };
 
 export default async function PartnerOrganizationsPage() {
+  if (!(await hasOrganizationMembership())) return null;
+
   const queryClient = getQueryClient();
   await queryClient
     .query(orpcQuery.partnerOrganizations.list.queryOptions())

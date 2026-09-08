@@ -1,10 +1,17 @@
 import { AppNavigation } from "@/components/app-navigation";
-import { requireSession } from "@/lib/session";
+import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
+import { hasOrganizationMembership, requireSession } from "@/lib/session";
 
 export default async function ProtectedLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await requireSession();
+  if (!(await hasOrganizationMembership())) {
+    const newlyRegistered =
+      Date.now() - session.user.createdAt.getTime() < 10 * 60 * 1000;
+
+    return <NoOrganizationAccess autoOpen={newlyRegistered} />;
+  }
 
   return (
     <div className="min-h-svh bg-muted/35">
