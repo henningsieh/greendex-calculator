@@ -30,15 +30,6 @@ export function ThemeSettings() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Alert>
-        <KeyboardIcon aria-hidden="true" />
-        <AlertTitle>Switch from anywhere</AlertTitle>
-        <AlertDescription>
-          Press <Kbd>d</Kbd> anywhere in Cost Tracker to switch between light and
-          dark. The shortcut stays inactive while you are typing.
-        </AlertDescription>
-      </Alert>
-
       <FieldSet>
         <FieldLegend variant="label">Color theme</FieldLegend>
         <FieldDescription>
@@ -61,6 +52,16 @@ export function ThemeSettings() {
           </ToggleGroupItem>
         </ToggleGroup>
       </FieldSet>
+
+      <Alert className="border-primary/25 bg-primary/10 text-foreground after:bg-primary">
+        <KeyboardIcon aria-hidden="true" className="text-primary" />
+        <AlertTitle>Switch from anywhere</AlertTitle>
+        <AlertDescription className="text-foreground/80">
+          Press <Kbd className="bg-primary/15 text-foreground">d</Kbd> anywhere in
+          Cost Tracker to switch between light and dark. The shortcut stays
+          inactive while you are typing.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }

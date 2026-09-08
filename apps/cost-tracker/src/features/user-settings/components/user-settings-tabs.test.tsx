@@ -17,22 +17,10 @@ vi.mock("@/features/user-settings/components/edit-name-form", () => ({
 }));
 
 describe("UserSettingsTabs", () => {
-  it("renders Appearance as the only active settings concern initially", () => {
+  it("renders Account details as the first and only active settings concern initially", () => {
     render(<UserSettingsTabs email="alex@example.org" name="Alex Morgan" />);
 
-    const activePanel = screen.getByRole("tabpanel");
-    expect(within(activePanel).getByText("Theme controls")).toBeTruthy();
-    expect(
-      within(activePanel).getByRole("heading", { name: "Appearance" }),
-    ).toBeTruthy();
-    expect(screen.queryByText(/Account form for/)).toBeNull();
-  });
-
-  it("switches to Account details without mixing in Appearance controls", async () => {
-    const user = userEvent.setup();
-    render(<UserSettingsTabs email="alex@example.org" name="Alex Morgan" />);
-
-    await user.click(screen.getByRole("tab", { name: "Account details" }));
+    expect(screen.getAllByRole("tab")[0]?.textContent).toBe("Account details");
 
     const activePanel = screen.getByRole("tabpanel");
     expect(
@@ -44,5 +32,19 @@ describe("UserSettingsTabs", () => {
       within(activePanel).getByRole("heading", { name: "Account details" }),
     ).toBeTruthy();
     expect(screen.queryByText("Theme controls")).toBeNull();
+  });
+
+  it("switches to Appearance without mixing in account controls", async () => {
+    const user = userEvent.setup();
+    render(<UserSettingsTabs email="alex@example.org" name="Alex Morgan" />);
+
+    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+
+    const activePanel = screen.getByRole("tabpanel");
+    expect(within(activePanel).getByText("Theme controls")).toBeTruthy();
+    expect(
+      within(activePanel).getByRole("heading", { name: "Appearance" }),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Account form for/)).toBeNull();
   });
 });

@@ -11,7 +11,7 @@ type UserSettingsTabsProps = {
 
 export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
   return (
-    <Tabs className="mt-10 gap-0" defaultValue="appearance">
+    <Tabs className="mt-10 gap-0" defaultValue="account">
       <TabsList
         aria-label="User settings sections"
         className="grid h-auto w-full grid-cols-2 justify-start gap-0 border-b p-0 sm:flex sm:gap-8"
@@ -19,26 +19,17 @@ export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
       >
         <TabsTrigger
           className="py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0"
-          value="appearance"
-        >
-          Appearance
-        </TabsTrigger>
-        <TabsTrigger
-          className="py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0"
           value="account"
         >
           Account details
         </TabsTrigger>
-      </TabsList>
-
-      <TabsContent className="pt-10" value="appearance">
-        <SettingsPanel
-          description="Your choice is saved in this browser."
-          title="Appearance"
+        <TabsTrigger
+          className="py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0"
+          value="appearance"
         >
-          <ThemeSettings />
-        </SettingsPanel>
-      </TabsContent>
+          Appearance
+        </TabsTrigger>
+      </TabsList>
 
       <TabsContent className="pt-10" value="account">
         <SettingsPanel
@@ -46,6 +37,15 @@ export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
           title="Account details"
         >
           <EditNameForm email={email} name={name} />
+        </SettingsPanel>
+      </TabsContent>
+
+      <TabsContent className="pt-10" value="appearance">
+        <SettingsPanel
+          description="Your choice is saved in this browser."
+          title="Appearance"
+        >
+          <ThemeSettings />
         </SettingsPanel>
       </TabsContent>
     </Tabs>
