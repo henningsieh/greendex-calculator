@@ -19,6 +19,9 @@
     "docs/**",
     "specs/**",
     "src/components/ui/**",
+    "apps/calculator/src/components/ui/**",
+    "apps/documentation/src/components/ui/**",
+    "apps/cost-tracker/src/components/ui/**",
     "src/lib/drizzle/migrations/**",
     "src/lib/drizzle/schemas/**"
   ],
@@ -184,6 +187,23 @@
         "react/purity": "warn",
         "react/set-state-in-render": "warn",
         "react/unsupported-syntax": "warn"
+      }
+    },
+    {
+      "files": ["apps/calculator/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
+      "rules": {
+        "no-restricted-imports": [
+          "warn",
+          {
+            "patterns": [
+              {
+                "group": ["lucide-react"],
+                "allowImportNamePattern": "^.+Icon$",
+                "message": "Import Lucide icons using the *Icon export name (for example, CheckIcon)."
+              }
+            ]
+          }
+        ]
       }
     },
     {

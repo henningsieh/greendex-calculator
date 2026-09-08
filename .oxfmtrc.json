@@ -10,6 +10,8 @@
     ".specify/**",
     "specs/**",
     "packages/**/dist/**",
+    "apps/calculator/src/components/ui/**",
+    "apps/cost-tracker/src/components/ui/**",
     "apps/documentation/src/components/ui/**"
   ],
   "sortImports": {
