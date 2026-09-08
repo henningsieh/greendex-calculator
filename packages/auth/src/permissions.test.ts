@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  addOrganizationRole,
   hasOrganizationRole,
   memberRole,
   organizationAdministratorRole,
@@ -63,5 +64,14 @@ describe("membership roles", () => {
     expect(parseOrganizationRoles("unknown, ,participant")).toEqual([
       "participant",
     ]);
+  });
+
+  it("adds a role without replacing or duplicating existing roles", () => {
+    expect(addOrganizationRole("owner,custom", "participant")).toBe(
+      "owner,custom,participant",
+    );
+    expect(addOrganizationRole("owner,participant", "participant")).toBe(
+      "owner,participant",
+    );
   });
 });
