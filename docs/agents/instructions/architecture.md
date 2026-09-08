@@ -21,7 +21,7 @@ Use this instruction when placing code, crossing workspace boundaries, or changi
 | Email package     | `packages/email/src/`     | Transactional templates, rendering, delivery primitives                       |
 | i18n package      | `packages/i18n/src/`      | next-intl exports and locale messages                                         |
 
-Keep environment-specific integration in the consuming app. For example, `apps/calculator/src/lib/email.ts` injects SMTP and application URL configuration into `@greendex/email`.
+Keep environment-specific integration in the consuming app. For example, `apps/calculator/src/lib/email.ts` injects SMTP and application URL configuration into `@greendex/email`. Follow the [Cost Tracker architecture](../../../apps/cost-tracker/docs/architecture.md) when placing Cost Tracker routes, shared UI, features, validation schemas, and integration seams.
 
 ## Calculator layers
 

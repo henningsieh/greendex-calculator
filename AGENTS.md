@@ -8,10 +8,11 @@
 
 ### Forbidden Commands
 
-Never execute commands that start the development server or any forced/hard git commands:
+Never start a development server, pass `--force`, or run destructive Git commands:
 
 - `pnpm run dev`, `npm run dev`, `yarn dev`, or any dev server! Most of the time there is already a dev server running on port 3000.
-- `git push --force`, `git reset --hard`, or destructive git operations
+- The `--force` parameter with any command. Use the normal non-forcing workflow or stop and ask the developer for direction.
+- `git reset --hard` or destructive git operations
 
 ### Allowed Commands
 
