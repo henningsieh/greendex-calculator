@@ -20,8 +20,8 @@ Oxfmt and Oxlint enforce mechanical style. This file records decisions tooling c
 ## Imports and environment
 
 - Let Oxfmt sort imports. Preserve side-effect imports and the oRPC initialization invariant described in `docs/agents/instructions/architecture.md`.
-- Use `@/` for calculator app imports rather than relative parent traversal.
-- Read runtime configuration through `apps/calculator/src/env.ts`. Source files must not access `process.env` directly except `apps/calculator/src/env.ts` and `apps/calculator/src/instrumentation.ts`.
+- Use `@/` for application-local imports rather than relative parent traversal.
+- Read runtime configuration through the owning app's `src/env.ts`; follow its documented exceptions for instrumentation.
 - Keep modules ESM.
 
 ## Async and errors
@@ -46,7 +46,8 @@ Oxfmt and Oxlint enforce mechanical style. This file records decisions tooling c
 
 - Validate procedure input with Zod before reaching persistence code.
 - Authorize access at the procedure boundary and constrain organization-owned database queries by `activeOrganizationId`.
-- Put procedures in their owning feature and register them in `apps/calculator/src/lib/orpc/router.ts`.
+- Put procedures in their owning feature and register them in the owning app's `src/lib/orpc/router.ts`.
+- Keep application runtime database-client access in feature procedures. Route and view modules consume oRPC; integration-test fixtures, Better Auth integration, and schema-derived validation are separate allowed seams.
 - Keep database schemas and migrations in `packages/database/`.
 
 ## Tests
@@ -56,7 +57,7 @@ Oxfmt and Oxlint enforce mechanical style. This file records decisions tooling c
 - Keep tests isolated and deterministic; clean up rows created by integration/E2E fixtures.
 - Do not commit `.only()` or unconditional `.skip()` calls.
 - Assert observable behavior and error contracts rather than implementation trivia.
-- For SSR routing changes, run `apps/calculator/src/__tests__/e2e/project-routing.spec.ts`.
+- For SSR routing changes, run the owning app's SSR regression coverage; Calculator uses `apps/calculator/src/__tests__/e2e/project-routing.spec.ts`.
 
 ## Documentation
 

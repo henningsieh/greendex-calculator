@@ -1,7 +1,7 @@
 ---
 name: "oRPC"
 description: "Procedures, middleware, router registration, OpenAPI, and SSR clients"
-applyTo: "apps/calculator/src/lib/orpc/**/*.ts,apps/calculator/src/app/api/rpc/**/*.ts,apps/calculator/src/app/api/openapi/**/*.ts,apps/calculator/src/features/**/procedures.ts,apps/calculator/src/features/**/validation-schemas.ts,apps/calculator/src/instrumentation.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx"
+applyTo: "apps/calculator/src/lib/orpc/**/*.ts,apps/calculator/src/app/api/rpc/**/*.ts,apps/calculator/src/app/api/openapi/**/*.ts,apps/calculator/src/features/**/procedures.ts,apps/calculator/src/features/**/validation-schemas.ts,apps/calculator/src/instrumentation.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/lib/orpc/**/*.ts,apps/cost-tracker/src/app/api/rpc/**/*.ts,apps/cost-tracker/src/features/**/procedures.ts,apps/cost-tracker/src/features/**/validation-schemas.ts,apps/cost-tracker/src/instrumentation.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx"
 ---
 
 # oRPC
@@ -22,31 +22,31 @@ No official oRPC project skill is adopted. Use the versioned official pages and 
 
 | Concern | Location |
 | --- | --- |
-| Router | `apps/calculator/src/lib/orpc/router.ts` |
-| Context and typed errors | `apps/calculator/src/lib/orpc/context.ts` |
-| Authentication and permissions | `apps/calculator/src/lib/orpc/middleware.ts` |
-| Shared procedures | `apps/calculator/src/lib/orpc/procedures.ts` |
-| Feature procedures | `apps/calculator/src/features/<feature>/procedures.ts` |
-| Direct server client | `apps/calculator/src/lib/orpc/client.server.ts` |
-| Universal client and Query utilities | `apps/calculator/src/lib/orpc/orpc.ts` |
-| OpenAPI configuration | `apps/calculator/src/lib/orpc/openapi-handler.ts` |
-| RPC route | `apps/calculator/src/app/api/rpc/[[...rest]]/route.ts` |
+| Router | Owning app's `src/lib/orpc/router.ts` |
+| Context and typed errors | Owning app's `src/lib/orpc/context.ts` |
+| Authentication and permissions | Owning app's `src/lib/orpc/middleware.ts` |
+| Shared procedures | Owning app's `src/lib/orpc/procedures.ts`, when present |
+| Feature procedures | Owning app's `src/features/<feature>/procedures.ts` |
+| Direct server client | Owning app's `src/lib/orpc/client.server.ts` |
+| Universal client and Query utilities | Owning app's `src/lib/orpc/orpc.ts` |
+| OpenAPI configuration | Calculator's `src/lib/orpc/openapi-handler.ts` |
+| RPC route | Owning app's `src/app/api/rpc/[[...rest]]/route.ts` |
 | REST/OpenAPI route | `apps/calculator/src/app/api/openapi/[[...rest]]/route.ts` |
 | Scalar route | `apps/calculator/src/app/api/docs/route.ts` |
 | OpenAPI specification | `apps/calculator/src/app/api/openapi-spec/route.ts` |
 
 ## Critical SSR invariant
 
-The direct router client must exist before `apps/calculator/src/lib/orpc/orpc.ts` evaluates on the server.
+The direct router client must exist before the owning app's `src/lib/orpc/orpc.ts` evaluates on the server.
 
-- `apps/calculator/src/instrumentation.ts` dynamically imports `@/lib/orpc/client.server` in the Node runtime.
-- `apps/calculator/src/app/[locale]/layout.tsx` side-effect-imports `@/lib/orpc/client.server` before local SSR consumers.
-- `apps/calculator/src/lib/orpc/client.server.ts` resolves `headers()` inside its context function so request data remains request-specific.
-- Preserve both initialization paths and their effective order. Validate this seam with `apps/calculator/src/__tests__/e2e/project-routing.spec.ts`.
+- The owning app's `instrumentation.ts` dynamically imports `@/lib/orpc/client.server` in the Node runtime.
+- Its root app layout side-effect-imports `@/lib/orpc/client.server` before local SSR consumers.
+- `client.server.ts` resolves `headers()` inside its context function so request data remains request-specific.
+- Preserve both initialization paths and their effective order. Validate this seam with app-local SSR regression coverage.
 
 ## Procedures and consumers
 
-1. Put domain procedures in the owning feature and register them in `apps/calculator/src/lib/orpc/router.ts`.
+1. Put domain procedures in the owning feature and register them in the owning app's `src/lib/orpc/router.ts`.
 2. Define Zod input/output schemas at the boundary and add `.route(...)` metadata for REST/OpenAPI procedures.
 3. Use `base` for public procedures and `authorized` for authenticated procedures; apply permission middleware after `authorized`.
 4. Constrain tenant-owned persistence by `context.session.activeOrganizationId`.
@@ -54,7 +54,7 @@ The direct router client must exist before `apps/calculator/src/lib/orpc/orpc.ts
 6. Server Components call `orpc` directly or prefetch `orpcQuery.*.queryOptions()` into the request QueryClient.
 7. Client Components use `orpcQuery` with TanStack Query; follow [TanStack Query project rules](tanstack-query.md).
 8. Hydrate prefetched data before suspense consumers render, and handle typed navigation errors explicitly.
-9. Use `projects.getForParticipation` for public participation reads; keep internal project reads authenticated and organization-scoped.
+9. Keep internal Project reads authenticated and organization-scoped; Calculator uses `projects.getForParticipation` for public participation reads.
 
 ## OpenAPI
 

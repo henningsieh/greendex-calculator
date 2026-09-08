@@ -1,7 +1,7 @@
 ---
 name: "TanStack React Query"
 description: "Query clients, caching, query options, mutations, invalidation, prefetching, SSR, and hydration"
-applyTo: "apps/calculator/src/lib/tanstack-react-query/**/*.ts,apps/calculator/src/lib/tanstack-react-query/**/*.tsx,apps/calculator/src/components/providers/query-provider.tsx,apps/calculator/src/lib/orpc/orpc.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/features/**/hooks/**/*.ts,apps/calculator/src/features/**/hooks/**/*.tsx"
+applyTo: "apps/calculator/src/lib/tanstack-react-query/**/*.ts,apps/calculator/src/lib/tanstack-react-query/**/*.tsx,apps/calculator/src/components/providers/query-provider.tsx,apps/calculator/src/lib/orpc/orpc.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/features/**/hooks/**/*.ts,apps/calculator/src/features/**/hooks/**/*.tsx,apps/cost-tracker/src/lib/tanstack-react-query/**/*.ts,apps/cost-tracker/src/lib/tanstack-react-query/**/*.tsx,apps/cost-tracker/src/components/query-provider.tsx,apps/cost-tracker/src/lib/orpc/orpc.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx,apps/cost-tracker/src/features/**/components/**/*.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/features/**/hooks/**/*.ts,apps/cost-tracker/src/features/**/hooks/**/*.tsx"
 ---
 
 # TanStack React Query
@@ -22,10 +22,10 @@ No dedicated Query skill is installed; use the versioned official pages and inst
 
 | Concern | Location |
 | --- | --- |
-| QueryClient factory, serialization, hash, defaults | `apps/calculator/src/lib/tanstack-react-query/client.ts` |
-| Request QueryClient and hydration boundary | `apps/calculator/src/lib/tanstack-react-query/hydration.tsx` |
-| Browser provider | `apps/calculator/src/components/providers/query-provider.tsx` |
-| oRPC query options | `apps/calculator/src/lib/orpc/orpc.ts` |
+| QueryClient factory, serialization, hash, defaults | Owning app's `src/lib/tanstack-react-query/client.ts` |
+| Request QueryClient and hydration boundary | Owning app's `src/lib/tanstack-react-query/hydration.tsx` |
+| Browser provider | Owning app's query provider |
+| oRPC query options | Owning app's `src/lib/orpc/orpc.ts` |
 
 ## Cache and hydration invariants
 

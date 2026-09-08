@@ -23,25 +23,20 @@ Use this instruction when placing code, crossing workspace boundaries, or changi
 
 Keep environment-specific integration in the consuming app. For example, `apps/calculator/src/lib/email.ts` injects SMTP and application URL configuration into `@greendex/email`. Follow the [Cost Tracker architecture](../../../apps/cost-tracker/docs/architecture.md) when placing Cost Tracker routes, shared UI, features, validation schemas, and integration seams.
 
-## Calculator layers
+## Application layers
 
-- Routes and layouts: `apps/calculator/src/app/`
-- Feature behavior: `apps/calculator/src/features/<feature>/`
-- Shared app components: `apps/calculator/src/components/`
-- Integration libraries: `apps/calculator/src/lib/`
-- Unit/integration tests: `apps/calculator/src/__tests__/` and feature-local `__tests__/`
-- Browser tests: `apps/calculator/src/__tests__/e2e/`
+- Routes and layouts: `apps/<app>/src/app/`
+- Feature behavior: `apps/<app>/src/features/<feature>/`
+- Shared app components: `apps/<app>/src/components/`
+- Integration libraries: `apps/<app>/src/lib/`
 
-Add business behavior to the owning application's feature. Calculator procedures are registered in `apps/calculator/src/lib/orpc/router.ts`. Keep Project Partnerships and Cost Submissions in Cost Tracker; share only the agreed Organization, Project, Project Participation, persistence, and transport interfaces. Put reusable cross-app behavior in a workspace package only when it has a clear package-level interface.
+Add business behavior to the owning application's feature. Procedures are registered in the owning app's `src/lib/orpc/router.ts`. Keep Project Partnerships and Cost Submissions in Cost Tracker; share only the agreed Organization, Project, Project Participation, persistence, and transport interfaces. Put reusable cross-app behavior in a workspace package only when it has a clear package-level interface.
+
+Application runtime database access belongs in owning feature procedures. Route and view modules consume oRPC interfaces; integration-test fixtures, Better Auth integration, and schema-derived validation remain their own seams.
 
 ## Critical SSR oRPC invariant
 
-Preserve both initialization paths and their effective evaluation order:
-
-1. `apps/calculator/src/instrumentation.ts` dynamically imports `@/lib/orpc/client.server` in the Node.js runtime.
-2. `apps/calculator/src/app/[locale]/layout.tsx` side-effect-imports `@/lib/orpc/client.server` before local SSR consumers.
-
-The [oRPC instruction](orpc.md) owns the full project invariant. Read it and the [official v1 SSR guide](https://v1.orpc.dev/docs/best-practices/optimize-ssr.md) before editing this seam, then validate with `apps/calculator/src/__tests__/e2e/project-routing.spec.ts`.
+Preserve the owning app's server-client initialization order: its `instrumentation.ts` dynamically imports `@/lib/orpc/client.server` in the Node.js runtime, and its root app layout side-effect-imports that client before local SSR consumers. The [oRPC instruction](orpc.md) owns the full invariant. Read it and the [official v1 SSR guide](https://v1.orpc.dev/docs/best-practices/optimize-ssr.md) before editing this seam, then run its app-local SSR regression coverage.
 
 ## Server and client data flow
 
@@ -49,20 +44,20 @@ The [oRPC instruction](orpc.md) owns the full project invariant. Read it and the
 - Client Components use `orpcQuery` with TanStack Query and `orpc` for mutations.
 - Prefer Server Components. Add `"use client"` only for hooks, browser APIs, or interaction.
 - Pass request-specific headers through the server oRPC context; do not store request data in global reusable context.
-- Public REST/OpenAPI traffic enters through `apps/calculator/src/app/api/openapi/`; internal RPC traffic enters through `apps/calculator/src/app/api/rpc/`.
+- Internal RPC traffic enters through the owning app's `src/app/api/rpc/`; Calculator public REST/OpenAPI traffic enters through `apps/calculator/src/app/api/openapi/`.
 
 ## Placement guide
 
 | Change                                      | Location                                                      |
 | ------------------------------------------- | ------------------------------------------------------------- |
-| Project or organization procedure           | Owning `apps/calculator/src/features/<feature>/procedures.ts` |
-| Procedure registration or shared middleware | `apps/calculator/src/lib/orpc/`                               |
-| Database schema or migration                | `packages/database/src/`                                      |
-| Transactional email template                | `packages/email/src/templates/`                               |
-| Email transport configuration               | `apps/calculator/src/lib/email.ts`                            |
-| Translation message                         | Every file in `packages/i18n/src/locales/`                    |
-| Shared UI primitive                         | `apps/calculator/src/components/ui/`                          |
-| Feature UI                                  | `apps/calculator/src/features/<feature>/components/`          |
+| Project or organization procedure           | Owning `apps/<app>/src/features/<feature>/procedures.ts` |
+| Procedure registration or shared middleware | Owning `apps/<app>/src/lib/orpc/`                       |
+| Database schema or migration                | `packages/database/src/`                                  |
+| Transactional email template                | `packages/email/src/templates/`                           |
+| Email transport configuration               | `apps/calculator/src/lib/email.ts`                        |
+| Translation message                         | Every file in `packages/i18n/src/locales/`                |
+| Shared UI primitive                         | Owning `apps/<app>/src/components/ui/`                    |
+| Feature UI                                  | Owning `apps/<app>/src/features/<feature>/components/`   |
 
 ## Constraints
 

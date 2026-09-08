@@ -6,8 +6,9 @@
     "build": "turbo run build",
     "predev": "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     "dev": "turbo run dev",
-    "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions",
+    "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam",
     "check:agent-instructions": "node scripts/check-agent-instructions.mjs",
+    "check:cost-tracker-persistence-seam": "node scripts/check-cost-tracker-persistence-seam.mjs",
     "start": "turbo run start",
     "format": "turbo run format",
     "test": "turbo run test --",
@@ -24,7 +25,8 @@
     "test:e2e:ui": "turbo run test:e2e:ui --",
     "test:e2e:debug": "turbo run test:e2e:debug --",
     "test:e2e:headed": "turbo run test:e2e:headed --",
-    "test:e2e:report": "turbo run test:e2e:report --"
+    "test:e2e:report": "turbo run test:e2e:report --",
+    "test:cost-tracker-persistence-seam": "pnpm --filter @greendex/cost-tracker exec vitest run --root ../.. scripts/check-cost-tracker-persistence-seam.test.ts"
   },
   "dependencies": {
     "dotenv-cli": "^11.0.0",
