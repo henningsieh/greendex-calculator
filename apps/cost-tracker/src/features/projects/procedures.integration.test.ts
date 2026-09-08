@@ -34,9 +34,16 @@ const userId = randomUUID();
 const organizationId = randomUUID();
 const foreignOrganizationId = randomUUID();
 const partnerOrganizationId = randomUUID();
+const foreignPartnerOrganizationId = randomUUID();
+const archivedPartnerOrganizationId = randomUUID();
 const projectId = randomUUID();
+const laterProjectId = randomUUID();
 const foreignProjectId = randomUUID();
+const archivedProjectId = randomUUID();
 const partnershipId = randomUUID();
+const laterPartnershipId = randomUUID();
+const foreignPartnershipId = randomUUID();
+const archivedPartnershipId = randomUUID();
 const headers = new Headers();
 const client = createRouterClient(router, { context: async () => ({ headers }) });
 
@@ -68,14 +75,36 @@ beforeAll(async () => {
       slug: `assigned-partner-${partnerOrganizationId}`,
       createdAt: new Date(),
     },
+    {
+      id: foreignPartnerOrganizationId,
+      name: "Foreign Partner Organization",
+      slug: `foreign-partner-${foreignPartnerOrganizationId}`,
+      createdAt: new Date(),
+    },
+    {
+      id: archivedPartnerOrganizationId,
+      name: "Archived Partner Organization",
+      slug: `archived-partner-${archivedPartnerOrganizationId}`,
+      createdAt: new Date(),
+    },
   ]);
   await db.insert(projectsTable).values([
     {
       id: projectId,
-      name: "Active Organization Project",
+      name: "Zebra Active Organization Project",
       startDate: new Date("2026-05-01T00:00:00.000Z"),
       endDate: new Date("2026-05-03T00:00:00.000Z"),
       location: "Berlin",
+      country: "DE",
+      responsibleUserId: userId,
+      organizationId,
+    },
+    {
+      id: laterProjectId,
+      name: "Alpha Later Organization Project",
+      startDate: new Date("2026-07-01T00:00:00.000Z"),
+      endDate: new Date("2026-07-03T00:00:00.000Z"),
+      location: "Hamburg",
       country: "DE",
       responsibleUserId: userId,
       organizationId,
@@ -90,12 +119,40 @@ beforeAll(async () => {
       responsibleUserId: userId,
       organizationId: foreignOrganizationId,
     },
+    {
+      id: archivedProjectId,
+      name: "Archived Organization Project",
+      startDate: new Date("2026-04-01T00:00:00.000Z"),
+      endDate: new Date("2026-04-03T00:00:00.000Z"),
+      location: "Cologne",
+      country: "DE",
+      responsibleUserId: userId,
+      organizationId,
+      archived: true,
+    },
   ]);
-  await db.insert(projectPartnerOrganizationsTable).values({
-    id: partnershipId,
-    projectId,
-    organizationId: partnerOrganizationId,
-  });
+  await db.insert(projectPartnerOrganizationsTable).values([
+    {
+      id: partnershipId,
+      projectId,
+      organizationId: partnerOrganizationId,
+    },
+    {
+      id: laterPartnershipId,
+      projectId: laterProjectId,
+      organizationId: partnerOrganizationId,
+    },
+    {
+      id: foreignPartnershipId,
+      projectId: foreignProjectId,
+      organizationId: foreignPartnerOrganizationId,
+    },
+    {
+      id: archivedPartnershipId,
+      projectId: archivedProjectId,
+      organizationId: archivedPartnerOrganizationId,
+    },
+  ]);
 });
 
 beforeEach(() => {
@@ -115,11 +172,28 @@ afterAll(async () => {
   await db
     .delete(projectPartnerOrganizationsTable)
     .where(eq(projectPartnerOrganizationsTable.id, partnershipId));
+  await db
+    .delete(projectPartnerOrganizationsTable)
+    .where(eq(projectPartnerOrganizationsTable.id, laterPartnershipId));
+  await db
+    .delete(projectPartnerOrganizationsTable)
+    .where(eq(projectPartnerOrganizationsTable.id, foreignPartnershipId));
+  await db
+    .delete(projectPartnerOrganizationsTable)
+    .where(eq(projectPartnerOrganizationsTable.id, archivedPartnershipId));
   await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
+  await db.delete(projectsTable).where(eq(projectsTable.id, laterProjectId));
   await db.delete(projectsTable).where(eq(projectsTable.id, foreignProjectId));
+  await db.delete(projectsTable).where(eq(projectsTable.id, archivedProjectId));
   await db.delete(organization).where(eq(organization.id, organizationId));
   await db.delete(organization).where(eq(organization.id, foreignOrganizationId));
   await db.delete(organization).where(eq(organization.id, partnerOrganizationId));
+  await db
+    .delete(organization)
+    .where(eq(organization.id, foreignPartnerOrganizationId));
+  await db
+    .delete(organization)
+    .where(eq(organization.id, archivedPartnerOrganizationId));
   await db.delete(user).where(eq(user.id, userId));
 });
 
@@ -130,10 +204,19 @@ describe("Cost Tracker Project procedures", () => {
     expect(projects).toEqual([
       {
         id: projectId,
-        name: "Active Organization Project",
+        name: "Zebra Active Organization Project",
         startDate: new Date("2026-05-01T00:00:00.000Z"),
         endDate: new Date("2026-05-03T00:00:00.000Z"),
         location: "Berlin",
+        costSubmissionWindowOpen: false,
+        partnerOrganizationCount: 1,
+      },
+      {
+        id: laterProjectId,
+        name: "Alpha Later Organization Project",
+        startDate: new Date("2026-07-01T00:00:00.000Z"),
+        endDate: new Date("2026-07-03T00:00:00.000Z"),
+        location: "Hamburg",
         costSubmissionWindowOpen: false,
         partnerOrganizationCount: 1,
       },
@@ -153,7 +236,10 @@ describe("Cost Tracker Project procedures", () => {
       {
         id: partnerOrganizationId,
         name: "Assigned Partner Organization",
-        projectNames: ["Active Organization Project"],
+        projectNames: [
+          "Alpha Later Organization Project",
+          "Zebra Active Organization Project",
+        ],
       },
     ]);
     expect(partners[0]).not.toHaveProperty("slug");

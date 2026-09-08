@@ -18,7 +18,7 @@ export const listProjects = authorized
           eq(project.organizationId, context.session.activeOrganizationId!),
           eq(project.archived, false),
         ),
-      orderBy: (project, { asc }) => [asc(project.startDate)],
+      orderBy: (project, { asc }) => [asc(project.startDate), asc(project.id)],
       columns: {
         id: true,
         name: true,
@@ -58,6 +58,7 @@ export const listPartnerOrganizations = authorized
           eq(project.organizationId, context.session.activeOrganizationId!),
           eq(project.archived, false),
         ),
+      orderBy: (project, { asc }) => [asc(project.startDate), asc(project.id)],
       columns: { name: true },
       with: {
         partnerOrganizations: {
@@ -87,7 +88,12 @@ export const listPartnerOrganizations = authorized
       }
     }
 
-    return [...organizations.values()].sort((left, right) =>
-      left.name.localeCompare(right.name),
-    );
+    return [...organizations.values()]
+      .map((organization) => ({
+        ...organization,
+        projectNames: [...organization.projectNames].sort((left, right) =>
+          left.localeCompare(right),
+        ),
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name));
   });
