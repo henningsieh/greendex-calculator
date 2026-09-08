@@ -19,7 +19,8 @@ export const metadata: Metadata = {
     default: "Cost Tracker",
     template: "%s | Cost Tracker",
   },
-  description: "Track and understand your costs.",
+  description:
+    "Organize Project travel costs, Proof Documents, and Cost Allocations.",
 };
 
 export default function RootLayout({
