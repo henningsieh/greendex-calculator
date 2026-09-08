@@ -8,10 +8,10 @@ function LoadingRegion({
   label: string;
 }) {
   return (
-    <div aria-label={label} aria-live="polite" role="status">
+    <output aria-label={label} aria-live="polite">
       <span className="sr-only">{label}</span>
       {children}
-    </div>
+    </output>
   );
 }
 
