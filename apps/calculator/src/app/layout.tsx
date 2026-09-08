@@ -1,6 +1,5 @@
 import "./globals.css"; // Global CSS import
 import "@/lib/orpc/client.server"; // Initialize server-side oRPC client for pre-rendering
-import { DEFAULT_LANGUAGE } from "@greendex/config/languages";
 import {
   ANDROID_PACKAGE,
   APP_NAME,
@@ -83,7 +82,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang={DEFAULT_LANGUAGE} suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <body className="antialiased">
         <JsonLd />
         {children}

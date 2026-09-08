@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "predev": "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
+    "predev": "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
     "dev": "turbo run dev",
     "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions",
     "check:agent-instructions": "node scripts/check-agent-instructions.mjs",

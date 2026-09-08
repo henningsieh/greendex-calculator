@@ -2,7 +2,7 @@
 
 import createGlobe, { type COBEOptions } from "cobe";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import type { CityLocation } from "@/lib/i18n/eu-cities";
 
@@ -72,29 +72,17 @@ export function Globe({
   const effectiveDark = dark !== undefined ? dark : isDark ? 1 : 0;
 
   // Default colors based on theme
-  const defaultBaseColor = useMemo<[number, number, number]>(
-    () =>
-      isDark
-        ? [0.1, 0.4, 0.3] // Dark mode: darker teal
-        : [0.8, 0.95, 0.9], // Light mode: very light teal
-    [isDark],
-  );
+  const defaultBaseColor: [number, number, number] = isDark
+    ? [0.1, 0.4, 0.3] // Dark mode: darker teal
+    : [0.8, 0.95, 0.9]; // Light mode: very light teal
 
-  const defaultMarkerColor = useMemo<[number, number, number]>(
-    () =>
-      isDark
-        ? [0.2, 0.9, 0.6] // Dark mode: bright emerald
-        : [0.15, 0.65, 0.4], // Light mode: medium green
-    [isDark],
-  );
+  const defaultMarkerColor: [number, number, number] = isDark
+    ? [0.2, 0.9, 0.6] // Dark mode: bright emerald
+    : [0.15, 0.65, 0.4]; // Light mode: medium green
 
-  const defaultGlowColor = useMemo<[number, number, number]>(
-    () =>
-      isDark
-        ? [0.1, 0.5, 0.3] // Dark mode: emerald glow
-        : [0.7, 0.9, 0.8], // Light mode: soft teal glow
-    [isDark],
-  );
+  const defaultGlowColor: [number, number, number] = isDark
+    ? [0.1, 0.5, 0.3] // Dark mode: emerald glow
+    : [0.7, 0.9, 0.8]; // Light mode: soft teal glow
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -164,28 +152,21 @@ export function Globe({
   ]);
 
   return (
-    <figure
+    <div
       className={className}
+      role="img"
       aria-label="Interactive 3D globe showing EU member states and capital cities"
-      style={{
-        width,
-        height,
-        maxWidth: "100%",
-        aspectRatio: "1",
-        margin: 0,
-      }}
     >
       <canvas
         ref={canvasRef}
         aria-hidden="true"
         style={{
-          width: "100%",
-          height: "100%",
+          width,
+          height,
           maxWidth: "100%",
           aspectRatio: "1",
-          display: "block",
         }}
       />
-    </figure>
+    </div>
   );
 }

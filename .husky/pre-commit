@@ -31,3 +31,6 @@ NEW_STAGED_HASH=$(git diff --cached | sha256sum | cut -d' ' -f1)
 if [ "$STAGED_HASH" != "$NEW_STAGED_HASH" ]; then
   echo "✨ Files formatted"
 fi
+
+pnpm run lint
+pnpm run type-check

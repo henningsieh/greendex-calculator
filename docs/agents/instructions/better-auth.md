@@ -25,4 +25,4 @@ applyTo: "apps/calculator/src/lib/better-auth/**/*.ts,apps/calculator/src/featur
 
 Update the auth configuration, run `pnpm --filter @greendex/calculator auth:generate`, inspect `packages/database/src/schemas/auth-schema.ts`, generate and inspect the Drizzle migration, and update integration tests. A new database needs migrations before auth testing; OAuth initiation writes to `verification` before provider redirect.
 
-[Shared Project permissions](../../projects/permissions.md) define the accepted cross-application target. [Calculator Project permissions](../../../apps/calculator/docs/projects/permissions.md) describe the current implementation. Do not treat [ADR-0002](../../adr/0002-integrate-participants-with-better-auth.md) as implemented until its schema and auth changes land.
+[Project permissions](../../projects/permissions.md) remain the authority for permission semantics.

@@ -11,7 +11,7 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 | Change Query caching, mutations, prefetching, or hydration | [TanStack Query](instructions/tanstack-query.md) | [Query route](integrations.md#tanstack-query) | Query client/hydration utilities and owning consumer |
 | Change a data table or migrate v8 examples | [TanStack Table](instructions/tanstack-table.md) | [Table route](integrations.md#tanstack-table) and matching Intent skill | Owning feature table registry, columns, instance, and tests |
 | Change SSR data fetching | [Architecture](instructions/architecture.md), [oRPC](instructions/orpc.md), and [TanStack Query](instructions/tanstack-query.md) | [SSR routes](integrations.md#orpc) and matching `.next-docs` page | Server page/layout, hydration utilities, oRPC client seam |
-| Change authentication or organizations | [Better Auth](instructions/better-auth.md) | [Shared Project permissions](../projects/permissions.md), current app permissions, and accepted auth ADRs | Owning app auth library and feature |
+| Change authentication or organizations | [Better Auth](instructions/better-auth.md) | [Better Auth route](integrations.md#better-auth) and [permissions](../projects/permissions.md) | Calculator Better Auth library and owning feature |
 | Change database schema or migration | [Drizzle](instructions/drizzle.md) | [Drizzle route](integrations.md#drizzle-orm-and-kit) | `packages/database/src/schemas/` and generated migration |
 | Change deployment or managed resources | [Coolify](instructions/coolify.md) | [Coolify route](integrations.md#coolify-deployment-and-api) | Coolify-managed configuration; never generated compose output |
 | Add or update a UI component/form | [UI components](instructions/shadcn.md) | [shadcn route](integrations.md#shadcnui) | Shared or feature component directory |
@@ -19,9 +19,7 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 | Change email templates or delivery | [Email](instructions/email.md) | [Email routes](integrations.md#react-email) | `packages/email/`; calculator transport wiring stays app-specific |
 | Change documentation-app behavior | [Documentation application](instructions/documentation-app.md) | [Fumadocs route](integrations.md#fumadocs) | `apps/documentation/` |
 | Change dependencies or Turbo tasks | [Workspace](instructions/workspace.md) | Owning manifest and lockfile | Owning workspace plus lockfile |
-| Fix or extend questionnaire calculations | [Code standards](instructions/code-standards.md) | [Calculator participation docs](../../apps/calculator/docs/participate/) | `apps/calculator/src/features/participate/` |
-| Change shared Project identity, participation, or permissions | [Shared Projects](../projects/README.md) | [Context map](../../CONTEXT-MAP.md) and accepted ADRs | Shared database schema and every affected app |
-| Change Project Partnerships, Cost Submissions, or allocations | [Cost Tracker Projects](../../apps/cost-tracker/docs/projects/README.md) | [Cost model](../../apps/cost-tracker/docs/domain-model.md) and accepted ADRs | Cost Tracker owning feature and shared database schema |
+| Fix or extend questionnaire calculations | [Code standards](instructions/code-standards.md) | [Participation docs](../participate/) | `apps/calculator/src/features/participate/` |
 | Add tests | [Code standards](instructions/code-standards.md) | Relevant feature documentation | Unit/integration or E2E test directory |
 
 ## Cross-cutting sequence
