@@ -1,6 +1,6 @@
 # User settings
 
-The protected `/user-settings` route owns personal Cost Tracker preferences and current-user account details.
+The protected `/user-settings` route owns personal Cost Tracker preferences and current-user account details. Settings-local tabs keep Appearance and Account details as separate views; only the selected concern is rendered.
 
 ## Appearance
 
@@ -20,9 +20,10 @@ The signed-in user updates their own name through Better Auth's `authClient.upda
 src/features/user-settings/
 ├── components/
 │   ├── edit-name-form.tsx
-│   └── theme-settings.tsx
+│   ├── theme-settings.tsx
+│   └── user-settings-tabs.tsx
 ├── types.ts
 └── validation-schemas.ts
 ```
 
-The route composes the feature components; shared navigation and theme-provider mechanics remain in `src/components/`.
+The route passes server-loaded session data into the feature-owned tab composition; shared navigation and theme-provider mechanics remain in `src/components/`. Feature-local tests cover tab separation, persisted-name schema boundaries, form validation, pending state, Better Auth success and failure, and session UI refresh.

@@ -10,6 +10,8 @@
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
     "type-check": "next typegen && tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
     "clean": "rm -rf .next .turbo node_modules",
     "test:email-delivery": "dotenv -e .env -- tsx scripts/verify-email-delivery.ts"
   },
@@ -38,15 +40,22 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^6.1.1",
     "babel-plugin-react-compiler": "1.0.0",
     "imapflow": "^1.7.8",
+    "jsdom": "^30.0.1",
     "oxfmt": "^0.66.0",
     "oxlint": "^1.81.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.13",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "8.2.2",
+    "vitest": "^5.0.0"
   }
 }
