@@ -34,7 +34,8 @@ export const USERS_SORT_FIELDS = [
 export const MEMBER_ROLES = {
   OrganizationAdministrator: "owner",
   ProjectCoordinator: "admin",
-  Participant: "member",
+  Participant: "participant",
+  Member: "member",
 } as const;
 
 /**

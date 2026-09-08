@@ -33,6 +33,11 @@ const portConfigurations = [
     isExpectedCommand: (command) => /\bnext(?:\s+dev|-server\b)/.test(command),
   },
   {
+    port: portFromEnvironment("COST_TRACKER_PORT"),
+    workspace: "apps/cost-tracker",
+    isExpectedCommand: (command) => /\bnext(?:\s+dev|-server\b)/.test(command),
+  },
+  {
     port: portFromEnvironment("SOCKET_PORT"),
     workspace: "apps/calculator",
     isExpectedCommand: (command) =>

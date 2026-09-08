@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -82,7 +84,9 @@ export default async function ORPCServerExample() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <ul className="list-inside list-disc space-y-1">
-            <li>This is a Server Component (no "use client" directive)</li>
+            <li>
+              This is a Server Component (no &quot;use client&quot; directive)
+            </li>
             <li>oRPC calls are made during Server-Side Rendering (SSR)</li>
             <li>
               The server-side client executes procedures directly (no HTTP
@@ -98,9 +102,9 @@ export default async function ORPCServerExample() {
           </ul>
           <p className="mt-4 text-muted-foreground">
             Compare this with the{" "}
-            <a className="underline" href="/orpc-test">
+            <Link className="underline" href="/orpc-test">
               /orpc-test page
-            </a>{" "}
+            </Link>{" "}
             which uses client-side RPC calls.
           </p>
         </CardContent>

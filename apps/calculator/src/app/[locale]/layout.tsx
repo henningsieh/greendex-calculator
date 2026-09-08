@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from "@greendex/i18n/client";
-import { getMessages, setRequestLocale } from "@greendex/i18n/server";
+import { getLocale, getMessages } from "@greendex/i18n/server";
 import { Comfortaa, DM_Sans, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { notFound } from "next/navigation";
@@ -42,9 +42,6 @@ const jetbrainsMono = JetBrains_Mono({
 
 interface Props {
   children: React.ReactNode;
-  params: Promise<{
-    locale: string;
-  }>;
 }
 
 export function generateStaticParams() {
@@ -53,16 +50,13 @@ export function generateStaticParams() {
   }));
 }
 
-export default async function LocaleLayout({ children, params }: Props) {
-  const { locale } = await params;
+export default async function LocaleLayout({ children }: Props) {
+  const locale = await getLocale();
 
   // Ensure that the incoming `locale` is valid
   if (!isSupportedLocale(locale)) {
     notFound();
   }
-
-  // Enable static rendering
-  setRequestLocale(locale);
 
   // Providing all messages to the client side is the easiest way to get started
   const messages = await getMessages();

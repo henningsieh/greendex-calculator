@@ -22,7 +22,7 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
-export default async () => {
+export default async function ParticipantsPage() {
   const headers = await nextHeaders();
 
   // Get session and organizations for server-side data
@@ -73,4 +73,4 @@ export default async () => {
       </ContentContainer>
     </div>
   );
-};
+}

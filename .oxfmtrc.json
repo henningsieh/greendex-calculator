@@ -10,6 +10,8 @@
     ".specify/**",
     "specs/**",
     "packages/**/dist/**",
+    "apps/calculator/src/components/ui/**",
+    "apps/cost-tracker/src/components/ui/**",
     "apps/documentation/src/components/ui/**"
   ],
   "sortImports": {
@@ -22,6 +24,18 @@
       "options": {
         "sortTailwindcss": {
           "stylesheet": "apps/calculator/src/app/globals.css",
+          "attributes": ["class", "className"],
+          "functions": ["clsx", "cn", "cva", "twMerge"],
+          "preserveDuplicates": false,
+          "preserveWhitespace": false
+        }
+      }
+    },
+    {
+      "files": ["apps/cost-tracker/**"],
+      "options": {
+        "sortTailwindcss": {
+          "stylesheet": "apps/cost-tracker/src/app/globals.css",
           "attributes": ["class", "className"],
           "functions": ["clsx", "cn", "cva", "twMerge"],
           "preserveDuplicates": false,

@@ -32,6 +32,8 @@ All resources are in project `t40wk84o88wkgcocs80k0wws`, environment `rc04oc8sks
 
 The deleted combined application `wokgg0808c8k44cgk480444c` is not a deployment target. Retrieve credentials from Coolify; keep tokens and environment values out of Git, terminal output, PR text, and chat.
 
+The Cost Tracker consumes the existing Garage S3 service from the separate `ambitia-cost-tracker` Coolify project. Read the [Garage runbook](../../../apps/cost-tracker/docs/infrastructure/garage.md) before S3 operations; its live resource identifiers, storage topology, and destructive-operation boundaries are authoritative for that service.
+
 ## Application contract
 
 | App | Build command | Start command | Domains | Health check |

@@ -4,6 +4,7 @@ import {
   EU_MEMBER_COUNT,
   type EUCountryCode,
 } from "@greendex/config/eu-countries";
+import { type COBEOptions } from "cobe";
 import { stagger } from "motion/react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
@@ -79,7 +80,7 @@ export function GlobeSection() {
   }, []);
 
   // Handle auto-rotation with phi reset
-  const handleRender = useCallback((state: Record<string, any>) => {
+  const handleRender = useCallback((state: Partial<COBEOptions>) => {
     phiRef.current += GLOBE_CONFIG.rotationSpeed;
 
     // Reset phi if it grows too large to prevent runaway rotation

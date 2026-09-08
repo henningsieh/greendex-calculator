@@ -45,7 +45,7 @@ describe("environment entrypoints", () => {
   it("delegates root lifecycle commands directly to Turbo", () => {
     expect(rootPackage.scripts.dev).toBe("turbo run dev");
     expect(rootPackage.scripts.predev).toBe(
-      "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
+      "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     );
     expect(rootPackage.scripts.build).toBe("turbo run build");
     expect(rootPackage.scripts.start).toBe("turbo run start");

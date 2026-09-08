@@ -106,6 +106,13 @@
       "when": 1788762042689,
       "tag": "0014_fat_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788810963133,
+      "tag": "0015_project_partnership_foundation",
+      "breakpoints": true
     }
   ]
 }

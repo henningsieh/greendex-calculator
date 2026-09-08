@@ -8,17 +8,21 @@ import {
   ProjectSharedTransportEmissionProfile,
 } from "@greendex/config/transport-emission-profiles";
 import { createId } from "@paralleldrive/cuid2";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
+  check,
   customType,
+  index,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { organization, user, member } from "./auth-schema";
+import { organization, user } from "./auth-schema";
 
 /**
  * Custom Drizzle type for distance values.
@@ -97,6 +101,9 @@ export const projectsTable = pgTable("project", {
 
   // Archived flag - projects can be archived instead of deleted
   archived: boolean("archived").default(false).notNull(),
+  costSubmissionWindowOpen: boolean("cost_submission_window_open")
+    .default(false)
+    .notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -145,35 +152,105 @@ export const projectSharedTravelLegsTable = pgTable("project_shared_travel_leg",
 });
 
 /**
+ * Assigns an Organization as a Project-specific Partner Organization.
+ */
+export const projectPartnerOrganizationsTable = pgTable(
+  "project_partner_organization",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("project_partner_organization_project_org_unique").on(
+      table.projectId,
+      table.organizationId,
+    ),
+    index("project_partner_organization_project_idx").on(table.projectId),
+    index("project_partner_organization_organization_idx").on(
+      table.organizationId,
+    ),
+  ],
+);
+
+/**
  * Project Participant table
  *
  * Links project participants (members of the organization) to projects.
  * Country is stored here because it comes from the participation questionnaire,
  * not from the user's account registration.
  */
-export const projectParticipantsTable = pgTable("project_participant", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  projectId: text("project_id")
-    .notNull()
-    .references(() => projectsTable.id, { onDelete: "cascade" }),
-  memberId: text("member_id")
-    .notNull()
-    .references(() => member.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+export const projectParticipantsTable = pgTable(
+  "project_participant",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    representedOrganizationId: text("represented_organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "restrict" }),
+    displayName: text("display_name").notNull(),
+    email: text("email"),
+    userId: text("user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
 
-  // Country code from participation questionnaire (EU member state)
-  country: text("country").$type<EUCountryCode>().notNull(),
+    // Country code from participation questionnaire (EU member state)
+    country: text("country").$type<EUCountryCode>(),
+    mergedIntoParticipantId: text("merged_into_participant_id").references(
+      (): AnyPgColumn => projectParticipantsTable.id,
+      { onDelete: "restrict" },
+    ),
+    mergedAt: timestamp("merged_at"),
+    mergedByUserId: text("merged_by_user_id").references(() => user.id, {
+      onDelete: "restrict",
+    }),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("project_participant_project_idx").on(table.projectId),
+    index("project_participant_represented_org_idx").on(
+      table.representedOrganizationId,
+    ),
+    uniqueIndex("project_participant_project_email_unique")
+      .on(table.projectId, table.email)
+      .where(sql`${table.email} is not null`),
+    uniqueIndex("project_participant_project_user_unique")
+      .on(table.projectId, table.userId)
+      .where(sql`${table.userId} is not null`),
+    check(
+      "project_participant_email_normalized",
+      sql`${table.email} is null or ${table.email} = lower(trim(${table.email}))`,
+    ),
+    check(
+      "project_participant_not_merged_into_self",
+      sql`${table.mergedIntoParticipantId} is null or ${table.mergedIntoParticipantId} <> ${table.id}`,
+    ),
+    check(
+      "project_participant_merge_fields_consistent",
+      sql`(${table.mergedIntoParticipantId} is null and ${table.mergedAt} is null and ${table.mergedByUserId} is null) or (${table.mergedIntoParticipantId} is not null and ${table.mergedAt} is not null and ${table.mergedByUserId} is not null)`,
+    ),
+  ],
+);
 
 // ============================================================================
 // RELATIONS
@@ -191,6 +268,7 @@ export const projectRelations = relations(projectsTable, ({ one, many }) => ({
   }),
   sharedTravelLegs: many(projectSharedTravelLegsTable),
   participants: many(projectParticipantsTable),
+  partnerOrganizations: many(projectPartnerOrganizationsTable),
 }));
 
 // projectSharedTravelLeg - relations
@@ -204,6 +282,20 @@ export const projectSharedTravelLegRelations = relations(
   }),
 );
 
+export const projectPartnerOrganizationRelations = relations(
+  projectPartnerOrganizationsTable,
+  ({ one }) => ({
+    project: one(projectsTable, {
+      fields: [projectPartnerOrganizationsTable.projectId],
+      references: [projectsTable.id],
+    }),
+    organization: one(organization, {
+      fields: [projectPartnerOrganizationsTable.organizationId],
+      references: [organization.id],
+    }),
+  }),
+);
+
 // projectParticipant - relations
 export const projectParticipantRelations = relations(
   projectParticipantsTable,
@@ -212,13 +304,24 @@ export const projectParticipantRelations = relations(
       fields: [projectParticipantsTable.projectId],
       references: [projectsTable.id],
     }),
-    member: one(member, {
-      fields: [projectParticipantsTable.memberId],
-      references: [member.id],
+    representedOrganization: one(organization, {
+      fields: [projectParticipantsTable.representedOrganizationId],
+      references: [organization.id],
     }),
     user: one(user, {
       fields: [projectParticipantsTable.userId],
       references: [user.id],
+      relationName: "projectParticipationUser",
+    }),
+    mergedIntoParticipant: one(projectParticipantsTable, {
+      fields: [projectParticipantsTable.mergedIntoParticipantId],
+      references: [projectParticipantsTable.id],
+      relationName: "mergedProjectParticipation",
+    }),
+    mergedByUser: one(user, {
+      fields: [projectParticipantsTable.mergedByUserId],
+      references: [user.id],
+      relationName: "projectParticipationMergedByUser",
     }),
   }),
 );

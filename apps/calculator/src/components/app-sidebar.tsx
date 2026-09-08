@@ -1,8 +1,11 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { PanelRightCloseIcon, PanelRightOpenIcon } from "lucide-react";
-import type { ComponentType } from "react";
+import {
+  type LucideIcon,
+  PanelRightCloseIcon,
+  PanelRightOpenIcon,
+} from "lucide-react";
 import { Suspense } from "react";
 
 import type { AppRoute } from "@/app/routes";
@@ -57,7 +60,7 @@ export type SidebarGroupId = (typeof SIDEBAR_GROUP_IDS)[number];
 
 export type SidebarMenuItemDef = {
   titleKey: string;
-  icon: ComponentType<any>;
+  icon: LucideIcon;
   url: AppRoute;
 };
 
