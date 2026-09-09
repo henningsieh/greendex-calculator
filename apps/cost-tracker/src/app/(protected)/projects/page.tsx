@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 
+import {
+  normalizeProjectCollectionState,
+  loadProjectCollectionSearchParams,
+} from "@/features/projects/collection-state";
+import { ProjectCollection } from "@/features/projects/components/project-collection";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
-import { ProjectsList } from "@/features/projects/components/projects-list";
-import { orpcQuery } from "@/lib/orpc/orpc";
+import { getProjectOverviewQueryOptions } from "@/features/projects/project-overview-query-options";
+import { orpc } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
@@ -12,30 +17,57 @@ import {
 
 export const metadata: Metadata = { title: "Projects" };
 
-export default async function ProjectsPage() {
+type ProjectsPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function ProjectsPage(
+  { searchParams }: ProjectsPageProps = {
+    searchParams: Promise.resolve({}),
+  },
+) {
   if (!(await hasOrganizationMembership())) return null;
 
+  const [urlState, availableScopes] = await Promise.all([
+    loadProjectCollectionSearchParams(searchParams),
+    orpc.projects
+      .availableScopes()
+      .catch(() => ({ hosted: true, partner: false })),
+  ]);
+  const state = normalizeProjectCollectionState(urlState);
+  const requestedScope = state.scope;
+  const initialScope =
+    requestedScope === "partner" && availableScopes.partner
+      ? "partner"
+      : requestedScope === "hosted" && availableScopes.hosted
+        ? "hosted"
+        : availableScopes.hosted
+          ? "hosted"
+          : availableScopes.partner
+            ? "partner"
+            : "hosted";
+  const queryOptions = getProjectOverviewQueryOptions(initialScope, state);
   const queryClient = getQueryClient();
-  await queryClient
-    .query(orpcQuery.projects.list.queryOptions())
-    .catch(swallowPrefetchError);
+  await queryClient.query(queryOptions).catch(swallowPrefetchError);
 
   return (
     <div>
-      <header className="max-w-2xl">
-        <p className="text-sm font-medium text-primary">Workspace</p>
+      <header className="max-w-3xl">
+        <p className="text-sm font-medium text-primary">Project workspace</p>
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
           Projects
         </h1>
         <p className="mt-4 text-lg leading-8 text-muted-foreground">
-          The active Projects whose travel costs belong to your selected
-          Organization.
+          Review Projects hosted by or assigned to your active Organization.
         </p>
       </header>
 
       <HydrateClient client={queryClient}>
         <ProjectDataErrorBoundary resource="Projects">
-          <ProjectsList />
+          <ProjectCollection
+            availableScopes={availableScopes}
+            initialScope={initialScope}
+          />
         </ProjectDataErrorBoundary>
       </HydrateClient>
     </div>

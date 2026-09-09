@@ -55,7 +55,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
-      router.replace("/dashboard");
+      router.replace("/projects");
       router.refresh();
     } catch {
       setError("We could not complete this request. Please try again.");
@@ -68,7 +68,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: "/projects",
       });
 
       if (result.error) {

@@ -75,23 +75,3 @@ export function PartnerOrganizationsSkeleton() {
     </LoadingRegion>
   );
 }
-
-export function DashboardSkeleton() {
-  return (
-    <LoadingRegion label="Loading dashboard">
-      <HeaderSkeleton />
-      <div className="mt-10 grid rounded-2xl border sm:grid-cols-2">
-        {Array.from({ length: 2 }, (_, index) => (
-          <div className="flex items-center gap-5 p-8" key={index}>
-            <Skeleton className="size-11" data-testid="loading-skeleton" />
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-8 w-12" data-testid="loading-skeleton" />
-              <Skeleton className="h-4 w-36" data-testid="loading-skeleton" />
-            </div>
-          </div>
-        ))}
-      </div>
-      <ListRowsSkeleton count={2} />
-    </LoadingRegion>
-  );
-}

@@ -1,27 +1,29 @@
 ---
 name: "UI Components"
 description: "shadcn primitives, feature components, forms, and accessibility"
-applyTo: "apps/calculator/src/components/**/*.ts,apps/calculator/src/components/**/*.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx"
+applyTo: "apps/calculator/src/components/**/*.ts,apps/calculator/src/components/**/*.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx,apps/cost-tracker/src/components/**/*.ts,apps/cost-tracker/src/components/**/*.tsx,apps/cost-tracker/src/features/**/components/**/*.ts,apps/cost-tracker/src/features/**/components/**/*.tsx"
 ---
 
 # UI Components
 
 ## Official documentation and skill
 
-Use existing local primitives before adding another abstraction. Inspect `apps/calculator/components.json`, start with the official [shadcn/ui `llms.txt` index](https://ui.shadcn.com/llms.txt), and fetch only the needed [component documentation](https://ui.shadcn.com/docs). Use the official `shadcn` skill as supplementary project-aware workflow guidance.
+Use existing local primitives before adding another abstraction. Inspect the owning app's `components.json`, start with the official [shadcn/ui `llms.txt` index](https://ui.shadcn.com/llms.txt), and fetch only the needed [component documentation](https://ui.shadcn.com/docs). Use the official `shadcn` skill as supplementary project-aware workflow guidance.
 
 ## Locations
 
-- Shared shadcn primitives: `apps/calculator/src/components/ui/`
-- Shared composed components: `apps/calculator/src/components/`
-- Feature-specific components: `apps/calculator/src/features/<feature>/components/`
-- Global styles: `apps/calculator/src/app/globals.css`
-- shadcn configuration: `apps/calculator/components.json`
+Within the owning app:
+
+- Shared shadcn primitives: `src/components/ui/`
+- Shared composed components: `src/components/`
+- Feature-specific components: `src/features/<feature>/components/`
+- Global styles: `src/app/globals.css`
+- shadcn configuration: `components.json`
 
 Add a missing upstream component with:
 
 ```bash
-pnpm --dir apps/calculator dlx shadcn@latest add <component>
+pnpm --dir apps/<owning-app> dlx shadcn@latest add <component>
 ```
 
 Review generated dependencies and code before retaining them.

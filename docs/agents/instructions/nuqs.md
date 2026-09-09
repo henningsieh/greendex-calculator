@@ -1,7 +1,7 @@
 ---
 name: "nuqs"
 description: "Type-safe URL search-parameter state, parsers, Next.js adapter, and server parsing"
-applyTo: "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx"
+applyTo: "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/components/nuqs-provider.tsx,apps/cost-tracker/src/features/**/collection-state.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx"
 ---
 
 # nuqs
@@ -10,7 +10,7 @@ applyTo: "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calcula
 
 For every nuqs change:
 
-1. Confirm the installed `nuqs` version in `apps/calculator/package.json` and `pnpm-lock.yaml`.
+1. Confirm the installed `nuqs` version in the owning app's `package.json` and `pnpm-lock.yaml`.
 2. Start with the official [nuqs LLM index](https://nuqs.dev/llms.txt), then fetch only the Markdown page for the active concern. Use [Next.js App Router adapters](https://nuqs.dev/docs/adapters#nextjs-app-router) for provider setup.
 3. Compare examples with the installed declarations and Greendex source; source and installed types win.
 4. Finish when every changed adapter, parser, hook, or server-side concern has an authoritative source.
@@ -21,12 +21,13 @@ No official `SKILL.md` is available. The maintainer-authored [nuqs contributor A
 
 | Concern | Location |
 | --- | --- |
-| App Router adapter boundary | `apps/calculator/src/components/providers/nuqs-adapter.tsx` |
-| Adapter placement | `apps/calculator/src/app/[locale]/layout.tsx` |
-| Client URL state | Owning Calculator feature component |
-| Server URL parsing | Owning Calculator page with `nuqs/server` |
+| App Router adapter boundary | Owning app's Nuqs provider component |
+| Calculator placement | `apps/calculator/src/app/[locale]/layout.tsx` |
+| Cost Tracker placement | `apps/cost-tracker/src/app/layout.tsx` |
+| Client URL state | Owning feature component |
+| Server URL parsing | Owning page with `nuqs/server` |
 
-The Calculator uses the App Router adapter, `NuqsAdapter` from `nuqs/adapters/next/app`, once around the locale layout's descendants. Preserve that boundary when adding client URL state; do not add feature-local adapters or use a Pages Router/unified adapter.
+Each app uses the App Router adapter, `NuqsAdapter` from `nuqs/adapters/next/app`, once around its root descendants. Preserve that boundary when adding client URL state; do not add feature-local adapters or use a Pages Router/unified adapter.
 
 ## URL-state rules
 

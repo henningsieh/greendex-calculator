@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LoginPage() {
-  if (await getSession()) redirect("/dashboard");
+  if (await getSession()) redirect("/projects");
 
   return <AuthForm mode="sign-in" />;
 }

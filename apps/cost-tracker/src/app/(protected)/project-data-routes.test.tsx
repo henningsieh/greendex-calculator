@@ -2,55 +2,62 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  availableScopes: vi.fn(),
+  getOverviewOptions: vi.fn((scope: string) => ({
+    queryKey: ["projects", scope],
+  })),
   hasOrganizationMembership: vi.fn().mockResolvedValue(true),
   hydrateClient: vi.fn(
     ({ children }: { children: React.ReactNode; client: unknown }) => children,
   ),
-  partnerOrganizationsQueryOptions: vi.fn(() => ({
-    queryKey: ["partner-organizations", "list"],
-  })),
-  projectDataErrorBoundary: vi.fn(
-    ({ children, resource }: { children: React.ReactNode; resource: string }) => (
-      <div data-resource={resource} data-testid="project-data-error-boundary">
-        {children}
-      </div>
-    ),
-  ),
-  projectsQueryOptions: vi.fn(() => ({ queryKey: ["projects", "list"] })),
   query: vi.fn().mockResolvedValue(undefined),
   swallowPrefetchError: vi.fn(),
-  requireSession: vi.fn().mockResolvedValue({
-    user: { name: "Cost Tracker User" },
-  }),
 }));
 
 const queryClient = { query: mocks.query };
 
-vi.mock("@/features/projects/components/dashboard-overview", () => ({
-  DashboardOverview: ({ userName }: { userName: string }) => (
-    <p>Dashboard for {userName}</p>
+vi.mock("@/features/projects/components/project-collection", () => ({
+  ProjectCollection: ({ initialScope }: { initialScope: string }) => (
+    <p>Project collection: {initialScope}</p>
   ),
 }));
-vi.mock("@/features/projects/components/partner-organizations-list", () => ({
-  PartnerOrganizationsList: () => <p>Partner Organizations view</p>,
+vi.mock("@/features/projects/components/project-partnership-manager", () => ({
+  ProjectPartnershipManager: () => <p>Project Partnership manager</p>,
+}));
+vi.mock("@/features/projects/components/project-workspace", () => ({
+  ProjectWorkspace: ({ projectId }: { projectId: string }) => (
+    <p>Project workspace: {projectId}</p>
+  ),
 }));
 vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
-  ProjectDataErrorBoundary: mocks.projectDataErrorBoundary,
+  ProjectDataErrorBoundary: ({
+    children,
+    resource,
+  }: {
+    children: React.ReactNode;
+    resource: string;
+  }) => <div data-resource={resource}>{children}</div>,
 }));
-vi.mock("@/features/projects/components/projects-list", () => ({
-  ProjectsList: () => <p>Projects view</p>,
+vi.mock("@/features/projects/project-overview-query-options", () => ({
+  getProjectOverviewQueryOptions: mocks.getOverviewOptions,
 }));
 vi.mock("@/lib/orpc/orpc", () => ({
+  orpc: { projects: { availableScopes: mocks.availableScopes } },
   orpcQuery: {
-    projects: { list: { queryOptions: mocks.projectsQueryOptions } },
-    partnerOrganizations: {
-      list: { queryOptions: mocks.partnerOrganizationsQueryOptions },
+    projects: {
+      detail: {
+        queryOptions: ({ input }: { input: { projectId: string } }) => ({
+          queryKey: ["projects", "detail", input.projectId],
+        }),
+      },
+    },
+    projectPartnerships: {
+      list: { queryOptions: () => ({ queryKey: ["partnerships", "list"] }) },
     },
   },
 }));
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: mocks.hasOrganizationMembership,
-  requireSession: mocks.requireSession,
 }));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => queryClient,
@@ -58,62 +65,68 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   swallowPrefetchError: mocks.swallowPrefetchError,
 }));
 
-import DashboardPage from "@/app/(protected)/dashboard/page";
 import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
+import ProjectPage from "@/app/(protected)/projects/[id]/page";
 import ProjectsPage from "@/app/(protected)/projects/page";
 
 describe("Cost Tracker Project data routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.availableScopes.mockResolvedValue({ hosted: true, partner: true });
   });
 
-  it("prefetches both dashboard reads before hydrating the overview", async () => {
-    render(await DashboardPage());
-
-    expect(mocks.requireSession).toHaveBeenCalledOnce();
-    expect(mocks.query).toHaveBeenCalledTimes(2);
-    expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["projects", "list"],
-    });
-    expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["partner-organizations", "list"],
-    });
-    expect(mocks.hydrateClient.mock.calls[0]?.[0].client).toBe(queryClient);
-    expect(screen.getByText("Dashboard for Cost Tracker User")).toBeTruthy();
-    expect(
-      screen
-        .getByTestId("project-data-error-boundary")
-        .getAttribute("data-resource"),
-    ).toBe("the dashboard");
-  });
-
-  it("prefetches the Project list before hydrating its view", async () => {
+  it("defaults to Hosted and prefetches only the selected overview", async () => {
     render(await ProjectsPage());
 
+    expect(mocks.availableScopes).toHaveBeenCalledOnce();
+    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+      "hosted",
+      expect.objectContaining({ pageSize: 25, window: "all" }),
+    );
+    expect(mocks.query).toHaveBeenCalledOnce();
     expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["projects", "list"],
+      queryKey: ["projects", "hosted"],
     });
-    expect(mocks.hydrateClient.mock.calls[0]?.[0].client).toBe(queryClient);
-    expect(screen.getByText("Projects view")).toBeTruthy();
-    expect(
-      screen
-        .getByTestId("project-data-error-boundary")
-        .getAttribute("data-resource"),
-    ).toBe("Projects");
+    expect(screen.getByText("Project collection: hosted")).toBeTruthy();
   });
 
-  it("prefetches Partner Organizations before hydrating their view", async () => {
+  it("uses Partner when requested and available", async () => {
+    render(
+      await ProjectsPage({
+        searchParams: Promise.resolve({ scope: "partner", window: "open" }),
+      }),
+    );
+
+    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+      "partner",
+      expect.objectContaining({ window: "open" }),
+    );
+    expect(screen.getByText("Project collection: partner")).toBeTruthy();
+  });
+
+  it("falls back to Partner when no Hosted Projects are available", async () => {
+    mocks.availableScopes.mockResolvedValue({ hosted: false, partner: true });
+
+    render(await ProjectsPage());
+
+    expect(screen.getByText("Project collection: partner")).toBeTruthy();
+  });
+
+  it("prefetches Project Partnership management data", async () => {
     render(await PartnerOrganizationsPage());
 
     expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["partner-organizations", "list"],
+      queryKey: ["partnerships", "list"],
     });
-    expect(mocks.hydrateClient.mock.calls[0]?.[0].client).toBe(queryClient);
-    expect(screen.getByText("Partner Organizations view")).toBeTruthy();
-    expect(
-      screen
-        .getByTestId("project-data-error-boundary")
-        .getAttribute("data-resource"),
-    ).toBe("Partner Organizations");
+    expect(screen.getByText("Project Partnership manager")).toBeTruthy();
+  });
+
+  it("prefetches the relationship-derived Project workspace", async () => {
+    render(await ProjectPage({ params: Promise.resolve({ id: "project-1" }) }));
+
+    expect(mocks.query).toHaveBeenCalledWith({
+      queryKey: ["projects", "detail", "project-1"],
+    });
+    expect(screen.getByText("Project workspace: project-1")).toBeTruthy();
   });
 });

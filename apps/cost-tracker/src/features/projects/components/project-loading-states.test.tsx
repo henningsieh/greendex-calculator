@@ -2,14 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
-  DashboardSkeleton,
   PartnerOrganizationsSkeleton,
   ProjectsSkeleton,
 } from "@/features/projects/components/project-loading-states";
 
 describe("Cost Tracker Project loading states", () => {
   it.each([
-    ["dashboard", <DashboardSkeleton key="dashboard" />, "Loading dashboard"],
     ["Projects", <ProjectsSkeleton key="projects" />, "Loading Projects"],
     [
       "Partner Organizations",

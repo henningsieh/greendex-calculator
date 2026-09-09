@@ -51,7 +51,7 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
     }
 
     setOpen(false);
-    router.replace("/dashboard");
+    router.replace("/projects");
     router.refresh();
   }
 

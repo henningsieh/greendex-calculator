@@ -19,6 +19,7 @@ const emailMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/email", () => ({ emailSender: emailMocks }));
+vi.mock("server-only", () => ({}));
 
 import { env } from "@/env";
 import { auth } from "@/lib/auth";
@@ -94,7 +95,7 @@ describe("Cost Tracker Better Auth", () => {
     createdOrganizationIds.push(olderOrganizationId, newestOrganizationId);
 
     const signUp = await auth.api.signUpEmail({
-      body: { email, name: "Dashboard User", password },
+      body: { email, name: "Project User", password },
     });
     await db
       .update(user)
@@ -145,7 +146,10 @@ describe("Cost Tracker Better Auth", () => {
     const client = createRouterClient(router, {
       context: async () => ({ headers }),
     });
-    await expect(client.projects.list()).resolves.toEqual([]);
+    await expect(client.projects.availableScopes()).resolves.toEqual({
+      hosted: false,
+      partner: false,
+    });
     await expect(
       auth.api.createOrganization({
         body: {
@@ -159,7 +163,7 @@ describe("Cost Tracker Better Auth", () => {
 
   it("starts Google sign-in with the deployed Cost Tracker callback contract", async () => {
     const result = await auth.api.signInSocial({
-      body: { provider: "google", callbackURL: "/dashboard" },
+      body: { provider: "google", callbackURL: "/projects" },
     });
 
     expect(result.redirect).toBe(true);

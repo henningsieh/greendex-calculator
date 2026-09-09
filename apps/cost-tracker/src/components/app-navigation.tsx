@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Building2Icon,
-  ChevronDownIcon,
-  FolderKanbanIcon,
-  LayoutDashboardIcon,
-} from "lucide-react";
+import { Building2Icon, ChevronDownIcon, FolderKanbanIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -24,7 +19,6 @@ import { SignOutButton } from "@/features/authentication/components/sign-out-but
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
-  { href: "/dashboard", icon: LayoutDashboardIcon, label: "Overview" },
   { href: "/projects", icon: FolderKanbanIcon, label: "Projects" },
   {
     href: "/partner-organizations",
@@ -44,7 +38,7 @@ export function AppNavigation({ email, name }: AppNavigationProps) {
   return (
     <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
       <div className="flex h-18 items-center justify-between">
-        <SiteBrand href="/dashboard" />
+        <SiteBrand href="/projects" />
         <div className="flex items-center gap-2 lg:hidden">
           <AccountMenu compact email={email} name={name} pathname={pathname} />
         </div>

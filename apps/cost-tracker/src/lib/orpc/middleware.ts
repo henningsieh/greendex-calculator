@@ -28,6 +28,18 @@ type CostTrackerPermissions = {
   projectPartnership?: ProjectPartnershipPermission[];
 };
 
+export async function hasCostTrackerPermissions(
+  headers: Headers,
+  permissions: CostTrackerPermissions,
+) {
+  const result = await auth.api.hasPermission({
+    headers,
+    body: { permissions },
+  });
+
+  return result.success;
+}
+
 export const requireCostTrackerPermissions =
   (permissions: CostTrackerPermissions) =>
   async ({
@@ -42,15 +54,10 @@ export const requireCostTrackerPermissions =
       });
     }
 
-    const result = await auth.api.hasPermission({
-      headers: context.headers,
-      body: { permissions },
-    });
-
-    if (!result.success) {
+    if (!(await hasCostTrackerPermissions(context.headers, permissions))) {
       throw errors.FORBIDDEN({
         message:
-          "The active Organization role cannot read this Cost Tracker resource.",
+          "The active Organization role cannot access this Cost Tracker resource.",
       });
     }
 

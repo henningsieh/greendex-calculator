@@ -1,6 +1,6 @@
 # Cost Tracker Cost Model and Schema Blueprint
 
-Status: approved design; documentation only. No Drizzle schema or migration implements this model yet.
+Status: approved Cost Submission design; documentation only for Cost Submission, Proof Document, Travel Cost Entry, and Cost Allocation persistence. Project Partnerships and the read-only Cost Submission Window state are already implemented.
 
 Read these sources first:
 

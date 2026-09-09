@@ -78,39 +78,61 @@ const distanceKmType = customType<{ data: number; driverData: string }>({
  * they are responsible. Organization Administrators can manage every project.
  * Only Organization Administrators can delete projects.
  */
-export const projectsTable = pgTable("project", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  name: text("name").notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  location: text("location").notNull(),
-  country: text("country").$type<EUCountryCode>().notNull(),
-  welcomeMessage: text("welcome_message"),
+export const projectsTable = pgTable(
+  "project",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    name: text("name").notNull(),
+    startDate: timestamp("start_date").notNull(),
+    endDate: timestamp("end_date").notNull(),
+    location: text("location").notNull(),
+    country: text("country").$type<EUCountryCode>().notNull(),
+    welcomeMessage: text("welcome_message"),
 
-  // Foreign key to user (responsible team member)
-  responsibleUserId: text("responsible_user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+    // Foreign key to user (responsible team member)
+    responsibleUserId: text("responsible_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
 
-  // Foreign key to organization - projects are scoped to organizations
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
+    // Foreign key to organization - projects are scoped to organizations
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
 
-  // Archived flag - projects can be archived instead of deleted
-  archived: boolean("archived").default(false).notNull(),
-  costSubmissionWindowOpen: boolean("cost_submission_window_open")
-    .default(false)
-    .notNull(),
+    // Archived flag - projects can be archived instead of deleted
+    archived: boolean("archived").default(false).notNull(),
+    costSubmissionWindowOpen: boolean("cost_submission_window_open")
+      .default(false)
+      .notNull(),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("project_hosted_overview_operational_idx").on(
+      table.organizationId,
+      table.archived,
+      table.costSubmissionWindowOpen.desc(),
+      table.startDate,
+      table.id,
+    ),
+    index("project_hosted_overview_date_idx").on(
+      table.organizationId,
+      table.archived,
+      table.startDate,
+      table.endDate,
+      table.id,
+    ),
+    index("project_name_trigram_idx")
+      .using("gin", sql`lower(${table.name}) gin_trgm_ops`)
+      .where(sql`${table.archived} = false`),
+  ],
+);
 
 /**
  * Project Shared Travel Leg table
