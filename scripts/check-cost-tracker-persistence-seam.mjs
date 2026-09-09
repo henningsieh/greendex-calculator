@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +9,12 @@ const databaseClientImportPattern =
   /(?:from\s*|import\s*\()(["'])@greendex\/database\1/u;
 
 const findFiles = async (directoryPath) => {
+  try {
+    await stat(directoryPath);
+  } catch {
+    return [];
+  }
+
   const entries = await readdir(directoryPath, { withFileTypes: true });
   const files = [];
 
