@@ -60,6 +60,7 @@ Use the [integration registry](agents/integrations.md) for vendor APIs. Its link
 - [TanStack Table](agents/instructions/tanstack-table.md)
 - [Better Auth](agents/instructions/better-auth.md)
 - [Internationalization](agents/instructions/i18n.md)
+- [nuqs URL search state](agents/instructions/nuqs.md)
 - [Email](agents/instructions/email.md)
 - [shadcn/ui](agents/instructions/shadcn.md)
 - [Repository conventions and Oxc](agents/instructions/conventions.md)
