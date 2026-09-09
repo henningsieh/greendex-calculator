@@ -135,7 +135,7 @@ The live database has SSL disabled because Coolify’s generated SSL mount was i
 ## Task Routing
 
 1. Start at [`docs/README.md`](docs/README.md) for project documentation.
-2. For an unfamiliar or cross-cutting task, use [`docs/agents/agent-workflows.md`](docs/agents/agent-workflows.md).
+2. For an unfamiliar or cross-cutting task, or live Next.js development or debugging, use [`docs/agents/agent-workflows.md`](docs/agents/agent-workflows.md).
 3. For vendor APIs, use [`docs/agents/integrations.md`](docs/agents/integrations.md). Confirm the installed version before following an online example.
 4. Before editing a matching concern, read every scoped instruction below. Its `applyTo` value is a machine-readable scope; this table is the agent router.
 
