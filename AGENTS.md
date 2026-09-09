@@ -154,6 +154,7 @@ The instruction files below live under [`docs/agents/instructions/`](docs/agents
 | `drizzle.md` | Schemas, migrations, and Drizzle ORM/Kit usage | Database source and auth schema generation |
 | `email.md` | Templates, localization, delivery, and SMTP injection | Email package and Calculator adapter |
 | `i18n.md` | Messages, locale routing/navigation, country presentation | i18n package and localized app routes |
+| `nuqs.md` | URL search-parameter state, parsers, Next.js adapter | Calculator provider, pages, layouts, and feature components |
 | `orpc.md` | Procedures, middleware, router, OpenAPI, SSR clients | oRPC, feature procedures, app routes |
 | `shadcn.md` | Shared/feature components, forms, accessibility | Calculator component files |
 | `tanstack-query.md` | Query caching, options, mutations, prefetching, SSR, hydration | Query integration surfaces |
@@ -187,6 +188,7 @@ This repository has one domain context. Before changing domain language, read `d
 | Authentication and organizations | [Better Auth instruction](docs/agents/instructions/better-auth.md) |
 | UI components and forms | [shadcn instruction](docs/agents/instructions/shadcn.md) |
 | Internationalization | [Internationalization instruction](docs/agents/instructions/i18n.md) |
+| URL search-parameter state | [nuqs instruction](docs/agents/instructions/nuqs.md) |
 | Database schemas and migrations | [Drizzle instruction](docs/agents/instructions/drizzle.md) and `packages/database/` |
 | Deployment and managed resources | [Coolify instruction](docs/agents/instructions/coolify.md) |
 | Questionnaire flows and calculations | `docs/participate/` |

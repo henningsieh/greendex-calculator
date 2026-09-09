@@ -50,6 +50,8 @@ const expectedScopes = {
     "packages/email/src/**/*.ts,packages/email/src/**/*.tsx,apps/calculator/src/lib/email.ts",
   "i18n.md":
     "packages/i18n/src/**/*.ts,packages/i18n/src/locales/*.json,packages/config/src/languages.ts,apps/calculator/src/lib/i18n/**/*.ts,apps/calculator/src/proxy.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/app/sitemap.ts",
+  "nuqs.md":
+    "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx",
   "orpc.md":
     "apps/calculator/src/lib/orpc/**/*.ts,apps/calculator/src/app/api/rpc/**/*.ts,apps/calculator/src/app/api/openapi/**/*.ts,apps/calculator/src/features/**/procedures.ts,apps/calculator/src/features/**/validation-schemas.ts,apps/calculator/src/instrumentation.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx",
   "shadcn.md":
@@ -83,6 +85,10 @@ const requiredOnlineRoutes = {
     "https://github.com/michaelwittig/node-i18n-iso-countries",
     "https://gitlab.com/catamphetamine/country-flag-icons",
   ],
+  "nuqs.md": [
+    "https://nuqs.dev/llms.txt",
+    "https://nuqs.dev/docs/adapters#nextjs-app-router",
+  ],
   "orpc.md": [
     "https://v1.orpc.dev/docs/getting-started.md",
     "https://orpc.dev/llms.txt",
@@ -102,6 +108,7 @@ const requiredIntegrationAnchors = [
   "drizzle-orm-and-kit",
   "fumadocs",
   "next-intl-and-country-data",
+  "nuqs",
   "orpc",
   "react-email",
   "shadcnui",
