@@ -1,6 +1,5 @@
 "use client";
 
-import { ORPCError } from "@orpc/client";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import Link from "next/link";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
@@ -12,6 +11,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 
 type ProjectDataErrorBoundaryProps = {
   children: React.ReactNode;
@@ -22,34 +22,19 @@ type ProjectDataErrorFallbackProps = FallbackProps & {
   resource: string;
 };
 
-function getErrorMessage(error: unknown, resource: string) {
-  if (error instanceof ORPCError) {
-    if (error.code === "FORBIDDEN") {
-      return `You no longer have access to these ${resource}.`;
-    }
-
-    if (error.code === "UNAUTHORIZED") {
-      return "Your session has ended. Sign in again to continue.";
-    }
-  }
-
-  return `We couldn't load ${resource}. Try again.`;
-}
-
 function ProjectDataErrorFallback({
   error,
   resetErrorBoundary,
   resource,
 }: ProjectDataErrorFallbackProps) {
-  const sessionExpired =
-    error instanceof ORPCError && error.code === "UNAUTHORIZED";
+  const errorMessage = getORPCRequestErrorMessage(error);
 
   return (
     <Alert variant="destructive">
       <AlertTitle>Unable to load {resource}</AlertTitle>
-      <AlertDescription>{getErrorMessage(error, resource)}</AlertDescription>
+      <AlertDescription>{errorMessage.text}</AlertDescription>
       <AlertAction>
-        {sessionExpired ? (
+        {errorMessage.sessionExpired ? (
           <Link
             className={buttonVariants({ size: "sm", variant: "outline" })}
             href="/login"
@@ -63,7 +48,7 @@ function ProjectDataErrorFallback({
             type="button"
             variant="outline"
           >
-            Try again
+            Retry
           </Button>
         )}
       </AlertAction>

@@ -20,7 +20,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const queryClient = getQueryClient();
   await queryClient
-    .query(orpcQuery.projects.detail.queryOptions({ input: { projectId: id } }))
+    .query(
+      orpcQuery.projects.detail.queryOptions({
+        input: { projectId: id },
+        meta: { costTrackerORPC: true },
+      }),
+    )
     .catch(swallowPrefetchError);
 
   return (

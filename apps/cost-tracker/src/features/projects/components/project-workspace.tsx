@@ -21,7 +21,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
 
 export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const { data: project } = useSuspenseQuery(
-    orpcQuery.projects.detail.queryOptions({ input: { projectId } }),
+    orpcQuery.projects.detail.queryOptions({
+      input: { projectId },
+      meta: { costTrackerORPC: true },
+    }),
   );
 
   return (

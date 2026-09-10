@@ -5,6 +5,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { NuqsProvider } from "@/components/nuqs-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
@@ -43,11 +44,13 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ThemeProvider>
-          <NuqsProvider>
-            <QueryProvider>{children}</QueryProvider>
-          </NuqsProvider>
-        </ThemeProvider>
+        <Toaster>
+          <ThemeProvider>
+            <NuqsProvider>
+              <QueryProvider>{children}</QueryProvider>
+            </NuqsProvider>
+          </ThemeProvider>
+        </Toaster>
       </body>
     </html>
   );

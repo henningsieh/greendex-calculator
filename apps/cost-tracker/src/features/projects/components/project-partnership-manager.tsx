@@ -31,7 +31,9 @@ function mutationMessage(error: unknown) {
 export function ProjectPartnershipManager() {
   const queryClient = useQueryClient();
   const { data: partnerships } = useSuspenseQuery(
-    orpcQuery.projectPartnerships.list.queryOptions(),
+    orpcQuery.projectPartnerships.list.queryOptions({
+      meta: { costTrackerORPC: true },
+    }),
   );
   const [projectId, setProjectId] = useState("");
   const [organizationId, setOrganizationId] = useState("");

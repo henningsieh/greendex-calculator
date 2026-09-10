@@ -7,6 +7,12 @@ export type ProjectOverviewData =
   | Awaited<ReturnType<typeof orpc.projects.hostedOverview>>
   | Awaited<ReturnType<typeof orpc.projects.partnerOverview>>;
 
+export function getProjectAvailableScopesQueryOptions() {
+  const options = orpcQuery.projects.availableScopes.queryOptions();
+
+  return { ...options, meta: { costTrackerORPC: true } };
+}
+
 /**
  * Bridges two intentionally different safe output projections into one
  * discriminated client view while preserving the generated oRPC query key and
@@ -32,8 +38,12 @@ export function getProjectOverviewQueryOptions(
             ...commonInput,
             partnerOrganizationIds: state.partnerOrganizationIds,
           },
+          meta: { costTrackerORPC: true },
         })
-      : orpcQuery.projects.partnerOverview.queryOptions({ input: commonInput });
+      : orpcQuery.projects.partnerOverview.queryOptions({
+          input: commonInput,
+          meta: { costTrackerORPC: true },
+        });
 
   return options as unknown as UseSuspenseQueryOptions<ProjectOverviewData>;
 }

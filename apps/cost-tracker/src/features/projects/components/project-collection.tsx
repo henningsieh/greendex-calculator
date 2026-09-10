@@ -39,7 +39,10 @@ import {
   PROJECT_SORT_MODES,
   PROJECT_WINDOW_FILTERS,
 } from "@/features/projects/collection-state";
-import { getProjectOverviewQueryOptions } from "@/features/projects/project-overview-query-options";
+import {
+  getProjectAvailableScopesQueryOptions,
+  getProjectOverviewQueryOptions,
+} from "@/features/projects/project-overview-query-options";
 
 const serverOwnedTableFeatures = tableFeatures({});
 
@@ -51,11 +54,6 @@ type ProjectRow = {
   location: string;
   country: string;
   costSubmissionWindowOpen: boolean;
-};
-
-type ProjectCollectionProps = {
-  availableScopes: { hosted: boolean; partner: boolean };
-  initialScope: "hosted" | "partner";
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -85,17 +83,21 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function ProjectCollection({
-  availableScopes,
-  initialScope,
-}: ProjectCollectionProps) {
+export function ProjectCollection() {
   const [urlState, setUrlState] = useQueryStates(projectCollectionParsers, {
     history: "push",
     shallow: true,
   });
+  const { data: availableScopes } = useSuspenseQuery(
+    getProjectAvailableScopesQueryOptions(),
+  );
   const state = normalizeProjectCollectionState(urlState);
   const scope =
-    state.scope && availableScopes[state.scope] ? state.scope : initialScope;
+    state.scope && availableScopes[state.scope]
+      ? state.scope
+      : availableScopes.hosted
+        ? "hosted"
+        : "partner";
   const searchTimeout = useRef<number>(undefined);
 
   useEffect(() => () => window.clearTimeout(searchTimeout.current), []);

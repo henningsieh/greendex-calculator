@@ -23,6 +23,10 @@ vi.mock("nuqs", () => ({
   useQueryStates: () => [mocks.state, mocks.setUrlState],
 }));
 vi.mock("@/features/projects/project-overview-query-options", () => ({
+  getProjectAvailableScopesQueryOptions: () => ({
+    queryKey: ["projects", "available-scopes"],
+    queryFn: async () => ({ hosted: true, partner: true }),
+  }),
   getProjectOverviewQueryOptions: (
     scope: "hosted" | "partner",
     state: object,
@@ -68,10 +72,7 @@ function renderCollection() {
   return render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading Projects</p>}>
-        <ProjectCollection
-          availableScopes={{ hosted: true, partner: true }}
-          initialScope="hosted"
-        />
+        <ProjectCollection />
       </Suspense>
     </QueryClientProvider>,
   );
