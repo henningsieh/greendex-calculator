@@ -167,15 +167,11 @@ The three route modules should contain only:
 
 Required query ownership:
 
-┌───────────────────────┬─────────────────────────────────────────────────┐
-│ Route │ Prefetch │
-├───────────────────────┼─────────────────────────────────────────────────┤
-│ Dashboard │ Projects and Partner Organizations concurrently │
-├───────────────────────┼─────────────────────────────────────────────────┤
-│ Projects │ Projects │
-├───────────────────────┼─────────────────────────────────────────────────┤
-│ Partner Organizations │ Partner Organizations │
-└───────────────────────┴─────────────────────────────────────────────────┘
+| Route                 | Prefetch                                        |
+| --------------------- | ----------------------------------------------- |
+| Dashboard             | Projects and Partner Organizations concurrently |
+| Projects              | Projects                                        |
+| Partner Organizations | Partner Organizations                           |
 
 No route or view module may import the db client.
 
