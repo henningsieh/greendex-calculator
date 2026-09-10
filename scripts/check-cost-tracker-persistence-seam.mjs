@@ -34,9 +34,7 @@ const findFiles = async (directoryPath) => {
 
 const isRouteOrViewModule = (relativePath) =>
   relativePath.startsWith("apps/cost-tracker/src/app/") ||
-  /apps\/cost-tracker\/src\/features\/[^/]+\/components\//u.test(
-    relativePath,
-  );
+  /apps\/cost-tracker\/src\/features\/[^/]+\/components\//u.test(relativePath);
 
 export const findForbiddenDatabaseImports = (files) =>
   files

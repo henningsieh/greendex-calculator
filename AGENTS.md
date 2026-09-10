@@ -145,23 +145,23 @@ The instruction files below live under [`docs/agents/instructions/`](docs/agents
 
 <!-- AGENT-INSTRUCTION-INDEX-START -->
 
-| Instruction | Read before changing | Scope summary |
-| --- | --- | --- |
-| `architecture.md` | Module placement, workspace boundaries, SSR/server-client flow | App and package source files |
-| `better-auth.md` | Authentication, organizations, sessions, permissions, auth schema | Auth/organization implementation |
-| `code-standards.md` | TypeScript, React, persistence, errors, tests | App and package source files |
-| `conventions.md` | Manifests, configuration, environment, quality workflow | Repository configuration |
-| `coolify.md` | Deployment resources, environment values, managed databases | Deployment configuration and operational documentation |
-| `documentation-app.md` | Fumadocs application ownership and integration | Documentation application source |
-| `drizzle.md` | Schemas, migrations, and Drizzle ORM/Kit usage | Database source and auth schema generation |
-| `email.md` | Templates, localization, delivery, and SMTP injection | Email package and Calculator adapter |
-| `i18n.md` | Messages, locale routing/navigation, country presentation | i18n package and localized app routes |
-| `nuqs.md` | URL search-parameter state, parsers, Next.js adapter | Calculator provider, pages, layouts, and feature components |
-| `orpc.md` | Procedures, middleware, router, OpenAPI, SSR clients | oRPC, feature procedures, app routes |
-| `shadcn.md` | Shared/feature components, forms, accessibility | Calculator component files |
-| `tanstack-query.md` | Query caching, options, mutations, prefetching, SSR, hydration | Query integration surfaces |
-| `tanstack-table.md` | Table v9 features, state, columns, and table tests | Feature tables and table tests |
-| `workspace.md` | Dependencies, catalog, workspace packages, Turbo tasks/env | Manifests, workspace and Turbo config |
+| Instruction            | Read before changing                                              | Scope summary                                               |
+| ---------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------- |
+| `architecture.md`      | Module placement, workspace boundaries, SSR/server-client flow    | App and package source files                                |
+| `better-auth.md`       | Authentication, organizations, sessions, permissions, auth schema | Auth/organization implementation                            |
+| `code-standards.md`    | TypeScript, React, persistence, errors, tests                     | App and package source files                                |
+| `conventions.md`       | Manifests, configuration, environment, quality workflow           | Repository configuration                                    |
+| `coolify.md`           | Deployment resources, environment values, managed databases       | Deployment configuration and operational documentation      |
+| `documentation-app.md` | Fumadocs application ownership and integration                    | Documentation application source                            |
+| `drizzle.md`           | Schemas, migrations, and Drizzle ORM/Kit usage                    | Database source and auth schema generation                  |
+| `email.md`             | Templates, localization, delivery, and SMTP injection             | Email package and Calculator adapter                        |
+| `i18n.md`              | Messages, locale routing/navigation, country presentation         | i18n package and localized app routes                       |
+| `nuqs.md`              | URL search-parameter state, parsers, Next.js adapter              | Calculator provider, pages, layouts, and feature components |
+| `orpc.md`              | Procedures, middleware, router, OpenAPI, SSR clients              | oRPC, feature procedures, app routes                        |
+| `shadcn.md`            | Shared/feature components, forms, accessibility                   | Calculator component files                                  |
+| `tanstack-query.md`    | Query caching, options, mutations, prefetching, SSR, hydration    | Query integration surfaces                                  |
+| `tanstack-table.md`    | Table v9 features, state, columns, and table tests                | Feature tables and table tests                              |
+| `workspace.md`         | Dependencies, catalog, workspace packages, Turbo tasks/env        | Manifests, workspace and Turbo config                       |
 
 <!-- AGENT-INSTRUCTION-INDEX-END -->
 
@@ -181,24 +181,24 @@ This repository has shared domain language and application-specific contexts. Be
 
 ### Primary documentation
 
-| Task | Read |
-| --- | --- |
-| Vendor APIs and installed skills | [Integration reference routes](docs/agents/integrations.md) |
-| API endpoints and procedures | [oRPC instruction](docs/agents/instructions/orpc.md) |
-| Query caching, prefetching, and hydration | [TanStack Query instruction](docs/agents/instructions/tanstack-query.md) |
-| Data tables | [TanStack Table instruction](docs/agents/instructions/tanstack-table.md) |
-| Authentication and organizations | [Better Auth instruction](docs/agents/instructions/better-auth.md) |
-| UI components and forms | [shadcn instruction](docs/agents/instructions/shadcn.md) |
-| Internationalization | [Internationalization instruction](docs/agents/instructions/i18n.md) |
-| URL search-parameter state | [nuqs instruction](docs/agents/instructions/nuqs.md) |
-| Database schemas and migrations | [Drizzle instruction](docs/agents/instructions/drizzle.md) and `packages/database/` |
-| Deployment and managed resources | [Coolify instruction](docs/agents/instructions/coolify.md) |
-| Shared Project model, participation, and permissions | `docs/projects/` |
-| Calculator questionnaire flows and calculations | `apps/calculator/docs/participate/` |
-| Calculator Projects feature | `apps/calculator/docs/projects/` |
-| Cost Tracker Projects and planned cost schema | `apps/cost-tracker/docs/projects/` and `apps/cost-tracker/docs/domain-model.md` |
-| Email templates and transport | [Email instruction](docs/agents/instructions/email.md) |
-| Code standards and tooling | [Repository conventions](docs/agents/instructions/conventions.md) |
+| Task                                                 | Read                                                                                |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Vendor APIs and installed skills                     | [Integration reference routes](docs/agents/integrations.md)                         |
+| API endpoints and procedures                         | [oRPC instruction](docs/agents/instructions/orpc.md)                                |
+| Query caching, prefetching, and hydration            | [TanStack Query instruction](docs/agents/instructions/tanstack-query.md)            |
+| Data tables                                          | [TanStack Table instruction](docs/agents/instructions/tanstack-table.md)            |
+| Authentication and organizations                     | [Better Auth instruction](docs/agents/instructions/better-auth.md)                  |
+| UI components and forms                              | [shadcn instruction](docs/agents/instructions/shadcn.md)                            |
+| Internationalization                                 | [Internationalization instruction](docs/agents/instructions/i18n.md)                |
+| URL search-parameter state                           | [nuqs instruction](docs/agents/instructions/nuqs.md)                                |
+| Database schemas and migrations                      | [Drizzle instruction](docs/agents/instructions/drizzle.md) and `packages/database/` |
+| Deployment and managed resources                     | [Coolify instruction](docs/agents/instructions/coolify.md)                          |
+| Shared Project model, participation, and permissions | `docs/projects/`                                                                    |
+| Calculator questionnaire flows and calculations      | `apps/calculator/docs/participate/`                                                 |
+| Calculator Projects feature                          | `apps/calculator/docs/projects/`                                                    |
+| Cost Tracker Projects and planned cost schema        | `apps/cost-tracker/docs/projects/` and `apps/cost-tracker/docs/domain-model.md`     |
+| Email templates and transport                        | [Email instruction](docs/agents/instructions/email.md)                              |
+| Code standards and tooling                           | [Repository conventions](docs/agents/instructions/conventions.md)                   |
 
 ---
 
