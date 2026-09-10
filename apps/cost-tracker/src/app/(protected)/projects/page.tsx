@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
 import {
-  normalizeProjectCollectionState,
   loadProjectCollectionSearchParams,
+  normalizeProjectCollectionState,
+  resolveProjectCollectionState,
 } from "@/features/projects/collection-state";
 import { ProjectCollection } from "@/features/projects/components/project-collection";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
@@ -39,18 +40,12 @@ export default async function ProjectsPage(
   ]);
 
   if (availableScopes) {
-    const state = normalizeProjectCollectionState(urlState);
-    const requestedScope = state.scope;
-    const initialScope =
-      requestedScope === "partner" && availableScopes.partner
-        ? "partner"
-        : requestedScope === "hosted" && availableScopes.hosted
-          ? "hosted"
-          : availableScopes.hosted
-            ? "hosted"
-            : "partner";
+    const resolution = resolveProjectCollectionState(
+      normalizeProjectCollectionState(urlState),
+      availableScopes,
+    );
     await queryClient
-      .query(getProjectOverviewQueryOptions(initialScope, state))
+      .query(getProjectOverviewQueryOptions(resolution.scope, resolution.state))
       .catch(swallowPrefetchError);
   }
 

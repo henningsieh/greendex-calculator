@@ -120,6 +120,24 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByText("Project collection")).toBeTruthy();
   });
 
+  it("prefetches Hosted Projects without a stale Partner cursor", async () => {
+    mocks.availableScopes.mockResolvedValue({ hosted: true, partner: false });
+
+    render(
+      await ProjectsPage({
+        searchParams: Promise.resolve({
+          cursor: "partner-cursor",
+          scope: "partner",
+        }),
+      }),
+    );
+
+    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+      "hosted",
+      expect.objectContaining({ cursor: undefined }),
+    );
+  });
+
   it("prefetches Project Partnership management data", async () => {
     render(await PartnerOrganizationsPage());
 

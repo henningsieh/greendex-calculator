@@ -32,12 +32,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/components/ui/toast";
 import {
   normalizeProjectCollectionState,
   PROJECT_PAGE_SIZES,
   projectCollectionParsers,
   PROJECT_SORT_MODES,
   PROJECT_WINDOW_FILTERS,
+  resolveProjectCollectionState,
 } from "@/features/projects/collection-state";
 import {
   getProjectAvailableScopesQueryOptions,
@@ -91,16 +93,38 @@ export function ProjectCollection() {
   const { data: availableScopes } = useSuspenseQuery(
     getProjectAvailableScopesQueryOptions(),
   );
-  const state = normalizeProjectCollectionState(urlState);
-  const scope =
-    state.scope && availableScopes[state.scope]
-      ? state.scope
-      : availableScopes.hosted
-        ? "hosted"
-        : "partner";
+  const requestedState = normalizeProjectCollectionState(urlState);
+  const resolution = resolveProjectCollectionState(
+    requestedState,
+    availableScopes,
+  );
+  const { scope, state } = resolution;
+  const fallbackNotices = useRef(new Set<string>());
   const searchTimeout = useRef<number>(undefined);
 
   useEffect(() => () => window.clearTimeout(searchTimeout.current), []);
+
+  useEffect(() => {
+    if (!resolution.didPartnerToHostedFallback) return;
+
+    const noticeKey = `${requestedState.scope}:${requestedState.cursor ?? ""}`;
+    if (fallbackNotices.current.has(noticeKey)) return;
+
+    fallbackNotices.current.add(noticeKey);
+    void setUrlState({ cursor: null, scope }, { history: "replace" });
+    toast.add({
+      description:
+        "Partner Projects are unavailable. Hosted Projects are shown instead.",
+      title: "Project view updated",
+      type: "info",
+    });
+  }, [
+    requestedState.cursor,
+    requestedState.scope,
+    resolution.didPartnerToHostedFallback,
+    scope,
+    setUrlState,
+  ]);
 
   const { data, dataUpdatedAt, isFetching, refetch } = useSuspenseQuery(
     getProjectOverviewQueryOptions(scope, state),

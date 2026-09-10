@@ -42,8 +42,12 @@ export type ProjectCollectionUrlState = inferParserType<
   typeof projectCollectionParsers
 >;
 
+export type ProjectCollectionScope = (typeof PROJECT_COLLECTION_SCOPES)[number];
+
+export type ProjectScopeAvailability = Record<ProjectCollectionScope, boolean>;
+
 export type ProjectCollectionState = {
-  scope: (typeof PROJECT_COLLECTION_SCOPES)[number] | null;
+  scope: ProjectCollectionScope | null;
   search?: string;
   window: (typeof PROJECT_WINDOW_FILTERS)[number];
   dateFrom?: Date;
@@ -52,6 +56,12 @@ export type ProjectCollectionState = {
   sort: (typeof PROJECT_SORT_MODES)[number];
   cursor?: string;
   pageSize: (typeof PROJECT_PAGE_SIZES)[number];
+};
+
+export type ResolvedProjectCollectionState = {
+  scope: ProjectCollectionScope;
+  state: ProjectCollectionState;
+  didPartnerToHostedFallback: boolean;
 };
 
 export function normalizeProjectCollectionState(
@@ -78,5 +88,33 @@ export function normalizeProjectCollectionState(
     sort: state.sort,
     cursor: state.cursor || undefined,
     pageSize: state.pageSize,
+  };
+}
+
+/**
+ * Selects a queryable Project scope before any overview request. A cursor is
+ * only valid for the scope that created it, so changing scope always clears it.
+ */
+export function resolveProjectCollectionState(
+  state: ProjectCollectionState,
+  availableScopes: ProjectScopeAvailability,
+): ResolvedProjectCollectionState {
+  const scope =
+    state.scope && availableScopes[state.scope]
+      ? state.scope
+      : availableScopes.hosted
+        ? "hosted"
+        : "partner";
+  const didFallback = state.scope !== null && state.scope !== scope;
+
+  return {
+    scope,
+    state: {
+      ...state,
+      scope,
+      cursor: didFallback ? undefined : state.cursor,
+    },
+    didPartnerToHostedFallback:
+      state.scope === "partner" && scope === "hosted" && !availableScopes.partner,
   };
 }
