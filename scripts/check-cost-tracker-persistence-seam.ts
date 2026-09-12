@@ -59,14 +59,14 @@ const findFiles = async (directoryPath: string): Promise<string[]> => {
   return files;
 };
 
-type ScannedToken = {
-  kind: SyntaxKind;
-  text: string;
+type ModuleSpecifier = {
+  isReExport: boolean;
   value: string;
 };
 
-type ModuleSpecifier = {
-  isReExport: boolean;
+type ScannedToken = {
+  kind: SyntaxKind;
+  text: string;
   value: string;
 };
 
@@ -74,27 +74,20 @@ const isSpecifierToken = (kind: SyntaxKind) =>
   kind === SyntaxKind.StringLiteral ||
   kind === SyntaxKind.NoSubstitutionTemplateLiteral;
 
-const getTokenSpecifier = (token: ScannedToken) => {
-  if (token.value) return token.value;
-  const text = token.text;
-  return text.length >= 2 ? text.slice(1, -1) : text;
-};
+const getTokenSpecifier = (token: ScannedToken) =>
+  token.value || token.text.slice(1, -1);
 
 const scanTokens = (content: string): ScannedToken[] => {
-  // skipTrivia=true: comments/whitespace never surface as tokens, so
-  // import-like text in comments or string literals can't false-positive.
   const scanner = createScanner(true);
   scanner.setText(content);
   const tokens: ScannedToken[] = [];
 
-  let kind = scanner.scan();
-  while (kind !== SyntaxKind.EndOfFile) {
+  for (let kind = scanner.scan(); kind !== SyntaxKind.EndOfFile; kind = scanner.scan()) {
     tokens.push({
       kind,
       text: scanner.getTokenText(),
       value: scanner.getTokenValue(),
     });
-    kind = scanner.scan();
   }
 
   return tokens;
@@ -102,33 +95,42 @@ const scanTokens = (content: string): ScannedToken[] => {
 
 const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
   const specifiers = new Map<string, boolean>();
+  const importedBindings = new Map<string, string>();
   const tokens = scanTokens(content);
   const recordSpecifier = (value: string, isReExport: boolean) => {
     specifiers.set(value, specifiers.get(value) === true || isReExport);
   };
-
-  // Attribute a `from "spec"` string to its import/export statement.
-  // Whole-declaration `import type` / `export type` is skipped (type-only).
-  // Inline `import { type X }` still records (fail-closed over-approximation).
-  const recordFromSpecifier = (fromIndex: number, isReExport: boolean) => {
-    for (let i = fromIndex + 1; i < tokens.length; i += 1) {
-      if (isSpecifierToken(tokens[i].kind)) {
-        recordSpecifier(getTokenSpecifier(tokens[i]), isReExport);
-        return i;
+  const recordBindings = (start: number, end: number, specifier: string) => {
+    for (let i = start; i < end; i += 1) {
+      if (tokens[i].kind === SyntaxKind.Identifier) {
+        importedBindings.set(tokens[i].value, specifier);
       }
+    }
+  };
+  const findStatementEnd = (start: number) => {
+    for (let i = start; i < tokens.length; i += 1) {
       if (tokens[i].kind === SyntaxKind.SemicolonToken) return i;
     }
     return tokens.length;
   };
+  const findFromSpecifier = (start: number, end: number) => {
+    for (let i = start; i < end - 1; i += 1) {
+      if (
+        tokens[i].kind === SyntaxKind.FromKeyword &&
+        isSpecifierToken(tokens[i + 1].kind)
+      ) {
+        return { index: i + 1, value: getTokenSpecifier(tokens[i + 1]) };
+      }
+    }
+    return undefined;
+  };
 
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
+    const next = tokens[i + 1];
+    if (!next) continue;
 
     if (token.kind === SyntaxKind.ImportKeyword) {
-      const next = tokens[i + 1];
-      if (!next) continue;
-
-      // Dynamic import: import("spec")
       if (
         next.kind === SyntaxKind.OpenParenToken &&
         tokens[i + 2] &&
@@ -138,59 +140,47 @@ const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
         i += 2;
         continue;
       }
-
-      // Side-effect import: import "spec"
       if (isSpecifierToken(next.kind)) {
         recordSpecifier(getTokenSpecifier(next), false);
         i += 1;
         continue;
       }
+      if (
+        next.kind === SyntaxKind.TypeKeyword ||
+        next.kind === SyntaxKind.DotToken
+      ) {
+        continue;
+      }
 
-      // import type ... -> type-only, skip
-      if (next.kind === SyntaxKind.TypeKeyword) continue;
-
-      // Only static declaration grammar can contain a from-clause. Do not
-      // skip ordinary statements such as import.meta expressions, which can
-      // contain a later dynamic import.
-      const isStaticImport =
-        next.kind === SyntaxKind.Identifier ||
-        next.kind === SyntaxKind.OpenBraceToken ||
-        next.kind === SyntaxKind.AsteriskToken;
-      if (!isStaticImport) continue;
-
-      for (let j = i + 1; j < tokens.length; j += 1) {
-        if (tokens[j].kind === SyntaxKind.FromKeyword) {
-          i = recordFromSpecifier(j, false);
-          break;
-        }
-        if (tokens[j].kind === SyntaxKind.SemicolonToken) {
-          i = j;
-          break;
-        }
+      const end = findStatementEnd(i + 1);
+      const from = findFromSpecifier(i + 1, end);
+      if (from) {
+        recordSpecifier(from.value, false);
+        recordBindings(i + 1, from.index, from.value);
+        i = end;
       }
     } else if (token.kind === SyntaxKind.ExportKeyword) {
-      const next = tokens[i + 1];
-      // export type ... -> type-only, skip
-      if (next && next.kind === SyntaxKind.TypeKeyword) continue;
+      if (next.kind === SyntaxKind.TypeKeyword) continue;
+      if (
+        next.kind !== SyntaxKind.OpenBraceToken &&
+        next.kind !== SyntaxKind.AsteriskToken
+      ) {
+        continue;
+      }
 
-      // Only export-list and export-all declarations can contain a
-      // from-clause. Keep exported initializers in the token stream so a
-      // nested dynamic import is still discovered.
-      const isStaticReExport =
-        next?.kind === SyntaxKind.OpenBraceToken ||
-        next?.kind === SyntaxKind.AsteriskToken;
-      if (!isStaticReExport) continue;
-
-      for (let j = i + 1; j < tokens.length; j += 1) {
-        if (tokens[j].kind === SyntaxKind.FromKeyword) {
-          i = recordFromSpecifier(j, true);
-          break;
-        }
-        if (tokens[j].kind === SyntaxKind.SemicolonToken) {
-          i = j;
-          break;
+      const end = findStatementEnd(i + 1);
+      const from = findFromSpecifier(i + 1, end);
+      if (from) {
+        recordSpecifier(from.value, true);
+      } else if (next.kind === SyntaxKind.OpenBraceToken) {
+        for (let j = i + 2; j < end; j += 1) {
+          if (tokens[j].kind === SyntaxKind.Identifier) {
+            const importedSpecifier = importedBindings.get(tokens[j].value);
+            if (importedSpecifier) recordSpecifier(importedSpecifier, true);
+          }
         }
       }
+      i = end;
     }
   }
 
