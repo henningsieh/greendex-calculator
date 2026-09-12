@@ -9,6 +9,8 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Architecture review and migration plan](architecture-review-and-migration-plan.md)
 - [Architecture review after the migration fix (13 findings)](architecture-review-after-migration-fix.md)
 - [Architecture migration fix plan](architecture-migration-fix-plan.md)
+- [Final Cost Tracker migration review](architecture-migration-final-review.md)
+- [Phase 0 – kurze Erklärung](phase-0-erklaerung.md)
 - [Shared Greendex language](../../../DOMAIN-GLOSSARY.md)
 - [Shared Projects documentation](../../../docs/projects/README.md)
 - [Cost Tracker Projects](projects/README.md)
