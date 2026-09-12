@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-table";
 import { RefreshCwIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useRef } from "react";
 
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
 import {
+  getProjectCollectionReturnDestination,
   normalizeProjectCollectionState,
   PROJECT_PAGE_SIZES,
   projectCollectionParsers,
@@ -90,6 +92,8 @@ export function ProjectCollection() {
     history: "push",
     shallow: true,
   });
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: availableScopes } = useSuspenseQuery(
     getProjectAvailableScopesQueryOptions(),
   );
@@ -130,6 +134,15 @@ export function ProjectCollection() {
     getProjectOverviewQueryOptions(scope, state),
   );
 
+  const browserUrl =
+    typeof window === "undefined"
+      ? { pathname: "/projects", search: "" }
+      : window.location;
+  const search = searchParams?.toString() ?? browserUrl.search.slice(1);
+  const returnTo = getProjectCollectionReturnDestination(
+    `${pathname ?? browserUrl.pathname}${search ? `?${search}` : ""}`,
+  );
+
   const columns = useMemo<
     ColumnDef<typeof serverOwnedTableFeatures, ProjectRow>[]
   >(
@@ -140,7 +153,7 @@ export function ProjectCollection() {
         cell: ({ row }) => (
           <Link
             className="font-medium text-foreground underline-offset-4 hover:underline"
-            href={`/projects/${encodeURIComponent(row.original.id)}`}
+            href={`/projects/${encodeURIComponent(row.original.id)}?${new URLSearchParams({ returnTo })}`}
           >
             {row.original.name}
           </Link>
@@ -174,7 +187,7 @@ export function ProjectCollection() {
         ),
       },
     ],
-    [],
+    [returnTo],
   );
   const table = useTable({
     columns,

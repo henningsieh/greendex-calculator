@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getProjectCollectionReturnDestination,
   loadProjectCollectionSearchParams,
   normalizeProjectCollectionState,
 } from "@/features/projects/collection-state";
@@ -44,6 +45,25 @@ describe("Project collection URL state", () => {
       cursor: "opaque",
       pageSize: 50,
     });
+  });
+
+  it("accepts a local Project collection return destination", () => {
+    expect(
+      getProjectCollectionReturnDestination(
+        "/projects?scope=partner&search=climate&cursor=opaque",
+      ),
+    ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
+  });
+
+  it.each([
+    undefined,
+    ["/projects"],
+    "projects?scope=hosted",
+    "/projects/project-1",
+    "//attacker.example/projects",
+    "https://attacker.example/projects",
+  ])("falls back for an unsafe Project return destination: %j", (returnTo) => {
+    expect(getProjectCollectionReturnDestination(returnTo)).toBe("/projects");
   });
 
   it("omits search values shorter than three normalized characters", () => {

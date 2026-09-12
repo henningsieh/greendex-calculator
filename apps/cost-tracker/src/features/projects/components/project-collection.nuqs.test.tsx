@@ -71,53 +71,57 @@ function renderCollection({
   );
 }
 
-describe("Project collection unavailable scope fallback", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.availableScopes = { hosted: true, partner: false };
-  });
-
-  it("replaces an unavailable Partner URL before creating the Hosted query", async () => {
-    const onUrlUpdate = vi.fn();
-    renderCollection({ onUrlUpdate });
-
-    await screen.findByRole("tab", { name: "Hosted" });
-
-    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
-      "hosted",
-      expect.objectContaining({ cursor: undefined }),
-    );
-    await waitFor(() => expect(onUrlUpdate).toHaveBeenCalledOnce());
-    const update = onUrlUpdate.mock.calls[0]?.[0] as UrlUpdateEvent;
-    expect(update.options.history).toBe("replace");
-    expect(update.searchParams.get("scope")).toBe("hosted");
-    expect(update.searchParams.has("cursor")).toBe(false);
-    expect(mocks.toastAdd).toHaveBeenCalledWith({
-      description:
-        "Partner Projects are unavailable. Hosted Projects are shown instead.",
-      title: "Project view updated",
-      type: "info",
+describe(
+  "Project collection unavailable scope fallback",
+  { timeout: 10_000 },
+  () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      mocks.availableScopes = { hosted: true, partner: false };
     });
-  });
 
-  it.each(["hosted", "partner"] as const)(
-    "keeps a valid %s URL unchanged",
-    async (scope) => {
+    it("replaces an unavailable Partner URL before creating the Hosted query", async () => {
       const onUrlUpdate = vi.fn();
-      mocks.availableScopes = { hosted: true, partner: true };
-      renderCollection({
-        onUrlUpdate,
-        searchParams: `?scope=${scope}&cursor=${scope}-cursor`,
-      });
+      renderCollection({ onUrlUpdate });
 
-      await screen.findByRole("tab", { name: "Hosted" });
+      await screen.findByRole("tab", { name: "Hosted" }, { timeout: 10_000 });
 
       expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
-        scope,
-        expect.objectContaining({ cursor: `${scope}-cursor` }),
+        "hosted",
+        expect.objectContaining({ cursor: undefined }),
       );
-      expect(onUrlUpdate).not.toHaveBeenCalled();
-      expect(mocks.toastAdd).not.toHaveBeenCalled();
-    },
-  );
-});
+      await waitFor(() => expect(onUrlUpdate).toHaveBeenCalledOnce());
+      const update = onUrlUpdate.mock.calls[0]?.[0] as UrlUpdateEvent;
+      expect(update.options.history).toBe("replace");
+      expect(update.searchParams.get("scope")).toBe("hosted");
+      expect(update.searchParams.has("cursor")).toBe(false);
+      expect(mocks.toastAdd).toHaveBeenCalledWith({
+        description:
+          "Partner Projects are unavailable. Hosted Projects are shown instead.",
+        title: "Project view updated",
+        type: "info",
+      });
+    });
+
+    it.each(["hosted", "partner"] as const)(
+      "keeps a valid %s URL unchanged",
+      async (scope) => {
+        const onUrlUpdate = vi.fn();
+        mocks.availableScopes = { hosted: true, partner: true };
+        renderCollection({
+          onUrlUpdate,
+          searchParams: `?scope=${scope}&cursor=${scope}-cursor`,
+        });
+
+        await screen.findByRole("tab", { name: "Hosted" }, { timeout: 10_000 });
+
+        expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+          scope,
+          expect.objectContaining({ cursor: `${scope}-cursor` }),
+        );
+        expect(onUrlUpdate).not.toHaveBeenCalled();
+        expect(mocks.toastAdd).not.toHaveBeenCalled();
+      },
+    );
+  },
+);

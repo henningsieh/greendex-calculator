@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getProjectCollectionReturnDestination } from "@/features/projects/collection-state";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -19,7 +20,13 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-export function ProjectWorkspace({ projectId }: { projectId: string }) {
+export function ProjectWorkspace({
+  projectId,
+  returnTo,
+}: {
+  projectId: string;
+  returnTo?: string;
+}) {
   const { data: project } = useSuspenseQuery(
     orpcQuery.projects.detail.queryOptions({
       input: { projectId },
@@ -30,6 +37,12 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-8">
       <header className="space-y-4">
+        <Link
+          className={buttonVariants({ variant: "ghost" })}
+          href={getProjectCollectionReturnDestination(returnTo)}
+        >
+          Back to Projects
+        </Link>
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm font-medium text-primary">
             {project.relationship === "hosted"

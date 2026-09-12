@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
     cursor: "",
     pageSize: 25 as const,
   },
+  projectReturnSearch:
+    "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque",
 }));
 
 vi.mock("nuqs", () => ({
@@ -84,10 +86,30 @@ beforeEach(() => {
   mocks.state.search = "";
   mocks.state.cursor = "";
   mocks.state.partnerOrganizationIds = [];
+  mocks.projectReturnSearch =
+    "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque";
+  window.history.replaceState({}, "", `/projects?${mocks.projectReturnSearch}`);
 });
 
 describe("Project collection", { timeout: 10_000 }, () => {
   it("renders one server-returned page without exposing deferred fields", async () => {
+    renderCollection();
+
+    expect(
+      await screen.findByRole(
+        "link",
+        { name: "Climate Forum" },
+        { timeout: 10_000 },
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Open")).toBeTruthy();
+    expect(screen.getByText("Projects (3 total)")).toBeTruthy();
+    expect(
+      screen.queryByText(/EUR|submission count|latest activity/i),
+    ).toBeNull();
+  });
+
+  it("preserves the complete collection state when opening a Project", async () => {
     renderCollection();
 
     expect(
@@ -98,12 +120,9 @@ describe("Project collection", { timeout: 10_000 }, () => {
           { timeout: 10_000 },
         )
       ).getAttribute("href"),
-    ).toBe("/projects/project-1");
-    expect(screen.getByText("Open")).toBeTruthy();
-    expect(screen.getByText("Projects (3 total)")).toBeTruthy();
-    expect(
-      screen.queryByText(/EUR|submission count|latest activity/i),
-    ).toBeNull();
+    ).toBe(
+      "/projects/project-1?returnTo=%2Fprojects%3Fscope%3Dpartner%26search%3Dclimate%26window%3Dopen%26dateFrom%3D2026-01-01%26dateTo%3D2026-12-31%26partnerOrganizationIds%3Dpartner-1%26sort%3Dstart-desc%26pageSize%3D50%26cursor%3Dopaque",
+    );
   });
 
   it("clears the cursor when scope or filters change", async () => {

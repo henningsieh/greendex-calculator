@@ -27,9 +27,13 @@ vi.mock("@/features/projects/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: () => <p>Project Partnership manager</p>,
 }));
 vi.mock("@/features/projects/components/project-workspace", () => ({
-  ProjectWorkspace: ({ projectId }: { projectId: string }) => (
-    <p>Project workspace: {projectId}</p>
-  ),
+  ProjectWorkspace: ({
+    projectId,
+    returnTo,
+  }: {
+    projectId: string;
+    returnTo?: string;
+  }) => <p data-return-to={returnTo}>Project workspace: {projectId}</p>,
 }));
 vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
   ProjectDataErrorBoundary: ({
@@ -147,12 +151,23 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByText("Project Partnership manager")).toBeTruthy();
   });
 
-  it("prefetches the relationship-derived Project workspace", async () => {
-    render(await ProjectPage({ params: Promise.resolve({ id: "project-1" }) }));
+  it("keeps Project authorization independent from the return destination", async () => {
+    render(
+      await ProjectPage({
+        params: Promise.resolve({ id: "project-1" }),
+        searchParams: Promise.resolve({
+          returnTo: "/projects?scope=partner&search=climate&cursor=opaque",
+        }),
+      }),
+    );
 
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["projects", "detail", "project-1"],
     });
-    expect(screen.getByText("Project workspace: project-1")).toBeTruthy();
+    expect(
+      screen
+        .getByText("Project workspace: project-1")
+        .getAttribute("data-return-to"),
+    ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
   });
 });

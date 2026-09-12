@@ -21,6 +21,8 @@ export const PROJECT_PAGE_SIZES = [25, 50, 100] as const;
 
 const MAX_PARTNER_FILTERS = 20;
 const MINIMUM_SEARCH_LENGTH = 3;
+const PROJECT_COLLECTION_PATH = "/projects";
+const LOCAL_URL_ORIGIN = "https://cost-tracker.local";
 
 export const projectCollectionParsers = {
   scope: parseAsStringLiteral(PROJECT_COLLECTION_SCOPES),
@@ -63,6 +65,30 @@ export type ResolvedProjectCollectionState = {
   state: ProjectCollectionState;
   didPartnerToHostedFallback: boolean;
 };
+
+/**
+ * Accepts only a local Project collection URL. This keeps return context out of
+ * workspace authorization and prevents open redirects from crafted links.
+ */
+export function getProjectCollectionReturnDestination(returnTo: unknown): string {
+  if (
+    typeof returnTo !== "string" ||
+    !returnTo.startsWith("/") ||
+    returnTo.startsWith("//")
+  ) {
+    return PROJECT_COLLECTION_PATH;
+  }
+
+  try {
+    const url = new URL(returnTo, LOCAL_URL_ORIGIN);
+    return url.origin === LOCAL_URL_ORIGIN &&
+      url.pathname === PROJECT_COLLECTION_PATH
+      ? returnTo
+      : PROJECT_COLLECTION_PATH;
+  } catch {
+    return PROJECT_COLLECTION_PATH;
+  }
+}
 
 export function normalizeProjectCollectionState(
   state: ProjectCollectionUrlState,
