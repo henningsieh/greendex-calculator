@@ -4,6 +4,7 @@ import {
   getProjectCollectionReturnDestination,
   loadProjectCollectionSearchParams,
   normalizeProjectCollectionState,
+  resolveProjectCollectionState,
 } from "@/features/projects/collection-state";
 
 describe("Project collection URL state", () => {
@@ -44,6 +45,35 @@ describe("Project collection URL state", () => {
       sort: "start-desc",
       cursor: "opaque",
       pageSize: 50,
+    });
+  });
+
+  it("represents an Organization with no available Project scope", () => {
+    const resolution = resolveProjectCollectionState(
+      {
+        scope: "partner",
+        search: undefined,
+        window: "all",
+        partnerOrganizationIds: [],
+        sort: "operational",
+        cursor: "stale-partner-cursor",
+        pageSize: 25,
+      },
+      { hosted: false, partner: false },
+    );
+
+    expect(resolution).toEqual({
+      scope: null,
+      state: {
+        scope: null,
+        search: undefined,
+        window: "all",
+        partnerOrganizationIds: [],
+        sort: "operational",
+        cursor: undefined,
+        pageSize: 25,
+      },
+      didPartnerToHostedFallback: false,
     });
   });
 

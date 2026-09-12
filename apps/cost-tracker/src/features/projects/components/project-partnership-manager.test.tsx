@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -153,6 +154,31 @@ describe("ProjectPartnershipManager", () => {
     // Red if the list query is not invalidated and refetched after a successful assign.
     expect(screen.queryByText("Existing Partner Organization")).toBeNull();
     expectProjectDataInvalidation(invalidateQueries);
+  });
+
+  it("shows a safe message instead of a remote mutation error", async () => {
+    mocks.assign.mockRejectedValue(
+      new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "postgres://internal-user:secret@database/private",
+      }),
+    );
+    mocks.list.mockResolvedValue([existingPartnership]);
+    const user = userEvent.setup();
+    await renderManager([existingPartnership]);
+
+    await user.type(screen.getByLabelText("Hosted Project ID"), "project-new");
+    await user.type(
+      screen.getByLabelText("Partner Organization ID"),
+      "organization-new",
+    );
+    await user.click(screen.getByRole("button", { name: "Assign" }));
+
+    expect(
+      await screen.findByText("The request failed with HTTP 500. Try again."),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(/internal-user|secret|database\/private/),
+    ).toBeNull();
   });
 
   it("invalidates generated Project query families and refreshes the visible list after removal", async () => {

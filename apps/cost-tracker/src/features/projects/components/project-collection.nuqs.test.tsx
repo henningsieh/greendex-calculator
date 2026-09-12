@@ -101,6 +101,21 @@ describe("Project collection Nuqs URL state", { timeout: 10_000 }, () => {
     });
   });
 
+  it("renders an honest empty state without creating an overview query when neither scope is available", async () => {
+    const onUrlUpdate = vi.fn();
+    mocks.availableScopes = { hosted: false, partner: false };
+
+    renderCollection({ onUrlUpdate });
+
+    expect(
+      await screen.findByText(
+        "No Projects are hosted by or assigned to your active Organization.",
+      ),
+    ).toBeTruthy();
+    expect(mocks.getOverviewOptions).not.toHaveBeenCalled();
+    expect(onUrlUpdate).not.toHaveBeenCalled();
+  });
+
   it("writes server-provided cursors to the URL without using browser history", async () => {
     const onUrlUpdate = vi.fn();
     const browserBack = vi.spyOn(window.history, "back");

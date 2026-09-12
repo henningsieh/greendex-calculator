@@ -228,14 +228,19 @@ function parseCursor(
 ): ProjectOverviewCursor | undefined {
   if (!input.cursor) return undefined;
 
-  const cursor = decodeProjectOverviewCursor(input.cursor, fingerprint);
-  if (!cursor || cursor.sort !== input.sort) {
+  const decodedCursor = decodeProjectOverviewCursor(input.cursor, fingerprint);
+  if (decodedCursor.status === "unsupported-version") return undefined;
+
+  if (
+    decodedCursor.status === "invalid" ||
+    decodedCursor.cursor.sort !== input.sort
+  ) {
     throw errors.BAD_REQUEST({
       message: "The Project page cursor is invalid for these filters.",
     });
   }
 
-  return cursor;
+  return decodedCursor.cursor;
 }
 
 type ProjectOverviewCursorRow = {

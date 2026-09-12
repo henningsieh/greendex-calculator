@@ -61,7 +61,7 @@ export type ProjectCollectionState = {
 };
 
 export type ResolvedProjectCollectionState = {
-  scope: ProjectCollectionScope;
+  scope: ProjectCollectionScope | null;
   state: ProjectCollectionState;
   didPartnerToHostedFallback: boolean;
 };
@@ -130,15 +130,18 @@ export function resolveProjectCollectionState(
       ? state.scope
       : availableScopes.hosted
         ? "hosted"
-        : "partner";
-  const didFallback = state.scope !== null && state.scope !== scope;
+        : availableScopes.partner
+          ? "partner"
+          : null;
+  const didFallback =
+    scope !== null && state.scope !== null && state.scope !== scope;
 
   return {
     scope,
     state: {
       ...state,
       scope,
-      cursor: didFallback ? undefined : state.cursor,
+      cursor: scope === null || didFallback ? undefined : state.cursor,
     },
     didPartnerToHostedFallback:
       state.scope === "partner" && scope === "hosted" && !availableScopes.partner,

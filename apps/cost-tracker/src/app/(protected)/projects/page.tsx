@@ -44,9 +44,11 @@ export default async function ProjectsPage(
       normalizeProjectCollectionState(urlState),
       availableScopes,
     );
-    await queryClient
-      .query(getProjectOverviewQueryOptions(resolution.scope, resolution.state))
-      .catch(swallowPrefetchError);
+    if (resolution.scope) {
+      await queryClient
+        .query(getProjectOverviewQueryOptions(resolution.scope, resolution.state))
+        .catch(swallowPrefetchError);
+    }
   }
 
   return (

@@ -34,7 +34,9 @@ test.describe("Cost Tracker Project production path", () => {
 
     await page.goto("/projects");
     await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
-    await page.waitForTimeout(500);
+    await expect(
+      page.locator('[aria-label="Project collection"][data-hydrated="true"]'),
+    ).toBeVisible();
     // Red if server prefetch and client hydration diverge, causing an immediate RPC refetch.
     expect(rpcRequests).toHaveLength(0);
 

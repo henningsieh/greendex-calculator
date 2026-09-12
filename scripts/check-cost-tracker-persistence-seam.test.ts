@@ -67,6 +67,22 @@ describe("Cost Tracker persistence seam", () => {
     ]);
   });
 
+  it("ignores import-like text in comments and string literals", () => {
+    expect(
+      findForbiddenDatabaseImports([
+        fixture(
+          "app/(protected)/projects/page.tsx",
+          [
+            '// import { db } from "@greendex/database";',
+            'const example = \'export { db } from "@greendex/database/client";\';',
+            'const dynamicExample = `import("@greendex/database")`;',
+            "export { example, dynamicExample };",
+          ].join("\n"),
+        ),
+      ]),
+    ).toEqual([]);
+  });
+
   it("allows feature procedures, Better Auth, schema-only imports, and test fixtures", () => {
     expect(
       findForbiddenDatabaseImports([

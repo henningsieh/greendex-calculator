@@ -2,8 +2,8 @@ import { mkdir } from "node:fs/promises";
 
 import { chromium, type FullConfig } from "@playwright/test";
 
-// oxlint-disable-next-line import/no-relative-parent-imports -- Uses the canonical shared-database seed credential without duplicating it.
-import { SEED_USER } from "../../../../calculator/scripts/seed";
+// oxlint-disable-next-line import/no-relative-parent-imports -- Uses the canonical side-effect-free seed identity.
+import { SEED_USER } from "../../../../calculator/scripts/seed-user";
 
 const storageStatePath = "src/__tests__/e2e/.auth/storage-state.json";
 

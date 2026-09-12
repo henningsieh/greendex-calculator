@@ -3,6 +3,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   columnFilteringFeature,
+  filterFn_includesString,
   flexRender,
   functionalUpdate,
   rowPaginationFeature,
@@ -17,8 +18,8 @@ import {
 import { RefreshCwIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useQueryStates } from "nuqs";
-import { useEffect, useMemo, useRef } from "react";
+import { type UseQueryStatesReturn, useQueryStates } from "nuqs";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,11 +45,13 @@ import { toast } from "@/components/ui/toast";
 import {
   getProjectCollectionReturnDestination,
   normalizeProjectCollectionState,
+  type ProjectCollectionState,
   PROJECT_PAGE_SIZES,
   projectCollectionParsers,
   PROJECT_SORT_MODES,
   PROJECT_WINDOW_FILTERS,
   resolveProjectCollectionState,
+  type ProjectScopeAvailability,
 } from "@/features/projects/collection-state";
 import {
   getProjectAvailableScopesQueryOptions,
@@ -59,6 +62,7 @@ const projectCollectionTableFeatures = tableFeatures({
   columnFilteringFeature,
   rowPaginationFeature,
   rowSortingFeature,
+  filterFns: { includesString: filterFn_includesString },
 });
 
 const PROJECT_FILTER_IDS = {
@@ -130,8 +134,9 @@ function getDateFilterValue(
   id: string,
   fallback: Date | null,
 ) {
-  const value = filters.find((filter) => filter.id === id)?.value;
-  return value instanceof Date ? value : fallback;
+  const filter = filters.find((entry) => entry.id === id);
+  if (!filter) return fallback;
+  return filter.value instanceof Date ? filter.value : null;
 }
 
 function getStringArrayFilterValue(
@@ -201,28 +206,102 @@ function MetricCard({ label, value }: { label: string; value: number }) {
 }
 
 export function ProjectCollection() {
+  const { data: availableScopes } = useSuspenseQuery(
+    getProjectAvailableScopesQueryOptions(),
+  );
+
+  if (!availableScopes.hosted && !availableScopes.partner) {
+    return (
+      <section
+        aria-label="Project collection"
+        className="mt-10 rounded-xl border p-8 text-center"
+      >
+        <h2 className="font-heading text-2xl font-semibold">
+          No Projects available
+        </h2>
+        <p className="mt-2 text-muted-foreground">
+          No Projects are hosted by or assigned to your active Organization.
+        </p>
+      </section>
+    );
+  }
+
+  return <AvailableProjectCollection availableScopes={availableScopes} />;
+}
+
+type ProjectCollectionQueryState = UseQueryStatesReturn<
+  typeof projectCollectionParsers
+>;
+
+function AvailableProjectCollection({
+  availableScopes,
+}: {
+  availableScopes: ProjectScopeAvailability;
+}) {
   const [urlState, setUrlState] = useQueryStates(projectCollectionParsers, {
     history: "push",
     shallow: true,
   });
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { data: availableScopes } = useSuspenseQuery(
-    getProjectAvailableScopesQueryOptions(),
-  );
   const requestedState = normalizeProjectCollectionState(urlState);
   const resolution = resolveProjectCollectionState(
     requestedState,
     availableScopes,
   );
-  const { scope, state } = resolution;
+
+  if (!resolution.scope) {
+    return null;
+  }
+
+  return (
+    <ResolvedProjectCollection
+      availableScopes={availableScopes}
+      didPartnerToHostedFallback={resolution.didPartnerToHostedFallback}
+      pathname={pathname}
+      requestedState={requestedState}
+      scope={resolution.scope}
+      searchParams={searchParams}
+      setUrlState={setUrlState}
+      state={resolution.state}
+      urlState={urlState}
+    />
+  );
+}
+
+function ResolvedProjectCollection({
+  availableScopes,
+  didPartnerToHostedFallback,
+  pathname,
+  requestedState,
+  scope,
+  searchParams,
+  setUrlState,
+  state,
+  urlState,
+}: {
+  availableScopes: ProjectScopeAvailability;
+  didPartnerToHostedFallback: boolean;
+  pathname: string;
+  requestedState: ProjectCollectionState;
+  scope: "hosted" | "partner";
+  searchParams: ReturnType<typeof useSearchParams>;
+  setUrlState: ProjectCollectionQueryState[1];
+  state: ProjectCollectionState;
+  urlState: ProjectCollectionQueryState[0];
+}) {
   const fallbackNotices = useRef(new Set<string>());
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const searchTimeout = useRef<number>(undefined);
 
   useEffect(() => () => window.clearTimeout(searchTimeout.current), []);
 
   useEffect(() => {
-    if (!resolution.didPartnerToHostedFallback) return;
+    if (!didPartnerToHostedFallback) return;
 
     const noticeKey = `${requestedState.scope}:${requestedState.cursor ?? ""}`;
     if (fallbackNotices.current.has(noticeKey)) return;
@@ -238,7 +317,7 @@ export function ProjectCollection() {
   }, [
     requestedState.cursor,
     requestedState.scope,
-    resolution.didPartnerToHostedFallback,
+    didPartnerToHostedFallback,
     scope,
     setUrlState,
   ]);
@@ -411,7 +490,11 @@ export function ProjectCollection() {
   const whole = data.metrics.whole;
 
   return (
-    <section className="mt-10 space-y-8" aria-label="Project collection">
+    <section
+      aria-label="Project collection"
+      className="mt-10 space-y-8"
+      data-hydrated={isHydrated ? "true" : undefined}
+    >
       <div
         className="flex flex-wrap gap-2"
         role="tablist"
