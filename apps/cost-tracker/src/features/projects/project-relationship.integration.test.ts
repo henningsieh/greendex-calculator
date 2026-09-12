@@ -14,7 +14,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { resolveProjectRelationship } from "@/features/projects/project-relationship.server";
+import { resolveProjectRelationship } from "@/features/projects/project-relationship-procedure";
 
 const suffix = randomUUID();
 const userId = `relationship-user-${suffix}`;

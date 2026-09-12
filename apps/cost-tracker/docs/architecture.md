@@ -22,7 +22,7 @@ Create only the subdirectories a feature uses; do not add empty architecture pla
 
 ## Persistence seam
 
-Runtime route and view modules consume oRPC interfaces. Feature procedures own application database-client access, including authorization, active Organization scoping, persistence, and DTO projection. Integration-test fixtures, Better Auth integration, and schema-derived validation are separate seams. Run `pnpm run check:cost-tracker-persistence-seam` after changing Cost Tracker routes or view components.
+Runtime route and view modules consume oRPC interfaces. Feature procedure modules own application database-client access, including authorization, active Organization scoping, persistence, and DTO projection. Integration-test fixtures, Better Auth integration, and schema-derived validation are separate seams. `pnpm run check:cost-tracker-persistence-seam` rejects direct database-client package roots and subpaths, dynamic imports, and local alias or re-export chains in route and view modules; it intentionally permits the separate seams. Run it after changing Cost Tracker routes or views.
 
 ## Validation and types
 
@@ -32,7 +32,7 @@ Persisted form schemas start from the owning Drizzle table with `drizzle-zod`, t
 
 `/projects` is the canonical Project collection. Its Server Component parses the shared nuqs contract, resolves the available Hosted/Partner scope through oRPC, and prefetches exactly one generated overview query. The hydrated client view keeps scope, filters, sort, cursor, and page size in shallow URL state; TanStack Query requests each authoritative page and TanStack Table renders that page without client filtering, sorting, or pagination.
 
-`/projects/[id]` accepts only Project identity. `project-relationship.server.ts` derives Hosted, Partner, or inaccessible access from the active Organization, and the detail procedure projects relationship-specific safe data. URL scope is never authorization input.
+`/projects/[id]` accepts only Project identity. `project-relationship-procedure.ts` derives Hosted, Partner, or inaccessible access from the active Organization, and the detail procedure projects relationship-specific safe data. URL scope is never authorization input.
 
 `/partner-organizations` owns Hosting-side Project Partnership management. Procedures validate Better Auth actions, prove Hosting ownership, and preserve represented-Organization invariants. Existing Organization discovery remains deliberately limited to exact known IDs until a directory disclosure policy is approved.
 

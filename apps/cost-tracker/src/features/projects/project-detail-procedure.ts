@@ -5,7 +5,7 @@ import {
 } from "@greendex/database/schema";
 import { asc, eq } from "drizzle-orm";
 
-import { resolveProjectRelationship } from "@/features/projects/project-relationship.server";
+import { resolveProjectRelationship } from "@/features/projects/project-relationship-procedure";
 import {
   ProjectDetailInputSchema,
   ProjectDetailSchema,
