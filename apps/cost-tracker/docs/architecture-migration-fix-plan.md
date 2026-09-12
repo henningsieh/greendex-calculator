@@ -4,6 +4,34 @@ This document records which findings from the full Phase 0–8 review must be fi
 
 The reviewed implementation is commit `4903da2`. The original review used the finding IDs listed below.
 
+## Source review: the 13 findings this plan exists for
+
+This plan, and the parent specification in GitHub issue [#113](https://github.com/henningsieh/greendex-calculator/issues/113), exist **because of one review artifact**:
+
+- [Cost Tracker architecture review after the migration fix](architecture-review-after-migration-fix.md) — originally written to `/tmp/cost-tracker-standards-subagent.md`; its first line is `# Standards report — 13 findings`. It is the Standards-axis review of the diff `1257069..4903da2`, produced on 2026-09-09.
+
+That report lists **13 findings** (bugs/defects). Every one of them must keep an explicit, recorded disposition — none may be dropped silently. The final review ticket [#121](https://github.com/henningsieh/greendex-calculator/issues/121) must walk all 13 findings one by one and record, for each, whether it is fixed in production code and covered by a red-capable test, deferred to a named GitHub issue, or deliberately out of scope with a reason.
+
+| #   | Finding (short)                                                                      | Disposition in this plan                                                                            |
+| --- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| 1   | Migration `0015` was hand-edited after it had been applied                           | **Open — no ticket yet**                                                                            |
+| 2   | Tenant scoping is not atomic (partnership/Project owner checks)                      | **Open — no ticket yet**                                                                            |
+| 3   | Persistence outside procedures (`project-relationship.server.ts`)                    | Fix now — `ARCH-01` ([#119](https://github.com/henningsieh/greendex-calculator/issues/119))         |
+| 4   | Typed errors swallowed into fabricated scope data (`projects/page.tsx`)              | Fix now — `ERROR-01` ([#114](https://github.com/henningsieh/greendex-calculator/issues/114))        |
+| 5   | Production failures are not logged (`hydration.tsx`)                                 | Fix now — `ERROR-01` ([#114](https://github.com/henningsieh/greendex-calculator/issues/114))        |
+| 6   | Unlabeled `<Label>`/`<SelectTrigger>` controls (`project-collection.tsx`)            | Separate issue — `A11Y-01` ([#122](https://github.com/henningsieh/greendex-calculator/issues/122))  |
+| 7   | Unstable list key, no `getRowId` (`project-collection.tsx`)                          | Fix now — `ARCH-02` ([#118](https://github.com/henningsieh/greendex-calculator/issues/118))         |
+| 8   | Duplicated handwritten boundary types                                                | Separate issue — `STD-01` ([#124](https://github.com/henningsieh/greendex-calculator/issues/124))   |
+| 9   | Unchecked type assertions (`as unknown as`, `!`, SQL casts)                          | Separate issue — `STD-01` ([#124](https://github.com/henningsieh/greendex-calculator/issues/124))   |
+| 10  | Persisted form schema not Drizzle-derived (`validation-schemas.ts`)                  | **Open — no ticket yet**                                                                            |
+| 11  | Mutation failures hidden or silent (`use-sign-out.ts`, `no-organization-access.tsx`) | Separate issue — `AUTH-01` ([#123](https://github.com/henningsieh/greendex-calculator/issues/123))  |
+| 12  | Shared dependency versions bypass the workspace catalog                              | Separate issue — `STD-02` ([#125](https://github.com/henningsieh/greendex-calculator/issues/125))   |
+| 13  | Duplicated policy/pagination/sort logic, plus commit-convention violations           | Separate issue — `SMELL-01` ([#126](https://github.com/henningsieh/greendex-calculator/issues/126)) |
+
+Findings 1, 2, and 10 currently have neither a fix ticket nor a filed follow-up issue in this plan's issue set (#114–#128). The final review must not accept Phases 6–8 while any of those three is unaccounted for: either the finding is already fixed in production code and proven by a test, or a follow-up issue is filed and linked.
+
+The mapping in this table is provisional. Ticket [#121](https://github.com/henningsieh/greendex-calculator/issues/121) owns correcting it against the actual code, and the original report text remains the source of truth for the 13 findings.
+
 ## Goal
 
 Fix the six important findings that prevent acceptance of Phases 6–8. Keep the parts that already passed. Finish with a new independent review.
@@ -118,5 +146,6 @@ The work is complete when:
 2. every fix ticket passes its focused tests and required checks;
 3. the final browser, SSR, persistence, type, test, build, lint, format, and agent-instruction checks pass;
 4. a new independent review accepts Phases 6–8;
-5. Phase 0 is recorded only as a historical qualification;
-6. a short easy-German explanation file is added for an ADHD reader, explaining what the missing Phase 0 evidence means, why it cannot be recreated, and why it is not a code defect.
+5. all 13 findings of [architecture-review-after-migration-fix.md](architecture-review-after-migration-fix.md) have a recorded disposition (fixed, deferred to a named issue, or out of scope with a reason);
+6. Phase 0 is recorded only as a historical qualification;
+7. a short easy-German explanation file is added for an ADHD reader, explaining what the missing Phase 0 evidence means, why it cannot be recreated, and why it is not a code defect.
