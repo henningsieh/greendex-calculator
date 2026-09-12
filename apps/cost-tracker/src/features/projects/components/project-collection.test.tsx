@@ -31,7 +31,7 @@ vi.mock("@/features/projects/project-overview-query-options", () => ({
   }),
   getProjectOverviewQueryOptions: (
     scope: "hosted" | "partner",
-    state: object,
+    state: { cursor?: string },
   ) => ({
     queryKey: ["projects", scope, state],
     queryFn: async () => ({
@@ -48,6 +48,7 @@ vi.mock("@/features/projects/project-overview-query-options", () => ({
         },
       ],
       nextCursor: "next-page",
+      previousCursor: state.cursor ? "previous-page" : undefined,
       metrics: {
         whole: {
           projectCount: 3,
@@ -142,9 +143,17 @@ describe("Project collection", { timeout: 10_000 }, () => {
     });
   });
 
-  it("stores the opaque next cursor in shallow URL state", async () => {
+  it("writes the opaque pagination cursors directly to URL state", async () => {
+    mocks.state.cursor = "current-page";
+    const browserBack = vi.spyOn(window.history, "back");
     renderCollection();
     await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: "previous-page",
+    });
+    expect(browserBack).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(mocks.setUrlState).toHaveBeenCalledWith({ cursor: "next-page" });

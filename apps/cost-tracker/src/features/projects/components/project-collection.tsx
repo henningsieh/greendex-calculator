@@ -472,9 +472,11 @@ export function ProjectCollection() {
       </div>
 
       <div className="flex justify-end gap-2">
-        {state.cursor && (
+        {data.previousCursor && (
           <Button
-            onClick={() => window.history.back()}
+            onClick={() =>
+              void setUrlState({ cursor: data.previousCursor ?? null })
+            }
             type="button"
             variant="outline"
           >

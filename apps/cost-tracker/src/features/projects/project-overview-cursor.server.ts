@@ -6,7 +6,8 @@ import { z } from "zod";
 import { PROJECT_SORT_MODES } from "@/features/projects/collection-state";
 
 const CursorSchema = z.object({
-  version: z.literal(1),
+  version: z.literal(2),
+  direction: z.enum(["next", "previous"]),
   fingerprint: z.string().length(64),
   sort: z.enum(PROJECT_SORT_MODES),
   id: z.string().min(1).max(128),

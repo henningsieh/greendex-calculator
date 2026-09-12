@@ -25,6 +25,7 @@ import {
   decodeProjectOverviewCursor,
   encodeProjectOverviewCursor,
   getProjectOverviewFingerprint,
+  type ProjectOverviewCursor,
 } from "@/features/projects/project-overview-cursor.server";
 import {
   HostedProjectOverviewInputSchema,
@@ -69,70 +70,137 @@ function getProjectFilters(input: CommonOverviewInput): SQL[] {
   return filters;
 }
 
-function getProjectOrder(input: CommonOverviewInput): SQL[] {
+type ProjectCursorDirection = ProjectOverviewCursor["direction"];
+
+function getProjectOrder(
+  input: CommonOverviewInput,
+  direction: ProjectCursorDirection,
+): SQL[] {
   switch (input.sort) {
     case "start-desc":
-      return [desc(projectsTable.startDate), asc(projectsTable.id)];
+      return direction === "next"
+        ? [desc(projectsTable.startDate), asc(projectsTable.id)]
+        : [asc(projectsTable.startDate), desc(projectsTable.id)];
     case "end-asc":
-      return [asc(projectsTable.endDate), asc(projectsTable.id)];
+      return direction === "next"
+        ? [asc(projectsTable.endDate), asc(projectsTable.id)]
+        : [desc(projectsTable.endDate), desc(projectsTable.id)];
     case "end-desc":
-      return [desc(projectsTable.endDate), asc(projectsTable.id)];
+      return direction === "next"
+        ? [desc(projectsTable.endDate), asc(projectsTable.id)]
+        : [asc(projectsTable.endDate), desc(projectsTable.id)];
     case "start-asc":
-      return [asc(projectsTable.startDate), asc(projectsTable.id)];
+      return direction === "next"
+        ? [asc(projectsTable.startDate), asc(projectsTable.id)]
+        : [desc(projectsTable.startDate), desc(projectsTable.id)];
     default:
-      return [
-        sql`${projectsTable.costSubmissionWindowOpen} desc nulls last`,
-        asc(projectsTable.startDate),
-        asc(projectsTable.id),
-      ];
+      return direction === "next"
+        ? [
+            sql`${projectsTable.costSubmissionWindowOpen} desc nulls last`,
+            asc(projectsTable.startDate),
+            asc(projectsTable.id),
+          ]
+        : [
+            sql`${projectsTable.costSubmissionWindowOpen} asc nulls first`,
+            desc(projectsTable.startDate),
+            desc(projectsTable.id),
+          ];
   }
 }
 
 function getCursorFilter(
   input: CommonOverviewInput,
   cursor: {
+    direction: ProjectCursorDirection;
     id: string;
     date: string;
     open?: boolean;
   },
 ): SQL {
   const date = new Date(cursor.date);
+  const isPrevious = cursor.direction === "previous";
 
   switch (input.sort) {
     case "start-desc":
-      return or(
-        lt(projectsTable.startDate, date),
-        and(eq(projectsTable.startDate, date), gt(projectsTable.id, cursor.id)),
-      )!;
+      return isPrevious
+        ? or(
+            gt(projectsTable.startDate, date),
+            and(
+              eq(projectsTable.startDate, date),
+              lt(projectsTable.id, cursor.id),
+            ),
+          )!
+        : or(
+            lt(projectsTable.startDate, date),
+            and(
+              eq(projectsTable.startDate, date),
+              gt(projectsTable.id, cursor.id),
+            ),
+          )!;
     case "end-asc":
-      return or(
-        gt(projectsTable.endDate, date),
-        and(eq(projectsTable.endDate, date), gt(projectsTable.id, cursor.id)),
-      )!;
+      return isPrevious
+        ? or(
+            lt(projectsTable.endDate, date),
+            and(eq(projectsTable.endDate, date), lt(projectsTable.id, cursor.id)),
+          )!
+        : or(
+            gt(projectsTable.endDate, date),
+            and(eq(projectsTable.endDate, date), gt(projectsTable.id, cursor.id)),
+          )!;
     case "end-desc":
-      return or(
-        lt(projectsTable.endDate, date),
-        and(eq(projectsTable.endDate, date), gt(projectsTable.id, cursor.id)),
-      )!;
+      return isPrevious
+        ? or(
+            gt(projectsTable.endDate, date),
+            and(eq(projectsTable.endDate, date), lt(projectsTable.id, cursor.id)),
+          )!
+        : or(
+            lt(projectsTable.endDate, date),
+            and(eq(projectsTable.endDate, date), gt(projectsTable.id, cursor.id)),
+          )!;
     case "start-asc":
-      return or(
-        gt(projectsTable.startDate, date),
-        and(eq(projectsTable.startDate, date), gt(projectsTable.id, cursor.id)),
-      )!;
-    default:
-      return or(
-        lt(projectsTable.costSubmissionWindowOpen, cursor.open ?? false),
-        and(
-          eq(projectsTable.costSubmissionWindowOpen, cursor.open ?? false),
-          or(
+      return isPrevious
+        ? or(
+            lt(projectsTable.startDate, date),
+            and(
+              eq(projectsTable.startDate, date),
+              lt(projectsTable.id, cursor.id),
+            ),
+          )!
+        : or(
             gt(projectsTable.startDate, date),
             and(
               eq(projectsTable.startDate, date),
               gt(projectsTable.id, cursor.id),
             ),
-          ),
-        ),
-      )!;
+          )!;
+    default:
+      return isPrevious
+        ? or(
+            gt(projectsTable.costSubmissionWindowOpen, cursor.open ?? false),
+            and(
+              eq(projectsTable.costSubmissionWindowOpen, cursor.open ?? false),
+              or(
+                lt(projectsTable.startDate, date),
+                and(
+                  eq(projectsTable.startDate, date),
+                  lt(projectsTable.id, cursor.id),
+                ),
+              ),
+            ),
+          )!
+        : or(
+            lt(projectsTable.costSubmissionWindowOpen, cursor.open ?? false),
+            and(
+              eq(projectsTable.costSubmissionWindowOpen, cursor.open ?? false),
+              or(
+                gt(projectsTable.startDate, date),
+                and(
+                  eq(projectsTable.startDate, date),
+                  gt(projectsTable.id, cursor.id),
+                ),
+              ),
+            ),
+          )!;
   }
 }
 
@@ -157,7 +225,7 @@ function parseCursor(
   input: CommonOverviewInput,
   fingerprint: string,
   errors: { BAD_REQUEST: (options?: { message?: string }) => Error },
-) {
+): ProjectOverviewCursor | undefined {
   if (!input.cursor) return undefined;
 
   const cursor = decodeProjectOverviewCursor(input.cursor, fingerprint);
@@ -168,6 +236,52 @@ function parseCursor(
   }
 
   return cursor;
+}
+
+type ProjectOverviewCursorRow = {
+  costSubmissionWindowOpen: boolean;
+  endDate: Date;
+  id: string;
+  startDate: Date;
+};
+
+function getProjectOverviewPage<T extends ProjectOverviewCursorRow>(
+  pageRows: T[],
+  input: CommonOverviewInput,
+  cursor: ProjectOverviewCursor | undefined,
+  fingerprint: string,
+) {
+  const isPreviousPage = cursor?.direction === "previous";
+  const hasAdditionalRows = pageRows.length > input.pageSize;
+  const rows = pageRows.slice(0, input.pageSize);
+
+  if (isPreviousPage) rows.reverse();
+
+  const firstRow = rows[0];
+  const lastRow = rows.at(-1);
+  const hasPrevious = isPreviousPage ? hasAdditionalRows : Boolean(cursor);
+  const hasNext = isPreviousPage ? Boolean(cursor) : hasAdditionalRows;
+  const createCursor = (
+    direction: ProjectCursorDirection,
+    row: ProjectOverviewCursorRow,
+  ) =>
+    encodeProjectOverviewCursor({
+      version: 2,
+      direction,
+      fingerprint,
+      sort: input.sort,
+      id: row.id,
+      date: getCursorDate(input, row).toISOString(),
+      open:
+        input.sort === "operational" ? row.costSubmissionWindowOpen : undefined,
+    });
+
+  return {
+    rows,
+    previousCursor:
+      hasPrevious && firstRow ? createCursor("previous", firstRow) : undefined,
+    nextCursor: hasNext && lastRow ? createCursor("next", lastRow) : undefined,
+  };
 }
 
 export const hostedOverview = authorized
@@ -225,7 +339,7 @@ export const hostedOverview = authorized
           .select(rowSelection)
           .from(projectsTable)
           .where(and(...pageFilters))
-          .orderBy(...getProjectOrder(input))
+          .orderBy(...getProjectOrder(input, cursor?.direction ?? "next"))
           .limit(input.pageSize + 1),
         db
           .select(metricsSelection)
@@ -258,8 +372,7 @@ export const hostedOverview = authorized
           .orderBy(asc(organization.name), asc(organization.id)),
       ]);
 
-    const rows = pageRows.slice(0, input.pageSize);
-    const lastRow = pageRows.length > input.pageSize ? rows.at(-1) : undefined;
+    const page = getProjectOverviewPage(pageRows, input, cursor, fingerprint);
     const mapMetrics = (value: (typeof wholeMetricRows)[number] | undefined) => ({
       projectCount: value?.projectCount ?? 0,
       openWindowCount: value?.openWindowCount ?? 0,
@@ -268,20 +381,7 @@ export const hostedOverview = authorized
 
     return {
       scope: "hosted" as const,
-      rows,
-      nextCursor: lastRow
-        ? encodeProjectOverviewCursor({
-            version: 1,
-            fingerprint,
-            sort: input.sort,
-            id: lastRow.id,
-            date: getCursorDate(input, lastRow).toISOString(),
-            open:
-              input.sort === "operational"
-                ? lastRow.costSubmissionWindowOpen
-                : undefined,
-          })
-        : undefined,
+      ...page,
       metrics: {
         whole: mapMetrics(wholeMetricRows[0]),
         filtered: mapMetrics(filteredMetricRows[0]),
@@ -330,7 +430,7 @@ export const partnerOverview = authorized
           eq(projectsTable.id, projectPartnerOrganizationsTable.projectId),
         )
         .where(and(...pageFilters))
-        .orderBy(...getProjectOrder(input))
+        .orderBy(...getProjectOrder(input, cursor?.direction ?? "next"))
         .limit(input.pageSize + 1),
       db
         .select(metricSelection)
@@ -350,8 +450,7 @@ export const partnerOverview = authorized
         .where(and(...filteredScopeFilters)),
     ]);
 
-    const rows = pageRows.slice(0, input.pageSize);
-    const lastRow = pageRows.length > input.pageSize ? rows.at(-1) : undefined;
+    const page = getProjectOverviewPage(pageRows, input, cursor, fingerprint);
     const mapMetrics = (value: (typeof wholeMetricRows)[number] | undefined) => ({
       projectCount: value?.projectCount ?? 0,
       openWindowCount: value?.openWindowCount ?? 0,
@@ -359,20 +458,7 @@ export const partnerOverview = authorized
 
     return {
       scope: "partner" as const,
-      rows,
-      nextCursor: lastRow
-        ? encodeProjectOverviewCursor({
-            version: 1,
-            fingerprint,
-            sort: input.sort,
-            id: lastRow.id,
-            date: getCursorDate(input, lastRow).toISOString(),
-            open:
-              input.sort === "operational"
-                ? lastRow.costSubmissionWindowOpen
-                : undefined,
-          })
-        : undefined,
+      ...page,
       metrics: {
         whole: mapMetrics(wholeMetricRows[0]),
         filtered: mapMetrics(filteredMetricRows[0]),
