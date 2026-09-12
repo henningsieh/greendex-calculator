@@ -43,13 +43,5 @@
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@12.4.2",
-  "intent": {
-    "skills": [
-      "workspace:@greendex/config",
-      "@tanstack/react-table",
-      "@tanstack/table-core",
-      "dotenv"
-    ]
-  }
+  "packageManager": "pnpm@12.4.2"
 }
