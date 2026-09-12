@@ -101,6 +101,32 @@ describe("Cost Tracker persistence seam", () => {
     ]);
   });
 
+  it("rejects routes that consume a database client re-exported by a permitted owner", () => {
+    expect(
+      findForbiddenDatabaseImports([
+        fixture(
+          "features/projects/project-detail-procedure.ts",
+          'export { db } from "@greendex/database";',
+        ),
+        fixture(
+          "lib/auth.ts",
+          'export { db } from "@greendex/database/client";',
+        ),
+        fixture(
+          "app/(protected)/projects/page.tsx",
+          'import { db as procedureDb } from "@/features/projects/project-detail-procedure";',
+        ),
+        fixture(
+          "features/projects/project-view-model.ts",
+          'import { db as authDb } from "@/lib/auth";',
+        ),
+      ]),
+    ).toEqual([
+      "apps/cost-tracker/src/app/(protected)/projects/page.tsx",
+      "apps/cost-tracker/src/features/projects/project-view-model.ts",
+    ]);
+  });
+
   it("allows feature procedures, Better Auth, schema-only imports, and test fixtures", () => {
     expect(
       findForbiddenDatabaseImports([

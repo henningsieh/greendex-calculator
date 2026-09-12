@@ -65,6 +65,11 @@ type ScannedToken = {
   value: string;
 };
 
+type ModuleSpecifier = {
+  isReExport: boolean;
+  value: string;
+};
+
 const isSpecifierToken = (kind: SyntaxKind) =>
   kind === SyntaxKind.StringLiteral ||
   kind === SyntaxKind.NoSubstitutionTemplateLiteral;
@@ -95,17 +100,20 @@ const scanTokens = (content: string): ScannedToken[] => {
   return tokens;
 };
 
-const getModuleSpecifiers = (content: string) => {
-  const specifiers = new Set<string>();
+const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
+  const specifiers = new Map<string, boolean>();
   const tokens = scanTokens(content);
+  const recordSpecifier = (value: string, isReExport: boolean) => {
+    specifiers.set(value, specifiers.get(value) === true || isReExport);
+  };
 
   // Attribute a `from "spec"` string to its import/export statement.
   // Whole-declaration `import type` / `export type` is skipped (type-only).
   // Inline `import { type X }` still records (fail-closed over-approximation).
-  const recordFromSpecifier = (fromIndex: number) => {
+  const recordFromSpecifier = (fromIndex: number, isReExport: boolean) => {
     for (let i = fromIndex + 1; i < tokens.length; i += 1) {
       if (isSpecifierToken(tokens[i].kind)) {
-        specifiers.add(getTokenSpecifier(tokens[i]));
+        recordSpecifier(getTokenSpecifier(tokens[i]), isReExport);
         return i;
       }
       if (tokens[i].kind === SyntaxKind.SemicolonToken) return i;
@@ -126,14 +134,14 @@ const getModuleSpecifiers = (content: string) => {
         tokens[i + 2] &&
         isSpecifierToken(tokens[i + 2].kind)
       ) {
-        specifiers.add(getTokenSpecifier(tokens[i + 2]));
+        recordSpecifier(getTokenSpecifier(tokens[i + 2]), false);
         i += 2;
         continue;
       }
 
       // Side-effect import: import "spec"
       if (isSpecifierToken(next.kind)) {
-        specifiers.add(getTokenSpecifier(next));
+        recordSpecifier(getTokenSpecifier(next), false);
         i += 1;
         continue;
       }
@@ -152,7 +160,7 @@ const getModuleSpecifiers = (content: string) => {
 
       for (let j = i + 1; j < tokens.length; j += 1) {
         if (tokens[j].kind === SyntaxKind.FromKeyword) {
-          i = recordFromSpecifier(j);
+          i = recordFromSpecifier(j, false);
           break;
         }
         if (tokens[j].kind === SyntaxKind.SemicolonToken) {
@@ -175,7 +183,7 @@ const getModuleSpecifiers = (content: string) => {
 
       for (let j = i + 1; j < tokens.length; j += 1) {
         if (tokens[j].kind === SyntaxKind.FromKeyword) {
-          i = recordFromSpecifier(j);
+          i = recordFromSpecifier(j, true);
           break;
         }
         if (tokens[j].kind === SyntaxKind.SemicolonToken) {
@@ -186,7 +194,10 @@ const getModuleSpecifiers = (content: string) => {
     }
   }
 
-  return specifiers;
+  return [...specifiers].map(([value, isReExport]) => ({
+    isReExport,
+    value,
+  }));
 };
 
 const resolveLocalModule = (
@@ -237,23 +248,38 @@ export const findForbiddenDatabaseImports = (
   const hasDatabaseClientAccess = (
     relativePath: string,
     seen = new Set<string>(),
+    exposesClient = false,
   ) => {
-    if (seen.has(relativePath) || isPermittedPersistenceOwner(relativePath)) {
-      return false;
-    }
+    if (seen.has(relativePath)) return false;
 
     const module = modules.get(relativePath);
     if (!module) return false;
 
     seen.add(relativePath);
     for (const specifier of getModuleSpecifiers(module.content)) {
-      if (isDatabaseClientPackage(specifier)) {
+      if (
+        isDatabaseClientPackage(specifier.value) &&
+        (!isPermittedPersistenceOwner(relativePath) ||
+          exposesClient ||
+          specifier.isReExport)
+      ) {
         seen.delete(relativePath);
         return true;
       }
 
-      const dependency = resolveLocalModule(relativePath, specifier, modules);
-      if (dependency && hasDatabaseClientAccess(dependency, seen)) {
+      const dependency = resolveLocalModule(
+        relativePath,
+        specifier.value,
+        modules,
+      );
+      if (
+        dependency &&
+        hasDatabaseClientAccess(
+          dependency,
+          seen,
+          exposesClient || specifier.isReExport,
+        )
+      ) {
         seen.delete(relativePath);
         return true;
       }
