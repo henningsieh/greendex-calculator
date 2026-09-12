@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -138,8 +139,12 @@ describe("Project collection", { timeout: 10_000 }, () => {
 
     fireEvent.click(screen.getByLabelText("Mobility Group"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
-      partnerOrganizationIds: ["partner-1"],
       cursor: null,
+      dateFrom: null,
+      dateTo: null,
+      partnerOrganizationIds: ["partner-1"],
+      search: "",
+      window: "all",
     });
   });
 
@@ -157,5 +162,50 @@ describe("Project collection", { timeout: 10_000 }, () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(mocks.setUrlState).toHaveBeenCalledWith({ cursor: "next-page" });
+  });
+
+  it("coordinates table controls with URL state without processing a server page", async () => {
+    renderCollection();
+    const projectLink = await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
+
+    expect(projectLink.closest("tr")?.getAttribute("data-project-id")).toBe(
+      "project-1",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sort by start date" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      sort: "start-asc",
+    });
+
+    fireEvent.change(screen.getByLabelText("Project name"), {
+      target: { value: "Travel" },
+    });
+    await waitFor(() =>
+      expect(mocks.setUrlState).toHaveBeenCalledWith({
+        cursor: null,
+        dateFrom: null,
+        dateTo: null,
+        partnerOrganizationIds: [],
+        search: "Travel",
+        window: "all",
+      }),
+    );
+
+    const user = userEvent.setup();
+    const pageSizeSelect = screen.getAllByRole("combobox")[2];
+    if (!pageSizeSelect) throw new Error("Projects per page control is missing.");
+    await user.click(pageSizeSelect);
+    await user.click(await screen.findByRole("option", { name: "50" }));
+    await waitFor(() =>
+      expect(mocks.setUrlState).toHaveBeenCalledWith({
+        cursor: null,
+        pageSize: 50,
+      }),
+    );
   });
 });
