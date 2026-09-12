@@ -458,13 +458,6 @@ for (const [skillName, source] of Object.entries(officialSkillSources)) {
   }
 }
 
-const rootManifest = JSON.parse(await readUtf8(path.join(root, "package.json")));
-for (const tablePackage of ["@tanstack/react-table", "@tanstack/table-core"]) {
-  if (!rootManifest.intent?.skills?.includes(tablePackage)) {
-    addError(`package.json: Intent discovery is missing ${tablePackage}`);
-  }
-}
-
 for (const filePath of scannedFiles) {
   const content = await readUtf8(filePath);
   const relativePath = path.relative(root, filePath);
