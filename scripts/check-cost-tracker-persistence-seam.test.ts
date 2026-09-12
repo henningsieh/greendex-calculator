@@ -83,6 +83,24 @@ describe("Cost Tracker persistence seam", () => {
     ).toEqual([]);
   });
 
+  it("detects dynamic imports nested beside import.meta or inside exported initializers", () => {
+    expect(
+      findForbiddenDatabaseImports([
+        fixture(
+          "app/(protected)/projects/page.tsx",
+          'const modules = [import.meta.url, import("@greendex/database")];',
+        ),
+        fixture(
+          "features/projects/project-view-model.ts",
+          'export const database = import("@greendex/database/client");',
+        ),
+      ]),
+    ).toEqual([
+      "apps/cost-tracker/src/app/(protected)/projects/page.tsx",
+      "apps/cost-tracker/src/features/projects/project-view-model.ts",
+    ]);
+  });
+
   it("allows feature procedures, Better Auth, schema-only imports, and test fixtures", () => {
     expect(
       findForbiddenDatabaseImports([

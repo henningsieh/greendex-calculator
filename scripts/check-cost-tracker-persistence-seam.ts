@@ -141,7 +141,15 @@ const getModuleSpecifiers = (content: string) => {
       // import type ... -> type-only, skip
       if (next.kind === SyntaxKind.TypeKeyword) continue;
 
-      // import ... from "spec": scan forward for the from-clause
+      // Only static declaration grammar can contain a from-clause. Do not
+      // skip ordinary statements such as import.meta expressions, which can
+      // contain a later dynamic import.
+      const isStaticImport =
+        next.kind === SyntaxKind.Identifier ||
+        next.kind === SyntaxKind.OpenBraceToken ||
+        next.kind === SyntaxKind.AsteriskToken;
+      if (!isStaticImport) continue;
+
       for (let j = i + 1; j < tokens.length; j += 1) {
         if (tokens[j].kind === SyntaxKind.FromKeyword) {
           i = recordFromSpecifier(j);
@@ -157,7 +165,14 @@ const getModuleSpecifiers = (content: string) => {
       // export type ... -> type-only, skip
       if (next && next.kind === SyntaxKind.TypeKeyword) continue;
 
-      // export ... from "spec" (covers export * from too)
+      // Only export-list and export-all declarations can contain a
+      // from-clause. Keep exported initializers in the token stream so a
+      // nested dynamic import is still discovered.
+      const isStaticReExport =
+        next?.kind === SyntaxKind.OpenBraceToken ||
+        next?.kind === SyntaxKind.AsteriskToken;
+      if (!isStaticReExport) continue;
+
       for (let j = i + 1; j < tokens.length; j += 1) {
         if (tokens[j].kind === SyntaxKind.FromKeyword) {
           i = recordFromSpecifier(j);
