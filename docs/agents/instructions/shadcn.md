@@ -51,4 +51,9 @@ Review generated dependencies and code before retaining them.
 - Preserve focus management supplied by Radix primitives.
 - Verify loading, empty, error, disabled, and narrow-screen states.
 
+## Temporary upstream divergence
+
+- `.oxlintrc.json` sets `react/set-state-in-effect` to `off` (was `warn`) because the vendored `src/hooks/use-mobile.ts` hook triggers it and upstream has not merged a React 19 fix yet.
+- Before touching that hook or the lint rule, check [shadcn-ui/ui#11603](https://github.com/shadcn-ui/ui/pull/11603) (preferred `useSyncExternalStore` rewrite; fallback [#10433](https://github.com/shadcn-ui/ui/pull/10433)). If merged, sync the hook via the `shadcn` CLI diff workflow and flip the rule back to `warn`.
+
 Local component source and `components.json` override upstream examples. [Code standards](code-standards.md) remain applicable.

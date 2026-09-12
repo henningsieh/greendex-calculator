@@ -182,7 +182,7 @@
         "react/immutability": "warn",
         "react/globals": "warn",
         "react/refs": "warn",
-        "react/set-state-in-effect": "warn",
+        "react/set-state-in-effect": "off",
         "react/error-boundaries": "warn",
         "react/purity": "warn",
         "react/set-state-in-render": "warn",
