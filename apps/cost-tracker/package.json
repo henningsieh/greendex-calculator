@@ -12,6 +12,8 @@
     "type-check": "next typegen && tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "dotenv -e .env -- playwright test",
+    "test:e2e:report": "playwright show-report src/__tests__/e2e/.playwright/report",
     "clean": "rm -rf .next .turbo node_modules",
     "test:email-delivery": "dotenv -e .env -- tsx scripts/verify-email-delivery.ts"
   },
@@ -47,6 +49,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",

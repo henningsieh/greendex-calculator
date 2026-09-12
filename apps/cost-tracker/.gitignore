@@ -3,6 +3,8 @@
 
 # test & build
 /coverage
+/src/__tests__/e2e/.auth/
+/src/__tests__/e2e/.playwright/
 /.next/
 /out/
 /build

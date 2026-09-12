@@ -17,5 +17,6 @@ export default defineConfig({
     globalSetup: ["./src/__tests__/global-setup.ts"],
     setupFiles: ["./src/__tests__/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    exclude: ["src/__tests__/e2e/**"],
   },
 });
