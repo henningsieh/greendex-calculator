@@ -55,7 +55,7 @@ import {
   getProjectOverviewQueryOptions,
 } from "@/features/projects/project-overview-query-options";
 
-const serverOwnedTableFeatures = tableFeatures({
+const projectCollectionTableFeatures = tableFeatures({
   columnFilteringFeature,
   rowPaginationFeature,
   rowSortingFeature,
@@ -265,7 +265,7 @@ export function ProjectCollection() {
     pageSize: state.pageSize,
   };
   const columns = useMemo<
-    ColumnDef<typeof serverOwnedTableFeatures, ProjectRow>[]
+    ColumnDef<typeof projectCollectionTableFeatures, ProjectRow>[]
   >(
     () => [
       {
@@ -329,7 +329,7 @@ export function ProjectCollection() {
   const table = useTable({
     columns,
     data: data.rows,
-    features: serverOwnedTableFeatures,
+    features: projectCollectionTableFeatures,
     getRowId: (row) => row.id,
     manualFiltering: true,
     manualPagination: true,
