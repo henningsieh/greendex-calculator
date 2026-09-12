@@ -124,6 +124,16 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByText("Project collection")).toBeTruthy();
   });
 
+  it("does not prefetch an overview when no Project scope is available", async () => {
+    mocks.availableScopes.mockResolvedValue({ hosted: false, partner: false });
+
+    render(await ProjectsPage());
+
+    expect(mocks.getOverviewOptions).not.toHaveBeenCalled();
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Project collection")).toBeTruthy();
+  });
+
   it("prefetches Hosted Projects without a stale Partner cursor", async () => {
     mocks.availableScopes.mockResolvedValue({ hosted: true, partner: false });
 

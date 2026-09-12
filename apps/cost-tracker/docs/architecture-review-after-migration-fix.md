@@ -1,5 +1,7 @@
 # Standards report — 13 findings
 
+> Historical snapshot of the Standards review for `1257069..4903da2`, produced on 2026-09-09. The findings describe that reviewed state, not the current branch. See [the final migration review](architecture-migration-final-review.md) for each current disposition.
+
 1. **Hard — migration history changed.** `packages/database/src/migrations/0015_project_partnership_foundation.sql:15-122` adds backfill/triggers to migration `0015`, which already exists in the base and journal. Previously migrated databases will never execute these additions. Violates `docs/agents/instructions/drizzle.md#Greendex workflow` (“Never hand-edit … applied migrations”) and `conventions.md#Database changes`.
 
 2. **Hard — tenant scoping is not atomic.** `project-partnership-procedures.ts:143-150,190-193` reads/deletes by partnership ID alone; `project-detail-procedure.ts:82-99` reads partner organizations by Project ID alone after a separate authorization query. Violates `code-standards.md#Procedures and persistence`: constrain Organization-owned queries by `activeOrganizationId`.

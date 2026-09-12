@@ -182,7 +182,7 @@
         "react/immutability": "warn",
         "react/globals": "warn",
         "react/refs": "warn",
-        "react/set-state-in-effect": "off",
+        "react/set-state-in-effect": "warn",
         "react/error-boundaries": "warn",
         "react/purity": "warn",
         "react/set-state-in-render": "warn",
@@ -233,6 +233,22 @@
         "prefer-const": "error",
         "prefer-rest-params": "error",
         "prefer-spread": "error"
+      }
+    },
+    {
+      "files": ["apps/calculator/src/hooks/use-mobile.ts"],
+      "plugins": [
+        "eslint",
+        "typescript",
+        "unicorn",
+        "oxc",
+        "react",
+        "import",
+        "jsx-a11y",
+        "nextjs"
+      ],
+      "rules": {
+        "react/set-state-in-effect": "off"
       }
     }
   ]

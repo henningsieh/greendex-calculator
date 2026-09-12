@@ -2,6 +2,9 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { SyntaxKind } from "typescript/unstable/ast";
+import { createScanner } from "typescript/unstable/ast/scanner";
+
 export type CostTrackerSourceFile = {
   content: string;
   relativePath: string;
@@ -12,10 +15,6 @@ const sourceRoot = "apps/cost-tracker/src";
 const sourceExtensions = [".ts", ".tsx", ".js", ".jsx"];
 const sourceFilePattern = /\.(?:ts|tsx|js|jsx)$/u;
 const testFilePattern = /(?:test|spec)\.[jt]sx?$/u;
-const importOrReExportPattern =
-  /\b(?:import|export)\s+(?!type\b)[\s\S]*?\s+from\s+(["'])([^"']+)\1/gu;
-const sideEffectImportPattern = /\bimport\s+(["'])([^"']+)\1/gu;
-const dynamicImportPattern = /\bimport\s*\(\s*(["'])([^"']+)\1\s*\)/gu;
 
 const normalizePath = (filePath: string) => path.posix.normalize(filePath);
 
@@ -60,15 +59,131 @@ const findFiles = async (directoryPath: string): Promise<string[]> => {
   return files;
 };
 
+type ScannedToken = {
+  kind: SyntaxKind;
+  text: string;
+  value: string;
+};
+
+const isSpecifierToken = (kind: SyntaxKind) =>
+  kind === SyntaxKind.StringLiteral ||
+  kind === SyntaxKind.NoSubstitutionTemplateLiteral;
+
+const getTokenSpecifier = (token: ScannedToken) => {
+  if (token.value) return token.value;
+  const text = token.text;
+  return text.length >= 2 ? text.slice(1, -1) : text;
+};
+
+const scanTokens = (content: string): ScannedToken[] => {
+  // skipTrivia=true: comments/whitespace never surface as tokens, so
+  // import-like text in comments or string literals can't false-positive.
+  const scanner = createScanner(true);
+  scanner.setText(content);
+  const tokens: ScannedToken[] = [];
+
+  let kind = scanner.scan();
+  while (kind !== SyntaxKind.EndOfFile) {
+    tokens.push({
+      kind,
+      text: scanner.getTokenText(),
+      value: scanner.getTokenValue(),
+    });
+    kind = scanner.scan();
+  }
+
+  return tokens;
+};
+
 const getModuleSpecifiers = (content: string) => {
   const specifiers = new Set<string>();
+  const tokens = scanTokens(content);
 
-  for (const pattern of [
-    importOrReExportPattern,
-    sideEffectImportPattern,
-    dynamicImportPattern,
-  ]) {
-    for (const match of content.matchAll(pattern)) specifiers.add(match[2]);
+  // Attribute a `from "spec"` string to its import/export statement.
+  // Whole-declaration `import type` / `export type` is skipped (type-only).
+  // Inline `import { type X }` still records (fail-closed over-approximation).
+  const recordFromSpecifier = (fromIndex: number) => {
+    for (let i = fromIndex + 1; i < tokens.length; i += 1) {
+      if (isSpecifierToken(tokens[i].kind)) {
+        specifiers.add(getTokenSpecifier(tokens[i]));
+        return i;
+      }
+      if (tokens[i].kind === SyntaxKind.SemicolonToken) return i;
+    }
+    return tokens.length;
+  };
+
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+
+    if (token.kind === SyntaxKind.ImportKeyword) {
+      const next = tokens[i + 1];
+      if (!next) continue;
+
+      // Dynamic import: import("spec")
+      if (
+        next.kind === SyntaxKind.OpenParenToken &&
+        tokens[i + 2] &&
+        isSpecifierToken(tokens[i + 2].kind)
+      ) {
+        specifiers.add(getTokenSpecifier(tokens[i + 2]));
+        i += 2;
+        continue;
+      }
+
+      // Side-effect import: import "spec"
+      if (isSpecifierToken(next.kind)) {
+        specifiers.add(getTokenSpecifier(next));
+        i += 1;
+        continue;
+      }
+
+      // import type ... -> type-only, skip
+      if (next.kind === SyntaxKind.TypeKeyword) continue;
+
+      // Only static declaration grammar can contain a from-clause. Do not
+      // skip ordinary statements such as import.meta expressions, which can
+      // contain a later dynamic import.
+      const isStaticImport =
+        next.kind === SyntaxKind.Identifier ||
+        next.kind === SyntaxKind.OpenBraceToken ||
+        next.kind === SyntaxKind.AsteriskToken;
+      if (!isStaticImport) continue;
+
+      for (let j = i + 1; j < tokens.length; j += 1) {
+        if (tokens[j].kind === SyntaxKind.FromKeyword) {
+          i = recordFromSpecifier(j);
+          break;
+        }
+        if (tokens[j].kind === SyntaxKind.SemicolonToken) {
+          i = j;
+          break;
+        }
+      }
+    } else if (token.kind === SyntaxKind.ExportKeyword) {
+      const next = tokens[i + 1];
+      // export type ... -> type-only, skip
+      if (next && next.kind === SyntaxKind.TypeKeyword) continue;
+
+      // Only export-list and export-all declarations can contain a
+      // from-clause. Keep exported initializers in the token stream so a
+      // nested dynamic import is still discovered.
+      const isStaticReExport =
+        next?.kind === SyntaxKind.OpenBraceToken ||
+        next?.kind === SyntaxKind.AsteriskToken;
+      if (!isStaticReExport) continue;
+
+      for (let j = i + 1; j < tokens.length; j += 1) {
+        if (tokens[j].kind === SyntaxKind.FromKeyword) {
+          i = recordFromSpecifier(j);
+          break;
+        }
+        if (tokens[j].kind === SyntaxKind.SemicolonToken) {
+          i = j;
+          break;
+        }
+      }
+    }
   }
 
   return specifiers;

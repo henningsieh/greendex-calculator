@@ -87,6 +87,8 @@ beforeEach(() => {
   mocks.state.scope = null;
   mocks.state.search = "";
   mocks.state.cursor = "";
+  mocks.state.dateFrom = null;
+  mocks.state.dateTo = null;
   mocks.state.partnerOrganizationIds = [];
   mocks.projectReturnSearch =
     "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque";
@@ -148,6 +150,37 @@ describe("Project collection", { timeout: 10_000 }, () => {
     });
   });
 
+  it("clears explicit Project date filters instead of restoring their previous values", async () => {
+    mocks.state.dateFrom = new Date("2026-01-01T00:00:00.000Z");
+    mocks.state.dateTo = new Date("2026-12-31T00:00:00.000Z");
+    renderCollection();
+    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+
+    fireEvent.change(screen.getByLabelText("Active on or after"), {
+      target: { value: "" },
+    });
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      dateFrom: null,
+      dateTo: mocks.state.dateTo,
+      partnerOrganizationIds: [],
+      search: "",
+      window: "all",
+    });
+
+    fireEvent.change(screen.getByLabelText("Active on or before"), {
+      target: { value: "" },
+    });
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      dateFrom: mocks.state.dateFrom,
+      dateTo: null,
+      partnerOrganizationIds: [],
+      search: "",
+      window: "all",
+    });
+  });
+
   it("writes the opaque pagination cursors directly to URL state", async () => {
     mocks.state.cursor = "current-page";
     const browserBack = vi.spyOn(window.history, "back");
@@ -162,6 +195,29 @@ describe("Project collection", { timeout: 10_000 }, () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(mocks.setUrlState).toHaveBeenCalledWith({ cursor: "next-page" });
+  });
+
+  it("registers every Table function required by the server-controlled columns", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const consoleWarn = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+
+    try {
+      renderCollection();
+      await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+      fireEvent.change(screen.getByLabelText("Project name"), {
+        target: { value: "Travel" },
+      });
+      await waitFor(() => expect(mocks.setUrlState).toHaveBeenCalled());
+
+      expect(consoleWarn).not.toHaveBeenCalledWith(
+        expect.stringContaining("is not registered"),
+      );
+    } finally {
+      consoleWarn.mockRestore();
+      vi.unstubAllEnvs();
+    }
   });
 
   it("coordinates table controls with URL state without processing a server page", async () => {

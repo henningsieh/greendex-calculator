@@ -1,6 +1,5 @@
 "use client";
 
-import { ORPCError } from "@orpc/client";
 import {
   useMutation,
   useQueryClient,
@@ -13,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -22,10 +22,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
 });
 
 function mutationMessage(error: unknown) {
-  if (error instanceof ORPCError && typeof error.message === "string") {
-    return error.message;
-  }
-  return "The Project Partnership could not be changed. Try again.";
+  return getORPCRequestErrorMessage(error).text;
 }
 
 export function ProjectPartnershipManager() {

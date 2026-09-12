@@ -14,8 +14,8 @@ That report lists **13 findings** (bugs/defects). Every one of them must keep an
 
 | #   | Finding (short)                                                                      | Disposition in this plan                                                                            |
 | --- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| 1   | Migration `0015` was hand-edited after it had been applied                           | **Open — no ticket yet**                                                                            |
-| 2   | Tenant scoping is not atomic (partnership/Project owner checks)                      | **Open — no ticket yet**                                                                            |
+| 1   | Migration `0015` was hand-edited after it had been applied                           | Deferred — [#129](https://github.com/henningsieh/greendex-calculator/issues/129)                    |
+| 2   | Tenant scoping is not atomic (partnership/Project owner checks)                      | Deferred — [#130](https://github.com/henningsieh/greendex-calculator/issues/130)                    |
 | 3   | Persistence outside procedures (`project-relationship.server.ts`)                    | Fix now — `ARCH-01` ([#119](https://github.com/henningsieh/greendex-calculator/issues/119))         |
 | 4   | Typed errors swallowed into fabricated scope data (`projects/page.tsx`)              | Fix now — `ERROR-01` ([#114](https://github.com/henningsieh/greendex-calculator/issues/114))        |
 | 5   | Production failures are not logged (`hydration.tsx`)                                 | Fix now — `ERROR-01` ([#114](https://github.com/henningsieh/greendex-calculator/issues/114))        |
@@ -23,12 +23,12 @@ That report lists **13 findings** (bugs/defects). Every one of them must keep an
 | 7   | Unstable list key, no `getRowId` (`project-collection.tsx`)                          | Fix now — `ARCH-02` ([#118](https://github.com/henningsieh/greendex-calculator/issues/118))         |
 | 8   | Duplicated handwritten boundary types                                                | Separate issue — `STD-01` ([#124](https://github.com/henningsieh/greendex-calculator/issues/124))   |
 | 9   | Unchecked type assertions (`as unknown as`, `!`, SQL casts)                          | Separate issue — `STD-01` ([#124](https://github.com/henningsieh/greendex-calculator/issues/124))   |
-| 10  | Persisted form schema not Drizzle-derived (`validation-schemas.ts`)                  | **Open — no ticket yet**                                                                            |
+| 10  | Persisted form schema not Drizzle-derived (`validation-schemas.ts`)                  | Deferred — [#131](https://github.com/henningsieh/greendex-calculator/issues/131)                    |
 | 11  | Mutation failures hidden or silent (`use-sign-out.ts`, `no-organization-access.tsx`) | Separate issue — `AUTH-01` ([#123](https://github.com/henningsieh/greendex-calculator/issues/123))  |
 | 12  | Shared dependency versions bypass the workspace catalog                              | Separate issue — `STD-02` ([#125](https://github.com/henningsieh/greendex-calculator/issues/125))   |
 | 13  | Duplicated policy/pagination/sort logic, plus commit-convention violations           | Separate issue — `SMELL-01` ([#126](https://github.com/henningsieh/greendex-calculator/issues/126)) |
 
-Findings 1, 2, and 10 currently have neither a fix ticket nor a filed follow-up issue in this plan's issue set (#114–#128). The final review must not accept Phases 6–8 while any of those three is unaccounted for: either the finding is already fixed in production code and proven by a test, or a follow-up issue is filed and linked.
+The final review deferred findings 1, 2, and 10 to #129, #130, and #131. The final review must not accept Phases 6–8 while any of those three is unaccounted for: either the finding is already fixed in production code and proven by a test, or a focused follow-up issue is filed and linked.
 
 The mapping in this table is provisional. Ticket [#121](https://github.com/henningsieh/greendex-calculator/issues/121) owns correcting it against the actual code, and the original report text remains the source of truth for the 13 findings.
 

@@ -277,7 +277,31 @@ describe("Project overview procedures", () => {
     },
   );
 
+  it("recovers at the first page when a cursor protocol version is unsupported", async () => {
+    const first = await client.projects.hostedOverview({ pageSize: 25 });
+    const staleCursor = Buffer.from(JSON.stringify({ version: 1 })).toString(
+      "base64url",
+    );
+
+    const recovered = await client.projects.hostedOverview({
+      pageSize: 25,
+      cursor: staleCursor,
+    });
+
+    expect(recovered.rows.map((project) => project.id)).toEqual(
+      first.rows.map((project) => project.id),
+    );
+    expect(recovered.previousCursor).toBeUndefined();
+  });
+
   it("rejects a cursor when its scope, search, filters, sort, or page size change", async () => {
+    await expect(
+      client.projects.hostedOverview({
+        pageSize: 25,
+        cursor: "not-a-valid-cursor",
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
     const first = await client.projects.hostedOverview({ pageSize: 25 });
 
     await expect(
