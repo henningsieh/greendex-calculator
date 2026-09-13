@@ -25,6 +25,10 @@ function mutationMessage(error: unknown) {
   return getORPCRequestErrorMessage(error).text;
 }
 
+/**
+ * Manages Partner Organization assignments for Projects hosted by the active
+ * Organization and refreshes affected Project data after each successful change.
+ */
 export function ProjectPartnershipManager() {
   const queryClient = useQueryClient();
   const { data: partnerships } = useSuspenseQuery(

@@ -13,6 +13,14 @@ import {
 } from "@/features/projects/validation-schemas";
 import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
+/**
+ * Returns the active Organization's relationship-specific Project view.
+ *
+ * Hosted views include assigned Partner Organizations, while the Partnership
+ * portion of Partner views exposes only the Hosting Organization and the active
+ * Organization's assignment. Requests without relationship-specific access are
+ * rejected.
+ */
 export const projectDetail = authorized
   .input(ProjectDetailInputSchema)
   .output(ProjectDetailSchema)
