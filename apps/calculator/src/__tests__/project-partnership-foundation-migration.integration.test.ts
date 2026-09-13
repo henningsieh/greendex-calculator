@@ -9,6 +9,7 @@ const migrationsDirectory = resolve(
   import.meta.dirname,
   "../../../../packages/database/src/migrations",
 );
+const projectPartnershipInvariantMigrationIndex = 17;
 
 function databaseUrl(databaseName: string): string {
   const url = new URL(process.env.DATABASE_URL!);
@@ -46,6 +47,16 @@ async function applyMigration(pool: Pool, migrationIndex: number) {
   await pool.query(
     await readFile(resolve(migrationsDirectory, filename), "utf8"),
   );
+}
+
+async function removeProjectPartnershipInvariantEnforcement(pool: Pool) {
+  await pool.query(`
+    DROP TRIGGER IF EXISTS "project_host_organization_invariants" ON "project";
+    DROP TRIGGER IF EXISTS "project_partnership_organization_invariants" ON "project_partner_organization";
+    DROP TRIGGER IF EXISTS "project_participation_organization_invariants" ON "project_participant";
+    DROP FUNCTION IF EXISTS "check_project_organization_invariants"();
+    DROP FUNCTION IF EXISTS "assert_project_organization_invariants"(text);
+  `);
 }
 
 async function createDisposableDatabase() {
@@ -128,10 +139,42 @@ describe("Project Partnership foundation migration", () => {
     ]);
   });
 
-  it("enforces Hosting and represented Organization invariants in PostgreSQL", async () => {
+  it("repairs the historical 0015 state with backfill and invariant enforcement", async () => {
     const database = await createDisposableDatabase();
     databases.push(database);
-    await applyMigrationsThrough(database.pool, 15);
+    await applyMigrationsThrough(database.pool, 14);
+    await seedLegacyParticipation(database.pool);
+    await applyMigration(database.pool, 15);
+    await database.pool.query(
+      `UPDATE "project_participant" SET "email" = NULL WHERE "id" = 'participation'`,
+    );
+    await removeProjectPartnershipInvariantEnforcement(database.pool);
+    await applyMigration(database.pool, 16);
+
+    await expect(
+      applyMigration(database.pool, projectPartnershipInvariantMigrationIndex),
+    ).resolves.toBeUndefined();
+
+    const participation = await database.pool.query(
+      `SELECT "email" FROM "project_participant" WHERE "id" = 'participation'`,
+    );
+    expect(participation.rows).toEqual([{ email: "participant@example.com" }]);
+
+    await expect(
+      database.pool.query(
+        `INSERT INTO "project_partner_organization" ("id", "project_id", "organization_id")
+         VALUES ('invalid-host-partnership', 'project', 'hosting-organization')`,
+      ),
+    ).rejects.toThrow(/Hosting Organization/i);
+  });
+
+  it("enforces Hosting and represented Organization invariants in fresh PostgreSQL databases", async () => {
+    const database = await createDisposableDatabase();
+    databases.push(database);
+    await applyMigrationsThrough(
+      database.pool,
+      projectPartnershipInvariantMigrationIndex,
+    );
     await database.pool.query(`
       INSERT INTO "user" ("id", "name", "email", "email_verified", "created_at", "updated_at")
       VALUES ('owner', 'Organization Administrator', 'organization-administrator@example.com', true, now(), now());
