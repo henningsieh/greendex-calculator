@@ -111,7 +111,7 @@ describe("Cost Tracker persistence seam", () => {
         fixture(
           "lib/auth.ts",
           [
-            'import { db } from "@greendex/database/client";',
+            'import { db } from "@greendex/database/client"',
             "export { db };",
           ].join("\n"),
         ),

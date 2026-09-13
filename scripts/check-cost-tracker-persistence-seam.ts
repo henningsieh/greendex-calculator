@@ -107,14 +107,8 @@ const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
       }
     }
   };
-  const findStatementEnd = (start: number) => {
-    for (let i = start; i < tokens.length; i += 1) {
-      if (tokens[i].kind === SyntaxKind.SemicolonToken) return i;
-    }
-    return tokens.length;
-  };
-  const findFromSpecifier = (start: number, end: number) => {
-    for (let i = start; i < end - 1; i += 1) {
+  const findFromSpecifier = (start: number) => {
+    for (let i = start; i < tokens.length - 1; i += 1) {
       if (
         tokens[i].kind === SyntaxKind.FromKeyword &&
         isSpecifierToken(tokens[i + 1].kind)
@@ -152,12 +146,11 @@ const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
         continue;
       }
 
-      const end = findStatementEnd(i + 1);
-      const from = findFromSpecifier(i + 1, end);
+      const from = findFromSpecifier(i + 1);
       if (from) {
         recordSpecifier(from.value, false);
         recordBindings(i + 1, from.index, from.value);
-        i = end;
+        i = from.index;
       }
     } else if (token.kind === SyntaxKind.ExportKeyword) {
       if (next.kind === SyntaxKind.TypeKeyword) continue;
@@ -168,19 +161,40 @@ const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
         continue;
       }
 
-      const end = findStatementEnd(i + 1);
-      const from = findFromSpecifier(i + 1, end);
-      if (from) {
-        recordSpecifier(from.value, true);
-      } else if (next.kind === SyntaxKind.OpenBraceToken) {
-        for (let j = i + 2; j < end; j += 1) {
+      if (next.kind === SyntaxKind.AsteriskToken) {
+        const from = findFromSpecifier(i + 1);
+        if (from) {
+          recordSpecifier(from.value, true);
+          i = from.index;
+        }
+        continue;
+      }
+
+      let closingBrace = i + 2;
+      while (
+        closingBrace < tokens.length &&
+        tokens[closingBrace].kind !== SyntaxKind.CloseBraceToken
+      ) {
+        closingBrace += 1;
+      }
+      const from = tokens[closingBrace + 1];
+      const specifier = tokens[closingBrace + 2];
+      if (
+        from?.kind === SyntaxKind.FromKeyword &&
+        specifier &&
+        isSpecifierToken(specifier.kind)
+      ) {
+        recordSpecifier(getTokenSpecifier(specifier), true);
+        i = closingBrace + 2;
+      } else {
+        for (let j = i + 2; j < closingBrace; j += 1) {
           if (tokens[j].kind === SyntaxKind.Identifier) {
             const importedSpecifier = importedBindings.get(tokens[j].value);
             if (importedSpecifier) recordSpecifier(importedSpecifier, true);
           }
         }
+        i = closingBrace;
       }
-      i = end;
     }
   }
 
