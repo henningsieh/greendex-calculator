@@ -38,6 +38,10 @@ Persisted form schemas start from the owning Drizzle table with `drizzle-zod`, t
 
 The pre-release `/dashboard` route is intentionally absent. Authentication, brand, and Organization-recovery destinations use `/projects`.
 
+## oRPC error presentation
+
+Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh failures retain cached data and produce a toast. Identical refresh failures—same oRPC status and code, or the same local error type and message—share one toast within a two-second interval; distinct failures remain separately visible.
+
 ## Current feature ownership
 
 Project collection state, relationship policy, reads, Project Partnership mutations, and views belong to `src/features/projects/`. User appearance and account-name behavior belong to `src/features/user-settings/`. Protected routes compose those features; shared navigation and provider mechanics remain in `src/components/`.

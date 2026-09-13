@@ -5,15 +5,19 @@ import { useState } from "react";
 
 import { toast } from "@/components/ui/toast";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { createORPCErrorToastGrouper } from "@/lib/orpc/error-toast-grouping";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() =>
-    createQueryClient({
+  const [queryClient] = useState(() => {
+    const errorToastGrouper = createORPCErrorToastGrouper();
+
+    return createQueryClient({
       onError(error, query) {
         if (
           query.options.meta?.costTrackerORPC !== true ||
-          query.state.data === undefined
+          query.state.data === undefined ||
+          !errorToastGrouper.shouldShow(error)
         ) {
           return;
         }
@@ -24,8 +28,8 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           type: "error",
         });
       },
-    }),
-  );
+    });
+  });
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
