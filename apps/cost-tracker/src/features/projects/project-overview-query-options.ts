@@ -1,11 +1,8 @@
 import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 
 import type { ProjectCollectionState } from "@/features/projects/collection-state";
-import { orpc, orpcQuery } from "@/lib/orpc/orpc";
-
-export type ProjectOverviewData =
-  | Awaited<ReturnType<typeof orpc.projects.hostedOverview>>
-  | Awaited<ReturnType<typeof orpc.projects.partnerOverview>>;
+import type { ProjectOverviewData } from "@/features/projects/types";
+import { orpcQuery } from "@/lib/orpc/orpc";
 
 export function getProjectAvailableScopesQueryOptions() {
   const options = orpcQuery.projects.availableScopes.queryOptions();
@@ -45,5 +42,5 @@ export function getProjectOverviewQueryOptions(
           meta: { costTrackerORPC: true },
         });
 
-  return options as unknown as UseSuspenseQueryOptions<ProjectOverviewData>;
+  return options;
 }

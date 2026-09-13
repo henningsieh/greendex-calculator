@@ -57,6 +57,7 @@ import {
   getProjectAvailableScopesQueryOptions,
   getProjectOverviewQueryOptions,
 } from "@/features/projects/project-overview-query-options";
+import type { ProjectOverviewRow } from "@/features/projects/types";
 
 const projectCollectionTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -72,16 +73,6 @@ const PROJECT_FILTER_IDS = {
   partnerOrganizationIds: "partnerOrganizationIds",
   window: "window",
 } as const;
-
-type ProjectRow = {
-  id: string;
-  name: string;
-  startDate: Date;
-  endDate: Date;
-  location: string;
-  country: string;
-  costSubmissionWindowOpen: boolean;
-};
 
 function getProjectColumnFilters({
   dateFrom,
@@ -344,7 +335,7 @@ function ResolvedProjectCollection({
     pageSize: state.pageSize,
   };
   const columns = useMemo<
-    ColumnDef<typeof projectCollectionTableFeatures, ProjectRow>[]
+    ColumnDef<typeof projectCollectionTableFeatures, ProjectOverviewRow>[]
   >(
     () => [
       {

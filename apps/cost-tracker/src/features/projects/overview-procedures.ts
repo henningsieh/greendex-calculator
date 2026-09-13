@@ -27,6 +27,7 @@ import {
   getProjectOverviewFingerprint,
   type ProjectOverviewCursor,
 } from "@/features/projects/project-overview-cursor.server";
+import type { ProjectOverviewInput } from "@/features/projects/types";
 import {
   HostedProjectOverviewInputSchema,
   HostedProjectOverviewSchema,
@@ -40,17 +41,7 @@ import {
   requireCostTrackerPermissions,
 } from "@/lib/orpc/middleware";
 
-type CommonOverviewInput = {
-  search?: string;
-  window: "all" | "open" | "closed";
-  dateFrom?: Date;
-  dateTo?: Date;
-  sort: "operational" | "start-asc" | "start-desc" | "end-asc" | "end-desc";
-  cursor?: string;
-  pageSize: 25 | 50 | 100;
-};
-
-function getProjectFilters(input: CommonOverviewInput): SQL[] {
+function getProjectFilters(input: ProjectOverviewInput): SQL[] {
   const filters: SQL[] = [];
 
   if (input.search) {
@@ -73,7 +64,7 @@ function getProjectFilters(input: CommonOverviewInput): SQL[] {
 type ProjectCursorDirection = ProjectOverviewCursor["direction"];
 
 function getProjectOrder(
-  input: CommonOverviewInput,
+  input: ProjectOverviewInput,
   direction: ProjectCursorDirection,
 ): SQL[] {
   switch (input.sort) {
@@ -109,7 +100,7 @@ function getProjectOrder(
 }
 
 function getCursorFilter(
-  input: CommonOverviewInput,
+  input: ProjectOverviewInput,
   cursor: {
     direction: ProjectCursorDirection;
     id: string;
@@ -205,7 +196,7 @@ function getCursorFilter(
 }
 
 function getCursorDate(
-  input: CommonOverviewInput,
+  input: ProjectOverviewInput,
   row: { startDate: Date; endDate: Date },
 ) {
   return input.sort.startsWith("end-") ? row.endDate : row.startDate;
@@ -222,7 +213,7 @@ const rowSelection = {
 };
 
 function parseCursor(
-  input: CommonOverviewInput,
+  input: ProjectOverviewInput,
   fingerprint: string,
   errors: { BAD_REQUEST: (options?: { message?: string }) => Error },
 ): ProjectOverviewCursor | undefined {
@@ -252,7 +243,7 @@ type ProjectOverviewCursorRow = {
 
 function getProjectOverviewPage<T extends ProjectOverviewCursorRow>(
   pageRows: T[],
-  input: CommonOverviewInput,
+  input: ProjectOverviewInput,
   cursor: ProjectOverviewCursor | undefined,
   fingerprint: string,
 ) {
