@@ -54,6 +54,7 @@ async function waitForAuthoritativeProjectLock() {
         FROM pg_stat_activity
         WHERE datname = current_database()
           AND wait_event_type = 'Lock'
+          AND query ILIKE '%select "id", "name" from "project"%'
           AND query ILIKE '%for update%'
       ) AS "waiting"
     `);

@@ -1,11 +1,19 @@
 UPDATE "project_participant" AS "participation"
 SET
-	"represented_organization_id" = "project"."organization_id",
-	"display_name" = "user"."name",
-	"email" = lower(trim("user"."email"))
+	"represented_organization_id" = COALESCE(
+		"participation"."represented_organization_id",
+		"project"."organization_id"
+	),
+	"display_name" = COALESCE("participation"."display_name", "user"."name"),
+	"email" = COALESCE("participation"."email", lower(trim("user"."email")))
 FROM "project", "user"
 WHERE "project"."id" = "participation"."project_id"
-	AND "user"."id" = "participation"."user_id";
+	AND "user"."id" = "participation"."user_id"
+	AND (
+		"participation"."represented_organization_id" IS NULL
+		OR "participation"."display_name" IS NULL
+		OR "participation"."email" IS NULL
+	);
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION "assert_project_organization_invariants"("target_project_id" text)
 RETURNS void

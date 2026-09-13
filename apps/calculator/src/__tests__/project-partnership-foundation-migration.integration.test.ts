@@ -145,9 +145,20 @@ describe("Project Partnership foundation migration", () => {
     await applyMigrationsThrough(database.pool, 14);
     await seedLegacyParticipation(database.pool);
     await applyMigration(database.pool, 15);
-    await database.pool.query(
-      `UPDATE "project_participant" SET "email" = NULL WHERE "id" = 'participation'`,
-    );
+    await database.pool.query(`
+      INSERT INTO "organization" ("id", "name", "slug", "created_at")
+      VALUES ('partner-organization', 'Partner Organization', 'partner-organization', now());
+
+      INSERT INTO "project_partner_organization" ("id", "project_id", "organization_id")
+      VALUES ('partnership', 'project', 'partner-organization');
+
+      UPDATE "project_participant"
+      SET
+        "represented_organization_id" = 'partner-organization',
+        "display_name" = 'Custom Participant Name',
+        "email" = NULL
+      WHERE "id" = 'participation';
+    `);
     await removeProjectPartnershipInvariantEnforcement(database.pool);
     await applyMigration(database.pool, 16);
 
@@ -156,9 +167,17 @@ describe("Project Partnership foundation migration", () => {
     ).resolves.toBeUndefined();
 
     const participation = await database.pool.query(
-      `SELECT "email" FROM "project_participant" WHERE "id" = 'participation'`,
+      `SELECT "represented_organization_id", "display_name", "email"
+       FROM "project_participant"
+       WHERE "id" = 'participation'`,
     );
-    expect(participation.rows).toEqual([{ email: "participant@example.com" }]);
+    expect(participation.rows).toEqual([
+      {
+        represented_organization_id: "partner-organization",
+        display_name: "Custom Participant Name",
+        email: "participant@example.com",
+      },
+    ]);
 
     await expect(
       database.pool.query(

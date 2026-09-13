@@ -48,7 +48,7 @@ describe("Project Partnership persisted form schemas", () => {
       id: "partnership-id",
     });
     expect(
-      RemoveProjectPartnershipInputSchema.safeParse({ id: " ".repeat(129) })
+      RemoveProjectPartnershipInputSchema.safeParse({ id: "a".repeat(129) })
         .success,
     ).toBe(false);
   });

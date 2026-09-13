@@ -94,7 +94,7 @@ export const projectDetail = authorized
             eq(projectsTable.organizationId, activeOrganizationId),
           ),
         )
-        .for("update")
+        .for("share")
         .limit(1);
       if (!hostedProject) {
         throw errors.FORBIDDEN({
