@@ -2,8 +2,9 @@ import { db } from "@greendex/database";
 import {
   organization,
   projectPartnerOrganizationsTable,
+  projectsTable,
 } from "@greendex/database/schema";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 import { resolveProjectRelationship } from "@/features/projects/project-relationship-procedure";
 import {
@@ -12,6 +13,14 @@ import {
 } from "@/features/projects/validation-schemas";
 import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
+/**
+ * Returns the active Organization's relationship-specific Project view.
+ *
+ * Hosted views include assigned Partner Organizations, while the Partnership
+ * portion of Partner views exposes only the Hosting Organization and the active
+ * Organization's assignment. Requests without relationship-specific access are
+ * rejected.
+ */
 export const projectDetail = authorized
   .input(ProjectDetailInputSchema)
   .output(ProjectDetailSchema)
@@ -83,21 +92,40 @@ export const projectDetail = authorized
       });
     }
 
-    const partnerOrganizations = await db
-      .select({
-        id: projectPartnerOrganizationsTable.id,
-        organizationId: organization.id,
-        organizationName: organization.name,
-        assignedAt: projectPartnerOrganizationsTable.createdAt,
-        updatedAt: projectPartnerOrganizationsTable.updatedAt,
-      })
-      .from(projectPartnerOrganizationsTable)
-      .innerJoin(
-        organization,
-        eq(organization.id, projectPartnerOrganizationsTable.organizationId),
-      )
-      .where(eq(projectPartnerOrganizationsTable.projectId, input.projectId))
-      .orderBy(asc(organization.name), asc(organization.id));
+    const partnerOrganizations = await db.transaction(async (transaction) => {
+      const [hostedProject] = await transaction
+        .select({ id: projectsTable.id })
+        .from(projectsTable)
+        .where(
+          and(
+            eq(projectsTable.id, input.projectId),
+            eq(projectsTable.organizationId, activeOrganizationId),
+          ),
+        )
+        .for("share")
+        .limit(1);
+      if (!hostedProject) {
+        throw errors.FORBIDDEN({
+          message: "The active Organization cannot access this Project.",
+        });
+      }
+
+      return transaction
+        .select({
+          id: projectPartnerOrganizationsTable.id,
+          organizationId: organization.id,
+          organizationName: organization.name,
+          assignedAt: projectPartnerOrganizationsTable.createdAt,
+          updatedAt: projectPartnerOrganizationsTable.updatedAt,
+        })
+        .from(projectPartnerOrganizationsTable)
+        .innerJoin(
+          organization,
+          eq(organization.id, projectPartnerOrganizationsTable.organizationId),
+        )
+        .where(eq(projectPartnerOrganizationsTable.projectId, hostedProject.id))
+        .orderBy(asc(organization.name), asc(organization.id));
+    });
 
     return {
       ...project,

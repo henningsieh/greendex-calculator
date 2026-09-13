@@ -120,6 +120,13 @@
       "when": 1788953079724,
       "tag": "0016_dusty_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789271863383,
+      "tag": "0017_project-partnership-invariants",
+      "breakpoints": true
     }
   ]
 }

@@ -25,6 +25,10 @@ function mutationMessage(error: unknown) {
   return getORPCRequestErrorMessage(error).text;
 }
 
+/**
+ * Manages Partner Organization assignments for Projects hosted by the active
+ * Organization and refreshes affected Project data after each successful change.
+ */
 export function ProjectPartnershipManager() {
   const queryClient = useQueryClient();
   const { data: partnerships } = useSuspenseQuery(
@@ -64,8 +68,7 @@ export function ProjectPartnershipManager() {
     onError: (error) => setFeedback(mutationMessage(error)),
   });
   const removeMutation = useMutation({
-    mutationFn: (partnershipId: string) =>
-      orpc.projectPartnerships.remove({ partnershipId }),
+    mutationFn: (id: string) => orpc.projectPartnerships.remove({ id }),
     onSuccess: async () => {
       setFeedback("Project Partnership removed.");
       await invalidateProjectData();

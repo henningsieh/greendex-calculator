@@ -1,3 +1,5 @@
+import { projectPartnerOrganizationsTable } from "@greendex/database/schema";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import {
@@ -139,14 +141,36 @@ export const ProjectPartnershipSchema = z.object({
   updatedAt: z.date(),
 });
 
-export const AssignProjectPartnershipInputSchema = z.object({
-  projectId: z.string().trim().min(1).max(128),
-  organizationId: z.string().trim().min(1).max(128),
-});
+const PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH = 128;
 
-export const RemoveProjectPartnershipInputSchema = z.object({
-  partnershipId: z.string().trim().min(1).max(128),
-});
+const ProjectPartnershipInsertSchema = createInsertSchema(
+  projectPartnerOrganizationsTable,
+);
+const ProjectPartnershipSelectSchema = createSelectSchema(
+  projectPartnerOrganizationsTable,
+);
+
+export const AssignProjectPartnershipInputSchema =
+  ProjectPartnershipInsertSchema.pick({
+    projectId: true,
+    organizationId: true,
+  }).safeExtend({
+    projectId: z
+      .string()
+      .trim()
+      .min(1)
+      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+    organizationId: z
+      .string()
+      .trim()
+      .min(1)
+      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+  });
+
+export const RemoveProjectPartnershipInputSchema =
+  ProjectPartnershipSelectSchema.pick({ id: true }).safeExtend({
+    id: z.string().trim().min(1).max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+  });
 
 export const RemoveProjectPartnershipResultSchema = z.object({
   id: z.string(),

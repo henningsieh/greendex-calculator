@@ -198,6 +198,7 @@ describe("ProjectPartnershipManager", () => {
         ),
       ).toBeTruthy();
     });
+    expect(mocks.remove).toHaveBeenCalledWith({ id: existingPartnership.id });
     expectProjectDataInvalidation(invalidateQueries);
   });
 });
