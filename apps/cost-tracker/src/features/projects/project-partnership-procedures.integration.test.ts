@@ -9,7 +9,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -36,6 +36,7 @@ const foreignHostId = `partnership-foreign-host-${suffix}`;
 const assignedOrganizationId = `partnership-assigned-org-${suffix}`;
 const removableOrganizationId = `partnership-removable-org-${suffix}`;
 const candidateOrganizationId = `partnership-candidate-org-${suffix}`;
+const raceOrganizationId = `partnership-race-org-${suffix}`;
 const projectId = `partnership-project-${suffix}`;
 const foreignProjectId = `partnership-foreign-project-${suffix}`;
 const assignedPartnershipId = `partnership-assigned-${suffix}`;
@@ -44,6 +45,24 @@ const participationId = `partnership-participation-${suffix}`;
 const createdPartnershipIds: string[] = [];
 const headers = new Headers();
 const client = createRouterClient(router, { context: async () => ({ headers }) });
+
+async function waitForAuthoritativeProjectLock() {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const result = await db.execute(sql<{ waiting: boolean }>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND wait_event_type = 'Lock'
+          AND query ILIKE '%for update%'
+      ) AS "waiting"
+    `);
+    if (result.rows[0]?.waiting) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+
+  throw new Error("The authoritative Project lock was not requested.");
+}
 
 function useActiveOrganization(activeOrganizationId: string) {
   authMocks.getSession.mockResolvedValue({
@@ -90,6 +109,12 @@ beforeAll(async () => {
       id: candidateOrganizationId,
       name: "Candidate Organization",
       slug: candidateOrganizationId,
+      createdAt: now,
+    },
+    {
+      id: raceOrganizationId,
+      name: "Race Organization",
+      slug: raceOrganizationId,
       createdAt: now,
     },
   ]);
@@ -166,6 +191,7 @@ afterAll(async () => {
         assignedOrganizationId,
         removableOrganizationId,
         candidateOrganizationId,
+        raceOrganizationId,
       ]),
     );
   await db.delete(user).where(inArray(user.id, [userId]));
@@ -233,6 +259,68 @@ describe("Project Partnership procedures", () => {
         partnershipId: assignedPartnershipId,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("does not assign after Hosting ownership changes between relationship resolution and mutation", async () => {
+    let releaseOwnershipChange: (() => void) | undefined;
+    let ownershipLockReady: (() => void) | undefined;
+    const ownershipLock = new Promise<void>((resolve) => {
+      ownershipLockReady = resolve;
+    });
+    const ownershipChange = db.transaction(async (transaction) => {
+      await transaction.execute(sql`LOCK TABLE "project" IN EXCLUSIVE MODE`);
+      ownershipLockReady?.();
+      await new Promise<void>((resolve) => {
+        releaseOwnershipChange = resolve;
+      });
+      await transaction
+        .update(projectsTable)
+        .set({ organizationId: foreignHostId })
+        .where(eq(projectsTable.id, projectId));
+    });
+    let assignment: Promise<{ error?: unknown }> | undefined;
+
+    try {
+      await ownershipLock;
+      assignment = client.projectPartnerships
+        .assign({
+          projectId,
+          organizationId: raceOrganizationId,
+        })
+        .then(
+          () => ({}),
+          (error: unknown) => ({ error }),
+        );
+      // Red if assignment uses the earlier relationship read instead of a
+      // project-row lock scoped to the active Organization before insertion.
+      await waitForAuthoritativeProjectLock();
+
+      releaseOwnershipChange?.();
+      await ownershipChange;
+
+      await expect(assignment).resolves.toMatchObject({
+        error: { code: "FORBIDDEN" },
+      });
+    } finally {
+      releaseOwnershipChange?.();
+      await ownershipChange.catch(() => undefined);
+      await assignment?.catch(() => undefined);
+      await db
+        .delete(projectPartnerOrganizationsTable)
+        .where(
+          and(
+            eq(projectPartnerOrganizationsTable.projectId, projectId),
+            eq(
+              projectPartnerOrganizationsTable.organizationId,
+              raceOrganizationId,
+            ),
+          ),
+        );
+      await db
+        .update(projectsTable)
+        .set({ organizationId: hostId })
+        .where(eq(projectsTable.id, projectId));
+    }
   });
 
   it("requires authoritative mutation permission", async () => {

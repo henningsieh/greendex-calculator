@@ -2,8 +2,9 @@ import { db } from "@greendex/database";
 import {
   organization,
   projectPartnerOrganizationsTable,
+  projectsTable,
 } from "@greendex/database/schema";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 import { resolveProjectRelationship } from "@/features/projects/project-relationship-procedure";
 import {
@@ -83,21 +84,40 @@ export const projectDetail = authorized
       });
     }
 
-    const partnerOrganizations = await db
-      .select({
-        id: projectPartnerOrganizationsTable.id,
-        organizationId: organization.id,
-        organizationName: organization.name,
-        assignedAt: projectPartnerOrganizationsTable.createdAt,
-        updatedAt: projectPartnerOrganizationsTable.updatedAt,
-      })
-      .from(projectPartnerOrganizationsTable)
-      .innerJoin(
-        organization,
-        eq(organization.id, projectPartnerOrganizationsTable.organizationId),
-      )
-      .where(eq(projectPartnerOrganizationsTable.projectId, input.projectId))
-      .orderBy(asc(organization.name), asc(organization.id));
+    const partnerOrganizations = await db.transaction(async (transaction) => {
+      const [hostedProject] = await transaction
+        .select({ id: projectsTable.id })
+        .from(projectsTable)
+        .where(
+          and(
+            eq(projectsTable.id, input.projectId),
+            eq(projectsTable.organizationId, activeOrganizationId),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!hostedProject) {
+        throw errors.FORBIDDEN({
+          message: "The active Organization cannot access this Project.",
+        });
+      }
+
+      return transaction
+        .select({
+          id: projectPartnerOrganizationsTable.id,
+          organizationId: organization.id,
+          organizationName: organization.name,
+          assignedAt: projectPartnerOrganizationsTable.createdAt,
+          updatedAt: projectPartnerOrganizationsTable.updatedAt,
+        })
+        .from(projectPartnerOrganizationsTable)
+        .innerJoin(
+          organization,
+          eq(organization.id, projectPartnerOrganizationsTable.organizationId),
+        )
+        .where(eq(projectPartnerOrganizationsTable.projectId, hostedProject.id))
+        .orderBy(asc(organization.name), asc(organization.id));
+    });
 
     return {
       ...project,

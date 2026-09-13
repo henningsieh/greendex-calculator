@@ -5,7 +5,7 @@ import {
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, exists, notExists } from "drizzle-orm";
 import { z } from "zod";
 
 import { resolveProjectRelationship } from "@/features/projects/project-relationship-procedure";
@@ -22,6 +22,18 @@ function getPostgresErrorCode(error: unknown): string | undefined {
   if ("code" in error && typeof error.code === "string") return error.code;
   if ("cause" in error) return getPostgresErrorCode(error.cause);
   return undefined;
+}
+
+function isExpectedORPCError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return false;
+  }
+
+  return (
+    error.code === "BAD_REQUEST" ||
+    error.code === "FORBIDDEN" ||
+    error.code === "NOT_FOUND"
+  );
 }
 
 export const listProjectPartnerships = authorized
@@ -86,37 +98,57 @@ export const assignProjectPartnership = authorized
       });
     }
 
-    const [candidate] = await db
-      .select({ id: organization.id, name: organization.name })
-      .from(organization)
-      .where(eq(organization.id, input.organizationId))
-      .limit(1);
-    if (!candidate) {
-      throw errors.NOT_FOUND({ message: "Partner Organization not found." });
-    }
-
     try {
-      const [created] = await db
-        .insert(projectPartnerOrganizationsTable)
-        .values({
-          projectId: input.projectId,
-          organizationId: input.organizationId,
-        })
-        .returning({
-          id: projectPartnerOrganizationsTable.id,
-          assignedAt: projectPartnerOrganizationsTable.createdAt,
-          updatedAt: projectPartnerOrganizationsTable.updatedAt,
-        });
+      return await db.transaction(async (transaction) => {
+        const [hostedProject] = await transaction
+          .select({ id: projectsTable.id, name: projectsTable.name })
+          .from(projectsTable)
+          .where(
+            and(
+              eq(projectsTable.id, input.projectId),
+              eq(projectsTable.organizationId, activeOrganizationId),
+            ),
+          )
+          .for("update")
+          .limit(1);
+        if (!hostedProject) {
+          throw errors.FORBIDDEN({
+            message: "Only the Hosting Organization can assign this Project.",
+          });
+        }
 
-      if (!created) throw new Error("Project Partnership insert returned no row");
+        const [candidate] = await transaction
+          .select({ id: organization.id, name: organization.name })
+          .from(organization)
+          .where(eq(organization.id, input.organizationId))
+          .limit(1);
+        if (!candidate) {
+          throw errors.NOT_FOUND({ message: "Partner Organization not found." });
+        }
 
-      return {
-        ...created,
-        projectId: relationship.projectId,
-        projectName: relationship.name,
-        organizationId: candidate.id,
-        organizationName: candidate.name,
-      };
+        const [created] = await transaction
+          .insert(projectPartnerOrganizationsTable)
+          .values({
+            projectId: hostedProject.id,
+            organizationId: candidate.id,
+          })
+          .returning({
+            id: projectPartnerOrganizationsTable.id,
+            assignedAt: projectPartnerOrganizationsTable.createdAt,
+            updatedAt: projectPartnerOrganizationsTable.updatedAt,
+          });
+        if (!created) {
+          throw new Error("Project Partnership insert returned no row");
+        }
+
+        return {
+          ...created,
+          projectId: hostedProject.id,
+          projectName: hostedProject.name,
+          organizationId: candidate.id,
+          organizationName: candidate.name,
+        };
+      });
     } catch (error) {
       const code = getPostgresErrorCode(error);
       if (code === "23505") {
@@ -129,6 +161,10 @@ export const assignProjectPartnership = authorized
           message: "This Project Partnership violates an Organization invariant.",
         });
       }
+      if (code === "23503") {
+        throw errors.NOT_FOUND({ message: "Partner Organization not found." });
+      }
+      if (isExpectedORPCError(error)) throw error;
 
       console.error("Failed to assign Project Partnership", error);
       throw errors.INTERNAL_SERVER_ERROR();
@@ -140,65 +176,101 @@ export const removeProjectPartnership = authorized
   .input(RemoveProjectPartnershipInputSchema)
   .output(RemoveProjectPartnershipResultSchema)
   .handler(async ({ context, errors, input }) => {
-    const [partnership] = await db
-      .select({
-        projectId: projectPartnerOrganizationsTable.projectId,
-        organizationId: projectPartnerOrganizationsTable.organizationId,
-      })
-      .from(projectPartnerOrganizationsTable)
-      .where(eq(projectPartnerOrganizationsTable.id, input.partnershipId))
-      .limit(1);
-    if (!partnership) {
-      throw errors.FORBIDDEN({
-        message:
-          "The active Organization cannot remove this Project Partnership.",
-      });
-    }
-
-    const relationship = await resolveProjectRelationship({
-      activeOrganizationId: context.session.activeOrganizationId!,
-      projectId: partnership.projectId,
-    });
-    if (relationship.kind !== "hosted") {
-      throw errors.FORBIDDEN({
-        message:
-          "Only the Hosting Organization can remove this Project Partnership.",
-      });
-    }
-
-    const [representedParticipation] = await db
-      .select({ id: projectParticipantsTable.id })
-      .from(projectParticipantsTable)
-      .where(
-        and(
-          eq(projectParticipantsTable.projectId, partnership.projectId),
-          eq(
-            projectParticipantsTable.representedOrganizationId,
-            partnership.organizationId,
-          ),
-        ),
-      )
-      .limit(1);
-    if (representedParticipation) {
-      throw errors.BAD_REQUEST({
-        message:
-          "Remove or reassign represented Project Participations before removing this Project Partnership.",
-      });
-    }
+    const activeOrganizationId = context.session.activeOrganizationId!;
 
     try {
-      const [removed] = await db
-        .delete(projectPartnerOrganizationsTable)
-        .where(eq(projectPartnerOrganizationsTable.id, input.partnershipId))
-        .returning({ id: projectPartnerOrganizationsTable.id });
-      if (!removed) {
-        throw errors.FORBIDDEN({
-          message:
-            "The active Organization cannot remove this Project Partnership.",
-        });
-      }
+      return await db.transaction(async (transaction) => {
+        const [partnership] = await transaction
+          .select({
+            projectId: projectPartnerOrganizationsTable.projectId,
+            organizationId: projectPartnerOrganizationsTable.organizationId,
+          })
+          .from(projectPartnerOrganizationsTable)
+          .innerJoin(
+            projectsTable,
+            and(
+              eq(projectsTable.id, projectPartnerOrganizationsTable.projectId),
+              eq(projectsTable.organizationId, activeOrganizationId),
+            ),
+          )
+          .where(eq(projectPartnerOrganizationsTable.id, input.partnershipId))
+          .for("update")
+          .limit(1);
+        if (!partnership) {
+          throw errors.FORBIDDEN({
+            message:
+              "The active Organization cannot remove this Project Partnership.",
+          });
+        }
 
-      return { id: removed.id, removed: true as const };
+        const [representedParticipation] = await transaction
+          .select({ id: projectParticipantsTable.id })
+          .from(projectParticipantsTable)
+          .where(
+            and(
+              eq(projectParticipantsTable.projectId, partnership.projectId),
+              eq(
+                projectParticipantsTable.representedOrganizationId,
+                partnership.organizationId,
+              ),
+            ),
+          )
+          .limit(1);
+        if (representedParticipation) {
+          throw errors.BAD_REQUEST({
+            message:
+              "Remove or reassign represented Project Participations before removing this Project Partnership.",
+          });
+        }
+
+        const [removed] = await transaction
+          .delete(projectPartnerOrganizationsTable)
+          .where(
+            and(
+              eq(projectPartnerOrganizationsTable.id, input.partnershipId),
+              exists(
+                transaction
+                  .select({ id: projectsTable.id })
+                  .from(projectsTable)
+                  .where(
+                    and(
+                      eq(
+                        projectsTable.id,
+                        projectPartnerOrganizationsTable.projectId,
+                      ),
+                      eq(projectsTable.organizationId, activeOrganizationId),
+                    ),
+                  ),
+              ),
+              notExists(
+                transaction
+                  .select({ id: projectParticipantsTable.id })
+                  .from(projectParticipantsTable)
+                  .where(
+                    and(
+                      eq(
+                        projectParticipantsTable.projectId,
+                        projectPartnerOrganizationsTable.projectId,
+                      ),
+                      eq(
+                        projectParticipantsTable.representedOrganizationId,
+                        projectPartnerOrganizationsTable.organizationId,
+                      ),
+                    ),
+                  ),
+              ),
+            ),
+          )
+          .returning({ id: projectPartnerOrganizationsTable.id });
+        if (!removed) {
+          throw errors.BAD_REQUEST({
+            message:
+              "Remove or reassign represented Project Participations before removing this Project Partnership.",
+          });
+        }
+
+        return { id: removed.id, removed: true as const };
+      });
     } catch (error) {
       if (getPostgresErrorCode(error) === "23514") {
         throw errors.BAD_REQUEST({
@@ -206,15 +278,7 @@ export const removeProjectPartnership = authorized
             "Remove or reassign represented Project Participations before removing this Project Partnership.",
         });
       }
-
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "FORBIDDEN"
-      ) {
-        throw error;
-      }
+      if (isExpectedORPCError(error)) throw error;
 
       console.error("Failed to remove Project Partnership", error);
       throw errors.INTERNAL_SERVER_ERROR();
