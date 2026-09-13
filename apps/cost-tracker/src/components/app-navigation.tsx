@@ -166,7 +166,6 @@ function AccountMenu({
           </DropdownMenuItem>
           <DropdownMenuItem
             className="rounded-md p-0 text-sm tracking-normal normal-case"
-            nativeButton
             render={
               <SignOutButton className="h-9 w-full justify-start rounded-md px-3 text-sm tracking-normal text-destructive normal-case hover:bg-destructive/10 hover:text-destructive" />
             }
