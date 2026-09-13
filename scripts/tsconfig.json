@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "vitest/globals"]
+  },
+  "include": [
+    "check-cost-tracker-persistence-seam.test.ts",
+    "check-cost-tracker-persistence-seam.ts"
+  ]
+}

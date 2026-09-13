@@ -2,15 +2,24 @@
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
+  columnFilteringFeature,
+  filterFn_includesString,
   flexRender,
+  functionalUpdate,
+  rowPaginationFeature,
+  rowSortingFeature,
   tableFeatures,
   type ColumnDef,
+  type ColumnFiltersState,
+  type PaginationState,
+  type SortingState,
   useTable,
 } from "@tanstack/react-table";
 import { RefreshCwIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
-import { useQueryStates } from "nuqs";
-import { useEffect, useMemo, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { type UseQueryStatesReturn, useQueryStates } from "nuqs";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,16 +41,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/components/ui/toast";
 import {
+  getProjectCollectionReturnDestination,
   normalizeProjectCollectionState,
+  type ProjectCollectionState,
   PROJECT_PAGE_SIZES,
   projectCollectionParsers,
   PROJECT_SORT_MODES,
   PROJECT_WINDOW_FILTERS,
+  resolveProjectCollectionState,
+  type ProjectScopeAvailability,
 } from "@/features/projects/collection-state";
-import { getProjectOverviewQueryOptions } from "@/features/projects/project-overview-query-options";
+import {
+  getProjectAvailableScopesQueryOptions,
+  getProjectOverviewQueryOptions,
+} from "@/features/projects/project-overview-query-options";
 
-const serverOwnedTableFeatures = tableFeatures({});
+const projectCollectionTableFeatures = tableFeatures({
+  columnFilteringFeature,
+  rowPaginationFeature,
+  rowSortingFeature,
+  filterFns: { includesString: filterFn_includesString },
+});
+
+const PROJECT_FILTER_IDS = {
+  dateFrom: "dateFrom",
+  dateTo: "dateTo",
+  name: "name",
+  partnerOrganizationIds: "partnerOrganizationIds",
+  window: "window",
+} as const;
 
 type ProjectRow = {
   id: string;
@@ -53,10 +83,100 @@ type ProjectRow = {
   costSubmissionWindowOpen: boolean;
 };
 
-type ProjectCollectionProps = {
-  availableScopes: { hosted: boolean; partner: boolean };
-  initialScope: "hosted" | "partner";
-};
+function getProjectColumnFilters({
+  dateFrom,
+  dateTo,
+  partnerOrganizationIds,
+  search,
+  window,
+}: {
+  dateFrom: Date | null;
+  dateTo: Date | null;
+  partnerOrganizationIds: string[];
+  search: string;
+  window: (typeof PROJECT_WINDOW_FILTERS)[number];
+}): ColumnFiltersState {
+  return [
+    { id: PROJECT_FILTER_IDS.name, value: search },
+    { id: PROJECT_FILTER_IDS.window, value: window },
+    { id: PROJECT_FILTER_IDS.dateFrom, value: dateFrom },
+    { id: PROJECT_FILTER_IDS.dateTo, value: dateTo },
+    {
+      id: PROJECT_FILTER_IDS.partnerOrganizationIds,
+      value: partnerOrganizationIds,
+    },
+  ];
+}
+
+function getStringFilterValue(
+  filters: ColumnFiltersState,
+  id: string,
+  fallback: string,
+) {
+  const value = filters.find((filter) => filter.id === id)?.value;
+  return typeof value === "string" ? value : fallback;
+}
+
+function isProjectWindowFilter(
+  value: string,
+): value is (typeof PROJECT_WINDOW_FILTERS)[number] {
+  return PROJECT_WINDOW_FILTERS.some((filter) => filter === value);
+}
+
+function isProjectPageSize(
+  value: number,
+): value is (typeof PROJECT_PAGE_SIZES)[number] {
+  return PROJECT_PAGE_SIZES.some((pageSize) => pageSize === value);
+}
+
+function getDateFilterValue(
+  filters: ColumnFiltersState,
+  id: string,
+  fallback: Date | null,
+) {
+  const filter = filters.find((entry) => entry.id === id);
+  if (!filter) return fallback;
+  return filter.value instanceof Date ? filter.value : null;
+}
+
+function getStringArrayFilterValue(
+  filters: ColumnFiltersState,
+  id: string,
+  fallback: string[],
+) {
+  const value = filters.find((filter) => filter.id === id)?.value;
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+    ? value
+    : fallback;
+}
+
+function getSortingState(
+  sort: (typeof PROJECT_SORT_MODES)[number],
+): SortingState {
+  switch (sort) {
+    case "start-asc":
+      return [{ id: "startDate", desc: false }];
+    case "start-desc":
+      return [{ id: "startDate", desc: true }];
+    case "end-asc":
+      return [{ id: "endDate", desc: false }];
+    case "end-desc":
+      return [{ id: "endDate", desc: true }];
+    default:
+      return [{ id: "operational", desc: false }];
+  }
+}
+
+function getProjectSortMode(sorting: SortingState) {
+  const currentSort = sorting[0];
+  if (currentSort?.id === "startDate") {
+    return currentSort.desc ? "start-desc" : "start-asc";
+  }
+  if (currentSort?.id === "endDate") {
+    return currentSort.desc ? "end-desc" : "end-asc";
+  }
+  return "operational";
+}
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -85,49 +205,183 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function ProjectCollection({
+export function ProjectCollection() {
+  const { data: availableScopes } = useSuspenseQuery(
+    getProjectAvailableScopesQueryOptions(),
+  );
+
+  if (!availableScopes.hosted && !availableScopes.partner) {
+    return (
+      <section
+        aria-label="Project collection"
+        className="mt-10 rounded-xl border p-8 text-center"
+      >
+        <h2 className="font-heading text-2xl font-semibold">
+          No Projects available
+        </h2>
+        <p className="mt-2 text-muted-foreground">
+          No Projects are hosted by or assigned to your active Organization.
+        </p>
+      </section>
+    );
+  }
+
+  return <AvailableProjectCollection availableScopes={availableScopes} />;
+}
+
+type ProjectCollectionQueryState = UseQueryStatesReturn<
+  typeof projectCollectionParsers
+>;
+
+function AvailableProjectCollection({
   availableScopes,
-  initialScope,
-}: ProjectCollectionProps) {
+}: {
+  availableScopes: ProjectScopeAvailability;
+}) {
   const [urlState, setUrlState] = useQueryStates(projectCollectionParsers, {
     history: "push",
     shallow: true,
   });
-  const state = normalizeProjectCollectionState(urlState);
-  const scope =
-    state.scope && availableScopes[state.scope] ? state.scope : initialScope;
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requestedState = normalizeProjectCollectionState(urlState);
+  const resolution = resolveProjectCollectionState(
+    requestedState,
+    availableScopes,
+  );
+
+  if (!resolution.scope) {
+    return null;
+  }
+
+  return (
+    <ResolvedProjectCollection
+      availableScopes={availableScopes}
+      didPartnerToHostedFallback={resolution.didPartnerToHostedFallback}
+      pathname={pathname}
+      requestedState={requestedState}
+      scope={resolution.scope}
+      searchParams={searchParams}
+      setUrlState={setUrlState}
+      state={resolution.state}
+      urlState={urlState}
+    />
+  );
+}
+
+function ResolvedProjectCollection({
+  availableScopes,
+  didPartnerToHostedFallback,
+  pathname,
+  requestedState,
+  scope,
+  searchParams,
+  setUrlState,
+  state,
+  urlState,
+}: {
+  availableScopes: ProjectScopeAvailability;
+  didPartnerToHostedFallback: boolean;
+  pathname: string;
+  requestedState: ProjectCollectionState;
+  scope: "hosted" | "partner";
+  searchParams: ReturnType<typeof useSearchParams>;
+  setUrlState: ProjectCollectionQueryState[1];
+  state: ProjectCollectionState;
+  urlState: ProjectCollectionQueryState[0];
+}) {
+  const fallbackNotices = useRef(new Set<string>());
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const searchTimeout = useRef<number>(undefined);
 
   useEffect(() => () => window.clearTimeout(searchTimeout.current), []);
+
+  useEffect(() => {
+    if (!didPartnerToHostedFallback) return;
+
+    const noticeKey = `${requestedState.scope}:${requestedState.cursor ?? ""}`;
+    if (fallbackNotices.current.has(noticeKey)) return;
+
+    fallbackNotices.current.add(noticeKey);
+    void setUrlState({ cursor: null, scope }, { history: "replace" });
+    toast.add({
+      description:
+        "Partner Projects are unavailable. Hosted Projects are shown instead.",
+      title: "Project view updated",
+      type: "info",
+    });
+  }, [
+    requestedState.cursor,
+    requestedState.scope,
+    didPartnerToHostedFallback,
+    scope,
+    setUrlState,
+  ]);
 
   const { data, dataUpdatedAt, isFetching, refetch } = useSuspenseQuery(
     getProjectOverviewQueryOptions(scope, state),
   );
 
+  const browserUrl =
+    typeof window === "undefined"
+      ? { pathname: "/projects", search: "" }
+      : window.location;
+  const search = searchParams?.toString() ?? browserUrl.search.slice(1);
+  const returnTo = getProjectCollectionReturnDestination(
+    `${pathname ?? browserUrl.pathname}${search ? `?${search}` : ""}`,
+  );
+
+  const columnFilters = getProjectColumnFilters(urlState);
+  const sorting = getSortingState(state.sort);
+  // Cursors are opaque, so Table tracks whether this is the first page or a
+  // cursor page. The oRPC response supplies the actual forward/backward value.
+  const pagination: PaginationState = {
+    pageIndex: state.cursor ? 1 : 0,
+    pageSize: state.pageSize,
+  };
   const columns = useMemo<
-    ColumnDef<typeof serverOwnedTableFeatures, ProjectRow>[]
+    ColumnDef<typeof projectCollectionTableFeatures, ProjectRow>[]
   >(
     () => [
       {
         accessorKey: "name",
+        enableSorting: false,
         header: "Project",
         cell: ({ row }) => (
           <Link
             className="font-medium text-foreground underline-offset-4 hover:underline"
-            href={`/projects/${encodeURIComponent(row.original.id)}`}
+            href={`/projects/${encodeURIComponent(row.original.id)}?${new URLSearchParams({ returnTo })}`}
           >
             {row.original.name}
           </Link>
         ),
       },
       {
-        id: "schedule",
-        header: "Schedule",
+        accessorKey: "startDate",
+        header: ({ column }) => {
+          const sortDirection = column.getIsSorted();
+          return (
+            <Button
+              aria-label="Sort by start date"
+              onClick={() => column.toggleSorting(sortDirection === "asc")}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              Schedule
+            </Button>
+          );
+        },
         cell: ({ row }) =>
           `${dateFormatter.format(row.original.startDate)} – ${dateFormatter.format(row.original.endDate)}`,
       },
       {
         id: "location",
+        enableSorting: false,
         header: "Location",
         cell: ({ row }) =>
           [row.original.location, row.original.country]
@@ -136,6 +390,7 @@ export function ProjectCollection({
       },
       {
         accessorKey: "costSubmissionWindowOpen",
+        enableSorting: false,
         header: "Submission window",
         cell: ({ row }) => (
           <Badge
@@ -148,21 +403,98 @@ export function ProjectCollection({
         ),
       },
     ],
-    [],
+    [returnTo],
   );
   const table = useTable({
     columns,
     data: data.rows,
-    features: serverOwnedTableFeatures,
+    features: projectCollectionTableFeatures,
+    getRowId: (row) => row.id,
+    manualFiltering: true,
+    manualPagination: true,
+    manualSorting: true,
+    onColumnFiltersChange: (updater) => {
+      const nextFilters = functionalUpdate(updater, columnFilters);
+      const nextWindow = getStringFilterValue(
+        nextFilters,
+        PROJECT_FILTER_IDS.window,
+        state.window,
+      );
+
+      void setUrlState({
+        cursor: null,
+        dateFrom: getDateFilterValue(
+          nextFilters,
+          PROJECT_FILTER_IDS.dateFrom,
+          urlState.dateFrom,
+        ),
+        dateTo: getDateFilterValue(
+          nextFilters,
+          PROJECT_FILTER_IDS.dateTo,
+          urlState.dateTo,
+        ),
+        partnerOrganizationIds: getStringArrayFilterValue(
+          nextFilters,
+          PROJECT_FILTER_IDS.partnerOrganizationIds,
+          urlState.partnerOrganizationIds,
+        ),
+        search: getStringFilterValue(
+          nextFilters,
+          PROJECT_FILTER_IDS.name,
+          urlState.search,
+        ),
+        window: isProjectWindowFilter(nextWindow) ? nextWindow : state.window,
+      });
+    },
+    onPaginationChange: (updater) => {
+      const nextPagination = functionalUpdate(updater, pagination);
+      if (nextPagination.pageSize !== pagination.pageSize) {
+        void setUrlState({
+          cursor: null,
+          pageSize: isProjectPageSize(nextPagination.pageSize)
+            ? nextPagination.pageSize
+            : state.pageSize,
+        });
+        return;
+      }
+
+      const cursor =
+        nextPagination.pageIndex > pagination.pageIndex
+          ? data.nextCursor
+          : nextPagination.pageIndex < pagination.pageIndex
+            ? data.previousCursor
+            : state.cursor;
+      void setUrlState({ cursor: cursor ?? null });
+    },
+    onSortingChange: (updater) => {
+      void setUrlState({
+        cursor: null,
+        sort: getProjectSortMode(functionalUpdate(updater, sorting)),
+      });
+    },
+    pageCount: -1,
+    state: { columnFilters, pagination, sorting },
   });
 
   const updateCollectionState = (patch: Parameters<typeof setUrlState>[0]) =>
     void setUrlState({ ...patch, cursor: null });
+  const updateProjectFilter = (
+    id: (typeof PROJECT_FILTER_IDS)[keyof typeof PROJECT_FILTER_IDS],
+    value: unknown,
+  ) =>
+    table.setColumnFilters((filters) => [
+      ...filters.filter((filter) => filter.id !== id),
+      { id, value },
+    ]);
   const filtered = data.metrics.filtered;
   const whole = data.metrics.whole;
 
   return (
-    <section className="mt-10 space-y-8" aria-label="Project collection">
+    <section
+      aria-label="Project collection"
+      className="mt-10 space-y-8"
+      data-hydrated={isHydrated ? "true" : undefined}
+    >
       <div
         className="flex flex-wrap gap-2"
         role="tablist"
@@ -235,7 +567,7 @@ export function ProjectCollection({
                 const search = event.target.value;
                 window.clearTimeout(searchTimeout.current);
                 searchTimeout.current = window.setTimeout(() => {
-                  void setUrlState({ search, cursor: null });
+                  updateProjectFilter(PROJECT_FILTER_IDS.name, search);
                 }, 300);
               }}
               placeholder="Search at least 3 characters"
@@ -246,9 +578,10 @@ export function ProjectCollection({
           <Label>Submission window</Label>
           <Select
             onValueChange={(value) =>
-              updateCollectionState({
-                window: value as (typeof PROJECT_WINDOW_FILTERS)[number],
-              })
+              updateProjectFilter(
+                PROJECT_FILTER_IDS.window,
+                value && isProjectWindowFilter(value) ? value : state.window,
+              )
             }
             value={state.window}
           >
@@ -268,9 +601,12 @@ export function ProjectCollection({
           <Label>Sort</Label>
           <Select
             onValueChange={(value) =>
-              updateCollectionState({
-                sort: value as (typeof PROJECT_SORT_MODES)[number],
-              })
+              table.setSorting(
+                getSortingState(
+                  PROJECT_SORT_MODES.find((mode) => mode === value) ??
+                    "operational",
+                ),
+              )
             }
             value={state.sort}
           >
@@ -291,11 +627,7 @@ export function ProjectCollection({
         <div className="space-y-2">
           <Label>Projects per page</Label>
           <Select
-            onValueChange={(value) =>
-              updateCollectionState({
-                pageSize: Number(value) as (typeof PROJECT_PAGE_SIZES)[number],
-              })
-            }
+            onValueChange={(value) => table.setPageSize(Number(value))}
             value={String(state.pageSize)}
           >
             <SelectTrigger className="w-full">
@@ -315,11 +647,12 @@ export function ProjectCollection({
           <Input
             id="project-date-from"
             onChange={(event) =>
-              updateCollectionState({
-                dateFrom: event.target.value
+              updateProjectFilter(
+                PROJECT_FILTER_IDS.dateFrom,
+                event.target.value
                   ? new Date(`${event.target.value}T00:00:00.000Z`)
                   : null,
-              })
+              )
             }
             type="date"
             value={state.dateFrom?.toISOString().slice(0, 10) ?? ""}
@@ -330,11 +663,12 @@ export function ProjectCollection({
           <Input
             id="project-date-to"
             onChange={(event) =>
-              updateCollectionState({
-                dateTo: event.target.value
+              updateProjectFilter(
+                PROJECT_FILTER_IDS.dateTo,
+                event.target.value
                   ? new Date(`${event.target.value}T00:00:00.000Z`)
                   : null,
-              })
+              )
             }
             type="date"
             value={state.dateTo?.toISOString().slice(0, 10) ?? ""}
@@ -359,7 +693,10 @@ export function ProjectCollection({
                         : state.partnerOrganizationIds.filter(
                             (id) => id !== partner.id,
                           );
-                      updateCollectionState({ partnerOrganizationIds: ids });
+                      updateProjectFilter(
+                        PROJECT_FILTER_IDS.partnerOrganizationIds,
+                        ids,
+                      );
                     }}
                     type="checkbox"
                   />
@@ -419,7 +756,7 @@ export function ProjectCollection({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow data-project-id={row.id} key={row.id}>
                   {row.getAllCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -433,9 +770,9 @@ export function ProjectCollection({
       </div>
 
       <div className="flex justify-end gap-2">
-        {state.cursor && (
+        {data.previousCursor && (
           <Button
-            onClick={() => window.history.back()}
+            onClick={() => table.previousPage()}
             type="button"
             variant="outline"
           >
@@ -444,7 +781,7 @@ export function ProjectCollection({
         )}
         <Button
           disabled={!data.nextCursor}
-          onClick={() => void setUrlState({ cursor: data.nextCursor ?? null })}
+          onClick={() => table.nextPage()}
           type="button"
           variant="outline"
         >

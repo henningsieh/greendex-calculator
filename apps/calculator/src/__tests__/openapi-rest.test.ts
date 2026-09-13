@@ -14,7 +14,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { env } from "@/env";
 
-import { SEED_USER } from "../../scripts/seed";
+import { SEED_USER } from "../../scripts/seed-user";
 
 const OPENAPI_VERSION_REGEX = /^3\.\d+\.\d+$/;
 const baseUrl = `${env.NEXT_PUBLIC_BASE_URL}/api/openapi`;

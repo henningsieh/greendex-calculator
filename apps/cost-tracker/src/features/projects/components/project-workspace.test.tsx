@@ -33,14 +33,14 @@ const baseProject = {
   costSubmissionWindowOpen: true,
 };
 
-function renderWorkspace() {
+function renderWorkspace(returnTo?: string) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading workspace</p>}>
-        <ProjectWorkspace projectId="project-1" />
+        <ProjectWorkspace projectId="project-1" returnTo={returnTo} />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -51,6 +51,36 @@ beforeEach(() => {
 });
 
 describe("Project workspace", () => {
+  it("returns to the exact Project collection URL", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    };
+    renderWorkspace("/projects?scope=partner&search=climate&cursor=opaque");
+
+    expect(
+      (
+        await screen.findByRole("link", { name: "Back to Projects" })
+      ).getAttribute("href"),
+    ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
+  });
+
+  it("falls back to Projects for an unsafe return destination", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    };
+    renderWorkspace("https://attacker.example/projects");
+
+    expect(
+      (
+        await screen.findByRole("link", { name: "Back to Projects" })
+      ).getAttribute("href"),
+    ).toBe("/projects");
+  });
+
   it("renders the Hosted-safe shell and management navigation", async () => {
     mocks.detail = {
       ...baseProject,

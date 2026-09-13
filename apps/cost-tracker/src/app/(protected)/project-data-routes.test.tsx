@@ -10,24 +10,30 @@ const mocks = vi.hoisted(() => ({
   hydrateClient: vi.fn(
     ({ children }: { children: React.ReactNode; client: unknown }) => children,
   ),
-  query: vi.fn().mockResolvedValue(undefined),
+  query: vi.fn((options: { queryKey: string[] }) =>
+    options.queryKey[1] === "available-scopes"
+      ? mocks.availableScopes()
+      : Promise.resolve(undefined),
+  ),
   swallowPrefetchError: vi.fn(),
 }));
 
 const queryClient = { query: mocks.query };
 
 vi.mock("@/features/projects/components/project-collection", () => ({
-  ProjectCollection: ({ initialScope }: { initialScope: string }) => (
-    <p>Project collection: {initialScope}</p>
-  ),
+  ProjectCollection: () => <p>Project collection</p>,
 }));
 vi.mock("@/features/projects/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: () => <p>Project Partnership manager</p>,
 }));
 vi.mock("@/features/projects/components/project-workspace", () => ({
-  ProjectWorkspace: ({ projectId }: { projectId: string }) => (
-    <p>Project workspace: {projectId}</p>
-  ),
+  ProjectWorkspace: ({
+    projectId,
+    returnTo,
+  }: {
+    projectId: string;
+    returnTo?: string;
+  }) => <p data-return-to={returnTo}>Project workspace: {projectId}</p>,
 }));
 vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
   ProjectDataErrorBoundary: ({
@@ -39,6 +45,9 @@ vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
   }) => <div data-resource={resource}>{children}</div>,
 }));
 vi.mock("@/features/projects/project-overview-query-options", () => ({
+  getProjectAvailableScopesQueryOptions: () => ({
+    queryKey: ["projects", "available-scopes"],
+  }),
   getProjectOverviewQueryOptions: mocks.getOverviewOptions,
 }));
 vi.mock("@/lib/orpc/orpc", () => ({
@@ -83,11 +92,14 @@ describe("Cost Tracker Project data routes", () => {
       "hosted",
       expect.objectContaining({ pageSize: 25, window: "all" }),
     );
-    expect(mocks.query).toHaveBeenCalledOnce();
-    expect(mocks.query).toHaveBeenCalledWith({
+    expect(mocks.query).toHaveBeenCalledTimes(2);
+    expect(mocks.query).toHaveBeenNthCalledWith(1, {
+      queryKey: ["projects", "available-scopes"],
+    });
+    expect(mocks.query).toHaveBeenNthCalledWith(2, {
       queryKey: ["projects", "hosted"],
     });
-    expect(screen.getByText("Project collection: hosted")).toBeTruthy();
+    expect(screen.getByText("Project collection")).toBeTruthy();
   });
 
   it("uses Partner when requested and available", async () => {
@@ -101,7 +113,7 @@ describe("Cost Tracker Project data routes", () => {
       "partner",
       expect.objectContaining({ window: "open" }),
     );
-    expect(screen.getByText("Project collection: partner")).toBeTruthy();
+    expect(screen.getByText("Project collection")).toBeTruthy();
   });
 
   it("falls back to Partner when no Hosted Projects are available", async () => {
@@ -109,7 +121,35 @@ describe("Cost Tracker Project data routes", () => {
 
     render(await ProjectsPage());
 
-    expect(screen.getByText("Project collection: partner")).toBeTruthy();
+    expect(screen.getByText("Project collection")).toBeTruthy();
+  });
+
+  it("does not prefetch an overview when no Project scope is available", async () => {
+    mocks.availableScopes.mockResolvedValue({ hosted: false, partner: false });
+
+    render(await ProjectsPage());
+
+    expect(mocks.getOverviewOptions).not.toHaveBeenCalled();
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Project collection")).toBeTruthy();
+  });
+
+  it("prefetches Hosted Projects without a stale Partner cursor", async () => {
+    mocks.availableScopes.mockResolvedValue({ hosted: true, partner: false });
+
+    render(
+      await ProjectsPage({
+        searchParams: Promise.resolve({
+          cursor: "partner-cursor",
+          scope: "partner",
+        }),
+      }),
+    );
+
+    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+      "hosted",
+      expect.objectContaining({ cursor: undefined }),
+    );
   });
 
   it("prefetches Project Partnership management data", async () => {
@@ -121,12 +161,23 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByText("Project Partnership manager")).toBeTruthy();
   });
 
-  it("prefetches the relationship-derived Project workspace", async () => {
-    render(await ProjectPage({ params: Promise.resolve({ id: "project-1" }) }));
+  it("keeps Project authorization independent from the return destination", async () => {
+    render(
+      await ProjectPage({
+        params: Promise.resolve({ id: "project-1" }),
+        searchParams: Promise.resolve({
+          returnTo: "/projects?scope=partner&search=climate&cursor=opaque",
+        }),
+      }),
+    );
 
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["projects", "detail", "project-1"],
     });
-    expect(screen.getByText("Project workspace: project-1")).toBeTruthy();
+    expect(
+      screen
+        .getByText("Project workspace: project-1")
+        .getAttribute("data-return-to"),
+    ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
   });
 });

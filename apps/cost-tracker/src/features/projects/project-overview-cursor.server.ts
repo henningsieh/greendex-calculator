@@ -5,8 +5,11 @@ import { z } from "zod";
 
 import { PROJECT_SORT_MODES } from "@/features/projects/collection-state";
 
+const CursorVersionSchema = z.object({ version: z.number().int() }).loose();
+
 const CursorSchema = z.object({
-  version: z.literal(1),
+  version: z.literal(2),
+  direction: z.enum(["next", "previous"]),
   fingerprint: z.string().length(64),
   sort: z.enum(PROJECT_SORT_MODES),
   id: z.string().min(1).max(128),
@@ -53,14 +56,26 @@ export function encodeProjectOverviewCursor(
 export function decodeProjectOverviewCursor(
   value: string,
   fingerprint: string,
-): ProjectOverviewCursor | undefined {
+):
+  | { status: "valid"; cursor: ProjectOverviewCursor }
+  | { status: "unsupported-version" }
+  | { status: "invalid" } {
   try {
-    const cursor = CursorSchema.parse(
-      JSON.parse(Buffer.from(value, "base64url").toString("utf8")),
+    const payload: unknown = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8"),
     );
+    const version = CursorVersionSchema.safeParse(payload);
 
-    return cursor.fingerprint === fingerprint ? cursor : undefined;
+    if (!version.success) return { status: "invalid" };
+    if (version.data.version !== 2) return { status: "unsupported-version" };
+
+    const cursor = CursorSchema.safeParse(payload);
+    if (!cursor.success || cursor.data.fingerprint !== fingerprint) {
+      return { status: "invalid" };
+    }
+
+    return { status: "valid", cursor: cursor.data };
   } catch {
-    return undefined;
+    return { status: "invalid" };
   }
 }

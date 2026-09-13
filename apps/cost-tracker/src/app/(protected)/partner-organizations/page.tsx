@@ -17,7 +17,11 @@ export default async function PartnerOrganizationsPage() {
 
   const queryClient = getQueryClient();
   await queryClient
-    .query(orpcQuery.projectPartnerships.list.queryOptions())
+    .query(
+      orpcQuery.projectPartnerships.list.queryOptions({
+        meta: { costTrackerORPC: true },
+      }),
+    )
     .catch(swallowPrefetchError);
 
   return (

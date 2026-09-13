@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -17,15 +18,21 @@ const mocks = vi.hoisted(() => ({
     cursor: "",
     pageSize: 25 as const,
   },
+  projectReturnSearch:
+    "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque",
 }));
 
 vi.mock("nuqs", () => ({
   useQueryStates: () => [mocks.state, mocks.setUrlState],
 }));
 vi.mock("@/features/projects/project-overview-query-options", () => ({
+  getProjectAvailableScopesQueryOptions: () => ({
+    queryKey: ["projects", "available-scopes"],
+    queryFn: async () => ({ hosted: true, partner: true }),
+  }),
   getProjectOverviewQueryOptions: (
     scope: "hosted" | "partner",
-    state: object,
+    state: { cursor?: string },
   ) => ({
     queryKey: ["projects", scope, state],
     queryFn: async () => ({
@@ -42,6 +49,7 @@ vi.mock("@/features/projects/project-overview-query-options", () => ({
         },
       ],
       nextCursor: "next-page",
+      previousCursor: state.cursor ? "previous-page" : undefined,
       metrics: {
         whole: {
           projectCount: 3,
@@ -68,10 +76,7 @@ function renderCollection() {
   return render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading Projects</p>}>
-        <ProjectCollection
-          availableScopes={{ hosted: true, partner: true }}
-          initialScope="hosted"
-        />
+        <ProjectCollection />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -82,11 +87,33 @@ beforeEach(() => {
   mocks.state.scope = null;
   mocks.state.search = "";
   mocks.state.cursor = "";
+  mocks.state.dateFrom = null;
+  mocks.state.dateTo = null;
   mocks.state.partnerOrganizationIds = [];
+  mocks.projectReturnSearch =
+    "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque";
+  window.history.replaceState({}, "", `/projects?${mocks.projectReturnSearch}`);
 });
 
 describe("Project collection", { timeout: 10_000 }, () => {
   it("renders one server-returned page without exposing deferred fields", async () => {
+    renderCollection();
+
+    expect(
+      await screen.findByRole(
+        "link",
+        { name: "Climate Forum" },
+        { timeout: 10_000 },
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Open")).toBeTruthy();
+    expect(screen.getByText("Projects (3 total)")).toBeTruthy();
+    expect(
+      screen.queryByText(/EUR|submission count|latest activity/i),
+    ).toBeNull();
+  });
+
+  it("preserves the complete collection state when opening a Project", async () => {
     renderCollection();
 
     expect(
@@ -97,12 +124,9 @@ describe("Project collection", { timeout: 10_000 }, () => {
           { timeout: 10_000 },
         )
       ).getAttribute("href"),
-    ).toBe("/projects/project-1");
-    expect(screen.getByText("Open")).toBeTruthy();
-    expect(screen.getByText("Projects (3 total)")).toBeTruthy();
-    expect(
-      screen.queryByText(/EUR|submission count|latest activity/i),
-    ).toBeNull();
+    ).toBe(
+      "/projects/project-1?returnTo=%2Fprojects%3Fscope%3Dpartner%26search%3Dclimate%26window%3Dopen%26dateFrom%3D2026-01-01%26dateTo%3D2026-12-31%26partnerOrganizationIds%3Dpartner-1%26sort%3Dstart-desc%26pageSize%3D50%26cursor%3Dopaque",
+    );
   });
 
   it("clears the cursor when scope or filters change", async () => {
@@ -117,16 +141,127 @@ describe("Project collection", { timeout: 10_000 }, () => {
 
     fireEvent.click(screen.getByLabelText("Mobility Group"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
-      partnerOrganizationIds: ["partner-1"],
       cursor: null,
+      dateFrom: null,
+      dateTo: null,
+      partnerOrganizationIds: ["partner-1"],
+      search: "",
+      window: "all",
     });
   });
 
-  it("stores the opaque next cursor in shallow URL state", async () => {
+  it("clears explicit Project date filters instead of restoring their previous values", async () => {
+    mocks.state.dateFrom = new Date("2026-01-01T00:00:00.000Z");
+    mocks.state.dateTo = new Date("2026-12-31T00:00:00.000Z");
     renderCollection();
     await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
 
+    fireEvent.change(screen.getByLabelText("Active on or after"), {
+      target: { value: "" },
+    });
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      dateFrom: null,
+      dateTo: mocks.state.dateTo,
+      partnerOrganizationIds: [],
+      search: "",
+      window: "all",
+    });
+
+    fireEvent.change(screen.getByLabelText("Active on or before"), {
+      target: { value: "" },
+    });
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      dateFrom: mocks.state.dateFrom,
+      dateTo: null,
+      partnerOrganizationIds: [],
+      search: "",
+      window: "all",
+    });
+  });
+
+  it("writes the opaque pagination cursors directly to URL state", async () => {
+    mocks.state.cursor = "current-page";
+    const browserBack = vi.spyOn(window.history, "back");
+    renderCollection();
+    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: "previous-page",
+    });
+    expect(browserBack).not.toHaveBeenCalled();
+
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(mocks.setUrlState).toHaveBeenCalledWith({ cursor: "next-page" });
+  });
+
+  it("registers every Table function required by the server-controlled columns", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const consoleWarn = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+
+    try {
+      renderCollection();
+      await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+      fireEvent.change(screen.getByLabelText("Project name"), {
+        target: { value: "Travel" },
+      });
+      await waitFor(() => expect(mocks.setUrlState).toHaveBeenCalled());
+
+      expect(consoleWarn).not.toHaveBeenCalledWith(
+        expect.stringContaining("is not registered"),
+      );
+    } finally {
+      consoleWarn.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("coordinates table controls with URL state without processing a server page", async () => {
+    renderCollection();
+    const projectLink = await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
+
+    expect(projectLink.closest("tr")?.getAttribute("data-project-id")).toBe(
+      "project-1",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sort by start date" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      sort: "start-asc",
+    });
+
+    fireEvent.change(screen.getByLabelText("Project name"), {
+      target: { value: "Travel" },
+    });
+    await waitFor(() =>
+      expect(mocks.setUrlState).toHaveBeenCalledWith({
+        cursor: null,
+        dateFrom: null,
+        dateTo: null,
+        partnerOrganizationIds: [],
+        search: "Travel",
+        window: "all",
+      }),
+    );
+
+    const user = userEvent.setup();
+    const pageSizeSelect = screen.getAllByRole("combobox")[2];
+    if (!pageSizeSelect) throw new Error("Projects per page control is missing.");
+    await user.click(pageSizeSelect);
+    await user.click(await screen.findByRole("option", { name: "50" }));
+    await waitFor(() =>
+      expect(mocks.setUrlState).toHaveBeenCalledWith({
+        cursor: null,
+        pageSize: 50,
+      }),
+    );
   });
 });

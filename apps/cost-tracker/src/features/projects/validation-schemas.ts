@@ -61,6 +61,7 @@ const ProjectOverviewMetricsSchema = z.object({
 export const HostedProjectOverviewSchema = z.object({
   scope: z.literal("hosted"),
   rows: z.array(ProjectOverviewRowSchema).max(100),
+  previousCursor: z.string().optional(),
   nextCursor: z.string().optional(),
   metrics: z.object({
     whole: ProjectOverviewMetricsSchema.extend({
@@ -76,6 +77,7 @@ export const HostedProjectOverviewSchema = z.object({
 export const PartnerProjectOverviewSchema = z.object({
   scope: z.literal("partner"),
   rows: z.array(ProjectOverviewRowSchema).max(100),
+  previousCursor: z.string().optional(),
   nextCursor: z.string().optional(),
   metrics: z.object({
     whole: ProjectOverviewMetricsSchema,

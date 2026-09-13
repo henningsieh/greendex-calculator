@@ -1,9 +1,15 @@
-import { defaultShouldDehydrateQuery, QueryClient } from "@tanstack/react-query";
+import {
+  defaultShouldDehydrateQuery,
+  QueryCache,
+  QueryClient,
+  type QueryCacheConfig,
+} from "@tanstack/react-query";
 
 import { serializer } from "@/lib/serializer";
 
-export function createQueryClient() {
+export function createQueryClient(queryCacheConfig?: QueryCacheConfig) {
   return new QueryClient({
+    queryCache: queryCacheConfig ? new QueryCache(queryCacheConfig) : undefined,
     defaultOptions: {
       queries: {
         staleTime: 60_000,

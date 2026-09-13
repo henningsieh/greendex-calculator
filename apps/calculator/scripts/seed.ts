@@ -26,6 +26,8 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import { SEED_USER } from "./seed-user";
+
 // Load environment variables from .env file
 config({ path: ".env" });
 
@@ -43,12 +45,6 @@ const seedPool = new Pool({
 });
 
 const db = drizzle(seedPool, { schema });
-
-export const SEED_USER = {
-  name: "Seed Owner",
-  email: "owner@sieh.org",
-  password: "SecurePassword123!",
-} as const;
 
 const SEED_ORGANIZATION = {
   name: "Seed Organization",

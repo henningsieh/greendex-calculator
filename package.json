@@ -8,12 +8,13 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam",
     "check:agent-instructions": "node scripts/check-agent-instructions.mjs",
-    "check:cost-tracker-persistence-seam": "node scripts/check-cost-tracker-persistence-seam.mjs",
+    "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
     "start": "turbo run start",
     "format": "turbo run format",
     "test": "turbo run test --",
     "test:run": "turbo run test:run --",
-    "type-check": "turbo run type-check",
+    "type-check": "turbo run type-check && pnpm run type-check:cost-tracker-persistence-seam",
+    "type-check:cost-tracker-persistence-seam": "tsc --project scripts/tsconfig.json",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
     "db:studio": "turbo run db:studio",
@@ -26,7 +27,7 @@
     "test:e2e:debug": "turbo run test:e2e:debug --",
     "test:e2e:headed": "turbo run test:e2e:headed --",
     "test:e2e:report": "turbo run test:e2e:report --",
-    "test:cost-tracker-persistence-seam": "pnpm --filter @greendex/cost-tracker exec vitest run --root ../.. scripts/check-cost-tracker-persistence-seam.test.ts"
+    "test:cost-tracker-persistence-seam": "vitest run scripts/check-cost-tracker-persistence-seam.test.ts"
   },
   "dependencies": {
     "dotenv-cli": "^11.0.0",
@@ -40,18 +41,12 @@
     "oxfmt": "^0.66.0",
     "oxlint": "^1.81.0",
     "oxlint-tsgolint": "^7.0.2001",
-    "typescript": "catalog:"
+    "tsx": "^4.23.13",
+    "typescript": "catalog:",
+    "vitest": "^5.0.0"
   },
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@12.3.4",
-  "intent": {
-    "skills": [
-      "workspace:@greendex/config",
-      "@tanstack/react-table",
-      "@tanstack/table-core",
-      "dotenv"
-    ]
-  }
+  "packageManager": "pnpm@12.3.4"
 }

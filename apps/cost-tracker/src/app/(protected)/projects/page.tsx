@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 
 import {
-  normalizeProjectCollectionState,
   loadProjectCollectionSearchParams,
+  normalizeProjectCollectionState,
+  resolveProjectCollectionState,
 } from "@/features/projects/collection-state";
 import { ProjectCollection } from "@/features/projects/components/project-collection";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
-import { getProjectOverviewQueryOptions } from "@/features/projects/project-overview-query-options";
-import { orpc } from "@/lib/orpc/orpc";
+import {
+  getProjectAvailableScopesQueryOptions,
+  getProjectOverviewQueryOptions,
+} from "@/features/projects/project-overview-query-options";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
@@ -28,27 +31,25 @@ export default async function ProjectsPage(
 ) {
   if (!(await hasOrganizationMembership())) return null;
 
+  const queryClient = getQueryClient();
   const [urlState, availableScopes] = await Promise.all([
     loadProjectCollectionSearchParams(searchParams),
-    orpc.projects
-      .availableScopes()
-      .catch(() => ({ hosted: true, partner: false })),
+    queryClient
+      .query(getProjectAvailableScopesQueryOptions())
+      .catch(swallowPrefetchError),
   ]);
-  const state = normalizeProjectCollectionState(urlState);
-  const requestedScope = state.scope;
-  const initialScope =
-    requestedScope === "partner" && availableScopes.partner
-      ? "partner"
-      : requestedScope === "hosted" && availableScopes.hosted
-        ? "hosted"
-        : availableScopes.hosted
-          ? "hosted"
-          : availableScopes.partner
-            ? "partner"
-            : "hosted";
-  const queryOptions = getProjectOverviewQueryOptions(initialScope, state);
-  const queryClient = getQueryClient();
-  await queryClient.query(queryOptions).catch(swallowPrefetchError);
+
+  if (availableScopes) {
+    const resolution = resolveProjectCollectionState(
+      normalizeProjectCollectionState(urlState),
+      availableScopes,
+    );
+    if (resolution.scope) {
+      await queryClient
+        .query(getProjectOverviewQueryOptions(resolution.scope, resolution.state))
+        .catch(swallowPrefetchError);
+    }
+  }
 
   return (
     <div>
@@ -64,10 +65,7 @@ export default async function ProjectsPage(
 
       <HydrateClient client={queryClient}>
         <ProjectDataErrorBoundary resource="Projects">
-          <ProjectCollection
-            availableScopes={availableScopes}
-            initialScope={initialScope}
-          />
+          <ProjectCollection />
         </ProjectDataErrorBoundary>
       </HydrateClient>
     </div>

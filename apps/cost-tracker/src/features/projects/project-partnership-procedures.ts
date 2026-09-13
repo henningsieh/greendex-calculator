@@ -8,7 +8,7 @@ import {
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { resolveProjectRelationship } from "@/features/projects/project-relationship.server";
+import { resolveProjectRelationship } from "@/features/projects/project-relationship-procedure";
 import {
   AssignProjectPartnershipInputSchema,
   ProjectPartnershipSchema,
