@@ -64,8 +64,7 @@ export function ProjectPartnershipManager() {
     onError: (error) => setFeedback(mutationMessage(error)),
   });
   const removeMutation = useMutation({
-    mutationFn: (partnershipId: string) =>
-      orpc.projectPartnerships.remove({ partnershipId }),
+    mutationFn: (id: string) => orpc.projectPartnerships.remove({ id }),
     onSuccess: async () => {
       setFeedback("Project Partnership removed.");
       await invalidateProjectData();
