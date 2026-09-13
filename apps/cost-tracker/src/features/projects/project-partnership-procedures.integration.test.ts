@@ -247,17 +247,13 @@ describe("Project Partnership procedures", () => {
 
   it("removes an unreferenced Partnership", async () => {
     await expect(
-      client.projectPartnerships.remove({
-        partnershipId: removablePartnershipId,
-      }),
+      client.projectPartnerships.remove({ id: removablePartnershipId }),
     ).resolves.toEqual({ id: removablePartnershipId, removed: true });
   });
 
   it("translates the represented-Organization removal block safely", async () => {
     await expect(
-      client.projectPartnerships.remove({
-        partnershipId: assignedPartnershipId,
-      }),
+      client.projectPartnerships.remove({ id: assignedPartnershipId }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 

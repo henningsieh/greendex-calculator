@@ -193,7 +193,7 @@ export const removeProjectPartnership = authorized
               eq(projectsTable.organizationId, activeOrganizationId),
             ),
           )
-          .where(eq(projectPartnerOrganizationsTable.id, input.partnershipId))
+          .where(eq(projectPartnerOrganizationsTable.id, input.id))
           .for("update")
           .limit(1);
         if (!partnership) {
@@ -227,7 +227,7 @@ export const removeProjectPartnership = authorized
           .delete(projectPartnerOrganizationsTable)
           .where(
             and(
-              eq(projectPartnerOrganizationsTable.id, input.partnershipId),
+              eq(projectPartnerOrganizationsTable.id, input.id),
               exists(
                 transaction
                   .select({ id: projectsTable.id })
