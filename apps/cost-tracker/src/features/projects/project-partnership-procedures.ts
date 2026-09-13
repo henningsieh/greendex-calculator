@@ -24,6 +24,7 @@ function getPostgresErrorCode(error: unknown): string | undefined {
   return undefined;
 }
 
+/** Identifies typed request errors that can pass through persistence handling. */
 function isExpectedORPCError(error: unknown): boolean {
   if (typeof error !== "object" || error === null || !("code" in error)) {
     return false;
@@ -77,6 +78,12 @@ export const listProjectPartnerships = authorized
       ),
   );
 
+/**
+ * Assigns an existing Organization to a Project hosted by the active Organization.
+ *
+ * Returns the created Project Partnership and rejects inaccessible Projects,
+ * unknown Organizations, self-Partnerships, duplicates, and invariant violations.
+ */
 export const assignProjectPartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
   .input(AssignProjectPartnershipInputSchema)
@@ -171,6 +178,12 @@ export const assignProjectPartnership = authorized
     }
   });
 
+/**
+ * Removes a Project Partnership owned by the active Hosting Organization.
+ *
+ * Returns the removed Partnership ID and rejects removals that would leave a
+ * Project Participation representing an unassigned Organization.
+ */
 export const removeProjectPartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["delete"] }))
   .input(RemoveProjectPartnershipInputSchema)
