@@ -107,24 +107,108 @@ settings:
 
 catalogs:
   default:
+    '@hookform/resolvers':
+      specifier: ^5.9.1
+      version: 5.9.1
+    '@orpc/client':
+      specifier: ^1.15.0
+      version: 1.15.0
+    '@orpc/server':
+      specifier: ^1.15.0
+      version: 1.15.0
+    '@orpc/tanstack-query':
+      specifier: ^1.15.0
+      version: 1.15.0
+    '@paralleldrive/cuid2':
+      specifier: ^3.3.0
+      version: 3.3.0
+    '@playwright/test':
+      specifier: ^1.63.0
+      version: 1.63.0
+    '@radix-ui/react-dropdown-menu':
+      specifier: ^2.1.24
+      version: 2.1.24
+    '@t3-oss/env-nextjs':
+      specifier: ^0.13.11
+      version: 0.13.11
+    '@tailwindcss/postcss':
+      specifier: 4.3.3
+      version: 4.3.3
+    '@tanstack/react-query':
+      specifier: ^5.102.8
+      version: 5.102.8
+    '@tanstack/react-table':
+      specifier: ^9.2.4
+      version: 9.2.4
     '@types/node':
       specifier: 26.4.1
       version: 26.4.1
+    '@types/pg':
+      specifier: ^8.23.1
+      version: 8.23.1
     '@types/react':
       specifier: 19.2.18
       version: 19.2.18
     '@types/react-dom':
       specifier: 19.2.7
       version: 19.2.7
+    '@vitejs/plugin-react':
+      specifier: ^6.1.1
+      version: 6.1.1
+    babel-plugin-react-compiler:
+      specifier: 1.0.0
+      version: 1.0.0
     better-auth:
       specifier: 1.7.3
       version: 1.7.3
+    class-variance-authority:
+      specifier: ^0.7.1
+      version: 0.7.1
+    clsx:
+      specifier: ^2.1.1
+      version: 2.1.1
+    country-flag-icons:
+      specifier: ^1.6.20
+      version: 1.6.20
+    dotenv:
+      specifier: ^17.4.2
+      version: 17.4.2
+    dotenv-cli:
+      specifier: ^11.0.0
+      version: 11.0.0
+    drizzle-orm:
+      specifier: ^0.45.2
+      version: 0.45.2
+    drizzle-zod:
+      specifier: ^0.8.3
+      version: 0.8.3
+    jsdom:
+      specifier: ^30.0.1
+      version: 30.0.1
+    lucide-react:
+      specifier: 1.41.0
+      version: 1.41.0
     next:
       specifier: 16.3.4
       version: 16.3.4
     next-intl:
       specifier: 4.14.2
       version: 4.14.2
+    next-themes:
+      specifier: ^0.4.6
+      version: 0.4.6
+    nuqs:
+      specifier: ^2.10.1
+      version: 2.10.1
+    oxfmt:
+      specifier: ^0.66.0
+      version: 0.66.0
+    oxlint:
+      specifier: ^1.81.0
+      version: 1.81.0
+    pg:
+      specifier: ^8.23.0
+      version: 8.23.0
     react:
       specifier: 19.2.8
       version: 19.2.8
@@ -134,16 +218,40 @@ catalogs:
     react-email:
       specifier: 6.9.3
       version: 6.9.3
+    react-error-boundary:
+      specifier: ^6.1.5
+      version: 6.1.5
+    react-hook-form:
+      specifier: ^7.87.0
+      version: 7.87.0
+    tailwind-merge:
+      specifier: 3.6.0
+      version: 3.6.0
+    tailwindcss:
+      specifier: 4.3.3
+      version: 4.3.3
+    tsx:
+      specifier: ^4.23.13
+      version: 4.23.13
+    tw-animate-css:
+      specifier: ^1.4.0
+      version: 1.4.0
     typescript:
       specifier: 7.0.2
       version: 7.0.2
+    vite:
+      specifier: 8.2.2
+      version: 8.2.2
+    zod:
+      specifier: ^4.5.4
+      version: 4.5.4
 
 importers:
 
   .:
     dependencies:
       dotenv-cli:
-        specifier: ^11.0.0
+        specifier: 'catalog:'
         version: 11.0.0
       turbo:
         specifier: ^2.10.12
@@ -162,16 +270,16 @@ importers:
         specifier: ^9.1.7
         version: 9.1.7
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       oxlint-tsgolint:
         specifier: ^7.0.2001
         version: 7.0.2001
       tsx:
-        specifier: ^4.23.13
+        specifier: 'catalog:'
         version: 4.23.13
       typescript:
         specifier: 'catalog:'
@@ -198,19 +306,19 @@ importers:
         specifier: workspace:*
         version: link:../../packages/i18n
       '@hookform/resolvers':
-        specifier: ^5.9.1
+        specifier: 'catalog:'
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.87.0(react@19.2.8))(zod@4.5.4)
       '@orpc/client':
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       '@orpc/openapi':
         specifier: ^1.15.0
         version: 1.15.0(ws@8.21.3)
       '@orpc/server':
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0(ws@8.21.3)
       '@orpc/tanstack-query':
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0(@orpc/client@1.15.0)(@tanstack/query-core@5.102.8)
       '@orpc/zod':
         specifier: 1.15.0
@@ -297,25 +405,25 @@ importers:
         specifier: ^1.2.6
         version: 1.2.6(@types/react@19.2.18)(react@19.2.8)
       '@t3-oss/env-nextjs':
-        specifier: ^0.13.11
+        specifier: 'catalog:'
         version: 0.13.11(typescript@7.0.2)(zod@4.5.4)
       '@tanstack/react-query':
-        specifier: ^5.102.8
+        specifier: 'catalog:'
         version: 5.102.8(react@19.2.8)
       '@tanstack/react-query-devtools':
         specifier: ^5.102.8
         version: 5.102.8(@tanstack/react-query@5.102.8(react@19.2.8))(react@19.2.8)
       '@tanstack/react-table':
-        specifier: ^9.2.4
+        specifier: 'catalog:'
         version: 9.2.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       better-auth:
         specifier: 'catalog:'
         version: 1.7.3(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0))(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@5.0.0)
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 'catalog:'
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       cmdk:
         specifier: ^1.1.1
@@ -327,16 +435,16 @@ importers:
         specifier: ^10.0.5
         version: 10.0.5
       country-flag-icons:
-        specifier: ^1.6.20
+        specifier: 'catalog:'
         version: 1.6.20
       dotenv-cli:
-        specifier: ^11.0.0
+        specifier: 'catalog:'
         version: 11.0.0
       drizzle-orm:
-        specifier: ^0.45.2
+        specifier: 'catalog:'
         version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0)
       drizzle-zod:
-        specifier: ^0.8.3
+        specifier: 'catalog:'
         version: 0.8.3(drizzle-orm@0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0))(zod@4.5.4)
       embla-carousel-react:
         specifier: ^8.6.0
@@ -348,7 +456,7 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       lucide-react:
-        specifier: 1.41.0
+        specifier: 'catalog:'
         version: 1.41.0(react@19.2.8)
       motion:
         specifier: ^13.2.0
@@ -360,10 +468,10 @@ importers:
         specifier: 'catalog:'
         version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       next-themes:
-        specifier: ^0.4.6
+        specifier: 'catalog:'
         version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       nuqs:
-        specifier: ^2.10.1
+        specifier: 'catalog:'
         version: 2.10.1(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       qrcode:
         specifier: ^1.5.4
@@ -381,10 +489,10 @@ importers:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
       react-error-boundary:
-        specifier: ^6.1.5
+        specifier: 'catalog:'
         version: 6.1.5(@types/react@19.2.18)(react@19.2.8)
       react-hook-form:
-        specifier: ^7.87.0
+        specifier: 'catalog:'
         version: 7.87.0(react@19.2.8)
       socket.io:
         specifier: ^4.8.3
@@ -396,35 +504,35 @@ importers:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tailwind-merge:
-        specifier: 3.6.0
+        specifier: 'catalog:'
         version: 3.6.0
       tsx:
-        specifier: ^4.23.13
+        specifier: 'catalog:'
         version: 4.23.13
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       zod:
-        specifier: ^4.5.4
+        specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
       '@noble/hashes':
         specifier: ^2.4.0
         version: 2.4.0
       '@paralleldrive/cuid2':
-        specifier: ^3.3.0
+        specifier: 'catalog:'
         version: 3.3.0
       '@playwright/test':
-        specifier: ^1.63.0
+        specifier: 'catalog:'
         version: 1.63.0
       '@tailwindcss/postcss':
-        specifier: 4.3.3
+        specifier: 'catalog:'
         version: 4.3.3
       '@types/node':
         specifier: 'catalog:'
         version: 26.4.1
       '@types/pg':
-        specifier: ^8.23.1
+        specifier: 'catalog:'
         version: 8.23.1
       '@types/qrcode':
         specifier: ^1.5.6
@@ -436,7 +544,7 @@ importers:
         specifier: 'catalog:'
         version: 19.2.7(@types/react@19.2.18)
       '@vitejs/plugin-react':
-        specifier: ^6.1.1
+        specifier: 'catalog:'
         version: 6.1.1(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       '@vitest/ui':
         specifier: ^5.0.0
@@ -445,40 +553,40 @@ importers:
         specifier: ^1.7.3
         version: 1.7.3(@better-fetch/fetch@1.3.1)(better-call@1.4.0(zod@4.5.4))(chokidar@5.0.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(vitest@5.0.0)
       babel-plugin-react-compiler:
-        specifier: 1.0.0
+        specifier: 'catalog:'
         version: 1.0.0
       dotenv:
-        specifier: ^17.4.2
+        specifier: 'catalog:'
         version: 17.4.2
       jsdom:
-        specifier: ^30.0.1
+        specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.4.0)
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       pg:
-        specifier: ^8.23.0
+        specifier: 'catalog:'
         version: 8.23.0
       playwright:
         specifier: ^1.63.0
         version: 1.63.0
       tailwindcss:
-        specifier: ^4.3.3
+        specifier: 'catalog:'
         version: 4.3.3
       ts-prune:
         specifier: ^0.10.3
         version: 0.10.3
       tw-animate-css:
-        specifier: ^1.4.0
+        specifier: 'catalog:'
         version: 1.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
       vite:
-        specifier: 8.2.2
+        specifier: 'catalog:'
         version: 8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
       vitest:
         specifier: ^5.0.0
@@ -499,55 +607,55 @@ importers:
         specifier: workspace:*
         version: link:../../packages/email
       '@hookform/resolvers':
-        specifier: ^5.9.1
+        specifier: 'catalog:'
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.87.0(react@19.2.8))(zod@4.5.4)
       '@orpc/client':
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       '@orpc/server':
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0(ws@8.21.3)
       '@orpc/tanstack-query':
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0(@orpc/client@1.15.0)(@tanstack/query-core@5.102.8)
       '@t3-oss/env-nextjs':
-        specifier: ^0.13.11
+        specifier: 'catalog:'
         version: 0.13.11(typescript@7.0.2)(zod@4.5.4)
       '@tanstack/react-query':
-        specifier: ^5.102.8
+        specifier: 'catalog:'
         version: 5.102.8(react@19.2.8)
       '@tanstack/react-table':
-        specifier: ^9.2.4
+        specifier: 'catalog:'
         version: 9.2.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       better-auth:
         specifier: 'catalog:'
         version: 1.7.3(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0))(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@5.0.0)
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 'catalog:'
         version: 0.7.1
       cn:
         specifier: ^0.2.5
         version: 0.2.5
       dotenv-cli:
-        specifier: ^11.0.0
+        specifier: 'catalog:'
         version: 11.0.0
       drizzle-orm:
-        specifier: ^0.45.2
+        specifier: 'catalog:'
         version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0)
       drizzle-zod:
-        specifier: ^0.8.3
+        specifier: 'catalog:'
         version: 0.8.3(drizzle-orm@0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0))(zod@4.5.4)
       lucide-react:
-        specifier: 1.41.0
+        specifier: 'catalog:'
         version: 1.41.0(react@19.2.8)
       next:
         specifier: 'catalog:'
         version: 16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       next-themes:
-        specifier: ^0.4.6
+        specifier: 'catalog:'
         version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       nuqs:
-        specifier: ^2.10.1
+        specifier: 'catalog:'
         version: 2.10.1(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       react:
         specifier: 'catalog:'
@@ -556,10 +664,10 @@ importers:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
       react-error-boundary:
-        specifier: ^6.1.5
+        specifier: 'catalog:'
         version: 6.1.5(@types/react@19.2.18)(react@19.2.8)
       react-hook-form:
-        specifier: ^7.87.0
+        specifier: 'catalog:'
         version: 7.87.0(react@19.2.8)
       server-only:
         specifier: ^0.0.1
@@ -568,17 +676,17 @@ importers:
         specifier: ^4.21.0
         version: 4.21.0(supports-color@10.2.2)(typescript@7.0.2)
       tw-animate-css:
-        specifier: ^1.4.0
+        specifier: 'catalog:'
         version: 1.4.0
       zod:
-        specifier: ^4.5.4
+        specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
       '@playwright/test':
-        specifier: ^1.63.0
+        specifier: 'catalog:'
         version: 1.63.0
       '@tailwindcss/postcss':
-        specifier: 4.3.3
+        specifier: 'catalog:'
         version: 4.3.3
       '@testing-library/dom':
         specifier: ^10.4.1
@@ -602,37 +710,37 @@ importers:
         specifier: ^8.18.1
         version: 8.18.1
       '@vitejs/plugin-react':
-        specifier: ^6.1.1
+        specifier: 'catalog:'
         version: 6.1.1(babel-plugin-react-compiler@1.0.0)(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       babel-plugin-react-compiler:
-        specifier: 1.0.0
+        specifier: 'catalog:'
         version: 1.0.0
       dotenv:
-        specifier: ^17.4.2
+        specifier: 'catalog:'
         version: 17.4.2
       imapflow:
         specifier: ^1.7.8
         version: 1.7.8
       jsdom:
-        specifier: ^30.0.1
+        specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.4.0)
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       tailwindcss:
-        specifier: 4.3.3
+        specifier: 'catalog:'
         version: 4.3.3
       tsx:
-        specifier: ^4.23.13
+        specifier: 'catalog:'
         version: 4.23.13
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
       vite:
-        specifier: 8.2.2
+        specifier: 'catalog:'
         version: 8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
       vitest:
         specifier: ^5.0.0
@@ -650,19 +758,19 @@ importers:
         specifier: workspace:*
         version: link:../../packages/i18n
       '@radix-ui/react-dropdown-menu':
-        specifier: ^2.1.24
+        specifier: 'catalog:'
         version: 2.1.24(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 'catalog:'
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       country-flag-icons:
-        specifier: ^1.6.20
+        specifier: 'catalog:'
         version: 1.6.20
       dotenv-cli:
-        specifier: ^11.0.0
+        specifier: 'catalog:'
         version: 11.0.0
       fumadocs-core:
         specifier: 16.15.7
@@ -674,7 +782,7 @@ importers:
         specifier: 16.15.7
         version: 16.15.7(@types/mdx@2.0.14)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.41.0(react@19.2.8))(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.4))(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)
       lucide-react:
-        specifier: 1.41.0
+        specifier: 'catalog:'
         version: 1.41.0(react@19.2.8)
       next:
         specifier: 'catalog:'
@@ -689,11 +797,11 @@ importers:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
       tailwind-merge:
-        specifier: 3.6.0
+        specifier: 'catalog:'
         version: 3.6.0
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: 4.3.3
+        specifier: 'catalog:'
         version: 4.3.3
       '@types/mdx':
         specifier: ^2.0.14
@@ -711,10 +819,10 @@ importers:
         specifier: ^8.5.28
         version: 8.5.28
       tailwindcss:
-        specifier: ^4.3.3
+        specifier: 'catalog:'
         version: 4.3.3
       tw-animate-css:
-        specifier: ^1.4.0
+        specifier: 'catalog:'
         version: 1.4.0
       typescript:
         specifier: 'catalog:'
@@ -736,10 +844,10 @@ importers:
         version: 19.2.8
     devDependencies:
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       typescript:
         specifier: 'catalog:'
@@ -751,7 +859,7 @@ importers:
   packages/config:
     dependencies:
       lucide-react:
-        specifier: 1.41.0
+        specifier: 'catalog:'
         version: 1.41.0(react@19.2.8)
     devDependencies:
       '@types/node':
@@ -761,10 +869,10 @@ importers:
         specifier: 'catalog:'
         version: 16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       typescript:
         specifier: 'catalog:'
@@ -776,32 +884,32 @@ importers:
         specifier: workspace:*
         version: link:../config
       '@paralleldrive/cuid2':
-        specifier: ^3.3.0
+        specifier: 'catalog:'
         version: 3.3.0
       drizzle-orm:
-        specifier: ^0.45.2
+        specifier: 'catalog:'
         version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.0)
       pg:
-        specifier: ^8.23.0
+        specifier: 'catalog:'
         version: 8.23.0
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
         version: 26.4.1
       '@types/pg':
-        specifier: ^8.23.1
+        specifier: 'catalog:'
         version: 8.23.1
       dotenv:
-        specifier: ^17.4.2
+        specifier: 'catalog:'
         version: 17.4.2
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       typescript:
         specifier: 'catalog:'
@@ -835,10 +943,10 @@ importers:
         specifier: 'catalog:'
         version: 19.2.7(@types/react@19.2.18)
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       typescript:
         specifier: 'catalog:'
@@ -857,10 +965,10 @@ importers:
         specifier: 'catalog:'
         version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(@babel/core@7.29.7(supports-color@10.2.2))(@playwright/test@1.63.0)(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       typescript:
         specifier: 'catalog:'

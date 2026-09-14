@@ -13,13 +13,13 @@
     "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
-    "lucide-react": "1.41.0"
+    "lucide-react": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "next": "catalog:",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "typescript": "catalog:"
   }
 }
