@@ -16,10 +16,11 @@ import { desc, eq, ilike } from "drizzle-orm";
 
 import { accessControl, organizationRoles } from "./permissions";
 
-type AuthOptions = BetterAuthOptions;
-type EmailVerificationOptions = NonNullable<AuthOptions["emailVerification"]>;
+type EmailVerificationOptions = NonNullable<
+  BetterAuthOptions["emailVerification"]
+>;
 type SessionDatabaseHooks = NonNullable<
-  NonNullable<AuthOptions["databaseHooks"]>["session"]
+  NonNullable<BetterAuthOptions["databaseHooks"]>["session"]
 >;
 
 export interface ServerAuthConfig {
@@ -50,7 +51,7 @@ export interface ServerAuthConfig {
   };
   organization?: Pick<OrganizationOptions, "sendInvitationEmail">;
   plugins?: BetterAuthPlugin[];
-  session?: AuthOptions["session"];
+  session?: BetterAuthOptions["session"];
   sessionUpdate?: SessionDatabaseHooks["update"];
 }
 
