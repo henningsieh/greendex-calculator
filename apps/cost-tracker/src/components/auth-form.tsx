@@ -17,6 +17,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";
 
@@ -54,8 +55,8 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       router.replace("/projects");
       router.refresh();
-    } catch {
-      setError("We could not complete this request. Please try again.");
+    } catch (error) {
+      setError(getORPCRequestErrorMessage(error).text);
     }
   }
 
@@ -65,8 +66,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     try {
       const { url } = await orpc.authentication.startGoogleSignIn();
       window.location.assign(url);
-    } catch {
-      setError("Google sign-in could not start. Please try again.");
+    } catch (error) {
+      setError(getORPCRequestErrorMessage(error).text);
     }
   }
 
