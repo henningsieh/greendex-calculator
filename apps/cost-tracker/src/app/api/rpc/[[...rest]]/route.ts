@@ -1,9 +1,11 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
+import { ResponseHeadersPlugin } from "@orpc/server/plugins";
 
 import { router } from "@/lib/orpc/router";
 
 const handler = new RPCHandler(router, {
+  plugins: [new ResponseHeadersPlugin()],
   interceptors: [
     onError((error) => {
       console.error("[Cost Tracker oRPC]", error);

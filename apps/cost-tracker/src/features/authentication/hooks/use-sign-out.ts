@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { authClient } from "@/lib/auth-client";
+import { toast } from "@/components/ui/toast";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { orpc } from "@/lib/orpc/orpc";
 
 export function useSignOut() {
   const router = useRouter();
@@ -11,15 +13,19 @@ export function useSignOut() {
 
   async function signOut() {
     setPending(true);
-    const result = await authClient.signOut();
-
-    if (result.error) {
+    try {
+      await orpc.authentication.signOut();
+      router.replace("/");
+      router.refresh();
+    } catch (error) {
+      toast.add({
+        description: getORPCRequestErrorMessage(error).text,
+        title: "Could not sign out",
+        type: "error",
+      });
+    } finally {
       setPending(false);
-      return;
     }
-
-    router.replace("/");
-    router.refresh();
   }
 
   return { pending, signOut };

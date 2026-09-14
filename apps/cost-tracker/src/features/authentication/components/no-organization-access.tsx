@@ -17,7 +17,8 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
-import { authClient } from "@/lib/auth-client";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { orpc } from "@/lib/orpc/orpc";
 
 function slugify(name: string) {
   return name
@@ -39,20 +40,19 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
     setError(undefined);
     setPending(true);
 
-    const result = await authClient.organization.create({
-      name,
-      slug: slugify(name),
-    });
-
-    if (result.error) {
+    try {
+      await orpc.authentication.createOrganization({
+        name,
+        slug: slugify(name),
+      });
+      setOpen(false);
+      router.replace("/projects");
+      router.refresh();
+    } catch (error) {
+      setError(getORPCRequestErrorMessage(error).text);
+    } finally {
       setPending(false);
-      setError("Choose a different Organization name.");
-      return;
     }
-
-    setOpen(false);
-    router.replace("/projects");
-    router.refresh();
   }
 
   return (

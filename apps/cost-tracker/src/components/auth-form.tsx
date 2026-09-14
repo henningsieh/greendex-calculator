@@ -17,7 +17,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";
 
 type AuthFormProps = {
@@ -39,13 +39,10 @@ export function AuthForm({ mode }: AuthFormProps) {
     const name = String(formData.get("name"));
 
     try {
-      const result = isSignIn
-        ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ name, email, password });
-
-      if (result.error) {
-        setError(result.error.message ?? "Authentication failed.");
-        return;
+      if (isSignIn) {
+        await orpc.authentication.signIn({ email, password });
+      } else {
+        await orpc.authentication.signUp({ name, email, password });
       }
 
       if (!isSignIn) {
@@ -66,14 +63,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError(undefined);
 
     try {
-      const result = await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "/projects",
-      });
-
-      if (result.error) {
-        setError(result.error.message ?? "Google sign-in failed.");
-      }
+      const { url } = await orpc.authentication.startGoogleSignIn();
+      window.location.assign(url);
     } catch {
       setError("Google sign-in could not start. Please try again.");
     }

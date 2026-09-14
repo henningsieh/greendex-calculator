@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import type { EditNameValues } from "@/features/user-settings/types";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
-import { authClient } from "@/lib/auth-client";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { orpc } from "@/lib/orpc/orpc";
 
 type EditNameFormProps = {
   email: string;
@@ -38,18 +39,13 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
     setNotice(undefined);
 
     try {
-      const result = await authClient.updateUser({ name: values.name });
-
-      if (result.error) {
-        setError(result.error.message ?? "Your name could not be updated.");
-        return;
-      }
+      await orpc.authentication.updateUser({ name: values.name });
 
       form.reset(values);
       setNotice("Your name has been updated.");
       router.refresh();
-    } catch {
-      setError("Your name could not be updated. Try again.");
+    } catch (error) {
+      setError(getORPCRequestErrorMessage(error).text);
     }
   }
 

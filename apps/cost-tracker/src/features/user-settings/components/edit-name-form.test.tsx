@@ -13,8 +13,8 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: mocks.refresh }),
 }));
 
-vi.mock("@/lib/auth-client", () => ({
-  authClient: { updateUser: mocks.updateUser },
+vi.mock("@/lib/orpc/orpc", () => ({
+  orpc: { authentication: { updateUser: mocks.updateUser } },
 }));
 
 function renderForm() {
@@ -62,7 +62,7 @@ describe("EditNameForm", () => {
   });
 
   it("trims and saves a valid name, refreshes the session UI, and resets the form", async () => {
-    mocks.updateUser.mockResolvedValue({ data: {}, error: null });
+    mocks.updateUser.mockResolvedValue({ success: true });
     const { nameInput, saveButton } = renderForm();
     const user = await enterName(nameInput, "  Morgan Lee  ");
 
@@ -78,20 +78,25 @@ describe("EditNameForm", () => {
   });
 
   it("shows the Better Auth error and clears it when the user edits again", async () => {
-    mocks.updateUser.mockResolvedValue({
-      data: null,
-      error: { message: "Name update blocked." },
-    });
+    mocks.updateUser.mockRejectedValue(new Error("Name update blocked."));
     const { nameInput, saveButton } = renderForm();
     const user = await enterName(nameInput, "Morgan Lee");
 
     await user.click(saveButton);
 
-    expect(await screen.findByText("Name update blocked.")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "The server or network is unreachable. Check your connection and try again.",
+      ),
+    ).toBeTruthy();
     expect(mocks.refresh).not.toHaveBeenCalled();
 
     await user.type(nameInput, " Jr");
-    expect(screen.queryByText("Name update blocked.")).toBeNull();
+    expect(
+      screen.queryByText(
+        "The server or network is unreachable. Check your connection and try again.",
+      ),
+    ).toBeNull();
   });
 
   it("gives actionable feedback when the update request throws", async () => {
@@ -102,15 +107,15 @@ describe("EditNameForm", () => {
     await user.click(saveButton);
 
     expect(
-      await screen.findByText("Your name could not be updated. Try again."),
+      await screen.findByText(
+        "The server or network is unreachable. Check your connection and try again.",
+      ),
     ).toBeTruthy();
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
   it("disables repeated submission while the update is pending", async () => {
-    let resolveUpdate:
-      | ((value: { data: object; error: null }) => void)
-      | undefined;
+    let resolveUpdate: ((value: { success: true }) => void) | undefined;
     mocks.updateUser.mockReturnValue(
       new Promise((resolve) => {
         resolveUpdate = resolve;
@@ -127,7 +132,7 @@ describe("EditNameForm", () => {
     expect((saveButton as HTMLButtonElement).disabled).toBe(true);
     expect(mocks.updateUser).toHaveBeenCalledOnce();
 
-    resolveUpdate?.({ data: {}, error: null });
+    resolveUpdate?.({ success: true });
     await screen.findByText("Your name has been updated.");
   });
 });

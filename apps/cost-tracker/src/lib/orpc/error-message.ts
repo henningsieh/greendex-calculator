@@ -13,6 +13,13 @@ export function getORPCRequestErrorMessage(
   error: unknown,
 ): ORPCRequestErrorMessage {
   if (error instanceof ORPCError) {
+    if (error.status === 400 || error.code === "BAD_REQUEST") {
+      return {
+        sessionExpired: false,
+        text: "We could not complete that request. Check your details and try again.",
+      };
+    }
+
     if (error.status === 401 || error.code === "UNAUTHORIZED") {
       return {
         sessionExpired: true,
@@ -24,6 +31,13 @@ export function getORPCRequestErrorMessage(
       return {
         sessionExpired: false,
         text: "You do not have permission to access this resource.",
+      };
+    }
+
+    if (error.status === 429 || error.code === "TOO_MANY_REQUESTS") {
+      return {
+        sessionExpired: false,
+        text: "Too many requests were sent. Wait a moment and try again.",
       };
     }
 

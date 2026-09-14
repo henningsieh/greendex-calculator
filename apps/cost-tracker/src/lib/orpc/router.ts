@@ -1,6 +1,14 @@
 import type { InferRouterOutputs } from "@orpc/server";
 
 import {
+  createOrganization,
+  signIn,
+  signOut,
+  signUp,
+  startGoogleSignIn,
+  updateUser,
+} from "@/features/authentication/procedures";
+import {
   availableProjectScopes,
   hostedOverview,
   partnerOverview,
@@ -13,6 +21,14 @@ import {
 } from "@/features/projects/project-partnership-procedures";
 
 export const router = {
+  authentication: {
+    createOrganization,
+    signIn,
+    signOut,
+    signUp,
+    startGoogleSignIn,
+    updateUser,
+  },
   projects: {
     availableScopes: availableProjectScopes,
     detail: projectDetail,
