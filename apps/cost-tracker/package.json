@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "dotenv -v NODE_ENV=development -e .env -- sh -c 'next dev --port \"$COST_TRACKER_PORT\"'",
+    "prebuild": "dotenv -e .env -- turbo run db:migrate",
     "build": "next build",
+    "prestart": "dotenv -e .env -- pnpm run start:prepare",
+    "start:prepare": "pnpm dlx kill-port \"$COST_TRACKER_PORT\" || true; sleep 1; pnpm --filter @greendex/database run db:migrate",
     "start": "dotenv -v NODE_ENV=production -e .env -- sh -c 'next start --port \"$COST_TRACKER_PORT\"'",
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
