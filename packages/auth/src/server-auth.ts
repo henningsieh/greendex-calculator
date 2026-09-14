@@ -18,9 +18,19 @@ export interface ServerAuthConfig {
   appName: string;
   baseURL: string;
   secret: string;
-  google: {
-    clientId: string;
-    clientSecret: string;
+  socialProviders: {
+    google: {
+      clientId: string;
+      clientSecret: string;
+    };
+    discord?: {
+      clientId: string;
+      clientSecret: string;
+    };
+    github?: {
+      clientId: string;
+      clientSecret: string;
+    };
   };
   emailSender: Pick<
     EmailSender,
@@ -49,9 +59,7 @@ export function createServerAuth(config: ServerAuthConfig) {
       sendVerificationEmail: ({ user, url }) =>
         config.emailSender.sendEmailVerificationEmail({ user, url }),
     },
-    socialProviders: {
-      google: config.google,
-    },
+    socialProviders: config.socialProviders,
     plugins: [
       organization({
         ac: accessControl,
