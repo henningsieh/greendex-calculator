@@ -5,14 +5,22 @@ import {
 } from "@greendex/database/schema";
 import * as schema from "@greendex/database/schema";
 import type { EmailSender } from "@greendex/email";
-import { betterAuth } from "better-auth";
+import type { BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
+import { betterAuth, type BetterAuthOptions } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
+import type { OrganizationOptions } from "better-auth/plugins/organization";
 import { desc, eq, ilike } from "drizzle-orm";
 
 import { accessControl, organizationRoles } from "./permissions";
+
+type AuthOptions = BetterAuthOptions;
+type EmailVerificationOptions = NonNullable<AuthOptions["emailVerification"]>;
+type SessionDatabaseHooks = NonNullable<
+  NonNullable<AuthOptions["databaseHooks"]>["session"]
+>;
 
 export interface ServerAuthConfig {
   appName: string;
@@ -36,6 +44,14 @@ export interface ServerAuthConfig {
     EmailSender,
     "sendEmailVerificationEmail" | "sendPasswordResetEmail"
   >;
+  emailVerification?: Omit<EmailVerificationOptions, "sendOnSignUp">;
+  experimental?: {
+    joins?: boolean;
+  };
+  organization?: Pick<OrganizationOptions, "sendInvitationEmail">;
+  plugins?: BetterAuthPlugin[];
+  session?: AuthOptions["session"];
+  sessionUpdate?: SessionDatabaseHooks["update"];
 }
 
 /**
@@ -47,6 +63,7 @@ export function createServerAuth(config: ServerAuthConfig) {
     appName: config.appName,
     baseURL: config.baseURL,
     secret: config.secret,
+    experimental: config.experimental,
     database: drizzleAdapter(db, { provider: "pg", schema }),
     emailAndPassword: {
       enabled: true,
@@ -58,12 +75,14 @@ export function createServerAuth(config: ServerAuthConfig) {
       sendOnSignUp: true,
       sendVerificationEmail: ({ user, url }) =>
         config.emailSender.sendEmailVerificationEmail({ user, url }),
+      ...config.emailVerification,
     },
     socialProviders: config.socialProviders,
     plugins: [
       organization({
         ac: accessControl,
         roles: organizationRoles,
+        ...config.organization,
         allowUserToCreateOrganization: async (user) => {
           const membership = await db.query.member.findFirst({
             where: eq(member.userId, user.id),
@@ -97,7 +116,9 @@ export function createServerAuth(config: ServerAuthConfig) {
         },
       }),
       nextCookies(),
+      ...(config.plugins ?? []),
     ],
+    session: config.session,
     databaseHooks: {
       /**
        * Initializes a session with the User's most recently created Organization
@@ -121,6 +142,7 @@ export function createServerAuth(config: ServerAuthConfig) {
             };
           },
         },
+        ...(config.sessionUpdate ? { update: config.sessionUpdate } : {}),
       },
     },
   });
