@@ -7,12 +7,9 @@
  * (env variables, email handlers, etc.)
  */
 
-// Export types
-export type { AuthClientConfig } from "./auth-client";
 export type { Session, User } from "better-auth/types";
 
-// Export auth client utilities
-export { createAuthClient } from "./auth-client";
+export { createServerAuth, type ServerAuthConfig } from "./server-auth";
 
 export {
   accessControl,
