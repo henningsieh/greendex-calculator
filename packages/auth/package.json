@@ -5,7 +5,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/auth-client.ts",
     "./oauth-icons": "./src/oauth-icons.tsx"
   },
   "scripts": {
@@ -19,7 +18,8 @@
   "dependencies": {
     "@greendex/database": "workspace:*",
     "@greendex/email": "workspace:*",
-    "better-auth": "catalog:"
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "oxfmt": "catalog:",
