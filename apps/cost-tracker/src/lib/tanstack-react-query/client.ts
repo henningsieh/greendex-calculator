@@ -1,3 +1,4 @@
+import { StandardRPCJsonSerializer } from "@orpc/client/standard";
 import {
   defaultShouldDehydrateQuery,
   QueryCache,
@@ -5,7 +6,7 @@ import {
   type QueryCacheConfig,
 } from "@tanstack/react-query";
 
-import { serializer } from "@/lib/serializer";
+const serializer = new StandardRPCJsonSerializer();
 
 export function createQueryClient(queryCacheConfig?: QueryCacheConfig) {
   return new QueryClient({
