@@ -566,7 +566,7 @@ function ResolvedProjectCollection({
           </div>
         </div>
         <div className="space-y-2">
-          <Label>Submission window</Label>
+          <Label htmlFor="project-submission-window">Submission window</Label>
           <Select
             onValueChange={(value) =>
               updateProjectFilter(
@@ -576,7 +576,7 @@ function ResolvedProjectCollection({
             }
             value={state.window}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full" id="project-submission-window">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -589,7 +589,7 @@ function ResolvedProjectCollection({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Sort</Label>
+          <Label htmlFor="project-sort">Sort</Label>
           <Select
             onValueChange={(value) =>
               table.setSorting(
@@ -601,7 +601,7 @@ function ResolvedProjectCollection({
             }
             value={state.sort}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full" id="project-sort">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -616,12 +616,12 @@ function ResolvedProjectCollection({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Projects per page</Label>
+          <Label htmlFor="project-page-size">Projects per page</Label>
           <Select
             onValueChange={(value) => table.setPageSize(Number(value))}
             value={String(state.pageSize)}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full" id="project-page-size">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

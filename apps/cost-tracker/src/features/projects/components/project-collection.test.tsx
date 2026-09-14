@@ -253,8 +253,14 @@ describe("Project collection", { timeout: 10_000 }, () => {
     );
 
     const user = userEvent.setup();
-    const pageSizeSelect = screen.getAllByRole("combobox")[2];
-    if (!pageSizeSelect) throw new Error("Projects per page control is missing.");
+    expect(
+      screen.getByRole("combobox", { name: "Submission window" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Sort" })).toBeTruthy();
+
+    const pageSizeSelect = screen.getByRole("combobox", {
+      name: "Projects per page",
+    });
     await user.click(pageSizeSelect);
     await user.click(await screen.findByRole("option", { name: "50" }));
     await waitFor(() =>
