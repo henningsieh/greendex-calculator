@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/orpc/orpc", () => ({
   orpcQuery: {
     projects: {
-      detail: {
+      get: {
         queryOptions: ({ input }: { input: { projectId: string } }) => ({
           queryKey: ["project", input.projectId, mocks.detail],
           queryFn: async () => mocks.detail,
@@ -51,7 +51,7 @@ beforeEach(() => {
 });
 
 describe("Project workspace", () => {
-  it("returns to the exact Project collection URL", async () => {
+  it("returns to the exact Project list URL", async () => {
     mocks.detail = {
       ...baseProject,
       relationship: "hosted",

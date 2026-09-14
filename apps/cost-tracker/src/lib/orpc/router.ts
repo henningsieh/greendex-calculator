@@ -9,16 +9,16 @@ import {
   updateUser,
 } from "@/features/authentication/procedures";
 import {
-  availableProjectScopes,
-  hostedOverview,
-  partnerOverview,
-} from "@/features/projects/overview-procedures";
-import { projectDetail } from "@/features/projects/project-detail-procedure";
+  assignPartnership,
+  listPartnerships,
+  removePartnership,
+} from "@/features/projects/procedures/partnerships";
 import {
-  assignProjectPartnership,
-  listProjectPartnerships,
-  removeProjectPartnership,
-} from "@/features/projects/project-partnership-procedures";
+  availableScopes,
+  getProject,
+  listHosted,
+  listPartner,
+} from "@/features/projects/procedures/projects";
 
 export const router = {
   authentication: {
@@ -30,15 +30,15 @@ export const router = {
     updateUser,
   },
   projects: {
-    availableScopes: availableProjectScopes,
-    detail: projectDetail,
-    hostedOverview,
-    partnerOverview,
+    get: getProject,
+    listHosted,
+    listPartner,
+    scopes: availableScopes,
   },
   projectPartnerships: {
-    assign: assignProjectPartnership,
-    list: listProjectPartnerships,
-    remove: removeProjectPartnership,
+    assign: assignPartnership,
+    list: listPartnerships,
+    remove: removePartnership,
   },
 };
 

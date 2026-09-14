@@ -102,13 +102,13 @@ function expectProjectDataInvalidation(
     queryKey: orpcQuery.projectPartnerships.list.queryKey(),
   });
   expect(invalidateQueries).toHaveBeenCalledWith({
-    queryKey: orpcQuery.projects.hostedOverview.key({ type: "query" }),
+    queryKey: orpcQuery.projects.listHosted.key({ type: "query" }),
   });
   expect(invalidateQueries).toHaveBeenCalledWith({
-    queryKey: orpcQuery.projects.partnerOverview.key({ type: "query" }),
+    queryKey: orpcQuery.projects.listPartner.key({ type: "query" }),
   });
   expect(invalidateQueries).toHaveBeenCalledWith({
-    queryKey: orpcQuery.projects.detail.key({ type: "query" }),
+    queryKey: orpcQuery.projects.get.key({ type: "query" }),
   });
 }
 

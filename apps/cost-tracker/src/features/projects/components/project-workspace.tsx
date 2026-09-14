@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProjectCollectionReturnDestination } from "@/features/projects/collection-state";
+import { getProjectListReturnDestination } from "@/features/projects/project-list-query-options";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -28,7 +28,7 @@ export function ProjectWorkspace({
   returnTo?: string;
 }) {
   const { data: project } = useSuspenseQuery(
-    orpcQuery.projects.detail.queryOptions({
+    orpcQuery.projects.get.queryOptions({
       input: { projectId },
       meta: { costTrackerORPC: true },
     }),
@@ -39,7 +39,7 @@ export function ProjectWorkspace({
       <header className="space-y-4">
         <Link
           className={buttonVariants({ variant: "ghost" })}
-          href={getProjectCollectionReturnDestination(returnTo)}
+          href={getProjectListReturnDestination(returnTo)}
         >
           Back to Projects
         </Link>

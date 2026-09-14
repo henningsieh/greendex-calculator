@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
-import { PROJECT_SORT_MODES } from "@/features/projects/collection-state";
+import { PROJECT_SORT_MODES } from "@/features/projects/validation-schemas";
 
 const CursorVersionSchema = z.object({ version: z.number().int() }).loose();
 
@@ -17,9 +17,9 @@ const CursorSchema = z.object({
   open: z.boolean().optional(),
 });
 
-export type ProjectOverviewCursor = z.infer<typeof CursorSchema>;
+export type ProjectListCursor = z.infer<typeof CursorSchema>;
 
-export function getProjectOverviewFingerprint(input: {
+export function getProjectListFingerprint(input: {
   scope: "hosted" | "partner";
   search?: string;
   window: "all" | "open" | "closed";
@@ -45,19 +45,17 @@ export function getProjectOverviewFingerprint(input: {
     .digest("hex");
 }
 
-export function encodeProjectOverviewCursor(
-  cursor: ProjectOverviewCursor,
-): string {
+export function encodeProjectListCursor(cursor: ProjectListCursor): string {
   return Buffer.from(JSON.stringify(CursorSchema.parse(cursor))).toString(
     "base64url",
   );
 }
 
-export function decodeProjectOverviewCursor(
+export function decodeProjectListCursor(
   value: string,
   fingerprint: string,
 ):
-  | { status: "valid"; cursor: ProjectOverviewCursor }
+  | { status: "valid"; cursor: ProjectListCursor }
   | { status: "unsupported-version" }
   | { status: "invalid" } {
   try {

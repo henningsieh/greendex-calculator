@@ -28,7 +28,9 @@ const isRuntimeSourceFile = (relativePath: string) =>
   sourceFilePattern.test(relativePath) && !testFilePattern.test(relativePath);
 
 const isFeatureProcedure = (relativePath: string) =>
-  /\/features\/[^/]+\/[^/]*procedure(?:s)?\.[jt]sx?$/u.test(relativePath);
+  /\/features\/[^/]+\/(?:[^/]*procedure(?:s)?|procedures\/[^/]+)\.[jt]sx?$/u.test(
+    relativePath,
+  );
 
 const isPermittedPersistenceOwner = (relativePath: string) =>
   isFeatureProcedure(relativePath) ||

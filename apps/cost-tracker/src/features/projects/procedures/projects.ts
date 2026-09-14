@@ -1,3 +1,4 @@
+import "server-only";
 import { db } from "@greendex/database";
 import {
   organization,
@@ -22,21 +23,23 @@ import {
 } from "drizzle-orm";
 
 import {
-  decodeProjectOverviewCursor,
-  encodeProjectOverviewCursor,
-  getProjectOverviewFingerprint,
-  type ProjectOverviewCursor,
-} from "@/features/projects/project-overview-cursor.server";
+  decodeProjectListCursor,
+  encodeProjectListCursor,
+  getProjectListFingerprint,
+  type ProjectListCursor,
+} from "@/features/projects/project-list-cursor.server";
 import type {
-  PartnerProjectOverview,
-  ProjectOverviewInput,
+  PartnerProjectList,
+  ProjectListInput,
 } from "@/features/projects/types";
 import {
-  HostedProjectOverviewInputSchema,
-  HostedProjectOverviewSchema,
-  PartnerProjectOverviewInputSchema,
-  PartnerProjectOverviewSchema,
-  ProjectScopeAvailabilitySchema,
+  HostedProjectListInputSchema,
+  HostedProjectListSchema,
+  PartnerProjectListInputSchema,
+  PartnerProjectListSchema,
+  ProjectDetailInputSchema,
+  ProjectDetailSchema,
+  ProjectListScopeAvailabilitySchema,
 } from "@/features/projects/validation-schemas";
 import {
   authorized,
@@ -44,7 +47,7 @@ import {
   requireCostTrackerPermissions,
 } from "@/lib/orpc/middleware";
 
-function getProjectFilters(input: ProjectOverviewInput): SQL[] {
+function getProjectFilters(input: ProjectListInput): SQL[] {
   const filters: SQL[] = [];
 
   if (input.search) {
@@ -64,12 +67,12 @@ function getProjectFilters(input: ProjectOverviewInput): SQL[] {
   return filters;
 }
 
-type ProjectCursorDirection = ProjectOverviewCursor["direction"];
+type ProjectCursorDirection = ProjectListCursor["direction"];
 type ProjectCursorPosition = Pick<
-  ProjectOverviewCursor,
+  ProjectListCursor,
   "date" | "direction" | "id" | "open"
 >;
-type ProjectOverviewCursorRow = {
+type ProjectListCursorRow = {
   costSubmissionWindowOpen: boolean;
   endDate: Date;
   id: string;
@@ -79,8 +82,8 @@ type ProjectOverviewCursorRow = {
 type ProjectSortDescription = {
   getCursorFilter: (cursor: ProjectCursorPosition) => SQL;
   getCursorValues: (
-    row: ProjectOverviewCursorRow,
-  ) => Pick<ProjectOverviewCursor, "date" | "open">;
+    row: ProjectListCursorRow,
+  ) => Pick<ProjectListCursor, "date" | "open">;
   getOrder: (direction: ProjectCursorDirection) => SQL[];
 };
 
@@ -106,7 +109,7 @@ function createChronologicalSortDescriptions({
 }: {
   ascendingOrder: SQL;
   descendingOrder: SQL;
-  getCursorDate: (row: ProjectOverviewCursorRow) => Date;
+  getCursorDate: (row: ProjectListCursorRow) => Date;
   isAfter: (date: Date) => SQL;
   isBefore: (date: Date) => SQL;
   isEqual: (date: Date) => SQL;
@@ -201,10 +204,10 @@ const PROJECT_SORT_DESCRIPTIONS = {
   "start-desc": startDateSortDescriptions.descending,
   "end-asc": endDateSortDescriptions.ascending,
   "end-desc": endDateSortDescriptions.descending,
-} satisfies Record<ProjectOverviewInput["sort"], ProjectSortDescription>;
+} satisfies Record<ProjectListInput["sort"], ProjectSortDescription>;
 
 function getProjectSortDescription(
-  sort: ProjectOverviewInput["sort"],
+  sort: ProjectListInput["sort"],
 ): ProjectSortDescription {
   return PROJECT_SORT_DESCRIPTIONS[sort];
 }
@@ -233,7 +236,7 @@ const hostedProjectMetricsSelection = {
   ),
 };
 
-type ProjectMetricRow = PartnerProjectOverview["metrics"]["whole"];
+type ProjectMetricRow = PartnerProjectList["metrics"]["whole"];
 
 function mapProjectMetrics(value: ProjectMetricRow | undefined) {
   return {
@@ -266,13 +269,13 @@ function getPartnerProjectScopeFilters(activeOrganizationId: string): SQL[] {
 }
 
 function parseCursor(
-  input: ProjectOverviewInput,
+  input: ProjectListInput,
   fingerprint: string,
   errors: { BAD_REQUEST: (options?: { message?: string }) => Error },
-): ProjectOverviewCursor | undefined {
+): ProjectListCursor | undefined {
   if (!input.cursor) return undefined;
 
-  const decodedCursor = decodeProjectOverviewCursor(input.cursor, fingerprint);
+  const decodedCursor = decodeProjectListCursor(input.cursor, fingerprint);
   if (decodedCursor.status === "unsupported-version") return undefined;
 
   if (
@@ -287,10 +290,10 @@ function parseCursor(
   return decodedCursor.cursor;
 }
 
-function finalizeProjectOverviewPage<T extends ProjectOverviewCursorRow>(
+function finalizeProjectListPage<T extends ProjectListCursorRow>(
   pageRows: T[],
-  input: ProjectOverviewInput,
-  cursor: ProjectOverviewCursor | undefined,
+  input: ProjectListInput,
+  cursor: ProjectListCursor | undefined,
   fingerprint: string,
 ) {
   const isPreviousPage = cursor?.direction === "previous";
@@ -306,9 +309,9 @@ function finalizeProjectOverviewPage<T extends ProjectOverviewCursorRow>(
   const sortDescription = getProjectSortDescription(input.sort);
   const createCursor = (
     direction: ProjectCursorDirection,
-    row: ProjectOverviewCursorRow,
+    row: ProjectListCursorRow,
   ) =>
-    encodeProjectOverviewCursor({
+    encodeProjectListCursor({
       version: 2,
       direction,
       fingerprint,
@@ -325,13 +328,123 @@ function finalizeProjectOverviewPage<T extends ProjectOverviewCursorRow>(
   };
 }
 
-export const hostedOverview = authorized
+export type ProjectRelationship =
+  | { kind: "inaccessible" }
+  | {
+      kind: "hosted";
+      projectId: string;
+      name: string;
+      startDate: Date;
+      endDate: Date;
+      location: string;
+      country: string;
+      archived: boolean;
+      costSubmissionWindowOpen: boolean;
+      hostingOrganization: { id: string; name: string };
+    }
+  | {
+      kind: "partner";
+      projectId: string;
+      name: string;
+      startDate: Date;
+      endDate: Date;
+      location: string;
+      country: string;
+      archived: boolean;
+      costSubmissionWindowOpen: boolean;
+      hostingOrganization: { id: string; name: string };
+      partnershipId: string;
+      assignedAt: Date;
+      assignmentUpdatedAt: Date;
+    };
+
+export async function resolveRelationship({
+  activeOrganizationId,
+  projectId,
+}: {
+  activeOrganizationId: string;
+  projectId: string;
+}): Promise<ProjectRelationship> {
+  const [row] = await db
+    .select({
+      projectId: projectsTable.id,
+      name: projectsTable.name,
+      startDate: projectsTable.startDate,
+      endDate: projectsTable.endDate,
+      location: projectsTable.location,
+      country: projectsTable.country,
+      archived: projectsTable.archived,
+      costSubmissionWindowOpen: projectsTable.costSubmissionWindowOpen,
+      hostingOrganizationId: organization.id,
+      hostingOrganizationName: organization.name,
+      partnershipId: projectPartnerOrganizationsTable.id,
+      partnershipCreatedAt: projectPartnerOrganizationsTable.createdAt,
+      partnershipUpdatedAt: projectPartnerOrganizationsTable.updatedAt,
+    })
+    .from(projectsTable)
+    .innerJoin(organization, eq(organization.id, projectsTable.organizationId))
+    .leftJoin(
+      projectPartnerOrganizationsTable,
+      and(
+        eq(projectPartnerOrganizationsTable.projectId, projectsTable.id),
+        eq(projectPartnerOrganizationsTable.organizationId, activeOrganizationId),
+      ),
+    )
+    .where(
+      and(
+        eq(projectsTable.id, projectId),
+        or(
+          eq(projectsTable.organizationId, activeOrganizationId),
+          eq(
+            projectPartnerOrganizationsTable.organizationId,
+            activeOrganizationId,
+          ),
+        ),
+      ),
+    )
+    .limit(1);
+
+  if (!row) return { kind: "inaccessible" };
+
+  const common = {
+    projectId: row.projectId,
+    name: row.name,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    location: row.location,
+    country: row.country,
+    archived: row.archived,
+    costSubmissionWindowOpen: row.costSubmissionWindowOpen,
+    hostingOrganization: {
+      id: row.hostingOrganizationId,
+      name: row.hostingOrganizationName,
+    },
+  };
+
+  if (row.hostingOrganizationId === activeOrganizationId) {
+    return { kind: "hosted", ...common };
+  }
+
+  if (row.partnershipId && row.partnershipCreatedAt && row.partnershipUpdatedAt) {
+    return {
+      kind: "partner",
+      ...common,
+      partnershipId: row.partnershipId,
+      assignedAt: row.partnershipCreatedAt,
+      assignmentUpdatedAt: row.partnershipUpdatedAt,
+    };
+  }
+
+  return { kind: "inaccessible" };
+}
+
+export const listHosted = authorized
   .use(requireCostTrackerPermissions({ project: ["read"] }))
-  .input(HostedProjectOverviewInputSchema)
-  .output(HostedProjectOverviewSchema)
+  .input(HostedProjectListInputSchema)
+  .output(HostedProjectListSchema)
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
-    const fingerprint = getProjectOverviewFingerprint({
+    const fingerprint = getProjectListFingerprint({
       scope: "hosted",
       ...input,
     });
@@ -400,12 +513,7 @@ export const hostedOverview = authorized
           .orderBy(asc(organization.name), asc(organization.id)),
       ]);
 
-    const page = finalizeProjectOverviewPage(
-      pageRows,
-      input,
-      cursor,
-      fingerprint,
-    );
+    const page = finalizeProjectListPage(pageRows, input, cursor, fingerprint);
 
     return {
       scope: "hosted" as const,
@@ -418,18 +526,18 @@ export const hostedOverview = authorized
     };
   });
 
-export const partnerOverview = authorized
+export const listPartner = authorized
   .use(
     requireCostTrackerPermissions({
       project: ["read"],
       projectPartnership: ["read"],
     }),
   )
-  .input(PartnerProjectOverviewInputSchema)
-  .output(PartnerProjectOverviewSchema)
+  .input(PartnerProjectListInputSchema)
+  .output(PartnerProjectListSchema)
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
-    const fingerprint = getProjectOverviewFingerprint({
+    const fingerprint = getProjectListFingerprint({
       scope: "partner",
       ...input,
     });
@@ -469,12 +577,7 @@ export const partnerOverview = authorized
         .where(and(...filteredScopeFilters)),
     ]);
 
-    const page = finalizeProjectOverviewPage(
-      pageRows,
-      input,
-      cursor,
-      fingerprint,
-    );
+    const page = finalizeProjectListPage(pageRows, input, cursor, fingerprint);
 
     return {
       scope: "partner" as const,
@@ -486,8 +589,8 @@ export const partnerOverview = authorized
     };
   });
 
-export const availableProjectScopes = authorized
-  .output(ProjectScopeAvailabilitySchema)
+export const availableScopes = authorized
+  .output(ProjectListScopeAvailabilitySchema)
   .handler(async ({ context, errors }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
@@ -525,4 +628,125 @@ export const availableProjectScopes = authorized
     ]);
 
     return { hosted: hostedRows.length > 0, partner: partnerRows.length > 0 };
+  });
+
+/**
+ * Returns the active Organization's relationship-specific Project view.
+ *
+ * Hosted views include assigned Partner Organizations, while the Partnership
+ * portion of Partner views exposes only the Hosting Organization and the active
+ * Organization's assignment. Requests without relationship-specific access are
+ * rejected.
+ */
+export const getProject = authorized
+  .input(ProjectDetailInputSchema)
+  .output(ProjectDetailSchema)
+  .handler(async ({ context, errors, input }) => {
+    const activeOrganizationId = context.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      throw errors.FORBIDDEN({
+        message: "Select an active Organization before opening a Project.",
+      });
+    }
+
+    const [canReadHosted, canReadPartner] = await Promise.all([
+      hasCostTrackerPermissions(context.headers, { project: ["read"] }),
+      hasCostTrackerPermissions(context.headers, {
+        project: ["read"],
+        projectPartnership: ["read"],
+      }),
+    ]);
+    if (!(canReadHosted || canReadPartner)) {
+      throw errors.FORBIDDEN({
+        message: "The active Organization role cannot read this Project.",
+      });
+    }
+
+    const relationship = await resolveRelationship({
+      activeOrganizationId,
+      projectId: input.projectId,
+    });
+    if (relationship.kind === "inaccessible") {
+      throw errors.FORBIDDEN({
+        message: "The active Organization cannot access this Project.",
+      });
+    }
+
+    const project = {
+      id: relationship.projectId,
+      name: relationship.name,
+      startDate: relationship.startDate,
+      endDate: relationship.endDate,
+      location: relationship.location,
+      country: relationship.country,
+      archived: relationship.archived,
+      costSubmissionWindowOpen: relationship.costSubmissionWindowOpen,
+    };
+
+    if (relationship.kind === "partner") {
+      if (!canReadPartner) {
+        throw errors.FORBIDDEN({
+          message:
+            "The active Organization role cannot read this Project Partnership.",
+        });
+      }
+
+      return {
+        ...project,
+        relationship: "partner" as const,
+        hostingOrganization: relationship.hostingOrganization,
+        partnership: {
+          id: relationship.partnershipId,
+          assignedAt: relationship.assignedAt,
+          updatedAt: relationship.assignmentUpdatedAt,
+        },
+      };
+    }
+
+    if (!canReadHosted) {
+      throw errors.FORBIDDEN({
+        message: "The active Organization role cannot read this hosted Project.",
+      });
+    }
+
+    const partnerOrganizations = await db.transaction(async (transaction) => {
+      const [hostedProject] = await transaction
+        .select({ id: projectsTable.id })
+        .from(projectsTable)
+        .where(
+          and(
+            eq(projectsTable.id, input.projectId),
+            eq(projectsTable.organizationId, activeOrganizationId),
+          ),
+        )
+        .for("share")
+        .limit(1);
+      if (!hostedProject) {
+        throw errors.FORBIDDEN({
+          message: "The active Organization cannot access this Project.",
+        });
+      }
+
+      return transaction
+        .select({
+          id: projectPartnerOrganizationsTable.id,
+          organizationId: organization.id,
+          organizationName: organization.name,
+          assignedAt: projectPartnerOrganizationsTable.createdAt,
+          updatedAt: projectPartnerOrganizationsTable.updatedAt,
+        })
+        .from(projectPartnerOrganizationsTable)
+        .innerJoin(
+          organization,
+          eq(organization.id, projectPartnerOrganizationsTable.organizationId),
+        )
+        .where(eq(projectPartnerOrganizationsTable.projectId, hostedProject.id))
+        .orderBy(asc(organization.name), asc(organization.id));
+    });
+
+    return {
+      ...project,
+      relationship: "hosted" as const,
+      partnerOrganizations,
+    };
   });

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   availableScopes: vi.fn(),
-  getOverviewOptions: vi.fn((scope: string) => ({
+  getListOptions: vi.fn((scope: string) => ({
     queryKey: ["projects", scope],
   })),
   hasOrganizationMembership: vi.fn().mockResolvedValue(true),
@@ -20,8 +20,8 @@ const mocks = vi.hoisted(() => ({
 
 const queryClient = { query: mocks.query };
 
-vi.mock("@/features/projects/components/project-collection", () => ({
-  ProjectCollection: () => <p>Project collection</p>,
+vi.mock("@/features/projects/components/project-list", () => ({
+  ProjectList: () => <p>Project list</p>,
 }));
 vi.mock("@/features/projects/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: () => <p>Project Partnership manager</p>,
@@ -44,17 +44,21 @@ vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
     resource: string;
   }) => <div data-resource={resource}>{children}</div>,
 }));
-vi.mock("@/features/projects/project-overview-query-options", () => ({
-  getProjectAvailableScopesQueryOptions: () => ({
-    queryKey: ["projects", "available-scopes"],
+vi.mock(
+  "@/features/projects/project-list-query-options",
+  async (importOriginal) => ({
+    ...((await importOriginal()) as Record<string, unknown>),
+    getProjectAvailableScopesQueryOptions: () => ({
+      queryKey: ["projects", "available-scopes"],
+    }),
+    getProjectListQueryOptions: mocks.getListOptions,
   }),
-  getProjectOverviewQueryOptions: mocks.getOverviewOptions,
-}));
+);
 vi.mock("@/lib/orpc/orpc", () => ({
-  orpc: { projects: { availableScopes: mocks.availableScopes } },
+  orpc: { projects: { scopes: mocks.availableScopes } },
   orpcQuery: {
     projects: {
-      detail: {
+      get: {
         queryOptions: ({ input }: { input: { projectId: string } }) => ({
           queryKey: ["projects", "detail", input.projectId],
         }),
@@ -84,11 +88,11 @@ describe("Cost Tracker Project data routes", () => {
     mocks.availableScopes.mockResolvedValue({ hosted: true, partner: true });
   });
 
-  it("defaults to Hosted and prefetches only the selected overview", async () => {
+  it("defaults to Hosted and prefetches only the selected list", async () => {
     render(await ProjectsPage());
 
     expect(mocks.availableScopes).toHaveBeenCalledOnce();
-    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+    expect(mocks.getListOptions).toHaveBeenCalledWith(
       "hosted",
       expect.objectContaining({ pageSize: 25, window: "all" }),
     );
@@ -99,7 +103,7 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenNthCalledWith(2, {
       queryKey: ["projects", "hosted"],
     });
-    expect(screen.getByText("Project collection")).toBeTruthy();
+    expect(screen.getByText("Project list")).toBeTruthy();
   });
 
   it("uses Partner when requested and available", async () => {
@@ -109,11 +113,11 @@ describe("Cost Tracker Project data routes", () => {
       }),
     );
 
-    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+    expect(mocks.getListOptions).toHaveBeenCalledWith(
       "partner",
       expect.objectContaining({ window: "open" }),
     );
-    expect(screen.getByText("Project collection")).toBeTruthy();
+    expect(screen.getByText("Project list")).toBeTruthy();
   });
 
   it("falls back to Partner when no Hosted Projects are available", async () => {
@@ -121,17 +125,17 @@ describe("Cost Tracker Project data routes", () => {
 
     render(await ProjectsPage());
 
-    expect(screen.getByText("Project collection")).toBeTruthy();
+    expect(screen.getByText("Project list")).toBeTruthy();
   });
 
-  it("does not prefetch an overview when no Project scope is available", async () => {
+  it("does not prefetch an list when no Project scope is available", async () => {
     mocks.availableScopes.mockResolvedValue({ hosted: false, partner: false });
 
     render(await ProjectsPage());
 
-    expect(mocks.getOverviewOptions).not.toHaveBeenCalled();
+    expect(mocks.getListOptions).not.toHaveBeenCalled();
     expect(mocks.query).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Project collection")).toBeTruthy();
+    expect(screen.getByText("Project list")).toBeTruthy();
   });
 
   it("prefetches Hosted Projects without a stale Partner cursor", async () => {
@@ -146,7 +150,7 @@ describe("Cost Tracker Project data routes", () => {
       }),
     );
 
-    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+    expect(mocks.getListOptions).toHaveBeenCalledWith(
       "hosted",
       expect.objectContaining({ cursor: undefined }),
     );

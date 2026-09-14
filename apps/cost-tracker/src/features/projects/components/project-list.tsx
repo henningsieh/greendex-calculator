@@ -43,23 +43,23 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
 import {
-  getProjectCollectionReturnDestination,
-  normalizeProjectCollectionState,
-  type ProjectCollectionState,
+  getProjectAvailableScopesQueryOptions,
+  getProjectListQueryOptions,
+} from "@/features/projects/project-list-query-options";
+import {
+  getProjectListReturnDestination,
+  normalizeProjectListState,
+  type ProjectListState,
   PROJECT_PAGE_SIZES,
-  projectCollectionParsers,
+  projectListParsers,
   PROJECT_SORT_MODES,
   PROJECT_WINDOW_FILTERS,
-  resolveProjectCollectionState,
-  type ProjectScopeAvailability,
-} from "@/features/projects/collection-state";
-import {
-  getProjectAvailableScopesQueryOptions,
-  getProjectOverviewQueryOptions,
-} from "@/features/projects/project-overview-query-options";
-import type { ProjectOverviewRow } from "@/features/projects/types";
+  resolveProjectListState,
+  type ProjectListScopeAvailability,
+} from "@/features/projects/project-list-query-options";
+import type { ProjectListRow } from "@/features/projects/types";
 
-const projectCollectionTableFeatures = tableFeatures({
+const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
   rowPaginationFeature,
   rowSortingFeature,
@@ -196,7 +196,7 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function ProjectCollection() {
+export function ProjectList() {
   const { data: availableScopes } = useSuspenseQuery(
     getProjectAvailableScopesQueryOptions(),
   );
@@ -204,7 +204,7 @@ export function ProjectCollection() {
   if (!availableScopes.hosted && !availableScopes.partner) {
     return (
       <section
-        aria-label="Project collection"
+        aria-label="Project list"
         className="mt-10 rounded-xl border p-8 text-center"
       >
         <h2 className="font-heading text-2xl font-semibold">
@@ -217,36 +217,31 @@ export function ProjectCollection() {
     );
   }
 
-  return <AvailableProjectCollection availableScopes={availableScopes} />;
+  return <AvailableProjectList availableScopes={availableScopes} />;
 }
 
-type ProjectCollectionQueryState = UseQueryStatesReturn<
-  typeof projectCollectionParsers
->;
+type ProjectListQueryState = UseQueryStatesReturn<typeof projectListParsers>;
 
-function AvailableProjectCollection({
+function AvailableProjectList({
   availableScopes,
 }: {
-  availableScopes: ProjectScopeAvailability;
+  availableScopes: ProjectListScopeAvailability;
 }) {
-  const [urlState, setUrlState] = useQueryStates(projectCollectionParsers, {
+  const [urlState, setUrlState] = useQueryStates(projectListParsers, {
     history: "push",
     shallow: true,
   });
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const requestedState = normalizeProjectCollectionState(urlState);
-  const resolution = resolveProjectCollectionState(
-    requestedState,
-    availableScopes,
-  );
+  const requestedState = normalizeProjectListState(urlState);
+  const resolution = resolveProjectListState(requestedState, availableScopes);
 
   if (!resolution.scope) {
     return null;
   }
 
   return (
-    <ResolvedProjectCollection
+    <ResolvedProjectList
       availableScopes={availableScopes}
       didPartnerToHostedFallback={resolution.didPartnerToHostedFallback}
       pathname={pathname}
@@ -260,7 +255,7 @@ function AvailableProjectCollection({
   );
 }
 
-function ResolvedProjectCollection({
+function ResolvedProjectList({
   availableScopes,
   didPartnerToHostedFallback,
   pathname,
@@ -271,15 +266,15 @@ function ResolvedProjectCollection({
   state,
   urlState,
 }: {
-  availableScopes: ProjectScopeAvailability;
+  availableScopes: ProjectListScopeAvailability;
   didPartnerToHostedFallback: boolean;
   pathname: string;
-  requestedState: ProjectCollectionState;
+  requestedState: ProjectListState;
   scope: "hosted" | "partner";
   searchParams: ReturnType<typeof useSearchParams>;
-  setUrlState: ProjectCollectionQueryState[1];
-  state: ProjectCollectionState;
-  urlState: ProjectCollectionQueryState[0];
+  setUrlState: ProjectListQueryState[1];
+  state: ProjectListState;
+  urlState: ProjectListQueryState[0];
 }) {
   const fallbackNotices = useRef(new Set<string>());
   const isHydrated = useSyncExternalStore(
@@ -314,7 +309,7 @@ function ResolvedProjectCollection({
   ]);
 
   const { data, dataUpdatedAt, isFetching, refetch } = useSuspenseQuery(
-    getProjectOverviewQueryOptions(scope, state),
+    getProjectListQueryOptions(scope, state),
   );
 
   const browserUrl =
@@ -322,7 +317,7 @@ function ResolvedProjectCollection({
       ? { pathname: "/projects", search: "" }
       : window.location;
   const search = searchParams?.toString() ?? browserUrl.search.slice(1);
-  const returnTo = getProjectCollectionReturnDestination(
+  const returnTo = getProjectListReturnDestination(
     `${pathname ?? browserUrl.pathname}${search ? `?${search}` : ""}`,
   );
 
@@ -335,7 +330,7 @@ function ResolvedProjectCollection({
     pageSize: state.pageSize,
   };
   const columns = useMemo<
-    ColumnDef<typeof projectCollectionTableFeatures, ProjectOverviewRow>[]
+    ColumnDef<typeof projectListTableFeatures, ProjectListRow>[]
   >(
     () => [
       {
@@ -399,7 +394,7 @@ function ResolvedProjectCollection({
   const table = useTable({
     columns,
     data: data.rows,
-    features: projectCollectionTableFeatures,
+    features: projectListTableFeatures,
     getRowId: (row) => row.id,
     manualFiltering: true,
     manualPagination: true,
@@ -467,7 +462,7 @@ function ResolvedProjectCollection({
     state: { columnFilters, pagination, sorting },
   });
 
-  const updateCollectionState = (patch: Parameters<typeof setUrlState>[0]) =>
+  const updateListState = (patch: Parameters<typeof setUrlState>[0]) =>
     void setUrlState({ ...patch, cursor: null });
   const updateProjectFilter = (
     id: (typeof PROJECT_FILTER_IDS)[keyof typeof PROJECT_FILTER_IDS],
@@ -482,7 +477,7 @@ function ResolvedProjectCollection({
 
   return (
     <section
-      aria-label="Project collection"
+      aria-label="Project list"
       className="mt-10 space-y-8"
       data-hydrated={isHydrated ? "true" : undefined}
     >
@@ -494,7 +489,7 @@ function ResolvedProjectCollection({
         <Button
           aria-selected={scope === "hosted"}
           disabled={!availableScopes.hosted && availableScopes.partner}
-          onClick={() => updateCollectionState({ scope: "hosted" })}
+          onClick={() => updateListState({ scope: "hosted" })}
           role="tab"
           variant={scope === "hosted" ? "default" : "outline"}
         >
@@ -503,7 +498,7 @@ function ResolvedProjectCollection({
         <Button
           aria-selected={scope === "partner"}
           disabled={!availableScopes.partner}
-          onClick={() => updateCollectionState({ scope: "partner" })}
+          onClick={() => updateListState({ scope: "partner" })}
           role="tab"
           variant={scope === "partner" ? "default" : "outline"}
         >

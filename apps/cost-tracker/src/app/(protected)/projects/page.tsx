@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 
-import {
-  loadProjectCollectionSearchParams,
-  normalizeProjectCollectionState,
-  resolveProjectCollectionState,
-} from "@/features/projects/collection-state";
-import { ProjectCollection } from "@/features/projects/components/project-collection";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
+import { ProjectList } from "@/features/projects/components/project-list";
 import {
   getProjectAvailableScopesQueryOptions,
-  getProjectOverviewQueryOptions,
-} from "@/features/projects/project-overview-query-options";
+  getProjectListQueryOptions,
+} from "@/features/projects/project-list-query-options";
+import {
+  loadProjectListSearchParams,
+  normalizeProjectListState,
+  resolveProjectListState,
+} from "@/features/projects/project-list-query-options";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
@@ -33,20 +33,20 @@ export default async function ProjectsPage(
 
   const queryClient = getQueryClient();
   const [urlState, availableScopes] = await Promise.all([
-    loadProjectCollectionSearchParams(searchParams),
+    loadProjectListSearchParams(searchParams),
     queryClient
       .query(getProjectAvailableScopesQueryOptions())
       .catch(swallowPrefetchError),
   ]);
 
   if (availableScopes) {
-    const resolution = resolveProjectCollectionState(
-      normalizeProjectCollectionState(urlState),
+    const resolution = resolveProjectListState(
+      normalizeProjectListState(urlState),
       availableScopes,
     );
     if (resolution.scope) {
       await queryClient
-        .query(getProjectOverviewQueryOptions(resolution.scope, resolution.state))
+        .query(getProjectListQueryOptions(resolution.scope, resolution.state))
         .catch(swallowPrefetchError);
     }
   }
@@ -65,7 +65,7 @@ export default async function ProjectsPage(
 
       <HydrateClient client={queryClient}>
         <ProjectDataErrorBoundary resource="Projects">
-          <ProjectCollection />
+          <ProjectList />
         </ProjectDataErrorBoundary>
       </HydrateClient>
     </div>

@@ -6,47 +6,51 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   availableScopes: { hosted: true, partner: false },
-  getOverviewOptions: vi.fn(),
+  getListOptions: vi.fn(),
   toastAdd: vi.fn(),
 }));
 
 vi.mock("@/components/ui/toast", () => ({
   toast: { add: mocks.toastAdd },
 }));
-vi.mock("@/features/projects/project-overview-query-options", () => ({
-  getProjectAvailableScopesQueryOptions: () => ({
-    queryKey: ["projects", "available-scopes"],
-    queryFn: async () => mocks.availableScopes,
-  }),
-  getProjectOverviewQueryOptions: mocks.getOverviewOptions.mockImplementation(
-    (scope: "hosted" | "partner", state: { cursor?: string }) => ({
-      queryKey: ["projects", scope, state],
-      queryFn: async () => ({
-        scope,
-        rows: [],
-        previousCursor: state.cursor ? "previous-page" : undefined,
-        nextCursor: "next-page",
-        metrics: {
-          whole: {
-            projectCount: 0,
-            openWindowCount: 0,
-            partnerOrganizationCount: 0,
-          },
-          filtered: {
-            projectCount: 0,
-            openWindowCount: 0,
-            partnerOrganizationCount: 0,
-          },
-        },
-        partnerOptions: [],
-      }),
+vi.mock(
+  "@/features/projects/project-list-query-options",
+  async (importOriginal) => ({
+    ...((await importOriginal()) as Record<string, unknown>),
+    getProjectAvailableScopesQueryOptions: () => ({
+      queryKey: ["projects", "available-scopes"],
+      queryFn: async () => mocks.availableScopes,
     }),
-  ),
-}));
+    getProjectListQueryOptions: mocks.getListOptions.mockImplementation(
+      (scope: "hosted" | "partner", state: { cursor?: string }) => ({
+        queryKey: ["projects", scope, state],
+        queryFn: async () => ({
+          scope,
+          rows: [],
+          previousCursor: state.cursor ? "previous-page" : undefined,
+          nextCursor: "next-page",
+          metrics: {
+            whole: {
+              projectCount: 0,
+              openWindowCount: 0,
+              partnerOrganizationCount: 0,
+            },
+            filtered: {
+              projectCount: 0,
+              openWindowCount: 0,
+              partnerOrganizationCount: 0,
+            },
+          },
+          partnerOptions: [],
+        }),
+      }),
+    ),
+  }),
+);
 
-import { ProjectCollection } from "@/features/projects/components/project-collection";
+import { ProjectList } from "@/features/projects/components/project-list";
 
-function renderCollection({
+function renderList({
   onUrlUpdate,
   searchParams = "?scope=partner&cursor=partner-cursor",
 }: {
@@ -65,14 +69,14 @@ function renderCollection({
     >
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<p>Loading Projects</p>}>
-          <ProjectCollection />
+          <ProjectList />
         </Suspense>
       </QueryClientProvider>
     </NuqsTestingAdapter>,
   );
 }
 
-describe("Project collection Nuqs URL state", { timeout: 10_000 }, () => {
+describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.availableScopes = { hosted: true, partner: false };
@@ -80,11 +84,11 @@ describe("Project collection Nuqs URL state", { timeout: 10_000 }, () => {
 
   it("replaces an unavailable Partner URL before creating the Hosted query", async () => {
     const onUrlUpdate = vi.fn();
-    renderCollection({ onUrlUpdate });
+    renderList({ onUrlUpdate });
 
     await screen.findByRole("tab", { name: "Hosted" }, { timeout: 10_000 });
 
-    expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+    expect(mocks.getListOptions).toHaveBeenCalledWith(
       "hosted",
       expect.objectContaining({ cursor: undefined }),
     );
@@ -101,25 +105,25 @@ describe("Project collection Nuqs URL state", { timeout: 10_000 }, () => {
     });
   });
 
-  it("renders an honest empty state without creating an overview query when neither scope is available", async () => {
+  it("renders an honest empty state without creating an list query when neither scope is available", async () => {
     const onUrlUpdate = vi.fn();
     mocks.availableScopes = { hosted: false, partner: false };
 
-    renderCollection({ onUrlUpdate });
+    renderList({ onUrlUpdate });
 
     expect(
       await screen.findByText(
         "No Projects are hosted by or assigned to your active Organization.",
       ),
     ).toBeTruthy();
-    expect(mocks.getOverviewOptions).not.toHaveBeenCalled();
+    expect(mocks.getListOptions).not.toHaveBeenCalled();
     expect(onUrlUpdate).not.toHaveBeenCalled();
   });
 
   it("writes server-provided cursors to the URL without using browser history", async () => {
     const onUrlUpdate = vi.fn();
     const browserBack = vi.spyOn(window.history, "back");
-    renderCollection({
+    renderList({
       onUrlUpdate,
       searchParams: "?scope=hosted&cursor=direct-page-two",
     });
@@ -144,14 +148,14 @@ describe("Project collection Nuqs URL state", { timeout: 10_000 }, () => {
     async (scope) => {
       const onUrlUpdate = vi.fn();
       mocks.availableScopes = { hosted: true, partner: true };
-      renderCollection({
+      renderList({
         onUrlUpdate,
         searchParams: `?scope=${scope}&cursor=${scope}-cursor`,
       });
 
       await screen.findByRole("tab", { name: "Hosted" }, { timeout: 10_000 });
 
-      expect(mocks.getOverviewOptions).toHaveBeenCalledWith(
+      expect(mocks.getListOptions).toHaveBeenCalledWith(
         scope,
         expect.objectContaining({ cursor: `${scope}-cursor` }),
       );

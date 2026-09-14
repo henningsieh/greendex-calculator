@@ -1,7 +1,7 @@
 ---
 name: "oRPC"
 description: "Procedures, middleware, router registration, OpenAPI, and SSR clients"
-applyTo: "apps/calculator/src/lib/orpc/**/*.ts,apps/calculator/src/app/api/rpc/**/*.ts,apps/calculator/src/app/api/openapi/**/*.ts,apps/calculator/src/features/**/procedures.ts,apps/calculator/src/features/**/validation-schemas.ts,apps/calculator/src/instrumentation.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/lib/orpc/**/*.ts,apps/cost-tracker/src/app/api/rpc/**/*.ts,apps/cost-tracker/src/features/**/*procedure*.ts,apps/cost-tracker/src/features/**/validation-schemas.ts,apps/cost-tracker/src/instrumentation.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx"
+applyTo: "apps/calculator/src/lib/orpc/**/*.ts,apps/calculator/src/app/api/rpc/**/*.ts,apps/calculator/src/app/api/openapi/**/*.ts,apps/calculator/src/features/**/procedures.ts,apps/calculator/src/features/**/validation-schemas.ts,apps/calculator/src/instrumentation.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/lib/orpc/**/*.ts,apps/cost-tracker/src/app/api/rpc/**/*.ts,apps/cost-tracker/src/features/**/procedures/*.ts,apps/cost-tracker/src/features/**/*procedure*.ts,apps/cost-tracker/src/features/**/validation-schemas.ts,apps/cost-tracker/src/instrumentation.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx"
 ---
 
 # oRPC
@@ -26,7 +26,7 @@ No official oRPC project skill is adopted. Use the versioned official pages and 
 | Context and typed errors | Owning app's `src/lib/orpc/context.ts` |
 | Authentication and permissions | Owning app's `src/lib/orpc/middleware.ts` |
 | Shared procedures | Owning app's `src/lib/orpc/procedures.ts`, when present |
-| Feature procedures | Owning app's `src/features/<feature>/procedures.ts` |
+| Feature procedures | Owning app's `src/features/<feature>/procedures/` directory (one short-named file per procedure) or a single `procedures.ts` for small features |
 | Direct server client | Owning app's `src/lib/orpc/client.server.ts` |
 | Universal client and Query utilities | Owning app's `src/lib/orpc/orpc.ts` |
 | OpenAPI configuration | Calculator's `src/lib/orpc/openapi-handler.ts` |

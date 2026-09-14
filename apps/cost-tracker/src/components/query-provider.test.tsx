@@ -15,7 +15,7 @@ import { QueryProvider } from "@/components/query-provider";
 function CachedORPCQuery() {
   const attempts = useRef(0);
   const query = useQuery({
-    queryKey: ["projects", "overview"],
+    queryKey: ["projects", "list"],
     queryFn: async () => {
       if (attempts.current++ > 0) throw new Error("network unavailable");
 

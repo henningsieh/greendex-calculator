@@ -50,7 +50,7 @@ Preserve the owning app's server-client initialization order: its `instrumentati
 
 | Change                                      | Location                                                      |
 | ------------------------------------------- | ------------------------------------------------------------- |
-| Project or organization procedure           | Owning `apps/<app>/src/features/<feature>/procedures.ts` |
+| Project or organization procedure           | Owning `apps/<app>/src/features/<feature>/procedures/` directory (or `procedures.ts` for small features) |
 | Procedure registration or shared middleware | Owning `apps/<app>/src/lib/orpc/`                       |
 | Database schema or migration                | `packages/database/src/`                                  |
 | Transactional email template                | `packages/email/src/templates/`                           |

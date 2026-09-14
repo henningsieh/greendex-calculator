@@ -30,7 +30,7 @@ Persisted form schemas start from the owning Drizzle table with `drizzle-zod`, t
 
 ## Project read architecture
 
-`/projects` is the canonical Project collection. Its Server Component parses the shared nuqs contract, resolves the available Hosted/Partner scope through oRPC, and prefetches exactly one generated overview query. The hydrated client view keeps scope, filters, sort, cursor, and page size in shallow URL state; TanStack Query requests each authoritative page and TanStack Table renders that page without client filtering, sorting, or pagination.
+`/projects` is the canonical Project list. Its Server Component parses the shared nuqs contract, resolves the available Hosted/Partner scope through oRPC, and prefetches exactly one generated list query. The hydrated client view keeps scope, filters, sort, cursor, and page size in shallow URL state; TanStack Query requests each authoritative page and TanStack Table renders that page without client filtering, sorting, or pagination.
 
 `/projects/[id]` accepts only Project identity. `project-relationship-procedure.ts` derives Hosted, Partner, or inaccessible access from the active Organization, and the detail procedure projects relationship-specific safe data. URL scope is never authorization input.
 
@@ -44,6 +44,6 @@ Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh
 
 ## Current feature ownership
 
-Project collection state, relationship policy, reads, Project Partnership mutations, and views belong to `src/features/projects/`. User appearance and account-name behavior belong to `src/features/user-settings/`. Protected routes compose those features; shared navigation and provider mechanics remain in `src/components/`.
+Project list state, relationship policy, reads, Project Partnership mutations, and views belong to `src/features/projects/`. User appearance and account-name behavior belong to `src/features/user-settings/`. Protected routes compose those features; shared navigation and provider mechanics remain in `src/components/`.
 
 See [Cost Tracker Projects](projects/README.md) and [User settings](user-settings.md) for behavior and integration details.

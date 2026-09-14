@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getProjectCollectionReturnDestination,
-  loadProjectCollectionSearchParams,
-  normalizeProjectCollectionState,
-  resolveProjectCollectionState,
-} from "@/features/projects/collection-state";
+  getProjectListReturnDestination,
+  loadProjectListSearchParams,
+  normalizeProjectListState,
+  resolveProjectListState,
+} from "@/features/projects/project-list-query-options";
 
-describe("Project collection URL state", () => {
+describe("Project list URL state", () => {
   it("parses typed defaults without adding URL-only state", () => {
-    expect(loadProjectCollectionSearchParams({})).toEqual({
+    expect(loadProjectListSearchParams({})).toEqual({
       scope: null,
       search: "",
       window: "all",
@@ -24,7 +24,7 @@ describe("Project collection URL state", () => {
 
   it("normalizes search, Partner filters, and invalid date ranges safely", () => {
     expect(
-      normalizeProjectCollectionState({
+      normalizeProjectListState({
         scope: "hosted",
         search: "  CLIMATE  ",
         window: "open",
@@ -49,7 +49,7 @@ describe("Project collection URL state", () => {
   });
 
   it("represents an Organization with no available Project scope", () => {
-    const resolution = resolveProjectCollectionState(
+    const resolution = resolveProjectListState(
       {
         scope: "partner",
         search: undefined,
@@ -77,9 +77,9 @@ describe("Project collection URL state", () => {
     });
   });
 
-  it("accepts a local Project collection return destination", () => {
+  it("accepts a local Project list return destination", () => {
     expect(
-      getProjectCollectionReturnDestination(
+      getProjectListReturnDestination(
         "/projects?scope=partner&search=climate&cursor=opaque",
       ),
     ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
@@ -93,11 +93,11 @@ describe("Project collection URL state", () => {
     "//attacker.example/projects",
     "https://attacker.example/projects",
   ])("falls back for an unsafe Project return destination: %j", (returnTo) => {
-    expect(getProjectCollectionReturnDestination(returnTo)).toBe("/projects");
+    expect(getProjectListReturnDestination(returnTo)).toBe("/projects");
   });
 
   it("omits search values shorter than three normalized characters", () => {
-    const state = normalizeProjectCollectionState({
+    const state = normalizeProjectListState({
       scope: null,
       search: " ab ",
       window: "all",

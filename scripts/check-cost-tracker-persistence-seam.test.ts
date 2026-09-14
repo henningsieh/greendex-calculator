@@ -137,6 +137,10 @@ describe("Cost Tracker persistence seam", () => {
           "features/projects/project-detail-procedure.ts",
           'import { db } from "@greendex/database";',
         ),
+        fixture(
+          "features/projects/procedures/list-hosted.ts",
+          'import { db } from "@greendex/database";',
+        ),
         fixture("lib/auth.ts", 'import { db } from "@greendex/database";'),
         fixture(
           "app/(protected)/projects/page.tsx",

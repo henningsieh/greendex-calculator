@@ -46,13 +46,13 @@ export function ProjectPartnershipManager() {
         queryKey: orpcQuery.projectPartnerships.list.queryKey(),
       }),
       queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.hostedOverview.key({ type: "query" }),
+        queryKey: orpcQuery.projects.listHosted.key({ type: "query" }),
       }),
       queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.partnerOverview.key({ type: "query" }),
+        queryKey: orpcQuery.projects.listPartner.key({ type: "query" }),
       }),
       queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.detail.key({ type: "query" }),
+        queryKey: orpcQuery.projects.get.key({ type: "query" }),
       }),
     ]);
   };

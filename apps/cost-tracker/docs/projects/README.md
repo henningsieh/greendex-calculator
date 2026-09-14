@@ -16,15 +16,15 @@ Each Partner Organization assignment belongs only to that Project. The same Orga
 
 ## Project application surfaces
 
-- `/projects` is the bounded, server-authoritative collection. It has explicit Hosted and Partner scopes, truthful Project-backed filters and sorts, opaque cursor pagination, whole-scope/current-filter metrics, and links to the canonical workspace.
+- `/projects` is the bounded, server-authoritative list. It has explicit Hosted and Partner scopes, truthful Project-backed filters and sorts, opaque cursor pagination, whole-scope/current-filter metrics, and links to the canonical workspace.
 - `/projects/[id]` is the relationship-derived workspace. Hosted staff see Project context, the read-only Cost Submission Window, and assigned Partner Organizations. Partner staff see Project context, Hosting Organization identity, the window state, and their assignment metadata.
 - `/partner-organizations` manages Project Partnerships for Projects hosted by the active Organization. Assign/remove procedures remain authoritative and refuse foreign Projects, self-Partnerships, duplicates, and removal that would invalidate represented Project Participations.
 
 Partner projections never expose financial data, individual submissions, Proof Documents, allocations, Participant identity, or other Partner Organizations. Those persistence models are not implemented.
 
-## Collection state and performance
+## List state and performance
 
-The Project collection stores scope, normalized name search, window state, overlap dates, Partner filters, allowlisted sort, cursor, and page size in a shared nuqs parser contract. The procedures own filtering, sorting, exact metrics, and cursor pagination; TanStack Table renders only the returned page. Case-insensitive literal substring search uses a partial trigram index, while Hosted operational/date indexes support the principal tenant-scoped paths.
+The Project list stores scope, normalized name search, window state, overlap dates, Partner filters, allowlisted sort, cursor, and page size in a shared nuqs parser contract. The procedures own filtering, sorting, exact metrics, and cursor pagination; TanStack Table renders only the returned page. Case-insensitive literal substring search uses a partial trigram index, while Hosted operational/date indexes support the principal tenant-scoped paths.
 
 ## Cost Submission Window
 
@@ -36,7 +36,7 @@ Recently-closed filtering requires a persisted transition timestamp and duration
 
 ## Related documentation
 
-- [Project overview query-plan validation](query-plan-validation.md)
+- [Project list query-plan validation](list-query-plan-validation.md)
 - [Cost Tracker domain and cost schema](../domain-model.md)
 - [Shared Project permissions](../../../../docs/projects/permissions.md)
 - [ADR-0001](../../../../docs/adr/0001-model-project-organizations-and-participation.md)

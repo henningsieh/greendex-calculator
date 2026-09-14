@@ -146,7 +146,7 @@ describe("Cost Tracker Better Auth", () => {
     const client = createRouterClient(router, {
       context: async () => ({ headers }),
     });
-    await expect(client.projects.availableScopes()).resolves.toEqual({
+    await expect(client.projects.scopes()).resolves.toEqual({
       hosted: false,
       partner: false,
     });

@@ -16,14 +16,10 @@ describe("Cost Tracker browser oRPC client", () => {
 
     const { orpc } = await import("@/lib/orpc/orpc");
 
-    await expect(orpc.projects.availableScopes()).rejects.toThrow(
-      "network unavailable",
-    );
+    await expect(orpc.projects.scopes()).rejects.toThrow("network unavailable");
 
     const [request] = fetch.mock.calls[0] ?? [];
     expect(request).toBeInstanceOf(Request);
-    expect(new URL(request.url).pathname).toBe(
-      "/api/rpc/projects/availableScopes",
-    );
+    expect(new URL(request.url).pathname).toBe("/api/rpc/projects/scopes");
   });
 });

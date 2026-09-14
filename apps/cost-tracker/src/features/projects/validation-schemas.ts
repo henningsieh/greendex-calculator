@@ -2,13 +2,18 @@ import { projectPartnerOrganizationsTable } from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import {
-  PROJECT_PAGE_SIZES,
-  PROJECT_SORT_MODES,
-  PROJECT_WINDOW_FILTERS,
-} from "@/features/projects/collection-state";
+export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
+export const PROJECT_WINDOW_FILTERS = ["all", "open", "closed"] as const;
+export const PROJECT_SORT_MODES = [
+  "operational",
+  "start-asc",
+  "start-desc",
+  "end-asc",
+  "end-desc",
+] as const;
+export const PROJECT_PAGE_SIZES = [25, 50, 100] as const;
 
-const ProjectOverviewInputBaseSchema = z
+const ProjectListInputBaseSchema = z
   .object({
     search: z
       .string()
@@ -34,18 +39,19 @@ const ProjectOverviewInputBaseSchema = z
     { message: "The Project date range is invalid." },
   );
 
-export const HostedProjectOverviewInputSchema =
-  ProjectOverviewInputBaseSchema.safeExtend({
+export const HostedProjectListInputSchema = ProjectListInputBaseSchema.safeExtend(
+  {
     partnerOrganizationIds: z
       .array(z.string().trim().min(1).max(128))
       .max(20)
       .default([])
       .transform((ids) => [...new Set(ids)].sort()),
-  });
+  },
+);
 
-export const PartnerProjectOverviewInputSchema = ProjectOverviewInputBaseSchema;
+export const PartnerProjectListInputSchema = ProjectListInputBaseSchema;
 
-export const ProjectOverviewRowSchema = z.object({
+export const ProjectListRowSchema = z.object({
   id: z.string(),
   name: z.string(),
   startDate: z.date(),
@@ -55,39 +61,39 @@ export const ProjectOverviewRowSchema = z.object({
   costSubmissionWindowOpen: z.boolean(),
 });
 
-const ProjectOverviewMetricsSchema = z.object({
+const ProjectListMetricsSchema = z.object({
   projectCount: z.number().int().nonnegative(),
   openWindowCount: z.number().int().nonnegative(),
 });
 
-export const HostedProjectOverviewSchema = z.object({
+export const HostedProjectListSchema = z.object({
   scope: z.literal("hosted"),
-  rows: z.array(ProjectOverviewRowSchema).max(100),
+  rows: z.array(ProjectListRowSchema).max(100),
   previousCursor: z.string().optional(),
   nextCursor: z.string().optional(),
   metrics: z.object({
-    whole: ProjectOverviewMetricsSchema.extend({
+    whole: ProjectListMetricsSchema.extend({
       partnerOrganizationCount: z.number().int().nonnegative(),
     }),
-    filtered: ProjectOverviewMetricsSchema.extend({
+    filtered: ProjectListMetricsSchema.extend({
       partnerOrganizationCount: z.number().int().nonnegative(),
     }),
   }),
   partnerOptions: z.array(z.object({ id: z.string(), name: z.string() })),
 });
 
-export const PartnerProjectOverviewSchema = z.object({
+export const PartnerProjectListSchema = z.object({
   scope: z.literal("partner"),
-  rows: z.array(ProjectOverviewRowSchema).max(100),
+  rows: z.array(ProjectListRowSchema).max(100),
   previousCursor: z.string().optional(),
   nextCursor: z.string().optional(),
   metrics: z.object({
-    whole: ProjectOverviewMetricsSchema,
-    filtered: ProjectOverviewMetricsSchema,
+    whole: ProjectListMetricsSchema,
+    filtered: ProjectListMetricsSchema,
   }),
 });
 
-export const ProjectScopeAvailabilitySchema = z.object({
+export const ProjectListScopeAvailabilitySchema = z.object({
   hosted: z.boolean(),
   partner: z.boolean(),
 });

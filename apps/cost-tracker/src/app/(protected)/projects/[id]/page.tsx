@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { getProjectCollectionReturnDestination } from "@/features/projects/collection-state";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
+import { getProjectListReturnDestination } from "@/features/projects/project-list-query-options";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
@@ -29,13 +29,11 @@ export default async function ProjectPage({
     searchParams ??
       Promise.resolve<Record<string, string | string[] | undefined>>({}),
   ]);
-  const returnTo = getProjectCollectionReturnDestination(
-    rawSearchParams.returnTo,
-  );
+  const returnTo = getProjectListReturnDestination(rawSearchParams.returnTo);
   const queryClient = getQueryClient();
   await queryClient
     .query(
-      orpcQuery.projects.detail.queryOptions({
+      orpcQuery.projects.get.queryOptions({
         input: { projectId: id },
         meta: { costTrackerORPC: true },
       }),

@@ -8,7 +8,7 @@ import {
 import { and, asc, eq, exists, notExists } from "drizzle-orm";
 import { z } from "zod";
 
-import { resolveProjectRelationship } from "@/features/projects/project-relationship-procedure";
+import { resolveRelationship } from "@/features/projects/procedures/projects";
 import {
   AssignProjectPartnershipInputSchema,
   ProjectPartnershipSchema,
@@ -37,7 +37,7 @@ function isExpectedORPCError(error: unknown): boolean {
   );
 }
 
-export const listProjectPartnerships = authorized
+export const listPartnerships = authorized
   .use(
     requireCostTrackerPermissions({
       project: ["read"],
@@ -84,13 +84,13 @@ export const listProjectPartnerships = authorized
  * Returns the created Project Partnership and rejects inaccessible Projects,
  * unknown Organizations, self-Partnerships, duplicates, and invariant violations.
  */
-export const assignProjectPartnership = authorized
+export const assignPartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
   .input(AssignProjectPartnershipInputSchema)
   .output(ProjectPartnershipSchema)
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
-    const relationship = await resolveProjectRelationship({
+    const relationship = await resolveRelationship({
       activeOrganizationId,
       projectId: input.projectId,
     });
@@ -184,7 +184,7 @@ export const assignProjectPartnership = authorized
  * Returns the removed Partnership ID and rejects removals that would leave a
  * Project Participation representing an unassigned Organization.
  */
-export const removeProjectPartnership = authorized
+export const removePartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["delete"] }))
   .input(RemoveProjectPartnershipInputSchema)
   .output(RemoveProjectPartnershipResultSchema)

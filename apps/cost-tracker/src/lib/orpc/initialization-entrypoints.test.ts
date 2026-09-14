@@ -19,7 +19,7 @@ vi.mock("next/font/google", () => ({
 }));
 vi.mock("@/components/nuqs-provider", async () => {
   const { orpc } = await import("@/lib/orpc/orpc");
-  await orpc.projects.availableScopes();
+  await orpc.projects.scopes();
 
   return {
     NuqsProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -48,7 +48,7 @@ function mockDirectClientInstallation() {
   vi.doMock("@/lib/orpc/client.server", () => {
     mocks.installDirectClient();
     globalThis.$costTrackerClient = {
-      projects: { availableScopes: mocks.directCall },
+      projects: { scopes: mocks.directCall },
     } as never;
     return {};
   });
@@ -63,7 +63,7 @@ describe("Cost Tracker SSR oRPC initialization entrypoints", () => {
     await register();
     const { orpc } = await import("@/lib/orpc/orpc");
 
-    await expect(orpc.projects.availableScopes()).resolves.toEqual({
+    await expect(orpc.projects.scopes()).resolves.toEqual({
       hosted: true,
       partner: false,
     });

@@ -7,7 +7,7 @@ vi.mock("server-only", () => ({}));
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 import { HydrateClient } from "@/lib/tanstack-react-query/hydration";
 
-const queryKey = ["projects", "hydrated-overview"] as const;
+const queryKey = ["projects", "hydrated-list"] as const;
 
 function HydratedProject({ queryFn }: { queryFn: () => Promise<string> }) {
   const { data } = useQuery({ queryKey, queryFn });

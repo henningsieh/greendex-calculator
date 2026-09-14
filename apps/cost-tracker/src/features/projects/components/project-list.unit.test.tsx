@@ -25,58 +25,62 @@ const mocks = vi.hoisted(() => ({
 vi.mock("nuqs", () => ({
   useQueryStates: () => [mocks.state, mocks.setUrlState],
 }));
-vi.mock("@/features/projects/project-overview-query-options", () => ({
-  getProjectAvailableScopesQueryOptions: () => ({
-    queryKey: ["projects", "available-scopes"],
-    queryFn: async () => ({ hosted: true, partner: true }),
-  }),
-  getProjectOverviewQueryOptions: (
-    scope: "hosted" | "partner",
-    state: { cursor?: string },
-  ) => ({
-    queryKey: ["projects", scope, state],
-    queryFn: async () => ({
-      scope: "hosted" as const,
-      rows: [
-        {
-          id: "project-1",
-          name: "Climate Forum",
-          startDate: new Date("2026-06-01T00:00:00.000Z"),
-          endDate: new Date("2026-06-03T00:00:00.000Z"),
-          location: "Berlin",
-          country: "DE",
-          costSubmissionWindowOpen: true,
+vi.mock(
+  "@/features/projects/project-list-query-options",
+  async (importOriginal) => ({
+    ...((await importOriginal()) as Record<string, unknown>),
+    getProjectAvailableScopesQueryOptions: () => ({
+      queryKey: ["projects", "available-scopes"],
+      queryFn: async () => ({ hosted: true, partner: true }),
+    }),
+    getProjectListQueryOptions: (
+      scope: "hosted" | "partner",
+      state: { cursor?: string },
+    ) => ({
+      queryKey: ["projects", scope, state],
+      queryFn: async () => ({
+        scope: "hosted" as const,
+        rows: [
+          {
+            id: "project-1",
+            name: "Climate Forum",
+            startDate: new Date("2026-06-01T00:00:00.000Z"),
+            endDate: new Date("2026-06-03T00:00:00.000Z"),
+            location: "Berlin",
+            country: "DE",
+            costSubmissionWindowOpen: true,
+          },
+        ],
+        nextCursor: "next-page",
+        previousCursor: state.cursor ? "previous-page" : undefined,
+        metrics: {
+          whole: {
+            projectCount: 3,
+            openWindowCount: 2,
+            partnerOrganizationCount: 2,
+          },
+          filtered: {
+            projectCount: 1,
+            openWindowCount: 1,
+            partnerOrganizationCount: 1,
+          },
         },
-      ],
-      nextCursor: "next-page",
-      previousCursor: state.cursor ? "previous-page" : undefined,
-      metrics: {
-        whole: {
-          projectCount: 3,
-          openWindowCount: 2,
-          partnerOrganizationCount: 2,
-        },
-        filtered: {
-          projectCount: 1,
-          openWindowCount: 1,
-          partnerOrganizationCount: 1,
-        },
-      },
-      partnerOptions: [{ id: "partner-1", name: "Mobility Group" }],
+        partnerOptions: [{ id: "partner-1", name: "Mobility Group" }],
+      }),
     }),
   }),
-}));
+);
 
-import { ProjectCollection } from "@/features/projects/components/project-collection";
+import { ProjectList } from "@/features/projects/components/project-list";
 
-function renderCollection() {
+function renderList() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading Projects</p>}>
-        <ProjectCollection />
+        <ProjectList />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -95,9 +99,9 @@ beforeEach(() => {
   window.history.replaceState({}, "", `/projects?${mocks.projectReturnSearch}`);
 });
 
-describe("Project collection", { timeout: 10_000 }, () => {
+describe("Project list", { timeout: 10_000 }, () => {
   it("renders one server-returned page without exposing deferred fields", async () => {
-    renderCollection();
+    renderList();
 
     expect(
       await screen.findByRole(
@@ -113,8 +117,8 @@ describe("Project collection", { timeout: 10_000 }, () => {
     ).toBeNull();
   });
 
-  it("preserves the complete collection state when opening a Project", async () => {
-    renderCollection();
+  it("preserves the complete list state when opening a Project", async () => {
+    renderList();
 
     expect(
       (
@@ -130,7 +134,7 @@ describe("Project collection", { timeout: 10_000 }, () => {
   });
 
   it("clears the cursor when scope or filters change", async () => {
-    renderCollection();
+    renderList();
     await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
 
     fireEvent.click(screen.getByRole("tab", { name: "Partner" }));
@@ -153,7 +157,7 @@ describe("Project collection", { timeout: 10_000 }, () => {
   it("clears explicit Project date filters instead of restoring their previous values", async () => {
     mocks.state.dateFrom = new Date("2026-01-01T00:00:00.000Z");
     mocks.state.dateTo = new Date("2026-12-31T00:00:00.000Z");
-    renderCollection();
+    renderList();
     await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
 
     fireEvent.change(screen.getByLabelText("Active on or after"), {
@@ -184,7 +188,7 @@ describe("Project collection", { timeout: 10_000 }, () => {
   it("writes the opaque pagination cursors directly to URL state", async () => {
     mocks.state.cursor = "current-page";
     const browserBack = vi.spyOn(window.history, "back");
-    renderCollection();
+    renderList();
     await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
 
     fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
@@ -204,7 +208,7 @@ describe("Project collection", { timeout: 10_000 }, () => {
       .mockImplementation(() => undefined);
 
     try {
-      renderCollection();
+      renderList();
       await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
       fireEvent.change(screen.getByLabelText("Project name"), {
         target: { value: "Travel" },
@@ -221,7 +225,7 @@ describe("Project collection", { timeout: 10_000 }, () => {
   });
 
   it("coordinates table controls with URL state without processing a server page", async () => {
-    renderCollection();
+    renderList();
     const projectLink = await screen.findByRole(
       "link",
       { name: "Climate Forum" },
