@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # Model Cost Submissions and Travel Costs
+
+> **Superseded by [ADR-0006](0006-derive-claim-participants-through-cost-allocations.md), [ADR-0007](0007-share-participant-journeys-and-cap-claims-by-funding-rules.md), and [ADR-0011](0011-complete-claim-submission-and-payment-workflow.md).** The exact-money, Proof Document, and allocation-method principles remain applicable only where they do not conflict with those later decisions.
 
 Cost Tracker will use a Project-level Cost Submission Window. A completed Cost Submission groups Proof Documents and single-transport Travel Cost Entries; each entry covers one or more Project Participations through one explicit allocation method.
 

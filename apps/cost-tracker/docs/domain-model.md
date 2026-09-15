@@ -1,6 +1,6 @@
 # Cost Tracker Cost Model and Schema Blueprint
 
-Status: approved Cost Submission design; documentation only for Cost Submission, Proof Document, Travel Cost Entry, and Cost Allocation persistence. Project Partnerships and the read-only Cost Submission Window state are already implemented.
+Status: historical Cost Submission blueprint. [ADR-0006](../../../docs/adr/0006-derive-claim-participants-through-cost-allocations.md) replaces its aggregate with a Claim belonging to one Project Partnership and derives covered Participants through Cost Allocations. [ADR-0007](../../../docs/adr/0007-share-participant-journeys-and-cap-claims-by-funding-rules.md) replaces its independent Calculator-journey boundary with a shared Participant Journey and a configurable funding cap. Do not use this document's Cost Submission, entry-flow, or journey-boundary text for implementation. Project Partnerships and the read-only Cost Submission Window state are already implemented.
 
 Read these sources first:
 
@@ -11,14 +11,19 @@ Read these sources first:
 
 The shared documents own Organization, Project, Project Participation, invitation, and role rules. This document owns only Cost Tracker behavior and persistence.
 
+## Terminology
+
+A **Ticket** is an everyday real-world word for a travel document. A physical or PDF ticket may be a **Proof Document**, but Ticket is not a canonical Cost Tracker domain entity. In particular, it must not mean a **Travel Cost Entry** (the exact money and transport record) or a **Cost Allocation** (the association between a cost and one covered Project Participation).
+
 ## Context boundary
 
 Cost Tracker records journey-ticket costs for shared Project Participations.
 
-- Calculator owns questionnaire answers, Participant Travel Legs, Project Shared Travel Legs, and carbon-footprint calculation.
-- Cost Tracker owns Cost Submission Windows, Cost Submissions, Proof Documents, Travel Cost Entries, and Cost Allocations.
+- Participant Journey is shared journey data owned by Project Participation. Cost Tracker implements it first; Calculator will later adopt the same persisted record.
+- Calculator owns questionnaire answers, Project Shared Travel Legs, and carbon-footprint calculation.
+- Cost Tracker owns Claims, Payout Accounts, Proof Documents, Travel Cost Entries, Cost Allocations, and funding review.
 - Cost Tracker reuses Calculator's [`PARTICIPANT_TRANSPORT_EMISSION_PROFILES`](../../../packages/config/src/transport-emission-profiles.ts) instead of defining a competing transport list.
-- Cost records and Calculator journey records remain independent in the MVP.
+- Travel Cost Entries record money and transport evidence; Participant Journeys own personal routes and Erasmus Distance-Calculator distances.
 
 ## Cost Submission Window
 
@@ -79,7 +84,7 @@ EUR is the only MVP currency. Monetary values use PostgreSQL exact `numeric`/`de
 
 A single invoice may support several single-transport entries. Cost Tracker therefore keeps Proof Document and Travel Cost Entry as separate concepts.
 
-Travel Cost Entries do not create, update, or reference Calculator Participant Travel Legs in the MVP. The shared transport configuration is their only direct connection.
+Travel Cost Entries do not own personal routes, trip types, or Erasmus Distance-Calculator distances. Those facts belong to the shared Participant Journey rather than to a Cost Tracker money record.
 
 ## Cost Allocation
 

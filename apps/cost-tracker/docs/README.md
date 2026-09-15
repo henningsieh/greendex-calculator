@@ -16,13 +16,21 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Cost Tracker Projects](projects/README.md)
 - [User settings](user-settings.md)
 - [Cost model and schema blueprint](domain-model.md)
+- [Claim workflow](claim-workflow.md)
+- [Clickdummy use-case traceability](clickdummy/requirements-traceability.md)
 - [Garage S3 infrastructure](infrastructure/garage.md)
 
 ## Decisions
 
 - [Project Organizations and Project Participation](../../../docs/adr/0001-model-project-organizations-and-participation.md)
 - [Participant integration with Better Auth](../../../docs/adr/0002-integrate-participants-with-better-auth.md)
-- [Cost Submissions and Travel Costs](../../../docs/adr/0003-model-cost-submissions-and-travel-costs.md)
+- [Cost Submissions and Travel Costs](../../../docs/adr/0003-model-cost-submissions-and-travel-costs.md) — superseded in part by ADR-0006
+- [Derive Claim Participants Through Cost Allocations](../../../docs/adr/0006-derive-claim-participants-through-cost-allocations.md)
+- [Share Participant Journeys and Cap Claims by Funding Rules](../../../docs/adr/0007-share-participant-journeys-and-cap-claims-by-funding-rules.md)
+- [Return Claims for Partner Correction](../../../docs/adr/0008-return-claims-for-partner-correction.md)
+- [Approve Claims Before Recording Payment](../../../docs/adr/0009-approve-claims-before-recording-payment.md)
+- [Reject and Reopen Claims](../../../docs/adr/0010-reject-and-reopen-claims.md)
+- [Complete Claim Submission and Payment Workflow](../../../docs/adr/0011-complete-claim-submission-and-payment-workflow.md)
 
 ## End-to-end test account
 
@@ -38,4 +46,4 @@ deletes its own verification-email fixture; it does not use this account.
 
 ## Scope
 
-Cost Tracker owns the rules for Project Partnerships, Cost Submission Windows, Cost Submissions, Proof Documents, Travel Cost Entries, and Cost Allocations. Shared Organizations, Projects, Users, Project Participations, and transport configuration remain repository-level concerns. The Cost Tracker model defines its persistence semantics; `@greendex/database` owns their future Drizzle implementation and migrations.
+Cost Tracker owns the rules for Project Partnerships, Claims, Payout Accounts, Proof Documents, Travel Cost Entries, Cost Allocations, and funding review. Participant Journeys, Organizations, Projects, Users, Project Participations, and transport configuration are shared repository-level concerns. The Cost Tracker model defines its persistence semantics; `@greendex/database` owns their future Drizzle implementation and migrations.

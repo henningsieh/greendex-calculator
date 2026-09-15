@@ -46,6 +46,11 @@ The clickdummy is authoritative evidence for intended actors, domain requirement
 7. Recommend the smallest coherent vertical slice that exercises real domain behavior end to end. State its dependencies, acceptance boundaries, unresolved decisions, and why it is the best first slice.
 8. Stop before implementation. Present the findings and proposed documentation changes for approval. Once the requirements are sufficiently resolved, recommend whether to continue with `/to-spec`, detour through `/prototype` for a runnable interaction question, or use `/wayfinder` if the product surface remains too large to map in one session.
 
+## Discovery output
+
+- [Use-case traceability](requirements-traceability.md)
+- [Claim workflow target](../claim-workflow.md)
+
 ## Completion criteria
 
 Discovery is complete only when:

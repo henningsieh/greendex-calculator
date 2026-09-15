@@ -2,6 +2,8 @@
 
 Status: approved design; the proposed schema changes are not implemented.
 
+> **Participant identity and onboarding notice:** [ADR-0005](../adr/0005-require-authenticated-participant-onboarding.md) supersedes this document's optional-email, unauthenticated-participation, and project-specific profile assumptions. Do not implement those parts of this schema blueprint until this model is revised to represent the centralized User profile and app-wide agreement.
+
 This document is the cross-application source of truth for Project identity and Project Participation. Read [ADR-0001](../adr/0001-model-project-organizations-and-participation.md) for rationale and [shared permissions](permissions.md) for Better Auth integration.
 
 ## Project
@@ -11,6 +13,7 @@ Every Project has exactly one owning Organization. Applications may present that
 - Calculator presents the owning Organization without a Hosting/Partner distinction.
 - Cost Tracker calls it the Hosting Organization when contrasting it with Project-specific Partner Organizations.
 - Cost Tracker may assign zero or more Partner Organizations to a Project.
+- When a Partner-side Project Coordinator first saves a Participant Journey for a Project, Cost Tracker copies its configurable travel-funding rules and rates into immutable Project-owned historical data in the same operation. Later configuration changes affect only future Projects.
 - A Project Partnership is Project-specific. Assignment to one Project does not apply to another.
 - The Hosting Organization remains `project.organizationId` and is not duplicated in a Project Partnership row.
 
@@ -18,8 +21,9 @@ Every Project has exactly one owning Organization. Applications may present that
 Project
 ├── exactly one owning Organization
 ├── zero or more Project Participations
+├── shared Participant Journeys
 ├── Calculator-owned carbon data
-└── Cost Tracker-owned Project Partnerships and Cost Submissions
+└── Cost Tracker-owned Project Partnerships and Claims
 ```
 
 ## Project Participation
@@ -41,6 +45,12 @@ The represented Organization is required and must be either:
 2. one of that Project's Partner Organizations.
 
 One Project Participation represents only one Organization. A Travel Cost Entry may cover several Project Participations, but that does not change their individual representation.
+
+### Participant Journey
+
+A Participant Journey belongs to one Project Participation. The MVP permits exactly one Participant Journey per Project Participation. It is the shared record of that Participant's real journey to or from the Project: its origin, destination, trip type, and Erasmus Distance-Calculator distance used to select a funding band. Cost Tracker will implement it first; Calculator will later adapt its participant-travel model to use the same journey data.
+
+A Participant Journey is neither a cost record nor a carbon calculation result. Travel Cost Entries may cover several Project Participations and therefore cannot own each Participant's personal route or Erasmus Distance-Calculator distance.
 
 ### MVP identity
 

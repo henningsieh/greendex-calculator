@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # Integrate Participants with Better Auth
+
+> **Superseded in part by [ADR-0005](0005-require-authenticated-participant-onboarding.md).** Its account-required participant onboarding, centralized profile, app-wide agreement, and Registration Link decisions replace this ADR's email-optional and unauthenticated-participation flow. Its distinction between Hosting-Organization Membership, Organization roles, and Project Participation remains applicable where it does not conflict with ADR-0005.
 
 Participants who accept an invitation will use normal Better Auth Users, Organization Memberships, and distinct roles. The accepted invitation creates or reuses Membership in the Project's Hosting Organization; Project Participation remains the authority for which specific Projects and personal records the User may access.
 
