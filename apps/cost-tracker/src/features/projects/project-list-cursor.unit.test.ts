@@ -82,9 +82,7 @@ describe("project list cursor", () => {
     );
     expect(
       decodeProjectListCursor(
-        Buffer.from(JSON.stringify({ version: 2 }), "utf8").toString(
-          "base64url",
-        ),
+        Buffer.from(JSON.stringify({ version: 2 }), "utf8").toString("base64url"),
         fingerprint,
       ).status,
     ).toBe("invalid");
