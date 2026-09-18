@@ -41,6 +41,9 @@ pnpm run test:run
 pnpm run check:agent-instructions
 ```
 
+The staged-file pre-commit workflow and its design rationale are documented in
+the [Husky pre-commit research](../research/husky-pre-commit.md).
+
 - Oxfmt configuration, import sorting, and Tailwind sorting live in `.oxfmtrc.json`.
 - Oxlint configuration lives in `.oxlintrc.json`; lint scripts may apply fixes.
 - The root `.oxlintrc.json` also loads the `@shadcn/lint` Oxlint JS plugin (declared as a root devDependency) and carries the design-system rules; because workspaces resolve that single config, every workspace lint run includes them. `pnpm run lint:design-system` is the focused check-only pass. Read [UI components](shadcn.md) before changing those rules.
