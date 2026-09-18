@@ -121,9 +121,7 @@ export function SignupForm({
           <CardTitle className="space-y-1">
             <h1 className="text-xl font-bold">{t("signup.title")}</h1>
           </CardTitle>
-          <CardDescription className="text-sm">
-            {t("signup.description")}
-          </CardDescription>
+          <CardDescription>{t("signup.description")}</CardDescription>
         </CardHeader>
 
         <CardContent className="px-0">
@@ -191,7 +189,12 @@ export function SignupForm({
             <Field>
               <FieldDescription className="px-6 text-center font-bold">
                 {t("signup.footer.haveAccount")}
-                <Button asChild className="px-0 pl-1" variant="link">
+                <Button
+                  asChild
+                  /* eslint-disable-next-line shadcn/no-restyle -- Inline auth link alignment is intentional. */
+                  className="pl-1"
+                  variant="link"
+                >
                   <Link href={LOGIN_PATH}>{t("signup.footer.signIn")}</Link>
                 </Button>
               </FieldDescription>

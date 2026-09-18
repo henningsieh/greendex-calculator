@@ -106,7 +106,10 @@ export default async function AppLayout({
           <SidebarInset className="flex flex-col overflow-hidden">
             <div className="flex h-15 shrink-0 items-center border-b pl-3.5 lg:pl-6">
               <div className="flex items-center md:hidden">
-                <SidebarTrigger className="text-muted-foreground" />
+                <SidebarTrigger
+                  /* eslint-disable-next-line shadcn/no-restyle -- Mobile navigation trigger intentionally uses muted color. */
+                  className="text-muted-foreground"
+                />
                 <Separator
                   orientation="vertical"
                   className="m-2 data-[orientation=vertical]:h-4"

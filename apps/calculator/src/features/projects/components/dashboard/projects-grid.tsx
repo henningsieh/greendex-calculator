@@ -122,11 +122,12 @@ export function ProjectsGrid({
                 {t("sort-label")} <ChevronDownIcon className="ml-2 size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="space-y-1">
+            <DropdownMenuContent align="end" className="flex flex-col gap-1">
               <DropdownMenuLabel>{t("sort-projects")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {sortOptions.map((opt) => (
                 <DropdownMenuItem
+                  /* eslint-disable-next-line shadcn/no-restyle -- Selected sort option intentionally uses the menu accent surface. */
                   className={sortBy === opt.value ? "bg-accent" : ""}
                   key={opt.value}
                   onClick={() => setSortBy(opt.value as ProjectSortField)}

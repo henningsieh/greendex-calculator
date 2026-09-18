@@ -24,6 +24,17 @@ Use this instruction whenever changing a manifest, dependency version, workspace
 - Keep package-specific libraries in the owning workspace manifest.
 - Shared packages declare React or framework peer dependencies when their public API requires the consumer to supply them.
 - Root dev dependencies are limited to repository-wide orchestration and quality tools.
+- Keep exactly one Next.js install for the workspace: pin it in the catalog and expose that install at the repository root with `publicHoistPattern` rather than adding a second root dependency.
+
+## Single Next.js install
+
+The catalog pins one `next` version for the whole workspace, and `publicHoistPattern: [next]` in `pnpm-workspace.yaml` exposes that same install at the repository root. This keeps the Next.js documentation single-sourced:
+
+- the Next.js-managed agent-rules block in the root `AGENTS.md` resolves `node_modules/next/dist/docs` verbatim;
+- the bundled version-matched docs exist once, not per app;
+- Next.js tooling (the `nextjs_docs` MCP tool, the `agents-md` codemod refresh) works from the repository root.
+
+Do not add `next` to the root `dependencies`: a root install can resolve a second, differently peer-suffixed copy. Keep the link, not a copy.
 - Use an override only for a deliberate transitive-resolution fix that the catalog cannot express; document why it exists.
 
 ## Adding or updating a dependency
@@ -40,6 +51,7 @@ Do not edit `pnpm-lock.yaml` manually.
 
 - Define reusable root task entrypoints in `package.json`; define workspace implementations in workspace manifests.
 - Declare generated outputs so Turbo can cache only reproducible artifacts.
+- Keep lint inputs complete: the `lint` task hashes `$TURBO_ROOT$/.oxlintrc.json` plus the root `package.json` and `pnpm-lock.yaml`, so a config or lint-plugin version change invalidates cached results.
 - Mark persistent processes and non-cacheable lifecycle/database tasks appropriately.
 - Keep dependency ordering explicit with `dependsOn`.
 - Do not add a task merely to alias a single command unless it is part of the repository workflow.

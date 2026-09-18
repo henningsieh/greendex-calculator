@@ -17,6 +17,8 @@ Use this instruction for manifests, configuration, scripts, environment setup, a
 
 Read [workspace instructions](workspace.md) before modifying dependencies, package manifests, `pnpm-workspace.yaml`, or `turbo.json`.
 
+Keep the root `.oxlintrc.json` `jsPlugins` entry and the root `@shadcn/lint` devDependency in sync: the plugin version resolves from the root manifest, so a version bump belongs there and not in the app manifests.
+
 ## Environment
 
 - Each application owns its local environment file, created from the `.env.example` in that application's directory.
@@ -33,6 +35,7 @@ Run commands from the repository root unless a task requires an explicit workspa
 ```bash
 pnpm run format
 pnpm run lint
+pnpm run lint:design-system
 pnpm run type-check
 pnpm run test:run
 pnpm run check:agent-instructions
@@ -40,6 +43,8 @@ pnpm run check:agent-instructions
 
 - Oxfmt configuration, import sorting, and Tailwind sorting live in `.oxfmtrc.json`.
 - Oxlint configuration lives in `.oxlintrc.json`; lint scripts may apply fixes.
+- The root `.oxlintrc.json` also loads the `@shadcn/lint` Oxlint JS plugin (declared as a root devDependency) and carries the design-system rules; because workspaces resolve that single config, every workspace lint run includes them. `pnpm run lint:design-system` is the focused check-only pass. Read [UI components](shadcn.md) before changing those rules.
+- `ignorePatterns` and `overrides` entries are resolved relative to the config file directory, so keep them repository-root-relative.
 - Use Vitest for unit/integration tests and Playwright for browser flows.
 - Follow the process restrictions in `AGENTS.md`; repository configuration does not override them.
 

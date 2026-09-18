@@ -1,4 +1,5 @@
 ---
+name: "Documentation Index"
 applyTo: "**"
 description: "Repository-wide documentation index and application documentation routes"
 ---

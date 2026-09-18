@@ -10,6 +10,8 @@ applyTo: "apps/calculator/src/components/**/*.ts,apps/calculator/src/components/
 
 Use existing local primitives before adding another abstraction. Inspect the owning app's `components.json`, start with the official [shadcn/ui `llms.txt` index](https://ui.shadcn.com/llms.txt), and fetch only the needed [component documentation](https://ui.shadcn.com/docs). Use the official `shadcn` skill as supplementary project-aware workflow guidance.
 
+For the design-system lint that verifies these rules, use the official [`@shadcn/lint` README](https://github.com/shadcn-ui/lint) and fetch only the needed page ([adoption](https://github.com/shadcn-ui/lint/blob/main/docs/adoption.md), [rules](https://github.com/shadcn-ui/lint/blob/main/docs/rules.md)). The installed plugin version in the root manifest is authoritative over upstream examples.
+
 ## Locations
 
 Within the owning app:
@@ -27,6 +29,19 @@ pnpm --dir apps/<owning-app> dlx shadcn@latest add <component>
 ```
 
 Review generated dependencies and code before retaining them.
+
+## Design-system lint
+
+`@shadcn/lint` runs as an Oxlint JS plugin. The single source of truth is the repository-root `.oxlintrc.json`, which every workspace Oxlint run discovers, so `pnpm run lint` already includes these rules. `pnpm run lint:design-system` is the focused, check-only pass (no `--fix`) over both app sources.
+
+- The plugin is declared as a root devDependency; do not duplicate it per workspace.
+- `shadcn/no-restyle` is `error` with `allow: ["layout"]`; layout classes such as `mt-4` and `w-full` stay allowed.
+- Components own their appearance: the `overrides` entry turns `shadcn/no-restyle` off for `apps/*/src/components/ui/**`.
+- Config paths in `ignorePatterns` and `overrides` resolve against the config file directory, so write them repository-root-relative (`apps/calculator/src/...`), not workspace-relative.
+- The adopted rule is clean, so it is promoted to `error` as recommended by the upstream adoption guide. Keep new exceptions explicit: use a variant for reusable appearances, a contract when callers own part of a component's API, a documented file-level disable only for dense bespoke screens, and `eslint-disable-next-line shadcn/no-restyle -- <reason>` for a single intentional treatment.
+- The focused `lint:design-system` command uses `-D shadcn/no-restyle` and fails on new violations. Do not add a warning cap; the rule is already enforced as an error.
+- Re-run `pnpm run format && pnpm run lint` after changing component class usage, and never edit component internals to silence a caller-side finding.
+- `lint:design-system` pins the rules adopted so far (`shadcn/no-restyle`); extend that command when you adopt another rule.
 
 ## Composition
 

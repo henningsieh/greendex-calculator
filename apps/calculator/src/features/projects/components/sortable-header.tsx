@@ -89,6 +89,7 @@ export function SortableHeader({
       aria-sort={sortDirection}
       className={cn(
         "group -ml-4 h-8",
+        /* eslint-disable-next-line shadcn/no-restyle -- Active sort state intentionally changes button emphasis. */
         sortState && "font-medium text-foreground",
         className,
       )}

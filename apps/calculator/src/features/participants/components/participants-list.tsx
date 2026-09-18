@@ -45,7 +45,7 @@ export function ParticipantsList({ activeProjectId }: ParticipantsListProps) {
   );
 
   return (
-    <Card className="border border-border/60 bg-card/80 shadow-sm">
+    <Card tone="subtle">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <PROJECT_ICONS.participants className="size-5 text-secondary" />

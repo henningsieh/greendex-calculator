@@ -29,6 +29,7 @@ function DatePickerWithInput({
   return (
     <div className="relative flex gap-2">
       <Input
+        /* eslint-disable-next-line shadcn/no-restyle -- Date picker reserves space for its calendar affordance. */
         className="cursor-pointer bg-background pr-10"
         id={id}
         onClick={() => setOpen(true)}

@@ -23,7 +23,11 @@ const buttonVariants = cva(
           "border border-transparent hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         secondaryghost:
           "border border-transparent text-secondary hover:bg-secondary/20 hover:text-secondary-foreground focus-visible:border-secondary focus-visible:ring-secondary/50",
-        link: "border border-transparent text-primary underline-offset-4 hover:underline",
+        impact:
+          "bg-linear-to-r from-teal-500 to-emerald-500 text-lg text-white hover:from-teal-600 hover:to-emerald-600",
+        locale:
+          "rounded-full bg-transparent p-1 ring-1 ring-border hover:bg-accent/40 hover:text-accent-foreground hover:ring-primary data-[pending=true]:opacity-70",
+        link: "border border-transparent px-0 text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

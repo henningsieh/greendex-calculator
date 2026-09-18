@@ -17,7 +17,7 @@ interface StatsOverviewProps {
 export function StatsOverview({ stats }: StatsOverviewProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card className="border-teal-500/30 bg-linear-to-br from-teal-500/20 to-teal-500/5 backdrop-blur-sm">
+      <Card tone="teal">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -33,7 +33,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
         </div>
       </Card>
 
-      <Card className="border-emerald-500/30 bg-linear-to-br from-emerald-500/20 to-emerald-500/5 backdrop-blur-sm">
+      <Card tone="emerald">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -50,7 +50,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
         </div>
       </Card>
 
-      <Card className="border-cyan-500/30 bg-linear-to-br from-cyan-500/20 to-cyan-500/5 backdrop-blur-sm">
+      <Card tone="cyan">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -67,7 +67,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
         </div>
       </Card>
 
-      <Card className="border-green-500/30 bg-linear-to-br from-green-500/20 to-green-500/5 backdrop-blur-sm">
+      <Card tone="green">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>

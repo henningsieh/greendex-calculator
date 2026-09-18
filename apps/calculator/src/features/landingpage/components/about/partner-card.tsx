@@ -54,7 +54,7 @@ export async function PartnerCard({ partner }: PartnerCardProps) {
           </div>
 
           {countryData && (
-            <CardDescription className="flex items-center gap-1.5 font-medium text-muted-foreground/80">
+            <CardDescription className="flex items-center gap-1.5 font-medium text-muted-foreground">
               {countryData.Flag && (
                 <countryData.Flag
                   aria-hidden="true"
@@ -67,8 +67,8 @@ export async function PartnerCard({ partner }: PartnerCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="grow text-sm leading-relaxed text-muted-foreground">
-        <p>{partner.description}</p>
+      <CardContent className="grow text-sm leading-relaxed">
+        <p className="text-muted-foreground">{partner.description}</p>
       </CardContent>
 
       <CardFooter className="flex items-center justify-end border-t">

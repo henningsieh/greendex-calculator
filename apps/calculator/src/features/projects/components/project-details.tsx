@@ -407,33 +407,27 @@ export function ProjectDetails({ id }: ProjectDetailsProps) {
       <ParticipantsLinkControls projectId={id} />
 
       {/* Tabs Navigation */}
-      <Tabs className="space-y-4" defaultValue="details">
-        <TabsList className="grid w-full grid-cols-1 gap-2 bg-transparent p-0 sm:w-fit sm:grid-cols-3">
-          <TabsTrigger
-            className="text-muted-foreground/80 ring-offset-2 ring-offset-background focus-visible:border-secondary focus-visible:ring-secondary/80 focus-visible:outline-secondary data-[state=active]:border-secondary data-[state=active]:bg-secondary/60 data-[state=active]:text-foreground dark:data-[state=active]:border-secondary dark:data-[state=active]:bg-secondary/60"
-            value="details"
-          >
+      <Tabs className="gap-4" defaultValue="details">
+        <TabsList
+          className="grid w-full grid-cols-1 gap-2 p-0 sm:w-fit sm:grid-cols-3"
+          variant="plain"
+        >
+          <TabsTrigger variant="secondary" value="details">
             <PROJECT_ICONS.project className="size-4" />
             {t("tabs.details")}
           </TabsTrigger>
-          <TabsTrigger
-            className="focus-visible:border-secondary focus-visible:ring-secondary/50 focus-visible:outline-secondary dark:data-[state=active]:border-secondary/50"
-            value="shared-travel"
-          >
+          <TabsTrigger variant="secondary" value="shared-travel">
             <PROJECT_ICONS.sharedTravelLegs className="size-4" />
             {t("tabs.shared-travel")}
           </TabsTrigger>
-          <TabsTrigger
-            className="focus-visible:border-secondary focus-visible:ring-secondary/50 focus-visible:outline-secondary dark:data-[state=active]:border-secondary/50"
-            value="participants"
-          >
+          <TabsTrigger variant="secondary" value="participants">
             <PROJECT_ICONS.participants className="size-4" />
             {t("tabs.participants")}
           </TabsTrigger>
         </TabsList>
 
         {/* Project Details Tab */}
-        <TabsContent className="space-y-6" value="details">
+        <TabsContent className="flex flex-col gap-6" value="details">
           <ProjectDetailsTab project={project} />
         </TabsContent>
 

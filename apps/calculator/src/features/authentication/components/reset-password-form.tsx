@@ -133,7 +133,7 @@ export function ResetPasswordForm({
 
         <CardFooter className="px-0">
           <div className="w-full text-center">
-            <Button asChild className="px-0" variant="link">
+            <Button asChild variant="link">
               <Link href={LOGIN_PATH}>{t("common.backToLogin")}</Link>
             </Button>
           </div>

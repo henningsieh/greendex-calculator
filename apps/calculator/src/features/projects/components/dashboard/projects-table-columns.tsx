@@ -239,11 +239,13 @@ export function ProjectTableColumns(
       header: ({ table }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="p-0" size="icon-sm" variant="secondaryghost">
+            <Button size="icon-sm" variant="secondaryghost">
               <Columns3CogIcon className="size-4" />
             </Button>
           </DropdownMenuTrigger>
+          {/* eslint-disable-next-line shadcn/no-restyle -- Column chooser intentionally uses the secondary menu surface. */}
           <DropdownMenuContent align="end" className="border-secondary">
+            {/* eslint-disable-next-line shadcn/no-restyle -- Compact column chooser heading is intentional. */}
             <DropdownMenuLabel className="text-xs">
               {t("table.columns")}
             </DropdownMenuLabel>
@@ -254,6 +256,7 @@ export function ProjectTableColumns(
                 return (
                   <DropdownMenuCheckboxItem
                     checked={column.getIsVisible()}
+                    /* eslint-disable-next-line shadcn/no-restyle -- Visible-column options intentionally use secondary focus styling. */
                     className="capitalize focus:bg-secondary/40 focus:text-secondary-foreground"
                     key={column.id}
                     onCheckedChange={(value: boolean) =>
@@ -398,8 +401,8 @@ function ProjectActionsCell({ project }: { project: ProjectType }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            className="size-8 p-0"
             onClick={(e) => e.stopPropagation()}
+            size="icon-sm"
             variant="secondaryghost"
           >
             <span className="sr-only">{t("table.open-menu")}</span>
@@ -435,9 +438,9 @@ function ProjectActionsCell({ project }: { project: ProjectType }) {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="text-destructive"
                 disabled={isDeleting || permissionsPending}
                 onClick={handleDelete}
+                variant="destructive"
               >
                 <Trash2Icon className="mr-2 size-4" />
                 {t("table.delete-project")}
