@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["@shadcn/lint"],
   "options": {
     "typeAware": true
   },
@@ -36,6 +37,16 @@
     "typescript/no-misused-spread": "off",
     "typescript/no-base-to-string": "off",
     "typescript/restrict-template-expressions": "off",
-    "no-unsafe-optional-chaining": "off"
-  }
+    "no-unsafe-optional-chaining": "off",
+    "shadcn/no-restyle": ["warn", { "allow": ["layout"] }]
+  },
+  "overrides": [
+    {
+      "files": [
+        "apps/calculator/src/components/ui/**",
+        "apps/documentation/src/components/ui/**"
+      ],
+      "rules": { "shadcn/no-restyle": "off" }
+    }
+  ]
 }

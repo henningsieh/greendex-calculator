@@ -7,6 +7,7 @@
     "predev": "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
     "dev": "turbo run dev",
     "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions",
+    "lint:design-system": "oxlint --config .oxlintrc.json -A all -W shadcn/no-restyle apps/calculator/src apps/documentation/src",
     "check:agent-instructions": "node scripts/check-agent-instructions.mjs",
     "start": "turbo run start",
     "format": "turbo run format",
@@ -31,6 +32,7 @@
     "turbo": "^2.10.13"
   },
   "devDependencies": {
+    "@shadcn/lint": "^0.1.1",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
