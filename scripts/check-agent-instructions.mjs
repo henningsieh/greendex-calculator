@@ -249,7 +249,7 @@ const retiredPointerPatterns = [
   },
   {
     pattern:
-      /\]\((?:\.\.\/)*(?:better-auth|clickdummy|fumadocs|i18n|next|oxc|orpc|react-email|shadcn|tanstack-react-query)\//u,
+      /\]\((?:\.\.\/)+(?:better-auth|fumadocs|i18n|next|oxc|orpc|react-email|shadcn|tanstack-react-query)\//u,
     message: "replace relative pointers to retired vendor-documentation roots",
   },
   {
