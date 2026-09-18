@@ -96,7 +96,10 @@ const requiredOnlineRoutes = {
     "https://orpc.dev/llms.txt",
     "https://v1.orpc.dev/llms.txt",
   ],
-  "shadcn.md": ["https://ui.shadcn.com/llms.txt"],
+  "shadcn.md": [
+    "https://ui.shadcn.com/llms.txt",
+    "https://github.com/shadcn-ui/lint",
+  ],
   "tanstack-query.md": [
     "https://tanstack.com/query/latest/llms.txt",
     "https://tanstack.com/query/v5/llms.txt",
@@ -114,6 +117,7 @@ const requiredIntegrationAnchors = [
   "orpc",
   "react-email",
   "shadcnui",
+  "shadcn-lint",
   "tanstack-query",
   "tanstack-table",
 ];
@@ -583,6 +587,73 @@ for (const taskName of ["build", "start"]) {
   const environment = turboConfig.tasks?.[taskName]?.env;
   if (!Array.isArray(environment) || !environment.includes("*")) {
     addError(`turbo.json: ${taskName} task must preserve env: ["*"]`);
+  }
+}
+
+// The design-system lint is a single root-level Oxlint JS plugin: the root config
+// registers it, the root manifest owns the version, and the lint task hashes both
+// so cached results cannot outlive a plugin or rule change.
+const designSystemPlugin = "@shadcn/lint";
+const lintConfig = JSON.parse(await readUtf8(path.join(root, ".oxlintrc.json")));
+if (!(lintConfig.jsPlugins ?? []).includes(designSystemPlugin)) {
+  addError(`.oxlintrc.json: register ${designSystemPlugin} in jsPlugins`);
+}
+
+const restyleRule = lintConfig.rules?.["shadcn/no-restyle"];
+const [restyleSeverity, restyleOptions] = Array.isArray(restyleRule)
+  ? restyleRule
+  : [restyleRule];
+if (restyleSeverity !== "warn") {
+  addError(
+    `.oxlintrc.json: shadcn/no-restyle must stay at "warn" until its findings are resolved (found ${JSON.stringify(restyleSeverity)})`,
+  );
+}
+if (JSON.stringify(restyleOptions?.allow) !== JSON.stringify(["layout"])) {
+  addError(
+    `.oxlintrc.json: shadcn/no-restyle must allow layout classes (allow: ["layout"])`,
+  );
+}
+
+for (const componentDirectory of [
+  "apps/calculator/src/components/ui/**",
+  "apps/documentation/src/components/ui/**",
+]) {
+  const override = (lintConfig.overrides ?? []).find((entry) =>
+    entry.files?.includes(componentDirectory),
+  );
+  if (!override) {
+    addError(
+      `.oxlintrc.json: missing the ${componentDirectory} override that lets components style themselves`,
+    );
+  } else if (override.rules?.["shadcn/no-restyle"] !== "off") {
+    addError(
+      `.oxlintrc.json: ${componentDirectory} must turn shadcn/no-restyle off`,
+    );
+  }
+}
+
+const rootManifest = JSON.parse(await readUtf8(path.join(root, "package.json")));
+if (!rootManifest.devDependencies?.[designSystemPlugin]) {
+  addError(
+    `package.json: declare ${designSystemPlugin} as a root devDependency so one version serves the workspace`,
+  );
+}
+if (!rootManifest.scripts?.["lint:design-system"]) {
+  addError(
+    "package.json: keep the focused `lint:design-system` script for the design-system rules",
+  );
+}
+
+for (const lintInput of [
+  "$TURBO_ROOT$/.oxlintrc.json",
+  "$TURBO_ROOT$/package.json",
+  "$TURBO_ROOT$/pnpm-lock.yaml",
+]) {
+  const inputs = turboConfig.tasks?.lint?.inputs;
+  if (!Array.isArray(inputs) || !inputs.includes(lintInput)) {
+    addError(
+      `turbo.json: the lint task must hash ${lintInput} so design-system lint results are not cached across config or plugin changes`,
+    );
   }
 }
 
