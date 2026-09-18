@@ -51,6 +51,7 @@ Do not edit `pnpm-lock.yaml` manually.
 
 - Define reusable root task entrypoints in `package.json`; define workspace implementations in workspace manifests.
 - Declare generated outputs so Turbo can cache only reproducible artifacts.
+- Keep lint inputs complete: the `lint` task hashes `$TURBO_ROOT$/.oxlintrc.json` plus the root `package.json` and `pnpm-lock.yaml`, so a config or lint-plugin version change invalidates cached results.
 - Mark persistent processes and non-cacheable lifecycle/database tasks appropriately.
 - Keep dependency ordering explicit with `dependsOn`.
 - Do not add a task merely to alias a single command unless it is part of the repository workflow.

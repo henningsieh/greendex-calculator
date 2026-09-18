@@ -25,6 +25,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 - Authentication, organizations, OAuth callback paths: [Better Auth](docs/agents/instructions/better-auth.md).
 - Module placement, workspace boundaries, SSR/server-client flow: [Architecture](docs/agents/instructions/architecture.md).
 - **Critical oRPC invariant:** preserve both imports of `@/lib/orpc/client.server` and their evaluation order. Read [oRPC](docs/agents/instructions/orpc.md) before touching that seam.
+- UI components and the `@shadcn/lint` design-system rules (root `.oxlintrc.json`, included in `pnpm run lint`): [UI components](docs/agents/instructions/shadcn.md).
 - Next.js API behavior: read the version-matched docs bundled in the single catalog-resolved install at `node_modules/next/dist/docs/` (they upgrade with the `next` package) instead of relying on model memory.
 - Issue-tracked work: [issue tracker](docs/agents/issue-tracker.md). Triage/labels: [triage labels](docs/agents/triage-labels.md). Domain-language changes: [domain](docs/agents/domain.md) and the [canonical glossary](DOMAIN-GLOSSARY.md).
 
@@ -39,7 +40,7 @@ The instruction files below live under [`docs/agents/instructions/`](docs/agents
 | `architecture.md`      | Module placement, workspace boundaries, SSR/server-client flow    | App and package source files                                |
 | `better-auth.md`       | Authentication, organizations, sessions, permissions, auth schema | Auth/organization implementation                            |
 | `code-standards.md`    | TypeScript, React, persistence, errors, tests                     | App and package source files                                |
-| `conventions.md`       | Manifests, configuration, environment, quality workflow           | Repository configuration                                    |
+| `conventions.md`       | Manifests, configuration, environment, quality workflow           | Repository configuration and lint tooling                   |
 | `coolify.md`           | Deployment resources, environment values, managed databases       | Deployment configuration and operational documentation      |
 | `documentation-app.md` | Fumadocs application ownership and integration                    | Documentation application source                            |
 | `drizzle.md`           | Schemas, migrations, and Drizzle ORM/Kit usage                    | Database source and auth schema generation                  |
@@ -47,7 +48,7 @@ The instruction files below live under [`docs/agents/instructions/`](docs/agents
 | `i18n.md`              | Messages, locale routing/navigation, country presentation         | i18n package and localized app routes                       |
 | `nuqs.md`              | URL search-parameter state, parsers, Next.js adapter              | Calculator provider, pages, layouts, and feature components |
 | `orpc.md`              | Procedures, middleware, router, OpenAPI, SSR clients              | oRPC, feature procedures, app routes                        |
-| `shadcn.md`            | Shared/feature components, forms, accessibility                   | Calculator component files                                  |
+| `shadcn.md`            | Shared/feature components, forms, accessibility                   | Calculator components and design-system lint                |
 | `tanstack-query.md`    | Query caching, options, mutations, prefetching, SSR, hydration    | Query integration surfaces                                  |
 | `tanstack-table.md`    | Table v9 features, state, columns, and table tests                | Feature tables and table tests                              |
 | `workspace.md`         | Dependencies, catalog, workspace packages, Turbo tasks/env        | Manifests, workspace and Turbo config                       |

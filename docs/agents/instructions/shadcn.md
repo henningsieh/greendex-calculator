@@ -10,6 +10,8 @@ applyTo: "apps/calculator/src/components/**/*.ts,apps/calculator/src/components/
 
 Use existing local primitives before adding another abstraction. Inspect `apps/calculator/components.json`, start with the official [shadcn/ui `llms.txt` index](https://ui.shadcn.com/llms.txt), and fetch only the needed [component documentation](https://ui.shadcn.com/docs). Use the official `shadcn` skill as supplementary project-aware workflow guidance.
 
+For the design-system lint that verifies these rules, use the official [`@shadcn/lint` README](https://github.com/shadcn-ui/lint) and fetch only the needed page ([adoption](https://github.com/shadcn-ui/lint/blob/main/docs/adoption.md), [rules](https://github.com/shadcn-ui/lint/blob/main/docs/rules.md)). The installed plugin version in the root manifest is authoritative over upstream examples.
+
 ## Locations
 
 - Shared shadcn primitives: `apps/calculator/src/components/ui/`
@@ -25,6 +27,19 @@ pnpm --dir apps/calculator dlx shadcn@latest add <component>
 ```
 
 Review generated dependencies and code before retaining them.
+
+## Design-system lint
+
+`@shadcn/lint` runs as an Oxlint JS plugin. The single source of truth is the repository-root `.oxlintrc.json`, which every workspace Oxlint run discovers, so `pnpm run lint` already includes these rules. `pnpm run lint:design-system` is the focused, check-only pass (no `--fix`) over both app sources.
+
+- The plugin is declared as a root devDependency; do not duplicate it per workspace.
+- `shadcn/no-restyle` starts at `warn` with `allow: ["layout"]`, so layout classes such as `mt-4` and `w-full` stay allowed.
+- Components own their appearance: the `overrides` entry turns `shadcn/no-restyle` off for `apps/*/src/components/ui/**`.
+- Config paths in `ignorePatterns` and `overrides` resolve against the config file directory, so write them repository-root-relative (`apps/calculator/src/...`), not workspace-relative.
+- Findings are warnings, not errors: `pnpm run lint` still exits 0. Follow the upstream adoption path — fix repeated patterns first, promote each rule to `error` once clean, and only then add a warning cap.
+- Prefer an existing variant or a `contracts` entry in `.oxlintrc.json` over suppressing a finding. For an intentional exception, add `// oxlint-disable-next-line shadcn/no-restyle -- <reason>` next to the code.
+- Re-run `pnpm run format && pnpm run lint` after changing component class usage, and never edit component internals to silence a caller-side finding.
+- `lint:design-system` pins the rules adopted so far (`shadcn/no-restyle`); extend that command when you adopt another rule.
 
 ## Composition
 

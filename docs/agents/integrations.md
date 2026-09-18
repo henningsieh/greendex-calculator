@@ -23,6 +23,7 @@ For every integration change:
 | Nodemailer | [documentation](https://nodemailer.com/) | [Email](instructions/email.md) | Online documentation and installed declarations |
 | <a id="fumadocs"></a>Fumadocs | [`llms.txt`](https://fumadocs.vercel.app/llms.txt) | [Documentation application](instructions/documentation-app.md) | Online documentation; generic site-reading skill is not API authority |
 | <a id="shadcnui"></a>shadcn/ui | [`llms.txt`](https://ui.shadcn.com/llms.txt) | [UI components](instructions/shadcn.md) | Official `shadcn` skill plus online component documentation |
+| <a id="shadcn-lint"></a>@shadcn/lint | [README](https://github.com/shadcn-ui/lint) · [adoption](https://github.com/shadcn-ui/lint/blob/main/docs/adoption.md) · [rules](https://github.com/shadcn-ui/lint/blob/main/docs/rules.md) | [UI components](instructions/shadcn.md) | Oxlint JS plugin configured in the root `.oxlintrc.json`; no skill |
 | <a id="next-intl-and-country-data"></a>next-intl | [documentation](https://next-intl.dev/docs) | [Internationalization](instructions/i18n.md) | Official pages because no working `llms.txt` route is available |
 | Country data and flags | [`i18n-iso-countries`](https://github.com/michaelwittig/node-i18n-iso-countries) · [`country-flag-icons`](https://gitlab.com/catamphetamine/country-flag-icons) | [Internationalization](instructions/i18n.md) | Installed declarations and official repositories; no third-party skill |
 
