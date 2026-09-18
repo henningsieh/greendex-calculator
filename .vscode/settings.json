@@ -119,9 +119,13 @@
 
   // ============================================================================
   // EXTENSION — JSON
-  // ============================================================================
+  // ----------------------------------------------------------------------------
+  // The Turborepo codemod pins $schema to a versioned subdomain per release
+  // (e.g. https://v2-10-13.turborepo.dev/schema.json). The wildcard covers the
+  // apex domain and all current/future version subdomains, so editor schema
+  // validation keeps working across turbo upgrades without further changes.
   "json.schemaDownload.trustedDomains": {
-    "https://turborepo.dev": true,
+    "https://*.turborepo.dev": true,
     "https://ui.shadcn.com": true
   },
 
