@@ -30,19 +30,24 @@ export function LanguageToggleInline() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2.5 py-1.5 transition-colors outline-none hover:bg-fd-accent">
-        {currentHasCountryCode ? (
-          <CurrentFlag className="h-3.5 w-5 rounded-sm shadow-sm" />
-        ) : (
-          <GlobeIcon className="size-4" />
-        )}
-        <span className="text-sm font-medium">
-          {currentLocale?.code.toUpperCase()}
-        </span>
-        <ChevronDownIcon className="size-4 opacity-70" />
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-md px-2.5 py-1.5 transition-colors outline-none hover:bg-fd-accent"
+        >
+          {currentHasCountryCode ? (
+            <CurrentFlag className="h-3.5 w-5 rounded-sm shadow-sm" />
+          ) : (
+            <GlobeIcon className="size-4" />
+          )}
+          <span className="text-sm font-medium">
+            {currentLocale?.code.toUpperCase()}
+          </span>
+          <ChevronDownIcon className="size-4 opacity-70" />
+        </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="min-w-50 bg-accent">
+      <DropdownMenuContent align="end" className="min-w-50">
         {SUPPORTED_LANGUAGES.map((locale) => {
           const FlagIcon = getFlagComponent(locale);
           const isActive = locale.code === currentLang;
