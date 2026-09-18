@@ -9,7 +9,7 @@ catalog:
   react: 19.2.8
   react-dom: 19.2.8
   react-email: 6.9.3
-  next: 16.3.4
+  next: 16.3.5
   next-intl: 4.14.2
   better-auth: 1.7.3
   typescript: 7.0.2
@@ -22,6 +22,13 @@ hoistPattern:
   - react
   - drizzle-orm
   - pg
+
+# Expose the single catalog-resolved Next.js install (and with it the bundled
+# version-matched docs at node_modules/next/dist/docs) at the workspace root, so
+# the Next.js-managed agent-rules block in the root AGENTS.md resolves verbatim.
+# This creates a link to the one install; it never adds a second copy.
+publicHoistPattern:
+  - next
 
 allowBuilds:
   "@parcel/watcher": true
