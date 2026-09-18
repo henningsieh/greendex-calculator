@@ -144,6 +144,7 @@ const requiredRepositoryPaths = [
   "docs/agents/integrations.md",
   ".agents/skills/better-auth-best-practices/SKILL.md",
   ".agents/skills/shadcn/SKILL.md",
+  ".agents/skills/turborepo/SKILL.md",
   "skills-lock.json",
   "packages/config/src/languages.ts",
   "packages/database/src/schemas/auth-schema.ts",
@@ -528,12 +529,11 @@ for (const [fileName, routes] of Object.entries(requiredOnlineRoutes)) {
   }
 }
 
-const skillLock = JSON.parse(
-  await readUtf8(path.join(root, "skills-lock.json")),
-);
+const skillLock = JSON.parse(await readUtf8(path.join(root, "skills-lock.json")));
 const officialSkillSources = {
   "better-auth-best-practices": "better-auth/skills",
   shadcn: "shadcn-ui/ui",
+  turborepo: "vercel/turborepo",
 };
 for (const [skillName, source] of Object.entries(officialSkillSources)) {
   if (skillLock.skills?.[skillName]?.source !== source) {
