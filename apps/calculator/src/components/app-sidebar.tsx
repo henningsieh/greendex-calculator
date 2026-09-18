@@ -151,7 +151,10 @@ export function AppSidebar() {
         {groups.map((group) => (
           <div key={group.label}>
             <SidebarGroup className="overflow-x-hidden">
-              <SidebarGroupLabel className="text-nowrap">
+              <SidebarGroupLabel
+                /* eslint-disable-next-line shadcn/no-restyle -- Sidebar group labels must stay on one line. */
+                className="text-nowrap"
+              >
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -190,6 +193,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem onClick={() => toggleSidebar()}>
             <SidebarMenuButton
+              /* eslint-disable-next-line shadcn/no-restyle -- Sidebar labels must stay on one line. */
               className="text-nowrap [&>svg]:size-4"
               variant="outline"
             >

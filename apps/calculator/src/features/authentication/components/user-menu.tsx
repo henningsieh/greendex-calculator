@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-restyle -- Account menu intentionally owns sidebar-specific interaction states. */
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
@@ -82,7 +83,7 @@ export function UserMenu() {
               )}
               size="lg"
             >
-              <Avatar className="size-8 rounded-md ring-1 ring-border">
+              <Avatar variant="square">
                 {user.image ? (
                   <Image
                     alt={user.name}
@@ -107,8 +108,8 @@ export function UserMenu() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
+            variant="sidebar"
             className={cn(
-              "border border-sidebar-accent/50 bg-background/80 backdrop-blur-md",
               state === "expanded" && "w-(--radix-dropdown-menu-trigger-width)",
               state === "collapsed" && "w-72",
             )}

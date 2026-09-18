@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-restyle -- This header intentionally owns its bespoke project presentation. */
 "use client";
 
 import { useLocale, useTranslations } from "@greendex/i18n/client";

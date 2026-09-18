@@ -117,7 +117,12 @@ export function InviteProjectCoordinatorDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-2xl">{tInvite("title")}</DialogTitle>
+          <DialogTitle
+            /* eslint-disable-next-line shadcn/no-restyle -- Dialog title is intentionally prominent here. */
+            className="text-2xl"
+          >
+            {tInvite("title")}
+          </DialogTitle>
           <DialogDescription>{tInvite("description")}</DialogDescription>
         </DialogHeader>
 

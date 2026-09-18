@@ -25,6 +25,7 @@ export function LastUsedBadge({
   return (
     <Badge
       className={cn(
+        /* eslint-disable-next-line shadcn/no-restyle -- Last-used status intentionally has its own secondary treatment. */
         "absolute self-center border border-secondary bg-secondary/50 text-secondary-foreground",
         className,
       )}

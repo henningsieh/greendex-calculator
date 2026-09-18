@@ -100,6 +100,7 @@ export function Location({
     return (
       <Badge
         className={cn(
+          /* eslint-disable-next-line shadcn/no-restyle -- The badge variant owns the compact location presentation. */
           "inline-flex gap-2 rounded-md border-border/60 bg-background/50 px-2 py-1 align-middle text-sm font-normal",
           className,
         )}

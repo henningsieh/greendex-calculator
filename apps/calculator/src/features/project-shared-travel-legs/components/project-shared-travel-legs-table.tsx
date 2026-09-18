@@ -156,7 +156,10 @@ export function ProjectSharedTravelLegsTable({
                     <TableCell>
                       {sharedTravelLeg.distanceKm} {t("table.km")}
                     </TableCell>
-                    <TableCell className="max-w-50 truncate">
+                    <TableCell
+                      /* eslint-disable-next-line shadcn/no-restyle -- Long descriptions intentionally truncate in this table column. */
+                      className="max-w-50 truncate"
+                    >
                       {sharedTravelLeg.description || "-"}
                     </TableCell>
                     <TableCell>
@@ -200,7 +203,10 @@ export function ProjectSharedTravelLegsTable({
             </Table>
           </div>
         ) : (
-          <Empty className="border">
+          <Empty
+            /* eslint-disable-next-line shadcn/no-restyle -- Empty state intentionally has a table-style border. */
+            className="border"
+          >
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <PROJECT_ICONS.sharedTravelLegs className="size-6" />
@@ -260,13 +266,13 @@ export function ProjectSharedTravelLegsTable({
                 {t("delete.cancel-button")}
               </AlertDialogCancel>
               <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 disabled={deleteMutation.isPending}
                 onClick={() => {
                   if (deletingSharedTravelLegId) {
                     deleteMutation.mutate(deletingSharedTravelLegId);
                   }
                 }}
+                variant="destructive"
               >
                 {deleteMutation.isPending
                   ? t("delete.deleting")

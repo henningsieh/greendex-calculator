@@ -17,7 +17,7 @@ export function Leaderboard({ participants }: LeaderboardProps) {
   );
 
   return (
-    <Card className="overflow-hidden border-primary/20 bg-card/50 backdrop-blur-sm">
+    <Card tone="glass" className="overflow-hidden">
       <div className="border-b border-primary/20 bg-linear-to-r from-teal-500/20 to-emerald-500/20 px-6 py-4">
         <div className="flex items-center gap-3">
           <TrophyIcon className="size-6 text-teal-400" />

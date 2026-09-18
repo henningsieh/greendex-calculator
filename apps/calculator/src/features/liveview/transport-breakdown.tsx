@@ -19,7 +19,7 @@ export function TransportBreakdown({ stats }: TransportBreakdownProps) {
   );
 
   return (
-    <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
+    <Card tone="glass">
       <div className="border-b border-primary/20 px-6 py-4">
         <h2 className="text-xl font-bold text-foreground">
           Participant Travel Leg CO₂ Breakdown

@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-restyle -- Organization switcher intentionally owns sidebar-specific interaction states. */
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
@@ -117,8 +118,8 @@ export function OrganizationSwitcher() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
+            variant="sidebar"
             className={cn(
-              "border border-sidebar-accent/50 bg-background/80 backdrop-blur-md",
               state === "expanded" && "w-(--radix-dropdown-menu-trigger-width)",
               state === "collapsed" && "w-72",
             )}
