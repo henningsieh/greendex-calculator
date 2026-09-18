@@ -603,9 +603,9 @@ const restyleRule = lintConfig.rules?.["shadcn/no-restyle"];
 const [restyleSeverity, restyleOptions] = Array.isArray(restyleRule)
   ? restyleRule
   : [restyleRule];
-if (restyleSeverity !== "warn") {
+if (restyleSeverity !== "error") {
   addError(
-    `.oxlintrc.json: shadcn/no-restyle must stay at "warn" until its findings are resolved (found ${JSON.stringify(restyleSeverity)})`,
+    `.oxlintrc.json: shadcn/no-restyle must be "error" once its findings are resolved (found ${JSON.stringify(restyleSeverity)})`,
   );
 }
 if (JSON.stringify(restyleOptions?.allow) !== JSON.stringify(["layout"])) {
