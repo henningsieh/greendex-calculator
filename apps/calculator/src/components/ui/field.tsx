@@ -1,11 +1,11 @@
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
 import { useMemo } from "react";
 
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -180,15 +180,6 @@ function FieldSeparator({
   );
 }
 
-/**
- * Renders field-level error UI when there is error content to show.
- *
- * If `children` is provided, it is rendered directly. Otherwise `errors` are deduplicated by `message`; when there is a single unique message that message is rendered as text, and when there are multiple unique messages they are rendered as a bulleted list.
- *
- * @param children - Custom content to render inside the error container; when present this takes precedence over `errors`.
- * @param errors - Optional array of error objects (each may have a `message` string). Messages are deduplicated by value before rendering.
- * @returns A div with `role="alert"` and destructive styling containing the error content, or `null` when there is no content to display.
- */
 function FieldError({
   className,
   children,
@@ -198,15 +189,21 @@ function FieldError({
   errors?: ({ message?: string } | undefined)[];
 }) {
   const content = useMemo(() => {
-    if (children) return children;
+    if (children) {
+      return children;
+    }
 
-    if (!errors?.length) return null;
+    if (!errors?.length) {
+      return null;
+    }
 
     const uniqueErrors = [
       ...new Map(errors.map((error) => [error?.message, error])).values(),
     ];
 
-    if (uniqueErrors?.length == 1) return uniqueErrors[0]?.message;
+    if (uniqueErrors?.length == 1) {
+      return uniqueErrors[0]?.message;
+    }
 
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
@@ -218,7 +215,9 @@ function FieldError({
     );
   }, [children, errors]);
 
-  if (!content) return null;
+  if (!content) {
+    return null;
+  }
 
   return (
     <div

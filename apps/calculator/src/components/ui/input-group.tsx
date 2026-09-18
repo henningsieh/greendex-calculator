@@ -1,12 +1,12 @@
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -57,14 +57,6 @@ const inputGroupAddonVariants = cva(
   },
 );
 
-/**
- * Renders an addon element for an input group that aligns its contents and, when clicked outside a nested button, focuses the associated input.
- *
- * The element is rendered as a `div` with `role="group"` and `data-slot="input-group-addon"`. Clicking the addon will focus the first `input` inside the parent input group unless the click target is a `button`.
- *
- * @param align - Positioning of the addon relative to the input; accepts `"inline-start"`, `"inline-end"`, `"block-start"`, or `"block-end"`. Defaults to `"inline-start"`.
- * @returns A `div` element used as an input-group addon.
- */
 function InputGroupAddon({
   className,
   align = "inline-start",
@@ -77,7 +69,9 @@ function InputGroupAddon({
       data-align={align}
       className={cn(inputGroupAddonVariants({ align }), className)}
       onClick={(e) => {
-        if ((e.target as HTMLElement).closest("button")) return;
+        if ((e.target as HTMLElement).closest("button")) {
+          return;
+        }
         e.currentTarget.parentElement?.querySelector("input")?.focus();
       }}
       {...props}

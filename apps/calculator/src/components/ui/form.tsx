@@ -1,7 +1,8 @@
 "use client";
 
-import * as LabelPrimitive from "@radix-ui/react-label";
-import { Slot } from "@radix-ui/react-slot";
+import { cn } from "cn";
+import type { Label as LabelPrimitive } from "radix-ui";
+import { Slot } from "radix-ui";
 import * as React from "react";
 import {
   Controller,
@@ -14,7 +15,6 @@ import {
 } from "react-hook-form";
 
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 
 const Form = FormProvider;
 
@@ -104,11 +104,11 @@ function FormLabel({
   );
 }
 
-function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
+function FormControl({ ...props }: React.ComponentProps<typeof Slot.Root>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
   return (
-    <Slot
+    <Slot.Root
       data-slot="form-control"
       id={formItemId}
       aria-describedby={
@@ -133,20 +133,13 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   );
 }
 
-/**
- * Renders a form message paragraph that shows the field's error message or the component's children.
- *
- * If there is no error message and no children, nothing is rendered.
- *
- * @param className - Additional CSS classes to apply to the paragraph
- * @param props - Other props forwarded to the underlying `<p>` element
- * @returns A `<p>` element containing the displayed message, or `null` when there is no message
- */
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   const { error, formMessageId } = useFormField();
   const body = error ? String(error?.message ?? "") : props.children;
 
-  if (!body) return null;
+  if (!body) {
+    return null;
+  }
 
   return (
     <p
