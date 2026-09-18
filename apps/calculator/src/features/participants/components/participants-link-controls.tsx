@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-restyle -- This composed control intentionally owns its dense link styling. */
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";

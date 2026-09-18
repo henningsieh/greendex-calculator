@@ -187,7 +187,10 @@ export function UsersTable({
       </div>
       <div className="rounded-md border">
         <Table className="mb-4 w-full sm:mb-0">
-          <TableHeader className="border-b bg-muted/50">
+          <TableHeader
+            /* eslint-disable-next-line shadcn/no-restyle -- Users table header intentionally has a tinted divider. */
+            className="border-b bg-muted/50"
+          >
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -242,14 +245,20 @@ export function UsersTable({
               }
 
               return (
-                <TableRow className="hover:bg-transparent">
+                <TableRow
+                  /* eslint-disable-next-line shadcn/no-restyle -- Empty table rows intentionally suppress hover tint. */
+                  className="hover:bg-transparent"
+                >
                   <TableCell colSpan={columns.length}>
                     <Empty>
                       <EmptyHeader>
                         <EmptyMedia variant="icon">
                           <FilterXIcon className="size-9 text-destructive" />
                         </EmptyMedia>
-                        <EmptyTitle className="text-destructive">
+                        <EmptyTitle
+                          /* eslint-disable-next-line shadcn/no-restyle -- Empty error title intentionally uses destructive color. */
+                          className="text-destructive"
+                        >
                           {emptyTitle}
                         </EmptyTitle>
                         <EmptyDescription>{emptyDescription}</EmptyDescription>

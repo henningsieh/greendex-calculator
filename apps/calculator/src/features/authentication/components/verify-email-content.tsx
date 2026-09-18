@@ -144,6 +144,7 @@ export function VerifyEmailContent({
         <CardTitle>
           <h1 className="text-2xl font-bold">{t("title")}</h1>
         </CardTitle>
+        {/* eslint-disable-next-line shadcn/no-restyle -- Verification copy intentionally uses the brand color. */}
         <CardDescription className="text-primary">
           {t("description")}
           <div className="mt-1 font-bold italic">{email}</div>
