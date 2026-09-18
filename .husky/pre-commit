@@ -1,36 +1,42 @@
-#!/bin/sh
-# Exit on any error
-set -e
+#!/usr/bin/env sh
+set -eu
 
-# Check if there are any staged files
-if [ -z "$(git diff --cached --name-only)" ]; then
-  echo "No staged files to format"
+# Default: check only files in this commit. Use PRE_COMMIT_FULL=1 for the
+# repository-wide checks, or HUSKY=0 / git commit --no-verify when appropriate.
+if [ "${PRE_COMMIT_FULL:-0}" = "1" ]; then
+  pnpm run format
+  pnpm run lint
   exit 0
 fi
 
-# Store the hash of staged changes to detect modifications
-STAGED_HASH=$(git diff --cached | sha256sum | cut -d' ' -f1)
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -n "$staged" ] || exit 0
 
-# Save list of staged files (handling all file states)
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
-
-# Format the workspace. `set -e` makes a formatting failure block the commit.
-pnpm run format
-
-# Re-stage the formatted files
-if [ -n "$STAGED_FILES" ]; then
-  echo "$STAGED_FILES" | while IFS= read -r file; do
-    if [ -f "$file" ]; then
-      git add "$file"
-    fi
-  done
+# Protect unrelated unstaged edits while tools write the selected files.
+stash_created=0
+if ! git diff --quiet; then
+  git stash push --keep-index --message 'husky pre-commit unstaged changes' >/dev/null
+  stash_created=1
 fi
 
-# Check if staged files actually changed
-NEW_STAGED_HASH=$(git diff --cached | sha256sum | cut -d' ' -f1)
-if [ "$STAGED_HASH" != "$NEW_STAGED_HASH" ]; then
-  echo "✨ Files formatted"
-fi
+restore_stash() {
+  if [ "$stash_created" = "1" ]; then
+    git stash pop >/dev/null || {
+      echo 'husky: could not restore unstaged changes; resolve the stash manually' >&2
+      exit 1
+    }
+  fi
+}
+trap restore_stash EXIT
 
-pnpm run lint
-pnpm run type-check
+git diff --cached --name-only -z --diff-filter=ACMR \
+  | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
+  | xargs -0 -r pnpm exec oxfmt --write
+git diff --cached --name-only -z --diff-filter=ACMR \
+  | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
+  | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json
+
+# Only re-stage files that were selected from the original staged snapshot.
+git diff --cached --name-only -z --diff-filter=ACMR \
+  | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
+  | xargs -0 -r git add --

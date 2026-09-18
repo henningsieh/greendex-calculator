@@ -4,16 +4,17 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "predev": "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
+    "predev": "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     "dev": "turbo run dev",
-    "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions",
-    "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/calculator/src apps/documentation/src",
+    "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam",
     "check:agent-instructions": "node scripts/check-agent-instructions.mjs",
+    "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
     "start": "turbo run start",
     "format": "turbo run format",
-    "test": "turbo run test --",
-    "test:run": "turbo run test:run --",
-    "type-check": "turbo run type-check",
+    "test": "turbo run test --concurrency 1 --",
+    "test:run": "turbo run test:run --concurrency 1 --",
+    "type-check": "turbo run type-check && pnpm run type-check:cost-tracker-persistence-seam",
+    "type-check:cost-tracker-persistence-seam": "tsc --project scripts/tsconfig.json",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
     "db:studio": "turbo run db:studio",
@@ -25,10 +26,13 @@
     "test:e2e:ui": "turbo run test:e2e:ui --",
     "test:e2e:debug": "turbo run test:e2e:debug --",
     "test:e2e:headed": "turbo run test:e2e:headed --",
-    "test:e2e:report": "turbo run test:e2e:report --"
+    "test:e2e:report": "turbo run test:e2e:report --",
+    "test:cost-tracker-persistence-seam": "vitest run scripts/check-cost-tracker-persistence-seam.test.ts",
+    "test:agent-instruction-policy": "vitest run scripts/agent-instruction-policy.test.ts",
+    "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/calculator/src apps/documentation/src"
   },
   "dependencies": {
-    "dotenv-cli": "^11.0.0",
+    "dotenv-cli": "catalog:",
     "turbo": "^2.10.13"
   },
   "devDependencies": {
@@ -37,10 +41,12 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "husky": "^9.1.7",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "oxlint-tsgolint": "^7.0.2001",
-    "typescript": "catalog:"
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^5.0.0"
   },
   "engines": {
     "node": ">=22"
