@@ -346,11 +346,7 @@ export function ImpactModal({
         </div>
 
         {/* Continue Button */}
-        <Button
-          className="bg-linear-to-r from-teal-500 to-emerald-500 text-lg text-white hover:from-teal-600 hover:to-emerald-600"
-          onClick={onClose}
-          size="lg"
-        >
+        <Button onClick={onClose} size="lg" variant="impact">
           Continue
           <ArrowRightIcon className="ml-2 size-5" />
         </Button>

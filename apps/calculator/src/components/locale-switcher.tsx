@@ -51,16 +51,13 @@ export function LocaleSwitcher({ className }: { className?: string }) {
         <Button
           aria-expanded={open}
           aria-label={`Select language, current: ${currentLocale?.englishName || locale}`}
-          className={cn(
-            "size-8 rounded-full bg-transparent p-1 ring-1 ring-border hover:bg-accent/40 hover:text-accent-foreground hover:ring-primary",
-            isPending && "opacity-70",
-            className,
-          )}
+          className={cn("size-8", className)}
+          data-pending={isPending}
           disabled={isPending}
           role="combobox"
           size="icon-xs"
           type="button"
-          variant="ghost"
+          variant="locale"
         >
           {currentLocale?.Flag && (
             <currentLocale.Flag className="size-6 rounded-sm border-none" />

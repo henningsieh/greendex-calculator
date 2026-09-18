@@ -50,7 +50,12 @@ export function UserSession() {
   if (!session) {
     return (
       <div className="flex items-center">
-        <Button asChild className="px-2" variant="link">
+        <Button
+          asChild
+          /* eslint-disable-next-line shadcn/no-restyle -- Login link spacing is intentional. */
+          className="px-2"
+          variant="link"
+        >
           <Link href={LOGIN_PATH}>{t("loginButton")}</Link>
         </Button>
       </div>
@@ -68,8 +73,12 @@ export function UserSession() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="relative size-8 rounded-full" variant="ghost">
-          <Avatar className="size-8 ring-1 ring-border">
+        <Button
+          /* eslint-disable-next-line shadcn/no-restyle -- User-menu trigger intentionally uses a round hit target. */
+          className="relative size-8 rounded-full"
+          variant="ghost"
+        >
+          <Avatar variant="ringed">
             {user.image ? (
               <Image
                 alt={user.name || "User avatar"}

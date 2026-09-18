@@ -36,29 +36,20 @@ export function OrganizationDashboard({
 
   return (
     <Tabs
-      className="w-full space-y-6"
+      className="w-full gap-6"
       onValueChange={setActiveTab}
       value={activeTab || "dashboard"}
     >
       <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger
-          className="text-muted-foreground/80 data-[state=active]:border-secondary data-[state=active]:bg-secondary/60 data-[state=active]:text-foreground dark:data-[state=active]:border-secondary dark:data-[state=active]:bg-secondary/60"
-          value="dashboard"
-        >
+        <TabsTrigger variant="secondary" value="dashboard">
           <ORGANIZATION_ICONS.statistics className="size-4" />
           <p className="truncate">{t("dashboard.tabs.statistics")}</p>
         </TabsTrigger>
-        <TabsTrigger
-          className="text-muted-foreground/80 data-[state=active]:border-secondary data-[state=active]:bg-secondary/60 data-[state=active]:text-foreground dark:data-[state=active]:border-secondary dark:data-[state=active]:bg-secondary/60"
-          value="projects"
-        >
+        <TabsTrigger variant="secondary" value="projects">
           <PROJECT_ICONS.projects className="size-4" />
           <p className="truncate">{t("dashboard.tabs.projects")}</p>
         </TabsTrigger>
-        <TabsTrigger
-          className="text-muted-foreground/80 data-[state=active]:border-secondary data-[state=active]:bg-secondary/60 data-[state=active]:text-foreground dark:data-[state=active]:border-secondary dark:data-[state=active]:bg-secondary/60"
-          value="participants"
-        >
+        <TabsTrigger variant="secondary" value="participants">
           <PROJECT_ICONS.participants className="size-4" />
           <p className="truncate">{t("dashboard.tabs.participants")}</p>
         </TabsTrigger>
