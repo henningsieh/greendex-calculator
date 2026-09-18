@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig = {
+  // This repository keeps a single root AGENTS.md: Next.js must not write its
+  // agent-rules block into this project directory.
+  agentRules: false,
   typedRoutes: true,
   reactCompiler: true,
   devIndicators: {

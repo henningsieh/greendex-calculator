@@ -1,8 +1,10 @@
 import { lstat, readFile, readdir, stat } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
 const instructionDirectory = path.join(root, "docs", "agents", "instructions");
 const routerPath = path.join(root, "AGENTS.md");
 const workflowPath = path.join(root, "docs", "agents", "agent-workflows.md");
@@ -183,6 +185,11 @@ const stalePatterns = [
     pattern: /quick-start\.instructions\.md/u,
     message: "use docs/agents/agent-workflows.md for opt-in task routing",
   },
+  {
+    pattern: /NEXT-AGENTS-MD-START/u,
+    message:
+      "remove the legacy Next.js agents-md index; Next.js 16.3+ bundles version-matched docs in the installed package",
+  },
 ];
 
 const retiredPointerPatterns = [
@@ -195,6 +202,11 @@ const retiredPointerPatterns = [
     pattern:
       /\]\((?:\.\.\/)*(?:better-auth|clickdummy|fumadocs|i18n|next|oxc|orpc|react-email|shadcn|tanstack-react-query)\//u,
     message: "replace relative pointers to retired vendor-documentation roots",
+  },
+  {
+    pattern: /apps\/\*\/node_modules\/next\/dist\/docs/u,
+    message:
+      "point Next.js docs at the single root-resolvable node_modules/next/dist/docs",
   },
 ];
 
@@ -242,9 +254,6 @@ const parseFrontmatter = (content, fileName) => {
   return values;
 };
 
-const isOptionalGeneratedNextDocumentationIndex = (filePath, rawTarget) =>
-  filePath === workflowPath && rawTarget === "../../.next-docs/index.mdx";
-
 const validateMarkdownLinks = async (
   filePath,
   content,
@@ -276,10 +285,7 @@ const validateMarkdownLinks = async (
     const absoluteTarget = decodedTarget.startsWith("/")
       ? path.resolve(root, `.${decodedTarget}`)
       : path.resolve(baseDirectory, decodedTarget);
-    if (
-      !(await pathExists(absoluteTarget)) &&
-      !isOptionalGeneratedNextDocumentationIndex(filePath, rawTarget)
-    ) {
+    if (!(await pathExists(absoluteTarget))) {
       addError(
         `${path.relative(root, filePath)}: broken link ${JSON.stringify(rawTarget)}`,
       );
@@ -330,7 +336,126 @@ for (const relativeRoot of retiredDocumentationRoots) {
   }
 }
 
+const downloadedNextCorpus = await findFiles(path.join(root, ".next-docs"));
+if (downloadedNextCorpus.length > 0) {
+  addError(
+    ".next-docs: the legacy downloaded Next.js corpus is obsolete; remove the directory (Next.js 16.3+ bundles version-matched docs in the installed package)",
+  );
+}
+
+// This repository keeps exactly one root AGENTS.md. Both apps set
+// `agentRules: false` so Next.js can never create app-level agent files.
+const appAgentFileNames = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "AGENTS.override.md",
+  "AGENTS.MD",
+  "CLAUDE.MD",
+];
+for (const appName of await readdir(path.join(root, "apps"))) {
+  for (const fileName of appAgentFileNames) {
+    const appAgentPath = path.join(root, "apps", appName, fileName);
+    if (await pathExists(appAgentPath)) {
+      addError(
+        `apps/${appName}/${fileName}: app-level agent files are forbidden; keep the single root AGENTS.md`,
+      );
+    }
+  }
+}
+
+for (const [configPath, label] of [
+  ["apps/calculator/next.config.ts", "calculator"],
+  ["apps/documentation/next.config.mjs", "documentation"],
+]) {
+  const config = await readUtf8(path.join(root, configPath));
+  if (!/agentRules:\s*false/u.test(config)) {
+    addError(
+      `${configPath}: set \`agentRules: false\` so Next.js never writes ${label} app-level agent files`,
+    );
+  }
+}
+
 const router = await readUtf8(routerPath);
+
+if (!router.includes("<!-- BEGIN:nextjs-agent-rules -->")) {
+  addError(
+    "AGENTS.md: missing the Next.js agent-rules block produced by the installed Next.js generator",
+  );
+}
+
+// Next.js is centralized: one catalog-pinned install, exposed at the repository
+// root so the managed agent-rules block resolves `node_modules/next/dist/docs`.
+// This also keeps the bundled version-matched docs single-sourced.
+let nextPackageJsonPath;
+try {
+  nextPackageJsonPath = require.resolve("next/package.json", { paths: [root] });
+} catch {
+  addError(
+    "next is not resolvable from the repository root; the Next.js agent-rules block in AGENTS.md points at node_modules/next/dist/docs, so keep the single catalog install exposed with `publicHoistPattern: [next]` in pnpm-workspace.yaml",
+  );
+}
+
+if (nextPackageJsonPath) {
+  const installedNextVersion = JSON.parse(
+    await readUtf8(nextPackageJsonPath),
+  ).version;
+  const catalogNextVersion = (
+    await readUtf8(path.join(root, "pnpm-workspace.yaml"))
+  ).match(/^[ \t]*next:[ \t]*([^\s#]+)/mu)?.[1];
+
+  if (!catalogNextVersion) {
+    addError("pnpm-workspace.yaml: the catalog no longer pins a `next` version");
+  } else if (catalogNextVersion !== installedNextVersion) {
+    addError(
+      `next version drift\n  catalog:   ${catalogNextVersion}\n  installed: ${installedNextVersion}`,
+    );
+  }
+
+  const nextDocsEntry = path.join(
+    path.dirname(nextPackageJsonPath),
+    "dist",
+    "docs",
+    "index.md",
+  );
+  if (!(await pathExists(nextDocsEntry))) {
+    addError(
+      "the installed next package is missing its bundled docs entry node_modules/next/dist/docs/index.md",
+    );
+  }
+
+  if (router.includes("<!-- BEGIN:nextjs-agent-rules -->")) {
+    const generator = require("next/dist/server/lib/generate-agent-files");
+    if (!generator.hasCurrentAgentRules(root)) {
+      addError(
+        "AGENTS.md: the committed Next.js agent-rules block no longer matches the installed generator; refresh it from next/dist/server/lib/generate-agent-files",
+      );
+    }
+  }
+}
+
+for (const appName of await readdir(path.join(root, "apps"))) {
+  const appDirectory = path.join(root, "apps", appName);
+  const hasNextConfig = (await readdir(appDirectory)).some((entry) =>
+    entry.startsWith("next.config."),
+  );
+  if (!hasNextConfig) continue;
+
+  const manifestPath = path.join(appDirectory, "package.json");
+  if (!(await pathExists(manifestPath))) {
+    addError(`apps/${appName}: has a next.config but no package.json`);
+    continue;
+  }
+
+  const manifest = JSON.parse(await readUtf8(manifestPath));
+  const declaredNext =
+    manifest.dependencies?.next ?? manifest.devDependencies?.next;
+  if (declaredNext !== "catalog:") {
+    addError(
+      `apps/${appName}/package.json: declare next as "catalog:" so the workspace keeps one Next.js install (found ${declaredNext ?? "nothing"})`,
+    );
+  }
+}
+
 const indexMatch = router.match(
   /<!-- AGENT-INSTRUCTION-INDEX-START -->([\s\S]*?)<!-- AGENT-INSTRUCTION-INDEX-END -->/u,
 );
@@ -364,7 +489,8 @@ for (const fileName of instructionFiles) {
 
   const frontmatter = parseFrontmatter(content, fileName);
   for (const requiredKey of ["name", "description", "applyTo"]) {
-    if (!frontmatter[requiredKey]) addError(`${fileName}: missing ${requiredKey} frontmatter`);
+    if (!frontmatter[requiredKey])
+      addError(`${fileName}: missing ${requiredKey} frontmatter`);
   }
   if (frontmatter.applyTo !== expectedScopes[fileName]) {
     addError(
@@ -384,7 +510,9 @@ const integrationRegistry = await readUtf8(
 );
 for (const anchor of requiredIntegrationAnchors) {
   if (!integrationRegistry.includes(`<a id="${anchor}"></a>`)) {
-    addError(`docs/agents/integrations.md: missing integration anchor #${anchor}`);
+    addError(
+      `docs/agents/integrations.md: missing integration anchor #${anchor}`,
+    );
   }
 }
 
@@ -438,7 +566,9 @@ const instrumentation = await readUtf8(
   path.join(root, "apps/calculator/src/instrumentation.ts"),
 );
 if (!instrumentation.includes('await import("@/lib/orpc/client.server")')) {
-  addError("calculator instrumentation no longer initializes the server oRPC client");
+  addError(
+    "calculator instrumentation no longer initializes the server oRPC client",
+  );
 }
 
 const localeLayout = await readUtf8(

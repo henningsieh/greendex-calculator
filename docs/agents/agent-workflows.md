@@ -11,7 +11,7 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 | Change Query caching, mutations, prefetching, or hydration | [TanStack Query](instructions/tanstack-query.md) | [Query route](integrations.md#tanstack-query) | Query client/hydration utilities and owning consumer |
 | Change URL search-parameter state, nuqs parsers, or its Next.js adapter | [nuqs](instructions/nuqs.md) | [nuqs route](integrations.md#nuqs) and the matching local Next.js docs page | Calculator provider, owning page, and feature component |
 | Change a data table or migrate v8 examples | [TanStack Table](instructions/tanstack-table.md) | [Table route](integrations.md#tanstack-table) | Owning feature table registry, columns, instance, and tests |
-| Change SSR data fetching | [Architecture](instructions/architecture.md), [oRPC](instructions/orpc.md), and [TanStack Query](instructions/tanstack-query.md) | [SSR routes](integrations.md#orpc) and matching `.next-docs` page | Server page/layout, hydration utilities, oRPC client seam |
+| Change SSR data fetching | [Architecture](instructions/architecture.md), [oRPC](instructions/orpc.md), and [TanStack Query](instructions/tanstack-query.md) | [SSR routes](integrations.md#orpc) and the matching page under `node_modules/next/dist/docs/` | Server page/layout, hydration utilities, oRPC client seam |
 | Change authentication or organizations | [Better Auth](instructions/better-auth.md) | [Better Auth route](integrations.md#better-auth) and [permissions](../projects/permissions.md) | Calculator Better Auth library and owning feature |
 | Change database schema or migration | [Drizzle](instructions/drizzle.md) | [Drizzle route](integrations.md#drizzle-orm-and-kit) | `packages/database/src/schemas/` and generated migration |
 | Change deployment or managed resources | [Coolify](instructions/coolify.md) | [Coolify route](integrations.md#coolify-deployment-and-api) | Coolify-managed configuration; never generated compose output |
@@ -34,4 +34,4 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 
 ## Next.js work
 
-For any Next.js task, start at the [local Next.js documentation index](../../.next-docs/index.mdx). If the ignored corpus is absent, regenerate it with `pnpm dlx @next/codemod agents-md --output AGENTS.md`, then follow the smallest relevant page set.
+For any Next.js task, read the version-matched docs bundled in the single catalog-resolved Next.js install at `node_modules/next/dist/docs/` (entry `index.md`); they upgrade with the `next` package, so there is no download or regeneration step. The catalog pins one Next.js version for the whole workspace and `publicHoistPattern` exposes that one install at the repository root; do not reintroduce per-app doc pointers. The legacy `.next-docs/` corpus and the `agents-md` download are obsolete on Next.js 16.3+.

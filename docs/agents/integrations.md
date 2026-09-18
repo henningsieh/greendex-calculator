@@ -10,7 +10,7 @@ For every integration change:
 
 | Integration | Direct official route | Greendex map | Skill strategy |
 | --- | --- | --- | --- |
-| Next.js | Generated version-matched index in `AGENTS.md` and `.next-docs/` | [Architecture](instructions/architecture.md) | Generated local vendor corpus; regenerate with the command embedded in `AGENTS.md` |
+| Next.js | Bundled with the single catalog-resolved install at `node_modules/next/dist/docs/` (entry `index.md`), version-matched to the installed package | [Architecture](instructions/architecture.md) | Bundled version-matched docs; no skill or download needed |
 | <a id="nuqs"></a>nuqs | [`llms.txt`](https://nuqs.dev/llms.txt) · [Next.js App Router adapter](https://nuqs.dev/docs/adapters#nextjs-app-router) | [nuqs](instructions/nuqs.md) | Official online documentation and installed declarations; no official `SKILL.md` is available. The maintainer [AGENTS.md](https://github.com/47ng/nuqs/blob/next/AGENTS.md) is upstream contributor guidance, not consumer-app API guidance |
 | <a id="coolify-deployment-and-api"></a>Coolify | [`llms.txt`](https://coolify.io/docs/llms.txt) · [`llms-full.txt`](https://coolify.io/docs/llms-full.txt) | [Coolify](instructions/coolify.md) | Online documentation; no official project skill adopted |
 | <a id="drizzle-orm-and-kit"></a>Drizzle ORM and Kit | [`llms.txt`](https://orm.drizzle.team/llms.txt) · [`llms-full.txt`](https://orm.drizzle.team/llms-full.txt) | [Drizzle](instructions/drizzle.md) | Online documentation and installed declarations; no official project skill adopted |

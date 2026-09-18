@@ -1,4 +1,5 @@
 ---
+name: "Documentation Index"
 applyTo: "**"
 description: "Developer documentation index and online vendor-reference routes"
 ---

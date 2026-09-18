@@ -40,7 +40,7 @@ Oxfmt and Oxlint enforce mechanical style. This file records decisions tooling c
 - Use stable domain identifiers as list keys.
 - Keep components at module scope rather than defining them during render.
 - Use localized navigation and messages in locale-prefixed calculator routes.
-- Consult the checked-in `.next-docs` pages listed in `AGENTS.md` before changing Next.js behavior.
+- Consult the version-matched docs bundled with the installed package at `node_modules/next/dist/docs/` before changing Next.js behavior.
 
 ## Procedures and persistence
 
