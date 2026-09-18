@@ -1,16 +1,24 @@
 "use client";
 
-import { cn } from "cn";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import * as React from "react";
-import {
-  DayPicker,
-  getDefaultClassNames,
-  type DayButton,
-} from "react-day-picker";
+import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
+/**
+ * Render a DayPicker calendar preconfigured with the project's styles, responsive RTL fixes, and overridable subcomponents.
+ *
+ * @param className - Additional CSS classes applied to the calendar container
+ * @param classNames - Partial mapping to override internal DayPicker class names
+ * @param showOutsideDays - Whether to display days from adjacent months (default: `true`)
+ * @param captionLayout - Layout for the month caption (default: `"label"`)
+ * @param buttonVariant - Variant passed to navigation buttons (e.g., Button `variant`)
+ * @param formatters - Custom formatter functions merged with the component's defaults (month dropdown is abbreviated)
+ * @param components - Component overrides merged with the component's built-in subcomponent overrides
+ * @returns A DayPicker React element configured with the calendar's styling, behavior, and component overrides
+ */
 function Calendar({
   className,
   classNames,
@@ -29,7 +37,7 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+        "group/calendar bg-background p-3 [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className,
@@ -136,17 +144,15 @@ function Calendar({
           );
         },
         Chevron: ({ className, orientation, ...props }) => {
-          if (orientation === "left") {
+          if (orientation === "left")
             return (
               <ChevronLeftIcon className={cn("size-4", className)} {...props} />
             );
-          }
 
-          if (orientation === "right") {
+          if (orientation === "right")
             return (
               <ChevronRightIcon className={cn("size-4", className)} {...props} />
             );
-          }
 
           return (
             <ChevronDownIcon className={cn("size-4", className)} {...props} />

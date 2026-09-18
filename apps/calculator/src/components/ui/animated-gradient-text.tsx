@@ -1,19 +1,19 @@
-import { type ComponentPropsWithoutRef } from "react";
+import { ComponentPropsWithoutRef } from "react";
 
-import { cn } from "@/lib/utils/index";
+import { cn } from "@/lib/utils";
 
-export interface AnimatedGradientTextProps extends ComponentPropsWithoutRef<"div"> {
+interface AnimatedGradientTextProps extends ComponentPropsWithoutRef<"div"> {
   speed?: number;
-  colorFrom?: string;
-  colorTo?: string;
+  colorFrom: string;
+  colorTo: string;
 }
 
 export function AnimatedGradientText({
   children,
   className,
   speed = 1,
-  colorFrom = "#ffaa40",
-  colorTo = "#9c40ff",
+  colorFrom,
+  colorTo,
   ...props
 }: AnimatedGradientTextProps) {
   return (
@@ -26,7 +26,7 @@ export function AnimatedGradientText({
         } as React.CSSProperties
       }
       className={cn(
-        `inline animate-gradient bg-linear-to-r from-(--color-from) via-(--color-to) to-(--color-from) bg-size-[var(--bg-size)_100%] bg-clip-text text-transparent`,
+        `inline animate-gradient bg-linear-to-r from-[var(--color-from)] via-[var(--color-to)] to-[var(--color-from)] bg-[length:var(--bg-size)_100%] bg-clip-text text-transparent`,
         className,
       )}
       {...props}
