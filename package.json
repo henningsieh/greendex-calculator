@@ -28,6 +28,7 @@
     "test:e2e:headed": "turbo run test:e2e:headed --",
     "test:e2e:report": "turbo run test:e2e:report --",
     "test:cost-tracker-persistence-seam": "vitest run scripts/check-cost-tracker-persistence-seam.test.ts",
+    "test:agent-instruction-policy": "vitest run scripts/agent-instruction-policy.test.ts",
     "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/calculator/src apps/documentation/src"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "turbo": "^2.10.13"
   },
   "devDependencies": {
+    "@shadcn/lint": "^0.1.1",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -44,8 +46,7 @@
     "oxlint-tsgolint": "^7.0.2001",
     "tsx": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^5.0.0",
-    "@shadcn/lint": "^0.1.1"
+    "vitest": "^5.0.0"
   },
   "engines": {
     "node": ">=22"
