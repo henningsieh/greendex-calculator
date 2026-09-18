@@ -1,6 +1,6 @@
 {
   "servers": {
-    "next-devtools-mcp": {
+    "next-devtools": {
       "type": "stdio",
       "command": "pnpm",
       "args": ["dlx", "next-devtools-mcp@latest"]
