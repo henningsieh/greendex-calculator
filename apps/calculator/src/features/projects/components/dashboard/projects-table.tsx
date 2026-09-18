@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-restyle -- This dense table intentionally owns its badge and skeleton presentation. */
 "use client";
 
 import {
@@ -387,11 +388,7 @@ export function ProjectsTable({ projects }: { projects: ProjectType[] }) {
             {columnFilters.map((filter) => {
               if (filter.id === "country") {
                 return (
-                  <Badge
-                    className="px-2 text-xs"
-                    key={filter.id}
-                    variant="secondaryoutline"
-                  >
+                  <Badge key={filter.id} variant="secondaryoutline">
                     {t("table.country")}:{" "}
                     <Location
                       countryCode={filter.value as string}
@@ -403,21 +400,13 @@ export function ProjectsTable({ projects }: { projects: ProjectType[] }) {
               }
               if (filter.id === "name") {
                 return (
-                  <Badge
-                    className="px-2 text-xs"
-                    key={filter.id}
-                    variant="secondaryoutline"
-                  >
+                  <Badge key={filter.id} variant="secondaryoutline">
                     {t("table.name")}: {filter.value as string}
                   </Badge>
                 );
               }
               return (
-                <Badge
-                  className="px-2 text-xs"
-                  key={filter.id}
-                  variant="secondaryoutline"
-                >
+                <Badge key={filter.id} variant="secondaryoutline">
                   {filter.id}: {filter.value as string}
                 </Badge>
               );

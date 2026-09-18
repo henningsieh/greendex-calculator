@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-restyle -- This card intentionally owns its selectable and interactive presentation. */
 "use client";
 
 import { useFormatter, useLocale } from "@greendex/i18n/client";
@@ -177,7 +178,7 @@ export function ProjectCard({
                   <DropdownMenuTrigger asChild>
                     <Button
                       className={cn(
-                        "size-8 bg-background/80 p-0 backdrop-blur-sm transition-opacity hover:bg-background",
+                        "size-8 bg-background/80 backdrop-blur-sm transition-opacity hover:bg-background",
                         "focus:opacity-100",
                       )}
                       onClick={(e) => e.stopPropagation()}

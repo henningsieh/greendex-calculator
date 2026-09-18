@@ -153,9 +153,7 @@ export function LoginForm({
           <CardTitle className="space-y-1">
             <h1 className="text-xl font-bold">{t("login.title")}</h1>
           </CardTitle>
-          <CardDescription className="text-sm">
-            {t("login.description")}
-          </CardDescription>
+          <CardDescription>{t("login.description")}</CardDescription>
         </CardHeader>
 
         <CardContent className="px-0">
@@ -199,7 +197,7 @@ export function LoginForm({
                     label={t("login.password")}
                     name="password"
                     rightLabel={
-                      <Button asChild className="px-0" variant="link">
+                      <Button asChild variant="link">
                         <Link
                           className="ml-auto text-sm underline-offset-4 hover:underline"
                           href={FORGOT_PASSWORD_PATH}
@@ -270,7 +268,12 @@ export function LoginForm({
                     signupHref += `?nextPageUrl=${encodeURIComponent(normalized)}`;
                   }
                   return (
-                    <Button asChild className="px-0 pl-1" variant="link">
+                    <Button
+                      asChild
+                      /* eslint-disable-next-line shadcn/no-restyle -- Inline auth link alignment is intentional. */
+                      className="pl-1"
+                      variant="link"
+                    >
                       <Link href={signupHref}>{t("login.footer.signUp")}</Link>
                     </Button>
                   );
