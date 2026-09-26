@@ -663,6 +663,9 @@ importers:
       '@greendex/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@greendex/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@greendex/database':
         specifier: workspace:*
         version: link:../../packages/database

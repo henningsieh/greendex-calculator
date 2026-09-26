@@ -18,6 +18,7 @@ import {
   customType,
   index,
   integer,
+  jsonb,
   bigint,
   numeric,
   primaryKey,
@@ -483,6 +484,10 @@ export const projectFundingSnapshotsTable = pgTable("project_funding_snapshot", 
     .primaryKey()
     .references(() => projectsTable.id, { onDelete: "cascade" }),
   rulesVersion: integer("rules_version").notNull(),
+  // Bands stay relational for range lookups; freeze the exact profile set as JSON.
+  participantTransportProfiles: jsonb("participant_transport_profiles")
+    .$type<string[]>()
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export const projectFundingBandsTable = pgTable(
