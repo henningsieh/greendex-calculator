@@ -365,6 +365,12 @@ describe("assignment-scoped participation coordination", () => {
       client.participations.remove({ partnershipId: own, id: created.id }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
+      client.participations.create({ partnershipId: own, userId: candidate }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringMatching(/locked/i),
+    });
+    await expect(
       client.participations.update({
         partnershipId: own,
         id: created.id,

@@ -2,6 +2,7 @@ import "server-only";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
+  claimsTable as claims,
   participantJourneysTable as journeys,
   projectFundingBandsTable as bands,
   projectFundingSnapshotsTable as snapshots,
@@ -12,6 +13,7 @@ import {
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
+import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -121,6 +123,25 @@ export const save = authorized
       if (!lockedProject)
         throw errors.FORBIDDEN({
           message: "Project Partnership is unavailable.",
+        });
+      const [lockedPartnership] = await tx
+        .select({ id: partnerships.id })
+        .from(partnerships)
+        .where(eq(partnerships.id, input.partnershipId))
+        .for("update")
+        .limit(1);
+      if (!lockedPartnership)
+        throw errors.FORBIDDEN({
+          message: "Project Partnership is unavailable.",
+        });
+      const [claim] = await tx
+        .select({ status: claims.status })
+        .from(claims)
+        .where(eq(claims.partnershipId, input.partnershipId))
+        .limit(1);
+      if (claim && claimLocksPartnerEdits(claim.status))
+        throw errors.BAD_REQUEST({
+          message: "Claim is locked; Participant Journeys cannot change.",
         });
       const [participation] = await tx
         .select({ id: participants.id })

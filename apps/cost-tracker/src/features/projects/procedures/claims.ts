@@ -9,6 +9,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -19,7 +20,7 @@ const partnershipInput = z.object({ partnershipId: coordinationId });
 const draftSchema = z.object({
   id: z.string(),
   partnershipId: z.string(),
-  status: z.literal("editable"),
+  status: z.enum(["editable", "correction_requested"]),
 });
 const selectedDraft = {
   id: claims.id,
@@ -114,7 +115,7 @@ export const selectPayoutAccount = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (claim && claim.status !== "editable") {
+      if (claim && claimLocksPartnerEdits(claim.status)) {
         throw errors.BAD_REQUEST({
           message:
             "Payout Account selection is locked while the Claim is not editable.",
@@ -195,9 +196,9 @@ export const saveDraft = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
       if (existing) {
-        if (existing.status !== "editable")
+        if (claimLocksPartnerEdits(existing.status))
           throw errors.BAD_REQUEST({ message: "Claim is not editable." });
-        return { ...existing, status: "editable" as const };
+        return draftSchema.parse(existing);
       }
       const [created] = await tx
         .insert(claims)
@@ -210,8 +211,8 @@ export const saveDraft = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (raced?.status === "editable")
-        return { ...raced, status: "editable" as const };
+      if (raced && !claimLocksPartnerEdits(raced.status))
+        return draftSchema.parse(raced);
       throw errors.BAD_REQUEST({ message: "Claim is not editable." });
     });
   });

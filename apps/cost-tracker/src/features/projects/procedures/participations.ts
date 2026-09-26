@@ -10,6 +10,7 @@ import {
   participantJourneysTable as journeys,
   participantProfilesTable as profiles,
   projectParticipantsTable as participants,
+  projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
@@ -21,6 +22,7 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
+import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -49,13 +51,6 @@ const scopeInput = z.object({ partnershipId: coordinationId });
 const rowInput = scopeInput.extend({ id: coordinationId });
 const mergeMessage =
   "Identity already participates in this Project; request merge review.";
-
-// Partner-side Participation edits stay possible while the Claim is editable
-// and during a correction request (resubmission re-runs the checklist and
-// re-derives payable); all other Claim states lock them.
-function claimLocksParticipation(status: string): boolean {
-  return status !== "editable" && status !== "correction_requested";
-}
 
 function postgresCode(error: unknown): string | undefined {
   if (!error || typeof error !== "object") return undefined;
@@ -131,73 +126,99 @@ export function createParticipationProcedures(
           message:
             "Participant agreement is not yet available; use the invitation onboarding path later.",
         });
-      const [candidate] = await db
-        .select({
-          id: user.id,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          name: profiles.fullName,
-        })
-        .from(user)
-        .innerJoin(profiles, eq(profiles.userId, user.id))
-        .innerJoin(
-          acceptances,
-          and(
-            eq(acceptances.userId, user.id),
-            eq(acceptances.version, agreement.id),
-            eq(acceptances.contentHash, agreement.contentHash),
-          ),
-        )
-        .innerJoin(
-          member,
-          and(
-            eq(member.userId, user.id),
-            eq(member.organizationId, scope.hostId),
-          ),
-        )
-        .where(
-          and(
-            eq(user.id, input.userId),
-            eq(user.emailVerified, true),
-            sql`(',' || ${member.role} || ',') ~ ',(participant|owner|admin),'`,
-          ),
-        )
-        .limit(1);
-      if (!candidate)
-        throw errors.BAD_REQUEST({
-          message:
-            "User has not completed onboarding; use a Participant invitation instead.",
-        });
-      const email = candidate.email.trim().toLowerCase();
-      const [duplicate] = await db
-        .select({ id: participants.id })
-        .from(participants)
-        .leftJoin(user, eq(user.id, participants.userId))
-        .where(
-          and(
-            eq(participants.projectId, scope.projectId),
-            or(
-              eq(participants.userId, candidate.id),
-              eq(participants.email, email),
-              sql`lower(trim(${user.email})) = ${email}`,
-            ),
-          ),
-        )
-        .limit(1);
-      if (duplicate) throw errors.BAD_REQUEST({ message: mergeMessage });
       try {
-        const [created] = await db
-          .insert(participants)
-          .values({
-            projectId: scope.projectId,
-            representedOrganizationId: scope.partnerId,
-            userId: candidate.id,
-            email,
-            displayName: candidate.name,
-          })
-          .returning(selected);
-        if (!created) throw new Error("Participation insert returned no row");
-        return created;
+        return await db.transaction(async (tx) => {
+          const [partnership] = await tx
+            .select({ id: partnerships.id })
+            .from(partnerships)
+            .where(
+              and(
+                eq(partnerships.id, input.partnershipId),
+                eq(partnerships.organizationId, scope.partnerId),
+              ),
+            )
+            .for("update")
+            .limit(1);
+          if (!partnership)
+            throw errors.FORBIDDEN({
+              message: "Project Partnership is unavailable.",
+            });
+          const [claim] = await tx
+            .select({ status: claims.status })
+            .from(claims)
+            .where(eq(claims.partnershipId, input.partnershipId))
+            .limit(1);
+          if (claim && claimLocksPartnerEdits(claim.status))
+            throw errors.BAD_REQUEST({
+              message: "Locked Claim prevents Participation creation.",
+            });
+          const [candidate] = await tx
+            .select({
+              id: user.id,
+              email: user.email,
+              emailVerified: user.emailVerified,
+              name: profiles.fullName,
+            })
+            .from(user)
+            .innerJoin(profiles, eq(profiles.userId, user.id))
+            .innerJoin(
+              acceptances,
+              and(
+                eq(acceptances.userId, user.id),
+                eq(acceptances.version, agreement.id),
+                eq(acceptances.contentHash, agreement.contentHash),
+              ),
+            )
+            .innerJoin(
+              member,
+              and(
+                eq(member.userId, user.id),
+                eq(member.organizationId, scope.hostId),
+              ),
+            )
+            .where(
+              and(
+                eq(user.id, input.userId),
+                eq(user.emailVerified, true),
+                sql`(',' || ${member.role} || ',') ~ ',(participant|owner|admin),'`,
+              ),
+            )
+            .limit(1);
+          if (!candidate)
+            throw errors.BAD_REQUEST({
+              message:
+                "User has not completed onboarding; use a Participant invitation instead.",
+            });
+          const email = candidate.email.trim().toLowerCase();
+          const [duplicate] = await tx
+            .select({ id: participants.id })
+            .from(participants)
+            .leftJoin(user, eq(user.id, participants.userId))
+            .where(
+              and(
+                eq(participants.projectId, scope.projectId),
+                or(
+                  eq(participants.userId, candidate.id),
+                  eq(participants.email, email),
+                  sql`lower(trim(${user.email})) = ${email}`,
+                ),
+              ),
+            )
+            .limit(1);
+          if (duplicate) throw errors.BAD_REQUEST({ message: mergeMessage });
+          const [created] = await tx
+            .insert(participants)
+            .values({
+              projectId: scope.projectId,
+              representedOrganizationId: scope.partnerId,
+              userId: candidate.id,
+              email,
+              displayName: candidate.name,
+            })
+            .returning(selected);
+          if (!created) throw new Error("Participation insert returned no row");
+          return created;
+        });
       } catch (error) {
         if (postgresCode(error) === "23505")
           throw errors.BAD_REQUEST({ message: mergeMessage });
@@ -257,30 +278,47 @@ export function createParticipationProcedures(
         throw errors.FORBIDDEN({
           message: "Only the Partner Organization may update its Participation.",
         });
-      const [submitted] = await db
-        .select({ status: claims.status })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .limit(1);
-      if (submitted && claimLocksParticipation(submitted.status))
-        throw errors.BAD_REQUEST({
-          message: "Locked Claim prevents Participation changes.",
-        });
-      const [changed] = await db
-        .update(participants)
-        .set({ country: input.country })
-        .where(
-          and(
-            eq(participants.id, input.id),
-            eq(participants.projectId, scope.projectId),
-            eq(participants.representedOrganizationId, scope.partnerId),
-            isNull(participants.mergedIntoParticipantId),
-          ),
-        )
-        .returning(selected);
-      if (!changed)
-        throw errors.FORBIDDEN({ message: "Participation is unavailable." });
-      return changed;
+      return db.transaction(async (tx) => {
+        const [partnership] = await tx
+          .select({ id: partnerships.id })
+          .from(partnerships)
+          .where(
+            and(
+              eq(partnerships.id, input.partnershipId),
+              eq(partnerships.organizationId, scope.partnerId),
+            ),
+          )
+          .for("update")
+          .limit(1);
+        if (!partnership)
+          throw errors.FORBIDDEN({
+            message: "Project Partnership is unavailable.",
+          });
+        const [submitted] = await tx
+          .select({ status: claims.status })
+          .from(claims)
+          .where(eq(claims.partnershipId, input.partnershipId))
+          .limit(1);
+        if (submitted && claimLocksPartnerEdits(submitted.status))
+          throw errors.BAD_REQUEST({
+            message: "Locked Claim prevents Participation changes.",
+          });
+        const [changed] = await tx
+          .update(participants)
+          .set({ country: input.country })
+          .where(
+            and(
+              eq(participants.id, input.id),
+              eq(participants.projectId, scope.projectId),
+              eq(participants.representedOrganizationId, scope.partnerId),
+              isNull(participants.mergedIntoParticipantId),
+            ),
+          )
+          .returning(selected);
+        if (!changed)
+          throw errors.FORBIDDEN({ message: "Participation is unavailable." });
+        return changed;
+      });
     });
 
   const remove = authorized
@@ -299,6 +337,21 @@ export function createParticipationProcedures(
         });
       try {
         return await db.transaction(async (tx) => {
+          const [partnership] = await tx
+            .select({ id: partnerships.id })
+            .from(partnerships)
+            .where(
+              and(
+                eq(partnerships.id, input.partnershipId),
+                eq(partnerships.organizationId, scope.partnerId),
+              ),
+            )
+            .for("update")
+            .limit(1);
+          if (!partnership)
+            throw errors.FORBIDDEN({
+              message: "Project Partnership is unavailable.",
+            });
           const [row] = await tx
             .select({ id: participants.id })
             .from(participants)
@@ -319,7 +372,7 @@ export function createParticipationProcedures(
             .from(claims)
             .where(eq(claims.partnershipId, input.partnershipId))
             .limit(1);
-          if (claim && claimLocksParticipation(claim.status))
+          if (claim && claimLocksPartnerEdits(claim.status))
             throw errors.BAD_REQUEST({
               message: "Locked Claim prevents Participation removal.",
             });

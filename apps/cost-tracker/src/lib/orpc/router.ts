@@ -44,6 +44,7 @@ import {
   createSetupLink,
   disableSetupLink,
 } from "@/features/projects/procedures/setup-links";
+import { submit } from "@/features/projects/procedures/submission";
 
 export const router = {
   authentication: {
@@ -56,7 +57,7 @@ export const router = {
   },
   participantOnboarding,
   participations,
-  claims: { getDraft, saveDraft, selectPayoutAccount },
+  claims: { getDraft, saveDraft, selectPayoutAccount, submit },
   costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
   journeys: { list: listJourneys, save: saveJourney },
   projects: {
