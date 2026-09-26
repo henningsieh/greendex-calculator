@@ -187,6 +187,12 @@ export function ProjectWorkspace({
             >
               Coordinate Participants
             </Link>
+            <Link
+              className={buttonVariants({ variant: "outline" })}
+              href={`/partnerships/${encodeURIComponent(project.partnership.id)}/claim`}
+            >
+              Open Claim workspace
+            </Link>
           </CardContent>
         </Card>
       )}

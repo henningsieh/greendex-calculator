@@ -153,6 +153,33 @@ afterAll(async () => {
 });
 
 describe("Claim drafts and Partnership payout selection", () => {
+  it("reads only Partner payout options and the selected account without creating a Claim", async () => {
+    expect(
+      await client.claims.listPayoutAccounts({ partnershipId: own }),
+    ).toEqual({
+      accounts: expect.arrayContaining([
+        expect.objectContaining({ id: account }),
+        expect.objectContaining({ id: secondAccount }),
+      ]),
+      selectedPayoutAccountId: null,
+    });
+    expect(
+      (await client.claims.listPayoutAccounts({ partnershipId: own })).accounts,
+    ).toHaveLength(2);
+    await client.claims.selectPayoutAccount({
+      partnershipId: own,
+      payoutAccountId: account,
+    });
+    expect(
+      (await client.claims.listPayoutAccounts({ partnershipId: own }))
+        .selectedPayoutAccountId,
+    ).toBe(account);
+    expect(await client.claims.getDraft({ partnershipId: own })).toBeNull();
+    await expect(
+      client.claims.listPayoutAccounts({ partnershipId: foreign }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("reads an empty workspace without creating a Claim", async () => {
     expect(await client.claims.getDraft({ partnershipId: own })).toBeNull();
     expect(

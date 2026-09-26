@@ -17,7 +17,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -28,10 +28,12 @@ import {
   vi,
 } from "vitest";
 
-const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
+const authMocks = vi.hoisted(() => ({ getSession: vi.fn(), put: vi.fn() }));
+vi.mock("@/lib/proof-storage", () => ({ putProofFile: authMocks.put }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
+import { POST as upload } from "@/app/api/proof-documents/route";
 import { router } from "@/lib/orpc/router";
 
 const suffix = randomUUID();
@@ -173,6 +175,15 @@ beforeEach(async () => {
   actor = coordinator;
   activeOrg = partner;
   await db.delete(entries).where(eq(entries.claimId, ownClaim));
+  await db
+    .delete(documents)
+    .where(
+      and(
+        eq(documents.claimId, ownClaim),
+        eq(documents.originalFileName, "uploaded.pdf"),
+      ),
+    );
+  authMocks.put.mockReset().mockResolvedValue(undefined);
 });
 
 afterAll(async () => {
@@ -194,6 +205,75 @@ afterAll(async () => {
 });
 
 describe("Claim cost procedures", () => {
+  it("lists only Claim-scoped Proof Documents and refuses foreign Partnerships", async () => {
+    expect(
+      (await client.documents.list({ partnershipId: own })).map(
+        (item) => item.id,
+      ),
+    ).toEqual([proof]);
+    expect(await client.documents.list({ partnershipId: next })).toEqual([]);
+    await expect(
+      client.documents.list({ partnershipId: foreign }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("uploads only to an editable Claim with authenticated Partner scope", async () => {
+    function request(partnershipId: string, origin = "https://test.example") {
+      const data = new FormData();
+      data.set("partnershipId", partnershipId);
+      data.set(
+        "file",
+        new File(["test"], "uploaded.pdf", { type: "application/pdf" }),
+      );
+      return new Request("https://test.example/api/proof-documents", {
+        method: "POST",
+        headers: { origin },
+        body: data,
+      });
+    }
+    expect((await upload(request(own, "https://foreign.example"))).status).toBe(
+      403,
+    );
+    expect(authMocks.put).not.toHaveBeenCalled();
+    authMocks.getSession.mockResolvedValueOnce(null);
+    expect((await upload(request(own))).status).toBe(401);
+    expect((await upload(request(next))).status).toBe(400);
+    expect((await upload(request(foreign))).status).toBe(403);
+    const response = await upload(request(own));
+    expect(response.status).toBe(201);
+    expect(authMocks.put).toHaveBeenCalledWith(
+      expect.stringContaining(`claims/${partner}/${ownClaim}/`),
+      expect.any(Uint8Array),
+      "application/pdf",
+    );
+    const body = await response.json();
+    expect(
+      (await client.documents.list({ partnershipId: own })).map(
+        (item) => item.id,
+      ),
+    ).toContain(body.id);
+    expect(
+      (await client.documents.list({ partnershipId: next })).map(
+        (item) => item.id,
+      ),
+    ).not.toContain(body.id);
+    actor = participantUser;
+    expect((await upload(request(own))).status).toBe(403);
+    actor = coordinator;
+    await db
+      .update(claims)
+      .set({ status: "submitted" })
+      .where(eq(claims.id, ownClaim));
+    try {
+      expect((await upload(request(own))).status).toBe(400);
+      expect(authMocks.put).toHaveBeenCalledTimes(1);
+    } finally {
+      await db
+        .update(claims)
+        .set({ status: "editable" })
+        .where(eq(claims.id, ownClaim));
+    }
+  });
   it("keeps one real group total and derives equal cents that sum exactly to it", async () => {
     const saved = await client.costs.save(base);
     expect(saved.allocations.map((row) => row.amountEur)).toEqual([

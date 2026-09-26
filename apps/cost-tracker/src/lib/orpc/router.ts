@@ -11,6 +11,7 @@ import {
 } from "@/features/authentication/procedures";
 import {
   getDraft,
+  listPayoutAccounts,
   saveDraft,
   selectPayoutAccount,
 } from "@/features/projects/procedures/claims";
@@ -23,6 +24,7 @@ import {
   list as listCosts,
   save as saveCost,
 } from "@/features/projects/procedures/costs";
+import { list as listDocuments } from "@/features/projects/procedures/documents";
 import {
   list as listJourneys,
   save as saveJourney,
@@ -68,6 +70,7 @@ export const router = {
   participations,
   claims: {
     getDraft,
+    listPayoutAccounts,
     saveDraft,
     selectPayoutAccount,
     submit,
@@ -80,6 +83,7 @@ export const router = {
     reopen,
   },
   costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
+  documents: { list: listDocuments },
   journeys: { list: listJourneys, save: saveJourney },
   projects: {
     get: getProject,

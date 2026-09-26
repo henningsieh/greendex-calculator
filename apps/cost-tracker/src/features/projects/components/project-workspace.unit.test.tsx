@@ -12,7 +12,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
     projects: {
       get: {
         queryOptions: ({ input }: { input: { projectId: string } }) => ({
-          queryKey: ["project", input.projectId, mocks.detail],
+          queryKey: ["project", input.projectId],
           queryFn: async () => mocks.detail,
         }),
       },
@@ -169,6 +169,11 @@ describe("Project workspace", () => {
         .getByRole("link", { name: "Coordinate Participants" })
         .getAttribute("href"),
     ).toBe("/partnerships/partnership-1/participants");
+    expect(
+      screen
+        .getByRole("link", { name: "Open Claim workspace" })
+        .getAttribute("href"),
+    ).toBe("/partnerships/partnership-1/claim");
     expect(screen.queryByText(/EUR|Proof Document/i)).toBeNull();
   });
 });

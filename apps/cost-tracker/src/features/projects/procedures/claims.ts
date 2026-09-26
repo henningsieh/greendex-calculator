@@ -82,6 +82,58 @@ export const getDraft = authorized
     return claim ?? null;
   });
 
+/** List only this Partner's accounts and the Partnership's current selection. */
+export const listPayoutAccounts = authorized
+  .input(partnershipInput)
+  .output(
+    z.object({
+      accounts: z.array(
+        z.object({
+          id: z.string(),
+          accountHolder: z.string(),
+          iban: z.string(),
+          bic: z.string().nullable(),
+        }),
+      ),
+      selectedPayoutAccountId: z.string().nullable(),
+    }),
+  )
+  .handler(async ({ input, context, errors }) => {
+    const scope = await requirePartnerSide(
+      input.partnershipId,
+      context.user.id,
+      context.session.activeOrganizationId,
+      errors,
+    );
+    const [available, selected] = await Promise.all([
+      db
+        .select({
+          id: accounts.id,
+          accountHolder: accounts.accountHolder,
+          iban: accounts.iban,
+          bic: accounts.bic,
+        })
+        .from(accounts)
+        .where(eq(accounts.organizationId, scope.partnerId)),
+      db
+        .select({ payoutAccountId: selections.payoutAccountId })
+        .from(selections)
+        .innerJoin(
+          accounts,
+          and(
+            eq(accounts.id, selections.payoutAccountId),
+            eq(accounts.organizationId, scope.partnerId),
+          ),
+        )
+        .where(eq(selections.partnershipId, input.partnershipId))
+        .limit(1),
+    ]);
+    return {
+      accounts: available,
+      selectedPayoutAccountId: selected[0]?.payoutAccountId ?? null,
+    };
+  });
+
 /** Select by reference on the Partnership, without starting a Claim. */
 export const selectPayoutAccount = authorized
   .input(partnershipInput.extend({ payoutAccountId: coordinationId }))
