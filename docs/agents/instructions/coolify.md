@@ -43,7 +43,7 @@ The Cost Tracker consumes the existing Garage S3 service from the separate `ambi
 
 Both applications use repository root `/`, Railpack, GitHub App source `henningsieh/greendex-calculator`, branch `main`, and preview template `{{pr_id}}.{{domain}}`. Wildcard DNS must cover the resulting preview hosts.
 
-Preserve `"env": ["*"]` on Turbo `build` and `start`. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Calculator preview `DATABASE_URL` must use the preview database UUID hostname, never the host IP or public port. Authentication and mail settings may mirror development unless the task says otherwise.
+Preserve `"env": ["*"]` on Turbo `build` and `start`. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Authentication and mail settings may mirror development unless the task says otherwise.
 
 ## Sequential preview deployment runbook
 
@@ -94,7 +94,7 @@ Use `PATCH /applications/{uuid}` for persistent application settings and `/appli
 - Deployment commit equals the current PR head.
 - `GET https://<pr>.greendex.apps.sieh.org/api/rpc/health` succeeds.
 - `https://<pr>.socket.greendex.apps.sieh.org` routes to the same preview deployment; verify a Socket.IO handshake when practical.
-- The running container uses preview `DATABASE_URL` and the private hostname `gcmwapuqoz45mjvtdwl3vgg4:5432`.
+- The running container uses a `development`-environment `DATABASE_URL` (preview private hostname `gcmwapuqoz45mjvtdwl3vgg4:5432` preferred; direct public IP/port access is allowed in development).
 - Drizzle migrations completed and the `verification` table exists. Pass `DATABASE_URL` explicitly when invoking migration inside a container.
 
 ### Documentation
@@ -116,4 +116,6 @@ Treat logs and host metrics as evidence; never repeatedly redeploy an unchanged 
 
 ## Operational boundaries
 
-Coolify owns persistent deployment configuration. Use its UI/API; generated `/data/coolify/.../docker-compose.y*ml` files are outputs. Application-to-database traffic stays on the private `coolify` network. Keep databases and volumes when replacing an application unless deletion is explicitly authorized. Follow [Drizzle](drizzle.md) for schema changes and migrations.
+Development environment allowance: all resources are in `development` environment `rc04oc8sksggs48ggkwsgsg0`. Direct database access via public IP/port, `DATABASE_URL` overrides, and applying Drizzle migrations (`db:migrate`/`db:generate` targets) are explicitly allowed and pre-approved here, including for worker agents. Only restriction: do not break the database — no drops, no volume deletion, no credential leaks.
+
+Coolify owns persistent deployment configuration. Use its UI/API; generated `/data/coolify/.../docker-compose.y*ml` files are outputs. Application-to-database traffic prefers the private `coolify` network, but direct access is permitted in development. Keep databases and volumes when replacing an application unless deletion is explicitly authorized. Follow [Drizzle](drizzle.md) for schema changes and migrations.
