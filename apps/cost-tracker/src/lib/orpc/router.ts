@@ -19,6 +19,11 @@ import {
   listHosted,
   listPartner,
 } from "@/features/projects/procedures/projects";
+import {
+  consumeSetupLink,
+  createSetupLink,
+  disableSetupLink,
+} from "@/features/projects/procedures/setup-links";
 
 export const router = {
   authentication: {
@@ -39,6 +44,9 @@ export const router = {
     assign: assignPartnership,
     list: listPartnerships,
     remove: removePartnership,
+    createSetupLink,
+    disableSetupLink,
+    consumeSetupLink,
   },
 };
 

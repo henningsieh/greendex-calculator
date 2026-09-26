@@ -134,6 +134,13 @@
       "when": 1790424078453,
       "tag": "0018_flashy_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790427222968,
+      "tag": "0019_daily_overlord",
+      "breakpoints": true
     }
   ]
 }

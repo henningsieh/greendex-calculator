@@ -212,6 +212,33 @@ export const projectPartnerOrganizationsTable = pgTable(
   ],
 );
 
+/** App-owned, email-specific invitation to set up a Project Partnership. */
+export const partnerOrganizationSetupLinksTable = pgTable(
+  "partner_organization_setup_link",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    secretHash: text("secret_hash").notNull(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    recipientEmail: text("recipient_email").notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    consumedAt: timestamp("consumed_at"),
+    consumedByUserId: text("consumed_by_user_id").references(() => user.id),
+    partnershipId: text("partnership_id").references(
+      () => projectPartnerOrganizationsTable.id,
+    ),
+  },
+  (table) => [index("partner_setup_link_project_idx").on(table.projectId)],
+);
+
 /**
  * Project Participant table
  *
