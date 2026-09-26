@@ -16,6 +16,12 @@ const validServerEnvironment = {
   SMTP_USERNAME: "mailer",
   SMTP_PASSWORD: "mailer-password",
   SMTP_SECURE: "false",
+  S3_ENDPOINT: "https://s3-garage.apps.sieh.org",
+  S3_REGION: "garage",
+  S3_BUCKET: "ambitia-cost-tracker-development",
+  S3_ACCESS_KEY_ID: "access-key",
+  S3_SECRET_ACCESS_KEY: "secret-key",
+  S3_FORCE_PATH_STYLE: "true",
 };
 
 describe("Cost Tracker environment", () => {
@@ -26,6 +32,7 @@ describe("Cost Tracker environment", () => {
       ...validServerEnvironment,
       SMTP_PORT: 587,
       SMTP_SECURE: false,
+      S3_FORCE_PATH_STYLE: true,
     });
     expect(
       CostTrackerClientEnvironmentSchema.parse({
@@ -44,12 +51,33 @@ describe("Cost Tracker environment", () => {
     ["SMTP_USERNAME", ""],
     ["SMTP_PASSWORD", ""],
     ["SMTP_SECURE", "sometimes"],
+    ["S3_ENDPOINT", "not-a-url"],
+    ["S3_REGION", ""],
+    ["S3_BUCKET", ""],
+    ["S3_ACCESS_KEY_ID", ""],
+    ["S3_SECRET_ACCESS_KEY", ""],
+    ["S3_FORCE_PATH_STYLE", "sometimes"],
   ])("rejects invalid %s configuration", (key, value) => {
     expect(
       CostTrackerServerEnvironmentSchema.safeParse({
         ...validServerEnvironment,
         [key]: value,
       }).success,
+    ).toBe(false);
+  });
+
+  it.each([
+    "S3_ENDPOINT",
+    "S3_REGION",
+    "S3_BUCKET",
+    "S3_ACCESS_KEY_ID",
+    "S3_SECRET_ACCESS_KEY",
+    "S3_FORCE_PATH_STYLE",
+  ])("rejects missing %s configuration", (key) => {
+    const configuration = { ...validServerEnvironment };
+    delete configuration[key as keyof typeof configuration];
+    expect(
+      CostTrackerServerEnvironmentSchema.safeParse(configuration).success,
     ).toBe(false);
   });
 
