@@ -6,7 +6,7 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
 } from "@greendex/database/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -82,6 +82,33 @@ function decision(action: Decision) {
           .for("update")
           .limit(1);
         const expectedStatus = action === "reopen" ? "rejected" : "submitted";
+        const nextStatus =
+          action === "requestCorrection"
+            ? "correction_requested"
+            : action === "reopen"
+              ? "submitted"
+              : action === "approve"
+                ? "approved"
+                : "rejected";
+        const eventType = action === "reopen" ? "reopened" : nextStatus;
+        if (claim?.status === nextStatus) {
+          const [latest] = await tx
+            .select({ eventType: history.eventType, reason: history.reason })
+            .from(history)
+            .where(eq(history.claimId, claim.id))
+            .orderBy(desc(history.occurredAt), desc(history.id))
+            .limit(1);
+          if (
+            latest?.eventType === eventType &&
+            ((action !== "reject" && action !== "requestCorrection") ||
+              latest.reason === input.reason)
+          )
+            return {
+              id: claim.id,
+              status: nextStatus,
+              approvedAmountEur: claim.approvedAmountEur,
+            };
+        }
         if (
           !claim ||
           claim.status !== expectedStatus ||
@@ -90,14 +117,7 @@ function decision(action: Decision) {
           throw errors.BAD_REQUEST({
             message: `Claim must be ${expectedStatus} for this review decision.`,
           });
-        const status =
-          action === "requestCorrection"
-            ? "correction_requested"
-            : action === "reopen"
-              ? "submitted"
-              : action === "approve"
-                ? "approved"
-                : "rejected";
+        const status = nextStatus;
         const reason =
           action === "reject" || action === "requestCorrection"
             ? input.reason

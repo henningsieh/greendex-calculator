@@ -17,7 +17,7 @@ import {
   travelCostEntryDocumentsTable as links,
 } from "@greendex/database/schema";
 import { ORPCError } from "@orpc/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
@@ -93,6 +93,27 @@ export const submit = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
+      if (claim?.status === "submitted") {
+        const [latest] = await tx
+          .select({ eventType: history.eventType })
+          .from(history)
+          .where(eq(history.claimId, claim.id))
+          .orderBy(desc(history.occurredAt), desc(history.id))
+          .limit(1);
+        if (latest && ["submitted", "resubmitted"].includes(latest.eventType)) {
+          const [saved] = await tx
+            .select({ approvedAmountEur: claims.approvedAmountEur })
+            .from(claims)
+            .where(eq(claims.id, claim.id))
+            .limit(1);
+          if (saved.approvedAmountEur !== null)
+            return {
+              id: claim.id,
+              status: "submitted" as const,
+              approvedAmountEur: saved.approvedAmountEur,
+            };
+        }
+      }
       if (!claim || claimLocksPartnerEdits(claim.status))
         throw errors.BAD_REQUEST({
           message: "Save an editable Claim before submitting.",

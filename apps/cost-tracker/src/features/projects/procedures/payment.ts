@@ -6,7 +6,7 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
 } from "@greendex/database/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -165,6 +165,23 @@ export const correctPayment = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
+      if (claim?.status === "approved" && claim.approvedAmountEur !== null) {
+        const [latest] = await tx
+          .select({ eventType: history.eventType, reason: history.reason })
+          .from(history)
+          .where(eq(history.claimId, claim.id))
+          .orderBy(desc(history.occurredAt), desc(history.id))
+          .limit(1);
+        if (
+          latest?.eventType === "payment_corrected" &&
+          latest.reason === input.reason
+        )
+          return {
+            id: claim.id,
+            status: "approved" as const,
+            approvedAmountEur: claim.approvedAmountEur,
+          };
+      }
       if (!claim || claim.status !== "paid" || claim.approvedAmountEur === null)
         throw errors.BAD_REQUEST({
           message: "Only a paid Claim can have its paid flag corrected.",

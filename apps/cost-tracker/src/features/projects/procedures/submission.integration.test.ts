@@ -23,7 +23,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -48,8 +48,10 @@ const host = id("host"),
 const actor = id("actor"),
   participantUser = id("participant-user");
 const project = id("project"),
+  secondProject = id("second-project"),
   own = id("own"),
-  foreign = id("foreign");
+  foreign = id("foreign"),
+  elsewhere = id("elsewhere");
 const robin = id("robin"),
   sam = id("sam"),
   outsider = id("outsider"),
@@ -136,11 +138,26 @@ beforeAll(async () => {
     organizationId: host,
     responsibleUserId: actor,
   });
+  await db.insert(projects).values({
+    id: secondProject,
+    name: "Other hosted Project",
+    startDate: now,
+    endDate: now,
+    location: "Riga",
+    country: "LV",
+    organizationId: host,
+    responsibleUserId: actor,
+  });
   await db.insert(partnerships).values([
     { id: own, projectId: project, organizationId: partner },
     { id: foreign, projectId: project, organizationId: other },
+    { id: elsewhere, projectId: secondProject, organizationId: partner },
   ]);
-  await db.insert(assignments).values({ partnershipId: own, userId: actor });
+  await db.insert(assignments).values([
+    { partnershipId: own, userId: actor },
+    { partnershipId: elsewhere, userId: actor },
+    { partnershipId: own, userId: participantUser },
+  ]);
   await db.insert(accounts).values(
     [account, alternate].map((accountId) => ({
       id: accountId,
@@ -189,6 +206,7 @@ beforeEach(async () => {
   await db.delete(selections).where(eq(selections.partnershipId, own));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, robin));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, sam));
+  await db.delete(journeys).where(eq(journeys.projectParticipantId, third));
   await db.delete(snapshots).where(eq(snapshots.projectId, project));
   await client.claims.selectPayoutAccount({
     partnershipId: own,
@@ -203,12 +221,16 @@ afterAll(async () => {
   await db.delete(selections).where(eq(selections.partnershipId, own));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, robin));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, sam));
+  await db.delete(journeys).where(eq(journeys.projectParticipantId, third));
   await db.delete(snapshots).where(eq(snapshots.projectId, project));
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(accounts).where(eq(accounts.organizationId, partner));
   await db.delete(assignments).where(eq(assignments.partnershipId, own));
+  await db.delete(assignments).where(eq(assignments.partnershipId, elsewhere));
   await db.delete(partnerships).where(eq(partnerships.projectId, project));
+  await db.delete(partnerships).where(eq(partnerships.projectId, secondProject));
   await db.delete(projects).where(eq(projects.id, project));
+  await db.delete(projects).where(eq(projects.id, secondProject));
   for (const org of [other, partner, host])
     await db.delete(member).where(eq(member.organizationId, org));
   for (const org of [other, partner, host])
@@ -270,7 +292,293 @@ async function prepare(amountEur = "1000.01") {
   return { train, plane };
 }
 
+// The role × procedure matrix is documented in apps/cost-tracker/docs/claim-authorization-matrix.md.
+// Each generated case has a role and procedure in its test name for auditability.
+const claimProcedures = [
+  "claims.getDraft",
+  "claims.saveDraft",
+  "claims.selectPayoutAccount",
+  "claims.submit",
+  "claims.getHistory",
+  "claims.requestCorrection",
+  "claims.approve",
+  "claims.reject",
+  "claims.reopen",
+  "claims.markPaid",
+  "claims.correctPayment",
+  "costs.list",
+  "costs.save",
+  "costs.linkDocument",
+  "journeys.list",
+  "journeys.save",
+] as const;
+type ClaimProcedure = (typeof claimProcedures)[number];
+const partnerProcedures: readonly ClaimProcedure[] = [
+  "claims.getDraft",
+  "claims.saveDraft",
+  "claims.selectPayoutAccount",
+  "claims.submit",
+  "claims.getHistory",
+  "costs.list",
+  "costs.save",
+  "costs.linkDocument",
+  "journeys.list",
+  "journeys.save",
+];
+const hostProcedures: readonly ClaimProcedure[] = [
+  "claims.getDraft",
+  "claims.getHistory",
+  "claims.requestCorrection",
+  "claims.approve",
+  "claims.reject",
+  "claims.reopen",
+  "claims.markPaid",
+  "claims.correctPayment",
+];
+const roles = [
+  {
+    name: "Partner assigned coordinator",
+    side: "partner",
+    role: "member",
+    assigned: true,
+  },
+  { name: "Partner owner", side: "partner", role: "owner", assigned: false },
+  { name: "Partner admin", side: "partner", role: "admin", assigned: false },
+  {
+    name: "Partner unassigned coordinator",
+    side: "partner",
+    role: "project-coordinator",
+    assigned: false,
+  },
+  {
+    name: "Partner fallback member",
+    side: "partner",
+    role: "member",
+    assigned: false,
+  },
+  {
+    name: "Partner participant",
+    side: "partner",
+    role: "participant",
+    assigned: true,
+  },
+  {
+    name: "Hosting assigned coordinator",
+    side: "host",
+    role: "member",
+    assigned: true,
+  },
+  { name: "Hosting owner", side: "host", role: "owner", assigned: false },
+  { name: "Hosting admin", side: "host", role: "admin", assigned: false },
+  {
+    name: "Hosting unassigned coordinator",
+    side: "host",
+    role: "project-coordinator",
+    assigned: false,
+  },
+  {
+    name: "Hosting fallback member",
+    side: "host",
+    role: "member",
+    assigned: false,
+  },
+  {
+    name: "Hosting participant",
+    side: "host",
+    role: "participant",
+    assigned: true,
+  },
+] as const;
+
+async function invokeMatrixProcedure(procedure: ClaimProcedure, entryId: string) {
+  const input = { partnershipId: own };
+  switch (procedure) {
+    case "claims.getDraft":
+      return client.claims.getDraft(input);
+    case "claims.saveDraft":
+      return client.claims.saveDraft(input);
+    case "claims.selectPayoutAccount":
+      return client.claims.selectPayoutAccount({
+        ...input,
+        payoutAccountId: alternate,
+      });
+    case "claims.submit":
+      return client.claims.submit(input);
+    case "claims.getHistory":
+      return client.claims.getHistory(input);
+    case "claims.requestCorrection":
+      return client.claims.requestCorrection({
+        ...input,
+        reason: "Fix evidence",
+      });
+    case "claims.approve":
+      return client.claims.approve(input);
+    case "claims.reject":
+      return client.claims.reject({ ...input, reason: "Ineligible" });
+    case "claims.reopen":
+      return client.claims.reopen(input);
+    case "claims.markPaid":
+      return client.claims.markPaid({ ...input, amountEur: "100.00" });
+    case "claims.correctPayment":
+      return client.claims.correctPayment({ ...input, reason: "No transfer" });
+    case "costs.list":
+      return client.costs.list(input);
+    case "costs.save":
+      return client.costs.save({
+        ...input,
+        transportProfile: "train",
+        amountEur: "10.00",
+        allocationMethod: "equal",
+        allocations: [{ projectParticipantId: robin }],
+      });
+    case "costs.linkDocument":
+      return client.costs.linkDocument({
+        ...input,
+        entryId,
+        proofDocumentId: proof,
+      });
+    case "journeys.list":
+      return client.journeys.list(input);
+    case "journeys.save":
+      return client.journeys.save({
+        ...input,
+        projectParticipantId: third,
+        origin: "Berlin",
+        destination: "Riga",
+        tripType: "one-way",
+        erasmusDistanceKm: "850",
+      });
+  }
+}
+
+describe("Claim authorization matrix", () => {
+  it.each(
+    roles.flatMap((role) =>
+      claimProcedures.map((procedure) => ({ role, procedure })),
+    ),
+  )("$role.name × $procedure", async ({ role, procedure }) => {
+    const allowed =
+      role.role !== "participant" &&
+      (role.assigned || role.role === "owner" || role.role === "admin");
+    const expected =
+      allowed &&
+      (role.side === "host" ? hostProcedures : partnerProcedures).includes(
+        procedure,
+      );
+    let entryId = "missing-entry";
+    if (expected && procedure === "claims.submit") await prepare("100.00");
+    if (expected && procedure === "costs.linkDocument") {
+      entryId = (
+        await client.costs.save({
+          partnershipId: own,
+          transportProfile: "train",
+          amountEur: "10.00",
+          allocationMethod: "equal",
+          allocations: [{ projectParticipantId: robin }],
+        })
+      ).id;
+      await db.insert(documents).values({
+        id: proof,
+        claimId,
+        fileReference: "test/matrix",
+        originalFileName: "proof.pdf",
+        mediaType: "application/pdf",
+        byteSize: 1,
+        checksum: "matrix",
+      });
+    }
+    const statuses: Partial<
+      Record<ClaimProcedure, "submitted" | "rejected" | "approved" | "paid">
+    > = {
+      "claims.requestCorrection": "submitted",
+      "claims.approve": "submitted",
+      "claims.reject": "submitted",
+      "claims.reopen": "rejected",
+      "claims.markPaid": "approved",
+      "claims.correctPayment": "paid",
+    };
+    if (statuses[procedure])
+      await db
+        .update(claims)
+        .set({ status: statuses[procedure], approvedAmountEur: "100.00" })
+        .where(eq(claims.id, claimId));
+    const orgId = role.side === "host" ? host : partner;
+    const person = role.role === "participant" ? participantUser : actor;
+    if (role.side === "partner" && !role.assigned)
+      await db
+        .delete(assignments)
+        .where(
+          and(eq(assignments.partnershipId, own), eq(assignments.userId, actor)),
+        );
+    if (role.side === "host" && (!role.assigned || role.role === "participant"))
+      await db
+        .update(projects)
+        .set({ responsibleUserId: participantUser })
+        .where(eq(projects.id, project));
+    await db
+      .update(member)
+      .set({ role: role.role })
+      .where(and(eq(member.organizationId, orgId), eq(member.userId, person)));
+    activeOrg = orgId;
+    activeActor = person;
+    try {
+      if (expected)
+        expect(await invokeMatrixProcedure(procedure, entryId)).toBeDefined();
+      else
+        await expect(
+          invokeMatrixProcedure(procedure, entryId),
+        ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    } finally {
+      activeOrg = partner;
+      activeActor = actor;
+      await db
+        .update(member)
+        .set({
+          role:
+            person === participantUser && orgId === partner
+              ? "participant"
+              : "member",
+        })
+        .where(and(eq(member.organizationId, orgId), eq(member.userId, person)));
+      if (role.side === "partner" && !role.assigned)
+        await db
+          .insert(assignments)
+          .values({ partnershipId: own, userId: actor })
+          .onConflictDoNothing();
+      if (role.side === "host" && (!role.assigned || role.role === "participant"))
+        await db
+          .update(projects)
+          .set({ responsibleUserId: actor })
+          .where(eq(projects.id, project));
+    }
+  });
+});
+
 describe("Claim submission", () => {
+  it("concurrent double-submit writes one submission history event", async () => {
+    await prepare();
+    const [first, retry] = await Promise.all([submit(), submit()]);
+    expect(retry).toEqual(first);
+    expect(
+      (
+        await db.select().from(history).where(eq(history.claimId, claimId))
+      ).filter((row) => row.eventType === "submitted"),
+    ).toHaveLength(1);
+  });
+
+  it("concurrent resubmission retries write one resubmitted event", async () => {
+    await prepare();
+    await submit();
+    await asHost();
+    await review("requestCorrection");
+    activeOrg = partner;
+    const [first, retry] = await Promise.all([submit(), submit()]);
+    expect(retry).toEqual(first);
+    expect(
+      (await events()).filter((event) => event.eventType === "resubmitted"),
+    ).toHaveLength(1);
+  });
+
   it("itemizes missing checklist items and never partially submits", async () => {
     await db.delete(selections).where(eq(selections.partnershipId, own));
     await expect(submit()).rejects.toMatchObject({
@@ -318,7 +626,10 @@ describe("Claim submission", () => {
         occurredAt: expect.any(Date),
       },
     ]);
-    await expect(submit()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await submit()).toMatchObject({
+      status: "submitted",
+      approvedAmountEur: "726.00",
+    });
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,
@@ -472,11 +783,10 @@ describe("Claim submission", () => {
       status: "submitted",
       approvedAmountEur: "102.01",
     });
-    expect(
-      (await db.select().from(history).where(eq(history.claimId, claimId))).map(
-        (event) => event.eventType,
-      ),
-    ).toEqual(["submitted", "resubmitted"]);
+    expect((await events()).map((event) => event.eventType)).toEqual([
+      "submitted",
+      "resubmitted",
+    ]);
   });
 
   it("serializes payout selection against submission without half-locked selection", async () => {
@@ -530,7 +840,139 @@ async function submittedClaim() {
   await asHost();
 }
 
+describe("Claim lock abuse", () => {
+  it.each(["submitted", "approved", "rejected", "paid"] as const)(
+    "%s blocks every Partner edit without changing Claim data or history",
+    async (status) => {
+      const { train } = await prepare("100.00");
+      await submit();
+      if (status !== "submitted") {
+        await asHost();
+        if (status === "rejected") await review("reject");
+        else {
+          const approved = await review("approve");
+          if (status === "paid")
+            await client.claims.markPaid({
+              partnershipId: own,
+              amountEur: approved.approvedAmountEur!,
+            });
+        }
+        activeOrg = partner;
+      }
+      const before = {
+        claim: await db.select().from(claims).where(eq(claims.id, claimId)),
+        selection: await db
+          .select()
+          .from(selections)
+          .where(eq(selections.partnershipId, own)),
+        costs: await db
+          .select()
+          .from(entries)
+          .where(eq(entries.claimId, claimId)),
+        history: await db
+          .select()
+          .from(history)
+          .where(eq(history.claimId, claimId)),
+        journey: await db
+          .select()
+          .from(journeys)
+          .where(eq(journeys.projectParticipantId, third)),
+      };
+      const attempts = [
+        () => client.claims.saveDraft({ partnershipId: own }),
+        () =>
+          client.claims.selectPayoutAccount({
+            partnershipId: own,
+            payoutAccountId: alternate,
+          }),
+        () =>
+          client.costs.save({
+            partnershipId: own,
+            entryId: train.id,
+            transportProfile: "train",
+            amountEur: "9.00",
+            allocationMethod: "equal",
+            allocations: [{ projectParticipantId: robin }],
+          }),
+        () =>
+          client.costs.linkDocument({
+            partnershipId: own,
+            entryId: train.id,
+            proofDocumentId: proof,
+          }),
+        () =>
+          client.journeys.save({
+            partnershipId: own,
+            projectParticipantId: third,
+            origin: "X",
+            destination: "Y",
+            tripType: "one-way",
+            erasmusDistanceKm: "800",
+          }),
+      ];
+      for (const attempt of attempts)
+        await expect(attempt()).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+          message: expect.stringMatching(/locked|editable/i),
+        });
+      expect(
+        await db.select().from(claims).where(eq(claims.id, claimId)),
+      ).toEqual(before.claim);
+      expect(
+        await db
+          .select()
+          .from(selections)
+          .where(eq(selections.partnershipId, own)),
+      ).toEqual(before.selection);
+      expect(
+        await db.select().from(entries).where(eq(entries.claimId, claimId)),
+      ).toEqual(before.costs);
+      expect(
+        await db.select().from(history).where(eq(history.claimId, claimId)),
+      ).toEqual(before.history);
+      expect(
+        await db
+          .select()
+          .from(journeys)
+          .where(eq(journeys.projectParticipantId, third)),
+      ).toEqual(before.journey);
+    },
+  );
+});
+
 describe("Host Claim review", () => {
+  it.each([
+    ["approve", "approved", "approved"],
+    ["reject", "rejected", "rejected"],
+    ["requestCorrection", "correction_requested", "correction_requested"],
+  ] as const)(
+    "retry %s records one %s decision",
+    async (action, status, event) => {
+      await submittedClaim();
+      const [first, retry] = await Promise.all([review(action), review(action)]);
+      expect(first.status).toBe(status);
+      expect(retry).toEqual(first);
+      expect(
+        (
+          await db.select().from(history).where(eq(history.claimId, claimId))
+        ).filter((row) => row.eventType === event),
+      ).toHaveLength(1);
+    },
+  );
+
+  it("concurrent reopen retries retain one reopened event", async () => {
+    await submittedClaim();
+    await review("reject");
+    const [first, retry] = await Promise.all([
+      review("reopen"),
+      review("reopen"),
+    ]);
+    expect(retry).toEqual(first);
+    expect(
+      (await events()).filter((event) => event.eventType === "reopened"),
+    ).toHaveLength(1);
+  });
+
   it("requires reasons, keeps rejected Claims readable and locked, and writes actor/time/history for every transition", async () => {
     await submittedClaim();
     await expect(
@@ -597,14 +1039,12 @@ describe("Host Claim review", () => {
     await asHost();
     expect(await review("reopen")).toMatchObject({ status: "submitted" });
     expect(
-      (await db.select().from(history).where(eq(history.claimId, claimId))).map(
-        ({ eventType, reason, actorUserId, occurredAt }) => ({
-          eventType,
-          reason,
-          actorUserId,
-          occurredAt,
-        }),
-      ),
+      (await events()).map(({ eventType, reason, actorUserId, occurredAt }) => ({
+        eventType,
+        reason,
+        actorUserId,
+        occurredAt,
+      })),
     ).toMatchObject([
       {
         eventType: "submitted",
@@ -693,11 +1133,10 @@ describe("Host Claim review", () => {
         erasmusDistanceKm: "800",
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(
-      (await db.select().from(history).where(eq(history.claimId, claimId))).map(
-        (event) => event.eventType,
-      ),
-    ).toEqual(["submitted", "approved"]);
+    expect((await events()).map((event) => event.eventType)).toEqual([
+      "submitted",
+      "approved",
+    ]);
   }, 15_000);
 
   it("denies reopen while paid and all transitions outside their source state", async () => {
@@ -783,7 +1222,11 @@ const markPaid = (amountEur: string) =>
 const correctPayment = (reason?: string) =>
   client.claims.correctPayment({ partnershipId: own, reason: reason ?? "" });
 const events = () =>
-  db.select().from(history).where(eq(history.claimId, claimId));
+  db
+    .select()
+    .from(history)
+    .where(eq(history.claimId, claimId))
+    .orderBy(asc(history.occurredAt));
 
 async function approvedClaim() {
   await submittedClaim();
@@ -792,6 +1235,65 @@ async function approvedClaim() {
 }
 
 describe("Claim payment recording", () => {
+  it("concurrent confirmed payment retries record one paid event", async () => {
+    const payable = await approvedClaim();
+    const [first, retry] = await Promise.all([
+      markPaid(payable),
+      markPaid(payable),
+    ]);
+    expect(retry).toEqual(first);
+    expect(
+      (await events()).filter((event) => event.eventType === "paid"),
+    ).toHaveLength(1);
+  });
+
+  it("correction against a concurrent payment attempt cannot unlock or partially pay", async () => {
+    const payable = await approvedClaim();
+    const [payment, correction] = await Promise.allSettled([
+      markPaid(payable),
+      review("requestCorrection", "Change payout"),
+    ]);
+    expect(payment.status).toBe("fulfilled");
+    expect(correction).toMatchObject({
+      status: "rejected",
+      reason: { code: "BAD_REQUEST" },
+    });
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("paid");
+    expect((await events()).map((event) => event.eventType)).toEqual([
+      "submitted",
+      "approved",
+      "paid",
+    ]);
+    activeOrg = partner;
+    await expect(
+      client.claims.selectPayoutAccount({
+        partnershipId: own,
+        payoutAccountId: alternate,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+  it("payment attempt against a concurrent correction request fails without a paid event", async () => {
+    await submittedClaim();
+    const [payment, correction] = await Promise.allSettled([
+      markPaid("101.01"),
+      review("requestCorrection", "Correct evidence"),
+    ]);
+    expect(payment).toMatchObject({
+      status: "rejected",
+      reason: { code: "BAD_REQUEST" },
+    });
+    expect(correction.status).toBe("fulfilled");
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("correction_requested");
+    expect((await events()).map((event) => event.eventType)).toEqual([
+      "submitted",
+      "correction_requested",
+    ]);
+  });
+
   it("rejects unpaid drafts, submissions and rejections without writing history", async () => {
     await asHost();
     await expect(markPaid("101.01")).rejects.toMatchObject({
@@ -871,6 +1373,19 @@ describe("Claim payment recording", () => {
         payoutAccountId: alternate,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("concurrent paid-flag correction retries retain one correction event", async () => {
+    const payable = await approvedClaim();
+    await markPaid(payable);
+    const [first, retry] = await Promise.all([
+      correctPayment("Transfer never sent"),
+      correctPayment("Transfer never sent"),
+    ]);
+    expect(retry).toEqual(first);
+    expect(
+      (await events()).filter((event) => event.eventType === "payment_corrected"),
+    ).toHaveLength(1);
   });
 
   it("corrects only a paid flag with a required reason, retaining both history events", async () => {
