@@ -6,6 +6,8 @@ import {
 import {
   PROJECT_SHARED_TRANSPORT_EMISSION_PROFILES,
   ProjectSharedTransportEmissionProfile,
+  PARTICIPANT_TRANSPORT_EMISSION_PROFILES,
+  type ParticipantTransportEmissionProfile,
 } from "@greendex/config/transport-emission-profiles";
 import { createId } from "@paralleldrive/cuid2";
 import { relations, sql } from "drizzle-orm";
@@ -15,6 +17,10 @@ import {
   check,
   customType,
   index,
+  integer,
+  bigint,
+  numeric,
+  primaryKey,
   pgEnum,
   pgTable,
   text,
@@ -273,6 +279,301 @@ export const projectParticipantsTable = pgTable(
     ),
   ],
 );
+
+// Claim persistence. Monetary values stay strings at the driver boundary: never
+// round exact EUR or percentage values through JavaScript floating point.
+export const claimStatusEnum = pgEnum("claim_status", [
+  "editable",
+  "submitted",
+  "correction_requested",
+  "approved",
+  "rejected",
+  "paid",
+]);
+export const journeyTripTypeEnum = pgEnum("journey_trip_type", [
+  "one-way",
+  "round-trip",
+]);
+export const costAllocationMethodEnum = pgEnum("cost_allocation_method", [
+  "equal",
+  "percentage",
+  "amount",
+]);
+export const participantTransportProfileEnum = pgEnum(
+  "participant_transport_profile",
+  PARTICIPANT_TRANSPORT_EMISSION_PROFILES,
+);
+export const claimEventTypeEnum = pgEnum("claim_event_type", [
+  "submitted",
+  "correction_requested",
+  "resubmitted",
+  "approved",
+  "rejected",
+  "reopened",
+  "paid",
+  "payment_corrected",
+]);
+
+export const participantJourneysTable = pgTable(
+  "participant_journey",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    projectParticipantId: text("project_participant_id")
+      .notNull()
+      .references(() => projectParticipantsTable.id, { onDelete: "cascade" })
+      .unique(),
+    origin: text("origin").notNull(),
+    destination: text("destination").notNull(),
+    tripType: journeyTripTypeEnum("trip_type").notNull(),
+    erasmusDistanceKm: numeric("erasmus_distance_km", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "participant_journey_distance_positive",
+      sql`${table.erasmusDistanceKm} > 0`,
+    ),
+  ],
+);
+
+/** Copy the complete configured bands on the first journey save, in the same transaction.
+ * No updater should ever modify these rows; later config versions affect only new projects.
+ */
+export const projectFundingSnapshotsTable = pgTable("project_funding_snapshot", {
+  projectId: text("project_id")
+    .primaryKey()
+    .references(() => projectsTable.id, { onDelete: "cascade" }),
+  rulesVersion: integer("rules_version").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const projectFundingBandsTable = pgTable(
+  "project_funding_band",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectFundingSnapshotsTable.projectId, {
+        onDelete: "cascade",
+      }),
+    minKm: numeric("min_km", { precision: 12, scale: 2 }).notNull(),
+    maxKm: numeric("max_km", { precision: 12, scale: 2 }).notNull(),
+    standardEur: numeric("standard_eur", { precision: 14, scale: 2 }).notNull(),
+    greenEur: numeric("green_eur", { precision: 14, scale: 2 }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("project_funding_band_project_min_unique").on(
+      table.projectId,
+      table.minKm,
+    ),
+    check(
+      "project_funding_band_range",
+      sql`${table.minKm} >= 0 and ${table.maxKm} >= ${table.minKm}`,
+    ),
+    check(
+      "project_funding_band_rates",
+      sql`${table.standardEur} >= 0 and ${table.greenEur} >= 0`,
+    ),
+  ],
+);
+
+export const payoutAccountsTable = pgTable(
+  "payout_account",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "restrict" }),
+    accountHolder: text("account_holder").notNull(),
+    iban: text("iban").notNull(),
+    bic: text("bic"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("payout_account_organization_idx").on(table.organizationId)],
+);
+
+export const partnershipPayoutAccountsTable = pgTable(
+  "partnership_payout_account",
+  {
+    partnershipId: text("partnership_id")
+      .primaryKey()
+      .references(() => projectPartnerOrganizationsTable.id, {
+        onDelete: "cascade",
+      }),
+    payoutAccountId: text("payout_account_id")
+      .notNull()
+      .references(() => payoutAccountsTable.id, { onDelete: "restrict" }),
+  },
+);
+
+export const claimsTable = pgTable(
+  "claim",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    partnershipId: text("partnership_id")
+      .notNull()
+      .references(() => projectPartnerOrganizationsTable.id, {
+        onDelete: "cascade",
+      })
+      .unique(),
+    status: claimStatusEnum("status").default("editable").notNull(),
+    approvedAmountEur: numeric("approved_amount_eur", {
+      precision: 14,
+      scale: 2,
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "claim_approved_amount_nonnegative",
+      sql`${table.approvedAmountEur} is null or ${table.approvedAmountEur} >= 0`,
+    ),
+  ],
+);
+
+export const travelCostEntriesTable = pgTable(
+  "travel_cost_entry",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    claimId: text("claim_id")
+      .notNull()
+      .references(() => claimsTable.id, { onDelete: "cascade" }),
+    transportProfile: participantTransportProfileEnum("transport_profile")
+      .$type<ParticipantTransportEmissionProfile>()
+      .notNull(),
+    amountEur: numeric("amount_eur", { precision: 14, scale: 2 }).notNull(),
+    allocationMethod: costAllocationMethodEnum("allocation_method").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("travel_cost_entry_claim_idx").on(table.claimId),
+    check("travel_cost_entry_positive", sql`${table.amountEur} > 0`),
+  ],
+);
+
+export const costAllocationsTable = pgTable(
+  "cost_allocation",
+  {
+    travelCostEntryId: text("travel_cost_entry_id")
+      .notNull()
+      .references(() => travelCostEntriesTable.id, { onDelete: "cascade" }),
+    projectParticipantId: text("project_participant_id")
+      .notNull()
+      .references(() => projectParticipantsTable.id, { onDelete: "restrict" }),
+    percentage: numeric("percentage", { precision: 12, scale: 6 }),
+    amountEur: numeric("amount_eur", { precision: 14, scale: 2 }),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.travelCostEntryId, table.projectParticipantId],
+    }),
+    index("cost_allocation_participant_idx").on(table.projectParticipantId),
+    check(
+      "cost_allocation_nonnegative",
+      sql`(${table.percentage} is null or ${table.percentage} >= 0) and (${table.amountEur} is null or ${table.amountEur} >= 0) and not (${table.percentage} is not null and ${table.amountEur} is not null)`,
+    ),
+  ],
+);
+
+export const proofDocumentsTable = pgTable(
+  "proof_document",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    claimId: text("claim_id")
+      .notNull()
+      .references(() => claimsTable.id, { onDelete: "cascade" }),
+    fileReference: text("file_reference").notNull(),
+    originalFileName: text("original_file_name").notNull(),
+    mediaType: text("media_type").notNull(),
+    byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+    checksum: text("checksum").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("proof_document_claim_idx").on(table.claimId),
+    check("proof_document_size_positive", sql`${table.byteSize} > 0`),
+  ],
+);
+
+export const travelCostEntryDocumentsTable = pgTable(
+  "travel_cost_entry_document",
+  {
+    travelCostEntryId: text("travel_cost_entry_id")
+      .notNull()
+      .references(() => travelCostEntriesTable.id, { onDelete: "cascade" }),
+    proofDocumentId: text("proof_document_id")
+      .notNull()
+      .references(() => proofDocumentsTable.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.travelCostEntryId, table.proofDocumentId] }),
+    index("travel_cost_entry_document_proof_idx").on(table.proofDocumentId),
+  ],
+);
+
+/** Only insert history events; correction is a new event, never an edit of an old one. */
+export const claimHistoryTable = pgTable(
+  "claim_history",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    claimId: text("claim_id")
+      .notNull()
+      .references(() => claimsTable.id, { onDelete: "restrict" }),
+    eventType: claimEventTypeEnum("event_type").notNull(),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+    reason: text("reason"),
+  },
+  (table) => [
+    index("claim_history_claim_time_idx").on(table.claimId, table.occurredAt),
+    check(
+      "claim_history_reason_required",
+      sql`${table.eventType} not in ('correction_requested', 'rejected', 'payment_corrected') or (nullif(trim(${table.reason}), '') is not null)`,
+    ),
+  ],
+);
+
+/** Deferred to procedure transactions: first journey + complete immutable funding snapshot;
+ * payout account organization = partnership organization and locked after submission;
+ * allocations match the entry method and total, and covered participations match both
+ * project and partner organization; documents and entries share a Claim and each entry
+ * has evidence; submission requires complete journeys, evidence and a payout account.
+ * UI reads must not create Claims. History writes accompany every state transition.
+ */
 
 // ============================================================================
 // RELATIONS
