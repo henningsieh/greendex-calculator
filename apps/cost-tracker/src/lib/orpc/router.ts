@@ -40,6 +40,13 @@ import {
   listPartner,
 } from "@/features/projects/procedures/projects";
 import {
+  approve,
+  getHistory,
+  reject,
+  reopen,
+  requestCorrection,
+} from "@/features/projects/procedures/review";
+import {
   consumeSetupLink,
   createSetupLink,
   disableSetupLink,
@@ -57,7 +64,17 @@ export const router = {
   },
   participantOnboarding,
   participations,
-  claims: { getDraft, saveDraft, selectPayoutAccount, submit },
+  claims: {
+    getDraft,
+    saveDraft,
+    selectPayoutAccount,
+    submit,
+    getHistory,
+    requestCorrection,
+    approve,
+    reject,
+    reopen,
+  },
   costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
   journeys: { list: listJourneys, save: saveJourney },
   projects: {

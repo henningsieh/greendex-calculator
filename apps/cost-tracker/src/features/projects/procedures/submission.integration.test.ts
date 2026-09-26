@@ -93,6 +93,27 @@ beforeAll(async () => {
     {
       id: randomUUID(),
       userId: actor,
+      organizationId: host,
+      role: "member",
+      createdAt: now,
+    },
+    {
+      id: randomUUID(),
+      userId: participantUser,
+      organizationId: host,
+      role: "member",
+      createdAt: now,
+    },
+    {
+      id: randomUUID(),
+      userId: actor,
+      organizationId: other,
+      role: "member",
+      createdAt: now,
+    },
+    {
+      id: randomUUID(),
+      userId: actor,
       organizationId: partner,
       role: "member",
       createdAt: now,
@@ -163,7 +184,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   activeOrg = partner;
   activeActor = actor;
-  await db.delete(history).where(eq(history.actorUserId, actor));
+  if (claimId) await db.delete(history).where(eq(history.claimId, claimId));
   await db.delete(claims).where(eq(claims.partnershipId, own));
   await db.delete(selections).where(eq(selections.partnershipId, own));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, robin));
@@ -177,7 +198,7 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(history).where(eq(history.actorUserId, actor));
+  await db.delete(history).where(eq(history.claimId, claimId));
   await db.delete(claims).where(eq(claims.partnershipId, own));
   await db.delete(selections).where(eq(selections.partnershipId, own));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, robin));
@@ -188,7 +209,8 @@ afterAll(async () => {
   await db.delete(assignments).where(eq(assignments.partnershipId, own));
   await db.delete(partnerships).where(eq(partnerships.projectId, project));
   await db.delete(projects).where(eq(projects.id, project));
-  await db.delete(member).where(eq(member.organizationId, partner));
+  for (const org of [other, partner, host])
+    await db.delete(member).where(eq(member.organizationId, org));
   for (const org of [other, partner, host])
     await db.delete(organization).where(eq(organization.id, org));
   for (const person of [participantUser, actor])
@@ -483,4 +505,275 @@ describe("Claim submission", () => {
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
+});
+
+const review = (
+  action: "requestCorrection" | "approve" | "reject" | "reopen",
+  reason?: string,
+) =>
+  action === "requestCorrection" || action === "reject"
+    ? client.claims[action]({ partnershipId: own, reason: reason ?? "Reason" })
+    : client.claims[action]({ partnershipId: own });
+
+async function asHost(role = "member", userId = actor) {
+  activeOrg = host;
+  activeActor = userId;
+  await db
+    .update(member)
+    .set({ role })
+    .where(and(eq(member.organizationId, host), eq(member.userId, userId)));
+}
+
+async function submittedClaim() {
+  await prepare("100.01");
+  await submit();
+  await asHost();
+}
+
+describe("Host Claim review", () => {
+  it("requires reasons, keeps rejected Claims readable and locked, and writes actor/time/history for every transition", async () => {
+    await submittedClaim();
+    await expect(
+      client.claims.requestCorrection({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(review("requestCorrection", "  ")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(await review("requestCorrection", "  Fix proof  ")).toMatchObject({
+      status: "correction_requested",
+    });
+    activeOrg = partner;
+    await client.claims.selectPayoutAccount({
+      partnershipId: own,
+      payoutAccountId: alternate,
+    });
+    const change = await client.costs.save({
+      partnershipId: own,
+      transportProfile: "train",
+      amountEur: "1.00",
+      allocationMethod: "equal",
+      allocations: [{ projectParticipantId: robin }],
+    });
+    await client.costs.linkDocument({
+      partnershipId: own,
+      entryId: change.id,
+      proofDocumentId: proof,
+    });
+    await submit();
+    await asHost();
+    await expect(
+      client.claims.reject({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(review("reject", "   ")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(await review("reject", "  Ineligible  ")).toMatchObject({
+      status: "rejected",
+    });
+    activeOrg = partner;
+    expect(await client.claims.getDraft({ partnershipId: own })).toMatchObject({
+      status: "rejected",
+    });
+    expect(await client.claims.getHistory({ partnershipId: own })).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "rejected",
+          reason: "Ineligible",
+          actorUserId: actor,
+          occurredAt: expect.any(Date),
+        }),
+      ]),
+    );
+    await expect(
+      client.claims.saveDraft({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(submit()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.claims.selectPayoutAccount({
+        partnershipId: own,
+        payoutAccountId: account,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await asHost();
+    expect(await review("reopen")).toMatchObject({ status: "submitted" });
+    expect(
+      (await db.select().from(history).where(eq(history.claimId, claimId))).map(
+        ({ eventType, reason, actorUserId, occurredAt }) => ({
+          eventType,
+          reason,
+          actorUserId,
+          occurredAt,
+        }),
+      ),
+    ).toMatchObject([
+      {
+        eventType: "submitted",
+        actorUserId: actor,
+        occurredAt: expect.any(Date),
+      },
+      {
+        eventType: "correction_requested",
+        reason: "Fix proof",
+        actorUserId: actor,
+        occurredAt: expect.any(Date),
+      },
+      {
+        eventType: "resubmitted",
+        actorUserId: actor,
+        occurredAt: expect.any(Date),
+      },
+      {
+        eventType: "rejected",
+        reason: "Ineligible",
+        actorUserId: actor,
+        occurredAt: expect.any(Date),
+      },
+      { eventType: "reopened", actorUserId: actor, occurredAt: expect.any(Date) },
+    ]);
+    activeOrg = partner;
+    await expect(
+      client.claims.saveDraft({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(submit()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  }, 15_000);
+
+  it("cannot approve incomplete or unsubmitted Claims, confirms submitted payable and permanently locks Partner editing", async () => {
+    await asHost();
+    await expect(review("approve")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    activeOrg = partner;
+    await prepare("100.01");
+    await asHost();
+    await expect(review("approve")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    await db
+      .update(claims)
+      .set({ status: "submitted", approvedAmountEur: null })
+      .where(eq(claims.id, claimId));
+    await expect(review("approve")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    await db
+      .update(claims)
+      .set({ status: "editable" })
+      .where(eq(claims.id, claimId));
+    activeOrg = partner;
+    const submitted = await submit();
+    await asHost();
+    expect(await review("approve")).toMatchObject({
+      status: "approved",
+      approvedAmountEur: submitted.approvedAmountEur,
+    });
+    await expect(review("requestCorrection")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    activeOrg = partner;
+    await expect(
+      client.claims.saveDraft({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.costs.save({
+        partnershipId: own,
+        transportProfile: "train",
+        amountEur: "1.00",
+        allocationMethod: "equal",
+        allocations: [{ projectParticipantId: robin }],
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.journeys.save({
+        partnershipId: own,
+        projectParticipantId: third,
+        origin: "X",
+        destination: "Y",
+        tripType: "one-way",
+        erasmusDistanceKm: "800",
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(
+      (await db.select().from(history).where(eq(history.claimId, claimId))).map(
+        (event) => event.eventType,
+      ),
+    ).toEqual(["submitted", "approved"]);
+  }, 15_000);
+
+  it("denies reopen while paid and all transitions outside their source state", async () => {
+    await submittedClaim();
+    await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await review("reject");
+    await db.update(claims).set({ status: "paid" }).where(eq(claims.id, claimId));
+    await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("paid");
+  }, 15_000);
+
+  it("enforces the Hosting role matrix on every review action and every Partnership", async () => {
+    await submittedClaim();
+    const actions = ["requestCorrection", "approve", "reject", "reopen"] as const;
+    for (const role of ["owner", "admin", "member", "project-coordinator"]) {
+      await asHost(role);
+      for (const action of actions) {
+        await db
+          .update(claims)
+          .set({
+            status: action === "reopen" ? "rejected" : "submitted",
+            approvedAmountEur: "101.01",
+          })
+          .where(eq(claims.id, claimId));
+        expect(await review(action)).toMatchObject({
+          status:
+            action === "requestCorrection"
+              ? "correction_requested"
+              : action === "reopen"
+                ? "submitted"
+                : action === "approve"
+                  ? "approved"
+                  : "rejected",
+        });
+      }
+    }
+    for (const role of ["member", "project-coordinator"]) {
+      await asHost(role, participantUser);
+      for (const action of actions) {
+        await db
+          .update(claims)
+          .set({ status: action === "reopen" ? "rejected" : "submitted" })
+          .where(eq(claims.id, claimId));
+        await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      }
+    }
+    await asHost("member", participantUser);
+    for (const action of actions) {
+      await db
+        .update(claims)
+        .set({ status: action === "reopen" ? "rejected" : "submitted" })
+        .where(eq(claims.id, claimId));
+      await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    for (const org of [partner, other]) {
+      activeOrg = org;
+      activeActor = actor;
+      for (const action of actions)
+        await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        client.claims.getHistory({ partnershipId: foreign }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    activeOrg = partner;
+    activeActor = participantUser;
+    for (const action of actions)
+      await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      client.claims.getHistory({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await asHost("member");
+    for (const action of actions)
+      await expect(
+        client.claims[action]({ partnershipId: foreign, reason: "Reason" }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  }, 15_000);
 });
