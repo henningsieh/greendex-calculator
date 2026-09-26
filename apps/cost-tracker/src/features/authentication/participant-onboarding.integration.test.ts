@@ -215,6 +215,26 @@ afterAll(async () => {
 });
 
 describe("Participant onboarding procedures", () => {
+  it("separately gates missing profile and stale agreement before listing Participations", async () => {
+    actor = recipient;
+    await expect(
+      client.participantOnboarding.listMyProjects(),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "Complete your Participant profile before accessing Projects.",
+    });
+    await client.participantOnboarding.saveProfile({ fullName: "Recipient" });
+    await expect(
+      client.participantOnboarding.listMyProjects(),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message:
+        "Accept the current Participant agreement before accessing Projects.",
+    });
+    await client.participantOnboarding.acceptAgreement({ accepted: true });
+    expect(await client.participantOnboarding.listMyProjects()).toEqual([]);
+  });
+
   it("joins through a reusable link, gates Projects on the current agreement, and preserves earlier acceptance", async () => {
     const link = await client.participantOnboarding.createRegistrationLink({
       partnershipId: partnership,
@@ -233,12 +253,18 @@ describe("Participant onboarding procedures", () => {
         participationId: joined.participationId,
         projectId: project,
         projectName: "Project",
+        representedOrganizationName: "Partner",
+        hostingOrganizationName: "Host",
       },
     ]);
     version = { id: "fixture-agreement-v2", contentHash: "fixture-hash-v2" };
     await expect(
       client.participantOnboarding.listMyProjects(),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message:
+        "Accept the current Participant agreement before accessing Projects.",
+    });
     await client.participantOnboarding.acceptAgreement({ accepted: true });
     expect(await client.participantOnboarding.listMyProjects()).toHaveLength(1);
     expect(

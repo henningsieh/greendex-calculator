@@ -7,6 +7,7 @@ import {
   claimsTable,
   invitation,
   member,
+  organization,
   participantAgreementAcceptancesTable as acceptances,
   participantInvitationBridgesTable as bridges,
   participantProfilesTable as profiles,
@@ -17,6 +18,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import {
@@ -683,6 +685,8 @@ export function createParticipantOnboardingProcedures(
       });
     });
 
+  const representedOrganization = alias(organization, "represented_organization");
+  const hostingOrganization = alias(organization, "hosting_organization");
   const listMyProjects = authorized
     .output(
       z.array(
@@ -690,6 +694,8 @@ export function createParticipantOnboardingProcedures(
           participationId: z.string(),
           projectId: z.string(),
           projectName: z.string(),
+          representedOrganizationName: z.string(),
+          hostingOrganizationName: z.string(),
         }),
       ),
     )
@@ -709,23 +715,36 @@ export function createParticipantOnboardingProcedures(
         .where(eq(acceptances.userId, context.user.id))
         .orderBy(desc(acceptances.acceptedAt), desc(acceptances.id))
         .limit(1);
+      if (!profile)
+        throw errors.FORBIDDEN({
+          message: "Complete your Participant profile before accessing Projects.",
+        });
       if (
-        !profile ||
         latest?.version !== version.id ||
         latest.contentHash !== version.contentHash
       )
         throw errors.FORBIDDEN({
           message:
-            "Complete your profile and accept the current agreement before accessing Projects.",
+            "Accept the current Participant agreement before accessing Projects.",
         });
       return db
         .select({
           participationId: participants.id,
           projectId: projects.id,
           projectName: projects.name,
+          representedOrganizationName: representedOrganization.name,
+          hostingOrganizationName: hostingOrganization.name,
         })
         .from(participants)
         .innerJoin(projects, eq(projects.id, participants.projectId))
+        .innerJoin(
+          representedOrganization,
+          eq(representedOrganization.id, participants.representedOrganizationId),
+        )
+        .innerJoin(
+          hostingOrganization,
+          eq(hostingOrganization.id, projects.organizationId),
+        )
         .innerJoin(
           member,
           and(
