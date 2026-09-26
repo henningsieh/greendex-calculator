@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { ProjectPartnershipManager } from "@/features/projects/components/project-partnership-manager";
+import { SetupLinkCreator } from "@/features/projects/components/setup-link";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
@@ -36,6 +37,10 @@ export default async function PartnerOrganizationsPage() {
           Organization and manage those Project Partnerships.
         </p>
       </header>
+
+      <section className="mt-10">
+        <SetupLinkCreator />
+      </section>
 
       <HydrateClient client={queryClient}>
         <ProjectDataErrorBoundary resource="Project Partnerships">
