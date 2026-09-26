@@ -10,6 +10,11 @@ import {
   updateUser,
 } from "@/features/authentication/procedures";
 import {
+  getDraft,
+  saveDraft,
+  selectPayoutAccount,
+} from "@/features/projects/procedures/claims";
+import {
   assignPartnerCoordinator,
   removePartnerCoordinator,
 } from "@/features/projects/procedures/coordination";
@@ -42,6 +47,7 @@ export const router = {
   },
   participantOnboarding,
   participations,
+  claims: { getDraft, saveDraft, selectPayoutAccount },
   projects: {
     get: getProject,
     listHosted,
