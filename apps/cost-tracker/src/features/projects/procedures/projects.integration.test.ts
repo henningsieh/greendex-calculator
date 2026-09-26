@@ -4,6 +4,8 @@ import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
+  claimsTable,
+  member,
   organization,
   projectPartnerOrganizationsTable,
   projectsTable,
@@ -34,6 +36,285 @@ import { PROJECT_SORT_MODES } from "@/features/projects/project-list-query-optio
 import { router } from "@/lib/orpc/router";
 
 describe("projects procedures", () => {
+  describe("derived readiness and completion", () => {
+    const suffix = randomUUID();
+    const id = (name: string) => `readiness-${name}-${suffix}`;
+    const actor = id("actor");
+    const otherUser = id("other-user");
+    const host = id("host");
+    const partnerIds = [id("partner-a"), id("partner-b"), id("partner-c")];
+    const projectId = id("project");
+    const secondProjectId = id("other-project");
+    const partnershipIds = [id("link-a"), id("link-b"), id("link-c")];
+    const otherPartnershipId = id("other-link");
+    const client = createRouterClient(router, {
+      context: async () => ({ headers: new Headers() }),
+    });
+    const complete = () => client.projects.complete({ projectId });
+    const setClaim = async (
+      index: number,
+      status:
+        | "editable"
+        | "submitted"
+        | "correction_requested"
+        | "approved"
+        | "rejected"
+        | "paid",
+    ) => {
+      await db
+        .insert(claimsTable)
+        .values({ partnershipId: partnershipIds[index]!, status })
+        .onConflictDoUpdate({
+          target: claimsTable.partnershipId,
+          set: { status },
+        });
+    };
+    const useSession = (organizationId: string) => {
+      authMocks.getSession.mockResolvedValue({
+        session: {
+          id: randomUUID(),
+          userId: actor,
+          activeOrganizationId: organizationId,
+        },
+        user: {
+          id: actor,
+          name: "Readiness actor",
+          email: `${actor}@example.org`,
+        },
+      });
+    };
+
+    beforeAll(async () => {
+      const now = new Date();
+      await db.insert(user).values(
+        [actor, otherUser].map((userId) => ({
+          id: userId,
+          name: "Readiness actor",
+          email: `${userId}@example.org`,
+          emailVerified: true,
+        })),
+      );
+      await db.insert(organization).values(
+        [host, ...partnerIds].map((org) => ({
+          id: org,
+          name: org,
+          slug: org,
+          createdAt: now,
+        })),
+      );
+      await db.insert(member).values(
+        [host, ...partnerIds].map((org) => ({
+          id: randomUUID(),
+          organizationId: org,
+          userId: actor,
+          role: "owner",
+          createdAt: now,
+        })),
+      );
+      await db.insert(projectsTable).values(
+        [projectId, secondProjectId].map((project) => ({
+          id: project,
+          name: project,
+          startDate: now,
+          endDate: now,
+          location: "Riga",
+          country: "LV" as const,
+          responsibleUserId: actor,
+          organizationId: host,
+        })),
+      );
+      await db.insert(projectPartnerOrganizationsTable).values([
+        ...partnershipIds.map((link, index) => ({
+          id: link,
+          projectId,
+          organizationId: partnerIds[index]!,
+        })),
+        {
+          id: otherPartnershipId,
+          projectId: secondProjectId,
+          organizationId: partnerIds[0]!,
+        },
+      ]);
+    });
+    beforeEach(async () => {
+      vi.clearAllMocks();
+      authMocks.hasPermission.mockResolvedValue({ success: true });
+      useSession(host);
+      await db
+        .delete(claimsTable)
+        .where(
+          inArray(claimsTable.partnershipId, [
+            ...partnershipIds,
+            otherPartnershipId,
+          ]),
+        );
+      await db
+        .update(member)
+        .set({ role: "owner" })
+        .where(eq(member.organizationId, host));
+    });
+    afterAll(async () => {
+      await db
+        .delete(claimsTable)
+        .where(
+          inArray(claimsTable.partnershipId, [
+            ...partnershipIds,
+            otherPartnershipId,
+          ]),
+        );
+      await db
+        .delete(projectPartnerOrganizationsTable)
+        .where(
+          inArray(projectPartnerOrganizationsTable.id, [
+            ...partnershipIds,
+            otherPartnershipId,
+          ]),
+        );
+      await db
+        .delete(projectsTable)
+        .where(inArray(projectsTable.id, [projectId, secondProjectId]));
+      await db.delete(member).where(eq(member.userId, actor));
+      await db
+        .delete(organization)
+        .where(inArray(organization.id, [host, ...partnerIds]));
+      await db.delete(user).where(inArray(user.id, [actor, otherUser]));
+    });
+
+    it("derives each Partnership's Claim state without mixing Projects or exposing other Partners", async () => {
+      await setClaim(0, "correction_requested");
+      await setClaim(1, "approved");
+      await setClaim(2, "paid");
+      await db
+        .insert(claimsTable)
+        .values({ partnershipId: otherPartnershipId, status: "rejected" });
+      const hosted = await client.projects.get({ projectId });
+      expect(hosted.relationship).toBe("hosted");
+      if (hosted.relationship !== "hosted")
+        throw new Error("Expected hosted Project");
+      expect(
+        hosted.partnerOrganizations.map((partner) => [
+          partner.organizationId,
+          partner.claimStatus,
+        ]),
+      ).toEqual([
+        [partnerIds[0], "correction_requested"],
+        [partnerIds[1], "approved"],
+        [partnerIds[2], "paid"],
+      ]);
+      useSession(partnerIds[0]!);
+      const partner = await client.projects.get({ projectId });
+      expect(partner.relationship).toBe("partner");
+      if (partner.relationship !== "partner")
+        throw new Error("Expected Partner Project");
+      expect(partner.partnership.claimStatus).toBe("correction_requested");
+      expect(partner).not.toHaveProperty("partnerOrganizations");
+
+      await setClaim(0, "rejected");
+      const updated = await client.projects.get({ projectId });
+      expect(updated.relationship).toBe("partner");
+      if (updated.relationship !== "partner")
+        throw new Error("Expected Partner Project");
+      expect(updated.partnership.claimStatus).toBe("rejected");
+    });
+
+    it.each([
+      "editable",
+      "submitted",
+      "correction_requested",
+      "approved",
+    ] as const)("blocks %s with the Partnership named", async (status) => {
+      await setClaim(0, status);
+      await setClaim(1, "paid");
+      await setClaim(2, "rejected");
+      await expect(complete()).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: expect.stringContaining(partnerIds[0]),
+      });
+    });
+
+    it("names claimless Partnerships even alongside non-terminal Claims", async () => {
+      const claimless = await client.projects.get({ projectId });
+      expect(claimless.relationship).toBe("hosted");
+      if (claimless.relationship !== "hosted")
+        throw new Error("Expected hosted Project");
+      expect(
+        claimless.partnerOrganizations.map(({ claimStatus }) => claimStatus),
+      ).toEqual([null, null, null]);
+      await setClaim(0, "submitted");
+      await setClaim(1, "paid");
+      await expect(complete()).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: expect.stringContaining(partnerIds[2]),
+      });
+      await expect(complete()).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: expect.stringContaining("no Claim"),
+      });
+    });
+
+    it("completes when every Partnership is paid or rejected, independently of another Project", async () => {
+      await setClaim(0, "paid");
+      await setClaim(1, "rejected");
+      await setClaim(2, "paid");
+      expect(await complete()).toEqual({ projectId, completed: true });
+    });
+
+    it.each(["owner", "admin", "project-coordinator", "member"])(
+      "allows Hosting %s (legacy assigned member coordinator)",
+      async (role) => {
+        await db
+          .update(member)
+          .set({ role })
+          .where(eq(member.organizationId, host));
+        await setClaim(0, "paid");
+        await setClaim(1, "rejected");
+        await setClaim(2, "paid");
+        if (role === "owner" || role === "admin") {
+          await db
+            .update(projectsTable)
+            .set({ responsibleUserId: otherUser })
+            .where(eq(projectsTable.id, projectId));
+        }
+        try {
+          expect(await complete()).toEqual({ projectId, completed: true });
+        } finally {
+          await db
+            .update(projectsTable)
+            .set({ responsibleUserId: actor })
+            .where(eq(projectsTable.id, projectId));
+        }
+      },
+    );
+
+    it.each(["member", "participant", "project-coordinator"])(
+      "denies Hosting %s without assignment",
+      async (role) => {
+        await db
+          .update(member)
+          .set({ role })
+          .where(eq(member.organizationId, host));
+        await db
+          .update(projectsTable)
+          .set({ responsibleUserId: otherUser })
+          .where(eq(projectsTable.id, projectId));
+        try {
+          await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
+        } finally {
+          await db
+            .update(projectsTable)
+            .set({ responsibleUserId: actor })
+            .where(eq(projectsTable.id, projectId));
+        }
+      },
+    );
+
+    it("denies Partner-side and unauthenticated completion", async () => {
+      useSession(partnerIds[0]!);
+      await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      authMocks.getSession.mockResolvedValue(null);
+      await expect(complete()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    });
+  });
   describe("get", () => {
     const suffix = randomUUID();
     const userId = `detail-user-${suffix}`;

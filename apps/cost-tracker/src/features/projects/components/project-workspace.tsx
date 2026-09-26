@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectListReturnDestination } from "@/features/projects/project-list-query-options";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import type { Outputs } from "@/lib/orpc/router";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "long",
@@ -19,6 +20,28 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   timeStyle: "short",
   timeZone: "UTC",
 });
+
+type ClaimStatus = Extract<
+  Outputs["projects"]["get"],
+  { relationship: "hosted" }
+>["partnerOrganizations"][number]["claimStatus"];
+
+const readinessLabels: Record<NonNullable<ClaimStatus>, string> = {
+  editable: "Active Claim · editable",
+  submitted: "Submitted",
+  correction_requested: "Correction requested",
+  approved: "Approved · unpaid",
+  rejected: "Rejected",
+  paid: "Paid",
+};
+
+function ClaimReadiness({ status }: { status: ClaimStatus }) {
+  return (
+    <Badge variant="secondary">
+      {status ? readinessLabels[status] : "No Claim"}
+    </Badge>
+  );
+}
 
 export function ProjectWorkspace({
   projectId,
@@ -118,8 +141,11 @@ export function ProjectWorkspace({
                       />
                       {partner.organizationName}
                     </span>
-                    <span className="text-sm text-muted-foreground">
-                      Assigned {dateTimeFormatter.format(partner.assignedAt)}
+                    <span className="flex flex-wrap items-center gap-3">
+                      <ClaimReadiness status={partner.claimStatus} />
+                      <span className="text-sm text-muted-foreground">
+                        Assigned {dateTimeFormatter.format(partner.assignedAt)}
+                      </span>
                     </span>
                   </li>
                 ))}
@@ -139,6 +165,10 @@ export function ProjectWorkspace({
             <CardTitle>Project Partnership</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
+            <p>
+              <span className="text-muted-foreground">Claim readiness:</span>{" "}
+              <ClaimReadiness status={project.partnership.claimStatus} />
+            </p>
             <p>
               <span className="text-muted-foreground">Hosting Organization:</span>{" "}
               {project.hostingOrganization.name}

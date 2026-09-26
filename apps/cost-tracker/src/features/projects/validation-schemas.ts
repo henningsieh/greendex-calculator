@@ -1,4 +1,7 @@
-import { projectPartnerOrganizationsTable } from "@greendex/database/schema";
+import {
+  claimsTable,
+  projectPartnerOrganizationsTable,
+} from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -113,7 +116,10 @@ const ProjectDetailBaseSchema = z.object({
   costSubmissionWindowOpen: z.boolean(),
 });
 
+const ProjectClaimStatusSchema = createSelectSchema(claimsTable).shape.status;
+
 const ProjectPartnershipSummarySchema = z.object({
+  claimStatus: ProjectClaimStatusSchema.nullable(),
   id: z.string(),
   organizationId: z.string(),
   organizationName: z.string(),
@@ -130,6 +136,7 @@ export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
     relationship: z.literal("partner"),
     hostingOrganization: z.object({ id: z.string(), name: z.string() }),
     partnership: z.object({
+      claimStatus: ProjectClaimStatusSchema.nullable(),
       id: z.string(),
       assignedAt: z.date(),
       updatedAt: z.date(),

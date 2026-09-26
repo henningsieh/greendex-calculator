@@ -36,6 +36,7 @@ import {
 import { correctPayment, markPaid } from "@/features/projects/procedures/payment";
 import {
   availableScopes,
+  complete,
   getProject,
   listHosted,
   listPartner,
@@ -82,6 +83,7 @@ export const router = {
   journeys: { list: listJourneys, save: saveJourney },
   projects: {
     get: getProject,
+    complete,
     listHosted,
     listPartner,
     scopes: availableScopes,

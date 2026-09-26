@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,6 +90,7 @@ describe("Project workspace", () => {
           id: "partnership-1",
           organizationId: "partner-1",
           organizationName: "Mobility Group",
+          claimStatus: null,
           assignedAt: new Date("2026-05-01T10:00:00.000Z"),
           updatedAt: new Date("2026-05-01T10:00:00.000Z"),
         },
@@ -107,6 +108,42 @@ describe("Project workspace", () => {
     expect(screen.queryByText(/Cost Submission$/)).toBeNull();
   });
 
+  it("renders each hosted Partnership's derived readiness independently", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      partnerOrganizations: [
+        ["Mobility Group", "correction_requested"],
+        ["Civic Union", "approved"],
+        ["Green Society", "paid"],
+        ["Arts Circle", "rejected"],
+        ["Future Collective", "submitted"],
+        ["Open Partnership", null],
+        ["New Claim", "editable"],
+      ].map(([organizationName, claimStatus], index) => ({
+        id: `partnership-${index}`,
+        organizationName,
+        claimStatus,
+        assignedAt: new Date("2026-05-01T10:00:00.000Z"),
+      })),
+    };
+    renderWorkspace();
+    await screen.findByText("Mobility Group");
+    for (const [name, status] of [
+      ["Mobility Group", "Correction requested"],
+      ["Civic Union", "Approved · unpaid"],
+      ["Green Society", "Paid"],
+      ["Arts Circle", "Rejected"],
+      ["Future Collective", "Submitted"],
+      ["Open Partnership", "No Claim"],
+      ["New Claim", "Active Claim · editable"],
+    ]) {
+      expect(
+        within(screen.getByText(name).closest("li")!).getByText(status),
+      ).toBeTruthy();
+    }
+  });
+
   it("renders only the active Partner assignment and Hosting identity", async () => {
     mocks.detail = {
       ...baseProject,
@@ -114,6 +151,7 @@ describe("Project workspace", () => {
       hostingOrganization: { id: "host-1", name: "Hosting Group" },
       partnership: {
         id: "partnership-1",
+        claimStatus: "submitted",
         assignedAt: new Date("2026-05-01T10:00:00.000Z"),
         updatedAt: new Date("2026-05-02T10:00:00.000Z"),
       },
@@ -121,6 +159,7 @@ describe("Project workspace", () => {
     renderWorkspace();
 
     expect(await screen.findByText("Hosting Group")).toBeTruthy();
+    expect(screen.getByText("Submitted")).toBeTruthy();
     expect(screen.queryByText("Assigned Partner Organizations")).toBeNull();
     expect(screen.queryByText(/EUR|Proof Document|Participant/i)).toBeNull();
   });

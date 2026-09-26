@@ -1,6 +1,9 @@
 import "server-only";
+import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
+  claimsTable,
+  member,
   organization,
   projectPartnerOrganizationsTable,
   projectsTable,
@@ -21,6 +24,7 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
+import { z } from "zod";
 
 import {
   decodeProjectListCursor,
@@ -691,11 +695,18 @@ export const getProject = authorized
         });
       }
 
+      const [claim] = await db
+        .select({ status: claimsTable.status })
+        .from(claimsTable)
+        .where(eq(claimsTable.partnershipId, relationship.partnershipId))
+        .limit(1);
+
       return {
         ...project,
         relationship: "partner" as const,
         hostingOrganization: relationship.hostingOrganization,
         partnership: {
+          claimStatus: claim?.status ?? null,
           id: relationship.partnershipId,
           assignedAt: relationship.assignedAt,
           updatedAt: relationship.assignmentUpdatedAt,
@@ -734,11 +745,16 @@ export const getProject = authorized
           organizationName: organization.name,
           assignedAt: projectPartnerOrganizationsTable.createdAt,
           updatedAt: projectPartnerOrganizationsTable.updatedAt,
+          claimStatus: claimsTable.status,
         })
         .from(projectPartnerOrganizationsTable)
         .innerJoin(
           organization,
           eq(organization.id, projectPartnerOrganizationsTable.organizationId),
+        )
+        .leftJoin(
+          claimsTable,
+          eq(claimsTable.partnershipId, projectPartnerOrganizationsTable.id),
         )
         .where(eq(projectPartnerOrganizationsTable.projectId, hostedProject.id))
         .orderBy(asc(organization.name), asc(organization.id));
@@ -749,4 +765,81 @@ export const getProject = authorized
       relationship: "hosted" as const,
       partnerOrganizations,
     };
+  });
+
+/** Completion is a fresh, derived gate; it does not persist a manual Project phase. */
+export const complete = authorized
+  .input(ProjectDetailInputSchema)
+  .output(z.object({ projectId: z.string(), completed: z.literal(true) }))
+  .handler(async ({ input, context, errors }) => {
+    const orgId = context.session.activeOrganizationId;
+    if (!orgId) throw errors.FORBIDDEN();
+
+    return db.transaction(async (tx) => {
+      const [project] = await tx
+        .select({
+          id: projectsTable.id,
+          responsibleUserId: projectsTable.responsibleUserId,
+        })
+        .from(projectsTable)
+        .where(
+          and(
+            eq(projectsTable.id, input.projectId),
+            eq(projectsTable.organizationId, orgId),
+            eq(projectsTable.archived, false),
+          ),
+        )
+        .for("share")
+        .limit(1);
+      if (!project)
+        throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
+      const [actor] = await tx
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.organizationId, orgId),
+            eq(member.userId, context.user.id),
+          ),
+        )
+        .limit(1);
+      if (
+        !actor ||
+        !(
+          hasOrganizationRole(actor.role, "owner") ||
+          hasOrganizationRole(actor.role, "admin") ||
+          (project.responsibleUserId === context.user.id &&
+            actor.role
+              .split(",")
+              .some((role) =>
+                ["member", "project-coordinator"].includes(role.trim()),
+              ))
+        )
+      )
+        throw errors.FORBIDDEN({
+          message: "Only assigned Hosting staff may complete this Project.",
+        });
+
+      const partnerships = await tx
+        .select({ name: organization.name, status: claimsTable.status })
+        .from(projectPartnerOrganizationsTable)
+        .innerJoin(
+          organization,
+          eq(organization.id, projectPartnerOrganizationsTable.organizationId),
+        )
+        .leftJoin(
+          claimsTable,
+          eq(claimsTable.partnershipId, projectPartnerOrganizationsTable.id),
+        )
+        .where(eq(projectPartnerOrganizationsTable.projectId, project.id))
+        .orderBy(asc(organization.name), asc(organization.id));
+      const blockers = partnerships.filter(
+        ({ status }) => status !== "paid" && status !== "rejected",
+      );
+      if (blockers.length)
+        throw errors.BAD_REQUEST({
+          message: `Cannot complete Project: ${blockers.map(({ name, status }) => `${name} (${status ?? "no Claim"})`).join(", ")}.`,
+        });
+      return { projectId: project.id, completed: true as const };
+    });
   });
