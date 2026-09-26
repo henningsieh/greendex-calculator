@@ -24,6 +24,7 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
+import { requirePartnerCoordination } from "@/features/projects/procedures/coordination";
 import { auth } from "@/lib/auth";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -138,13 +139,24 @@ export function createParticipantOnboardingProcedures(
       (partnership.responsibleUserId === userId &&
         activeOrganizationId === partnership.hostId &&
         roles.some(
-          ({ organizationId }) => organizationId === partnership.hostId,
+          ({ organizationId, role }) =>
+            organizationId === partnership.hostId &&
+            role
+              .split(",")
+              .some((value) =>
+                ["owner", "admin", "member", "project-coordinator"].includes(
+                  value.trim(),
+                ),
+              ),
         ));
-    // Coordinator assignment persistence is owned by #166; widen this guard when it lands.
-    if (!permitted)
-      throw errors.FORBIDDEN({
-        message: "Only authorized Partnership staff may manage onboarding.",
-      });
+    if (!permitted) {
+      await requirePartnerCoordination(
+        partnershipId,
+        userId,
+        activeOrganizationId,
+        errors,
+      );
+    }
     return {
       ...partnership,
       hostCanInvite:

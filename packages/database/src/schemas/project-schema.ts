@@ -212,6 +212,23 @@ export const projectPartnerOrganizationsTable = pgTable(
   ],
 );
 
+/** Explicit Partner-side coordination assignment; membership alone is not authority. */
+export const partnerCoordinatorAssignmentsTable = pgTable(
+  "partner_coordinator_assignment",
+  {
+    partnershipId: text("partnership_id")
+      .notNull()
+      .references(() => projectPartnerOrganizationsTable.id, {
+        onDelete: "cascade",
+      }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.partnershipId, table.userId] })],
+);
+
 /** App-owned, email-specific invitation to set up a Project Partnership. */
 export const partnerOrganizationSetupLinksTable = pgTable(
   "partner_organization_setup_link",

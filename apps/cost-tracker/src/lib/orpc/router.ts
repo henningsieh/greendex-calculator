@@ -10,6 +10,11 @@ import {
   updateUser,
 } from "@/features/authentication/procedures";
 import {
+  assignPartnerCoordinator,
+  removePartnerCoordinator,
+} from "@/features/projects/procedures/coordination";
+import { participations } from "@/features/projects/procedures/participations";
+import {
   assignPartnership,
   listPartnerships,
   removePartnership,
@@ -36,6 +41,7 @@ export const router = {
     updateUser,
   },
   participantOnboarding,
+  participations,
   projects: {
     get: getProject,
     listHosted,
@@ -49,6 +55,8 @@ export const router = {
     createSetupLink,
     disableSetupLink,
     consumeSetupLink,
+    assignPartnerCoordinator,
+    removePartnerCoordinator,
   },
 };
 

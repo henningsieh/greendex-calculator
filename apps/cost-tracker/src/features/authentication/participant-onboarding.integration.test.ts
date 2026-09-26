@@ -12,6 +12,7 @@ import {
   participantInvitationBridgesTable as bridges,
   participantProfilesTable as profiles,
   participantRegistrationLinksTable as links,
+  partnerCoordinatorAssignmentsTable as assignments,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
   projectsTable as projects,
@@ -624,6 +625,57 @@ describe("Participant onboarding procedures", () => {
     expect(
       await db.select().from(bridges).where(eq(bridges.projectId, project)),
     ).toHaveLength(0);
+  });
+
+  it("allows an assigned Partner coordinator to issue invitations without changing roles", async () => {
+    actor = recipient;
+    activeOrganizationId = partner;
+    const membershipId = randomUUID();
+    await db.insert(member).values({
+      id: membershipId,
+      organizationId: partner,
+      userId: recipient,
+      role: "member",
+      createdAt: new Date(),
+    });
+    await db
+      .insert(assignments)
+      .values({ partnershipId: partnership, userId: recipient });
+    try {
+      const issued = await client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: `invite-${suffix}@example.org`,
+      });
+      expect(
+        (
+          await db
+            .select({ partnershipId: bridges.partnershipId })
+            .from(bridges)
+            .where(eq(bridges.invitationId, issued.invitationId))
+        )[0]?.partnershipId,
+      ).toBe(partnership);
+      expect(
+        (
+          await db
+            .select({ role: member.role })
+            .from(member)
+            .where(eq(member.id, membershipId))
+        )[0]?.role,
+      ).toBe("member");
+      await expect(
+        client.participantOnboarding.issueInvitation({
+          partnershipId: otherPartnership,
+          email: `another-${suffix}@example.org`,
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    } finally {
+      await db.delete(bridges).where(eq(bridges.projectId, project));
+      await db.delete(invitation).where(eq(invitation.organizationId, host));
+      await db
+        .delete(assignments)
+        .where(eq(assignments.partnershipId, partnership));
+      await db.delete(member).where(eq(member.id, membershipId));
+    }
   });
 
   it("issues and consumes a native BA invitation via its app bridge, then retries without duplicate Participation", async () => {
