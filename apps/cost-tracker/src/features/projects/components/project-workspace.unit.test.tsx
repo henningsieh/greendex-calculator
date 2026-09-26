@@ -105,6 +105,9 @@ describe("Project workspace", () => {
         .getByRole("link", { name: "Manage Project Partnerships" })
         .getAttribute("href"),
     ).toBe("/partner-organizations");
+    expect(
+      screen.queryByRole("link", { name: "Coordinate Participants" }),
+    ).toBeNull();
     expect(screen.queryByText(/Cost Submission$/)).toBeNull();
   });
 
@@ -161,6 +164,11 @@ describe("Project workspace", () => {
     expect(await screen.findByText("Hosting Group")).toBeTruthy();
     expect(screen.getByText("Submitted")).toBeTruthy();
     expect(screen.queryByText("Assigned Partner Organizations")).toBeNull();
-    expect(screen.queryByText(/EUR|Proof Document|Participant/i)).toBeNull();
+    expect(
+      screen
+        .getByRole("link", { name: "Coordinate Participants" })
+        .getAttribute("href"),
+    ).toBe("/partnerships/partnership-1/participants");
+    expect(screen.queryByText(/EUR|Proof Document/i)).toBeNull();
   });
 });

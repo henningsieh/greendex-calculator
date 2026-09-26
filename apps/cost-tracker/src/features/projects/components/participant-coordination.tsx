@@ -1,0 +1,290 @@
+"use client";
+
+import { ORPCError } from "@orpc/client";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { useState } from "react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+import type { Outputs } from "@/lib/orpc/router";
+
+type Participation =
+  Outputs["participations"]["listPartnership"]["participations"][number];
+const countries = [
+  "AT",
+  "BE",
+  "BG",
+  "HR",
+  "CY",
+  "CZ",
+  "DK",
+  "EE",
+  "FI",
+  "FR",
+  "DE",
+  "GR",
+  "HU",
+  "IE",
+  "IT",
+  "LV",
+  "LT",
+  "LU",
+  "MT",
+  "NL",
+  "PL",
+  "PT",
+  "RO",
+  "SK",
+  "SI",
+  "ES",
+  "SE",
+] as const;
+type Country = (typeof countries)[number];
+
+function isCountry(value: string): value is Country {
+  return countries.some((country) => country === value);
+}
+
+const duplicateMessage =
+  "Identity already participates in this Project; request merge review.";
+
+function mutationFeedback(error: unknown) {
+  if (
+    error instanceof ORPCError &&
+    error.code === "BAD_REQUEST" &&
+    error.message === duplicateMessage
+  ) {
+    return {
+      title: "Review request",
+      description:
+        "This identity may already participate in this Project. Check the person's account and existing Participation, then contact the Hosting Organization to request a merge review. No new Participation was added.",
+    };
+  }
+  if (error instanceof ORPCError && error.code === "FORBIDDEN") {
+    return {
+      title: "Access denied",
+      description: getORPCRequestErrorMessage(error).text,
+    };
+  }
+  return {
+    title: "Unable to save Participation",
+    description: getORPCRequestErrorMessage(error).text,
+  };
+}
+
+function CountryEditor({
+  participant,
+  partnershipId,
+  onSaved,
+  onError,
+}: {
+  participant: Participation;
+  partnershipId: string;
+  onSaved: () => Promise<void>;
+  onError: (error: unknown) => void;
+}) {
+  const [country, setCountry] = useState<Country | "">(
+    participant.country && isCountry(participant.country)
+      ? participant.country
+      : "",
+  );
+  const update = useMutation({
+    mutationFn: () =>
+      orpc.participations.update({
+        partnershipId,
+        id: participant.id,
+        country: country || null,
+      }),
+    onSuccess: onSaved,
+    onError,
+  });
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="space-y-2">
+        <Label htmlFor={`country-${participant.id}`}>
+          Country for {participant.displayName}
+        </Label>
+        <select
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+          id={`country-${participant.id}`}
+          onChange={(event) =>
+            setCountry(isCountry(event.target.value) ? event.target.value : "")
+          }
+          value={country}
+        >
+          <option value="">Not set</option>
+          {countries.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </div>
+      <Button
+        disabled={update.isPending}
+        onClick={() => update.mutate()}
+        type="button"
+        variant="outline"
+      >
+        Save country for {participant.displayName}
+      </Button>
+    </div>
+  );
+}
+
+/** The list and mutations are scoped by the server's Partnership authorization, not client filtering. */
+export function ParticipantCoordination({
+  partnershipId,
+}: {
+  partnershipId: string;
+}) {
+  const queryClient = useQueryClient();
+  const { data } = useSuspenseQuery(
+    orpcQuery.participations.listPartnership.queryOptions({
+      input: { partnershipId },
+      meta: { costTrackerORPC: true },
+    }),
+  );
+  const [userId, setUserId] = useState("");
+  const [feedback, setFeedback] = useState<{
+    title: string;
+    description: string;
+  }>();
+  const refresh = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: orpcQuery.participations.listPartnership.queryKey({
+        input: { partnershipId },
+      }),
+    });
+  };
+  // Hosts may read server-authorized oversight data, but cannot manage Partner
+  // Participations here; denied writes show the access-denied surface below.
+  const create = useMutation({
+    mutationFn: () =>
+      orpc.participations.create({ partnershipId, userId: userId.trim() }),
+    onSuccess: async () => {
+      setUserId("");
+      setFeedback({
+        title: "Participation added",
+        description: "The scoped list has been refreshed.",
+      });
+      await refresh();
+    },
+    onError: (error) => setFeedback(mutationFeedback(error)),
+  });
+
+  return (
+    <section className="space-y-6" aria-label="Partnership Participants">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add an onboarded Participant</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Only add a User who has completed account, profile, and agreement
+            onboarding. For someone not yet onboarded, use the Hosting
+            Organization&apos;s Participant invitation path.
+          </p>
+          <form
+            className="flex flex-wrap items-end gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setFeedback(undefined);
+              create.mutate();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="participant-user-id">Onboarded User ID</Label>
+              <Input
+                id="participant-user-id"
+                required
+                value={userId}
+                onChange={(event) => setUserId(event.target.value)}
+              />
+            </div>
+            <Button disabled={create.isPending} type="submit">
+              {create.isPending ? "Adding…" : "Add Participation"}
+            </Button>
+          </form>
+          {feedback && (
+            <Alert>
+              <AlertTitle>{feedback.title}</AlertTitle>
+              <AlertDescription>{feedback.description}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Joined Participants</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.participations.length === 0 ? (
+            <p>No Participants have joined this Partnership yet.</p>
+          ) : (
+            <ul className="divide-y">
+              {data.participations.map((participant) => (
+                <li className="space-y-3 py-4" key={participant.id}>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <strong>{participant.displayName}</strong>
+                    <Badge variant="secondary">Joined</Badge>
+                  </div>
+                  {participant.email && (
+                    <p className="text-sm text-muted-foreground">
+                      {participant.email}
+                    </p>
+                  )}
+                  <CountryEditor
+                    participant={participant}
+                    partnershipId={partnershipId}
+                    onSaved={refresh}
+                    onError={(error) => setFeedback(mutationFeedback(error))}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Invitations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.invitations.length === 0 ? (
+            <p>No invitations are recorded for this Partnership.</p>
+          ) : (
+            <ul className="divide-y">
+              {data.invitations.map((invitation) => (
+                <li
+                  className="flex flex-wrap items-center gap-3 py-3"
+                  key={invitation.invitationId}
+                >
+                  <span>{invitation.email}</span>
+                  <Badge variant="secondary">
+                    {invitation.status === "pending"
+                      ? "Invitation pending"
+                      : `Invitation ${invitation.status}`}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-4 text-sm text-muted-foreground">
+            Invitation status does not show profile or agreement progress.
+          </p>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}

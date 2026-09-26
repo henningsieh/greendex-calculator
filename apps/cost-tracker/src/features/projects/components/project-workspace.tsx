@@ -181,6 +181,12 @@ export function ProjectWorkspace({
               <span className="text-muted-foreground">Assignment updated:</span>{" "}
               {dateTimeFormatter.format(project.partnership.updatedAt)}
             </p>
+            <Link
+              className={buttonVariants({ variant: "outline" })}
+              href={`/partnerships/${encodeURIComponent(project.partnership.id)}/participants`}
+            >
+              Coordinate Participants
+            </Link>
           </CardContent>
         </Card>
       )}

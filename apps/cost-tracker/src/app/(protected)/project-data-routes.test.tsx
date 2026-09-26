@@ -26,6 +26,11 @@ vi.mock("@/features/projects/components/project-list", () => ({
 vi.mock("@/features/projects/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: () => <p>Project Partnership manager</p>,
 }));
+vi.mock("@/features/projects/components/participant-coordination", () => ({
+  ParticipantCoordination: ({ partnershipId }: { partnershipId: string }) => (
+    <p>Coordination for {partnershipId}</p>
+  ),
+}));
 vi.mock("@/features/projects/components/project-workspace", () => ({
   ProjectWorkspace: ({
     projectId,
@@ -67,6 +72,13 @@ vi.mock("@/lib/orpc/orpc", () => ({
     projectPartnerships: {
       list: { queryOptions: () => ({ queryKey: ["partnerships", "list"] }) },
     },
+    participations: {
+      listPartnership: {
+        queryOptions: ({ input }: { input: { partnershipId: string } }) => ({
+          queryKey: ["participations", input.partnershipId],
+        }),
+      },
+    },
   },
 }));
 vi.mock("@/lib/session", () => ({
@@ -79,6 +91,7 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
 }));
 
 import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
+import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[id]/participants/page";
 import ProjectPage from "@/app/(protected)/projects/[id]/page";
 import ProjectsPage from "@/app/(protected)/projects/page";
 
@@ -163,6 +176,18 @@ describe("Cost Tracker Project data routes", () => {
       queryKey: ["partnerships", "list"],
     });
     expect(screen.getByText("Project Partnership manager")).toBeTruthy();
+  });
+
+  it("prefetches only the requested Partnership's server-authorized list", async () => {
+    render(
+      await PartnershipParticipantsPage({
+        params: Promise.resolve({ id: "own-partnership" }),
+      }),
+    );
+    expect(mocks.query).toHaveBeenCalledWith({
+      queryKey: ["participations", "own-partnership"],
+    });
+    expect(screen.getByText("Coordination for own-partnership")).toBeTruthy();
   });
 
   it("keeps Project authorization independent from the return destination", async () => {
