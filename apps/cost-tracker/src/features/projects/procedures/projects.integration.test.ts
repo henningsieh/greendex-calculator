@@ -244,6 +244,10 @@ describe("projects procedures", () => {
       await setClaim(1, "paid");
       await expect(complete()).rejects.toMatchObject({
         code: "BAD_REQUEST",
+        message: expect.stringContaining(partnerIds[0]),
+      });
+      await expect(complete()).rejects.toMatchObject({
+        code: "BAD_REQUEST",
         message: expect.stringContaining(partnerIds[2]),
       });
       await expect(complete()).rejects.toMatchObject({

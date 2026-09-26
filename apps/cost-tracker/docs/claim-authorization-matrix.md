@@ -1,5 +1,7 @@
 # Claim authorization matrix (#179)
 
+Traceability: assignment scope per [ADR-0004](../../../docs/adr/0004-scope-project-coordination-through-assignments.md), locks and reasons per [ADR-0008](../../../docs/adr/0008-return-claims-for-partner-correction.md), [ADR-0010](../../../docs/adr/0010-reject-and-reopen-claims.md), and [ADR-0011](../../../docs/adr/0011-complete-claim-submission-and-payment-workflow.md); lifecycle norm in [claim workflow](claim-workflow.md).
+
 `A` = allowed; `D` = denied (`FORBIDDEN`). Each cell is an independently named integration case in `Claim authorization matrix` (`submission.integration.test.ts`): `<role> × <procedure>`. `getDraft` and `getHistory` are shared-scope reads; costs and journeys reads remain Partner-only. Assignments are scoped to the target Partnership (Partner) or its hosted Project (Hosting). The unassigned rows exercise an existing member assigned elsewhere but not to the target Project or Partnership; owners/admins remain Organization-wide supersets even without a relevant assignment. Participants are assigned to the target yet still denied. `member` with an assignment is the legacy coordinator membership supported until ADR-0004 role migration.
 
 | Role / procedure               | claims.getDraft | claims.saveDraft | claims.selectPayoutAccount | claims.submit | claims.getHistory | claims.requestCorrection | claims.approve | claims.reject | claims.reopen | claims.markPaid | claims.correctPayment | costs.list | costs.save | costs.linkDocument | journeys.list | journeys.save |
