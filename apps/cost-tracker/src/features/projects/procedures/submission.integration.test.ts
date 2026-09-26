@@ -777,3 +777,166 @@ describe("Host Claim review", () => {
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   }, 15_000);
 });
+
+const markPaid = (amountEur: string) =>
+  client.claims.markPaid({ partnershipId: own, amountEur });
+const correctPayment = (reason?: string) =>
+  client.claims.correctPayment({ partnershipId: own, reason: reason ?? "" });
+const events = () =>
+  db.select().from(history).where(eq(history.claimId, claimId));
+
+async function approvedClaim() {
+  await submittedClaim();
+  const approved = await review("approve");
+  return approved.approvedAmountEur!;
+}
+
+describe("Claim payment recording", () => {
+  it("rejects unpaid drafts, submissions and rejections without writing history", async () => {
+    await asHost();
+    await expect(markPaid("101.01")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringMatching(/approved.*unpaid/i),
+    });
+    expect(await events()).toEqual([]);
+    activeOrg = partner;
+    await submittedClaim();
+    await expect(markPaid("101.01")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    await review("reject", "Not eligible");
+    const before = await events();
+    await expect(markPaid("101.01")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("rejected");
+    expect(await events()).toEqual(before);
+  });
+
+  it("rejects partial, excessive and invalid transfer amounts without changing an approved Claim", async () => {
+    const payable = await approvedClaim();
+    expect(payable).toBe("101.01");
+    const before = await events();
+    for (const amount of ["101.00", "101.02", "101.001", "0.00"]) {
+      await expect(markPaid(amount)).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+      });
+    }
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("approved");
+    expect(await events()).toEqual(before);
+  });
+
+  it("records one full confirmed transfer once, keeps approval separate, and locks payout selection", async () => {
+    const payable = await approvedClaim();
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("approved");
+    activeOrg = partner;
+    await expect(
+      client.claims.selectPayoutAccount({
+        partnershipId: own,
+        payoutAccountId: alternate,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await asHost();
+    expect(await markPaid(payable)).toMatchObject({
+      status: "paid",
+      approvedAmountEur: payable,
+    });
+    expect(await markPaid(payable)).toMatchObject({ status: "paid" });
+    await expect(markPaid("1.00")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(
+      (await events()).map(({ eventType, actorUserId, occurredAt }) => ({
+        eventType,
+        actorUserId,
+        occurredAt,
+      })),
+    ).toMatchObject([
+      {
+        eventType: "submitted",
+        actorUserId: actor,
+        occurredAt: expect.any(Date),
+      },
+      { eventType: "approved", actorUserId: actor, occurredAt: expect.any(Date) },
+      { eventType: "paid", actorUserId: actor, occurredAt: expect.any(Date) },
+    ]);
+    activeOrg = partner;
+    await expect(
+      client.claims.selectPayoutAccount({
+        partnershipId: own,
+        payoutAccountId: alternate,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("corrects only a paid flag with a required reason, retaining both history events", async () => {
+    const payable = await approvedClaim();
+    await expect(correctPayment("Premature mark")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    await markPaid(payable);
+    const before = await events();
+    await expect(correctPayment()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(correctPayment("  ")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(await events()).toEqual(before);
+    expect(await correctPayment("  Transfer never sent  ")).toMatchObject({
+      status: "approved",
+      approvedAmountEur: payable,
+    });
+    await expect(correctPayment("Again")).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("approved");
+    expect(await client.claims.getHistory({ partnershipId: own })).toMatchObject([
+      { eventType: "submitted" },
+      { eventType: "approved" },
+      { eventType: "paid", actorUserId: actor, occurredAt: expect.any(Date) },
+      {
+        eventType: "payment_corrected",
+        reason: "Transfer never sent",
+        actorUserId: actor,
+        occurredAt: expect.any(Date),
+      },
+    ]);
+    activeOrg = partner;
+    await expect(
+      client.claims.selectPayoutAccount({
+        partnershipId: own,
+        payoutAccountId: alternate,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
+    const payable = await approvedClaim();
+    for (const role of ["owner", "admin", "project-coordinator"]) {
+      await asHost(role);
+      await markPaid(payable);
+      await correctPayment("Incorrect flag");
+    }
+    await asHost("member", participantUser);
+    await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await db.update(claims).set({ status: "paid" }).where(eq(claims.id, claimId));
+    await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    for (const org of [partner, other]) {
+      activeOrg = org;
+      activeActor = actor;
+      await expect(markPaid(payable)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+      await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+    }
+  });
+});

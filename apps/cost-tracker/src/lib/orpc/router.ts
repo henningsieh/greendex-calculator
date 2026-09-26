@@ -33,6 +33,7 @@ import {
   listPartnerships,
   removePartnership,
 } from "@/features/projects/procedures/partnerships";
+import { correctPayment, markPaid } from "@/features/projects/procedures/payment";
 import {
   availableScopes,
   getProject,
@@ -72,6 +73,8 @@ export const router = {
     getHistory,
     requestCorrection,
     approve,
+    markPaid,
+    correctPayment,
     reject,
     reopen,
   },
