@@ -15,6 +15,14 @@ Greendex has shared project-administration language and two application contexts
 - [Carbon-footprint calculation](./apps/calculator/CONTEXT.md): collects Participant journey and questionnaire data and calculates Project emissions.
 - [Cost tracking](./apps/cost-tracker/CONTEXT.md): assigns Partner Organizations to Projects and records journey-ticket costs during a Cost Submission Window.
 
+## Coolify databases
+
+Development environment (`rc04oc8sksggs48ggkwsgsg0`) PostgreSQL resources. Connection hostnames are UUID-based, so renames never change them:
+
+- `greendex-dev-postgres` (`a004oogs4cwss04cok0wwckk`): deployed dev data; main `DATABASE_URL` of `greendex-calculator`.
+- `greendex-preview-postgres` (`gcmwapuqoz45mjvtdwl3vgg4`): isolated PR-preview data; preview `DATABASE_URL`.
+- `greendex-local-dev-postgres` (`m0w8wog0kgocssg4w4gg4wow`): local dev mirror over public port 5444; used by `apps/calculator/.env`.
+
 ## Relationships
 
 - Both applications reference the same Organizations, Projects, Users, and Project Participations.

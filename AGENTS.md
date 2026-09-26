@@ -21,7 +21,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 
 ## Topic Pointers (Only When the Task Touches Them)
 
-- Deployments, databases, environment values, preview runbook, incidents: [Coolify](docs/agents/instructions/coolify.md). It is the single source for project/environment IDs and the application contract; never commit credentials.
+- Deployments, databases, environment values, preview runbook, incidents: [Coolify](docs/agents/instructions/coolify.md). It is the single source for project/environment IDs and the application contract; never commit credentials. Database overview: [Context Map](CONTEXT-MAP.md#coolify-databases).
 - Authentication, organizations, OAuth callback paths: [Better Auth](docs/agents/instructions/better-auth.md).
 - Module placement, workspace boundaries, SSR/server-client flow: [Architecture](docs/agents/instructions/architecture.md).
 - **Critical oRPC invariant:** preserve both imports of `@/lib/orpc/client.server` and their evaluation order. Read [oRPC](docs/agents/instructions/orpc.md) before touching that seam.
