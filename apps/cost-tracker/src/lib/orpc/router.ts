@@ -19,6 +19,11 @@ import {
   removePartnerCoordinator,
 } from "@/features/projects/procedures/coordination";
 import {
+  linkDocument as linkCostDocument,
+  list as listCosts,
+  save as saveCost,
+} from "@/features/projects/procedures/costs";
+import {
   list as listJourneys,
   save as saveJourney,
 } from "@/features/projects/procedures/journeys";
@@ -52,6 +57,7 @@ export const router = {
   participantOnboarding,
   participations,
   claims: { getDraft, saveDraft, selectPayoutAccount },
+  costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
   journeys: { list: listJourneys, save: saveJourney },
   projects: {
     get: getProject,
