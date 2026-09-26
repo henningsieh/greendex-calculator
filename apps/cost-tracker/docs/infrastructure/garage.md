@@ -117,6 +117,8 @@ The access-key ID and secret key are intentionally omitted. Their local values a
 
 A temporary object PUT/GET/delete was successfully verified against the public S3 endpoint, and the verification object was removed.
 
+To repeat that check using the application's local `.env`, run `pnpm --filter @greendex/cost-tracker test:garage-storage` from the repository root. This opt-in live test writes a random object under `smoke-tests/` in the existing bucket, compares downloaded bytes, and deletes it even if verification fails. It does not create a bucket and is not part of the default test suite. If the process is interrupted before cleanup, inspect and remove only the orphaned `smoke-tests/` key after confirming it belongs to this run; do not clear the entire prefix or bucket.
+
 ## Health check
 
 Coolify runs:

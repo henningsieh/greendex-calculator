@@ -18,9 +18,11 @@
     "test:e2e": "dotenv -e .env -- playwright test",
     "test:e2e:report": "playwright show-report src/__tests__/e2e/.playwright/report",
     "clean": "rm -rf .next .turbo node_modules",
-    "test:email-delivery": "dotenv -e .env -- tsx scripts/verify-email-delivery.ts"
+    "test:email-delivery": "dotenv -e .env -- tsx scripts/verify-email-delivery.ts",
+    "test:garage-storage": "dotenv -e .env -- tsx scripts/verify-garage-storage.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1140.0",
     "@base-ui/react": "^1.8.0",
     "@greendex/auth": "workspace:*",
     "@greendex/database": "workspace:*",
