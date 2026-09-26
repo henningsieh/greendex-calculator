@@ -1,5 +1,6 @@
 import type { InferRouterOutputs } from "@orpc/server";
 
+import { participantOnboarding } from "@/features/authentication/participant-onboarding";
 import {
   createOrganization,
   signIn,
@@ -34,6 +35,7 @@ export const router = {
     startGoogleSignIn,
     updateUser,
   },
+  participantOnboarding,
   projects: {
     get: getProject,
     listHosted,

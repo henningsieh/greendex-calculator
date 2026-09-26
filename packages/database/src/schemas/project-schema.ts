@@ -28,7 +28,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { organization, user } from "./auth-schema";
+import { invitation, organization, user } from "./auth-schema";
 
 /**
  * Custom Drizzle type for distance values.
@@ -237,6 +237,92 @@ export const partnerOrganizationSetupLinksTable = pgTable(
     ),
   },
   (table) => [index("partner_setup_link_project_idx").on(table.projectId)],
+);
+
+/** Reusable, app-owned entry point bound to one Project Partnership. */
+export const participantRegistrationLinksTable = pgTable(
+  "participant_registration_link",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    partnershipId: text("partnership_id")
+      .notNull()
+      .references(() => projectPartnerOrganizationsTable.id, {
+        onDelete: "cascade",
+      })
+      .unique(),
+    secretHash: text("secret_hash").notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    closedByUserId: text("closed_by_user_id").references(() => user.id),
+    closedAt: timestamp("closed_at"),
+  },
+);
+
+/** Connects a Better Auth invitation to its Project Partnership without creating Participation early. */
+export const participantInvitationBridgesTable = pgTable(
+  "participant_invitation_bridge",
+  {
+    invitationId: text("invitation_id")
+      .primaryKey()
+      .references(() => invitation.id),
+    partnershipId: text("partnership_id")
+      .notNull()
+      .references(() => projectPartnerOrganizationsTable.id, {
+        onDelete: "cascade",
+      }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    status: text("status").default("pending").notNull(),
+    issuedByUserId: text("issued_by_user_id")
+      .notNull()
+      .references(() => user.id),
+    issuedAt: timestamp("issued_at").defaultNow().notNull(),
+    acceptedAt: timestamp("accepted_at"),
+  },
+  (table) => [
+    uniqueIndex("participant_invitation_live_email_unique")
+      .on(table.projectId, table.email)
+      .where(sql`${table.status} = 'pending'`),
+  ],
+);
+
+/** One User-owned profile, shared across the User's Project Participations. */
+export const participantProfilesTable = pgTable("participant_profile", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  fullName: text("full_name").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/** Append-only acceptance evidence; versions and content hashes are never rewritten. */
+export const participantAgreementAcceptancesTable = pgTable(
+  "participant_agreement_acceptance",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    version: text("version").notNull(),
+    contentHash: text("content_hash").notNull(),
+    answers: text("answers").notNull(),
+    acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("participant_agreement_user_version_unique").on(
+      table.userId,
+      table.version,
+    ),
+  ],
 );
 
 /**
