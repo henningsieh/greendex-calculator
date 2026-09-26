@@ -50,6 +50,13 @@ const rowInput = scopeInput.extend({ id: coordinationId });
 const mergeMessage =
   "Identity already participates in this Project; request merge review.";
 
+// Partner-side Participation edits stay possible while the Claim is editable
+// and during a correction request (resubmission re-runs the checklist and
+// re-derives payable); all other Claim states lock them.
+function claimLocksParticipation(status: string): boolean {
+  return status !== "editable" && status !== "correction_requested";
+}
+
 function postgresCode(error: unknown): string | undefined {
   if (!error || typeof error !== "object") return undefined;
   if ("code" in error && typeof error.code === "string") return error.code;
@@ -255,9 +262,9 @@ export function createParticipationProcedures(
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (submitted && submitted.status !== "editable")
+      if (submitted && claimLocksParticipation(submitted.status))
         throw errors.BAD_REQUEST({
-          message: "Submitted Claim prevents Participation changes.",
+          message: "Locked Claim prevents Participation changes.",
         });
       const [changed] = await db
         .update(participants)
@@ -312,9 +319,9 @@ export function createParticipationProcedures(
             .from(claims)
             .where(eq(claims.partnershipId, input.partnershipId))
             .limit(1);
-          if (claim && claim.status !== "editable")
+          if (claim && claimLocksParticipation(claim.status))
             throw errors.BAD_REQUEST({
-              message: "Submitted Claim prevents Participation removal.",
+              message: "Locked Claim prevents Participation removal.",
             });
           const [reference] = await tx
             .select({ id: participants.id })

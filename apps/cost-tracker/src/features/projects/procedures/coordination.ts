@@ -162,6 +162,13 @@ export const removePartnerCoordinator = authorized
     const [partnership] = await db
       .select({ organizationId: partnerships.organizationId })
       .from(partnerships)
+      .innerJoin(
+        projects,
+        and(
+          eq(projects.id, partnerships.projectId),
+          eq(projects.archived, false),
+        ),
+      )
       .where(eq(partnerships.id, input.partnershipId))
       .limit(1);
     if (!partnership || partnership.organizationId !== orgId)

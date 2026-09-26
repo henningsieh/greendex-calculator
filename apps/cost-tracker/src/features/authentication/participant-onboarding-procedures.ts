@@ -257,7 +257,10 @@ export function createParticipantOnboardingProcedures(
         .where(
           and(
             eq(participants.projectId, partnership.projectId),
-            or(eq(participants.email, input.email), eq(user.email, input.email)),
+            or(
+              sql`lower(${participants.email}) = ${input.email}`,
+              sql`lower(${user.email}) = ${input.email}`,
+            ),
           ),
         )
         .limit(1);
@@ -284,7 +287,26 @@ export function createParticipantOnboardingProcedures(
           throw errors.BAD_REQUEST({
             message: "This person already has an invitation to this Project.",
           });
-        return { invitationId: existingBridge.invitationId };
+        const [native] = await db
+          .select({
+            status: invitation.status,
+            expiresAt: invitation.expiresAt,
+          })
+          .from(invitation)
+          .where(eq(invitation.id, existingBridge.invitationId))
+          .limit(1);
+        if (
+          native &&
+          native.status === "pending" &&
+          native.expiresAt > new Date()
+        )
+          return { invitationId: existingBridge.invitationId };
+        // Stale bridge: the native invitation is missing, expired, or closed.
+        // Retire it and fall through to fresh issuance below.
+        await db
+          .update(bridges)
+          .set({ status: "revoked" })
+          .where(eq(bridges.invitationId, existingBridge.invitationId));
       }
       // TODO (#174): wire actual invitation email delivery and the recipient accept surface.
       // Cost Tracker's Better Auth config currently has no invitation-email sender.
@@ -376,10 +398,27 @@ export function createParticipantOnboardingProcedures(
         native.expiresAt <= new Date()
       )
         throw errors.BAD_REQUEST({ message: "Invitation is unavailable." });
-      await db
-        .update(bridges)
-        .set({ status: input.open ? "pending" : "revoked" })
-        .where(eq(bridges.invitationId, input.invitationId));
+      // Revocation also cancels the native invitation: a revoked bridge blocks
+      // app join, but the native row would otherwise stay acceptable through
+      // BA's public endpoint. Reopening never resurrects a canceled native row
+      // (the pre-check above rejects it) — re-issue after revoke instead.
+      await db.transaction(async (tx) => {
+        await tx
+          .update(bridges)
+          .set({ status: input.open ? "pending" : "revoked" })
+          .where(eq(bridges.invitationId, input.invitationId));
+        if (!input.open) {
+          await tx
+            .update(invitation)
+            .set({ status: "canceled" })
+            .where(
+              and(
+                eq(invitation.id, input.invitationId),
+                eq(invitation.status, "pending"),
+              ),
+            );
+        }
+      });
       return { open: input.open };
     });
 

@@ -1,6 +1,6 @@
 import type { InferRouterOutputs } from "@orpc/server";
 
-import { participantOnboarding } from "@/features/authentication/participant-onboarding";
+import { participantOnboarding } from "@/features/authentication/participant-onboarding-procedures";
 import {
   createOrganization,
   signIn,

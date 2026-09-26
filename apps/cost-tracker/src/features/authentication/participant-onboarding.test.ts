@@ -28,7 +28,7 @@ vi.mock("@greendex/database", () => ({
   },
 }));
 
-import { createParticipantOnboardingProcedures } from "@/features/authentication/participant-onboarding";
+import { createParticipantOnboardingProcedures } from "@/features/authentication/participant-onboarding-procedures";
 
 function client(version?: { id: string; contentHash: string }) {
   return createRouterClient(

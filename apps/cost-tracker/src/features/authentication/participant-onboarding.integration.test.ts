@@ -47,7 +47,7 @@ vi.mock("@/lib/auth", () => ({
   },
 }));
 
-import { createParticipantOnboardingProcedures } from "@/features/authentication/participant-onboarding";
+import { createParticipantOnboardingProcedures } from "@/features/authentication/participant-onboarding-procedures";
 
 const suffix = randomUUID();
 const host = `onboarding-host-${suffix}`;
@@ -356,7 +356,7 @@ describe("Participant onboarding procedures", () => {
     expect(authMocks.update).toHaveBeenCalledTimes(1);
   });
 
-  it("rejects revoked invitations before BA acceptance with no app writes", async () => {
+  it("cancels the native invitation on revoke and requires re-issue to recover", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -365,6 +365,11 @@ describe("Participant onboarding procedures", () => {
       invitationId: issued.invitationId,
       open: false,
     });
+    const [native] = await db
+      .select({ status: invitation.status })
+      .from(invitation)
+      .where(eq(invitation.id, issued.invitationId));
+    expect(native?.status).toBe("canceled");
     actor = recipient;
     await expect(
       client.participantOnboarding.join({
@@ -379,14 +384,51 @@ describe("Participant onboarding procedures", () => {
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
     ).toHaveLength(0);
     actor = owner;
-    await client.participantOnboarding.setInvitationOpen({
-      invitationId: issued.invitationId,
-      open: true,
+    // Reopening never resurrects the canceled native row: re-issue instead.
+    await expect(
+      client.participantOnboarding.setInvitationOpen({
+        invitationId: issued.invitationId,
+        open: true,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const reissued = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
     });
+    expect(reissued.invitationId).not.toBe(issued.invitationId);
     actor = recipient;
     await expect(
       client.participantOnboarding.join({
-        source: { kind: "invitation", invitationId: issued.invitationId },
+        source: { kind: "invitation", invitationId: reissued.invitationId },
+        profile: { fullName: "Recipient" },
+        agreement: { accepted: true },
+      }),
+    ).resolves.toHaveProperty("participationId");
+  });
+
+  it("retires a stale bridge and issues fresh when the native invitation expired", async () => {
+    const issued = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    await db
+      .update(invitation)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(invitation.id, issued.invitationId));
+    const fresh = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    expect(fresh.invitationId).not.toBe(issued.invitationId);
+    const [retired] = await db
+      .select({ status: bridges.status })
+      .from(bridges)
+      .where(eq(bridges.invitationId, issued.invitationId));
+    expect(retired?.status).toBe("revoked");
+    actor = recipient;
+    await expect(
+      client.participantOnboarding.join({
+        source: { kind: "invitation", invitationId: fresh.invitationId },
         profile: { fullName: "Recipient" },
         agreement: { accepted: true },
       }),
@@ -521,6 +563,21 @@ describe("Participant onboarding procedures", () => {
     expect(
       await db.select().from(bridges).where(eq(bridges.projectId, project)),
     ).toHaveLength(0);
+  });
+
+  it("relies on the database to reject non-normalized participation emails", async () => {
+    // project_participant_email_normalized (since migration 0015) makes a
+    // non-normalized legacy row impossible; the procedure's lower()
+    // comparisons are defense-in-depth over this invariant.
+    await expect(
+      db.insert(participants).values({
+        projectId: project,
+        representedOrganizationId: partner,
+        displayName: "Legacy",
+        userId: recipient,
+        email: recipientEmail.toUpperCase(),
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
   });
 
   it("allows Hosting staff to issue through Better Auth, not a direct invitation insert", async () => {

@@ -138,7 +138,6 @@ beforeEach(() => {
 });
 
 afterAll(async () => {
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, candidate));
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(bridges).where(eq(bridges.projectId, project));
   await db.delete(invitation).where(eq(invitation.organizationId, host));
@@ -374,5 +373,27 @@ describe("assignment-scoped participation coordination", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await db.delete(claims).where(eq(claims.id, claim!.id));
     await client.participations.remove({ partnershipId: own, id: created.id });
+  });
+
+  it("allows Participation changes while the Claim is correction_requested", async () => {
+    const reopened = await client.participations.create({
+      partnershipId: own,
+      userId: candidate,
+    });
+    const [claim] = await db
+      .insert(claims)
+      .values({ partnershipId: own, status: "correction_requested" })
+      .returning({ id: claims.id });
+    await expect(
+      client.participations.update({
+        partnershipId: own,
+        id: reopened.id,
+        country: "FR",
+      }),
+    ).resolves.toMatchObject({ country: "FR" });
+    await expect(
+      client.participations.remove({ partnershipId: own, id: reopened.id }),
+    ).resolves.toEqual({ removed: true });
+    await db.delete(claims).where(eq(claims.id, claim!.id));
   });
 });
