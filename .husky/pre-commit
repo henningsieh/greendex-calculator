@@ -31,7 +31,7 @@ trap restore_stash EXIT
 
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
-  | xargs -0 -r pnpm exec oxfmt --write
+  | xargs -0 -r pnpm exec oxfmt --write --no-error-on-unmatched-pattern
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
   | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json
