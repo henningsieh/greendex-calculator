@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "dotenv -e .env -- sh -c 'pnpm dlx kill-port \"$COST_TRACKER_PORT\" || true'",
     "dev": "dotenv -v NODE_ENV=development -e .env -- sh -c 'next dev --port \"$COST_TRACKER_PORT\"'",
     "prebuild": "dotenv -e .env -- turbo run db:migrate",
     "build": "next build",
