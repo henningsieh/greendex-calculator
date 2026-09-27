@@ -1,5 +1,6 @@
 import { AppNavigation } from "@/components/app-navigation";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
+import { canManageOrganization } from "@/features/organizations/access";
 import { hasOrganizationMembership, requireSession } from "@/lib/session";
 
 export default async function ProtectedLayout({
@@ -13,10 +14,16 @@ export default async function ProtectedLayout({
     return <NoOrganizationAccess autoOpen={newlyRegistered} />;
   }
 
+  const canViewOrganization = await canManageOrganization();
+
   return (
     <div className="min-h-svh bg-muted/35">
       <header className="border-b bg-background">
-        <AppNavigation email={session.user.email} name={session.user.name} />
+        <AppNavigation
+          email={session.user.email}
+          name={session.user.name}
+          showOrganization={canViewOrganization}
+        />
       </header>
       <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
         {children}

@@ -10,6 +10,12 @@ import {
   updateUser,
 } from "@/features/authentication/procedures";
 import {
+  cancelInvitation as cancelOrganizationInvitation,
+  inviteMember as inviteOrganizationMember,
+  listMembers as listOrganizationMembers,
+  listPendingInvitations as listOrganizationInvitations,
+} from "@/features/organizations/procedures/staff-invites";
+import {
   getDraft,
   listPayoutAccounts,
   saveDraft,
@@ -103,7 +109,14 @@ export const router = {
   costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
   documents: { list: listDocuments },
   journeys: { list: listJourneys, save: saveJourney, update: updateJourney },
-  organizations: { search: searchOrganizations, listMine: listMyOrganizations },
+  organizations: {
+    search: searchOrganizations,
+    listMine: listMyOrganizations,
+    listMembers: listOrganizationMembers,
+    listPendingInvitations: listOrganizationInvitations,
+    inviteMember: inviteOrganizationMember,
+    cancelInvitation: cancelOrganizationInvitation,
+  },
   projects: {
     create: createProject,
     searchHosted,

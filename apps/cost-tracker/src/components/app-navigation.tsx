@@ -1,6 +1,13 @@
 "use client";
 
-import { Building2Icon, ChevronDownIcon, FolderKanbanIcon } from "lucide-react";
+/* eslint-disable shadcn/no-restyle -- Account-menu bespoke treatments: none of the shared Button/DropdownMenu variants provide this screen's exact shape, spacing, typography, and color. Zero visual change intended; revisit with a variant if the pattern repeats. */
+
+import {
+  Building2Icon,
+  ChevronDownIcon,
+  FolderKanbanIcon,
+  UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -18,7 +25,7 @@ import {
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import { cn } from "@/lib/utils";
 
-const navigationItems = [
+const baseNavigationItems = [
   { href: "/projects", icon: FolderKanbanIcon, label: "Projects" },
   {
     href: "/partner-organizations",
@@ -27,13 +34,28 @@ const navigationItems = [
   },
 ];
 
+const organizationNavigationItem = {
+  href: "/organization",
+  icon: UsersIcon,
+  label: "Organization",
+};
+
 type AppNavigationProps = {
   email: string;
   name: string;
+  showOrganization?: boolean;
 };
 
-export function AppNavigation({ email, name }: AppNavigationProps) {
+export function AppNavigation({
+  email,
+  name,
+  showOrganization = false,
+}: AppNavigationProps) {
   const pathname = usePathname();
+  // Presentation-only: the Organization page and its procedures gate access.
+  const navigationItems = showOrganization
+    ? [...baseNavigationItems, organizationNavigationItem]
+    : baseNavigationItems;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
