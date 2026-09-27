@@ -1,9 +1,34 @@
+import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import {
   claimsTable,
   projectPartnerOrganizationsTable,
+  projectsTable,
 } from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
+  .pick({
+    name: true,
+    startDate: true,
+    endDate: true,
+    location: true,
+    country: true,
+    welcomeMessage: true,
+  })
+  .safeExtend({
+    name: z.string().trim().min(1, "Name is required").max(200),
+    startDate: z.date(),
+    endDate: z.date(),
+    location: z.string().trim().min(1, "Location is required").max(200),
+    country: z.enum(EU_COUNTRY_CODES),
+    welcomeMessage: z.string().max(5000).nullable().optional(),
+  })
+  .strict()
+  .refine(({ startDate, endDate }) => endDate >= startDate, {
+    path: ["endDate"],
+    message: "End date must not precede start date.",
+  });
 
 export const PROJECT_LIST_SCOPES = ["hosted", "partner"] as const;
 export const PROJECT_WINDOW_FILTERS = ["all", "open", "closed"] as const;
@@ -99,6 +124,7 @@ export const PartnerProjectListSchema = z.object({
 export const ProjectListScopeAvailabilitySchema = z.object({
   hosted: z.boolean(),
   partner: z.boolean(),
+  canCreate: z.boolean(),
 });
 
 export const ProjectDetailInputSchema = z.object({

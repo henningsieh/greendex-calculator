@@ -12,7 +12,15 @@ import { z } from "zod";
 import { authorized } from "@/lib/orpc/middleware";
 
 export const searchHosted = authorized
-  .input(z.object({ search: z.string().trim().min(2).max(128) }))
+  .input(
+    z.object({
+      search: z
+        .string()
+        .trim()
+        .max(128)
+        .refine((value) => value.length !== 1),
+    }),
+  )
   .output(z.array(z.object({ id: z.string(), name: z.string() })).max(20))
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
@@ -48,10 +56,12 @@ export const searchHosted = authorized
         and(
           eq(projects.organizationId, activeOrganizationId),
           eq(projects.archived, false),
-          or(
-            sql`lower(${projects.name}) like lower(${pattern}) escape '\\'`,
-            sql`lower(${projects.id}) like lower(${pattern}) escape '\\'`,
-          ),
+          input.search
+            ? or(
+                sql`lower(${projects.name}) like lower(${pattern}) escape '\\'`,
+                sql`lower(${projects.id}) like lower(${pattern}) escape '\\'`,
+              )
+            : undefined,
           isManager
             ? undefined
             : exists(

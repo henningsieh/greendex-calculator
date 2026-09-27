@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   refetch: vi.fn(),
+  canCreate: false,
   setUrlState: vi.fn().mockResolvedValue(undefined),
   state: {
     scope: null as "hosted" | "partner" | null,
@@ -22,6 +23,14 @@ const mocks = vi.hoisted(() => ({
     "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque",
 }));
 
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
+  useRouter: () => ({ push: vi.fn() }),
+}));
+vi.mock("@/lib/orpc/orpc", () => ({
+  orpc: { projects: { create: vi.fn() } },
+}));
+
 vi.mock("nuqs", () => ({
   useQueryStates: () => [mocks.state, mocks.setUrlState],
 }));
@@ -31,7 +40,11 @@ vi.mock(
     ...((await importOriginal()) as Record<string, unknown>),
     getProjectAvailableScopesQueryOptions: () => ({
       queryKey: ["projects", "available-scopes"],
-      queryFn: async () => ({ hosted: true, partner: true }),
+      queryFn: async () => ({
+        hosted: true,
+        partner: true,
+        canCreate: mocks.canCreate,
+      }),
     }),
     getProjectListQueryOptions: (
       scope: "hosted" | "partner",
@@ -88,6 +101,7 @@ function renderList() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.canCreate = false;
   mocks.state.scope = null;
   mocks.state.search = "";
   mocks.state.cursor = "";
@@ -99,7 +113,26 @@ beforeEach(() => {
   window.history.replaceState({}, "", `/projects?${mocks.projectReturnSearch}`);
 });
 
-describe("Project list", { timeout: 10_000 }, () => {
+describe("Project list", { timeout: 20_000 }, () => {
+  it("shows the creation dialog trigger only with active host membership", async () => {
+    const first = renderList();
+    await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
+    expect(screen.queryByRole("button", { name: "New project" })).toBeNull();
+    first.unmount();
+    mocks.canCreate = true;
+    renderList();
+    expect(
+      await screen.findByRole(
+        "button",
+        { name: "New project" },
+        { timeout: 10_000 },
+      ),
+    ).toBeTruthy();
+  });
   it("renders one server-returned page without exposing deferred fields", async () => {
     renderList();
 

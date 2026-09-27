@@ -42,6 +42,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
+import { AssignedProjectList } from "@/features/projects/components/assigned-project-list";
+import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import {
   getProjectAvailableScopesQueryOptions,
   getProjectListQueryOptions,
@@ -185,6 +187,7 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   return (
     <Card>
       <CardHeader className="pb-2">
+        {/* eslint-disable-next-line shadcn/no-restyle -- MetricCard label intentionally uses muted text. */}
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
         </CardTitle>
@@ -202,6 +205,14 @@ export function ProjectList() {
   );
 
   if (!availableScopes.hosted && !availableScopes.partner) {
+    if (availableScopes.canCreate) {
+      return (
+        <>
+          <CreateProjectDialog />
+          <AssignedProjectList />
+        </>
+      );
+    }
     return (
       <section
         aria-label="Project list"
@@ -217,7 +228,12 @@ export function ProjectList() {
     );
   }
 
-  return <AvailableProjectList availableScopes={availableScopes} />;
+  return (
+    <>
+      {availableScopes.canCreate && <CreateProjectDialog />}
+      <AvailableProjectList availableScopes={availableScopes} />
+    </>
+  );
 }
 
 type ProjectListQueryState = UseQueryStatesReturn<typeof projectListParsers>;
@@ -545,6 +561,7 @@ function ResolvedProjectList({
               className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
+              /* eslint-disable-next-line shadcn/no-restyle -- Search icon overlay requires matching input inset. */
               className="pl-9"
               defaultValue={urlState.search}
               id="project-search"
