@@ -19,6 +19,7 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Claim workflow](claim-workflow.md)
 - [Clickdummy use-case traceability](clickdummy/requirements-traceability.md)
 - [Garage S3 infrastructure](infrastructure/garage.md)
+- [Manual test journey (pair walkthrough, T01–T78)](manual-test-journey.md)
 
 ## Decisions
 
