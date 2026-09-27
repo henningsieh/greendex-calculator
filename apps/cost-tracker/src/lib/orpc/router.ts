@@ -55,7 +55,10 @@ import {
   createSetupLink,
   disableSetupLink,
 } from "@/features/projects/procedures/setup-links";
-import { submit } from "@/features/projects/procedures/submission";
+import {
+  previewSubmission,
+  submit,
+} from "@/features/projects/procedures/submission";
 
 export const router = {
   authentication: {
@@ -74,6 +77,7 @@ export const router = {
     saveDraft,
     selectPayoutAccount,
     submit,
+    previewSubmission,
     getHistory,
     requestCorrection,
     approve,

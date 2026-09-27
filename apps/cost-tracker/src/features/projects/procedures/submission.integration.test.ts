@@ -579,6 +579,104 @@ describe("Claim submission", () => {
     ).toHaveLength(1);
   });
 
+  it("previews seven blocked items before a Claim exists without creating one", async () => {
+    await db.delete(claims).where(eq(claims.id, claimId));
+    const preview = await client.claims.previewSubmission({ partnershipId: own });
+    expect(preview?.items).toHaveLength(7);
+    expect(
+      preview?.items.find((item) => item.key === "payoutAccount")?.passed,
+    ).toBe(true);
+    expect(preview?.items.find((item) => item.key === "entries")?.passed).toBe(
+      false,
+    );
+    expect(preview?.items.every((item) => item.passed)).toBe(false);
+    expect(await client.claims.getDraft({ partnershipId: own })).toBeNull();
+    expect(
+      await db.select().from(history).where(eq(history.claimId, claimId)),
+    ).toEqual([]);
+  });
+
+  it("restricts submission preview to the partner and hides it after submission", async () => {
+    await prepare();
+    activeOrg = host;
+    await expect(
+      client.claims.previewSubmission({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeOrg = partner;
+    await submit();
+    expect(
+      await client.claims.previewSubmission({ partnershipId: own }),
+    ).toBeNull();
+  });
+
+  it("previews missing checklist gaps without writing claim state or history", async () => {
+    await db.delete(selections).where(eq(selections.partnershipId, own));
+    const before = await db.select().from(claims).where(eq(claims.id, claimId));
+    const preview = await client.claims.previewSubmission({ partnershipId: own });
+    if (!preview) throw new Error("Expected editable Claim preview");
+    expect(preview.items).toHaveLength(7);
+    expect(preview.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "payoutAccount",
+          passed: false,
+          gaps: expect.arrayContaining([
+            expect.objectContaining({ path: ["payoutAccount"] }),
+          ]),
+        }),
+        expect.objectContaining({
+          key: "entries",
+          passed: false,
+          gaps: expect.arrayContaining([
+            expect.objectContaining({ path: ["entries"] }),
+          ]),
+        }),
+      ]),
+    );
+    expect(preview.calculatedPayableEur).toBeNull();
+    expect(await db.select().from(claims).where(eq(claims.id, claimId))).toEqual(
+      before,
+    );
+    expect(
+      await db.select().from(history).where(eq(history.claimId, claimId)),
+    ).toEqual([]);
+  });
+
+  it("marks missing covered Journey in both participation and journey checklist items", async () => {
+    await prepare();
+    await db.delete(journeys).where(eq(journeys.projectParticipantId, robin));
+    const preview = await client.claims.previewSubmission({ partnershipId: own });
+    expect(
+      preview?.items.find((item) => item.key === "participations"),
+    ).toMatchObject({
+      passed: false,
+      gaps: expect.arrayContaining([
+        expect.objectContaining({ path: ["participations", robin, "journey"] }),
+      ]),
+    });
+    expect(preview?.items.find((item) => item.key === "journeys")?.passed).toBe(
+      false,
+    );
+    expect(preview?.calculatedPayableEur).toBeNull();
+  });
+
+  it("previews the same calculated payable as submission without writing", async () => {
+    await prepare();
+    const before = await db.select().from(claims).where(eq(claims.id, claimId));
+    const preview = await client.claims.previewSubmission({ partnershipId: own });
+    if (!preview) throw new Error("Expected editable Claim preview");
+    expect(preview.items).toHaveLength(7);
+    expect(preview.items.every((item) => item.passed)).toBe(true);
+    expect(preview.calculatedPayableEur).toBe("726.00");
+    expect(await db.select().from(claims).where(eq(claims.id, claimId))).toEqual(
+      before,
+    );
+    expect(
+      await db.select().from(history).where(eq(history.claimId, claimId)),
+    ).toEqual([]);
+    expect((await submit()).approvedAmountEur).toBe(preview.calculatedPayableEur);
+  });
+
   it("itemizes missing checklist items and never partially submits", async () => {
     await db.delete(selections).where(eq(selections.partnershipId, own));
     await expect(submit()).rejects.toMatchObject({

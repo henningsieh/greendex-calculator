@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ClaimSubmission } from "@/features/projects/components/claim-submission";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -128,13 +129,13 @@ function JourneyEditor({
       <CardHeader>
         <CardTitle>Participant Journeys</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-5" id="claim-journeys">
         {saved.length === 0 ? (
           <p>No journeys saved yet.</p>
         ) : (
           <ul>
             {saved.map((journey) => (
-              <li key={journey.id}>
+              <li key={journey.id} id={`journey-${journey.projectParticipantId}`}>
                 {participants.find(
                   (item) => item.id === journey.projectParticipantId,
                 )?.displayName ?? "Participant"}
@@ -143,6 +144,17 @@ function JourneyEditor({
                 read-only)
               </li>
             ))}
+          </ul>
+        )}
+        {participants.some((item) => !existing.has(item.id)) && (
+          <ul aria-label="Participations needing Journeys">
+            {participants
+              .filter((item) => !existing.has(item.id))
+              .map((item) => (
+                <li key={item.id} id={`journey-gap-${item.id}`}>
+                  {item.displayName}: no Participant Journey saved.
+                </li>
+              ))}
           </ul>
         )}
         {editable && (
@@ -302,13 +314,13 @@ function CostEditor({
       <CardHeader>
         <CardTitle>Travel Cost Entries</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-5" id="claim-costs">
         {entries.length === 0 ? (
           <p>No costs saved yet.</p>
         ) : (
           <ul className="space-y-3">
             {entries.map((entry) => (
-              <li key={entry.id}>
+              <li key={entry.id} id={`cost-${entry.id}`}>
                 <p>
                   {entry.transportProfile}: {entry.amountEur} EUR ·{" "}
                   {entry.allocationMethod}
@@ -535,7 +547,7 @@ function ProofEditor({
       <CardHeader>
         <CardTitle>Proof Documents</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4" id="claim-proofs">
         {documents.length === 0 ? (
           <p>No Proof Documents in this Claim.</p>
         ) : (
@@ -570,7 +582,7 @@ function ProofEditor({
         )}
         {feedback && <output>{feedback}</output>}
         {entries.map((entry) => (
-          <div key={entry.id}>
+          <div key={entry.id} id={`proof-${entry.id}`}>
             <p>
               {entry.transportProfile} · {entry.amountEur} EUR
             </p>
@@ -642,6 +654,9 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const { data: documents } = useSuspenseQuery(
     orpcQuery.documents.list.queryOptions(options),
   );
+  const { data: preview } = useSuspenseQuery(
+    orpcQuery.claims.previewSubmission.queryOptions(options),
+  );
   const [feedback, setFeedback] = useState("");
   const [pending, setPending] = useState(false);
   const editable =
@@ -652,6 +667,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
     await Promise.all(
       [
         orpcQuery.claims.getDraft,
+        orpcQuery.claims.previewSubmission,
         orpcQuery.claims.listPayoutAccounts,
         orpcQuery.journeys.list,
         orpcQuery.costs.list,
@@ -706,11 +722,11 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
               ? `Claim ${draft.status} · saved`
               : "No Claim has been created. Opening this workspace saves nothing."}
           </p>
-          <div>
-            <Label htmlFor="claim-payout">Payout Account</Label>
+          <div id="claim-payout">
+            <Label htmlFor="claim-payout-select">Payout Account</Label>
             {payout.accounts.length ? (
               <select
-                id="claim-payout"
+                id="claim-payout-select"
                 className="w-full rounded-md border bg-background p-2"
                 disabled={!editable || pending}
                 value={payout.selectedPayoutAccountId ?? ""}
@@ -751,6 +767,16 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
           {feedback && <output>{feedback}</output>}
         </CardContent>
       </Card>
+      {draft && !editable && (
+        <Alert>
+          <AlertDescription>
+            This Claim is locked for Partner editing. Only a Hosting-side
+            correction request can reopen it.
+            {draft.approvedAmountEur &&
+              ` Calculated payable: ${draft.approvedAmountEur} EUR (computed by the server).`}
+          </AlertDescription>
+        </Alert>
+      )}
       <JourneyEditor
         partnershipId={partnershipId}
         participants={people.participations}
@@ -775,6 +801,13 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
             refresh={refresh}
           />
         </>
+      )}
+      {editable && preview && (
+        <ClaimSubmission
+          partnershipId={partnershipId}
+          preview={preview}
+          refresh={refresh}
+        />
       )}
       {!draft && (
         <Alert>

@@ -26,6 +26,7 @@ const selectedDraft = {
   id: claims.id,
   partnershipId: claims.partnershipId,
   status: claims.status,
+  approvedAmountEur: claims.approvedAmountEur,
 };
 
 async function requirePartnerSide(
@@ -56,6 +57,7 @@ export const getDraft = authorized
       .object({
         id: z.string(),
         partnershipId: z.string(),
+        approvedAmountEur: z.string().nullable(),
         status: z.enum([
           "editable",
           "submitted",

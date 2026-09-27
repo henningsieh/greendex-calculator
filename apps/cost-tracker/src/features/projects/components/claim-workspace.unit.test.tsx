@@ -7,7 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
-  draft: null as null | { id: string; partnershipId: string; status: "editable" },
+  draft: null as null | {
+    id: string;
+    partnershipId: string;
+    status: "editable" | "submitted" | "correction_requested";
+  },
   accounts: [
     { id: "account", accountHolder: "Partner", iban: "DE123", bic: null },
   ],
@@ -38,6 +42,15 @@ const mocks = vi.hoisted(() => ({
     mediaType: string;
     byteSize: number;
   }[],
+  preview: null as null | {
+    items: {
+      key: string;
+      passed: boolean;
+      gaps: { path: string[]; message: string }[];
+    }[];
+    calculatedPayableEur: string | null;
+  },
+  submit: vi.fn(),
   saveDraft: vi.fn(),
   select: vi.fn(),
   saveJourney: vi.fn(),
@@ -65,7 +78,11 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   return {
     ...original,
     orpc: {
-      claims: { saveDraft: mocks.saveDraft, selectPayoutAccount: mocks.select },
+      claims: {
+        saveDraft: mocks.saveDraft,
+        selectPayoutAccount: mocks.select,
+        submit: mocks.submit,
+      },
       journeys: { save: mocks.saveJourney },
       costs: { save: mocks.saveCost, linkDocument: mocks.link },
     },
@@ -74,6 +91,31 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       claims: {
         ...original.orpcQuery.claims,
         getDraft: query(original.orpcQuery.claims.getDraft, () => mocks.draft),
+        previewSubmission: query(
+          original.orpcQuery.claims.previewSubmission,
+          () =>
+            mocks.preview ??
+            (mocks.draft
+              ? null
+              : {
+                  items: [
+                    "payoutAccount",
+                    "entries",
+                    "entryDetails",
+                    "proofDocuments",
+                    "participations",
+                    "journeys",
+                    "fundingRules",
+                  ].map((key) => ({
+                    key,
+                    passed: false,
+                    gaps: [
+                      { path: [key], message: "Complete this requirement." },
+                    ],
+                  })),
+                  calculatedPayableEur: null,
+                }),
+        ),
         listPayoutAccounts: query(
           original.orpcQuery.claims.listPayoutAccounts,
           () => ({
@@ -131,6 +173,11 @@ function mount() {
 beforeEach(() => {
   mocks.draft = null;
   mocks.selected = null;
+  mocks.preview = null;
+  mocks.submit.mockReset().mockImplementation(async () => {
+    mocks.draft = { id: "claim", partnershipId: "own", status: "submitted" };
+    return { id: "claim", status: "submitted", approvedAmountEur: "726.00" };
+  });
   mocks.accounts = [
     { id: "account", accountHolder: "Partner", iban: "DE123", bic: null },
   ];
@@ -156,6 +203,12 @@ describe("Claim workspace", () => {
       await screen.findByText(/Opening this workspace saves nothing/),
     ).toBeInTheDocument();
     expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(
+      within(
+        screen.getByRole("list", { name: "Submission checklist" }),
+      ).getAllByRole("listitem"),
+    ).toHaveLength(7);
+    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "Save Claim draft" }),
     ).toBeDisabled();
@@ -361,6 +414,246 @@ describe("Claim workspace", () => {
     } finally {
       vi.stubGlobal("XMLHttpRequest", original);
     }
+  });
+
+  it("shows all seven server checklist results, links each gap, and blocks incomplete submission", async () => {
+    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.preview = {
+      items: [
+        {
+          key: "payoutAccount",
+          passed: false,
+          gaps: [
+            {
+              path: ["payoutAccount"],
+              message: "Select a Partner Payout Account.",
+            },
+          ],
+        },
+        {
+          key: "entries",
+          passed: false,
+          gaps: [
+            { path: ["entries"], message: "Add at least one Travel Cost Entry." },
+          ],
+        },
+        ...[
+          "entryDetails",
+          "proofDocuments",
+          "participations",
+          "journeys",
+          "fundingRules",
+        ].map((key) => ({
+          key,
+          passed: false,
+          gaps: [
+            {
+              path: [key],
+              message: "Add a Travel Cost Entry to check this requirement.",
+            },
+          ],
+        })),
+      ],
+      calculatedPayableEur: null,
+    };
+    mount();
+    const checklist = await screen.findByRole("list", {
+      name: "Submission checklist",
+    });
+    expect(within(checklist).getAllByRole("listitem")).toHaveLength(7);
+    expect(within(checklist).getAllByRole("link")).toHaveLength(7);
+    expect(
+      within(checklist).getByRole("link", {
+        name: /Select a Partner Payout Account/,
+      }),
+    ).toHaveAttribute("href", "#claim-payout");
+    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("links entry proof and missing participant journey gaps to their owning rows", async () => {
+    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.costs = [
+      {
+        id: "entry",
+        amountEur: "5.00",
+        transportProfile: "train",
+        allocationMethod: "equal",
+        allocations: [
+          { projectParticipantId: "person", amountEur: "5.00", percentage: null },
+        ],
+        proofDocumentIds: [],
+      },
+    ];
+    mocks.preview = {
+      items: [
+        { key: "payoutAccount", passed: true, gaps: [] },
+        { key: "entries", passed: true, gaps: [] },
+        {
+          key: "entryDetails",
+          passed: false,
+          gaps: [
+            {
+              path: ["entries", "entry", "allocations"],
+              message: "Fix allocation.",
+            },
+          ],
+        },
+        {
+          key: "proofDocuments",
+          passed: false,
+          gaps: [
+            {
+              path: ["entries", "entry", "proofDocuments"],
+              message: "Link document.",
+            },
+          ],
+        },
+        { key: "participations", passed: true, gaps: [] },
+        {
+          key: "journeys",
+          passed: false,
+          gaps: [
+            {
+              path: ["participations", "person", "journey"],
+              message: "Add journey.",
+            },
+          ],
+        },
+        { key: "fundingRules", passed: true, gaps: [] },
+      ],
+      calculatedPayableEur: null,
+    };
+    mount();
+    expect(
+      await screen.findByRole("link", { name: /Fix allocation/ }),
+    ).toHaveAttribute("href", "#cost-entry");
+    expect(screen.getByRole("link", { name: /Link document/ })).toHaveAttribute(
+      "href",
+      "#proof-entry",
+    );
+    expect(screen.getByRole("link", { name: /Add journey/ })).toHaveAttribute(
+      "href",
+      "#journey-gap-person",
+    );
+    expect(document.getElementById("cost-entry")).not.toBeNull();
+    expect(document.getElementById("proof-entry")).not.toBeNull();
+    expect(document.getElementById("journey-gap-person")).not.toBeNull();
+  });
+
+  it("shows computed preview, confirms lock before mutation, then keeps workspace read-only", async () => {
+    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.selected = "account";
+    mocks.preview = {
+      items: [
+        "payoutAccount",
+        "entries",
+        "entryDetails",
+        "proofDocuments",
+        "participations",
+        "journeys",
+        "fundingRules",
+      ].map((key) => ({ key, passed: true, gaps: [] })),
+      calculatedPayableEur: "726.00",
+    };
+    mount();
+    expect(
+      await screen.findByText(/Calculated payable: 726.00 EUR/),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
+    expect(mocks.submit).not.toHaveBeenCalled();
+    expect(screen.getByText(/submission locks the Claim/)).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm submission" }),
+    );
+    await waitFor(() =>
+      expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
+    );
+    expect(
+      await screen.findByText(/Claim submitted · saved/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/locked for Partner editing/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Payout Account")).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save journey" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Upload document" })).toBeNull();
+  });
+
+  it("renders a previously submitted Claim read-only on initial load", async () => {
+    mocks.draft = { id: "claim", partnershipId: "own", status: "submitted" };
+    mount();
+    expect(
+      await screen.findByText(/locked for Partner editing/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Payout Account")).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Submit Claim" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save journey" })).toBeNull();
+  });
+
+  it("leaves the Claim editable when submit revalidation rejects a stale preview", async () => {
+    mocks.costs = [
+      {
+        id: "entry",
+        amountEur: "5.00",
+        transportProfile: "train",
+        allocationMethod: "equal",
+        allocations: [
+          { projectParticipantId: "person", amountEur: "5.00", percentage: null },
+        ],
+        proofDocumentIds: [],
+      },
+    ];
+    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.preview = {
+      items: [
+        "payoutAccount",
+        "entries",
+        "entryDetails",
+        "proofDocuments",
+        "participations",
+        "journeys",
+        "fundingRules",
+      ].map((key) => ({ key, passed: true, gaps: [] })),
+      calculatedPayableEur: "726.00",
+    };
+    mocks.submit.mockImplementation(async () => {
+      mocks.preview = {
+        items: mocks.preview!.items.map((item) =>
+          item.key === "proofDocuments"
+            ? {
+                key: item.key,
+                passed: false,
+                gaps: [
+                  {
+                    path: ["entries", "entry", "proofDocuments"],
+                    message: "Link evidence.",
+                  },
+                ],
+              }
+            : item,
+        ),
+        calculatedPayableEur: null,
+      };
+      throw new ORPCError("BAD_REQUEST", {
+        message: "Claim submission checklist is incomplete.",
+      });
+    });
+    mount();
+    await screen.findByText(/Calculated payable: 726.00 EUR/);
+    await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm submission" }),
+    );
+    expect(
+      await screen.findByText(
+        "We could not complete that request. Check your details and try again.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: /Link evidence/ }),
+    ).toHaveAttribute("href", "#proof-entry");
+    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save cost" })).toBeInTheDocument();
   });
 
   it("shows account absence and saved journeys read-only", async () => {
