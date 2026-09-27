@@ -10,6 +10,7 @@ import { createQueryClient } from "@/lib/tanstack-react-query/client";
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   list: vi.fn(),
+  searchOnboarded: vi.fn(),
   update: vi.fn(),
 }));
 
@@ -17,7 +18,13 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/orpc/orpc")>();
   return {
     ...original,
-    orpc: { participations: { create: mocks.create, update: mocks.update } },
+    orpc: {
+      participations: {
+        create: mocks.create,
+        searchOnboarded: mocks.searchOnboarded,
+        update: mocks.update,
+      },
+    },
     orpcQuery: {
       participations: {
         listPartnership: {
@@ -43,6 +50,37 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   };
 });
 
+vi.mock("@/components/ui/popover", async () => {
+  const { createContext, useContext, cloneElement } = await import("react");
+  const Context = createContext({
+    open: false,
+    onOpenChange: (_open: boolean) => {},
+  });
+  return {
+    Popover: ({
+      children,
+      open,
+      onOpenChange,
+    }: {
+      children: React.ReactNode;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }) => (
+      <Context.Provider value={{ open, onOpenChange }}>
+        {children}
+      </Context.Provider>
+    ),
+    PopoverTrigger: ({ render }: { render: React.ReactElement }) => {
+      const { onOpenChange } = useContext(Context);
+      return cloneElement(render as React.ReactElement<{ onClick: () => void }>, {
+        onClick: () => onOpenChange(true),
+      });
+    },
+    PopoverContent: ({ children }: { children: React.ReactNode }) =>
+      useContext(Context).open ? <div>{children}</div> : null,
+  };
+});
+
 import { ParticipantCoordination } from "@/features/projects/components/participant-coordination";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
@@ -62,8 +100,36 @@ async function renderCoordination() {
   );
 }
 
+async function selectOnboardedParticipant(
+  user: ReturnType<typeof userEvent.setup>,
+  id: string,
+  name: string,
+) {
+  await user.click(screen.getByRole("button", { name: "Onboarded Participant" }));
+  await user.type(
+    screen.getByLabelText("Search Onboarded Participant by name, email or ID"),
+    id,
+  );
+  await waitFor(() =>
+    expect(mocks.searchOnboarded).toHaveBeenCalledWith({
+      partnershipId: "own-partnership",
+      search: id,
+    }),
+  );
+  await user.click(await screen.findByText(name));
+}
+
 describe("ParticipantCoordination", () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    Element.prototype.scrollIntoView = vi.fn();
     mocks.list.mockReset().mockResolvedValue({
       participations: [
         {
@@ -85,6 +151,10 @@ describe("ParticipantCoordination", () => {
       ],
     });
     mocks.create.mockReset();
+    mocks.searchOnboarded.mockReset().mockResolvedValue([
+      { id: "user-existing", name: "Existing Candidate" },
+      { id: "host-user", name: "Host Candidate" },
+    ]);
     mocks.update.mockReset();
   });
 
@@ -130,7 +200,7 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await user.type(screen.getByLabelText("Onboarded User ID"), "user-existing");
+    await selectOnboardedParticipant(user, "user-existing", "Existing Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     expect(mocks.create).toHaveBeenCalledWith({
       partnershipId: "own-partnership",
@@ -148,7 +218,7 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await user.type(screen.getByLabelText("Onboarded User ID"), "user-existing");
+    await selectOnboardedParticipant(user, "user-existing", "Existing Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toContain(
@@ -164,7 +234,7 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await user.type(screen.getByLabelText("Onboarded User ID"), "host-user");
+    await selectOnboardedParticipant(user, "host-user", "Host Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     const notice = await screen.findByRole("alert");
     expect(notice.textContent).toContain("Access denied");
