@@ -20,6 +20,9 @@ describe("environment entrypoints", () => {
   const documentationPackage = JSON.parse(
     readFileSync(path.resolve("../../apps/documentation/package.json"), "utf8"),
   ) as PackageManifest;
+  const costTrackerPackage = JSON.parse(
+    readFileSync(path.resolve("../../apps/cost-tracker/package.json"), "utf8"),
+  ) as PackageManifest;
   const turboConfig = JSON.parse(
     readFileSync(path.resolve("../../turbo.json"), "utf8"),
   ) as {
@@ -83,6 +86,12 @@ describe("environment entrypoints", () => {
     );
     expect(documentationPackage.scripts.dev).toBe(
       "dotenv -v NODE_ENV=development -e .env -- sh -c 'next dev --port \"$DOCUMENTATION_PORT\"'",
+    );
+    expect(documentationPackage.scripts.predev).toBe(
+      "dotenv -e .env -- sh -c 'pnpm dlx kill-port \"$DOCUMENTATION_PORT\" || true'",
+    );
+    expect(costTrackerPackage.scripts.predev).toBe(
+      "dotenv -e .env -- sh -c 'pnpm dlx kill-port \"$COST_TRACKER_PORT\" || true'",
     );
     expect(documentationPackage.scripts.start).toBe(
       "dotenv -v NODE_ENV=production -e .env -- sh -c 'next start --port \"$DOCUMENTATION_PORT\"'",
