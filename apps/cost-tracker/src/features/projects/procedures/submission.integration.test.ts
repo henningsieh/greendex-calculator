@@ -692,7 +692,10 @@ describe("Claim submission", () => {
       (await db.select().from(claims).where(eq(claims.partnershipId, own)))[0]
         .status,
     ).toBe("editable");
-    expect(await db.select().from(history)).toEqual([]);
+    // Scoped to this Claim: the shared dev database may hold unrelated history.
+    expect(
+      await db.select().from(history).where(eq(history.claimId, claimId)),
+    ).toEqual([]);
   });
 
   it("derives a capped payable from snapshot and locks all Partner writes with a history event", async () => {
