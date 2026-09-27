@@ -35,10 +35,15 @@ function deliveryFailureDetails(error: unknown): {
         : error instanceof Error
           ? "Error"
           : "Unknown";
-  const code =
-    error !== null && typeof error === "object" && "code" in error
-      ? error.code
-      : undefined;
+  let code: unknown;
+  try {
+    code =
+      error !== null && typeof error === "object" && "code" in error
+        ? error.code
+        : undefined;
+  } catch {
+    code = undefined;
+  }
 
   return {
     errorClass,

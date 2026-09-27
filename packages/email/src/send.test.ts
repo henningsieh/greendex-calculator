@@ -75,6 +75,33 @@ describe("sendEmail", () => {
     ).not.toMatch(/recipient@|sender@|private\.example|secret-token/);
   });
 
+  it("rethrows the original failure when reading its code throws", async () => {
+    const failure = {
+      message: "recipient@private.example secret-token",
+      get code() {
+        throw new Error("smtp.private.example secret-token");
+      },
+    };
+
+    await expect(
+      sendEmail(
+        options,
+        {
+          sendMail: vi.fn().mockRejectedValue(failure),
+        } as unknown as Transporter,
+        sender,
+      ),
+    ).rejects.toBe(failure);
+
+    expect(errorLog).toHaveBeenCalledWith("❌ Email sending failed:", {
+      errorClass: "Unknown",
+      code: "UNKNOWN",
+    });
+    expect(
+      JSON.stringify([...log.mock.calls, ...errorLog.mock.calls]),
+    ).not.toMatch(/recipient@|sender@|private\.example|secret-token/);
+  });
+
   it("does not log message identifiers or message contents on success", async () => {
     const sendMail = vi.fn().mockResolvedValue({
       messageId: "recipient@private.example",
