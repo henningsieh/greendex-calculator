@@ -6,6 +6,7 @@ import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
   claimHistoryTable as history,
+  hostProjectAssignmentsTable as hostAssignments,
   claimsTable as claims,
   costAllocationsTable as allocations,
   member,
@@ -136,7 +137,6 @@ beforeAll(async () => {
     location: "Riga",
     country: "LV",
     organizationId: host,
-    responsibleUserId: actor,
   });
   await db.insert(projects).values({
     id: secondProject,
@@ -146,8 +146,11 @@ beforeAll(async () => {
     location: "Riga",
     country: "LV",
     organizationId: host,
-    responsibleUserId: actor,
   });
+  await db.insert(hostAssignments).values([
+    { projectId: project, userId: actor },
+    { projectId: secondProject, userId: actor },
+  ]);
   await db.insert(partnerships).values([
     { id: own, projectId: project, organizationId: partner },
     { id: foreign, projectId: project, organizationId: other },
@@ -547,9 +550,13 @@ describe("Claim authorization matrix", () => {
         );
     if (role.side === "host" && (!role.assigned || role.role === "participant"))
       await db
-        .update(projects)
-        .set({ responsibleUserId: participantUser })
-        .where(eq(projects.id, project));
+        .delete(hostAssignments)
+        .where(
+          and(
+            eq(hostAssignments.projectId, project),
+            eq(hostAssignments.userId, actor),
+          ),
+        );
     await db
       .update(member)
       .set({ role: role.role })
@@ -582,9 +589,9 @@ describe("Claim authorization matrix", () => {
           .onConflictDoNothing();
       if (role.side === "host" && (!role.assigned || role.role === "participant"))
         await db
-          .update(projects)
-          .set({ responsibleUserId: actor })
-          .where(eq(projects.id, project));
+          .insert(hostAssignments)
+          .values({ projectId: project, userId: actor })
+          .onConflictDoNothing();
     }
   });
 });

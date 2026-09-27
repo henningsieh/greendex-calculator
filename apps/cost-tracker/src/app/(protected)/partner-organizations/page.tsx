@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { ProjectPartnershipManager } from "@/features/projects/components/project-partnership-manager";
 import { SetupLinkCreator } from "@/features/projects/components/setup-link";
+import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
@@ -16,6 +18,9 @@ export const metadata: Metadata = { title: "Partner Organizations" };
 export default async function PartnerOrganizationsPage() {
   if (!(await hasOrganizationMembership())) return null;
 
+  const canAssign = await hasCostTrackerPermissions(await headers(), {
+    projectPartnership: ["create"],
+  });
   const queryClient = getQueryClient();
   await queryClient
     .query(
@@ -33,8 +38,8 @@ export default async function PartnerOrganizationsPage() {
           Partner Organizations
         </h1>
         <p className="mt-4 text-lg leading-8 text-muted-foreground">
-          Assign existing Organizations to Projects hosted by your active
-          Organization and manage those Project Partnerships.
+          Create setup links for hosted Projects, or assign existing Partner
+          Organizations if your role permits.
         </p>
       </header>
 
@@ -44,7 +49,7 @@ export default async function PartnerOrganizationsPage() {
 
       <HydrateClient client={queryClient}>
         <ProjectDataErrorBoundary resource="Project Partnerships">
-          <ProjectPartnershipManager />
+          <ProjectPartnershipManager canAssign={canAssign} />
         </ProjectDataErrorBoundary>
       </HydrateClient>
     </div>

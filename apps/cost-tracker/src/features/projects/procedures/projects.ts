@@ -1,9 +1,7 @@
 import "server-only";
-import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   claimsTable,
-  member,
   organization,
   projectPartnerOrganizationsTable,
   projectsTable,
@@ -26,6 +24,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
+import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import {
   decodeProjectListCursor,
   encodeProjectListCursor,
@@ -779,7 +778,6 @@ export const complete = authorized
       const [project] = await tx
         .select({
           id: projectsTable.id,
-          responsibleUserId: projectsTable.responsibleUserId,
         })
         .from(projectsTable)
         .where(
@@ -793,28 +791,13 @@ export const complete = authorized
         .limit(1);
       if (!project)
         throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
-      const [actor] = await tx
-        .select({ role: member.role })
-        .from(member)
-        .where(
-          and(
-            eq(member.organizationId, orgId),
-            eq(member.userId, context.user.id),
-          ),
-        )
-        .limit(1);
-      if (
-        !actor ||
-        !(
-          hasOrganizationRole(actor.role, "owner") ||
-          hasOrganizationRole(actor.role, "admin") ||
-          (project.responsibleUserId === context.user.id &&
-            hasOrganizationRole(actor.role, "project-coordinator"))
-        )
-      )
-        throw errors.FORBIDDEN({
-          message: "Only assigned Hosting staff may complete this Project.",
-        });
+      await requireHostCoordination(
+        project.id,
+        context.user.id,
+        orgId,
+        errors,
+        tx,
+      );
 
       const partnerships = await tx
         .select({ name: organization.name, status: claimsTable.status })

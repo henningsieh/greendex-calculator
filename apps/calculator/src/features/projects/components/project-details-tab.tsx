@@ -86,7 +86,8 @@ export function ProjectDetailsTab({ project }: ProjectDetailsProps) {
             <Blockquote>
               {project.welcomeMessage}
               <BlockquoteAuthor className="text-sm font-normal">
-                — {project.responsibleUser?.name || project.responsibleUserId}
+                —{" "}
+                {project.hostAssignments.map(({ user }) => user.name).join(", ")}
               </BlockquoteAuthor>
             </Blockquote>
           </div>

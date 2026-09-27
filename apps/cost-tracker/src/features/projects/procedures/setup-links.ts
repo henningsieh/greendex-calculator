@@ -12,6 +12,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 const identifier = z.string().trim().min(1).max(128);
@@ -31,7 +32,6 @@ export const createSetupLink = authorized
       const [project] = await tx
         .select({
           id: projectsTable.id,
-          responsibleUserId: projectsTable.responsibleUserId,
         })
         .from(projectsTable)
         .where(
@@ -46,31 +46,18 @@ export const createSetupLink = authorized
         )
         .for("update")
         .limit(1);
-      // Setup links precede Partnership creation: only this hosted Project's assignment can scope issuance.
-      const [actor] = await tx
-        .select({ role: member.role })
-        .from(member)
-        .where(
-          and(
-            eq(member.organizationId, context.session.activeOrganizationId!),
-            eq(member.userId, context.user.id),
-          ),
-        )
-        .limit(1);
-      if (
-        !project ||
-        !actor ||
-        !(
-          hasOrganizationRole(actor.role, "owner") ||
-          hasOrganizationRole(actor.role, "admin") ||
-          (hasOrganizationRole(actor.role, "project-coordinator") &&
-            project.responsibleUserId === context.user.id)
-        )
-      )
+      if (!project)
         throw errors.FORBIDDEN({
           message:
             "Only assigned Hosting staff can create a setup link for this Project.",
         });
+      await requireHostCoordination(
+        project.id,
+        context.user.id,
+        context.session.activeOrganizationId,
+        errors,
+        tx,
+      );
       const expiresAt = new Date(Date.now() + SETUP_LINK_TTL_MS);
       const [link] = await tx
         .insert(links)
@@ -146,17 +133,16 @@ export const consumeSetupLink = authorized
 
       if (input.organization.kind === "existing") {
         const [ownership] = await tx
-          .select({ id: member.id })
+          .select({ role: member.role })
           .from(member)
           .where(
             and(
               eq(member.userId, context.user.id),
               eq(member.organizationId, input.organization.organizationId),
-              eq(member.role, "owner"),
             ),
           )
           .limit(1);
-        if (!ownership)
+        if (!ownership || !hasOrganizationRole(ownership.role, "owner"))
           throw errors.FORBIDDEN({
             message: "You must be an Owner of the selected Organization.",
           });

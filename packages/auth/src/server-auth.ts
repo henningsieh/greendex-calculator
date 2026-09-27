@@ -123,8 +123,10 @@ export function createServerAuth(config: ServerAuthConfig) {
           },
         },
       }),
-      nextCookies(),
       ...(config.plugins ?? []),
+      // Cookie integration must stay last so hooks.after cookies from
+      // preceding plugins are forwarded to the framework cookie store.
+      nextCookies(),
     ],
     session: config.session,
     databaseHooks: {

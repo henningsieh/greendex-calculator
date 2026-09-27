@@ -8,8 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
+
+const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
+const searchOwnedOrganizations = (search: string) =>
+  orpc.organizations.listMine({ search });
 
 type SetupError =
   | "invalid"
@@ -180,12 +185,12 @@ export function SetupLinkCreator() {
         </p>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={create}>
           <div className="space-y-2">
-            <Label htmlFor="setup-project">Hosted Project ID</Label>
-            <Input
-              id="setup-project"
-              required
+            <span className="text-sm font-medium">Hosted Project</span>
+            <EntityCombobox
+              label="Hosted Project"
               value={projectId}
-              onChange={(event) => setProjectId(event.target.value)}
+              onChange={setProjectId}
+              search={searchHosted}
             />
           </div>
           <div className="space-y-2">
@@ -199,7 +204,7 @@ export function SetupLinkCreator() {
             />
           </div>
           <div>
-            <Button disabled={pending} type="submit">
+            <Button disabled={pending || !projectId} type="submit">
               {pending ? "Neuer Link…" : "Neuer Link"}
             </Button>
           </div>
@@ -334,21 +339,23 @@ export function SetupLinkRecipient({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="setup-org-id">Organization ID</Label>
-                  <Input
-                    id="setup-org-id"
-                    required
+                  <span className="text-sm font-medium">Organization</span>
+                  <EntityCombobox
+                    label="Organization"
                     value={organizationId}
-                    onChange={(event) => setOrganizationId(event.target.value)}
+                    onChange={setOrganizationId}
+                    search={searchOwnedOrganizations}
                   />
                   <p>
                     Only an Owner of this Organization can complete setup.
-                    Ownership is verified by the server when you submit; entering
-                    an ID does not grant access.
+                    Ownership is verified by the server when you submit.
                   </p>
                 </div>
               )}
-              <Button disabled={pending} type="submit">
+              <Button
+                disabled={pending || (kind === "existing" && !organizationId)}
+                type="submit"
+              >
                 {pending ? "Completing…" : "Complete setup"}
               </Button>
             </form>

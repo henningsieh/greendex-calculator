@@ -32,6 +32,10 @@ import {
   update as updateJourney,
 } from "@/features/projects/procedures/journeys";
 import { listOnboardingProgress } from "@/features/projects/procedures/onboarding-progress";
+import {
+  searchOrganizations,
+  listMyOrganizations,
+} from "@/features/projects/procedures/organizations";
 import { participations } from "@/features/projects/procedures/participations";
 import {
   assignPartnership,
@@ -55,6 +59,7 @@ import {
   requestCorrection,
   reviewerAccess,
 } from "@/features/projects/procedures/review";
+import { searchHosted } from "@/features/projects/procedures/search-hosted";
 import {
   consumeSetupLink,
   createSetupLink,
@@ -97,7 +102,9 @@ export const router = {
   costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
   documents: { list: listDocuments },
   journeys: { list: listJourneys, save: saveJourney, update: updateJourney },
+  organizations: { search: searchOrganizations, listMine: listMyOrganizations },
   projects: {
+    searchHosted,
     get: getProject,
     complete,
     listHosted,

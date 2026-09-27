@@ -5,4 +5,4 @@ export {
   participantRole as participant,
   legacyCalculatorAdminRole as admin,
   type ProjectPermission,
-} from "@greendex/auth";
+} from "@greendex/auth/permissions";

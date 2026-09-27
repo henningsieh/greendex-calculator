@@ -38,6 +38,7 @@
     "@tanstack/react-table": "catalog:",
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
+    "cmdk": "^1.1.1",
     "cn": "^0.2.5",
     "dotenv-cli": "catalog:",
     "drizzle-orm": "catalog:",
@@ -77,7 +78,7 @@
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "^5.0.0",
+    "vitest": "catalog:",
     "ws": "^8.21.3"
   }
 }

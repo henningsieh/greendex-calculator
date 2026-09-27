@@ -199,7 +199,6 @@ describe("Cost Tracker Better Auth", () => {
       endDate: now,
       location: "Riga",
       country: "LV",
-      responsibleUserId: inviterId,
       organizationId: hostId,
     });
     await db

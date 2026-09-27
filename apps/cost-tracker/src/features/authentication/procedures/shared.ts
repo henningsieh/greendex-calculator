@@ -101,7 +101,6 @@ export async function partnershipForIssuer(
       projectId: partnerships.projectId,
       partnerId: partnerships.organizationId,
       hostId: projects.organizationId,
-      responsibleUserId: projects.responsibleUserId,
       archived: projects.archived,
     })
     .from(partnerships)

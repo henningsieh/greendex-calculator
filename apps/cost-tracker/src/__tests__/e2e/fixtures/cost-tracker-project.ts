@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
-import { organization, projectsTable, user } from "@greendex/database/schema";
+import {
+  hostProjectAssignmentsTable,
+  organization,
+  projectsTable,
+  user,
+} from "@greendex/database/schema";
 import { and, eq } from "drizzle-orm";
 
 // oxlint-disable-next-line import/no-relative-parent-imports -- Uses the canonical side-effect-free seed identity for a self-cleaning Cost Tracker fixture.
@@ -46,12 +51,15 @@ export class CostTrackerProjectFixture {
       endDate: new Date("2026-09-03T00:00:00.000Z"),
       location: "Berlin",
       country: "DE",
-      responsibleUserId: seedUser.id,
       organizationId: seedOrganization.id,
       costSubmissionWindowOpen: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    await db
+      .insert(hostProjectAssignmentsTable)
+      .values({ projectId: this.projectId, userId: seedUser.id });
   }
 
   async teardown() {
