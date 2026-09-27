@@ -25,6 +25,7 @@ import {
   save as saveCost,
 } from "@/features/projects/procedures/costs";
 import { list as listDocuments } from "@/features/projects/procedures/documents";
+import { duplicateReviews } from "@/features/projects/procedures/duplicate-reviews";
 import {
   list as listJourneys,
   save as saveJourney,
@@ -74,6 +75,7 @@ export const router = {
   },
   participantOnboarding,
   participations: { ...participations, listOnboardingProgress },
+  duplicateReviews,
   claims: {
     getDraft,
     listPayoutAccounts,

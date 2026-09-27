@@ -4,6 +4,7 @@ import { db } from "@greendex/database";
 import {
   claimsTable as claims,
   costAllocationsTable as allocations,
+  duplicateReviewTasksTable as reviewTasks,
   member,
   participantAgreementAcceptancesTable as acceptances,
   participantInvitationBridgesTable as bridges,
@@ -127,7 +128,7 @@ export function createParticipationProcedures(
             "Participant agreement is not yet available; use the invitation onboarding path later.",
         });
       try {
-        return await db.transaction(async (tx) => {
+        const outcome = await db.transaction(async (tx) => {
           const [partnership] = await tx
             .select({ id: partnerships.id })
             .from(partnerships)
@@ -205,7 +206,18 @@ export function createParticipationProcedures(
               ),
             )
             .limit(1);
-          if (duplicate) throw errors.BAD_REQUEST({ message: mergeMessage });
+          if (duplicate) {
+            await tx
+              .insert(reviewTasks)
+              .values({
+                partnershipId: input.partnershipId,
+                existingParticipationId: duplicate.id,
+                candidateUserId: candidate.id,
+                candidateEmail: email,
+              })
+              .onConflictDoNothing();
+            return { duplicate: true as const };
+          }
           const [created] = await tx
             .insert(participants)
             .values({
@@ -217,11 +229,50 @@ export function createParticipationProcedures(
             })
             .returning(selected);
           if (!created) throw new Error("Participation insert returned no row");
-          return created;
+          return { duplicate: false as const, created };
         });
-      } catch (error) {
-        if (postgresCode(error) === "23505")
+        if (outcome.duplicate)
           throw errors.BAD_REQUEST({ message: mergeMessage });
+        return outcome.created;
+      } catch (error) {
+        if (postgresCode(error) === "23505") {
+          // A concurrent onboarding write can win the Participation unique key.
+          // Recover its duplicate signal in a fresh transaction after rollback.
+          const [candidate] = await db
+            .select({ email: user.email })
+            .from(user)
+            .where(eq(user.id, input.userId))
+            .limit(1);
+          if (candidate) {
+            const email = candidate.email.trim().toLowerCase();
+            const [duplicate] = await db
+              .select({ id: participants.id })
+              .from(participants)
+              .leftJoin(user, eq(user.id, participants.userId))
+              .where(
+                and(
+                  eq(participants.projectId, scope.projectId),
+                  or(
+                    eq(participants.userId, input.userId),
+                    eq(participants.email, email),
+                    sql`lower(trim(${user.email})) = ${email}`,
+                  ),
+                ),
+              )
+              .limit(1);
+            if (duplicate)
+              await db
+                .insert(reviewTasks)
+                .values({
+                  partnershipId: input.partnershipId,
+                  existingParticipationId: duplicate.id,
+                  candidateUserId: input.userId,
+                  candidateEmail: email,
+                })
+                .onConflictDoNothing();
+          }
+          throw errors.BAD_REQUEST({ message: mergeMessage });
+        }
         if (postgresCode(error) === "23514")
           throw errors.FORBIDDEN({
             message: "Project Partnership is unavailable.",

@@ -16,6 +16,7 @@ import {
   participantInvitationBridgesTable as bridges,
   invitation,
   participantJourneysTable as journeys,
+  duplicateReviewTasksTable as reviewTasks,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { eq } from "drizzle-orm";
@@ -37,6 +38,7 @@ import {
   assignPartnerCoordinator,
   removePartnerCoordinator,
 } from "@/features/projects/procedures/coordination";
+import { duplicateReviews } from "@/features/projects/procedures/duplicate-reviews";
 import { createParticipationProcedures } from "@/features/projects/procedures/participations";
 
 const s = randomUUID();
@@ -55,6 +57,7 @@ const version = { id: "fixture-v1", contentHash: "fixture-hash" };
 const client = createRouterClient(
   {
     participations: createParticipationProcedures(() => version),
+    duplicateReviews,
     assignments: {
       assign: assignPartnerCoordinator,
       remove: removePartnerCoordinator,
@@ -138,6 +141,7 @@ beforeEach(() => {
 });
 
 afterAll(async () => {
+  await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(bridges).where(eq(bridges.projectId, project));
   await db.delete(invitation).where(eq(invitation.organizationId, host));
@@ -217,6 +221,7 @@ describe("assignment-scoped participation coordination", () => {
       client.participations.remove({ partnershipId: own, id: created.id }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     activeOrg = partner;
+    await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
     await client.participations.remove({ partnershipId: own, id: created.id });
     expect(
       (await client.participations.listPartnership({ partnershipId: own }))
@@ -241,8 +246,170 @@ describe("assignment-scoped participation coordination", () => {
         code: "BAD_REQUEST",
         message: expect.stringMatching(/merge review/i),
       });
+      expect(await client.duplicateReviews.list({ partnershipId: own })).toEqual([
+        expect.objectContaining({
+          existingParticipationId: placeholder!.id,
+          candidateUserId: candidate,
+          status: "open",
+        }),
+      ]);
     } finally {
+      await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
       await db.delete(participants).where(eq(participants.id, placeholder!.id));
+    }
+  });
+
+  it("persists one review task for repeated same-User attempts and enforces self-assignment and resolution", async () => {
+    const existing = await client.participations.create({
+      partnershipId: own,
+      userId: candidate,
+    });
+    for (let attempt = 0; attempt < 2; attempt++)
+      await expect(
+        client.participations.create({ partnershipId: own, userId: candidate }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const [task] = await client.duplicateReviews.list({ partnershipId: own });
+    expect(task).toMatchObject({
+      existingParticipationId: existing.id,
+      candidateUserId: candidate,
+      candidateEmail: email,
+      status: "open",
+      assignedToUserId: null,
+    });
+    expect(
+      await client.duplicateReviews.list({ partnershipId: own }),
+    ).toHaveLength(1);
+    await expect(
+      client.duplicateReviews.resolve({
+        partnershipId: own,
+        id: task!.id,
+        decision: "same_person",
+        survivorParticipationId: existing.id,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    actor = candidate;
+    activeOrg = host;
+    await expect(
+      client.duplicateReviews.list({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      client.duplicateReviews.assign({ partnershipId: own, id: task!.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    actor = coordinator;
+    activeOrg = partner;
+    await expect(
+      client.duplicateReviews.list({ partnershipId: foreign }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      client.duplicateReviews.assign({ partnershipId: foreign, id: task!.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(
+      await client.duplicateReviews.assign({ partnershipId: own, id: task!.id }),
+    ).toMatchObject({ status: "assigned", assignedToUserId: coordinator });
+    await expect(
+      client.duplicateReviews.assign({ partnershipId: own, id: task!.id }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const secondMembershipId = randomUUID();
+    await db.insert(member).values({
+      id: secondMembershipId,
+      userId: candidate,
+      organizationId: partner,
+      role: "member",
+      createdAt: new Date(),
+    });
+    await db
+      .insert(assignments)
+      .values({ partnershipId: own, userId: candidate });
+    try {
+      actor = candidate;
+      await expect(
+        client.duplicateReviews.resolve({
+          partnershipId: own,
+          id: task!.id,
+          decision: "dismiss",
+          survivorParticipationId: existing.id,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    } finally {
+      actor = coordinator;
+      await db.delete(assignments).where(eq(assignments.userId, candidate));
+      await db.delete(member).where(eq(member.id, secondMembershipId));
+    }
+    await expect(
+      client.duplicateReviews.resolve({
+        partnershipId: own,
+        id: task!.id,
+        decision: "same_person",
+        survivorParticipationId: "wrong",
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.duplicateReviews.resolve({
+        partnershipId: foreign,
+        id: task!.id,
+        decision: "same_person",
+        survivorParticipationId: existing.id,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(
+      await client.duplicateReviews.resolve({
+        partnershipId: own,
+        id: task!.id,
+        decision: "same_person",
+        survivorParticipationId: existing.id,
+      }),
+    ).toMatchObject({
+      status: "resolved",
+      decision: "same_person",
+      survivorParticipationId: existing.id,
+    });
+    await expect(
+      client.duplicateReviews.resolve({
+        partnershipId: own,
+        id: task!.id,
+        decision: "dismiss",
+        survivorParticipationId: existing.id,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
+    await client.participations.remove({ partnershipId: own, id: existing.id });
+  });
+
+  it("detects the same User even when stored email differs and records a distinct-persons decision", async () => {
+    const [existing] = await db
+      .insert(participants)
+      .values({
+        projectId: project,
+        representedOrganizationId: other,
+        displayName: "Earlier email",
+        userId: candidate,
+        email: `old-${s}@example.org`,
+      })
+      .returning({ id: participants.id });
+    try {
+      await expect(
+        client.participations.create({ partnershipId: own, userId: candidate }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      const [task] = await client.duplicateReviews.list({ partnershipId: own });
+      expect(task).toMatchObject({
+        existingParticipationId: existing!.id,
+        candidateEmail: email,
+      });
+      await client.duplicateReviews.assign({ partnershipId: own, id: task!.id });
+      expect(
+        await client.duplicateReviews.resolve({
+          partnershipId: own,
+          id: task!.id,
+          decision: "distinct_persons",
+          survivorParticipationId: existing!.id,
+        }),
+      ).toMatchObject({
+        decision: "distinct_persons",
+        survivorParticipationId: existing!.id,
+      });
+    } finally {
+      await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
+      await db.delete(participants).where(eq(participants.id, existing!.id));
     }
   });
 

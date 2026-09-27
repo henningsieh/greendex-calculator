@@ -415,6 +415,62 @@ export const projectParticipantsTable = pgTable(
   ],
 );
 
+export const duplicateReviewStatusEnum = pgEnum("duplicate_review_status", [
+  "open",
+  "assigned",
+  "resolved",
+]);
+export const duplicateReviewDecisionEnum = pgEnum("duplicate_review_decision", [
+  "same_person",
+  "distinct_persons",
+  "dismiss",
+]);
+
+/** A duplicate attempt is retained without creating a second Participation. */
+export const duplicateReviewTasksTable = pgTable(
+  "duplicate_review_task",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    partnershipId: text("partnership_id")
+      .notNull()
+      .references(() => projectPartnerOrganizationsTable.id, {
+        onDelete: "cascade",
+      }),
+    existingParticipationId: text("existing_participation_id")
+      .notNull()
+      .references(() => projectParticipantsTable.id),
+    candidateUserId: text("candidate_user_id")
+      .notNull()
+      .references(() => user.id),
+    candidateEmail: text("candidate_email").notNull(),
+    status: duplicateReviewStatusEnum("status").notNull().default("open"),
+    assignedToUserId: text("assigned_to_user_id").references(() => user.id),
+    decision: duplicateReviewDecisionEnum("decision"),
+    survivorParticipationId: text("survivor_participation_id").references(
+      () => projectParticipantsTable.id,
+    ),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => [
+    uniqueIndex("duplicate_review_attempt_unique").on(
+      table.partnershipId,
+      table.existingParticipationId,
+      table.candidateUserId,
+    ),
+    check(
+      "duplicate_review_lifecycle_check",
+      sql`(
+      (${table.status} = 'open' and ${table.assignedToUserId} is null and ${table.decision} is null and ${table.survivorParticipationId} is null and ${table.resolvedAt} is null) or
+      (${table.status} = 'assigned' and ${table.assignedToUserId} is not null and ${table.decision} is null and ${table.survivorParticipationId} is null and ${table.resolvedAt} is null) or
+      (${table.status} = 'resolved' and ${table.assignedToUserId} is not null and ${table.decision} is not null and ${table.survivorParticipationId} = ${table.existingParticipationId} and ${table.resolvedAt} is not null)
+    )`,
+    ),
+  ],
+);
+
 // Claim persistence. Monetary values stay strings at the driver boundary: never
 // round exact EUR or percentage values through JavaScript floating point.
 export const claimStatusEnum = pgEnum("claim_status", [

@@ -169,6 +169,13 @@
       "when": 1790491530767,
       "tag": "0023_tricky_shatterstar",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790494934167,
+      "tag": "0024_bizarre_spot",
+      "breakpoints": true
     }
   ]
 }
