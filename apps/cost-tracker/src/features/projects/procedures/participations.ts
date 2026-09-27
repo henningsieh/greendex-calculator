@@ -1,5 +1,4 @@
 import "server-only";
-import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   claimsTable as claims,
@@ -26,6 +25,7 @@ import {
 import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
+  requireHostCoordination,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
 import { authorized } from "@/lib/orpc/middleware";
@@ -475,41 +475,12 @@ export function createParticipationProcedures(
     .input(z.object({ projectId: coordinationId }))
     .output(z.array(participation))
     .handler(async ({ input, context, errors }) => {
-      const orgId = context.session.activeOrganizationId;
-      const [project] = await db
-        .select({ responsibleUserId: projects.responsibleUserId })
-        .from(projects)
-        .where(
-          and(
-            eq(projects.id, input.projectId),
-            eq(projects.organizationId, orgId ?? ""),
-            eq(projects.archived, false),
-          ),
-        )
-        .limit(1);
-      const [membership] = orgId
-        ? await db
-            .select({ role: member.role })
-            .from(member)
-            .where(
-              and(
-                eq(member.organizationId, orgId),
-                eq(member.userId, context.user.id),
-              ),
-            )
-            .limit(1)
-        : [];
-      if (
-        !project ||
-        !membership ||
-        !(
-          hasOrganizationRole(membership.role, "owner") ||
-          hasOrganizationRole(membership.role, "admin") ||
-          (project.responsibleUserId === context.user.id &&
-            hasOrganizationRole(membership.role, "project-coordinator"))
-        )
-      )
-        throw errors.FORBIDDEN();
+      await requireHostCoordination(
+        input.projectId,
+        context.user.id,
+        context.session.activeOrganizationId,
+        errors,
+      );
       return db
         .select(selected)
         .from(participants)

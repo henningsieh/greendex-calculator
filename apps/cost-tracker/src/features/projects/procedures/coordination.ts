@@ -2,6 +2,7 @@ import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   member,
+  hostProjectAssignmentsTable as hostAssignments,
   partnerCoordinatorAssignmentsTable as assignments,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
@@ -14,6 +15,60 @@ import { authorized } from "@/lib/orpc/middleware";
 export const coordinationId = z.string().trim().min(1).max(128);
 
 type Denial = { FORBIDDEN: (options: { message: string }) => Error };
+
+/** Verifies hosted Project membership and explicit Host-side coordination. */
+export async function requireHostCoordination(
+  projectId: string,
+  actorId: string,
+  activeOrganizationId: string | null | undefined,
+  errors: Denial,
+  executor: Pick<typeof db, "select"> = db,
+) {
+  const [project] = await executor
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.id, projectId),
+        eq(projects.organizationId, activeOrganizationId ?? ""),
+        eq(projects.archived, false),
+      ),
+    )
+    .limit(1);
+  const [membership] = activeOrganizationId
+    ? await executor
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.organizationId, activeOrganizationId),
+            eq(member.userId, actorId),
+          ),
+        )
+        .limit(1)
+    : [];
+  if (!project || !membership)
+    throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
+  if (
+    hasOrganizationRole(membership.role, "owner") ||
+    hasOrganizationRole(membership.role, "admin")
+  )
+    return project;
+  if (hasOrganizationRole(membership.role, "project-coordinator")) {
+    const [assignment] = await executor
+      .select({ userId: hostAssignments.userId })
+      .from(hostAssignments)
+      .where(
+        and(
+          eq(hostAssignments.projectId, projectId),
+          eq(hostAssignments.userId, actorId),
+        ),
+      )
+      .limit(1);
+    if (assignment) return project;
+  }
+  throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
+}
 
 /** Verifies both the active Organization and the actor's persisted staff scope. */
 export async function requirePartnerCoordination(
@@ -71,17 +126,13 @@ export async function requirePartnerCoordination(
       .limit(1);
     if (assignment) return scope;
   } else {
-    const [hosted] = await db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.id, scope.projectId),
-          eq(projects.responsibleUserId, actorId),
-        ),
-      )
-      .limit(1);
-    if (hosted) return scope;
+    await requireHostCoordination(
+      scope.projectId,
+      actorId,
+      activeOrganizationId,
+      errors,
+    );
+    return scope;
   }
   throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
 }

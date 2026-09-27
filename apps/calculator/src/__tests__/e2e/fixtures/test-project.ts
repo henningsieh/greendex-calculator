@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable,
   member,
   organization,
   projectSharedTravelLegsTable,
@@ -59,10 +60,13 @@ export class TestProjectFixture {
       welcomeMessage:
         "Welcome to the E2E Test Project! Let's calculate your carbon footprint.",
       organizationId: this.orgId,
-      responsibleUserId: this.userId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    await db
+      .insert(hostProjectAssignmentsTable)
+      .values({ projectId: this.projectId, userId: this.userId });
 
     // Add canonical Project Shared Travel for participant-visible coverage.
     const sharedTravelLegs: Omit<

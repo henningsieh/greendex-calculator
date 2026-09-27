@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable as hostAssignments,
   organization,
   projectParticipantsTable,
   projectPartnerOrganizationsTable,
@@ -128,7 +129,6 @@ beforeAll(async () => {
       endDate: new Date("2026-09-03T00:00:00.000Z"),
       location: "Tallinn",
       country: "EE",
-      responsibleUserId: userId,
       organizationId: hostId,
     },
     {
@@ -138,10 +138,15 @@ beforeAll(async () => {
       endDate: new Date("2026-10-03T00:00:00.000Z"),
       location: "Riga",
       country: "LV",
-      responsibleUserId: userId,
       organizationId: foreignHostId,
     },
   ]);
+  await db
+    .insert(hostAssignments)
+    .values({ projectId: projectId, userId: userId });
+  await db
+    .insert(hostAssignments)
+    .values({ projectId: foreignProjectId, userId });
   await db.insert(projectPartnerOrganizationsTable).values([
     {
       id: assignedPartnershipId,

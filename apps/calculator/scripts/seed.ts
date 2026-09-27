@@ -14,6 +14,7 @@ import { Buffer } from "node:buffer";
 
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
 import {
+  hostProjectAssignmentsTable,
   projectSharedTravelLegsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -238,13 +239,13 @@ async function seed() {
         location: location.city,
         country: location.country,
         welcomeMessage: `Welcome to ${PROJECT_NAMES[i]}! We're excited to have you join us for this important sustainability initiative.`,
-        responsibleUserId: userId,
         organizationId: orgId,
         archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
+      await db.insert(hostProjectAssignmentsTable).values({ projectId, userId });
       projectIds.push(projectId);
       console.log(
         `  ✅ Project ${i + 1}/10: ${PROJECT_NAMES[i]} in ${location.city}, ${location.country}`,

@@ -98,11 +98,6 @@ export const projectsTable = pgTable(
     country: text("country").$type<EUCountryCode>().notNull(),
     welcomeMessage: text("welcome_message"),
 
-    // Foreign key to user (responsible team member)
-    responsibleUserId: text("responsible_user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-
     // Foreign key to organization - projects are scoped to organizations
     organizationId: text("organization_id")
       .notNull()
@@ -211,6 +206,21 @@ export const projectPartnerOrganizationsTable = pgTable(
       table.organizationId,
     ),
   ],
+);
+
+/** Explicit Host-side coordination assignment; membership alone is not authority. */
+export const hostProjectAssignmentsTable = pgTable(
+  "host_project_assignment",
+  {
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.projectId, table.userId] })],
 );
 
 /** Explicit Partner-side coordination assignment; membership alone is not authority. */
@@ -781,10 +791,7 @@ export const claimHistoryTable = pgTable(
 
 // project - relations
 export const projectRelations = relations(projectsTable, ({ one, many }) => ({
-  responsibleUser: one(user, {
-    fields: [projectsTable.responsibleUserId],
-    references: [user.id],
-  }),
+  hostAssignments: many(hostProjectAssignmentsTable),
   organization: one(organization, {
     fields: [projectsTable.organizationId],
     references: [organization.id],
@@ -793,6 +800,20 @@ export const projectRelations = relations(projectsTable, ({ one, many }) => ({
   participants: many(projectParticipantsTable),
   partnerOrganizations: many(projectPartnerOrganizationsTable),
 }));
+
+export const hostProjectAssignmentRelations = relations(
+  hostProjectAssignmentsTable,
+  ({ one }) => ({
+    project: one(projectsTable, {
+      fields: [hostProjectAssignmentsTable.projectId],
+      references: [projectsTable.id],
+    }),
+    user: one(user, {
+      fields: [hostProjectAssignmentsTable.userId],
+      references: [user.id],
+    }),
+  }),
+);
 
 // projectSharedTravelLeg - relations
 export const projectSharedTravelLegRelations = relations(

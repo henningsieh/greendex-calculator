@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "@greendex/database";
 import {
   claimsTable,
+  hostProjectAssignmentsTable as hostAssignments,
   member,
   organization,
   projectPartnerOrganizationsTable,
@@ -119,8 +120,13 @@ describe("projects procedures", () => {
           endDate: now,
           location: "Riga",
           country: "LV" as const,
-          responsibleUserId: actor,
           organizationId: host,
+        })),
+      );
+      await db.insert(hostAssignments).values(
+        [projectId, secondProjectId].map((projectId) => ({
+          projectId,
+          userId: actor,
         })),
       );
       await db.insert(projectPartnerOrganizationsTable).values([
@@ -275,17 +281,16 @@ describe("projects procedures", () => {
         await setClaim(2, "paid");
         if (role === "owner" || role === "admin") {
           await db
-            .update(projectsTable)
-            .set({ responsibleUserId: otherUser })
-            .where(eq(projectsTable.id, projectId));
+            .delete(hostAssignments)
+            .where(eq(hostAssignments.projectId, projectId));
         }
         try {
           expect(await complete()).toEqual({ projectId, completed: true });
         } finally {
           await db
-            .update(projectsTable)
-            .set({ responsibleUserId: actor })
-            .where(eq(projectsTable.id, projectId));
+            .insert(hostAssignments)
+            .values({ projectId, userId: actor })
+            .onConflictDoNothing();
         }
       },
     );
@@ -306,16 +311,15 @@ describe("projects procedures", () => {
           .set({ role })
           .where(eq(member.organizationId, host));
         await db
-          .update(projectsTable)
-          .set({ responsibleUserId: otherUser })
-          .where(eq(projectsTable.id, projectId));
+          .delete(hostAssignments)
+          .where(eq(hostAssignments.projectId, projectId));
         try {
           await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
         } finally {
           await db
-            .update(projectsTable)
-            .set({ responsibleUserId: actor })
-            .where(eq(projectsTable.id, projectId));
+            .insert(hostAssignments)
+            .values({ projectId, userId: actor })
+            .onConflictDoNothing();
         }
       },
     );
@@ -381,7 +385,6 @@ describe("projects procedures", () => {
         endDate: new Date("2026-08-03T00:00:00.000Z"),
         location: "Prague",
         country: "CZ",
-        responsibleUserId: userId,
         organizationId: hostId,
         costSubmissionWindowOpen: true,
       });
@@ -430,7 +433,7 @@ describe("projects procedures", () => {
           },
         ],
       });
-      expect(detail).not.toHaveProperty("responsibleUserId");
+      expect(detail).not.toHaveProperty("hostAssignments");
     });
 
     it("returns only the active Partner assignment and Hosting identity", async () => {
@@ -568,7 +571,6 @@ describe("projects procedures", () => {
           endDate: new Date("2026-06-03T00:00:00.000Z"),
           location: "Berlin",
           country: "DE",
-          responsibleUserId: userId,
           organizationId: hostId,
           costSubmissionWindowOpen: true,
         },
@@ -579,7 +581,6 @@ describe("projects procedures", () => {
           endDate: new Date("2026-06-05T00:00:00.000Z"),
           location: "Paris",
           country: "FR",
-          responsibleUserId: userId,
           organizationId: hostId,
         },
         {
@@ -589,7 +590,6 @@ describe("projects procedures", () => {
           endDate: new Date("2026-07-05T00:00:00.000Z"),
           location: "Vienna",
           country: "AT",
-          responsibleUserId: userId,
           organizationId: hostId,
           costSubmissionWindowOpen: true,
         },
@@ -600,7 +600,6 @@ describe("projects procedures", () => {
           endDate: new Date("2026-05-02T00:00:00.000Z"),
           location: "Rome",
           country: "IT",
-          responsibleUserId: userId,
           organizationId: foreignHostId,
           costSubmissionWindowOpen: true,
         },
@@ -611,7 +610,6 @@ describe("projects procedures", () => {
           endDate: new Date("2026-04-02T00:00:00.000Z"),
           location: "Madrid",
           country: "ES",
-          responsibleUserId: userId,
           organizationId: hostId,
           archived: true,
         },
@@ -622,7 +620,6 @@ describe("projects procedures", () => {
           endDate: new Date(getGeneratedDate(index).getTime() + 86_400_000),
           location: "Brussels",
           country: "BE" as const,
-          responsibleUserId: userId,
           organizationId: hostId,
         })),
       ]);
@@ -876,7 +873,7 @@ describe("projects procedures", () => {
       for (const row of result.rows) {
         expect(row).not.toHaveProperty("organizationId");
         expect(row).not.toHaveProperty("partnerOrganizations");
-        expect(row).not.toHaveProperty("responsibleUserId");
+        expect(row).not.toHaveProperty("hostAssignments");
         expect(row).not.toHaveProperty("amount");
       }
     });
@@ -949,7 +946,6 @@ describe("projects procedures", () => {
           endDate: new Date("2026-06-03T00:00:00.000Z"),
           location: "Berlin",
           country: "DE",
-          responsibleUserId: userId,
           organizationId: hostingOrganizationId,
         },
         {
@@ -959,7 +955,6 @@ describe("projects procedures", () => {
           endDate: new Date("2026-07-03T00:00:00.000Z"),
           location: "Paris",
           country: "FR",
-          responsibleUserId: userId,
           organizationId: hostingOrganizationId,
           archived: true,
         },

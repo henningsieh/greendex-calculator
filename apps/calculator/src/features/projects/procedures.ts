@@ -1,6 +1,7 @@
 import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable,
   projectSharedTravelLegsTable,
   projectParticipantsTable,
   projectsTable,
@@ -26,6 +27,20 @@ import {
   ProjectForParticipationSchema,
   ProjectWithRelationsSchema,
 } from "./validation-schemas";
+
+async function hasHostAssignment(projectId: string, userId: string) {
+  const [assignment] = await db
+    .select({ projectId: hostProjectAssignmentsTable.projectId })
+    .from(hostProjectAssignmentsTable)
+    .where(
+      and(
+        eq(hostProjectAssignmentsTable.projectId, projectId),
+        eq(hostProjectAssignmentsTable.userId, userId),
+      ),
+    )
+    .limit(1);
+  return !!assignment;
+}
 
 /**
  * Create a new project
@@ -57,20 +72,26 @@ export const createProject = authorized
       });
     }
 
-    const newProject = await db
-      .insert(projectsTable)
-      .values({
-        ...input,
-        responsibleUserId: context.user.id,
-        organizationId: context.session.activeOrganizationId,
-      })
-      .returning();
+    const newProject = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(projectsTable)
+        .values({
+          ...input,
+          organizationId: context.session.activeOrganizationId!,
+        })
+        .returning();
+      await tx.insert(hostProjectAssignmentsTable).values({
+        projectId: created.id,
+        userId: context.user.id,
+      });
+      return created;
+    });
 
-    // Fetch the created project with responsible user
+    // Fetch the created project with its Host assignment
     const project = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, newProject[0].id),
+      where: eq(projectsTable.id, newProject.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -139,7 +160,7 @@ export const listProjects = authorized
       where: and(...conditions),
       orderBy: [orderByClause],
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -194,7 +215,7 @@ export const getProjectById = authorized
         eq(projectsTable.organizationId, context.session.activeOrganizationId),
       ),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -276,7 +297,7 @@ export const updateProject = authorized
     const project = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, input.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -349,14 +370,14 @@ export const deleteProject = authorized
       headers: await headers(),
     });
 
-    // Organization Administrators can delete any project; Project Coordinators can delete only their own.
+    // Organization Administrators can delete any project; Project Coordinators can delete only assigned projects.
     const isOrganizationAdministrator = hasOrganizationRole(
       role,
       MEMBER_ROLES.OrganizationAdministrator,
     );
     const isResponsibleProjectCoordinator =
       hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
-      existingProject.responsibleUserId === context.user.id;
+      (await hasHostAssignment(existingProject.id, context.user.id));
 
     if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
       throw errors.FORBIDDEN({
@@ -430,14 +451,14 @@ export const archiveProject = authorized
       });
     }
 
-    // Organization Administrators can archive any project; Project Coordinators can archive only their own.
+    // Organization Administrators can archive any project; Project Coordinators can archive only assigned projects.
     const isOrganizationAdministrator = hasOrganizationRole(
       role,
       MEMBER_ROLES.OrganizationAdministrator,
     );
     const isResponsibleProjectCoordinator =
       hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
-      existingProject.responsibleUserId === context.user.id;
+      (await hasHostAssignment(existingProject.id, context.user.id));
 
     if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
       throw errors.FORBIDDEN({
@@ -456,7 +477,7 @@ export const archiveProject = authorized
     const project = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, input.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -677,10 +698,7 @@ export const batchDeleteProjects = authorized
 
     // Verify all projects belong to user's organization and check permissions
     const projectsToDelete = await db
-      .select({
-        id: projectsTable.id,
-        responsibleUserId: projectsTable.responsibleUserId,
-      })
+      .select({ id: projectsTable.id })
       .from(projectsTable)
       .where(
         and(
@@ -696,7 +714,7 @@ export const batchDeleteProjects = authorized
       });
     }
 
-    // Organization Administrators can delete any project; Project Coordinators only their own.
+    // Organization Administrators can delete any project; Project Coordinators only assigned projects.
     const isOrganizationAdministrator = hasOrganizationRole(
       role,
       MEMBER_ROLES.OrganizationAdministrator,
@@ -704,7 +722,7 @@ export const batchDeleteProjects = authorized
     for (const project of projectsToDelete) {
       const isResponsibleProjectCoordinator =
         hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
-        project.responsibleUserId === context.user.id;
+        (await hasHostAssignment(project.id, context.user.id));
 
       if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
         throw errors.FORBIDDEN({
@@ -758,7 +776,7 @@ export const getProjectForParticipation = base
     const project = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, input.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
         sharedTravelLegs: {
           orderBy: [asc(projectSharedTravelLegsTable.createdAt)],
@@ -775,5 +793,11 @@ export const getProjectForParticipation = base
       });
     }
 
-    return project;
+    const { hostAssignments, ...publicProject } = project;
+    return {
+      ...publicProject,
+      hostCoordinatorNames: hostAssignments
+        .map(({ user }) => user.name)
+        .sort((left, right) => left.localeCompare(right)),
+    };
   });

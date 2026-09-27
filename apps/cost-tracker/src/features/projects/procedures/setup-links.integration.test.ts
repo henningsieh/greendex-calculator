@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable as hostAssignments,
   member,
   organization,
   partnerOrganizationSetupLinksTable as links,
@@ -85,9 +86,9 @@ beforeAll(async () => {
     endDate: now,
     location: "Riga",
     country: "LV",
-    responsibleUserId: userId,
     organizationId: hostId,
   });
+  await db.insert(hostAssignments).values({ projectId, userId });
 });
 
 beforeEach(async () => {
@@ -246,7 +247,6 @@ describe("Partner Organization setup links", () => {
       endDate: new Date(),
       location: "Riga",
       country: "LV",
-      responsibleUserId: otherUserId,
       organizationId: hostId,
     });
     try {
@@ -262,6 +262,16 @@ describe("Partner Organization setup links", () => {
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(
         client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
+      ).resolves.toHaveProperty("secret");
+      await db.insert(hostAssignments).values([
+        { projectId: otherProjectId, userId },
+        { projectId: otherProjectId, userId: otherUserId },
+      ]);
+      await expect(
+        client.projectPartnerships.createSetupLink({
+          projectId: otherProjectId,
+          recipientEmail,
+        }),
       ).resolves.toHaveProperty("secret");
     } finally {
       await db.delete(projectsTable).where(eq(projectsTable.id, otherProjectId));

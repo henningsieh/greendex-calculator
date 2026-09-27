@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable as hostAssignments,
   claimsTable as claims,
   costAllocationsTable as allocations,
   member,
@@ -118,9 +119,11 @@ beforeAll(async () => {
       location: "Riga",
       country: "LV" as const,
       organizationId: host,
-      responsibleUserId: coordinator,
     })),
   );
+  await db
+    .insert(hostAssignments)
+    .values({ projectId: project, userId: coordinator });
   await db.insert(partnerships).values([
     { id: own, projectId: project, organizationId: partner },
     { id: foreign, projectId: project, organizationId: other },

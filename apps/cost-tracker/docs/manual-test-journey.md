@@ -24,7 +24,7 @@ Traceability: `[...] ` tags map each case to a ticket (`#164`–`#187`), ADR, or
 Prerequisite for §2 onward: at least one Project must exist. If any case
 below has no UI surface, record it as a gap instead of working around it.
 
-- T01 — H (Owner/Admin) creates a Project (name, dates, location, country);
+- T01 — H (Owner/Admin) creates a Project in the Calculator app projects page (Cost Tracker has no creation UI; projects are shared rows in the common database: http://localhost:3000/en/org/projects) with name, dates, location, country;
   it appears in the projects list with derived readiness. [#166]
 - T02 — Member/Participant attempts project creation → denied server-side.
   [#179]
