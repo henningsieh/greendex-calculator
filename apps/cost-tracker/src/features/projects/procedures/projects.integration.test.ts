@@ -158,6 +158,10 @@ describe("projects procedures", () => {
         .update(member)
         .set({ role: "owner" })
         .where(eq(member.organizationId, host));
+      await db
+        .update(projectsTable)
+        .set({ completedAt: null, completedByUserId: null })
+        .where(eq(projectsTable.id, projectId));
     });
     afterAll(async () => {
       await db
@@ -266,7 +270,45 @@ describe("projects procedures", () => {
       await setClaim(0, "paid");
       await setClaim(1, "rejected");
       await setClaim(2, "paid");
-      expect(await complete()).toEqual({ projectId, completed: true });
+      const result = await complete();
+      expect(result).toMatchObject({
+        projectId,
+        completed: true,
+        completedByUserId: actor,
+        completedAt: expect.any(Date),
+      });
+      const [record] = await db
+        .select({
+          completedAt: projectsTable.completedAt,
+          completedByUserId: projectsTable.completedByUserId,
+        })
+        .from(projectsTable)
+        .where(eq(projectsTable.id, projectId));
+      expect(record).toEqual({
+        completedAt: result.completedAt,
+        completedByUserId: actor,
+      });
+      const detail = await client.projects.get({ projectId });
+      expect(detail).toMatchObject({
+        completedAt: result.completedAt,
+        completedByUserId: actor,
+      });
+      useSession(partnerIds[0]!);
+      expect(await client.projects.get({ projectId })).toMatchObject({
+        relationship: "partner",
+        completedAt: result.completedAt,
+        completedByUserId: actor,
+      });
+      useSession(host);
+      await expect(complete()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      const [unchanged] = await db
+        .select({
+          completedAt: projectsTable.completedAt,
+          completedByUserId: projectsTable.completedByUserId,
+        })
+        .from(projectsTable)
+        .where(eq(projectsTable.id, projectId));
+      expect(unchanged).toEqual(record);
     });
 
     it.each(["owner", "admin", "project-coordinator"])(
@@ -285,7 +327,12 @@ describe("projects procedures", () => {
             .where(eq(hostAssignments.projectId, projectId));
         }
         try {
-          expect(await complete()).toEqual({ projectId, completed: true });
+          expect(await complete()).toMatchObject({
+            projectId,
+            completed: true,
+            completedByUserId: actor,
+            completedAt: expect.any(Date),
+          });
         } finally {
           await db
             .insert(hostAssignments)
@@ -301,6 +348,11 @@ describe("projects procedures", () => {
         .set({ role: "member" })
         .where(eq(member.organizationId, host));
       await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      const [record] = await db
+        .select({ completedAt: projectsTable.completedAt })
+        .from(projectsTable)
+        .where(eq(projectsTable.id, projectId));
+      expect(record?.completedAt).toBeNull();
     });
 
     it.each(["member", "participant", "project-coordinator"])(

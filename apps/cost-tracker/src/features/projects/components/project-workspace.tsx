@@ -1,14 +1,16 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Building2Icon, CalendarDaysIcon, MapPinIcon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectListReturnDestination } from "@/features/projects/project-list-query-options";
-import { orpcQuery } from "@/lib/orpc/orpc";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -50,12 +52,41 @@ export function ProjectWorkspace({
   projectId: string;
   returnTo?: string;
 }) {
+  const queryClient = useQueryClient();
+  const [completing, setCompleting] = useState(false);
+  const [feedback, setFeedback] = useState("");
   const { data: project } = useSuspenseQuery(
     orpcQuery.projects.get.queryOptions({
       input: { projectId },
       meta: { costTrackerORPC: true },
     }),
   );
+
+  const canComplete =
+    project.relationship === "hosted" &&
+    !project.archived &&
+    !project.completedAt &&
+    project.partnerOrganizations.every(
+      ({ claimStatus }) => claimStatus === "paid" || claimStatus === "rejected",
+    );
+
+  async function completeProject() {
+    if (completing) return;
+    setCompleting(true);
+    setFeedback("");
+    try {
+      await orpc.projects.complete({ projectId });
+      setFeedback("Project completed.");
+      await queryClient.invalidateQueries({
+        queryKey: orpcQuery.projects.get.queryOptions({ input: { projectId } })
+          .queryKey,
+      });
+    } catch (error) {
+      setFeedback(getORPCRequestErrorMessage(error).text);
+    } finally {
+      setCompleting(false);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -73,6 +104,7 @@ export function ProjectWorkspace({
               : "Partner Project"}
           </p>
           {project.archived && <Badge variant="secondary">Archived</Badge>}
+          {project.completedAt && <Badge variant="secondary">Completed</Badge>}
         </div>
         <h1 className="font-heading text-4xl font-semibold tracking-tight">
           {project.name}
@@ -83,6 +115,18 @@ export function ProjectWorkspace({
           Cost Submission Window{" "}
           {project.costSubmissionWindowOpen ? "open" : "closed"}
         </Badge>
+        {project.completedAt && (
+          <p className="text-sm">
+            Completed {dateTimeFormatter.format(project.completedAt)} by{" "}
+            {project.completedByUserId}
+          </p>
+        )}
+        {canComplete && (
+          <Button disabled={completing} onClick={completeProject} type="button">
+            {completing ? "Completing…" : "Complete Project"}
+          </Button>
+        )}
+        {feedback && <output className="text-sm">{feedback}</output>}
       </header>
 
       <div className="grid gap-4 md:grid-cols-2">
