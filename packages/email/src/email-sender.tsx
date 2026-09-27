@@ -6,6 +6,7 @@ import { sendEmail } from "./send";
 import {
   EmailVerification,
   OrganizationInvitation,
+  ParticipantInvitation,
   PasswordResetEmail,
 } from "./templates";
 
@@ -31,6 +32,11 @@ export interface SendOrganizationInvitationParams {
   inviterName?: string;
 }
 
+export interface SendParticipantInvitationParams {
+  email: string;
+  inviteLink: string;
+}
+
 export interface SendMagicLinkEmailParams {
   email: string;
   url: string;
@@ -43,6 +49,9 @@ export interface EmailSender {
   ): Promise<void>;
   sendOrganizationInvitation(
     params: SendOrganizationInvitationParams,
+  ): Promise<void>;
+  sendParticipantInvitation(
+    params: SendParticipantInvitationParams,
   ): Promise<void>;
   sendMagicLinkEmail(params: SendMagicLinkEmailParams): Promise<void>;
 }
@@ -125,6 +134,18 @@ export function createEmailSender({
           subject: `You're invited to join ${organizationName}`,
           html,
         },
+        transporter,
+        sender,
+      );
+    },
+
+    async sendParticipantInvitation({ email, inviteLink }) {
+      const html = await render(
+        <ParticipantInvitation baseUrl={baseUrl} inviteLink={inviteLink} />,
+      );
+
+      await sendEmail(
+        { to: email, subject: "Your Participant Invitation", html },
         transporter,
         sender,
       );

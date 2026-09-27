@@ -30,6 +30,13 @@ import {
   vi,
 } from "vitest";
 
+const delivery = vi.hoisted(() => ({
+  sendParticipantInvitation: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/lib/email", () => ({
+  sendParticipantInvitation: delivery.sendParticipantInvitation,
+}));
+
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   addMember: vi.fn(),
@@ -47,7 +54,10 @@ vi.mock("@/lib/auth", () => ({
   },
 }));
 
-import { createParticipantOnboardingProcedures } from "@/features/authentication/participant-onboarding-procedures";
+import {
+  createParticipantOnboardingProcedures,
+  deliverParticipantInvitation,
+} from "@/features/authentication/participant-onboarding-procedures";
 
 const suffix = randomUUID();
 const host = `onboarding-host-${suffix}`;
@@ -139,6 +149,7 @@ beforeEach(async () => {
   activeOrganizationId = partner;
   version = { id: "fixture-agreement-v1", contentHash: "fixture-hash-v1" };
   vi.clearAllMocks();
+  delivery.sendParticipantInvitation.mockResolvedValue(undefined);
   authMocks.getSession.mockImplementation(async () => ({
     user: {
       id: actor,
@@ -475,12 +486,18 @@ describe("Participant onboarding procedures", () => {
       partnershipId: partnership,
       email: recipientEmail,
     });
+    expect(first.delivery).toBe("sent");
+    expect(delivery.sendParticipantInvitation).toHaveBeenCalledWith({
+      email: recipientEmail,
+      invitationId: first.invitationId,
+    });
     expect(
       await client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).toEqual(first);
+    ).toEqual({ ...first, delivery: "already-issued" });
+    expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
     expect(
       await db.select().from(bridges).where(eq(bridges.projectId, project)),
     ).toHaveLength(1);
@@ -495,6 +512,13 @@ describe("Participant onboarding procedures", () => {
     expect(
       new Set([first.invitationId, second.invitationId, third.invitationId]).size,
     ).toBe(3);
+    expect(second.delivery).toBe("sent");
+    expect(third.delivery).toBe("sent");
+    expect(delivery.sendParticipantInvitation.mock.calls).toEqual([
+      [{ email: recipientEmail, invitationId: first.invitationId }],
+      [{ email: recipientEmail, invitationId: second.invitationId }],
+      [{ email: recipientEmail, invitationId: third.invitationId }],
+    ]);
     const rows = await db
       .select()
       .from(bridges)
@@ -791,6 +815,64 @@ describe("Participant onboarding procedures", () => {
     ).toHaveLength(0);
   });
 
+  it("reports SMTP failure after committing and never resends on an idempotent retry", async () => {
+    delivery.sendParticipantInvitation.mockRejectedValueOnce(
+      new Error("SMTP unavailable"),
+    );
+    const first = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    expect(first.delivery).toBe("failed");
+    expect(
+      await db
+        .select()
+        .from(bridges)
+        .where(eq(bridges.invitationId, first.invitationId)),
+    ).toHaveLength(1);
+    expect(
+      await client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      }),
+    ).toEqual({ ...first, delivery: "already-issued" });
+    expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
+    const second = await client.participantOnboarding.reissueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    expect(second.delivery).toBe("sent");
+    expect(second.invitationId).not.toBe(first.invitationId);
+    expect(delivery.sendParticipantInvitation).toHaveBeenNthCalledWith(2, {
+      email: recipientEmail,
+      invitationId: second.invitationId,
+    });
+  });
+
+  it("skips delivery when a previously issued invitation is retired before send", async () => {
+    const issued = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    expect(issued.delivery).toBe("sent");
+    delivery.sendParticipantInvitation.mockClear();
+    await db
+      .update(bridges)
+      .set({ status: "revoked" })
+      .where(eq(bridges.invitationId, issued.invitationId));
+    await db
+      .update(invitation)
+      .set({ status: "canceled" })
+      .where(eq(invitation.id, issued.invitationId));
+    expect(
+      await deliverParticipantInvitation(recipientEmail, issued.invitationId),
+    ).toEqual({
+      invitationId: issued.invitationId,
+      delivery: "failed",
+    });
+    expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
+  });
+
   it("relies on the database to reject non-normalized participation emails", async () => {
     // project_participant_email_normalized (since migration 0015) makes a
     // non-normalized legacy row impossible; the procedure's lower()
@@ -840,6 +922,11 @@ describe("Participant onboarding procedures", () => {
         },
       }),
     );
+    expect(result.delivery).toBe("sent");
+    expect(delivery.sendParticipantInvitation).toHaveBeenCalledWith({
+      email: recipientEmail,
+      invitationId: result.invitationId,
+    });
     expect(
       (
         await db
@@ -853,6 +940,36 @@ describe("Participant onboarding procedures", () => {
     await db
       .delete(member)
       .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
+  });
+
+  it("never sends when Better Auth host issuance fails", async () => {
+    activeOrganizationId = host;
+    await db.insert(member).values({
+      id: randomUUID(),
+      organizationId: host,
+      userId: owner,
+      role: "owner",
+      createdAt: new Date(),
+    });
+    try {
+      authMocks.createInvitation.mockResolvedValueOnce(
+        new Response(null, { status: 403 }),
+      );
+      await expect(
+        client.participantOnboarding.issueInvitation({
+          partnershipId: partnership,
+          email: recipientEmail,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
+      expect(
+        await db.select().from(bridges).where(eq(bridges.projectId, project)),
+      ).toHaveLength(0);
+    } finally {
+      await db
+        .delete(member)
+        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
+    }
   });
 
   it("lets the Project responsible User issue when they hold only a plain Hosting Membership", async () => {
@@ -972,7 +1089,8 @@ describe("Participant onboarding procedures", () => {
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).toEqual(issued);
+    ).toEqual({ ...issued, delivery: "already-issued" });
+    expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
     const [native] = await db
       .select()
       .from(invitation)

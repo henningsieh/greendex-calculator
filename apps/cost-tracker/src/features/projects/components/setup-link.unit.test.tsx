@@ -83,6 +83,19 @@ describe("Setup Link UI", () => {
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
   });
 
+  it("uses the approved new-link wording while issuance is pending", async () => {
+    const user = userEvent.setup();
+    mocks.create.mockReturnValue(new Promise(() => {}));
+    render(<SetupLinkCreator />);
+    await user.type(screen.getByLabelText("Hosted Project ID"), "project-1");
+    await user.type(
+      screen.getByLabelText("Recipient email"),
+      "partner@example.com",
+    );
+    await user.click(screen.getByRole("button", { name: "Neuer Link" }));
+    expect(screen.getByRole("button", { name: "Neuer Link…" })).toBeDisabled();
+  });
+
   it("does not submit a missing secret", () => {
     render(<SetupLinkRecipient id="link-1" />);
     expect(screen.getByText("Invalid setup link")).toBeTruthy();

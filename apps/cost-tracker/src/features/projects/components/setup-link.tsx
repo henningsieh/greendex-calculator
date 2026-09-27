@@ -200,7 +200,7 @@ export function SetupLinkCreator() {
           </div>
           <div>
             <Button disabled={pending} type="submit">
-              {pending ? "Erstelle…" : "Neuer Link"}
+              {pending ? "Neuer Link…" : "Neuer Link"}
             </Button>
           </div>
         </form>

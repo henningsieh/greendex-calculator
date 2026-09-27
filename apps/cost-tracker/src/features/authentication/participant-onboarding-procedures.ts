@@ -17,7 +17,7 @@ import {
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -28,6 +28,7 @@ import {
 } from "@/features/authentication/participant-agreement";
 import { requirePartnerCoordination } from "@/features/projects/procedures/coordination";
 import { auth } from "@/lib/auth";
+import { sendParticipantInvitation } from "@/lib/email";
 import { authorized } from "@/lib/orpc/middleware";
 
 const id = z.string().min(1).max(128);
@@ -45,6 +46,40 @@ const joinInput = z.object({
     z.object({ kind: z.literal("invitation"), invitationId: id }),
   ]),
 });
+
+export async function deliverParticipantInvitation(
+  email: string,
+  invitationId: string,
+) {
+  try {
+    const [live] = await db
+      .select({ invitationId: bridges.invitationId })
+      .from(bridges)
+      .innerJoin(invitation, eq(invitation.id, bridges.invitationId))
+      .where(
+        and(
+          eq(bridges.invitationId, invitationId),
+          eq(bridges.status, "pending"),
+          eq(invitation.status, "pending"),
+          gt(invitation.expiresAt, new Date()),
+          sql`lower(${invitation.email}) = ${email}`,
+        ),
+      )
+      .limit(1);
+    if (!live) {
+      console.info("Superseded Participant Invitation delivery skipped.");
+      return { invitationId, delivery: "failed" as const };
+    }
+    // Do not hold a DB lock across SMTP latency. A rotation in the check-to-send
+    // window can deliver a dead link, but acceptance rejects it without state change.
+    await sendParticipantInvitation({ email, invitationId });
+    return { invitationId, delivery: "sent" as const };
+  } catch {
+    // The invitation is committed; report failure without leaking SMTP details.
+    console.error("Participant Invitation email delivery failed.");
+    return { invitationId, delivery: "failed" as const };
+  }
+}
 
 // Tests can supply a published fixture; the deployed value is deliberately unpublishable.
 export function createParticipantOnboardingProcedures(
@@ -249,9 +284,14 @@ export function createParticipantOnboardingProcedures(
     };
   }
 
+  const invitationResult = z.object({
+    invitationId: z.string(),
+    delivery: z.enum(["sent", "failed", "already-issued"]),
+  });
+
   const reissueInvitation = authorized
     .input(z.object({ partnershipId: id, email: normalizedEmail }))
-    .output(z.object({ invitationId: z.string() }))
+    .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
       const target = await partnershipForIssuer(
         input.partnershipId,
@@ -277,7 +317,7 @@ export function createParticipantOnboardingProcedures(
         throw errors.BAD_REQUEST({
           message: "This person already participates in this Project.",
         });
-      return db.transaction(async (tx) => {
+      const { invitationId } = await db.transaction(async (tx) => {
         // Serialize rotations across every Partnership in this Project.
         await tx
           .select({ id: projects.id })
@@ -342,11 +382,13 @@ export function createParticipantOnboardingProcedures(
         });
         return { invitationId };
       });
+      // Only explicit reissue creates a new identity and triggers another delivery.
+      return deliverParticipantInvitation(input.email, invitationId);
     });
 
   const issueInvitation = authorized
     .input(z.object({ partnershipId: id, email: normalizedEmail }))
-    .output(z.object({ invitationId: z.string() }))
+    .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
       const partnership = await partnershipForIssuer(
         input.partnershipId,
@@ -404,7 +446,11 @@ export function createParticipantOnboardingProcedures(
           native.status === "pending" &&
           native.expiresAt > new Date()
         )
-          return { invitationId: existingBridge.invitationId };
+          // Idempotent issuance never resends: only explicit reissue delivers again.
+          return {
+            invitationId: existingBridge.invitationId,
+            delivery: "already-issued" as const,
+          };
         // Stale bridge: the native invitation is missing, expired, or closed.
         // Retire it and fall through to fresh issuance below.
         await db.transaction(async (tx) => {
@@ -423,7 +469,6 @@ export function createParticipantOnboardingProcedures(
             .where(eq(bridges.invitationId, existingBridge.invitationId));
         });
       }
-      // Email delivery belongs to #182; the returned invitationId identifies the delivery target.
       let invitationId: string;
       if (partnership.hostCanInvite) {
         const response = await auth.api.createInvitation({
@@ -479,7 +524,7 @@ export function createParticipantOnboardingProcedures(
         partnershipId: partnership.id,
         at: new Date().toISOString(),
       });
-      return { invitationId };
+      return deliverParticipantInvitation(input.email, invitationId);
     });
 
   const setInvitationOpen = authorized

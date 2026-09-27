@@ -12,3 +12,16 @@ export const emailSender = createEmailSender({
     auth: { user: env.SMTP_USERNAME, pass: env.SMTP_PASSWORD },
   }),
 });
+
+export function sendParticipantInvitation({
+  email,
+  invitationId,
+}: {
+  email: string;
+  invitationId: string;
+}) {
+  return emailSender.sendParticipantInvitation({
+    email,
+    inviteLink: `${env.NEXT_PUBLIC_BASE_URL}/participant-invitations/${invitationId}`,
+  });
+}
