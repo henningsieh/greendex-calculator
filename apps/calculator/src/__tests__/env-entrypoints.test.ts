@@ -88,10 +88,10 @@ describe("environment entrypoints", () => {
       "dotenv -v NODE_ENV=development -e .env -- sh -c 'next dev --port \"$DOCUMENTATION_PORT\"'",
     );
     expect(documentationPackage.scripts.predev).toBe(
-      "dotenv -e .env -- sh -c 'pnpm dlx kill-port \"$DOCUMENTATION_PORT\" || true'",
+      "dotenv -e .env -- sh -c 'fuser -k \"$DOCUMENTATION_PORT/tcp\" || true'",
     );
     expect(costTrackerPackage.scripts.predev).toBe(
-      "dotenv -e .env -- sh -c 'pnpm dlx kill-port \"$COST_TRACKER_PORT\" || true'",
+      "dotenv -e .env -- sh -c 'fuser -k \"$COST_TRACKER_PORT/tcp\" || true'",
     );
     expect(documentationPackage.scripts.start).toBe(
       "dotenv -v NODE_ENV=production -e .env -- sh -c 'next start --port \"$DOCUMENTATION_PORT\"'",
