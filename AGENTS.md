@@ -31,7 +31,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 
 ## OpenAI Token Window (Subagent Model Routing)
 
-When launching subagents on `openai-*` provider models, check the 5h usage meter first — procedure: [codex-usage-meter](docs/codex-usage-meter.md). Below 15% remaining: stop launching OpenAI-model subagents, leave trees clean, report, and route to an alternate provider (e.g. `opencode-go/muse-spark-1.3-contributor` at the same thinking level) until the window resets. Re-meter before routing back.
+When launching subagents on `openai-*` provider models, check the 5h usage meter first — procedure: [codex-usage-meter](docs/codex-usage-meter.md). Below 15% remaining: stop launching OpenAI-model subagents, leave trees clean, report, and route to an alternate provider (e.g. `opencode-go/muse-spark-1.3-contributor` at the same thinking level) until the window resets. Re-meter before routing back. Launch mechanics (enable/discover, model suffixes, cold-start packet): [subagent-launch](docs/agents/subagent-launch.md).
 
 ## Scoped Instruction Index
 
