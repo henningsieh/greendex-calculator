@@ -75,6 +75,33 @@ describe("EntityCombobox", () => {
     expect(onChange).toHaveBeenCalledWith("partner-123");
   });
 
+  it("labels Participant searches for email while showing only name and ID", async () => {
+    const user = userEvent.setup();
+    const search = vi
+      .fn()
+      .mockResolvedValue([{ id: "user-123", name: "Onboarded Person" }]);
+    render(
+      <EntityCombobox
+        label="Onboarded Participant"
+        value=""
+        onChange={vi.fn()}
+        search={search}
+        searchBy="name, email or ID"
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Onboarded Participant" }),
+    );
+    await user.type(
+      screen.getByLabelText("Search Onboarded Participant by name, email or ID"),
+      "person@example.org",
+    );
+    expect(await screen.findByText("Onboarded Person")).toBeTruthy();
+    expect(search).toHaveBeenCalledWith("person@example.org");
+    expect(screen.getByText("user-123")).toBeTruthy();
+    expect(screen.queryByText("person@example.org")).toBeNull();
+  });
+
   it("selects the highlighted result by keyboard and keeps the ID", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

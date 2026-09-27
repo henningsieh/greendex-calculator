@@ -163,6 +163,214 @@ afterAll(async () => {
 });
 
 describe("assignment-scoped participation coordination", () => {
+  it("searches only currently onboarded Host users by ID, email, or profile name without disclosing email", async () => {
+    const query = (search: string, partnershipId = own) =>
+      client.participations.searchOnboarded({ partnershipId, search });
+    const expected = [{ id: candidate, name: "Candidate" }];
+    expect(await query(candidate)).toEqual(expected);
+    expect(await query(email.toUpperCase())).toEqual(expected);
+    expect(await query("CANDIDATE")).toEqual(expected);
+    expect(await query("%_")).toEqual([]);
+    await expect(query("c")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(query("x".repeat(129))).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    await expect(query(candidate, foreign)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    activeOrg = host;
+    await expect(query(candidate)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeOrg = partner;
+    actor = candidate;
+    await expect(query(candidate)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    authMocks.getSession.mockResolvedValueOnce(null);
+    await expect(query(candidate)).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
+  });
+
+  it("excludes unverified, missing-profile, stale-acceptance, wrong-role, and non-Host users", async () => {
+    const cases = [
+      {
+        key: "unverified",
+        verified: false,
+        profile: true,
+        accepted: true,
+        org: host,
+        role: "participant",
+      },
+      {
+        key: "no-profile",
+        verified: true,
+        profile: false,
+        accepted: true,
+        org: host,
+        role: "participant",
+      },
+      {
+        key: "stale",
+        verified: true,
+        profile: true,
+        accepted: false,
+        org: host,
+        role: "participant",
+      },
+      {
+        key: "wrong-role",
+        verified: true,
+        profile: true,
+        accepted: true,
+        org: host,
+        role: "member",
+      },
+      {
+        key: "wrong-org",
+        verified: true,
+        profile: true,
+        accepted: true,
+        org: other,
+        role: "participant",
+      },
+    ];
+    const ids = cases.map(({ key }) => `directory-${key}-${s}`);
+    try {
+      await db.insert(user).values(
+        cases.map(({ key, verified }, index) => ({
+          id: ids[index]!,
+          name: "Directory Candidate",
+          email: `directory-${key}-${s}@example.org`,
+          emailVerified: verified,
+        })),
+      );
+      await db.insert(member).values(
+        cases.map(({ org, role }, index) => ({
+          id: randomUUID(),
+          organizationId: org,
+          userId: ids[index]!,
+          role,
+          createdAt: new Date(),
+        })),
+      );
+      await db
+        .insert(profiles)
+        .values(
+          cases.flatMap(({ profile }, index) =>
+            profile
+              ? [{ userId: ids[index]!, fullName: "Directory Candidate" }]
+              : [],
+          ),
+        );
+      await db.insert(acceptances).values(
+        cases.flatMap(({ accepted }, index) =>
+          accepted
+            ? [
+                {
+                  userId: ids[index]!,
+                  version: version.id,
+                  contentHash: version.contentHash,
+                  answers: '{"accepted":true}',
+                },
+              ]
+            : [],
+        ),
+      );
+      expect(
+        await client.participations.searchOnboarded({
+          partnershipId: own,
+          search: `directory-`,
+        }),
+      ).toEqual([]);
+      expect(
+        await client.participations.searchOnboarded({
+          partnershipId: own,
+          search: "Directory Candidate",
+        }),
+      ).toEqual([]);
+      for (const id of ids) {
+        await expect(
+          client.participations.create({ partnershipId: own, userId: id }),
+        ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      }
+    } finally {
+      for (const id of ids) {
+        await db.delete(acceptances).where(eq(acceptances.userId, id));
+        await db.delete(profiles).where(eq(profiles.userId, id));
+        await db.delete(member).where(eq(member.userId, id));
+        await db.delete(user).where(eq(user.id, id));
+      }
+    }
+  });
+
+  it("caps directory results at 20 minimal rows", async () => {
+    const ids = Array.from(
+      { length: 22 },
+      (_, index) => `directory-cap-${index}-${s}`,
+    );
+    try {
+      await db.insert(user).values(
+        ids.map((id) => ({
+          id,
+          name: "Cap User",
+          email: `${id}@example.org`,
+          emailVerified: true,
+        })),
+      );
+      await db.insert(member).values(
+        ids.map((id) => ({
+          id: randomUUID(),
+          userId: id,
+          organizationId: host,
+          role: "participant",
+          createdAt: new Date(),
+        })),
+      );
+      await db
+        .insert(profiles)
+        .values(ids.map((id) => ({ userId: id, fullName: "Cap Candidate" })));
+      await db.insert(acceptances).values(
+        ids.map((id) => ({
+          userId: id,
+          version: version.id,
+          contentHash: version.contentHash,
+          answers: '{"accepted":true}',
+        })),
+      );
+      const result = await client.participations.searchOnboarded({
+        partnershipId: own,
+        search: "directory-cap-",
+      });
+      expect(result).toHaveLength(20);
+      expect(
+        result.every((row) => Object.keys(row).sort().join() === "id,name"),
+      ).toBe(true);
+    } finally {
+      for (const id of ids) {
+        await db.delete(acceptances).where(eq(acceptances.userId, id));
+        await db.delete(profiles).where(eq(profiles.userId, id));
+        await db.delete(member).where(eq(member.userId, id));
+        await db.delete(user).where(eq(user.id, id));
+      }
+    }
+  });
+
+  it("does not search against an unpublished agreement", async () => {
+    const unpublished = createRouterClient(
+      {
+        participations: createParticipationProcedures(() => ({
+          id: "PENDING-LEGAL-001",
+          contentHash: "",
+        })),
+      },
+      { context: async () => ({ headers: new Headers() }) },
+    );
+    await expect(
+      unpublished.participations.searchOnboarded({
+        partnershipId: own,
+        search: candidate,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("creates for an onboarded user, lists, updates and removes within the assigned Partnership", async () => {
     const created = await client.participations.create({
       partnershipId: own,

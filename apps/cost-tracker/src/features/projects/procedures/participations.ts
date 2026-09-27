@@ -14,7 +14,7 @@ import {
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
-import { and, eq, exists, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, exists, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -105,6 +105,62 @@ export function createParticipationProcedures(
           .where(eq(bridges.partnershipId, input.partnershipId)),
       ]);
       return { participations: rows, invitations };
+    });
+
+  const searchOnboarded = authorized
+    .input(scopeInput.extend({ search: z.string().trim().min(2).max(128) }))
+    .output(z.array(z.object({ id: z.string(), name: z.string() })).max(20))
+    .handler(async ({ input, context, errors }) => {
+      const scope = await requirePartnerCoordination(
+        input.partnershipId,
+        context.user.id,
+        context.session.activeOrganizationId,
+        errors,
+      );
+      if (scope.partnerId !== context.session.activeOrganizationId)
+        throw errors.FORBIDDEN({
+          message:
+            "Only the Partner Organization may search onboarded Participants.",
+        });
+      const agreement = currentAgreement();
+      if (!isPublishedAgreement(agreement))
+        throw errors.BAD_REQUEST({
+          message: "Participant agreement is not yet available.",
+        });
+      const escaped = input.search.replace(/[\\%_]/g, "\\$&");
+      const pattern = `%${escaped}%`;
+      return db
+        .select({ id: user.id, name: profiles.fullName })
+        .from(user)
+        .innerJoin(profiles, eq(profiles.userId, user.id))
+        .innerJoin(
+          acceptances,
+          and(
+            eq(acceptances.userId, user.id),
+            eq(acceptances.version, agreement.id),
+            eq(acceptances.contentHash, agreement.contentHash),
+          ),
+        )
+        .innerJoin(
+          member,
+          and(
+            eq(member.userId, user.id),
+            eq(member.organizationId, scope.hostId),
+          ),
+        )
+        .where(
+          and(
+            eq(user.emailVerified, true),
+            sql`(',' || ${member.role} || ',') ~ ',(participant|owner|admin),'`,
+            or(
+              sql`lower(${user.id}) like lower(${pattern}) escape '\\'`,
+              sql`lower(${user.email}) like lower(${pattern}) escape '\\'`,
+              sql`lower(${profiles.fullName}) like lower(${pattern}) escape '\\'`,
+            ),
+          ),
+        )
+        .orderBy(asc(profiles.fullName), asc(user.id))
+        .limit(20);
     });
 
   const create = authorized
@@ -533,7 +589,15 @@ export function createParticipationProcedures(
         );
     });
 
-  return { create, listPartnership, listHosted, listMine, update, remove };
+  return {
+    create,
+    searchOnboarded,
+    listPartnership,
+    listHosted,
+    listMine,
+    update,
+    remove,
+  };
 }
 
 export const participations = createParticipationProcedures();

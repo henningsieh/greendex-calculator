@@ -12,8 +12,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -156,6 +156,8 @@ export function ParticipantCoordination({
     }),
   );
   const [userId, setUserId] = useState("");
+  const searchOnboarded = (search: string) =>
+    orpc.participations.searchOnboarded({ partnershipId, search });
   const [feedback, setFeedback] = useState<{
     title: string;
     description: string;
@@ -170,8 +172,7 @@ export function ParticipantCoordination({
   // Hosts may read server-authorized oversight data, but cannot manage Partner
   // Participations here; denied writes show the access-denied surface below.
   const create = useMutation({
-    mutationFn: () =>
-      orpc.participations.create({ partnershipId, userId: userId.trim() }),
+    mutationFn: () => orpc.participations.create({ partnershipId, userId }),
     onSuccess: async () => {
       setUserId("");
       setFeedback({
@@ -204,15 +205,17 @@ export function ParticipantCoordination({
             }}
           >
             <div className="space-y-2">
-              <Label htmlFor="participant-user-id">Onboarded User ID</Label>
-              <Input
-                id="participant-user-id"
-                required
+              <span className="text-sm font-medium">Onboarded Participant</span>
+              <EntityCombobox
+                label="Onboarded Participant"
                 value={userId}
-                onChange={(event) => setUserId(event.target.value)}
+                onChange={setUserId}
+                search={searchOnboarded}
+                searchBy="name, email or ID"
+                disabled={create.isPending}
               />
             </div>
-            <Button disabled={create.isPending} type="submit">
+            <Button disabled={create.isPending || !userId} type="submit">
               {create.isPending ? "Adding…" : "Add Participation"}
             </Button>
           </form>

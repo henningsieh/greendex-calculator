@@ -22,6 +22,7 @@ export function EntityCombobox<T extends Entity>({
   search,
   preload = [],
   disabled,
+  searchBy = "name or ID",
 }: {
   label: string;
   value: string;
@@ -29,6 +30,7 @@ export function EntityCombobox<T extends Entity>({
   search?: (query: string) => Promise<T[]>;
   preload?: T[];
   disabled?: boolean;
+  searchBy?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -96,9 +98,9 @@ export function EntityCombobox<T extends Entity>({
       <PopoverContent align="start" className="w-(--anchor-width) gap-0 p-0">
         <Command shouldFilter={false}>
           <CommandInput
-            aria-label={`Search ${label} by name or ID`}
+            aria-label={`Search ${label} by ${searchBy}`}
             ref={(node) => node?.focus()}
-            placeholder="Search name or ID…"
+            placeholder={`Search ${searchBy}…`}
             value={query}
             onValueChange={(next) => {
               setQuery(next);
