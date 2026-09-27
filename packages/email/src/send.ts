@@ -1,9 +1,4 @@
-/**
- * Email sending utility
- */
 import type { Transporter } from "nodemailer";
-
-import { maskEmail } from "./utils";
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -12,21 +7,50 @@ export interface SendEmailOptions {
   text?: string;
 }
 
+// Only known transport codes may reach logs; arbitrary error fields can contain
+// SMTP responses, hostnames, credentials, or recipient addresses.
+const safeTransportCodes = new Set([
+  "EAUTH",
+  "ECONNECTION",
+  "EDNS",
+  "EENVELOPE",
+  "EMESSAGE",
+  "ESOCKET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EPIPE",
+]);
+
+function deliveryFailureDetails(error: unknown): {
+  errorClass: string;
+  code: string;
+} {
+  const errorClass =
+    error instanceof TypeError
+      ? "TypeError"
+      : error instanceof RangeError
+        ? "RangeError"
+        : error instanceof Error
+          ? "Error"
+          : "Unknown";
+  const code =
+    error !== null && typeof error === "object" && "code" in error
+      ? error.code
+      : undefined;
+
+  return {
+    errorClass,
+    code:
+      typeof code === "string" && safeTransportCodes.has(code) ? code : "UNKNOWN",
+  };
+}
+
 /**
- * Send an email via the configured SMTP transporter.
- *
- * The function logs the send attempt (with recipient addresses masked for privacy),
- * sends the message using the configured SMTP sender, logs the resulting messageId on success,
- * and re-throws any error encountered.
- *
- * @param options - Email send options including recipients and content
- * @param options.to - Recipient address or list of addresses
- * @param options.subject - Message subject line
- * @param options.html - HTML body of the message
- * @param options.text - Optional plain-text body of the message
- * @param transporter - Nodemailer transporter instance
- * @param sender - Sender email address
- * @throws Propagates any error thrown by the transport when sending fails
+ * Send an email via the configured SMTP transporter. Logs only fixed status
+ * text and allowlisted failure details, never message or transport contents.
+ * Propagates the original transport error to the caller.
  */
 export async function sendEmail(
   options: SendEmailOptions,
@@ -34,17 +58,9 @@ export async function sendEmail(
   sender: string,
 ): Promise<void> {
   try {
-    const maskedTo = Array.isArray(options.to)
-      ? options.to.map(maskEmail)
-      : maskEmail(options.to);
+    console.log("📮 Attempting to send email");
 
-    console.log("📮 Attempting to send email:", {
-      to: maskedTo,
-      subject: options.subject,
-      from: sender,
-    });
-
-    const result = await transporter.sendMail({
+    await transporter.sendMail({
       from: sender,
       to: options.to,
       subject: options.subject,
@@ -52,9 +68,9 @@ export async function sendEmail(
       text: options.text,
     });
 
-    console.log("✉️ Email sent successfully:", result.messageId);
+    console.log("✉️ Email sent successfully");
   } catch (error) {
-    console.error("❌ Email sending failed:", error);
+    console.error("❌ Email sending failed:", deliveryFailureDetails(error));
     throw error;
   }
 }
