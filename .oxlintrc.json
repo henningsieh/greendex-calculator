@@ -8,10 +8,7 @@
   },
   "settings": {
     "next": {
-      "rootDir": [
-        "apps/calculator/",
-        "apps/cost-tracker/"
-      ]
+      "rootDir": ["apps/calculator/", "apps/cost-tracker/"]
     }
   },
   "ignorePatterns": [
@@ -42,10 +39,7 @@
         ]
       }
     ],
-    "complexity": [
-      "warn",
-      25
-    ],
+    "complexity": ["warn", 25],
     "curly": "off",
     "react/no-array-index-key": "off",
     "typescript/array-type": "warn",
@@ -57,155 +51,87 @@
     "shadcn/no-restyle": [
       "error",
       {
-        "allow": [
-          "layout"
-        ],
+        "allow": ["layout"],
         "contracts": [
           {
             "pattern": "^Card$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^CardTitle$",
-            "allow": [
-              "layout",
-              "spacing",
-              "typography"
-            ]
+            "allow": ["layout", "spacing", "typography"]
           },
           {
             "pattern": "^CardContent$",
-            "allow": [
-              "layout",
-              "spacing",
-              "typography"
-            ]
+            "allow": ["layout", "spacing", "typography"]
           },
           {
             "pattern": "^CardHeader$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^CardFooter$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^CardDescription$",
-            "allow": [
-              "layout",
-              "spacing",
-              "typography"
-            ]
+            "allow": ["layout", "spacing", "typography"]
           },
           {
             "pattern": "^Label$",
-            "allow": [
-              "layout",
-              "typography"
-            ]
+            "allow": ["layout", "typography"]
           },
           {
             "pattern": "^Input$",
-            "allow": [
-              "layout",
-              "typography"
-            ]
+            "allow": ["layout", "typography"]
           },
           {
             "pattern": "^CountrySelect$",
-            "allow": [
-              "layout",
-              "typography"
-            ]
+            "allow": ["layout", "typography"]
           },
           {
             "pattern": "^Skeleton$",
-            "allow": [
-              "layout",
-              "spacing",
-              "color",
-              "shape"
-            ]
+            "allow": ["layout", "spacing", "color", "shape"]
           },
           {
             "pattern": "^FieldGroup$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^FieldSet$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^FieldDescription$",
-            "allow": [
-              "layout",
-              "spacing",
-              "typography"
-            ]
+            "allow": ["layout", "spacing", "typography"]
           },
           {
             "pattern": "^Tabs$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^TabsList$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^TabsContent$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^PopoverContent$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           },
           {
             "pattern": "^DropdownMenuLabel$",
-            "allow": [
-              "layout",
-              "typography"
-            ]
+            "allow": ["layout", "typography"]
           },
           {
             "pattern": "^FieldSeparator$",
-            "allow": [
-              "layout",
-              "typography"
-            ]
+            "allow": ["layout", "typography"]
           },
           {
             "pattern": "^DropdownMenuContent$",
-            "allow": [
-              "layout",
-              "spacing"
-            ]
+            "allow": ["layout", "spacing"]
           }
         ]
       }
@@ -235,7 +161,7 @@
         "import/no-relative-parent-imports": "warn",
         "no-array-constructor": "error",
         "no-unused-expressions": "warn",
-        "no-unused-vars": "warn",
+        "no-unused-vars": "error",
         "nextjs/google-font-display": "warn",
         "nextjs/google-font-preconnect": "warn",
         "nextjs/next-script-for-ga": "warn",
@@ -297,12 +223,8 @@
         "jsx-a11y/alt-text": [
           "warn",
           {
-            "elements": [
-              "img"
-            ],
-            "img": [
-              "Image"
-            ]
+            "elements": ["img"],
+            "img": ["Image"]
           }
         ],
         "jsx-a11y/anchor-ambiguous-text": "warn",
@@ -357,18 +279,14 @@
       }
     },
     {
-      "files": [
-        "apps/calculator/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
-      ],
+      "files": ["apps/calculator/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": [
-                  "lucide-react"
-                ],
+                "group": ["lucide-react"],
                 "allowImportNamePattern": "^.+Icon$",
                 "message": "Import Lucide icons using the *Icon export name (for example, CheckIcon)."
               }
@@ -407,9 +325,7 @@
       }
     },
     {
-      "files": [
-        "apps/calculator/src/hooks/use-mobile.ts"
-      ],
+      "files": ["apps/calculator/src/hooks/use-mobile.ts"],
       "plugins": [
         "eslint",
         "typescript",
@@ -434,15 +350,11 @@
       }
     },
     {
-      "files": [
-        "apps/calculator/src/features/landingpage/**"
-      ],
+      "files": ["apps/calculator/src/features/landingpage/**"],
       "rules": {
         "shadcn/no-restyle": "off"
       }
     }
   ],
-  "jsPlugins": [
-    "@shadcn/lint"
-  ]
+  "jsPlugins": ["@shadcn/lint"]
 }
