@@ -20,7 +20,7 @@ import { ORPCError } from "@orpc/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
+import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -389,7 +389,7 @@ export const previewSubmission = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (claim && claimLocksPartnerEdits(claim.status)) return null;
+      if (claim && isPartnerEditLocked(claim.status)) return null;
       const { issues, approvedAmountEur } = await evaluateSubmission(
         tx,
         claim?.id ?? null,
@@ -476,7 +476,7 @@ export const submit = authorized
             };
         }
       }
-      if (!claim || claimLocksPartnerEdits(claim.status))
+      if (!claim || isPartnerEditLocked(claim.status))
         throw errors.BAD_REQUEST({
           message: "Save an editable Claim before submitting.",
         });

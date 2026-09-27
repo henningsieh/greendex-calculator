@@ -14,7 +14,7 @@ import {
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { z } from "zod";
 
-import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
+import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -140,7 +140,7 @@ export const save = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (claim && claimLocksPartnerEdits(claim.status))
+      if (claim && isPartnerEditLocked(claim.status))
         throw errors.BAD_REQUEST({
           message: "Claim is locked; Participant Journeys cannot change.",
         });
@@ -249,7 +249,7 @@ export const update = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
-      if (!claim || claimLocksPartnerEdits(claim.status))
+      if (!claim || isPartnerEditLocked(claim.status))
         throw errors.BAD_REQUEST({
           message:
             "Save an editable Claim before updating a Participant Journey.",

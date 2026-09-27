@@ -9,6 +9,7 @@ import {
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -45,40 +46,13 @@ export const markPaid = authorized
         message: "Only Hosting staff may record payment.",
       });
     return db.transaction(async (tx) => {
-      // Match submission/review lock order so payment cannot race a decision or payout change.
-      const [project] = await tx
-        .select({ id: projects.id })
-        .from(projects)
-        .where(
-          and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
-        )
-        .for("update")
-        .limit(1);
-      const [partnership] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(
-          and(
-            eq(partnerships.id, input.partnershipId),
-            eq(partnerships.projectId, scope.projectId),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!project || !partnership)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
-      const [claim] = await tx
-        .select({
-          id: claims.id,
-          status: claims.status,
-          approvedAmountEur: claims.approvedAmountEur,
-        })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .for("update")
-        .limit(1);
+      // Shared Project → Partnership → Claim lock order (claim-locks.ts) so
+      // payment cannot race a decision or payout change.
+      const { claim } = await lockClaimScope(
+        tx,
+        { projectId: scope.projectId, partnershipId: input.partnershipId },
+        errors,
+      );
       if (!claim || !["approved", "paid"].includes(claim.status))
         throw errors.BAD_REQUEST({
           message: "Claim must be approved and unpaid to record payment.",

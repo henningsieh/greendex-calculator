@@ -15,6 +15,8 @@ import { z } from "zod";
 import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 const identifier = z.string().trim().min(1).max(128);
+// Setup links stay redeemable for seven days from creation.
+const SETUP_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const email = z.email().transform((value) => value.toLowerCase());
 const hash = (secret: string) =>
   createHash("sha256").update(secret).digest("hex");
@@ -69,7 +71,7 @@ export const createSetupLink = authorized
           message:
             "Only assigned Hosting staff can create a setup link for this Project.",
         });
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + SETUP_LINK_TTL_MS);
       const [link] = await tx
         .insert(links)
         .values({

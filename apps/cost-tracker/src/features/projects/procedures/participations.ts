@@ -23,7 +23,7 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
-import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
+import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -149,7 +149,7 @@ export function createParticipationProcedures(
             .from(claims)
             .where(eq(claims.partnershipId, input.partnershipId))
             .limit(1);
-          if (claim && claimLocksPartnerEdits(claim.status))
+          if (claim && isPartnerEditLocked(claim.status))
             throw errors.BAD_REQUEST({
               message: "Locked Claim prevents Participation creation.",
             });
@@ -352,7 +352,7 @@ export function createParticipationProcedures(
           .from(claims)
           .where(eq(claims.partnershipId, input.partnershipId))
           .limit(1);
-        if (submitted && claimLocksPartnerEdits(submitted.status))
+        if (submitted && isPartnerEditLocked(submitted.status))
           throw errors.BAD_REQUEST({
             message: "Locked Claim prevents Participation changes.",
           });
@@ -425,7 +425,7 @@ export function createParticipationProcedures(
             .from(claims)
             .where(eq(claims.partnershipId, input.partnershipId))
             .limit(1);
-          if (claim && claimLocksPartnerEdits(claim.status))
+          if (claim && isPartnerEditLocked(claim.status))
             throw errors.BAD_REQUEST({
               message: "Locked Claim prevents Participation removal.",
             });

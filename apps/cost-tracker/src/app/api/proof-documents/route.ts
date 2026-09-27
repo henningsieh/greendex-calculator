@@ -4,15 +4,21 @@ import {
 } from "@/features/projects/procedures/documents";
 import { auth } from "@/lib/auth";
 
+// Uploaded proof bytes in megabytes; mirrored in the streamed-bytes cap below.
+const MAX_UPLOAD_BYTES = 11 * 1024 * 1024;
+
 export async function POST(request: Request) {
-  // Multipart uploads use the same session and Partner-coordinator scope as oRPC.
+  // Allowed multipart exception to the oRPC-only seam (architecture.md):
+  // typed oRPC procedures cannot stream upload progress, so this route only
+  // enforces transport-level gates (origin, session, size caps) and delegates
+  // all authorization plus persistence to the owning feature procedure.
   if (request.headers.get("origin") !== new URL(request.url).origin) {
     return Response.json({ error: "Invalid origin." }, { status: 403 });
   }
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.session || !session.user)
     return Response.json({ error: "Sign in to continue." }, { status: 401 });
-  if (Number(request.headers.get("content-length")) > 11 * 1024 * 1024)
+  if (Number(request.headers.get("content-length")) > MAX_UPLOAD_BYTES)
     return Response.json({ error: "File is too large." }, { status: 413 });
   let data: FormData;
   try {
@@ -26,7 +32,7 @@ export async function POST(request: Request) {
       const { done, value } = await reader.read();
       if (done) break;
       total += value.byteLength;
-      if (total > 11 * 1024 * 1024) {
+      if (total > MAX_UPLOAD_BYTES) {
         await reader.cancel();
         return Response.json({ error: "File is too large." }, { status: 413 });
       }

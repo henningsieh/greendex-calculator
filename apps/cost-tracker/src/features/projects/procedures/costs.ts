@@ -12,7 +12,7 @@ import {
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
-import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
+import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -278,7 +278,7 @@ export const save = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
-      if (!claim || claimLocksPartnerEdits(claim.status))
+      if (!claim || isPartnerEditLocked(claim.status))
         throw errors.BAD_REQUEST({
           message: "Save an editable Claim before adding costs.",
         });
@@ -388,7 +388,7 @@ export const linkDocument = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
-      if (!claim || claimLocksPartnerEdits(claim.status))
+      if (!claim || isPartnerEditLocked(claim.status))
         throw errors.BAD_REQUEST({ message: "Claim is not editable." });
       const [entry] = await tx
         .select({ id: entries.id })

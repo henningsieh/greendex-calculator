@@ -9,7 +9,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
+import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -169,7 +169,7 @@ export const selectPayoutAccount = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (claim && claimLocksPartnerEdits(claim.status)) {
+      if (claim && isPartnerEditLocked(claim.status)) {
         throw errors.BAD_REQUEST({
           message:
             "Payout Account selection is locked while the Claim is not editable.",
@@ -250,7 +250,7 @@ export const saveDraft = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
       if (existing) {
-        if (claimLocksPartnerEdits(existing.status))
+        if (isPartnerEditLocked(existing.status))
           throw errors.BAD_REQUEST({ message: "Claim is not editable." });
         return draftSchema.parse(existing);
       }
@@ -265,7 +265,7 @@ export const saveDraft = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (raced && !claimLocksPartnerEdits(raced.status))
+      if (raced && !isPartnerEditLocked(raced.status))
         return draftSchema.parse(raced);
       throw errors.BAD_REQUEST({ message: "Claim is not editable." });
     });

@@ -9,14 +9,13 @@ import {
   partnershipPayoutAccountsTable as selections,
   proofDocumentsTable as documents,
   projectParticipantsTable as participants,
-  projectPartnerOrganizationsTable as partnerships,
-  projectsTable as projects,
   travelCostEntriesTable as entries,
   travelCostEntryDocumentsTable as links,
 } from "@greendex/database/schema";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -55,40 +54,12 @@ function decision(action: Decision) {
           message: "Only Hosting staff may review Claims.",
         });
       return db.transaction(async (tx) => {
-        // Same Project → Partnership → Claim lock order as submission.
-        const [project] = await tx
-          .select({ id: projects.id })
-          .from(projects)
-          .where(
-            and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
-          )
-          .for("update")
-          .limit(1);
-        const [partnership] = await tx
-          .select({ id: partnerships.id })
-          .from(partnerships)
-          .where(
-            and(
-              eq(partnerships.id, input.partnershipId),
-              eq(partnerships.projectId, scope.projectId),
-            ),
-          )
-          .for("update")
-          .limit(1);
-        if (!project || !partnership)
-          throw errors.FORBIDDEN({
-            message: "Project Partnership is unavailable.",
-          });
-        const [claim] = await tx
-          .select({
-            id: claims.id,
-            status: claims.status,
-            approvedAmountEur: claims.approvedAmountEur,
-          })
-          .from(claims)
-          .where(eq(claims.partnershipId, input.partnershipId))
-          .for("update")
-          .limit(1);
+        // Shared Project → Partnership → Claim lock order (claim-locks.ts).
+        const { claim } = await lockClaimScope(
+          tx,
+          { projectId: scope.projectId, partnershipId: input.partnershipId },
+          errors,
+        );
         const expectedStatus = action === "reopen" ? "rejected" : "submitted";
         const nextStatus =
           action === "requestCorrection"

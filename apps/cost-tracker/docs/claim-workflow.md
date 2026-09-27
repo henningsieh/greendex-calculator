@@ -15,7 +15,7 @@ editable → submitted → correction requested → submitted
                      ↘ rejected → reopened for Hosting review
 ```
 
-Opening Claim UI persists nothing. The first saved Claim information creates the Claim. A submitted Claim is locked. Only a correction request unlocks Partner-side editing. Reopening a rejection does not unlock Partner-side editing; Hosting staff either review it again or issue a correction request.
+Opening Claim UI persists nothing; there is no separate start ceremony. Explicit Save creates the Claim on its first save, after the Project Partnership has selected a Payout Account. A submitted Claim is locked. Only a correction request unlocks Partner-side editing. Reopening a rejection does not unlock Partner-side editing; Hosting staff either review it again or issue a correction request.
 
 There is no manually opened or closed Project-wide Claim phase. A Partner-side Project Coordinator may prepare its Claim whenever its Project Partnership is set up and has selected a Payout Account.
 
@@ -62,7 +62,7 @@ If staff accidentally mark a Claim paid without a transfer, an authorized Hostin
 
 ## History and access
 
-Claim history is append-only. It records submission, correction request and reason, resubmission, approval, rejection and reason, reopening, paid marking, and paid-flag correction, including responsible User and time.
+Claim history is append-only. It records Participant Journey updates (`journey_updated`), submission, correction request and reason, resubmission, approval, rejection and reason, reopening, paid marking, and paid-flag correction, including responsible User and time.
 
 A Payout Account is selected by Project Partnership reference. It may be changed while the Claim is editable. Once a Claim is submitted, its selected Payout Account is locked until Hosting staff return the Claim for correction; an approved or paid Claim's account cannot change. This preserves the agreed reference model without copying bank details into the Claim.
 

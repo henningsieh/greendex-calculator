@@ -9,7 +9,7 @@ import {
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
+import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -110,7 +110,7 @@ export async function uploadProofDocument(input: {
       .where(eq(claims.partnershipId, parsed.data.partnershipId))
       .for("update")
       .limit(1);
-    if (!claim || claimLocksPartnerEdits(claim.status))
+    if (!claim || isPartnerEditLocked(claim.status))
       return { status: 400 as const };
     const bytes = Buffer.from(await input.file.arrayBuffer());
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
