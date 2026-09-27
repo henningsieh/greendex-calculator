@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "fumadocs-mdx && next build",
-    "predev": "dotenv -e .env -- sh -c 'pnpm dlx kill-port \"$DOCUMENTATION_PORT\" || true'",
+    "predev": "dotenv -e .env -- sh -c 'fuser -k \"$DOCUMENTATION_PORT/tcp\" || true'",
     "dev": "dotenv -v NODE_ENV=development -e .env -- sh -c 'next dev --port \"$DOCUMENTATION_PORT\"'",
     "start": "dotenv -v NODE_ENV=production -e .env -- sh -c 'next start --port \"$DOCUMENTATION_PORT\"'",
     "format": "oxfmt",
