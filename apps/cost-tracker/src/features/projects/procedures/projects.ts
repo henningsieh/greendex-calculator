@@ -1,7 +1,9 @@
 import "server-only";
+import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   claimsTable,
+  member,
   organization,
   projectPartnerOrganizationsTable,
   projectsTable,
@@ -455,6 +457,27 @@ export const listHosted = authorized
   .output(HostedProjectListSchema)
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
+    const [membership] = await db
+      .select({ role: member.role })
+      .from(member)
+      .where(
+        and(
+          eq(member.organizationId, activeOrganizationId),
+          eq(member.userId, context.user.id),
+        ),
+      )
+      .limit(1);
+    if (
+      !membership ||
+      !(
+        hasOrganizationRole(membership.role, "owner") ||
+        hasOrganizationRole(membership.role, "admin")
+      )
+    ) {
+      throw errors.FORBIDDEN({
+        message: "Hosted Project overview is unavailable.",
+      });
+    }
     const fingerprint = getProjectListFingerprint({
       scope: "hosted",
       ...input,
@@ -610,13 +633,28 @@ export const availableScopes = authorized
       });
     }
 
-    const [canReadHosted, canReadPartner] = await Promise.all([
+    const [canReadHostedPermission, canReadPartner] = await Promise.all([
       hasCostTrackerPermissions(context.headers, { project: ["read"] }),
       hasCostTrackerPermissions(context.headers, {
         project: ["read"],
         projectPartnership: ["read"],
       }),
     ]);
+    const [membership] = await db
+      .select({ role: member.role })
+      .from(member)
+      .where(
+        and(
+          eq(member.organizationId, activeOrganizationId),
+          eq(member.userId, context.user.id),
+        ),
+      )
+      .limit(1);
+    const canReadHosted =
+      canReadHostedPermission &&
+      !!membership &&
+      (hasOrganizationRole(membership.role, "owner") ||
+        hasOrganizationRole(membership.role, "admin"));
     const [hostedRows, partnerRows] = await Promise.all([
       canReadHosted
         ? db
@@ -638,7 +676,11 @@ export const availableScopes = authorized
         : [],
     ]);
 
-    return { hosted: hostedRows.length > 0, partner: partnerRows.length > 0 };
+    return {
+      hosted: hostedRows.length > 0,
+      partner: partnerRows.length > 0,
+      canCreate: !!membership,
+    };
   });
 
 /**
@@ -667,7 +709,22 @@ export const getProject = authorized
         projectPartnership: ["read"],
       }),
     ]);
-    if (!(canReadHosted || canReadPartner)) {
+    const [membership] = await db
+      .select({ role: member.role })
+      .from(member)
+      .where(
+        and(
+          eq(member.organizationId, activeOrganizationId),
+          eq(member.userId, context.user.id),
+        ),
+      )
+      .limit(1);
+    const canCoordinateHosted =
+      membership &&
+      (hasOrganizationRole(membership.role, "owner") ||
+        hasOrganizationRole(membership.role, "admin") ||
+        hasOrganizationRole(membership.role, "project-coordinator"));
+    if (!(canReadHosted || canReadPartner || canCoordinateHosted)) {
       throw errors.FORBIDDEN({
         message: "The active Organization role cannot read this Project.",
       });
@@ -723,7 +780,7 @@ export const getProject = authorized
       };
     }
 
-    if (!canReadHosted) {
+    if (!canCoordinateHosted) {
       throw errors.FORBIDDEN({
         message: "The active Organization role cannot read this hosted Project.",
       });
@@ -746,6 +803,13 @@ export const getProject = authorized
           message: "The active Organization cannot access this Project.",
         });
       }
+      await requireHostCoordination(
+        hostedProject.id,
+        context.user.id,
+        activeOrganizationId,
+        errors,
+        transaction,
+      );
 
       return transaction
         .select({

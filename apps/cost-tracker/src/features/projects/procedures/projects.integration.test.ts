@@ -13,7 +13,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -430,6 +430,13 @@ describe("projects procedures", () => {
           createdAt: now,
         },
       ]);
+      await db.insert(member).values({
+        id: randomUUID(),
+        userId,
+        organizationId: hostId,
+        role: "owner",
+        createdAt: now,
+      });
       await db.insert(projectsTable).values({
         id: projectId,
         name: "Detail Project",
@@ -462,6 +469,7 @@ describe("projects procedures", () => {
       await db
         .delete(projectsTable)
         .where(inArray(projectsTable.id, [projectId]));
+      await db.delete(member).where(eq(member.userId, userId));
       await db
         .delete(organization)
         .where(inArray(organization.id, [hostId, partnerId, unrelatedId]));
@@ -615,6 +623,13 @@ describe("projects procedures", () => {
           createdAt: now,
         },
       ]);
+      await db.insert(member).values({
+        id: randomUUID(),
+        userId,
+        organizationId: hostId,
+        role: "owner",
+        createdAt: now,
+      });
       await db.insert(projectsTable).values([
         {
           id: alphaId,
@@ -696,10 +711,14 @@ describe("projects procedures", () => {
       ]);
     });
 
-    beforeEach(() => {
+    beforeEach(async () => {
       vi.clearAllMocks();
       authMocks.hasPermission.mockResolvedValue({ success: true });
       useActiveOrganization(hostId);
+      await db
+        .update(member)
+        .set({ role: "owner" })
+        .where(and(eq(member.userId, userId), eq(member.organizationId, hostId)));
     });
 
     afterAll(async () => {
@@ -707,6 +726,7 @@ describe("projects procedures", () => {
         .delete(projectPartnerOrganizationsTable)
         .where(inArray(projectPartnerOrganizationsTable.id, partnershipIds));
       await db.delete(projectsTable).where(inArray(projectsTable.id, projectIds));
+      await db.delete(member).where(eq(member.userId, userId));
       await db
         .delete(organization)
         .where(
@@ -930,22 +950,50 @@ describe("projects procedures", () => {
       }
     });
 
+    it.each([
+      "member",
+      "participant",
+      "project-coordinator",
+      "member,participant,project-coordinator",
+    ])(
+      "denies org-wide hosted overview to %s even with project.read",
+      async (role) => {
+        await db
+          .update(member)
+          .set({ role })
+          .where(
+            and(eq(member.userId, userId), eq(member.organizationId, hostId)),
+          );
+        await expect(
+          client.projects.listHosted({ pageSize: 25 }),
+        ).rejects.toMatchObject({ code: "FORBIDDEN" });
+        expect(await client.projects.scopes()).toEqual({
+          hosted: false,
+          partner: false,
+          canCreate: true,
+        });
+      },
+    );
+
     it("reports permission-aware scope availability", async () => {
       expect(await client.projects.scopes()).toEqual({
         hosted: true,
         partner: false,
+        canCreate: true,
       });
 
       useActiveOrganization(partnerId);
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: true,
+        canCreate: false,
       });
 
       useActiveOrganization(unrelatedId);
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: false,
+        canCreate: false,
       });
     });
   });

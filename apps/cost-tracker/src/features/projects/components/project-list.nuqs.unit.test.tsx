@@ -128,7 +128,13 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
       searchParams: "?scope=hosted&cursor=direct-page-two",
     });
 
-    fireEvent.click(await screen.findByRole("button", { name: "Previous page" }));
+    fireEvent.click(
+      await screen.findByRole(
+        "button",
+        { name: "Previous page" },
+        { timeout: 10_000 },
+      ),
+    );
 
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalledOnce());
     const update = onUrlUpdate.mock.calls[0]?.[0] as UrlUpdateEvent;

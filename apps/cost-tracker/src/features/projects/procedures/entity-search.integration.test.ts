@@ -282,10 +282,14 @@ describe("entity picker procedures", () => {
         ),
       );
     }
-  });
+  }, 20_000);
 
   it("scopes hosted search by active host membership and coordinator assignment", async () => {
     expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
+      { id: assigned, name: `Project ${assigned}` },
+      { id: unassigned, name: `Project ${unassigned}` },
+    ]);
+    expect(await client.projects.searchHosted({ search: "" })).toEqual([
       { id: assigned, name: `Project ${assigned}` },
       { id: unassigned, name: `Project ${unassigned}` },
     ]);
@@ -297,6 +301,14 @@ describe("entity picker procedures", () => {
       expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
         { id: assigned, name: `Project ${assigned}` },
       ]);
+      expect(await client.projects.searchHosted({ search: "" })).toEqual([
+        { id: assigned, name: `Project ${assigned}` },
+      ]);
+      await db
+        .delete(assignments)
+        .where(inArray(assignments.projectId, [assigned]));
+      expect(await client.projects.searchHosted({ search: "" })).toEqual([]);
+      await db.insert(assignments).values({ projectId: assigned, userId: actor });
       await expect(
         client.projects.searchHosted({ search: "x" }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });

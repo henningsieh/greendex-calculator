@@ -24,6 +24,7 @@ import {
   list as listCosts,
   save as saveCost,
 } from "@/features/projects/procedures/costs";
+import { create as createProject } from "@/features/projects/procedures/create";
 import { list as listDocuments } from "@/features/projects/procedures/documents";
 import { duplicateReviews } from "@/features/projects/procedures/duplicate-reviews";
 import {
@@ -104,6 +105,7 @@ export const router = {
   journeys: { list: listJourneys, save: saveJourney, update: updateJourney },
   organizations: { search: searchOrganizations, listMine: listMyOrganizations },
   projects: {
+    create: createProject,
     searchHosted,
     get: getProject,
     complete,
