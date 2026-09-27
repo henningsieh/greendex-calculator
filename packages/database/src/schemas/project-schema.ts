@@ -426,7 +426,11 @@ export const duplicateReviewDecisionEnum = pgEnum("duplicate_review_decision", [
   "dismiss",
 ]);
 
-/** A duplicate attempt is retained without creating a second Participation. */
+/** A duplicate attempt is retained without creating a second Participation.
+ *
+ * Retention is intentional: existing/survivor references use the default
+ * no-action behavior, so resolved tasks pin their Participation rows for the
+ * future manual merge path. Task cleanup belongs to that merge work, not here. */
 export const duplicateReviewTasksTable = pgTable(
   "duplicate_review_task",
   {

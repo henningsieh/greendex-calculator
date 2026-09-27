@@ -259,6 +259,65 @@ describe("assignment-scoped participation coordination", () => {
     }
   });
 
+  it("detects the same email across case variants via normalization", async () => {
+    const mixedUser = `coord-mixed-${s}`;
+    const mixedEmail = `MIXED-${s}@EXAMPLE.ORG`;
+    await db.insert(user).values({
+      id: mixedUser,
+      name: "Mixed",
+      email: mixedEmail,
+      emailVerified: true,
+    });
+    await db.insert(member).values({
+      id: randomUUID(),
+      userId: mixedUser,
+      organizationId: host,
+      role: "participant",
+      createdAt: new Date(),
+    });
+    await db.insert(profiles).values({ userId: mixedUser, fullName: "Mixed" });
+    await db.insert(acceptances).values({
+      userId: mixedUser,
+      version: version.id,
+      contentHash: version.contentHash,
+      answers: '{"accepted":true}',
+    });
+    const [placeholder] = await db
+      .insert(participants)
+      .values({
+        projectId: project,
+        representedOrganizationId: other,
+        displayName: "Existing",
+        email: mixedEmail.toLowerCase(),
+      })
+      .returning({ id: participants.id });
+    try {
+      await expect(
+        client.participations.create({
+          partnershipId: own,
+          userId: mixedUser,
+        }),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: expect.stringMatching(/merge review/i),
+      });
+      expect(await client.duplicateReviews.list({ partnershipId: own })).toEqual([
+        expect.objectContaining({
+          existingParticipationId: placeholder!.id,
+          candidateUserId: mixedUser,
+          status: "open",
+        }),
+      ]);
+    } finally {
+      await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
+      await db.delete(participants).where(eq(participants.id, placeholder!.id));
+      await db.delete(profiles).where(eq(profiles.userId, mixedUser));
+      await db.delete(acceptances).where(eq(acceptances.userId, mixedUser));
+      await db.delete(member).where(eq(member.userId, mixedUser));
+      await db.delete(user).where(eq(user.id, mixedUser));
+    }
+  });
+
   it("persists one review task for repeated same-User attempts and enforces self-assignment and resolution", async () => {
     const existing = await client.participations.create({
       partnershipId: own,

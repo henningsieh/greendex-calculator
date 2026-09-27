@@ -198,6 +198,7 @@ export function createParticipationProcedures(
             .where(
               and(
                 eq(participants.projectId, scope.projectId),
+                isNull(participants.mergedIntoParticipantId),
                 or(
                   eq(participants.userId, candidate.id),
                   eq(participants.email, email),
@@ -252,6 +253,7 @@ export function createParticipationProcedures(
               .where(
                 and(
                   eq(participants.projectId, scope.projectId),
+                  isNull(participants.mergedIntoParticipantId),
                   or(
                     eq(participants.userId, input.userId),
                     eq(participants.email, email),
