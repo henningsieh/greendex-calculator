@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 
 import { ORPCError } from "@orpc/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -50,16 +49,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
       consumeSetupLink: mocks.consume,
     },
     projects: { searchHosted: mocks.searchHosted },
-  },
-  orpcQuery: {
-    organizations: {
-      listMine: {
-        queryOptions: () => ({
-          queryKey: ["organizations", "listMine"],
-          queryFn: mocks.listMine,
-        }),
-      },
-    },
+    organizations: { listMine: mocks.listMine },
   },
 }));
 
@@ -108,17 +98,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function withQueryProvider(component: React.ReactNode) {
-  return render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      {component}
-    </QueryClientProvider>,
-  );
-}
 function recipient(secret = "private-secret") {
-  return withQueryProvider(<SetupLinkRecipient id="link-1" secret={secret} />);
+  return render(<SetupLinkRecipient id="link-1" secret={secret} />);
 }
 async function selectOption(
   user: ReturnType<typeof userEvent.setup>,
@@ -126,6 +107,7 @@ async function selectOption(
   name: string,
 ) {
   await user.click(screen.getByRole("button", { name: label }));
+  await user.type(screen.getByLabelText(`Search ${label} by name or ID`), name);
   await user.click(await screen.findByText(name));
 }
 
@@ -142,7 +124,7 @@ describe("Setup Link UI", () => {
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
       mocks.writeText,
     );
-    withQueryProvider(<SetupLinkCreator />);
+    render(<SetupLinkCreator />);
     await user.click(screen.getByRole("button", { name: "Hosted Project" }));
     await user.type(
       screen.getByLabelText("Search Hosted Project by name or ID"),
@@ -167,7 +149,7 @@ describe("Setup Link UI", () => {
   it("uses the approved new-link wording while issuance is pending", async () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));
-    withQueryProvider(<SetupLinkCreator />);
+    render(<SetupLinkCreator />);
     await user.click(screen.getByRole("button", { name: "Hosted Project" }));
     await user.type(
       screen.getByLabelText("Search Hosted Project by name or ID"),
@@ -183,7 +165,7 @@ describe("Setup Link UI", () => {
   });
 
   it("does not submit a missing secret", () => {
-    withQueryProvider(<SetupLinkRecipient id="link-1" />);
+    render(<SetupLinkRecipient id="link-1" />);
     expect(screen.getByText("Invalid setup link")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Complete setup" })).toBeNull();
   });
@@ -215,6 +197,7 @@ describe("Setup Link UI", () => {
     );
     expect(screen.getByText(/verified by the server/i)).toBeTruthy();
     await selectOption(user, "Organization", "My Organization");
+    expect(mocks.listMine).toHaveBeenCalledWith({ search: "My Organization" });
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
     expect(mocks.consume).toHaveBeenCalledWith({
       id: "link-1",

@@ -30,19 +30,26 @@ export const searchOrganizations = authorized
   });
 
 export const listMyOrganizations = authorized
-  .output(z.array(z.object({ id: z.string(), name: z.string() })).max(50))
-  .handler(async ({ context }) => {
-    const memberships = await db
-      .select({ id: organization.id, name: organization.name, role: member.role })
+  .input(searchInput)
+  .output(options)
+  .handler(async ({ context, input }) => {
+    const escaped = input.search.replace(/[\\%_]/g, "\\$&");
+    const pattern = `%${escaped}%`;
+    return db
+      .select({ id: organization.id, name: organization.name })
       .from(member)
       .innerJoin(organization, eq(organization.id, member.organizationId))
       .where(
         and(
           eq(member.userId, context.user.id),
+          // Match the comma-split, trimmed owner token used by hasOrganizationRole.
           sql`${member.role} ~ ${"(^|,)\\s*owner\\s*(,|$)"}`,
+          or(
+            sql`lower(${organization.name}) like lower(${pattern}) escape '\\'`,
+            sql`lower(${organization.id}) like lower(${pattern}) escape '\\'`,
+          ),
         ),
       )
       .orderBy(asc(organization.name), asc(organization.id))
-      .limit(50);
-    return memberships.map(({ id, name }) => ({ id, name }));
+      .limit(20);
   });

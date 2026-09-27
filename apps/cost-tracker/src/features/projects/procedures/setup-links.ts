@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
+import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   member,
@@ -132,17 +133,16 @@ export const consumeSetupLink = authorized
 
       if (input.organization.kind === "existing") {
         const [ownership] = await tx
-          .select({ id: member.id })
+          .select({ role: member.role })
           .from(member)
           .where(
             and(
               eq(member.userId, context.user.id),
               eq(member.organizationId, input.organization.organizationId),
-              eq(member.role, "owner"),
             ),
           )
           .limit(1);
-        if (!ownership)
+        if (!ownership || !hasOrganizationRole(ownership.role, "owner"))
           throw errors.FORBIDDEN({
             message: "You must be an Owner of the selected Organization.",
           });

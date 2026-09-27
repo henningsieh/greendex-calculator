@@ -168,11 +168,62 @@ describe("entity picker procedures", () => {
     }
   });
 
-  it("limits own Organizations to owner memberships", async () => {
-    expect(await client.organizations.listMine()).toEqual([
-      { id: host, name: `Host ${suffix}` },
+  it("searches only owned Organizations by name or ID and enforces min 2", async () => {
+    expect(await client.organizations.listMine({ search: partner })).toEqual([
       { id: partner, name: `Partner ${suffix}` },
     ]);
+    expect(
+      await client.organizations.listMine({ search: `Host ${suffix}` }),
+    ).toEqual([{ id: host, name: `Host ${suffix}` }]);
+    expect(await client.organizations.listMine({ search: foreign })).toEqual([]);
+    expect(await client.organizations.listMine({ search: "%_" })).toEqual([]);
+    await expect(
+      client.organizations.listMine({ search: "p" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    authMocks.getSession.mockResolvedValue(null);
+    await expect(
+      client.organizations.listMine({ search: partner }),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("finds owned Organizations beyond the first 50 while capping each result at 20", async () => {
+    const owned = Array.from({ length: 55 }, (_, index) => ({
+      id: `owned-result-${index}-${suffix}`,
+      name: `Owned Search ${suffix} ${index.toString().padStart(2, "0")}`,
+      slug: `owned-result-${index}-${suffix}`,
+      createdAt: new Date(),
+    }));
+    await db.insert(organization).values(owned);
+    await db.insert(member).values(
+      owned.map(({ id }) => ({
+        id: randomUUID(),
+        userId: actor,
+        organizationId: id,
+        role: "owner",
+        createdAt: new Date(),
+      })),
+    );
+    try {
+      expect(
+        await client.organizations.listMine({ search: `Owned Search ${suffix}` }),
+      ).toHaveLength(20);
+      expect(
+        await client.organizations.listMine({ search: owned[54]!.id }),
+      ).toEqual([{ id: owned[54]!.id, name: owned[54]!.name }]);
+    } finally {
+      await db.delete(member).where(
+        inArray(
+          member.organizationId,
+          owned.map(({ id }) => id),
+        ),
+      );
+      await db.delete(organization).where(
+        inArray(
+          organization.id,
+          owned.map(({ id }) => id),
+        ),
+      );
+    }
   });
 
   it("scopes hosted search by active host membership and coordinator assignment", async () => {

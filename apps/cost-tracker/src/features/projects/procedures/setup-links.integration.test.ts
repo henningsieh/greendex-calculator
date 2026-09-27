@@ -156,6 +156,59 @@ describe("Partner Organization setup links", () => {
     ).rejects.toThrow("already assigned");
   });
 
+  it.each(["member,owner", "owner,participant"])(
+    "offers and consumes an existing Organization with %s membership",
+    async (role) => {
+      const combinedOrgId = `setup-combined-${role}-${id}`;
+      await db.insert(organization).values({
+        id: combinedOrgId,
+        slug: combinedOrgId,
+        name: `Combined ${role}`,
+        createdAt: new Date(),
+      });
+      await db.insert(member).values({
+        id: randomUUID(),
+        userId,
+        organizationId: combinedOrgId,
+        role,
+        createdAt: new Date(),
+      });
+      let linkId: string | undefined;
+      try {
+        const link = await client.projectPartnerships.createSetupLink({
+          projectId,
+          recipientEmail,
+        });
+        linkId = link.id;
+        const matches = await client.organizations.listMine({
+          search: combinedOrgId,
+        });
+        expect(matches).toEqual([
+          { id: combinedOrgId, name: `Combined ${role}` },
+        ]);
+        const result = await client.projectPartnerships.consumeSetupLink({
+          id: link.id,
+          secret: link.secret,
+          organization: { kind: "existing", organizationId: matches[0]!.id },
+        });
+        expect(result.organizationId).toBe(combinedOrgId);
+        expect(
+          await db
+            .select()
+            .from(partnerships)
+            .where(eq(partnerships.id, result.partnershipId)),
+        ).toHaveLength(1);
+      } finally {
+        if (linkId) await db.delete(links).where(eq(links.id, linkId));
+        await db
+          .delete(partnerships)
+          .where(eq(partnerships.organizationId, combinedOrgId));
+        await db.delete(member).where(eq(member.organizationId, combinedOrgId));
+        await db.delete(organization).where(eq(organization.id, combinedOrgId));
+      }
+    },
+  );
+
   it("rejects wrong email and disabled links without creating a Partnership", async () => {
     const before = await db
       .select({ id: partnerships.id })

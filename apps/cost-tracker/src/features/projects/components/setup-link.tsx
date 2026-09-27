@@ -1,7 +1,6 @@
 "use client";
 
 import { ORPCError } from "@orpc/client";
-import { useQuery } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,9 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
-import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+import { orpc } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
+const searchOwnedOrganizations = (search: string) =>
+  orpc.organizations.listMine({ search });
 
 type SetupError =
   | "invalid"
@@ -254,10 +255,6 @@ export function SetupLinkRecipient({
   const [error, setError] = useState<SetupError>();
   const [completed, setCompleted] = useState(false);
   const [pending, setPending] = useState(false);
-  const ownedOrganizations = useQuery({
-    ...orpcQuery.organizations.listMine.queryOptions(),
-    enabled: kind === "existing" && !!secret,
-  });
 
   async function consume(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -343,26 +340,12 @@ export function SetupLinkRecipient({
               ) : (
                 <div className="space-y-2">
                   <span className="text-sm font-medium">Organization</span>
-                  {ownedOrganizations.isError ? (
-                    <p role="alert">
-                      Could not load Organizations.{" "}
-                      <Button
-                        type="button"
-                        variant="link"
-                        onClick={() => ownedOrganizations.refetch()}
-                      >
-                        Retry
-                      </Button>
-                    </p>
-                  ) : (
-                    <EntityCombobox
-                      label="Organization"
-                      value={organizationId}
-                      onChange={setOrganizationId}
-                      preload={ownedOrganizations.data ?? []}
-                      disabled={ownedOrganizations.isPending}
-                    />
-                  )}
+                  <EntityCombobox
+                    label="Organization"
+                    value={organizationId}
+                    onChange={setOrganizationId}
+                    search={searchOwnedOrganizations}
+                  />
                   <p>
                     Only an Owner of this Organization can complete setup.
                     Ownership is verified by the server when you submit.
