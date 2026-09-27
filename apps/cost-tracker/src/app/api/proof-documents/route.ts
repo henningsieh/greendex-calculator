@@ -1,11 +1,54 @@
 import {
+  downloadProofDocument,
   ProofAccessDenied,
+  ProofNotFound,
   uploadProofDocument,
 } from "@/features/projects/procedures/documents";
 import { auth } from "@/lib/auth";
 
 // Uploaded proof bytes in megabytes; mirrored in the streamed-bytes cap below.
 const MAX_UPLOAD_BYTES = 11 * 1024 * 1024;
+
+export async function GET(request: Request) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.session || !session.user)
+    return Response.json({ error: "Sign in to continue." }, { status: 401 });
+  const { searchParams } = new URL(request.url);
+  const partnershipId = searchParams.get("partnershipId") ?? "";
+  const documentId = searchParams.get("documentId") ?? "";
+  try {
+    const document = await downloadProofDocument({
+      partnershipId,
+      documentId,
+      actorId: session.user.id,
+      activeOrganizationId: session.session.activeOrganizationId,
+    });
+    // Never interpolate a stored filename into a header without encoding it.
+    const fileName = encodeURIComponent(document.fileName).replaceAll("'", "%27");
+    return new Response(new Uint8Array(document.bytes), {
+      headers: {
+        "Content-Type": ["application/pdf", "image/jpeg", "image/png"].includes(
+          document.mediaType,
+        )
+          ? document.mediaType
+          : "application/octet-stream",
+        "Content-Disposition": `attachment; filename*=UTF-8''${fileName}`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (error) {
+    if (error instanceof ProofAccessDenied)
+      return Response.json({ error: "Access denied." }, { status: 403 });
+    if (error instanceof ProofNotFound)
+      return Response.json({ error: "Document not found." }, { status: 404 });
+    console.error("[Proof download]", error);
+    return Response.json(
+      { error: "Download failed. Please try again." },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   // Allowed multipart exception to the oRPC-only seam (architecture.md):

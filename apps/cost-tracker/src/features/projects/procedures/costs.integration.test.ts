@@ -29,12 +29,19 @@ import {
   vi,
 } from "vitest";
 
-const authMocks = vi.hoisted(() => ({ getSession: vi.fn(), put: vi.fn() }));
-vi.mock("@/lib/proof-storage", () => ({ putProofFile: authMocks.put }));
+const authMocks = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  put: vi.fn(),
+  get: vi.fn(),
+}));
+vi.mock("@/lib/proof-storage", () => ({
+  putProofFile: authMocks.put,
+  getProofFile: authMocks.get,
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
-import { POST as upload } from "@/app/api/proof-documents/route";
+import { GET as download, POST as upload } from "@/app/api/proof-documents/route";
 import { router } from "@/lib/orpc/router";
 
 const suffix = randomUUID();
@@ -187,6 +194,7 @@ beforeEach(async () => {
       ),
     );
   authMocks.put.mockReset().mockResolvedValue(undefined);
+  authMocks.get.mockReset();
 });
 
 afterAll(async () => {
@@ -277,6 +285,53 @@ describe("Claim cost procedures", () => {
         .where(eq(claims.id, ownClaim));
     }
   });
+  it("downloads identical uploaded bytes only for the authorized Claim Partnership", async () => {
+    const bytes = new Uint8Array([0, 255, 37, 10, 128]);
+    const data = new FormData();
+    data.set("partnershipId", own);
+    data.set(
+      "file",
+      new File([bytes], "uploaded.pdf", { type: "application/pdf" }),
+    );
+    const uploaded = await upload(
+      new Request("https://test.example/api/proof-documents", {
+        method: "POST",
+        headers: { origin: "https://test.example" },
+        body: data,
+      }),
+    );
+    expect(uploaded.status).toBe(201);
+    const { id: documentId } = await uploaded.json();
+    const [reference, storedBytes] = authMocks.put.mock.lastCall!;
+    authMocks.get.mockImplementation(async (key: string) => {
+      expect(key).toBe(reference);
+      return storedBytes;
+    });
+    const request = (partnershipId: string, id = documentId) =>
+      new Request(
+        `https://test.example/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: id })}`,
+      );
+    authMocks.getSession.mockResolvedValueOnce(null);
+    expect((await download(request(own))).status).toBe(401);
+    expect((await download(request(foreign))).status).toBe(403);
+    expect((await download(request(next))).status).toBe(404);
+    expect((await download(request(own, foreignProof))).status).toBe(404);
+    actor = participantUser;
+    expect((await download(request(own))).status).toBe(403);
+    actor = coordinator;
+    activeOrg = other;
+    expect((await download(request(own))).status).toBe(403);
+    activeOrg = partner;
+    expect(authMocks.get).not.toHaveBeenCalled();
+    const response = await download(request(own));
+    expect(response.status).toBe(200);
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes);
+    expect(response.headers.get("content-type")).toBe("application/pdf");
+    expect(response.headers.get("content-disposition")).toContain("uploaded.pdf");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(authMocks.get).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps one real group total and derives equal cents that sum exactly to it", async () => {
     const saved = await client.costs.save(base);
     expect(saved.allocations.map((row) => row.amountEur)).toEqual([

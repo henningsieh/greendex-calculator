@@ -6,7 +6,7 @@ import {
   claimsTable as claims,
   proofDocumentsTable as documents,
 } from "@greendex/database/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
@@ -15,7 +15,7 @@ import {
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
 import { authorized } from "@/lib/orpc/middleware";
-import { putProofFile } from "@/lib/proof-storage";
+import { getProofFile, putProofFile } from "@/lib/proof-storage";
 
 const scopeInput = z.object({ partnershipId: coordinationId });
 const documentOutput = z.object({
@@ -71,6 +71,50 @@ export const list = authorized
   });
 
 export class ProofAccessDenied extends Error {}
+export class ProofNotFound extends Error {}
+
+/** Called by the download route; authorize the Partnership before resolving its Claim-owned object key. */
+export async function downloadProofDocument(input: {
+  partnershipId: string;
+  documentId: string;
+  actorId: string;
+  activeOrganizationId: string | null | undefined;
+}) {
+  if (
+    !scopeInput.safeParse({ partnershipId: input.partnershipId }).success ||
+    !coordinationId.safeParse(input.documentId).success
+  ) {
+    throw new ProofNotFound();
+  }
+  await requirePartner(
+    input.partnershipId,
+    input.actorId,
+    input.activeOrganizationId,
+    { FORBIDDEN: () => new ProofAccessDenied() },
+  );
+  const [document] = await db
+    .select({
+      fileReference: documents.fileReference,
+      originalFileName: documents.originalFileName,
+      mediaType: documents.mediaType,
+    })
+    .from(documents)
+    .innerJoin(claims, eq(documents.claimId, claims.id))
+    .where(
+      and(
+        eq(claims.partnershipId, input.partnershipId),
+        eq(documents.id, input.documentId),
+      ),
+    )
+    .limit(1);
+  if (!document) throw new ProofNotFound();
+  const bytes = await getProofFile(document.fileReference);
+  return {
+    bytes,
+    fileName: document.originalFileName,
+    mediaType: document.mediaType,
+  };
+}
 
 const allowedMediaTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 const maximumBytes = 10 * 1024 * 1024;

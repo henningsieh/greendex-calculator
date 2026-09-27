@@ -117,6 +117,14 @@ The access-key ID and secret key are intentionally omitted. Their local values a
 
 A temporary object PUT/GET/delete was successfully verified against the public S3 endpoint, and the verification object was removed.
 
+## Proof Document policy (interim, minimal for now)
+
+- **Retention:** Keep Claim Proof Documents in the private application bucket while their Project is active. There is no shorter automatic expiry or lifecycle rule yet.
+- **Malware scanning:** Treat uploaded files as untrusted. Scan on a best-effort basis when scanning is available and log the result or failure for operational follow-up; scanning is not a gate on upload or download. No automated scanning enforcement is currently implemented. Do not describe a file as clean solely because it was accepted.
+- **Deletion:** Delete a Project's Claim Proof Document objects and associated references when the Project is archived. This is the intended operational policy, not an implemented automatic archive hook; arrange and verify deletion as part of archiving until that hook exists. Do not delete the whole bucket or unrelated keys.
+
+Revisit this interim policy before introducing automated archive workflows or stronger security/retention requirements.
+
 To repeat that check using the application's local `.env`, run `pnpm --filter @greendex/cost-tracker test:garage-storage` from the repository root. This opt-in live test writes a random object under `smoke-tests/` in the existing bucket, compares downloaded bytes, and deletes it even if verification fails. It does not create a bucket and is not part of the default test suite. If the process is interrupted before cleanup, inspect and remove only the orphaned `smoke-tests/` key after confirming it belongs to this run; do not clear the entire prefix or bucket.
 
 ## Health check
