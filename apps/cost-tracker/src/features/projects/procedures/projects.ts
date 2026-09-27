@@ -343,6 +343,8 @@ export type ProjectRelationship =
       country: string;
       archived: boolean;
       costSubmissionWindowOpen: boolean;
+      completedAt: Date | null;
+      completedByUserId: string | null;
       hostingOrganization: { id: string; name: string };
     }
   | {
@@ -355,6 +357,8 @@ export type ProjectRelationship =
       country: string;
       archived: boolean;
       costSubmissionWindowOpen: boolean;
+      completedAt: Date | null;
+      completedByUserId: string | null;
       hostingOrganization: { id: string; name: string };
       partnershipId: string;
       assignedAt: Date;
@@ -378,6 +382,8 @@ export async function resolveRelationship({
       country: projectsTable.country,
       archived: projectsTable.archived,
       costSubmissionWindowOpen: projectsTable.costSubmissionWindowOpen,
+      completedAt: projectsTable.completedAt,
+      completedByUserId: projectsTable.completedByUserId,
       hostingOrganizationId: organization.id,
       hostingOrganizationName: organization.name,
       partnershipId: projectPartnerOrganizationsTable.id,
@@ -418,6 +424,8 @@ export async function resolveRelationship({
     country: row.country,
     archived: row.archived,
     costSubmissionWindowOpen: row.costSubmissionWindowOpen,
+    completedAt: row.completedAt,
+    completedByUserId: row.completedByUserId,
     hostingOrganization: {
       id: row.hostingOrganizationId,
       name: row.hostingOrganizationName,
@@ -684,6 +692,8 @@ export const getProject = authorized
       country: relationship.country,
       archived: relationship.archived,
       costSubmissionWindowOpen: relationship.costSubmissionWindowOpen,
+      completedAt: relationship.completedAt,
+      completedByUserId: relationship.completedByUserId,
     };
 
     if (relationship.kind === "partner") {
@@ -766,10 +776,17 @@ export const getProject = authorized
     };
   });
 
-/** Completion is a fresh, derived gate; it does not persist a manual Project phase. */
+/** Record one completion transition after checking fresh Partnership states. */
 export const complete = authorized
   .input(ProjectDetailInputSchema)
-  .output(z.object({ projectId: z.string(), completed: z.literal(true) }))
+  .output(
+    z.object({
+      projectId: z.string(),
+      completed: z.literal(true),
+      completedAt: z.date(),
+      completedByUserId: z.string(),
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const orgId = context.session.activeOrganizationId;
     if (!orgId) throw errors.FORBIDDEN();
@@ -778,6 +795,7 @@ export const complete = authorized
       const [project] = await tx
         .select({
           id: projectsTable.id,
+          completedAt: projectsTable.completedAt,
         })
         .from(projectsTable)
         .where(
@@ -787,7 +805,7 @@ export const complete = authorized
             eq(projectsTable.archived, false),
           ),
         )
-        .for("share")
+        .for("update")
         .limit(1);
       if (!project)
         throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
@@ -798,6 +816,8 @@ export const complete = authorized
         errors,
         tx,
       );
+      if (project.completedAt)
+        throw errors.BAD_REQUEST({ message: "Project is already completed." });
 
       const partnerships = await tx
         .select({ name: organization.name, status: claimsTable.status })
@@ -819,6 +839,26 @@ export const complete = authorized
         throw errors.BAD_REQUEST({
           message: `Cannot complete Project: ${blockers.map(({ name, status }) => `${name} (${status ?? "no Claim"})`).join(", ")}.`,
         });
-      return { projectId: project.id, completed: true as const };
+      const [completed] = await tx
+        .update(projectsTable)
+        .set({ completedAt: new Date(), completedByUserId: context.user.id })
+        .where(
+          and(
+            eq(projectsTable.id, project.id),
+            eq(projectsTable.organizationId, orgId),
+          ),
+        )
+        .returning({
+          completedAt: projectsTable.completedAt,
+          completedByUserId: projectsTable.completedByUserId,
+        });
+      if (!completed?.completedAt || !completed.completedByUserId)
+        throw errors.INTERNAL_SERVER_ERROR();
+      return {
+        projectId: project.id,
+        completed: true as const,
+        completedAt: completed.completedAt,
+        completedByUserId: completed.completedByUserId,
+      };
     });
   });

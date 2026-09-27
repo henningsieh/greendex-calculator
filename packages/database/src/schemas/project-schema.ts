@@ -108,6 +108,10 @@ export const projectsTable = pgTable(
     costSubmissionWindowOpen: boolean("cost_submission_window_open")
       .default(false)
       .notNull(),
+    completedAt: timestamp("completed_at"),
+    completedByUserId: text("completed_by_user_id").references(() => user.id, {
+      onDelete: "restrict",
+    }),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

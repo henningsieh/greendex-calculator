@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   detail: {} as Record<string, unknown>,
+  complete: vi.fn(),
 }));
 
 vi.mock("@/lib/orpc/orpc", () => ({
@@ -18,6 +20,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
       },
     },
   },
+  orpc: { projects: { complete: mocks.complete } },
 }));
 
 import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
@@ -48,6 +51,7 @@ function renderWorkspace(returnTo?: string) {
 
 beforeEach(() => {
   mocks.detail = {};
+  mocks.complete.mockReset();
 });
 
 describe("Project workspace", () => {
@@ -147,6 +151,84 @@ describe("Project workspace", () => {
     }
   });
 
+  it("completes an eligible Hosted Project and refreshes its workspace", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      completedAt: null,
+      completedByUserId: null,
+      partnerOrganizations: [
+        {
+          id: "link-1",
+          organizationName: "Partner",
+          claimStatus: "paid",
+          assignedAt: new Date(),
+        },
+      ],
+    };
+    mocks.complete.mockResolvedValue({ projectId: "project-1", completed: true });
+    renderWorkspace();
+    await user.click(
+      await screen.findByRole("button", { name: "Complete Project" }),
+    );
+    expect(mocks.complete).toHaveBeenCalledWith({ projectId: "project-1" });
+    expect(await screen.findByText("Project completed.")).toBeTruthy();
+  });
+
+  it("hides completion for blocked, completed and Partner Projects", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      completedAt: null,
+      partnerOrganizations: [
+        {
+          id: "link-1",
+          organizationName: "Partner",
+          claimStatus: "submitted",
+          assignedAt: new Date(),
+        },
+      ],
+    };
+    renderWorkspace();
+    await screen.findByText("Partner");
+    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
+  });
+
+  it("shows recorded completion and no repeat action", async () => {
+    const completedAt = new Date("2026-06-05T12:00:00.000Z");
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      completedAt,
+      completedByUserId: "staff-1",
+      partnerOrganizations: [],
+    };
+    renderWorkspace();
+    expect(await screen.findByText("Completed")).toBeTruthy();
+    expect(screen.getByText(/Completed 5 Jun 2026.*staff-1/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
+  });
+
+  it("reports a completion failure without marking the Project completed", async () => {
+    const user = userEvent.setup();
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      completedAt: null,
+      partnerOrganizations: [],
+    };
+    mocks.complete.mockRejectedValue(new Error("network"));
+    renderWorkspace();
+    await user.click(
+      await screen.findByRole("button", { name: "Complete Project" }),
+    );
+    expect(
+      await screen.findByText(/server or network is unreachable/i),
+    ).toBeTruthy();
+    expect(screen.queryByText("Completed")).toBeNull();
+  });
+
   it("renders only the active Partner assignment and Hosting identity", async () => {
     mocks.detail = {
       ...baseProject,
@@ -175,5 +257,6 @@ describe("Project workspace", () => {
         .getAttribute("href"),
     ).toBe("/partnerships/partnership-1/claim");
     expect(screen.queryByText(/EUR|Proof Document/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
   });
 });

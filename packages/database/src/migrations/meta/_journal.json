@@ -197,6 +197,13 @@
       "when": 1790520998928,
       "tag": "0027_brief_pepper_potts",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790529533917,
+      "tag": "0028_tiny_natasha_romanoff",
+      "breakpoints": true
     }
   ]
 }

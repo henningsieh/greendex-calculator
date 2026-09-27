@@ -114,6 +114,8 @@ const ProjectDetailBaseSchema = z.object({
   country: z.string(),
   archived: z.boolean(),
   costSubmissionWindowOpen: z.boolean(),
+  completedAt: z.date().nullable(),
+  completedByUserId: z.string().nullable(),
 });
 
 const ProjectClaimStatusSchema = createSelectSchema(claimsTable).shape.status;
