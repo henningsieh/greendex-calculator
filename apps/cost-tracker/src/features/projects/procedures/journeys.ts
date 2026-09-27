@@ -2,6 +2,7 @@ import "server-only";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
+  claimHistoryTable as history,
   claimsTable as claims,
   participantJourneysTable as journeys,
   projectFundingBandsTable as bands,
@@ -10,7 +11,7 @@ import {
   projectParticipantsTable as participants,
   projectsTable as projects,
 } from "@greendex/database/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { z } from "zod";
 
 import { claimLocksPartnerEdits } from "@/features/projects/procedures/claim-locks";
@@ -202,5 +203,117 @@ export const save = authorized
         })
         .returning(selected);
       return saved;
+    });
+  });
+
+/** Edit the existing shared journey, selecting its new band only from frozen Project rules. */
+export const update = authorized
+  .input(journeyInput)
+  .output(journeyOutput)
+  .handler(async ({ input, context, errors }) => {
+    const scope = await requirePartnerSide(
+      input.partnershipId,
+      context.user.id,
+      context.session.activeOrganizationId,
+      errors,
+    );
+    return db.transaction(async (tx) => {
+      // Share the Project → Partnership → Claim lock order with save and submit.
+      const [project] = await tx
+        .select({ id: projects.id })
+        .from(projects)
+        .where(
+          and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
+        )
+        .for("update")
+        .limit(1);
+      const [partnership] = await tx
+        .select({ id: partnerships.id })
+        .from(partnerships)
+        .where(
+          and(
+            eq(partnerships.id, input.partnershipId),
+            eq(partnerships.projectId, scope.projectId),
+            eq(partnerships.organizationId, scope.partnerId),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!project || !partnership)
+        throw errors.FORBIDDEN({
+          message: "Project Partnership is unavailable.",
+        });
+      const [claim] = await tx
+        .select({ id: claims.id, status: claims.status })
+        .from(claims)
+        .where(eq(claims.partnershipId, input.partnershipId))
+        .for("update")
+        .limit(1);
+      if (!claim || claimLocksPartnerEdits(claim.status))
+        throw errors.BAD_REQUEST({
+          message:
+            "Save an editable Claim before updating a Participant Journey.",
+        });
+      const [existing] = await tx
+        .select({ id: journeys.id })
+        .from(journeys)
+        .innerJoin(
+          participants,
+          eq(participants.id, journeys.projectParticipantId),
+        )
+        .where(
+          and(
+            eq(journeys.projectParticipantId, input.projectParticipantId),
+            eq(participants.projectId, scope.projectId),
+            eq(participants.representedOrganizationId, scope.partnerId),
+            isNull(participants.mergedIntoParticipantId),
+          ),
+        )
+        .limit(1);
+      if (!existing)
+        throw errors.BAD_REQUEST({
+          message:
+            "Select an existing Participant Journey in this Project Partnership.",
+        });
+      const matchingBands = await tx
+        .select({ id: bands.id })
+        .from(bands)
+        .where(
+          and(
+            eq(bands.projectId, scope.projectId),
+            lte(bands.minKm, input.erasmusDistanceKm),
+            gte(bands.maxKm, input.erasmusDistanceKm),
+          ),
+        );
+      if (matchingBands.length !== 1)
+        throw errors.BAD_REQUEST({
+          message: "Journey distance must have exactly one frozen funding band.",
+          data: {
+            issues: [
+              {
+                path: ["erasmusDistanceKm"],
+                message:
+                  "Journey distance must have exactly one frozen funding band.",
+              },
+            ],
+          },
+        });
+      const [updated] = await tx
+        .update(journeys)
+        .set({
+          origin: input.origin,
+          destination: input.destination,
+          tripType: input.tripType,
+          erasmusDistanceKm: input.erasmusDistanceKm,
+        })
+        .where(eq(journeys.id, existing.id))
+        .returning(selected);
+      if (claim?.status === "correction_requested")
+        await tx.insert(history).values({
+          claimId: claim.id,
+          actorUserId: context.user.id,
+          eventType: "journey_updated",
+        });
+      return updated;
     });
   });

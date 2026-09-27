@@ -370,6 +370,7 @@ export const getHistory = authorized
           "reopened",
           "paid",
           "payment_corrected",
+          "journey_updated",
         ]),
         actorUserId: z.string(),
         occurredAt: z.date(),

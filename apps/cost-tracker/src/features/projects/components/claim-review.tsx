@@ -45,6 +45,7 @@ const historyLabels: Record<History[number]["eventType"], string> = {
   reopened: "Reopened",
   paid: "Paid",
   payment_corrected: "Paid flag corrected",
+  journey_updated: "Journey corrected",
 };
 
 export function ClaimHistory({ events }: { events: History }) {

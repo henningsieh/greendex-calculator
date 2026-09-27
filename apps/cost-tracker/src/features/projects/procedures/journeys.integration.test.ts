@@ -4,6 +4,8 @@ import { randomUUID } from "node:crypto";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
+  claimHistoryTable as history,
+  claimsTable as claims,
   member,
   organization,
   partnerCoordinatorAssignmentsTable as assignments,
@@ -49,11 +51,20 @@ const first = id("first"),
   second = id("second"),
   outside = id("outside"),
   later = id("later");
+let claimId: string | undefined;
 let actor = coordinator;
 let activeOrg = partner;
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
+async function createEditableClaim() {
+  claimId = (
+    await db
+      .insert(claims)
+      .values({ partnershipId: own })
+      .returning({ id: claims.id })
+  )[0].id;
+}
 const journey = {
   partnershipId: own,
   projectParticipantId: first,
@@ -156,6 +167,9 @@ beforeAll(async () => {
 beforeEach(async () => {
   actor = coordinator;
   activeOrg = partner;
+  if (claimId) await db.delete(history).where(eq(history.claimId, claimId));
+  await db.delete(claims).where(eq(claims.partnershipId, own));
+  claimId = undefined;
   await db.delete(journeys).where(eq(journeys.projectParticipantId, first));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, second));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, later));
@@ -164,6 +178,8 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
+  if (claimId) await db.delete(history).where(eq(history.claimId, claimId));
+  await db.delete(claims).where(eq(claims.partnershipId, own));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, first));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, second));
   await db.delete(journeys).where(eq(journeys.projectParticipantId, later));
@@ -384,6 +400,177 @@ describe("Participant Journey procedures", () => {
       profiles[0] = initial;
       configBands[0].greenEur = initialRate;
     }
+  });
+
+  it("updates each journey field in place without adding a second journey", async () => {
+    const saved = await client.journeys.save(journey);
+    await createEditableClaim();
+    for (const [patch, expected] of [
+      [{ origin: "Tallinn" }, { origin: "Tallinn" }],
+      [{ destination: "Vilnius" }, { destination: "Vilnius" }],
+      [{ tripType: "one-way" }, { tripType: "one-way" }],
+      [{ erasmusDistanceKm: "1030" }, { erasmusDistanceKm: "1030.00" }],
+    ] as const) {
+      const updated = await client.journeys.update({ ...journey, ...patch });
+      expect(updated).toMatchObject({ id: saved.id, ...expected });
+    }
+    expect(
+      await db
+        .select()
+        .from(journeys)
+        .where(eq(journeys.projectParticipantId, first)),
+    ).toHaveLength(1);
+  });
+
+  it("validates update fields with the same itemized errors as save", async () => {
+    const saved = await client.journeys.save(journey);
+    await createEditableClaim();
+    await expect(
+      client.journeys.update({
+        partnershipId: own,
+        projectParticipantId: first,
+      } as typeof journey),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: {
+        issues: [
+          { path: ["origin"] },
+          { path: ["destination"] },
+          { path: ["tripType"] },
+          { path: ["erasmusDistanceKm"] },
+        ],
+      },
+    });
+    for (const patch of [
+      { origin: "   " },
+      { destination: "" },
+      { tripType: "return" },
+      { erasmusDistanceKm: "0" },
+      { erasmusDistanceKm: "-1" },
+      { erasmusDistanceKm: "123.456" },
+      { erasmusDistanceKm: "1234567890123" },
+    ]) {
+      await expect(
+        client.journeys.update({ ...journey, ...patch } as typeof journey),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(
+      (await db.select().from(journeys).where(eq(journeys.id, saved.id)))[0]
+        .origin,
+    ).toBe("Berlin");
+  });
+
+  it("rejects distances outside exactly one frozen band without changing the snapshot", async () => {
+    const saved = await client.journeys.save(journey);
+    await createEditableClaim();
+    const originalSnapshot = await db
+      .select()
+      .from(snapshots)
+      .where(eq(snapshots.projectId, project));
+    const originalBands = await db
+      .select()
+      .from(bands)
+      .where(eq(bands.projectId, project));
+    await expect(
+      client.journeys.update({ ...journey, erasmusDistanceKm: "9999999999.99" }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { issues: [{ path: ["erasmusDistanceKm"] }] },
+    });
+    const configBands = TRAVEL_FUNDING_RULES.bands as unknown as {
+      minKm: number;
+      maxKm: number;
+    }[];
+    const oldMin = configBands[0].minKm;
+    try {
+      configBands[0].minKm = 99999;
+      const updated = await client.journeys.update({
+        ...journey,
+        erasmusDistanceKm: String(originalBands[0].minKm),
+      });
+      expect(updated.id).toBe(saved.id);
+    } finally {
+      configBands[0].minKm = oldMin;
+    }
+    expect(
+      await db.select().from(snapshots).where(eq(snapshots.projectId, project)),
+    ).toEqual(originalSnapshot);
+    expect(
+      await db.select().from(bands).where(eq(bands.projectId, project)),
+    ).toEqual(originalBands);
+  });
+
+  it.each([
+    "editable",
+    "correction_requested",
+    "submitted",
+    "approved",
+    "rejected",
+    "paid",
+  ] as const)(
+    "gates %s updates and audits correction edits only",
+    async (status) => {
+      const saved = await client.journeys.save(journey);
+      claimId = (
+        await db
+          .insert(claims)
+          .values({ partnershipId: own, status })
+          .returning({ id: claims.id })
+      )[0].id;
+      const input = { ...journey, origin: "Tallinn" };
+      if (status === "editable" || status === "correction_requested") {
+        expect(await client.journeys.update(input)).toMatchObject({
+          id: saved.id,
+          origin: "Tallinn",
+        });
+      } else {
+        await expect(client.journeys.update(input)).rejects.toMatchObject({
+          code: "BAD_REQUEST",
+        });
+        expect(
+          (await db.select().from(journeys).where(eq(journeys.id, saved.id)))[0]
+            .origin,
+        ).toBe("Berlin");
+      }
+      const events = await db
+        .select()
+        .from(history)
+        .where(eq(history.claimId, claimId));
+      expect(events).toHaveLength(status === "correction_requested" ? 1 : 0);
+      if (status === "correction_requested")
+        expect(events[0]).toMatchObject({
+          eventType: "journey_updated",
+          actorUserId: coordinator,
+          occurredAt: expect.any(Date),
+          reason: null,
+        });
+    },
+  );
+
+  it("denies out-of-scope, missing and Participant updates", async () => {
+    await client.journeys.save(journey);
+    await expect(client.journeys.update(journey)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    await createEditableClaim();
+    await expect(
+      client.journeys.update({ ...journey, projectParticipantId: second }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.journeys.update({ ...journey, projectParticipantId: outside }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.journeys.update({ ...journey, partnershipId: foreign }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeOrg = host;
+    await expect(client.journeys.update(journey)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    activeOrg = partner;
+    actor = participantUser;
+    await expect(client.journeys.update(journey)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 
   it("scopes reads and writes to the active Partner coordinator, denying Participants and foreign participations", async () => {

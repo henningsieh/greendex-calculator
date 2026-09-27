@@ -507,6 +507,7 @@ export const claimEventTypeEnum = pgEnum("claim_event_type", [
   "reopened",
   "paid",
   "payment_corrected",
+  "journey_updated",
 ]);
 
 export const participantJourneysTable = pgTable(

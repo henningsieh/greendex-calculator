@@ -29,6 +29,7 @@ import { duplicateReviews } from "@/features/projects/procedures/duplicate-revie
 import {
   list as listJourneys,
   save as saveJourney,
+  update as updateJourney,
 } from "@/features/projects/procedures/journeys";
 import { listOnboardingProgress } from "@/features/projects/procedures/onboarding-progress";
 import { participations } from "@/features/projects/procedures/participations";
@@ -95,7 +96,7 @@ export const router = {
   },
   costs: { list: listCosts, save: saveCost, linkDocument: linkCostDocument },
   documents: { list: listDocuments },
-  journeys: { list: listJourneys, save: saveJourney },
+  journeys: { list: listJourneys, save: saveJourney, update: updateJourney },
   projects: {
     get: getProject,
     complete,

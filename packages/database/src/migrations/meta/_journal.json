@@ -183,6 +183,13 @@
       "when": 1790496366595,
       "tag": "0025_backfill_project_coordinator_role",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790500378223,
+      "tag": "0026_sloppy_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

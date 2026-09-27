@@ -311,6 +311,7 @@ const claimProcedures = [
   "costs.linkDocument",
   "journeys.list",
   "journeys.save",
+  "journeys.update",
 ] as const;
 type ClaimProcedure = (typeof claimProcedures)[number];
 const partnerProcedures: readonly ClaimProcedure[] = [
@@ -324,6 +325,7 @@ const partnerProcedures: readonly ClaimProcedure[] = [
   "costs.linkDocument",
   "journeys.list",
   "journeys.save",
+  "journeys.update",
 ];
 const hostProcedures: readonly ClaimProcedure[] = [
   "claims.getDraft",
@@ -448,6 +450,15 @@ async function invokeMatrixProcedure(procedure: ClaimProcedure, entryId: string)
         tripType: "one-way",
         erasmusDistanceKm: "850",
       });
+    case "journeys.update":
+      return client.journeys.update({
+        ...input,
+        projectParticipantId: robin,
+        origin: "Tallinn",
+        destination: "Riga",
+        tripType: "one-way",
+        erasmusDistanceKm: "850",
+      });
   }
 }
 
@@ -473,6 +484,24 @@ describe("Claim authorization matrix", () => {
       );
     let entryId = "missing-entry";
     if (expected && procedure === "claims.submit") await prepare("100.00");
+    if (procedure === "journeys.update") {
+      await db.insert(journeys).values({
+        projectParticipantId: robin,
+        origin: "Berlin",
+        destination: "Riga",
+        tripType: "one-way",
+        erasmusDistanceKm: "850",
+      });
+      if (expected)
+        await client.journeys.save({
+          partnershipId: own,
+          projectParticipantId: sam,
+          origin: "Paris",
+          destination: "Riga",
+          tripType: "one-way",
+          erasmusDistanceKm: "1030",
+        });
+    }
     if (expected && procedure === "costs.linkDocument") {
       entryId = (
         await client.costs.save({
@@ -570,6 +599,58 @@ describe("Claim submission", () => {
         await db.select().from(history).where(eq(history.claimId, claimId))
       ).filter((row) => row.eventType === "submitted"),
     ).toHaveLength(1);
+  });
+
+  it("re-derives the payable from the frozen band after a Partner journey correction and resubmission", async () => {
+    await prepare();
+    const first = await submit();
+    expect(first.approvedAmountEur).toBe("726.00");
+    await asHost();
+    await review("requestCorrection", "Correct distance");
+    activeOrg = partner;
+    const originalClaim = (
+      await db.select().from(claims).where(eq(claims.id, claimId))
+    )[0];
+    const frozen = await db
+      .select()
+      .from(snapshots)
+      .where(eq(snapshots.projectId, project));
+    const corrected = await client.journeys.update({
+      partnershipId: own,
+      projectParticipantId: robin,
+      origin: "Berlin",
+      destination: "Riga",
+      tripType: "round-trip",
+      erasmusDistanceKm: "2500",
+    });
+    expect(corrected.erasmusDistanceKm).toBe("2500.00");
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0],
+    ).toEqual(originalClaim);
+    expect(
+      await db.select().from(snapshots).where(eq(snapshots.projectId, project)),
+    ).toEqual(frozen);
+    expect(await client.claims.getHistory({ partnershipId: own })).toMatchObject([
+      { eventType: "submitted" },
+      { eventType: "correction_requested", reason: "Correct distance" },
+      {
+        eventType: "journey_updated",
+        actorUserId: actor,
+        occurredAt: expect.any(Date),
+      },
+    ]);
+    const second = await submit();
+    expect(second).toMatchObject({
+      id: first.id,
+      status: "submitted",
+      approvedAmountEur: "844.00",
+    });
+    expect((await events()).map((row) => row.eventType)).toEqual([
+      "submitted",
+      "correction_requested",
+      "journey_updated",
+      "resubmitted",
+    ]);
   });
 
   it("concurrent resubmission retries write one resubmitted event", async () => {
