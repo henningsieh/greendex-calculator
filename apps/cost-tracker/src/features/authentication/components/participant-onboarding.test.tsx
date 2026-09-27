@@ -114,9 +114,14 @@ describe("ParticipantJoin", () => {
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
-  it("rejects incomplete registration links before joining", () => {
+  it("rejects incomplete Participant Registration Links before joining without internal wording", () => {
     render(<ParticipantJoin agreement={published} source={null} />);
-    expect(screen.getByText(/complete registration link/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /complete Participant Invitation or Participant Registration Link required/i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/secret|hash/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Join Project" }),
     ).not.toBeInTheDocument();

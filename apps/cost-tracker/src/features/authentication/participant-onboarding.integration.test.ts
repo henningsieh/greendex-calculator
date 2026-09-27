@@ -330,6 +330,44 @@ describe("Participant onboarding procedures", () => {
     });
   });
 
+  it("creates additional independent links and closes only the selected link", async () => {
+    const first = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    const second = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    expect(first.id).not.toBe(second.id);
+    expect(
+      await db.select().from(links).where(eq(links.partnershipId, partnership)),
+    ).toHaveLength(2);
+    await client.participantOnboarding.setRegistrationLinkOpen({
+      id: first.id,
+      open: false,
+    });
+    const rows = await db
+      .select()
+      .from(links)
+      .where(eq(links.partnershipId, partnership));
+    expect(rows.find((row) => row.id === first.id)?.enabled).toBe(false);
+    expect(rows.find((row) => row.id === second.id)?.enabled).toBe(true);
+    actor = recipient;
+    await expect(
+      client.participantOnboarding.join({
+        source: { kind: "link", id: first.id, secret: first.secret },
+        profile: { fullName: "Recipient" },
+        agreement: { accepted: true },
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.participantOnboarding.join({
+        source: { kind: "link", id: second.id, secret: second.secret },
+        profile: { fullName: "Recipient" },
+        agreement: { accepted: true },
+      }),
+    ).resolves.toHaveProperty("participationId");
+  });
+
   it("blocks reopening registration after the Partnership's Claim is submitted", async () => {
     const link = await client.participantOnboarding.createRegistrationLink({
       partnershipId: partnership,
@@ -432,6 +470,160 @@ describe("Participant onboarding procedures", () => {
     ).resolves.toHaveProperty("participationId");
   });
 
+  it("explicitly rotates invitations twice, leaving one live native and bridge per Project email", async () => {
+    const first = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    expect(
+      await client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      }),
+    ).toEqual(first);
+    expect(
+      await db.select().from(bridges).where(eq(bridges.projectId, project)),
+    ).toHaveLength(1);
+    const second = await client.participantOnboarding.reissueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    const third = await client.participantOnboarding.reissueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    expect(
+      new Set([first.invitationId, second.invitationId, third.invitationId]).size,
+    ).toBe(3);
+    const rows = await db
+      .select()
+      .from(bridges)
+      .where(eq(bridges.projectId, project));
+    expect(
+      rows
+        .filter((row) => row.status === "pending")
+        .map((row) => row.invitationId),
+    ).toEqual([third.invitationId]);
+    const native = await db
+      .select()
+      .from(invitation)
+      .where(eq(invitation.organizationId, host));
+    expect(
+      native.filter((row) => row.status === "pending").map((row) => row.id),
+    ).toEqual([third.invitationId]);
+    expect(native.filter((row) => row.status === "canceled")).toHaveLength(2);
+    expect(native.find((row) => row.id === third.invitationId)).toMatchObject({
+      organizationId: host,
+      email: recipientEmail,
+      role: "participant",
+      inviterId: owner,
+      status: "pending",
+    });
+    actor = recipient;
+    await expect(
+      client.participantOnboarding.join({
+        source: { kind: "invitation", invitationId: first.invitationId },
+        profile: { fullName: "Recipient" },
+        agreement: { accepted: true },
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      client.participantOnboarding.join({
+        source: { kind: "invitation", invitationId: third.invitationId },
+        profile: { fullName: "Recipient" },
+        agreement: { accepted: true },
+      }),
+    ).resolves.toHaveProperty("participationId");
+    expect(authMocks.acceptInvitation).toHaveBeenCalledWith(
+      expect.objectContaining({ body: { invitationId: third.invitationId } }),
+    );
+  });
+
+  it("moves an invitation across Partnerships only with authority on both sides", async () => {
+    const first = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    await expect(
+      client.participantOnboarding.reissueInvitation({
+        partnershipId: otherPartnership,
+        email: recipientEmail,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(
+      (
+        await db
+          .select()
+          .from(bridges)
+          .where(eq(bridges.invitationId, first.invitationId))
+      )[0]?.status,
+    ).toBe("pending");
+    const otherMembershipId = randomUUID();
+    await db.insert(member).values({
+      id: otherMembershipId,
+      organizationId: otherPartner,
+      userId: owner,
+      role: "owner",
+      createdAt: new Date(),
+    });
+    activeOrganizationId = otherPartner;
+    try {
+      await expect(
+        client.participantOnboarding.reissueInvitation({
+          partnershipId: otherPartnership,
+          email: recipientEmail,
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(
+        (
+          await db
+            .select()
+            .from(bridges)
+            .where(eq(bridges.invitationId, first.invitationId))
+        )[0]?.status,
+      ).toBe("pending");
+      expect(
+        (
+          await db
+            .select()
+            .from(invitation)
+            .where(eq(invitation.id, first.invitationId))
+        )[0]?.status,
+      ).toBe("pending");
+    } finally {
+      await db.delete(member).where(eq(member.id, otherMembershipId));
+    }
+    activeOrganizationId = host;
+    await db.insert(member).values({
+      id: randomUUID(),
+      organizationId: host,
+      userId: owner,
+      role: "owner",
+      createdAt: new Date(),
+    });
+    try {
+      const second = await client.participantOnboarding.reissueInvitation({
+        partnershipId: otherPartnership,
+        email: recipientEmail,
+      });
+      expect(second.invitationId).not.toBe(first.invitationId);
+      const rows = await db
+        .select()
+        .from(bridges)
+        .where(eq(bridges.projectId, project));
+      expect(rows.filter((row) => row.status === "pending")).toMatchObject([
+        { invitationId: second.invitationId, partnershipId: otherPartnership },
+      ]);
+      expect(
+        rows.find((row) => row.invitationId === first.invitationId)?.status,
+      ).toBe("revoked");
+    } finally {
+      await db
+        .delete(member)
+        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
+    }
+  });
+
   it("retires a stale bridge and issues fresh when the native invitation expired", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
@@ -446,6 +638,14 @@ describe("Participant onboarding procedures", () => {
       email: recipientEmail,
     });
     expect(fresh.invitationId).not.toBe(issued.invitationId);
+    expect(
+      (
+        await db
+          .select()
+          .from(invitation)
+          .where(eq(invitation.id, issued.invitationId))
+      )[0]?.status,
+    ).toBe("canceled");
     const [retired] = await db
       .select({ status: bridges.status })
       .from(bridges)

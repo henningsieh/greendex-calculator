@@ -182,16 +182,6 @@ export function createParticipantOnboardingProcedures(
         context.session.activeOrganizationId,
         errors,
       );
-      const [existing] = await db
-        .select({ id: links.id })
-        .from(links)
-        .where(eq(links.partnershipId, input.partnershipId))
-        .limit(1);
-      if (existing)
-        throw errors.BAD_REQUEST({
-          message:
-            "This Partnership already has a registration link; distribute the existing secret securely.",
-        });
       const secret = randomBytes(32).toString("base64url");
       const [link] = await db
         .insert(links)
@@ -240,6 +230,118 @@ export function createParticipantOnboardingProcedures(
         })
         .where(eq(links.id, input.id));
       return { open: input.open };
+    });
+
+  function newNativeParticipantInvitation(
+    invitationId: string,
+    hostId: string,
+    email: string,
+    issuerId: string,
+  ) {
+    return {
+      id: invitationId,
+      organizationId: hostId,
+      email,
+      role: "participant",
+      status: "pending",
+      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+      inviterId: issuerId,
+    };
+  }
+
+  const reissueInvitation = authorized
+    .input(z.object({ partnershipId: id, email: normalizedEmail }))
+    .output(z.object({ invitationId: z.string() }))
+    .handler(async ({ input, context, errors }) => {
+      const target = await partnershipForIssuer(
+        input.partnershipId,
+        context.user.id,
+        context.session.activeOrganizationId,
+        errors,
+      );
+      const [existingParticipation] = await db
+        .select({ id: participants.id })
+        .from(participants)
+        .leftJoin(user, eq(user.id, participants.userId))
+        .where(
+          and(
+            eq(participants.projectId, target.projectId),
+            or(
+              sql`lower(${participants.email}) = ${input.email}`,
+              sql`lower(${user.email}) = ${input.email}`,
+            ),
+          ),
+        )
+        .limit(1);
+      if (existingParticipation)
+        throw errors.BAD_REQUEST({
+          message: "This person already participates in this Project.",
+        });
+      return db.transaction(async (tx) => {
+        // Serialize rotations across every Partnership in this Project.
+        await tx
+          .select({ id: projects.id })
+          .from(projects)
+          .where(eq(projects.id, target.projectId))
+          .for("update");
+        const [previous] = await tx
+          .select({
+            invitationId: bridges.invitationId,
+            partnershipId: bridges.partnershipId,
+          })
+          .from(bridges)
+          .where(
+            and(
+              eq(bridges.projectId, target.projectId),
+              eq(bridges.email, input.email),
+              eq(bridges.status, "pending"),
+            ),
+          )
+          .limit(1);
+        if (!previous)
+          throw errors.BAD_REQUEST({
+            message: "No active Participant Invitation to replace.",
+          });
+        if (previous.partnershipId !== target.id)
+          await partnershipForIssuer(
+            previous.partnershipId,
+            context.user.id,
+            context.session.activeOrganizationId,
+            errors,
+          );
+        await tx
+          .update(invitation)
+          .set({ status: "canceled" })
+          .where(
+            and(
+              eq(invitation.id, previous.invitationId),
+              eq(invitation.status, "pending"),
+            ),
+          );
+        await tx
+          .update(bridges)
+          .set({ status: "revoked" })
+          .where(eq(bridges.invitationId, previous.invitationId));
+        const invitationId = randomUUID();
+        await tx
+          .insert(invitation)
+          .values(
+            newNativeParticipantInvitation(
+              invitationId,
+              target.hostId,
+              input.email,
+              context.user.id,
+            ),
+          );
+        await tx.insert(bridges).values({
+          invitationId,
+          partnershipId: target.id,
+          projectId: target.projectId,
+          email: input.email,
+          issuedByUserId: context.user.id,
+        });
+        return { invitationId };
+      });
     });
 
   const issueInvitation = authorized
@@ -305,13 +407,23 @@ export function createParticipantOnboardingProcedures(
           return { invitationId: existingBridge.invitationId };
         // Stale bridge: the native invitation is missing, expired, or closed.
         // Retire it and fall through to fresh issuance below.
-        await db
-          .update(bridges)
-          .set({ status: "revoked" })
-          .where(eq(bridges.invitationId, existingBridge.invitationId));
+        await db.transaction(async (tx) => {
+          await tx
+            .update(invitation)
+            .set({ status: "canceled" })
+            .where(
+              and(
+                eq(invitation.id, existingBridge.invitationId),
+                eq(invitation.status, "pending"),
+              ),
+            );
+          await tx
+            .update(bridges)
+            .set({ status: "revoked" })
+            .where(eq(bridges.invitationId, existingBridge.invitationId));
+        });
       }
-      // TODO (#174): wire actual invitation email delivery and the recipient accept surface.
-      // Cost Tracker's Better Auth config currently has no invitation-email sender.
+      // Email delivery belongs to #182; the returned invitationId identifies the delivery target.
       let invitationId: string;
       if (partnership.hostCanInvite) {
         const response = await auth.api.createInvitation({
@@ -342,15 +454,16 @@ export function createParticipantOnboardingProcedures(
         // invitation shape plus bridge atomically, under the verified issuer guard.
         invitationId = randomUUID();
         await db.transaction(async (tx) => {
-          await tx.insert(invitation).values({
-            id: invitationId,
-            organizationId: partnership.hostId,
-            email: input.email,
-            role: "participant",
-            status: "pending",
-            expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
-            inviterId: context.user.id,
-          });
+          await tx
+            .insert(invitation)
+            .values(
+              newNativeParticipantInvitation(
+                invitationId,
+                partnership.hostId,
+                input.email,
+                context.user.id,
+              ),
+            );
           await tx.insert(bridges).values({
             invitationId,
             partnershipId: partnership.id,
@@ -766,6 +879,7 @@ export function createParticipantOnboardingProcedures(
     createRegistrationLink,
     setRegistrationLinkOpen,
     issueInvitation,
+    reissueInvitation,
     setInvitationOpen,
     join,
     listMyProjects,

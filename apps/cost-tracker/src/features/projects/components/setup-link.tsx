@@ -171,7 +171,7 @@ export function SetupLinkCreator() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create Partner Organization setup link</CardTitle>
+        <CardTitle>Partner Organization Setup Link</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         <p>
@@ -200,7 +200,7 @@ export function SetupLinkCreator() {
           </div>
           <div>
             <Button disabled={pending} type="submit">
-              {pending ? "Creating…" : "Create setup link"}
+              {pending ? "Erstelle…" : "Neuer Link"}
             </Button>
           </div>
         </form>
@@ -223,10 +223,12 @@ export function SetupLinkCreator() {
                 }
               }}
             >
-              Copy link
+              Kopieren
             </Button>
             {copied && (
-              <output>Link copied. Share it privately with the recipient.</output>
+              <output>
+                Link kopiert. Teilen Sie ihn nur mit der eingeladenen Person.
+              </output>
             )}
           </div>
         )}

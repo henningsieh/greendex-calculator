@@ -72,14 +72,14 @@ describe("Setup Link UI", () => {
       screen.getByLabelText("Recipient email"),
       "partner@example.com",
     );
-    await user.click(screen.getByRole("button", { name: "Create setup link" }));
+    await user.click(screen.getByRole("button", { name: "Neuer Link" }));
     expect(mocks.create).toHaveBeenCalledWith({
       projectId: "project-1",
       recipientEmail: "partner@example.com",
     });
     const url = screen.getByLabelText("Recipient setup link") as HTMLInputElement;
     expect(url.value).toContain("/setup-links/link-1?secret=private-secret");
-    await user.click(screen.getByRole("button", { name: "Copy link" }));
+    await user.click(screen.getByRole("button", { name: "Kopieren" }));
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
   });
 

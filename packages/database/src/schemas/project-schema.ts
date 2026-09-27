@@ -268,8 +268,7 @@ export const participantRegistrationLinksTable = pgTable(
       .notNull()
       .references(() => projectPartnerOrganizationsTable.id, {
         onDelete: "cascade",
-      })
-      .unique(),
+      }),
     secretHash: text("secret_hash").notNull(),
     enabled: boolean("enabled").default(true).notNull(),
     createdByUserId: text("created_by_user_id")
@@ -279,6 +278,11 @@ export const participantRegistrationLinksTable = pgTable(
     closedByUserId: text("closed_by_user_id").references(() => user.id),
     closedAt: timestamp("closed_at"),
   },
+  (table) => [
+    index("participant_registration_link_partnership_idx").on(
+      table.partnershipId,
+    ),
+  ],
 );
 
 /** Connects a Better Auth invitation to its Project Partnership without creating Participation early. */

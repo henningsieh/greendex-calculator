@@ -121,14 +121,18 @@ export function ParticipantJoin({
       <CardContent className="space-y-5">
         <p>
           Your account must use a verified email address. The server checks the
-          invitation or registration link before granting access.
+          Participant Invitation or Participant Registration Link before granting
+          access.
         </p>
         {!source ? (
           <Alert variant="destructive">
-            <AlertTitle>Complete registration link required</AlertTitle>
+            <AlertTitle>
+              Complete Participant Invitation or Participant Registration Link
+              required
+            </AlertTitle>
             <AlertDescription>
-              Open the complete link shared with you. An invitation needs its ID;
-              a registration link also needs its secret.
+              Open the complete link shared with you. If it does not work, ask the
+              sender for a new link.
             </AlertDescription>
           </Alert>
         ) : (
@@ -303,8 +307,8 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
           </Button>
         ) : projects.length === 0 ? (
           <p>
-            No Projects yet. Join through an invitation or registration link to
-            see your Participations here.
+            No Projects yet. Join through a Participant Invitation or Participant
+            Registration Link to see your Participations here.
           </p>
         ) : (
           <ul className="space-y-4">
