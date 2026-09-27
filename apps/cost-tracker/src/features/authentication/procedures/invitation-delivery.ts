@@ -1,4 +1,6 @@
 import "server-only";
+import { createHash } from "node:crypto";
+
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -35,12 +37,13 @@ export async function deliverParticipantInvitation(
     // window can deliver a dead link, but acceptance rejects it without state change.
     await sendParticipantInvitation({ email, invitationId });
     return { invitationId, delivery: "sent" as const };
-  } catch (error) {
-    // The invitation is committed; report failure without leaking SMTP details.
-    // A short prefix identifies the failed send without exposing the invitation URL bearer.
+  } catch {
+    // The invitation is committed; correlate failures without logging bearer or error content.
     console.error("Participant Invitation email delivery failed.", {
-      invitationIdPrefix: invitationId.slice(0, 8),
-      cause: error instanceof Error ? error.name : typeof error,
+      invitationIdHashPrefix: createHash("sha256")
+        .update(invitationId)
+        .digest("hex")
+        .slice(0, 8),
     });
     return { invitationId, delivery: "failed" as const };
   }
