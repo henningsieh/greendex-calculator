@@ -246,6 +246,44 @@ describe("entity picker procedures", () => {
     }
   });
 
+  it("finds an owner after more than 1000 preceding non-owner matches", async () => {
+    const candidates = Array.from({ length: 1002 }, (_, index) => ({
+      id: `picker-many-${index.toString().padStart(4, "0")}-${suffix}`,
+      name: `Many Matches ${suffix}`,
+      slug: `picker-many-${index.toString().padStart(4, "0")}-${suffix}`,
+      createdAt: new Date(),
+    }));
+    const last = candidates[1001]!;
+    await db.insert(organization).values(candidates);
+    try {
+      await db.insert(member).values(
+        candidates.map(({ id }, index) => ({
+          id: randomUUID(),
+          userId: actor,
+          organizationId: id,
+          role: index === 1001 ? "member,owner" : "member",
+          createdAt: new Date(),
+        })),
+      );
+      expect(
+        await client.organizations.listMine({ search: `Many Matches ${suffix}` }),
+      ).toEqual([{ id: last.id, name: last.name }]);
+    } finally {
+      await db.delete(member).where(
+        inArray(
+          member.organizationId,
+          candidates.map(({ id }) => id),
+        ),
+      );
+      await db.delete(organization).where(
+        inArray(
+          organization.id,
+          candidates.map(({ id }) => id),
+        ),
+      );
+    }
+  });
+
   it("scopes hosted search by active host membership and coordinator assignment", async () => {
     expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
       { id: assigned, name: `Project ${assigned}` },
