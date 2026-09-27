@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as assignments,
@@ -186,6 +187,25 @@ describe("entity picker procedures", () => {
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
+  it("uses hasOrganizationRole for the owned search predicate", async () => {
+    const combinedRole = "member,\uFEFFowner";
+    expect(hasOrganizationRole(combinedRole, "owner")).toBe(true);
+    await db
+      .update(member)
+      .set({ role: combinedRole })
+      .where(inArray(member.organizationId, [partner]));
+    try {
+      expect(await client.organizations.listMine({ search: partner })).toEqual([
+        { id: partner, name: `Partner ${suffix}` },
+      ]);
+    } finally {
+      await db
+        .update(member)
+        .set({ role: "member,owner" })
+        .where(inArray(member.organizationId, [partner]));
+    }
+  });
+
   it("finds owned Organizations beyond the first 50 while capping each result at 20", async () => {
     const owned = Array.from({ length: 55 }, (_, index) => ({
       id: `owned-result-${index}-${suffix}`,
@@ -195,11 +215,11 @@ describe("entity picker procedures", () => {
     }));
     await db.insert(organization).values(owned);
     await db.insert(member).values(
-      owned.map(({ id }) => ({
+      owned.map(({ id }, index) => ({
         id: randomUUID(),
         userId: actor,
         organizationId: id,
-        role: "owner",
+        role: index < 30 ? "member" : "owner",
         createdAt: new Date(),
       })),
     );
