@@ -37,7 +37,7 @@ below has no UI surface, record it as a gap instead of working around it.
 ## 2. Hosting setup
 
 - T05 — H signs in, creates/selects the Hosting Organization. [#164]
-- T06 — H invites a colleague as Organization Admin; colleague accepts and sees the org. [CD-02, #164]
+- T06 — H invites a colleague as Organization Admin in the Calculator app team page (Cost Tracker has no staff-invite UI; membership is org-level and shared: http://localhost:3000/en/org/team); colleague accepts and sees the org. [CD-02, #164]
 - T07 — X (no membership) opening any protected page → access-denied surface, no data. [#179]
 
 ## 3. Partner setup link (org-less recipient flow)
