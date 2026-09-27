@@ -16,6 +16,30 @@ _Avoid_: Host Organization, Host
 An Organization assigned to one Project through a Project Partnership. The same Organization may own another Project and therefore be its Hosting Organization.
 _Avoid_: Partner (when referring to the Organization)
 
+**Participant Agreement**:
+The app-wide versioned EU–Erasmus agreement in Cost Tracker. Acceptance belongs to the User, not to the Project Participation, and is stored with version and content hash as historical evidence. The current version gates Participant access: `join` and `listMyProjects` require acceptance of the current version; a new version requires renewed acceptance. The deployed value is `"PENDING-LEGAL-001"` until approved copy lands.
+_Avoid_: Rules, Project-specific agreement
+
+**Invitee**:
+A person targeted by a Participant Invitation or a Participant Registration Link, before join completes and before a Project Participation exists for that person in that Project.
+_Avoid_: Participant, Project Participation
+
+**Participant Invitation**:
+An email-bound invitation that grants the Invitee the `participant` role in the Hosting Organization, linked by a bridge record to exactly one Project Partnership. It never creates Membership in the Partner Organization.
+_Avoid_: Participant Registration Link, Organization Invitation
+
+**Participant Registration Link**:
+A shareable app-owned registration entry point for exactly one Project Partnership. Anyone holding the link may start onboarding with their own account; no email and no Better Auth invitation are involved.
+_Avoid_: Participant Invitation, Organization Invitation
+
+**Organization Invitation**:
+A Better Auth invitation into an Organization role (`owner`, `admin`, `member`) for colleagues. It carries no Project Partnership bridge and grants no Participant access.
+_Avoid_: Participant Invitation, Participant Registration Link
+
+**Review Task**:
+A persisted coordination object scoped to one Project Partnership about duplicate identity (the same User or the same email twice in one Project). States are open, assigned, resolved. Resolution feeds the merge-review flow that decides which Project Participation survives.
+_Avoid_: Claim review, inline notice (as storage)
+
 **Cost Submission Window**:
 Legacy read-only Project flag (`cost_submission_window_open`). It no longer gates Claim work: there is no manual Project-wide Claim phase. Retained only until the implemented field is removed.
 _Avoid_: Claiming phase, Claim phase

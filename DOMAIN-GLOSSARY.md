@@ -24,7 +24,7 @@ A User with Better Auth role `admin` and Organization-wide administrative author
 _Avoid_: Project Coordinator, Owner
 
 **Project Coordinator**:
-A User with Better Auth role `project-coordinator` and an explicit responsibility assignment. A hosted-Project assignment authorizes Host-side coordination; a Project-Partnership assignment authorizes Partner-side coordination. The role alone grants neither Organization-wide authority nor access to an unassigned Project.
+A User with Better Auth role `project-coordinator` and one explicit assignment. The assignment sets the scope: a Project assignment scopes work to that Project's Hosting Organization; a Project Partnership assignment scopes work to that Partnership's Partner Organization. The role alone grants neither Organization-wide authority nor access to an unassigned Project. UI wording differs by scope: `Project Coordinator` for Hosting Organization scope, `Group Organizer` for Partner Organization scope.
 _Avoid_: Organization Admin, Employee, Project Manager, Coordinator
 
 **Participant Role**:
