@@ -612,6 +612,17 @@ describe("Claim submission", () => {
     await prepare();
     const first = await submit();
     expect(first.approvedAmountEur).toBe("726.00");
+    const correctionInput = {
+      partnershipId: own,
+      projectParticipantId: robin,
+      origin: "Berlin",
+      destination: "Riga",
+      tripType: "round-trip" as const,
+      erasmusDistanceKm: "2500",
+    };
+    await expect(client.journeys.update(correctionInput)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
     await asHost();
     await review("requestCorrection", "Correct distance");
     activeOrg = partner;
@@ -622,14 +633,7 @@ describe("Claim submission", () => {
       .select()
       .from(snapshots)
       .where(eq(snapshots.projectId, project));
-    const corrected = await client.journeys.update({
-      partnershipId: own,
-      projectParticipantId: robin,
-      origin: "Berlin",
-      destination: "Riga",
-      tripType: "round-trip",
-      erasmusDistanceKm: "2500",
-    });
+    const corrected = await client.journeys.update(correctionInput);
     expect(corrected.erasmusDistanceKm).toBe("2500.00");
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0],
@@ -651,6 +655,9 @@ describe("Claim submission", () => {
       id: first.id,
       status: "submitted",
       approvedAmountEur: "844.00",
+    });
+    await expect(client.journeys.update(correctionInput)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
     });
     expect((await events()).map((row) => row.eventType)).toEqual([
       "submitted",

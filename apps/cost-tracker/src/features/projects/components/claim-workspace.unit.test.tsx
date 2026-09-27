@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
     projectParticipantId: string;
     origin: string;
     destination: string;
-    tripType: "one-way";
+    tripType: "one-way" | "round-trip";
     erasmusDistanceKm: string;
   }[],
   costs: [] as {
@@ -66,6 +66,7 @@ const mocks = vi.hoisted(() => ({
   saveDraft: vi.fn(),
   select: vi.fn(),
   saveJourney: vi.fn(),
+  updateJourney: vi.fn(),
   saveCost: vi.fn(),
   link: vi.fn(),
 }));
@@ -95,7 +96,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
         selectPayoutAccount: mocks.select,
         submit: mocks.submit,
       },
-      journeys: { save: mocks.saveJourney },
+      journeys: { save: mocks.saveJourney, update: mocks.updateJourney },
       costs: { save: mocks.saveCost, linkDocument: mocks.link },
     },
     orpcQuery: {
@@ -209,11 +210,149 @@ beforeEach(() => {
     mocks.selected = "account";
   });
   mocks.saveJourney.mockReset();
+  mocks.updateJourney.mockReset().mockImplementation(async (input) => {
+    mocks.journeys = mocks.journeys.map((journey) =>
+      journey.projectParticipantId === input.projectParticipantId
+        ? { ...journey, ...input }
+        : journey,
+    );
+  });
   mocks.saveCost.mockReset();
   mocks.link.mockReset();
 });
 
 describe("Claim workspace", () => {
+  it("corrects a saved journey only during correction, retains field errors, and relocks on resubmission", async () => {
+    mocks.journeys = [
+      {
+        id: "journey",
+        projectParticipantId: "person",
+        origin: "Berlin",
+        destination: "Riga",
+        tripType: "one-way",
+        erasmusDistanceKm: "800.00",
+      },
+    ];
+    mocks.draft = { id: "claim", partnershipId: "own", status: "submitted" };
+    const { unmount } = render(
+      <QueryClientProvider client={createQueryClient()}>
+        <ClaimWorkspace partnershipId="own" />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/Berlin → Riga/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Correct Robin's journey" }),
+    ).toBeNull();
+    unmount();
+    mocks.draft = {
+      id: "claim",
+      partnershipId: "own",
+      status: "correction_requested",
+    };
+    mocks.preview = {
+      items: [
+        "payoutAccount",
+        "entries",
+        "entryDetails",
+        "proofDocuments",
+        "participations",
+        "journeys",
+        "fundingRules",
+      ].map((key) => ({ key, passed: true, gaps: [] })),
+      calculatedPayableEur: "844.00",
+    };
+    mocks.updateJourney.mockRejectedValueOnce(
+      new ORPCError("BAD_REQUEST", {
+        data: {
+          issues: [
+            { path: ["origin"], message: "Enter origin." },
+            { path: ["destination"], message: "Enter destination." },
+            { path: ["tripType"], message: "Select trip type." },
+            { path: ["erasmusDistanceKm"], message: "Invalid distance." },
+          ],
+        },
+      }),
+    );
+    mount();
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Correct Robin's journey" }),
+    );
+    expect(screen.getByLabelText("Origin for Robin")).toHaveValue("Berlin");
+    expect(screen.getByLabelText("Destination for Robin")).toHaveValue("Riga");
+    expect(screen.getByLabelText("Trip type for Robin")).toHaveValue("one-way");
+    expect(screen.getByLabelText(/distance \(km\) for Robin/)).toHaveValue(
+      "800.00",
+    );
+    await userEvent.clear(screen.getByLabelText("Origin for Robin"));
+    await userEvent.type(screen.getByLabelText("Destination for Robin"), " City");
+    await userEvent.selectOptions(
+      screen.getByLabelText("Trip type for Robin"),
+      "round-trip",
+    );
+    await userEvent.clear(screen.getByLabelText(/distance \(km\) for Robin/));
+    await userEvent.type(
+      screen.getByLabelText(/distance \(km\) for Robin/),
+      "bad",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save correction" }),
+    );
+    for (const message of [
+      "Enter origin.",
+      "Enter destination.",
+      "Select trip type.",
+      "Invalid distance.",
+    ])
+      expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.getByLabelText(/distance \(km\) for Robin/)).toHaveValue("bad");
+    await userEvent.type(screen.getByLabelText("Origin for Robin"), "Tallinn");
+    await userEvent.clear(screen.getByLabelText(/distance \(km\) for Robin/));
+    await userEvent.type(
+      screen.getByLabelText(/distance \(km\) for Robin/),
+      "2500",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save correction" }),
+    );
+    await waitFor(() =>
+      expect(mocks.updateJourney).toHaveBeenLastCalledWith({
+        partnershipId: "own",
+        projectParticipantId: "person",
+        origin: "Tallinn",
+        destination: "Riga City",
+        tripType: "round-trip",
+        erasmusDistanceKm: "2500",
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText(/Tallinn → Riga City/)).toBeInTheDocument(),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Correct Robin's journey" }),
+    );
+    expect(screen.getByLabelText("Origin for Robin")).toHaveValue("Tallinn");
+    expect(screen.getByLabelText("Trip type for Robin")).toHaveValue(
+      "round-trip",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(mocks.submit).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm submission" }),
+    );
+    await waitFor(() =>
+      expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
+    );
+    expect(
+      await screen.findByText(/Claim submitted · saved/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Tallinn → Riga City/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Correct Robin's journey" }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save correction" })).toBeNull();
+  });
+
   it("shows correction reason, editing actions and resubmit; rejected reason without payment or edit controls", async () => {
     mocks.draft = {
       id: "claim",

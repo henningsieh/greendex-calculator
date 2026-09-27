@@ -80,17 +80,140 @@ function FieldError({ message }: { message?: string }) {
   ) : null;
 }
 
+function JourneyCorrection({
+  partnershipId,
+  journey,
+  name,
+  refresh,
+}: {
+  partnershipId: string;
+  journey: Outputs["journeys"]["list"][number];
+  name: string;
+  refresh: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [origin, setOrigin] = useState(journey.origin);
+  const [destination, setDestination] = useState(journey.destination);
+  const [tripType, setTripType] = useState(journey.tripType);
+  const [distance, setDistance] = useState(journey.erasmusDistanceKm);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [pending, setPending] = useState(false);
+  const id = `correction-${journey.id}`;
+
+  async function update(event: React.SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    setErrors({});
+    try {
+      await orpc.journeys.update({
+        partnershipId,
+        projectParticipantId: journey.projectParticipantId,
+        origin,
+        destination,
+        tripType,
+        erasmusDistanceKm: distance,
+      });
+      await refresh();
+      setEditing(false);
+    } catch (error) {
+      setErrors(errorsFor(error, "journey"));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div>
+      {name}: {journey.origin} → {journey.destination}, {journey.tripType},{" "}
+      {journey.erasmusDistanceKm} km (calculator distance)
+      {!editing ? (
+        <Button type="button" onClick={() => setEditing(true)}>
+          Correct {name}&apos;s journey
+        </Button>
+      ) : (
+        <form className="space-y-4" onSubmit={update} noValidate>
+          <FieldError message={errors.journey} />
+          <div>
+            <Label htmlFor={`${id}-origin`}>Origin for {name}</Label>
+            <Input
+              id={`${id}-origin`}
+              value={origin}
+              onChange={(event) => setOrigin(event.target.value)}
+            />
+            <FieldError message={errors.origin} />
+          </div>
+          <div>
+            <Label htmlFor={`${id}-destination`}>Destination for {name}</Label>
+            <Input
+              id={`${id}-destination`}
+              value={destination}
+              onChange={(event) => setDestination(event.target.value)}
+            />
+            <FieldError message={errors.destination} />
+          </div>
+          <div>
+            <Label htmlFor={`${id}-type`}>Trip type for {name}</Label>
+            <select
+              id={`${id}-type`}
+              className="w-full rounded-md border bg-background p-2"
+              value={tripType}
+              onChange={(event) =>
+                setTripType(event.target.value as typeof tripType)
+              }
+            >
+              <option value="one-way">One-way</option>
+              <option value="round-trip">Round-trip</option>
+            </select>
+            <FieldError message={errors.tripType} />
+          </div>
+          <div>
+            <Label htmlFor={`${id}-distance`}>
+              Erasmus Distance-Calculator distance (km) for {name}
+            </Label>
+            <Input
+              id={`${id}-distance`}
+              inputMode="decimal"
+              value={distance}
+              onChange={(event) => setDistance(event.target.value)}
+            />
+            <FieldError message={errors.erasmusDistanceKm} />
+          </div>
+          <Button type="submit" disabled={pending}>
+            Save correction
+          </Button>
+          <Button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              setOrigin(journey.origin);
+              setDestination(journey.destination);
+              setTripType(journey.tripType);
+              setDistance(journey.erasmusDistanceKm);
+              setErrors({});
+              setEditing(false);
+            }}
+          >
+            Cancel
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function JourneyEditor({
   partnershipId,
   participants,
   saved,
   editable,
+  correcting,
   refresh,
 }: {
   partnershipId: string;
   participants: Participation[];
   saved: Outputs["journeys"]["list"];
   editable: boolean;
+  correcting: boolean;
   refresh: () => Promise<void>;
 }) {
   const [person, setPerson] = useState("");
@@ -137,12 +260,28 @@ function JourneyEditor({
           <ul>
             {saved.map((journey) => (
               <li key={journey.id} id={`journey-${journey.projectParticipantId}`}>
-                {participants.find(
-                  (item) => item.id === journey.projectParticipantId,
-                )?.displayName ?? "Participant"}
-                : {journey.origin} → {journey.destination}, {journey.tripType},{" "}
-                {journey.erasmusDistanceKm} km (calculator distance; saved,
-                read-only)
+                {correcting ? (
+                  <JourneyCorrection
+                    key={`${journey.id}-${journey.origin}-${journey.destination}-${journey.tripType}-${journey.erasmusDistanceKm}`}
+                    partnershipId={partnershipId}
+                    journey={journey}
+                    name={
+                      participants.find(
+                        (item) => item.id === journey.projectParticipantId,
+                      )?.displayName ?? "Participant"
+                    }
+                    refresh={refresh}
+                  />
+                ) : (
+                  <>
+                    {participants.find(
+                      (item) => item.id === journey.projectParticipantId,
+                    )?.displayName ?? "Participant"}
+                    : {journey.origin} → {journey.destination}, {journey.tripType}
+                    , {journey.erasmusDistanceKm} km (calculator distance; saved,
+                    read-only)
+                  </>
+                )}
               </li>
             ))}
           </ul>
@@ -843,6 +982,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
         participants={people.participations}
         saved={journeys}
         editable={editable}
+        correcting={draft?.status === "correction_requested"}
         refresh={refresh}
       />
       {draft && (
