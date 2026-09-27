@@ -412,7 +412,13 @@ describe("Participant onboarding procedures", () => {
         profile: { fullName: "Recipient" },
         agreement: { accepted: true as const },
       });
-    for (const role of ["owner", "admin", "participant", "member"]) {
+    for (const role of [
+      "owner",
+      "admin",
+      "participant",
+      "member",
+      "member,project-coordinator",
+    ]) {
       await db.delete(participants).where(eq(participants.projectId, project));
       await db.delete(member).where(eq(member.userId, recipient));
       await db.insert(member).values({
@@ -424,11 +430,11 @@ describe("Participant onboarding procedures", () => {
       });
       await join();
       expect(await memberships()).toEqual([
-        { role: role === "member" ? "member,participant" : role },
+        { role: role.startsWith("member") ? `${role},participant` : role },
       ]);
     }
     expect(authMocks.addMember).not.toHaveBeenCalled();
-    expect(authMocks.update).toHaveBeenCalledTimes(1);
+    expect(authMocks.update).toHaveBeenCalledTimes(2);
   });
 
   it("cancels the native invitation on revoke and requires re-issue to recover", async () => {
@@ -972,7 +978,7 @@ describe("Participant onboarding procedures", () => {
     }
   });
 
-  it("lets the Project responsible User issue when they hold only a plain Hosting Membership", async () => {
+  it("denies a responsible User without the coordinator role", async () => {
     activeOrganizationId = host;
     await db.insert(member).values({
       id: randomUUID(),
@@ -981,22 +987,39 @@ describe("Participant onboarding procedures", () => {
       role: "member",
       createdAt: new Date(),
     });
-    const issued = await client.participantOnboarding.issueInvitation({
-      partnershipId: partnership,
-      email: recipientEmail,
-    });
-    expect(
-      (
-        await db
-          .select()
-          .from(invitation)
-          .where(eq(invitation.id, issued.invitationId))
-      )[0]?.organizationId,
-    ).toBe(host);
-    expect(authMocks.createInvitation).not.toHaveBeenCalled();
+    await expect(
+      client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await db
       .delete(member)
       .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
+  });
+
+  it("allows a coordinator assigned to the Hosting Project to issue", async () => {
+    activeOrganizationId = host;
+    await db.insert(member).values({
+      id: randomUUID(),
+      organizationId: host,
+      userId: owner,
+      role: "project-coordinator",
+      createdAt: new Date(),
+    });
+    try {
+      const issued = await client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      });
+      expect(issued.invitationId).toBeTruthy();
+    } finally {
+      await db.delete(bridges).where(eq(bridges.projectId, project));
+      await db.delete(invitation).where(eq(invitation.organizationId, host));
+      await db
+        .delete(member)
+        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
+    }
   });
 
   it("denies unassigned issuers and cross-Partnership owners with no invitation side effects", async () => {
@@ -1035,7 +1058,7 @@ describe("Participant onboarding procedures", () => {
       id: membershipId,
       organizationId: partner,
       userId: recipient,
-      role: "member",
+      role: "project-coordinator",
       createdAt: new Date(),
     });
     await db
@@ -1061,7 +1084,7 @@ describe("Participant onboarding procedures", () => {
             .from(member)
             .where(eq(member.id, membershipId))
         )[0]?.role,
-      ).toBe("member");
+      ).toBe("project-coordinator");
       await expect(
         client.participantOnboarding.issueInvitation({
           partnershipId: otherPartnership,

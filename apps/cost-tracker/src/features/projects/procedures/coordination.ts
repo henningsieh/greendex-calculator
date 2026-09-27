@@ -56,17 +56,8 @@ export async function requirePartnerCoordination(
     hasOrganizationRole(membership.role, "admin")
   )
     return scope;
-  if (
-    !membership.role
-      .split(",")
-      .some(
-        (role) =>
-          role.trim() === "member" || role.trim() === "project-coordinator",
-      )
-  )
+  if (!hasOrganizationRole(membership.role, "project-coordinator"))
     throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
-  // TODO (ADR-0004 role-migration follow-up): migrate legacy admin-as-coordinator data to a distinct
-  // project-coordinator role, then require that role along with this assignment.
   if (activeOrganizationId === scope.partnerId) {
     const [assignment] = await db
       .select({ userId: assignments.userId })

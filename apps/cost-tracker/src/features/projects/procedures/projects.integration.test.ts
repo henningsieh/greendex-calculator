@@ -263,8 +263,8 @@ describe("projects procedures", () => {
       expect(await complete()).toEqual({ projectId, completed: true });
     });
 
-    it.each(["owner", "admin", "project-coordinator", "member"])(
-      "allows Hosting %s (legacy assigned member coordinator)",
+    it.each(["owner", "admin", "project-coordinator"])(
+      "allows Hosting %s with organization-wide or explicit assignment authority",
       async (role) => {
         await db
           .update(member)
@@ -289,6 +289,14 @@ describe("projects procedures", () => {
         }
       },
     );
+
+    it("denies assigned fallback members without the coordinator role", async () => {
+      await db
+        .update(member)
+        .set({ role: "member" })
+        .where(eq(member.organizationId, host));
+      await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
 
     it.each(["member", "participant", "project-coordinator"])(
       "denies Hosting %s without assignment",

@@ -87,14 +87,14 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: host,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {
@@ -373,7 +373,7 @@ describe("assignment-scoped participation coordination", () => {
       id: secondMembershipId,
       userId: candidate,
       organizationId: partner,
-      role: "member",
+      role: "project-coordinator",
       createdAt: new Date(),
     });
     await db
@@ -478,7 +478,7 @@ describe("assignment-scoped participation coordination", () => {
       id,
       userId: candidate,
       organizationId: partner,
-      role: "member",
+      role: "project-coordinator",
       createdAt: new Date(),
     });
     await db
@@ -509,7 +509,7 @@ describe("assignment-scoped participation coordination", () => {
             .from(member)
             .where(eq(member.id, id))
         )[0]?.role,
-      ).toBe("member");
+      ).toBe("project-coordinator");
     } finally {
       actor = coordinator;
       activeOrg = partner;
@@ -517,7 +517,7 @@ describe("assignment-scoped participation coordination", () => {
       await db.delete(member).where(eq(member.id, id));
       await db
         .update(member)
-        .set({ role: "member" })
+        .set({ role: "project-coordinator" })
         .where(eq(member.userId, coordinator));
     }
   });

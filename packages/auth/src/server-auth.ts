@@ -14,7 +14,11 @@ import { organization } from "better-auth/plugins";
 import type { OrganizationOptions } from "better-auth/plugins/organization";
 import { desc, eq, ilike } from "drizzle-orm";
 
-import { accessControl, organizationRoles } from "./permissions";
+import {
+  accessControl,
+  costTrackerOrganizationRoles,
+  organizationRoles,
+} from "./permissions";
 
 type EmailVerificationOptions = NonNullable<
   BetterAuthOptions["emailVerification"]
@@ -50,6 +54,7 @@ export interface ServerAuthConfig {
     joins?: boolean;
   };
   organization?: Pick<OrganizationOptions, "sendInvitationEmail">;
+  costTrackerRoles?: boolean;
   plugins?: BetterAuthPlugin[];
   session?: BetterAuthOptions["session"];
   sessionUpdate?: SessionDatabaseHooks["update"];
@@ -82,7 +87,9 @@ export function createServerAuth(config: ServerAuthConfig) {
     plugins: [
       organization({
         ac: accessControl,
-        roles: organizationRoles,
+        roles: config.costTrackerRoles
+          ? costTrackerOrganizationRoles
+          : organizationRoles,
         ...config.organization,
         allowUserToCreateOrganization: async (user) => {
           const membership = await db.query.member.findFirst({

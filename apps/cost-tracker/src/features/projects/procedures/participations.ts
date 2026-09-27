@@ -506,13 +506,7 @@ export function createParticipationProcedures(
           hasOrganizationRole(membership.role, "owner") ||
           hasOrganizationRole(membership.role, "admin") ||
           (project.responsibleUserId === context.user.id &&
-            membership.role
-              .split(",")
-              .some(
-                (role) =>
-                  role.trim() === "member" ||
-                  role.trim() === "project-coordinator",
-              ))
+            hasOrganizationRole(membership.role, "project-coordinator"))
         )
       )
         throw errors.FORBIDDEN();

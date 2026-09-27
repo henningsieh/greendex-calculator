@@ -5,6 +5,7 @@ import { emailSender } from "@/lib/email";
 
 export const auth = createServerAuth({
   appName: "Cost Tracker",
+  costTrackerRoles: true,
   baseURL: env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
   socialProviders: {

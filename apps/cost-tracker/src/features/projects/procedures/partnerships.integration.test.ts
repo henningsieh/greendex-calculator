@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";

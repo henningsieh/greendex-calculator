@@ -96,7 +96,7 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: actor,
       organizationId: host,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {
@@ -117,7 +117,7 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: actor,
       organizationId: partner,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {
@@ -339,7 +339,7 @@ const roles = [
   {
     name: "Partner assigned coordinator",
     side: "partner",
-    role: "member",
+    role: "project-coordinator",
     assigned: true,
   },
   { name: "Partner owner", side: "partner", role: "owner", assigned: false },
@@ -365,7 +365,7 @@ const roles = [
   {
     name: "Hosting assigned coordinator",
     side: "host",
-    role: "member",
+    role: "project-coordinator",
     assigned: true,
   },
   { name: "Hosting owner", side: "host", role: "owner", assigned: false },
@@ -451,15 +451,21 @@ async function invokeMatrixProcedure(procedure: ClaimProcedure, entryId: string)
   }
 }
 
+function isMatrixRoleAllowed(role: (typeof roles)[number]) {
+  return (
+    (role.role === "project-coordinator" && role.assigned) ||
+    role.role === "owner" ||
+    role.role === "admin"
+  );
+}
+
 describe("Claim authorization matrix", () => {
   it.each(
     roles.flatMap((role) =>
       claimProcedures.map((procedure) => ({ role, procedure })),
     ),
   )("$role.name × $procedure", async ({ role, procedure }) => {
-    const allowed =
-      role.role !== "participant" &&
-      (role.assigned || role.role === "owner" || role.role === "admin");
+    const allowed = isMatrixRoleAllowed(role);
     const expected =
       allowed &&
       (role.side === "host" ? hostProcedures : partnerProcedures).includes(
@@ -537,7 +543,7 @@ describe("Claim authorization matrix", () => {
           role:
             person === participantUser && orgId === partner
               ? "participant"
-              : "member",
+              : "project-coordinator",
         })
         .where(and(eq(member.organizationId, orgId), eq(member.userId, person)));
       if (role.side === "partner" && !role.assigned)
@@ -926,7 +932,7 @@ const review = (
     ? client.claims[action]({ partnershipId: own, reason: reason ?? "Reason" })
     : client.claims[action]({ partnershipId: own });
 
-async function asHost(role = "member", userId = actor) {
+async function asHost(role = "project-coordinator", userId = actor) {
   activeOrg = host;
   activeActor = userId;
   await db
@@ -1285,7 +1291,7 @@ describe("Host Claim review", () => {
   it("enforces the Hosting role matrix on every review action and every Partnership", async () => {
     await submittedClaim();
     const actions = ["requestCorrection", "approve", "reject", "reopen"] as const;
-    for (const role of ["owner", "admin", "member", "project-coordinator"]) {
+    for (const role of ["owner", "admin", "project-coordinator"]) {
       await asHost(role);
       for (const action of actions) {
         await db
@@ -1306,6 +1312,14 @@ describe("Host Claim review", () => {
                   : "rejected",
         });
       }
+    }
+    await asHost("member");
+    for (const action of actions) {
+      await db
+        .update(claims)
+        .set({ status: action === "reopen" ? "rejected" : "submitted" })
+        .where(eq(claims.id, claimId));
+      await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
     for (const role of ["member", "project-coordinator"]) {
       await asHost(role, participantUser);
@@ -1341,7 +1355,7 @@ describe("Host Claim review", () => {
     await expect(
       client.claims.getHistory({ partnershipId: own }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await asHost("member");
+    await asHost("project-coordinator");
     for (const action of actions)
       await expect(
         client.claims[action]({ partnershipId: foreign, reason: "Reason" }),

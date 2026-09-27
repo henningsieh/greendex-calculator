@@ -75,14 +75,14 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: host,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {
@@ -366,7 +366,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "member" })
+        .set({ role: "project-coordinator" })
         .where(eq(member.userId, coordinator));
       await db
         .insert(assignments)

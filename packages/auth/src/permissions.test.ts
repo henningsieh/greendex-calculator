@@ -4,10 +4,12 @@ import {
   addOrganizationRole,
   hasOrganizationRole,
   memberRole,
+  organizationRoles,
   organizationAdministratorRole,
   parseOrganizationRoles,
   participantRole,
   projectCoordinatorRole,
+  costTrackerOrganizationRoles,
 } from "./permissions";
 
 describe("organization permissions", () => {
@@ -21,16 +23,34 @@ describe("organization permissions", () => {
     ).toBe(true);
   });
 
+  it("gates assignment-scoped coordinator role to Cost Tracker without granting broad project or organization access", () => {
+    expect(costTrackerOrganizationRoles["project-coordinator"]).toBe(
+      projectCoordinatorRole,
+    );
+    expect(projectCoordinatorRole.authorize({ project: ["read"] }).success).toBe(
+      false,
+    );
+    expect(
+      projectCoordinatorRole.authorize({ projectPartnership: ["create"] })
+        .success,
+    ).toBe(false);
+    expect(
+      projectCoordinatorRole.authorize({ organization: ["update"] }).success,
+    ).toBe(false);
+    expect(
+      costTrackerOrganizationRoles.admin.authorize({ project: ["update"] })
+        .success,
+    ).toBe(true);
+    expect(Object.keys(organizationRoles)).not.toContain("project-coordinator");
+  });
+
   it("keeps project coordinators from deleting projects", () => {
     expect(
       projectCoordinatorRole.authorize({ project: ["delete"] }).success,
     ).toBe(false);
     expect(
-      projectCoordinatorRole.authorize({
-        project: ["update"],
-        projectPartnership: ["read"],
-      }).success,
-    ).toBe(true);
+      projectCoordinatorRole.authorize({ project: ["update"] }).success,
+    ).toBe(false);
   });
 
   it("gives participants personal read and update access without partnership access", () => {

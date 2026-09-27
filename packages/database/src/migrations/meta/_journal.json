@@ -176,6 +176,13 @@
       "when": 1790494934167,
       "tag": "0024_bizarre_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790496366595,
+      "tag": "0025_backfill_project_coordinator_role",
+      "breakpoints": true
     }
   ]
 }

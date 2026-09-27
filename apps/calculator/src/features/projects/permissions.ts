@@ -3,6 +3,6 @@ export {
   organizationAdministratorRole as owner,
   memberRole as member,
   participantRole as participant,
-  projectCoordinatorRole as admin,
+  legacyCalculatorAdminRole as admin,
   type ProjectPermission,
 } from "@greendex/auth";

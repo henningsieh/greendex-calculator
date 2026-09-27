@@ -9,6 +9,7 @@ import { and, count, countDistinct, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
+  canonicalCalculatorRole,
   USERS_SORT_FIELDS,
   type MemberSortField,
 } from "@/features/organizations/types";
@@ -31,7 +32,10 @@ function getSortKey(
   if (sortBy === "role") {
     // Sort order: owner < admin < member
     const roleOrder = { owner: 0, admin: 1, member: 2 };
-    return roleOrder[member.role as keyof typeof roleOrder] ?? 999;
+    const role = canonicalCalculatorRole(member.role);
+    return role && role in roleOrder
+      ? roleOrder[role as keyof typeof roleOrder]
+      : 999;
   }
   if (sortBy === "user.name") {
     return (member.user?.name || "").toLowerCase();
@@ -123,7 +127,11 @@ export const getOrganizationRole = authorized
         });
       }
 
-      return currentMember.role;
+      // #183 appends a Cost Tracker role to legacy admins; Calculator exposes only its existing role contract.
+      const role = canonicalCalculatorRole(currentMember.role);
+      if (!role)
+        throw errors.FORBIDDEN({ message: "Organization role not found" });
+      return role;
     } catch (error) {
       if (error instanceof ORPCError) {
         throw error;

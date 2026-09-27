@@ -14,6 +14,8 @@ export { createServerAuth, type ServerAuthConfig } from "./server-auth";
 export {
   accessControl,
   addOrganizationRole,
+  costTrackerOrganizationRoles,
+  legacyCalculatorAdminRole,
   hasOrganizationRole,
   memberRole,
   ORGANIZATION_ROLES,

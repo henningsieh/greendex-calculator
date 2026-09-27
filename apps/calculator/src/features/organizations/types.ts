@@ -43,6 +43,19 @@ export const MEMBER_ROLES = {
  */
 export type MemberRole = (typeof MEMBER_ROLES)[keyof typeof MEMBER_ROLES];
 
+const calculatorRolePriority: MemberRole[] = [
+  "owner",
+  "admin",
+  "member",
+  "participant",
+];
+
+/** Ignore Cost Tracker's appended coordinator role at Calculator's display/API boundary. */
+export function canonicalCalculatorRole(storedRole: string): MemberRole | null {
+  const roles = storedRole.split(",").map((role) => role.trim());
+  return calculatorRolePriority.find((role) => roles.includes(role)) ?? null;
+}
+
 /**
  * Type for member sort field values - inferred from database schema
  */

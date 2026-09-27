@@ -8,7 +8,8 @@ import {
 
 export const ORGANIZATION_ROLES = {
   OrganizationAdministrator: "owner",
-  ProjectCoordinator: "admin",
+  ProjectCoordinator: "project-coordinator",
+  OrganizationAdmin: "admin",
   Participant: "participant",
   Member: "member",
 } as const;
@@ -32,11 +33,16 @@ export const organizationAdministratorRole = accessControl.newRole({
   projectParticipation: ["create", "read", "update", "merge"],
 });
 
-export const projectCoordinatorRole = accessControl.newRole({
+export const legacyCalculatorAdminRole = accessControl.newRole({
   ...adminAc.statements,
   project: ["create", "read", "update", "archive"],
   projectPartnership: ["create", "read", "update", "delete"],
   projectParticipation: ["create", "read", "update", "merge"],
+});
+
+// Assignment-bound Cost Tracker procedures grant coordination. The role alone grants no broad access.
+export const projectCoordinatorRole = accessControl.newRole({
+  ...memberAc.statements,
 });
 
 export const memberRole = accessControl.newRole({
@@ -51,9 +57,14 @@ export const participantRole = accessControl.newRole({
 
 export const organizationRoles = {
   owner: organizationAdministratorRole,
-  admin: projectCoordinatorRole,
+  admin: legacyCalculatorAdminRole,
   member: memberRole,
   participant: participantRole,
+};
+
+export const costTrackerOrganizationRoles = {
+  ...organizationRoles,
+  "project-coordinator": projectCoordinatorRole,
 };
 
 export type ProjectPermission = (typeof statement)["project"][number];

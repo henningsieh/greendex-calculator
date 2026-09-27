@@ -47,6 +47,15 @@ const joinInput = z.object({
   ]),
 });
 
+function shouldGrantParticipantRole(role: string): boolean {
+  return (
+    hasOrganizationRole(role, "member") &&
+    !["participant", "owner", "admin"].some((existing) =>
+      role.split(",").some((value) => value.trim() === existing),
+    )
+  );
+}
+
 export async function deliverParticipantInvitation(
   email: string,
   invitationId: string,
@@ -166,26 +175,12 @@ export function createParticipantOnboardingProcedures(
           ),
         ),
       );
-    const permitted =
-      roles.some(
-        ({ organizationId, role }) =>
-          organizationId === activeOrganizationId &&
-          (hasOrganizationRole(role, "owner") ||
-            hasOrganizationRole(role, "admin")),
-      ) ||
-      (partnership.responsibleUserId === userId &&
-        activeOrganizationId === partnership.hostId &&
-        roles.some(
-          ({ organizationId, role }) =>
-            organizationId === partnership.hostId &&
-            role
-              .split(",")
-              .some((value) =>
-                ["owner", "admin", "member", "project-coordinator"].includes(
-                  value.trim(),
-                ),
-              ),
-        ));
+    const permitted = roles.some(
+      ({ organizationId, role }) =>
+        organizationId === activeOrganizationId &&
+        (hasOrganizationRole(role, "owner") ||
+          hasOrganizationRole(role, "admin")),
+    );
     if (!permitted) {
       await requirePartnerCoordination(
         partnershipId,
@@ -720,17 +715,17 @@ export function createParticipantOnboardingProcedures(
           newRole: "participant",
           at: new Date().toISOString(),
         });
-      } else if (membership.role === "member") {
-        // Role matrix: newcomer gets participant; plain member gains participant;
-        // participant, owner and admin are reused unchanged. Project scope always comes from Participation.
+      } else if (shouldGrantParticipantRole(membership.role)) {
+        // #183 appends coordinator to assigned members; joining must retain every existing role.
+        const updatedRole = `${membership.role},participant`;
         const authContext = await auth.$context;
         const updated = await authContext.adapter.update({
           model: "member",
           where: [
             { field: "id", value: membership.id },
-            { field: "role", value: "member" },
+            { field: "role", value: membership.role },
           ],
-          update: { role: "member,participant" },
+          update: { role: updatedRole },
         });
         if (!updated)
           throw errors.BAD_REQUEST({
@@ -739,8 +734,8 @@ export function createParticipantOnboardingProcedures(
         console.info("Participant membership updated", {
           actor: context.user.id,
           linkId: input.source.kind === "link" ? input.source.id : bridgeId,
-          previousRole: "member",
-          newRole: "member,participant",
+          previousRole: membership.role,
+          newRole: updatedRole,
           at: new Date().toISOString(),
         });
       }

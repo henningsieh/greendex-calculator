@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
+import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   member,
@@ -20,14 +21,16 @@ const hash = (secret: string) =>
 
 /** The caller delivers the returned secret through a private channel; it is never persisted raw. */
 export const createSetupLink = authorized
-  .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
   .input(z.object({ projectId: identifier, recipientEmail: email }))
   .output(z.object({ id: z.string(), secret: z.string(), expiresAt: z.date() }))
   .handler(async ({ input, context, errors }) => {
     const secret = randomBytes(32).toString("base64url");
     return db.transaction(async (tx) => {
       const [project] = await tx
-        .select({ id: projectsTable.id })
+        .select({
+          id: projectsTable.id,
+          responsibleUserId: projectsTable.responsibleUserId,
+        })
         .from(projectsTable)
         .where(
           and(
@@ -41,10 +44,30 @@ export const createSetupLink = authorized
         )
         .for("update")
         .limit(1);
-      if (!project)
+      // Setup links precede Partnership creation: only this hosted Project's assignment can scope issuance.
+      const [actor] = await tx
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.organizationId, context.session.activeOrganizationId!),
+            eq(member.userId, context.user.id),
+          ),
+        )
+        .limit(1);
+      if (
+        !project ||
+        !actor ||
+        !(
+          hasOrganizationRole(actor.role, "owner") ||
+          hasOrganizationRole(actor.role, "admin") ||
+          (hasOrganizationRole(actor.role, "project-coordinator") &&
+            project.responsibleUserId === context.user.id)
+        )
+      )
         throw errors.FORBIDDEN({
           message:
-            "Only the Hosting Organization can create a setup link for this Project.",
+            "Only assigned Hosting staff can create a setup link for this Project.",
         });
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const [link] = await tx

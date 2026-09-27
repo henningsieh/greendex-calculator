@@ -89,7 +89,7 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {

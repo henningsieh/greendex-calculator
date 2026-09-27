@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -61,13 +62,22 @@ beforeAll(async () => {
     { id: hostId, slug: hostId, name: "Host", createdAt: now },
     { id: partnerId, slug: partnerId, name: "Partner", createdAt: now },
   ]);
-  await db.insert(member).values({
-    id: `setup-member-${id}`,
-    userId,
-    organizationId: partnerId,
-    role: "owner",
-    createdAt: now,
-  });
+  await db.insert(member).values([
+    {
+      id: `setup-member-${id}`,
+      userId,
+      organizationId: partnerId,
+      role: "owner",
+      createdAt: now,
+    },
+    {
+      id: `setup-host-member-${id}`,
+      userId,
+      organizationId: hostId,
+      role: "owner",
+      createdAt: now,
+    },
+  ]);
   await db.insert(projectsTable).values({
     id: projectId,
     name: "Project",
@@ -80,10 +90,14 @@ beforeAll(async () => {
   });
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   authMocks.hasPermission.mockResolvedValue({ success: true });
   asUser();
+  await db
+    .update(member)
+    .set({ role: "owner" })
+    .where(eq(member.organizationId, hostId));
 });
 
 afterAll(async () => {
@@ -172,7 +186,7 @@ describe("Partner Organization setup links", () => {
     ).toEqual(before);
   });
 
-  it("creates a new Organization with Owner membership, without Host membership", async () => {
+  it("creates a new Organization with Owner membership, without changing Host membership", async () => {
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
       recipientEmail,
@@ -194,7 +208,65 @@ describe("Partner Organization setup links", () => {
     ).toMatchObject([{ role: "owner", userId }]);
     expect(
       await db.select().from(member).where(eq(member.organizationId, hostId)),
-    ).toEqual([]);
+    ).toMatchObject([{ role: "owner", userId }]);
+  });
+
+  it.each([
+    { role: "project-coordinator", allowed: true },
+    { role: "member", allowed: false },
+    { role: "participant", allowed: false },
+    { role: "admin", allowed: true },
+    { role: "owner", allowed: true },
+  ])("scopes setup-link issuance for $role", async ({ role, allowed }) => {
+    await db
+      .update(member)
+      .set({ role })
+      .where(eq(member.organizationId, hostId));
+    const issue = client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    if (allowed) await expect(issue).resolves.toHaveProperty("secret");
+    else await expect(issue).rejects.toThrow();
+  });
+
+  it("denies a coordinator on another hosted Project without its own assignment", async () => {
+    const otherUserId = `setup-other-user-${id}`;
+    const otherProjectId = `setup-other-project-${id}`;
+    await db.insert(user).values({
+      id: otherUserId,
+      name: "Other coordinator",
+      email: `${otherUserId}@example.com`,
+      emailVerified: true,
+    });
+    await db.insert(projectsTable).values({
+      id: otherProjectId,
+      name: "Other Project",
+      startDate: new Date(),
+      endDate: new Date(),
+      location: "Riga",
+      country: "LV",
+      responsibleUserId: otherUserId,
+      organizationId: hostId,
+    });
+    try {
+      await db
+        .update(member)
+        .set({ role: "project-coordinator" })
+        .where(eq(member.organizationId, hostId));
+      await expect(
+        client.projectPartnerships.createSetupLink({
+          projectId: otherProjectId,
+          recipientEmail,
+        }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
+      ).resolves.toHaveProperty("secret");
+    } finally {
+      await db.delete(projectsTable).where(eq(projectsTable.id, otherProjectId));
+      await db.delete(user).where(eq(user.id, otherUserId));
+    }
   });
 
   it("requires Owner verification and rejects expired links", async () => {

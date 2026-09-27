@@ -809,11 +809,7 @@ export const complete = authorized
           hasOrganizationRole(actor.role, "owner") ||
           hasOrganizationRole(actor.role, "admin") ||
           (project.responsibleUserId === context.user.id &&
-            actor.role
-              .split(",")
-              .some((role) =>
-                ["member", "project-coordinator"].includes(role.trim()),
-              ))
+            hasOrganizationRole(actor.role, "project-coordinator"))
         )
       )
         throw errors.FORBIDDEN({
