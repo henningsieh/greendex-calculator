@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ClaimHistory } from "@/features/projects/components/claim-review";
 import { ClaimSubmission } from "@/features/projects/components/claim-submission";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
@@ -632,6 +633,61 @@ function ProofEditor({
   );
 }
 
+function ClaimStateNotice({
+  draft,
+  history,
+}: {
+  draft: Outputs["claims"]["getDraft"];
+  history: Outputs["claims"]["getHistory"];
+}) {
+  if (!draft) return null;
+  if (draft.status === "correction_requested")
+    return (
+      <Alert>
+        <AlertDescription>
+          Correction requested:{" "}
+          {history.findLast((event) => event.eventType === "correction_requested")
+            ?.reason ?? "See Claim history for the correction request."}
+          <p>
+            Correct the Claim data and Proof Documents, then resubmit for Hosting
+            review.
+          </p>
+        </AlertDescription>
+      </Alert>
+    );
+  if (draft.status === "rejected")
+    return (
+      <Alert>
+        <AlertDescription>
+          Rejected:{" "}
+          {history.findLast((event) => event.eventType === "rejected")?.reason ??
+            "See Claim history for the rejection reason."}
+          <p>
+            This Claim is locked and unpaid. Only Hosting staff may reopen it;
+            reopening does not unlock Partner edits.
+          </p>
+        </AlertDescription>
+      </Alert>
+    );
+  if (draft.status === "approved")
+    return (
+      <Alert>
+        <AlertDescription>
+          Approved · unpaid. The full transfer has not been recorded.
+        </AlertDescription>
+      </Alert>
+    );
+  if (draft.status === "paid")
+    return (
+      <Alert>
+        <AlertDescription>
+          Paid. The full transfer was recorded separately from approval.
+        </AlertDescription>
+      </Alert>
+    );
+  return null;
+}
+
 export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const client = useQueryClient();
   const input = { partnershipId };
@@ -657,6 +713,9 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const { data: preview } = useSuspenseQuery(
     orpcQuery.claims.previewSubmission.queryOptions(options),
   );
+  const { data: history } = useSuspenseQuery(
+    orpcQuery.claims.getHistory.queryOptions(options),
+  );
   const [feedback, setFeedback] = useState("");
   const [pending, setPending] = useState(false);
   const editable =
@@ -667,6 +726,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
     await Promise.all(
       [
         orpcQuery.claims.getDraft,
+        orpcQuery.claims.getHistory,
         orpcQuery.claims.previewSubmission,
         orpcQuery.claims.listPayoutAccounts,
         orpcQuery.journeys.list,
@@ -767,6 +827,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
           {feedback && <output>{feedback}</output>}
         </CardContent>
       </Card>
+      <ClaimStateNotice draft={draft} history={history} />
       {draft && !editable && (
         <Alert>
           <AlertDescription>
@@ -809,6 +870,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
           refresh={refresh}
         />
       )}
+      {draft && <ClaimHistory events={history} />}
       {!draft && (
         <Alert>
           <AlertDescription>

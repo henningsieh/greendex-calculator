@@ -151,12 +151,20 @@ export function ProjectWorkspace({
                 ))}
               </ul>
             )}
-            <Link
-              className={buttonVariants({ variant: "outline" })}
-              href="/partner-organizations"
-            >
-              Manage Project Partnerships
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                className={buttonVariants({ variant: "outline" })}
+                href="/claims/review"
+              >
+                Review submitted Claims
+              </Link>
+              <Link
+                className={buttonVariants({ variant: "outline" })}
+                href="/partner-organizations"
+              >
+                Manage Project Partnerships
+              </Link>
+            </div>
           </CardContent>
         </Card>
       ) : (

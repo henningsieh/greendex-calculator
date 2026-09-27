@@ -10,7 +10,13 @@ const mocks = vi.hoisted(() => ({
   draft: null as null | {
     id: string;
     partnershipId: string;
-    status: "editable" | "submitted" | "correction_requested";
+    status:
+      | "editable"
+      | "submitted"
+      | "correction_requested"
+      | "approved"
+      | "paid"
+      | "rejected";
   },
   accounts: [
     { id: "account", accountHolder: "Partner", iban: "DE123", bic: null },
@@ -41,6 +47,12 @@ const mocks = vi.hoisted(() => ({
     originalFileName: string;
     mediaType: string;
     byteSize: number;
+  }[],
+  history: [] as {
+    eventType: "correction_requested" | "rejected" | "reopened";
+    actorUserId: string;
+    occurredAt: Date;
+    reason: string | null;
   }[],
   preview: null as null | {
     items: {
@@ -91,6 +103,10 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       claims: {
         ...original.orpcQuery.claims,
         getDraft: query(original.orpcQuery.claims.getDraft, () => mocks.draft),
+        getHistory: query(
+          original.orpcQuery.claims.getHistory,
+          () => mocks.history,
+        ),
         previewSubmission: query(
           original.orpcQuery.claims.previewSubmission,
           () =>
@@ -172,6 +188,7 @@ function mount() {
 
 beforeEach(() => {
   mocks.draft = null;
+  mocks.history = [];
   mocks.selected = null;
   mocks.preview = null;
   mocks.submit.mockReset().mockImplementation(async () => {
@@ -197,6 +214,56 @@ beforeEach(() => {
 });
 
 describe("Claim workspace", () => {
+  it("shows correction reason, editing actions and resubmit; rejected reason without payment or edit controls", async () => {
+    mocks.draft = {
+      id: "claim",
+      partnershipId: "own",
+      status: "correction_requested",
+    };
+    mocks.preview = { items: [], calculatedPayableEur: null };
+    mocks.history = [
+      {
+        eventType: "correction_requested",
+        reason: "Fix receipt",
+        actorUserId: "host",
+        occurredAt: new Date("2026-01-01"),
+      },
+    ];
+    const { unmount } = render(
+      <QueryClientProvider client={createQueryClient()}>
+        <ClaimWorkspace partnershipId="own" />
+      </QueryClientProvider>,
+    );
+    expect(
+      await screen.findByText(/Correction requested: Fix receipt/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Correct the Claim data/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
+    unmount();
+    mocks.preview = null;
+    mocks.draft = { id: "claim", partnershipId: "own", status: "rejected" };
+    mocks.history = [
+      {
+        eventType: "reopened",
+        reason: "Mistaken rejection",
+        actorUserId: "host",
+        occurredAt: new Date("2026-01-01"),
+      },
+      {
+        eventType: "rejected",
+        reason: "Ineligible",
+        actorUserId: "host",
+        occurredAt: new Date("2026-01-02"),
+      },
+    ];
+    mount();
+    expect(await screen.findByText("Ineligible")).toBeInTheDocument();
+    expect(screen.getByText("Mistaken rejection")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit Claim" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();
+  });
+
   it("does not create on open, selects payout then explicitly saves, and shows saved state", async () => {
     mount();
     expect(

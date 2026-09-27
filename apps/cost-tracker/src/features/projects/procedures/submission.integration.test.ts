@@ -1039,6 +1039,37 @@ describe("Claim lock abuse", () => {
 });
 
 describe("Host Claim review", () => {
+  it("reads submitted Claim cost, proof, payout and journey details for assigned Hosting reviewer only", async () => {
+    await prepare();
+    await submit();
+    activeOrg = host;
+    const details = await client.claims.getReviewDetails({ partnershipId: own });
+    expect(details.approvedAmountEur).toBe("726.00");
+    expect(details.payoutAccount).toMatchObject({ iban: expect.any(String) });
+    expect(details.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          allocations: expect.arrayContaining([
+            expect.objectContaining({ participantName: expect.any(String) }),
+          ]),
+          documents: expect.arrayContaining([
+            expect.objectContaining({ originalFileName: "proof.pdf" }),
+          ]),
+        }),
+      ]),
+    );
+    expect(details.journeys.length).toBeGreaterThan(0);
+    activeOrg = partner;
+    await expect(
+      client.claims.getReviewDetails({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeOrg = host;
+    activeActor = participantUser;
+    await expect(
+      client.claims.getReviewDetails({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeActor = actor;
+  });
   it.each([
     ["approve", "approved", "approved"],
     ["reject", "rejected", "rejected"],

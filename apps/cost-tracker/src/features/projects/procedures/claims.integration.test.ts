@@ -14,7 +14,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -75,6 +75,20 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
+      role: "member",
+      createdAt: now,
+    },
+    {
+      id: randomUUID(),
+      userId: coordinator,
+      organizationId: host,
+      role: "member",
+      createdAt: now,
+    },
+    {
+      id: randomUUID(),
+      userId: participant,
+      organizationId: host,
       role: "member",
       createdAt: now,
     },
@@ -145,6 +159,7 @@ afterAll(async () => {
   await db.delete(partnerships).where(eq(partnerships.projectId, project));
   await db.delete(projects).where(eq(projects.id, project));
   await db.delete(member).where(eq(member.organizationId, partner));
+  await db.delete(member).where(eq(member.organizationId, host));
   await db.delete(organization).where(eq(organization.id, other));
   await db.delete(organization).where(eq(organization.id, partner));
   await db.delete(organization).where(eq(organization.id, host));
@@ -153,6 +168,45 @@ afterAll(async () => {
 });
 
 describe("Claim drafts and Partnership payout selection", () => {
+  it("does not expose unsubmitted drafts to Hosting review", async () => {
+    await db.insert(claims).values({ partnershipId: own, status: "editable" });
+    activeOrg = host;
+    await expect(
+      client.claims.getReviewDetails({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("exposes reviewer access for assigned Hosting coordinators and owners, not Partners or unassigned staff", async () => {
+    expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
+      canReview: false,
+    });
+    activeOrg = host;
+    expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
+      canReview: true,
+    });
+    actor = participant;
+    await expect(
+      client.claims.reviewerAccess({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await db
+      .update(member)
+      .set({ role: "owner" })
+      .where(
+        and(eq(member.userId, participant), eq(member.organizationId, host)),
+      );
+    try {
+      expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
+        canReview: true,
+      });
+    } finally {
+      await db
+        .update(member)
+        .set({ role: "member" })
+        .where(
+          and(eq(member.userId, participant), eq(member.organizationId, host)),
+        );
+    }
+  });
   it("reads only Partner payout options and the selected account without creating a Claim", async () => {
     expect(
       await client.claims.listPayoutAccounts({ partnershipId: own }),

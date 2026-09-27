@@ -3,10 +3,18 @@ import { db } from "@greendex/database";
 import {
   claimHistoryTable as history,
   claimsTable as claims,
+  costAllocationsTable as allocations,
+  participantJourneysTable as journeys,
+  payoutAccountsTable as accounts,
+  partnershipPayoutAccountsTable as selections,
+  proofDocumentsTable as documents,
+  projectParticipantsTable as participants,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
+  travelCostEntriesTable as entries,
+  travelCostEntryDocumentsTable as links,
 } from "@greendex/database/schema";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -142,6 +150,211 @@ function decision(action: Decision) {
       });
     });
 }
+
+// Rendering hint only. Mutations independently repeat the authoritative scope check.
+export const reviewerAccess = authorized
+  .input(claimInput)
+  .output(z.object({ canReview: z.boolean() }))
+  .handler(async ({ input, context, errors }) => {
+    const scope = await requirePartnerCoordination(
+      input.partnershipId,
+      context.user.id,
+      context.session.activeOrganizationId,
+      errors,
+    );
+    return { canReview: scope.hostId === context.session.activeOrganizationId };
+  });
+
+/** Hosting-only, read-only snapshot for Claim review; no editable drafts or storage keys leave this boundary. */
+export const getReviewDetails = authorized
+  .input(claimInput)
+  .output(
+    z.object({
+      payoutAccount: z
+        .object({
+          accountHolder: z.string(),
+          iban: z.string(),
+          bic: z.string().nullable(),
+        })
+        .nullable(),
+      entries: z.array(
+        z.object({
+          id: z.string(),
+          transportProfile: z.string(),
+          amountEur: z.string(),
+          allocationMethod: z.string(),
+          allocations: z.array(
+            z.object({
+              participantId: z.string(),
+              participantName: z.string(),
+              percentage: z.string().nullable(),
+              amountEur: z.string().nullable(),
+            }),
+          ),
+          documents: z.array(
+            z.object({
+              id: z.string(),
+              originalFileName: z.string(),
+              mediaType: z.string(),
+              byteSize: z.number(),
+            }),
+          ),
+        }),
+      ),
+      journeys: z.array(
+        z.object({
+          participantId: z.string(),
+          participantName: z.string(),
+          origin: z.string(),
+          destination: z.string(),
+          tripType: z.string(),
+          erasmusDistanceKm: z.string(),
+        }),
+      ),
+      approvedAmountEur: z.string().nullable(),
+    }),
+  )
+  .handler(async ({ input, context, errors }) => {
+    const scope = await requirePartnerCoordination(
+      input.partnershipId,
+      context.user.id,
+      context.session.activeOrganizationId,
+      errors,
+    );
+    if (scope.hostId !== context.session.activeOrganizationId)
+      throw errors.FORBIDDEN({
+        message: "Only Hosting staff may review Claims.",
+      });
+    const [claim] = await db
+      .select({
+        id: claims.id,
+        status: claims.status,
+        approvedAmountEur: claims.approvedAmountEur,
+      })
+      .from(claims)
+      .where(eq(claims.partnershipId, input.partnershipId))
+      .limit(1);
+    if (
+      !claim ||
+      ![
+        "submitted",
+        "correction_requested",
+        "approved",
+        "rejected",
+        "paid",
+      ].includes(claim.status)
+    )
+      throw errors.BAD_REQUEST({
+        message: "No submitted Claim is available for review.",
+      });
+    const [payout, costRows, journeyRows] = await Promise.all([
+      db
+        .select({
+          accountHolder: accounts.accountHolder,
+          iban: accounts.iban,
+          bic: accounts.bic,
+        })
+        .from(selections)
+        .innerJoin(
+          accounts,
+          and(
+            eq(accounts.id, selections.payoutAccountId),
+            eq(accounts.organizationId, scope.partnerId),
+          ),
+        )
+        .where(eq(selections.partnershipId, input.partnershipId))
+        .limit(1),
+      db
+        .select({
+          id: entries.id,
+          transportProfile: entries.transportProfile,
+          amountEur: entries.amountEur,
+          allocationMethod: entries.allocationMethod,
+        })
+        .from(entries)
+        .where(eq(entries.claimId, claim.id)),
+      db
+        .select({
+          participantId: participants.id,
+          participantName: participants.displayName,
+          origin: journeys.origin,
+          destination: journeys.destination,
+          tripType: journeys.tripType,
+          erasmusDistanceKm: journeys.erasmusDistanceKm,
+        })
+        .from(journeys)
+        .innerJoin(
+          participants,
+          eq(participants.id, journeys.projectParticipantId),
+        )
+        .where(
+          and(
+            eq(participants.projectId, scope.projectId),
+            eq(participants.representedOrganizationId, scope.partnerId),
+          ),
+        ),
+    ]);
+    const ids = costRows.map((row) => row.id);
+    const [shares, evidence] = ids.length
+      ? await Promise.all([
+          db
+            .select({
+              travelCostEntryId: allocations.travelCostEntryId,
+              participantId: participants.id,
+              participantName: participants.displayName,
+              percentage: allocations.percentage,
+              amountEur: allocations.amountEur,
+            })
+            .from(allocations)
+            .innerJoin(
+              participants,
+              eq(participants.id, allocations.projectParticipantId),
+            )
+            .where(inArray(allocations.travelCostEntryId, ids)),
+          db
+            .select({
+              travelCostEntryId: links.travelCostEntryId,
+              id: documents.id,
+              originalFileName: documents.originalFileName,
+              mediaType: documents.mediaType,
+              byteSize: documents.byteSize,
+            })
+            .from(links)
+            .innerJoin(
+              documents,
+              and(
+                eq(documents.id, links.proofDocumentId),
+                eq(documents.claimId, claim.id),
+              ),
+            )
+            .where(inArray(links.travelCostEntryId, ids)),
+        ])
+      : [[], []];
+    return {
+      payoutAccount: payout[0] ?? null,
+      approvedAmountEur: claim.approvedAmountEur,
+      journeys: journeyRows,
+      entries: costRows.map((row) => ({
+        ...row,
+        allocations: shares
+          .filter((share) => share.travelCostEntryId === row.id)
+          .map(({ participantId, participantName, percentage, amountEur }) => ({
+            participantId,
+            participantName,
+            percentage,
+            amountEur,
+          })),
+        documents: evidence
+          .filter((document) => document.travelCostEntryId === row.id)
+          .map(({ id, originalFileName, mediaType, byteSize }) => ({
+            id,
+            originalFileName,
+            mediaType,
+            byteSize,
+          })),
+      })),
+    };
+  });
 
 export const getHistory = authorized
   .input(claimInput)

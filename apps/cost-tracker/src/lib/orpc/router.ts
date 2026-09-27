@@ -46,9 +46,11 @@ import {
 import {
   approve,
   getHistory,
+  getReviewDetails,
   reject,
   reopen,
   requestCorrection,
+  reviewerAccess,
 } from "@/features/projects/procedures/review";
 import {
   consumeSetupLink,
@@ -79,6 +81,8 @@ export const router = {
     submit,
     previewSubmission,
     getHistory,
+    getReviewDetails,
+    reviewerAccess,
     requestCorrection,
     approve,
     markPaid,

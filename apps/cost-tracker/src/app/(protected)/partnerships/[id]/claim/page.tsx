@@ -27,6 +27,7 @@ export default async function ClaimPage({
   await Promise.all(
     [
       client.query(orpcQuery.claims.getDraft.queryOptions(options)),
+      client.query(orpcQuery.claims.getHistory.queryOptions(options)),
       client.query(orpcQuery.claims.previewSubmission.queryOptions(options)),
       client.query(orpcQuery.claims.listPayoutAccounts.queryOptions(options)),
       client.query(
