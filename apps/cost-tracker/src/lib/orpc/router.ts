@@ -29,6 +29,7 @@ import {
   list as listJourneys,
   save as saveJourney,
 } from "@/features/projects/procedures/journeys";
+import { listOnboardingProgress } from "@/features/projects/procedures/onboarding-progress";
 import { participations } from "@/features/projects/procedures/participations";
 import {
   assignPartnership,
@@ -72,7 +73,7 @@ export const router = {
     updateUser,
   },
   participantOnboarding,
-  participations,
+  participations: { ...participations, listOnboardingProgress },
   claims: {
     getDraft,
     listPayoutAccounts,
