@@ -1,6 +1,7 @@
 "use client";
 
 import { ORPCError } from "@orpc/client";
+import { useQuery } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,8 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
-import { orpc } from "@/lib/orpc/orpc";
+import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+
+const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
 
 type SetupError =
   | "invalid"
@@ -180,12 +184,12 @@ export function SetupLinkCreator() {
         </p>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={create}>
           <div className="space-y-2">
-            <Label htmlFor="setup-project">Hosted Project ID</Label>
-            <Input
-              id="setup-project"
-              required
+            <span className="text-sm font-medium">Hosted Project</span>
+            <EntityCombobox
+              label="Hosted Project"
               value={projectId}
-              onChange={(event) => setProjectId(event.target.value)}
+              onChange={setProjectId}
+              search={searchHosted}
             />
           </div>
           <div className="space-y-2">
@@ -199,7 +203,7 @@ export function SetupLinkCreator() {
             />
           </div>
           <div>
-            <Button disabled={pending} type="submit">
+            <Button disabled={pending || !projectId} type="submit">
               {pending ? "Neuer Link…" : "Neuer Link"}
             </Button>
           </div>
@@ -250,6 +254,10 @@ export function SetupLinkRecipient({
   const [error, setError] = useState<SetupError>();
   const [completed, setCompleted] = useState(false);
   const [pending, setPending] = useState(false);
+  const ownedOrganizations = useQuery({
+    ...orpcQuery.organizations.listMine.queryOptions(),
+    enabled: kind === "existing" && !!secret,
+  });
 
   async function consume(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -334,21 +342,37 @@ export function SetupLinkRecipient({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="setup-org-id">Organization ID</Label>
-                  <Input
-                    id="setup-org-id"
-                    required
-                    value={organizationId}
-                    onChange={(event) => setOrganizationId(event.target.value)}
-                  />
+                  <span className="text-sm font-medium">Organization</span>
+                  {ownedOrganizations.isError ? (
+                    <p role="alert">
+                      Could not load Organizations.{" "}
+                      <Button
+                        type="button"
+                        variant="link"
+                        onClick={() => ownedOrganizations.refetch()}
+                      >
+                        Retry
+                      </Button>
+                    </p>
+                  ) : (
+                    <EntityCombobox
+                      label="Organization"
+                      value={organizationId}
+                      onChange={setOrganizationId}
+                      preload={ownedOrganizations.data ?? []}
+                      disabled={ownedOrganizations.isPending}
+                    />
+                  )}
                   <p>
                     Only an Owner of this Organization can complete setup.
-                    Ownership is verified by the server when you submit; entering
-                    an ID does not grant access.
+                    Ownership is verified by the server when you submit.
                   </p>
                 </div>
               )}
-              <Button disabled={pending} type="submit">
+              <Button
+                disabled={pending || (kind === "existing" && !organizationId)}
+                type="submit"
+              >
                 {pending ? "Completing…" : "Complete setup"}
               </Button>
             </form>

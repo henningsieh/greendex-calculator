@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { ORPCError } from "@orpc/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,12 +10,55 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   consume: vi.fn(),
   writeText: vi.fn(),
+  searchHosted: vi.fn(),
+  listMine: vi.fn(),
 }));
+vi.mock("@/components/ui/popover", async () => {
+  const { createContext, useContext, cloneElement } = await import("react");
+  const OpenContext = createContext({
+    open: false,
+    onOpenChange: (_open: boolean) => {},
+  });
+  return {
+    Popover: ({
+      children,
+      open,
+      onOpenChange,
+    }: {
+      children: React.ReactNode;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }) => (
+      <OpenContext.Provider value={{ open, onOpenChange }}>
+        {children}
+      </OpenContext.Provider>
+    ),
+    PopoverTrigger: ({ render }: { render: React.ReactElement }) => {
+      const { onOpenChange } = useContext(OpenContext);
+      return cloneElement(render as React.ReactElement<{ onClick: () => void }>, {
+        onClick: () => onOpenChange(true),
+      });
+    },
+    PopoverContent: ({ children }: { children: React.ReactNode }) =>
+      useContext(OpenContext).open ? <div>{children}</div> : null,
+  };
+});
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: {
     projectPartnerships: {
       createSetupLink: mocks.create,
       consumeSetupLink: mocks.consume,
+    },
+    projects: { searchHosted: mocks.searchHosted },
+  },
+  orpcQuery: {
+    organizations: {
+      listMine: {
+        queryOptions: () => ({
+          queryKey: ["organizations", "listMine"],
+          queryFn: mocks.listMine,
+        }),
+      },
     },
   },
 }));
@@ -31,6 +75,15 @@ const source = readFileSync(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  Element.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal("navigator", { clipboard: { writeText: mocks.writeText } });
   mocks.writeText.mockResolvedValue(undefined);
   mocks.create.mockResolvedValue({
@@ -38,6 +91,12 @@ beforeEach(() => {
     secret: "private-secret",
     expiresAt: new Date("2026-12-01"),
   });
+  mocks.searchHosted.mockResolvedValue([
+    { id: "project-1", name: "Hosted Example" },
+  ]);
+  mocks.listMine.mockResolvedValue([
+    { id: "partner-1", name: "My Organization" },
+  ]);
   mocks.consume.mockResolvedValue({
     partnershipId: "partnership-1",
     organizationId: "partner-1",
@@ -49,14 +108,31 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function withQueryProvider(component: React.ReactNode) {
+  return render(
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      {component}
+    </QueryClientProvider>,
+  );
+}
 function recipient(secret = "private-secret") {
-  return render(<SetupLinkRecipient id="link-1" secret={secret} />);
+  return withQueryProvider(<SetupLinkRecipient id="link-1" secret={secret} />);
+}
+async function selectOption(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string,
+  name: string,
+) {
+  await user.click(screen.getByRole("button", { name: label }));
+  await user.click(await screen.findByText(name));
 }
 
 async function submitExisting() {
   const user = userEvent.setup();
   await user.click(screen.getByRole("radio", { name: "Existing Organization" }));
-  await user.type(screen.getByLabelText("Organization ID"), "partner-1");
+  await selectOption(user, "Organization", "My Organization");
   await user.click(screen.getByRole("button", { name: "Complete setup" }));
 }
 
@@ -66,8 +142,13 @@ describe("Setup Link UI", () => {
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
       mocks.writeText,
     );
-    render(<SetupLinkCreator />);
-    await user.type(screen.getByLabelText("Hosted Project ID"), "project-1");
+    withQueryProvider(<SetupLinkCreator />);
+    await user.click(screen.getByRole("button", { name: "Hosted Project" }));
+    await user.type(
+      screen.getByLabelText("Search Hosted Project by name or ID"),
+      "Host",
+    );
+    await user.click(await screen.findByText("Hosted Example"));
     await user.type(
       screen.getByLabelText("Recipient email"),
       "partner@example.com",
@@ -86,8 +167,13 @@ describe("Setup Link UI", () => {
   it("uses the approved new-link wording while issuance is pending", async () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));
-    render(<SetupLinkCreator />);
-    await user.type(screen.getByLabelText("Hosted Project ID"), "project-1");
+    withQueryProvider(<SetupLinkCreator />);
+    await user.click(screen.getByRole("button", { name: "Hosted Project" }));
+    await user.type(
+      screen.getByLabelText("Search Hosted Project by name or ID"),
+      "Host",
+    );
+    await user.click(await screen.findByText("Hosted Example"));
     await user.type(
       screen.getByLabelText("Recipient email"),
       "partner@example.com",
@@ -97,7 +183,7 @@ describe("Setup Link UI", () => {
   });
 
   it("does not submit a missing secret", () => {
-    render(<SetupLinkRecipient id="link-1" />);
+    withQueryProvider(<SetupLinkRecipient id="link-1" />);
     expect(screen.getByText("Invalid setup link")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Complete setup" })).toBeNull();
   });
@@ -128,7 +214,7 @@ describe("Setup Link UI", () => {
       screen.getByRole("radio", { name: "Existing Organization" }),
     );
     expect(screen.getByText(/verified by the server/i)).toBeTruthy();
-    await user.type(screen.getByLabelText("Organization ID"), "partner-1");
+    await selectOption(user, "Organization", "My Organization");
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
     expect(mocks.consume).toHaveBeenCalledWith({
       id: "link-1",

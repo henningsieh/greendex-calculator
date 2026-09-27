@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     queryKey: ["projects", scope],
   })),
   hasOrganizationMembership: vi.fn().mockResolvedValue(true),
+  hasCostTrackerPermissions: vi.fn().mockResolvedValue(true),
   hydrateClient: vi.fn(
     ({ children }: { children: React.ReactNode; client: unknown }) => children,
   ),
@@ -24,7 +25,9 @@ vi.mock("@/features/projects/components/project-list", () => ({
   ProjectList: () => <p>Project list</p>,
 }));
 vi.mock("@/features/projects/components/project-partnership-manager", () => ({
-  ProjectPartnershipManager: () => <p>Project Partnership manager</p>,
+  ProjectPartnershipManager: ({ canAssign }: { canAssign: boolean }) => (
+    <p data-can-assign={canAssign}>Project Partnership manager</p>
+  ),
 }));
 vi.mock("@/features/projects/components/participant-coordination", () => ({
   ParticipantCoordination: ({ partnershipId }: { partnershipId: string }) => (
@@ -81,6 +84,12 @@ vi.mock("@/lib/orpc/orpc", () => ({
     },
   },
 }));
+vi.mock("next/headers", () => ({
+  headers: () => Promise.resolve(new Headers()),
+}));
+vi.mock("@/lib/orpc/middleware", () => ({
+  hasCostTrackerPermissions: mocks.hasCostTrackerPermissions,
+}));
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: mocks.hasOrganizationMembership,
 }));
@@ -96,6 +105,15 @@ import ProjectPage from "@/app/(protected)/projects/[id]/page";
 import ProjectsPage from "@/app/(protected)/projects/page";
 
 describe("Cost Tracker Project data routes", () => {
+  it("hides direct assignment for users without the create permission", async () => {
+    mocks.hasCostTrackerPermissions.mockResolvedValueOnce(false);
+    render(await PartnerOrganizationsPage());
+    expect(
+      screen
+        .getByText("Project Partnership manager")
+        .getAttribute("data-can-assign"),
+    ).toBe("false");
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.availableScopes.mockResolvedValue({ hosted: true, partner: true });

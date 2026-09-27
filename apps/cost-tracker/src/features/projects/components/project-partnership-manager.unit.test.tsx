@@ -11,14 +11,48 @@ const mocks = vi.hoisted(() => ({
   confirm: vi.fn(() => true),
   list: vi.fn(),
   remove: vi.fn(),
+  searchHosted: vi.fn(),
+  searchOrganizations: vi.fn(),
 }));
 
+vi.mock("@/components/ui/popover", async () => {
+  const { createContext, useContext, cloneElement } = await import("react");
+  const OpenContext = createContext({
+    open: false,
+    onOpenChange: (_open: boolean) => {},
+  });
+  return {
+    Popover: ({
+      children,
+      open,
+      onOpenChange,
+    }: {
+      children: React.ReactNode;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }) => (
+      <OpenContext.Provider value={{ open, onOpenChange }}>
+        {children}
+      </OpenContext.Provider>
+    ),
+    PopoverTrigger: ({ render }: { render: React.ReactElement }) => {
+      const { onOpenChange } = useContext(OpenContext);
+      return cloneElement(render as React.ReactElement<{ onClick: () => void }>, {
+        onClick: () => onOpenChange(true),
+      });
+    },
+    PopoverContent: ({ children }: { children: React.ReactNode }) =>
+      useContext(OpenContext).open ? <div>{children}</div> : null,
+  };
+});
 vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/orpc/orpc")>();
 
   return {
     ...original,
     orpc: {
+      projects: { searchHosted: mocks.searchHosted },
+      organizations: { search: mocks.searchOrganizations },
       projectPartnerships: {
         assign: mocks.assign,
         remove: mocks.remove,
@@ -86,7 +120,7 @@ async function renderManager(partnerships: Partnership[]) {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <ProjectPartnershipManager />
+      <ProjectPartnershipManager canAssign />
     </QueryClientProvider>,
   );
 
@@ -112,12 +146,42 @@ function expectProjectDataInvalidation(
   });
 }
 
+async function selectAssignment(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Hosted Project" }));
+  await user.type(
+    await screen.findByLabelText("Search Hosted Project by name or ID"),
+    "New",
+  );
+  await user.click(await screen.findByText("New Project"));
+  await user.click(screen.getByRole("button", { name: "Partner Organization" }));
+  await user.type(
+    await screen.findByLabelText("Search Partner Organization by name or ID"),
+    "New",
+  );
+  await user.click(await screen.findByText("New Partner"));
+}
+
 describe("ProjectPartnershipManager", () => {
   beforeEach(() => {
     vi.stubGlobal("confirm", mocks.confirm);
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    Element.prototype.scrollIntoView = vi.fn();
     mocks.assign.mockReset().mockResolvedValue(assignedPartnership);
     mocks.confirm.mockClear();
     mocks.list.mockReset();
+    mocks.searchHosted
+      .mockReset()
+      .mockResolvedValue([{ id: "project-new", name: "New Project" }]);
+    mocks.searchOrganizations
+      .mockReset()
+      .mockResolvedValue([{ id: "organization-new", name: "New Partner" }]);
     mocks.remove
       .mockReset()
       .mockResolvedValue({ id: existingPartnership.id, removed: true });
@@ -134,14 +198,7 @@ describe("ProjectPartnershipManager", () => {
     const user = userEvent.setup();
     const { invalidateQueries } = await renderManager([existingPartnership]);
 
-    await user.type(
-      screen.getByLabelText("Hosted Project ID"),
-      assignedPartnership.projectId,
-    );
-    await user.type(
-      screen.getByLabelText("Partner Organization ID"),
-      assignedPartnership.organizationId,
-    );
+    await selectAssignment(user);
     await user.click(screen.getByRole("button", { name: "Assign" }));
 
     await waitFor(() => {
@@ -166,11 +223,7 @@ describe("ProjectPartnershipManager", () => {
     const user = userEvent.setup();
     await renderManager([existingPartnership]);
 
-    await user.type(screen.getByLabelText("Hosted Project ID"), "project-new");
-    await user.type(
-      screen.getByLabelText("Partner Organization ID"),
-      "organization-new",
-    );
+    await selectAssignment(user);
     await user.click(screen.getByRole("button", { name: "Assign" }));
 
     expect(

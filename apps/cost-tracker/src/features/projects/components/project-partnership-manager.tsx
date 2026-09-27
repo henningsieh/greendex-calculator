@@ -10,8 +10,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
@@ -21,6 +20,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
+const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
+const searchOrganizations = (search: string) =>
+  orpc.organizations.search({ search });
+
 function mutationMessage(error: unknown) {
   return getORPCRequestErrorMessage(error).text;
 }
@@ -29,7 +32,11 @@ function mutationMessage(error: unknown) {
  * Manages Partner Organization assignments for Projects hosted by the active
  * Organization and refreshes affected Project data after each successful change.
  */
-export function ProjectPartnershipManager() {
+export function ProjectPartnershipManager({
+  canAssign = false,
+}: {
+  canAssign?: boolean;
+}) {
   const queryClient = useQueryClient();
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
@@ -78,55 +85,65 @@ export function ProjectPartnershipManager() {
 
   return (
     <section className="mt-10 space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Assign an existing Organization</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="grid gap-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setFeedback(undefined);
-              assignMutation.mutate();
-            }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="partnership-project-id">Hosted Project ID</Label>
-              <Input
-                id="partnership-project-id"
-                onChange={(event) => setProjectId(event.target.value)}
-                required
-                value={projectId}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="partnership-organization-id">
-                Partner Organization ID
-              </Label>
-              <Input
-                id="partnership-organization-id"
-                onChange={(event) => setOrganizationId(event.target.value)}
-                required
-                value={organizationId}
-              />
-            </div>
-            <Button disabled={assignMutation.isPending} type="submit">
-              <LinkIcon aria-hidden="true" />
-              {assignMutation.isPending ? "Assigning…" : "Assign"}
-            </Button>
-          </form>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Enter an exact existing Organization ID. Organization directory search
-            is not exposed until its disclosure policy is defined.
-          </p>
-          {feedback && (
-            <p aria-live="polite" className="mt-4 text-sm">
-              {feedback}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {canAssign && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Assign an existing Organization</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="grid gap-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setFeedback(undefined);
+                assignMutation.mutate();
+              }}
+            >
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Hosted Project</span>
+                <EntityCombobox
+                  label="Hosted Project"
+                  value={projectId}
+                  onChange={setProjectId}
+                  search={searchHosted}
+                  preload={partnerships.map(
+                    ({ projectId: id, projectName: name }) => ({ id, name }),
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Partner Organization</span>
+                <EntityCombobox
+                  label="Partner Organization"
+                  value={organizationId}
+                  onChange={setOrganizationId}
+                  search={searchOrganizations}
+                  preload={partnerships.map(
+                    ({ organizationId: id, organizationName: name }) => ({
+                      id,
+                      name,
+                    }),
+                  )}
+                />
+              </div>
+              <Button
+                disabled={
+                  assignMutation.isPending || !projectId || !organizationId
+                }
+                type="submit"
+              >
+                <LinkIcon aria-hidden="true" />
+                {assignMutation.isPending ? "Assigning…" : "Assign"}
+              </Button>
+            </form>
+            {feedback && (
+              <p aria-live="polite" className="mt-4 text-sm">
+                {feedback}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-4">
         <h2 className="font-heading text-2xl font-semibold">
