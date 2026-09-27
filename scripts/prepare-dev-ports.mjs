@@ -46,24 +46,24 @@ const portConfigurations = [
 ];
 
 function listenersForPort(port) {
+  let output;
   try {
-    const output = execFileSync(
-      "lsof",
-      ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-
-    return [...new Set(output.trim().split("\n").filter(Boolean).map(Number))];
+    // NOTE: lsof is blind to orphaned next-server processes on some machines
+    // (empty result while ss/fuser see the listener), so detect via ss.
+    // ss exits 0 with header only when nothing listens: no special-casing needed.
+    output = execFileSync("ss", ["-tlnp", "sport", "=", `:${port}`], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
   } catch (error) {
-    if (error.status === 1) {
-      return [];
-    }
-
-    throw new Error(`Unable to inspect port ${port} with lsof: ${error.message}`);
+    throw new Error(`Unable to inspect port ${port} with ss: ${error.message}`);
   }
+
+  const pids = [...output.matchAll(/pid=(\d+)/g)].map((match) =>
+    Number(match[1]),
+  );
+
+  return [...new Set(pids)];
 }
 
 function processDetails(pid) {
