@@ -1,6 +1,4 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
-
 import { db } from "@greendex/database";
 import {
   claimsTable,
@@ -12,34 +10,11 @@ import { z } from "zod";
 import {
   id,
   partnershipForIssuer,
-  secretHash,
 } from "@/features/authentication/procedures/shared";
 import { authorized } from "@/lib/orpc/middleware";
 
-export function buildRegistrationLinks() {
-  const createRegistrationLink = authorized
-    .input(z.object({ partnershipId: id }))
-    .output(z.object({ id: z.string(), secret: z.string() }))
-    .handler(async ({ input, context, errors }) => {
-      await partnershipForIssuer(
-        input.partnershipId,
-        context.user.id,
-        context.session.activeOrganizationId,
-        errors,
-      );
-      const secret = randomBytes(32).toString("base64url");
-      const [link] = await db
-        .insert(links)
-        .values({
-          partnershipId: input.partnershipId,
-          secretHash: secretHash(secret),
-          createdByUserId: context.user.id,
-        })
-        .returning({ id: links.id });
-      return { id: link!.id, secret };
-    });
-
-  const setRegistrationLinkOpen = authorized
+export function buildSetRegistrationLinkOpen() {
+  return authorized
     .input(z.object({ id, open: z.boolean() }))
     .output(z.object({ open: z.boolean() }))
     .handler(async ({ input, context, errors }) => {
@@ -76,5 +51,4 @@ export function buildRegistrationLinks() {
         .where(eq(links.id, input.id));
       return { open: input.open };
     });
-  return { createRegistrationLink, setRegistrationLinkOpen };
 }

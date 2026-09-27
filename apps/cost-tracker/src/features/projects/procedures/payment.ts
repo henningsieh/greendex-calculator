@@ -3,10 +3,8 @@ import { db } from "@greendex/database";
 import {
   claimHistoryTable as history,
   claimsTable as claims,
-  projectPartnerOrganizationsTable as partnerships,
-  projectsTable as projects,
 } from "@greendex/database/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
@@ -106,39 +104,11 @@ export const correctPayment = authorized
         message: "Only Hosting staff may correct payment.",
       });
     return db.transaction(async (tx) => {
-      const [project] = await tx
-        .select({ id: projects.id })
-        .from(projects)
-        .where(
-          and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
-        )
-        .for("update")
-        .limit(1);
-      const [partnership] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(
-          and(
-            eq(partnerships.id, input.partnershipId),
-            eq(partnerships.projectId, scope.projectId),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!project || !partnership)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
-      const [claim] = await tx
-        .select({
-          id: claims.id,
-          status: claims.status,
-          approvedAmountEur: claims.approvedAmountEur,
-        })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .for("update")
-        .limit(1);
+      const { claim } = await lockClaimScope(
+        tx,
+        { projectId: scope.projectId, partnershipId: input.partnershipId },
+        errors,
+      );
       if (claim?.status === "approved" && claim.approvedAmountEur !== null) {
         const [latest] = await tx
           .select({ eventType: history.eventType, reason: history.reason })
