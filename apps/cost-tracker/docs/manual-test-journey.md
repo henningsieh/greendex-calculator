@@ -27,7 +27,7 @@ Traceability: `[...] ` tags map each case to a ticket (`#164`–`#187`), ADR, or
 
 ## 2. Partner setup link (org-less recipient flow)
 
-- T04 — H creates a recipient-bound Setup Link for Project + email; copies it (`Kopieren`). [#164, #173]
+- T04 — H creates a recipient-bound Setup Link for Project + email (project must exist — see T79); copies it (`Kopieren`). [#164, #173]
 - T05 — Recipient opens link signed out → guided to sign-in, link preserved for revisit after sign-in (no returnTo magic; manual revisit works). [#173]
 - T06 — Wrong email signs in and redeems → distinct wrong-email error, no side effects. [#164]
 - T07 — Disabled link → distinct disabled error. [#164]
@@ -139,6 +139,21 @@ Traceability: `[...] ` tags map each case to a ticket (`#164`–`#187`), ADR, or
 - T77 — Invitation expiry cannot be waited out (48h/7d) — document as untestable manually; expiry logic stays covered by automated tests. [#164]
 - T78 — Two browsers (org-less recipient vs coordinator) side by side: no session bleed, no cross-visible data. [#179]
 
+## 15. Project lifecycle (hosting side)
+
+Prerequisite for §2 onward: at least one Project must exist. If any case
+below has no UI surface, record it as a gap instead of working around it.
+
+- T79 — H (Owner/Admin) creates a Project (name, dates, location, country);
+  it appears in the projects list with derived readiness. [#166]
+- T80 — Member/Participant attempts project creation → denied server-side.
+  [#179]
+- T81 — H designates the hosting-side coordinator (project responsible user);
+  that coordinator gains host-scoped powers (review queue, issuance) while
+  unrelated projects stay out of reach. [ADR-0004, #166]
+- T82 — Archived project: creation-type actions (setup links, invitations)
+  are denied; existing data stays readable. [#164]
+
 ## Sign-off
 
-Record date, tester, environment, and per-case pass/fail with issue links for failures. Failing cases become GitHub issues; this file gains their numbers. Coverage claim: T01–T78 span every ticket `#161`–`#183`, `#185`–`#187`, every ADR `0004`–`0011`, and clickdummy outcomes `CD-02`–`CD-11`.
+Record date, tester, environment, and per-case pass/fail with issue links for failures. Failing cases become GitHub issues; this file gains their numbers. Coverage claim: T01–T82 span every ticket `#161`–`#183`, `#185`–`#187`, every ADR `0004`–`0011`, and clickdummy outcomes `CD-02`–`CD-11`.
