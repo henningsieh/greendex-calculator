@@ -125,7 +125,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/ui": "^5.0.0",
-    "auth": "^1.7.3",
+    "auth": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "dotenv": "catalog:",
     "jsdom": "catalog:",
@@ -138,7 +138,7 @@
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "^5.0.0"
+    "vitest": "catalog:"
   },
   "config": {
     "scalarVersion": "1.25.0"
