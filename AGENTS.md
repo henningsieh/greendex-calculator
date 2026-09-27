@@ -29,6 +29,10 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 - Next.js API behavior: read the version-matched docs bundled in the single catalog-resolved install at `node_modules/next/dist/docs/` (they upgrade with the `next` package) instead of relying on model memory.
 - Issue-tracked work: [issue tracker](docs/agents/issue-tracker.md). Triage/labels: [triage labels](docs/agents/triage-labels.md). Domain-language changes: [domain](docs/agents/domain.md) and the [canonical glossary](DOMAIN-GLOSSARY.md).
 
+## OpenAI Token Window (Subagent Model Routing)
+
+When launching subagents on `openai-*` provider models, check the 5h usage meter first — procedure: [codex-usage-meter](docs/codex-usage-meter.md). Below 15% remaining: stop launching OpenAI-model subagents, leave trees clean, report, and route to an alternate provider (e.g. `opencode-go/muse-spark-1.3-contributor` at the same thinking level) until the window resets. Re-meter before routing back.
+
 ## Scoped Instruction Index
 
 The instruction files below live under [`docs/agents/instructions/`](docs/agents/instructions/).
