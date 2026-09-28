@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
-import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
-import { getProjectListReturnDestination } from "@/features/projects/project-list-query-options";
-import { orpcQuery } from "@/lib/orpc/orpc";
+import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
+import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
 import { hasOrganizationMembership } from "@/lib/session";
-import {
-  getQueryClient,
-  HydrateClient,
-  swallowPrefetchError,
-} from "@/lib/tanstack-react-query/hydration";
 
 export const metadata: Metadata = { title: "Project workspace" };
 
@@ -24,27 +18,14 @@ export default async function ProjectPage({
 }: ProjectPageProps) {
   if (!(await hasOrganizationMembership())) return null;
 
-  const [{ id }, rawSearchParams] = await Promise.all([
-    params,
-    searchParams ??
-      Promise.resolve<Record<string, string | string[] | undefined>>({}),
-  ]);
-  const returnTo = getProjectListReturnDestination(rawSearchParams.returnTo);
-  const queryClient = getQueryClient();
-  await queryClient
-    .query(
-      orpcQuery.projects.get.queryOptions({
-        input: { projectId: id },
-        meta: { costTrackerORPC: true },
-      }),
-    )
-    .catch(swallowPrefetchError);
-
   return (
-    <HydrateClient client={queryClient}>
-      <ProjectDataErrorBoundary resource="this Project">
-        <ProjectWorkspace projectId={id} returnTo={returnTo} />
-      </ProjectDataErrorBoundary>
-    </HydrateClient>
+    <div>
+      <p className="text-sm font-medium text-primary">Project workspace</p>
+      <Suspense
+        fallback={<PrefetchedSectionSkeleton label="Loading Project workspace" />}
+      >
+        <ProjectWorkspaceSection params={params} searchParams={searchParams} />
+      </Suspense>
+    </div>
   );
 }

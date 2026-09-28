@@ -59,6 +59,18 @@ export function ProjectsSkeleton() {
   );
 }
 
+/**
+ * List-only fallback for the inner Suspense boundary on the Projects page.
+ * The page shell already renders the real header, so only rows are sketched.
+ */
+export function ProjectListSkeleton() {
+  return (
+    <LoadingRegion label="Loading Project list">
+      <ListRowsSkeleton />
+    </LoadingRegion>
+  );
+}
+
 export function PartnerOrganizationsSkeleton() {
   return (
     <LoadingRegion label="Loading Partner Organizations">

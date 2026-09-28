@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
+import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { buttonVariants } from "@/components/ui/button";
-import { ParticipantCoordination } from "@/features/projects/components/participant-coordination";
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
-import { orpcQuery } from "@/lib/orpc/orpc";
+import { PartnershipParticipantsSection } from "@/features/projects/components/partnership-participants-section";
 import { hasOrganizationMembership } from "@/lib/session";
-import {
-  getQueryClient,
-  HydrateClient,
-  swallowPrefetchError,
-} from "@/lib/tanstack-react-query/hydration";
 
 export const metadata: Metadata = { title: "Partnership Participants" };
 
@@ -20,16 +15,6 @@ export default async function PartnershipParticipantsPage({
   params: Promise<{ id: string }>;
 }) {
   if (!(await hasOrganizationMembership())) return null;
-  const { id } = await params;
-  const queryClient = getQueryClient();
-  await queryClient
-    .query(
-      orpcQuery.participations.listPartnership.queryOptions({
-        input: { partnershipId: id },
-        meta: { costTrackerORPC: true },
-      }),
-    )
-    .catch(swallowPrefetchError);
 
   return (
     <div className="space-y-8">
@@ -44,11 +29,13 @@ export default async function PartnershipParticipantsPage({
           Coordinate Participants for this Project Partnership.
         </p>
       </header>
-      <HydrateClient client={queryClient}>
-        <ProjectDataErrorBoundary resource="Partnership Participants">
-          <ParticipantCoordination partnershipId={id} />
-        </ProjectDataErrorBoundary>
-      </HydrateClient>
+      <Suspense
+        fallback={
+          <PrefetchedSectionSkeleton label="Loading Partnership Participants" />
+        }
+      >
+        <PartnershipParticipantsSection params={params} />
+      </Suspense>
     </div>
   );
 }

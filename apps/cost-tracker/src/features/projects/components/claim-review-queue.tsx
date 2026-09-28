@@ -1,6 +1,6 @@
 "use client";
 
-import { useQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,13 +12,12 @@ export function ClaimReviewQueue() {
       meta: { costTrackerORPC: true },
     }),
   );
-  const claims = useQueries({
+  const claims = useSuspenseQueries({
     queries: partnerships.map((item) => ({
       ...orpcQuery.claims.getDraft.queryOptions({
         input: { partnershipId: item.id },
         meta: { costTrackerORPC: true },
       }),
-      retry: false,
     })),
   });
   const submitted = partnerships.filter(
@@ -30,9 +29,7 @@ export function ClaimReviewQueue() {
         <CardTitle>Submitted Claims awaiting review</CardTitle>
       </CardHeader>
       <CardContent>
-        {claims.some((query) => query.isPending) ? (
-          <p>Loading submitted Claims…</p>
-        ) : submitted.length === 0 ? (
+        {submitted.length === 0 ? (
           <p>No submitted Claims available for review.</p>
         ) : (
           <ul className="space-y-3">

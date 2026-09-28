@@ -1,7 +1,11 @@
 "use client";
 
 import { parseOrganizationRoles } from "@greendex/auth/permissions";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQueries,
+} from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -60,26 +64,22 @@ function roleBadges(role: string) {
   ));
 }
 
-function queryErrorText(error: unknown): string | null {
-  if (!error) return null;
-  return getORPCRequestErrorMessage(error).text;
-}
-
 export function OrganizationTeam({
   currentUserEmail,
 }: {
   currentUserEmail: string;
 }) {
   const queryClient = useQueryClient();
-  const members = useQuery(membersOptions);
-  const pending = useQuery(pendingOptions);
+  const [members, pending] = useSuspenseQueries({
+    queries: [membersOptions, pendingOptions],
+  });
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<StaffRole>("member");
   const [notice, setNotice] = useState("");
   const [formError, setFormError] = useState("");
 
-  const memberRows = members.data?.members ?? [];
-  const invitationRows = pending.data?.invitations ?? [];
+  const memberRows = members.data.members;
+  const invitationRows = pending.data.invitations;
   const ownRole =
     memberRows.find(
       (entry) => entry.email.toLowerCase() === currentUserEmail.toLowerCase(),
@@ -132,13 +132,7 @@ export function OrganizationTeam({
     invite.mutate({ email, role });
   }
 
-  const loadError =
-    queryErrorText(members.error) ?? queryErrorText(pending.error);
-  const error = formError || loadError;
-
-  if (members.isPending || pending.isPending) {
-    return <p>Loading Organization staff…</p>;
-  }
+  const error = formError;
 
   return (
     <div className="space-y-10">

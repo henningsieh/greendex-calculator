@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
-import { ProjectPartnershipManager } from "@/features/projects/components/project-partnership-manager";
+import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
+import { ProjectPartnershipSection } from "@/features/projects/components/project-partnership-section";
 import { SetupLinkCreator } from "@/features/projects/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
-import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
-import {
-  getQueryClient,
-  HydrateClient,
-  swallowPrefetchError,
-} from "@/lib/tanstack-react-query/hydration";
 
 export const metadata: Metadata = { title: "Partner Organizations" };
 
@@ -21,15 +16,6 @@ export default async function PartnerOrganizationsPage() {
   const canAssign = await hasCostTrackerPermissions(await headers(), {
     projectPartnership: ["create"],
   });
-  const queryClient = getQueryClient();
-  await queryClient
-    .query(
-      orpcQuery.projectPartnerships.list.queryOptions({
-        meta: { costTrackerORPC: true },
-      }),
-    )
-    .catch(swallowPrefetchError);
-
   return (
     <div>
       <header className="max-w-3xl">
@@ -47,11 +33,13 @@ export default async function PartnerOrganizationsPage() {
         <SetupLinkCreator />
       </section>
 
-      <HydrateClient client={queryClient}>
-        <ProjectDataErrorBoundary resource="Project Partnerships">
-          <ProjectPartnershipManager canAssign={canAssign} />
-        </ProjectDataErrorBoundary>
-      </HydrateClient>
+      <Suspense
+        fallback={
+          <PrefetchedSectionSkeleton label="Loading Project Partnerships" />
+        }
+      >
+        <ProjectPartnershipSection canAssign={canAssign} />
+      </Suspense>
     </div>
   );
 }

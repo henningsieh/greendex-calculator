@@ -2,7 +2,7 @@
 
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { ORPCError } from "@orpc/client";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -831,30 +831,35 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const client = useQueryClient();
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
-  const { data: draft } = useSuspenseQuery(
-    orpcQuery.claims.getDraft.queryOptions(options),
-  );
-  const { data: payout } = useSuspenseQuery(
-    orpcQuery.claims.listPayoutAccounts.queryOptions(options),
-  );
-  const { data: people } = useSuspenseQuery(
-    orpcQuery.participations.listPartnership.queryOptions(options),
-  );
-  const { data: journeys } = useSuspenseQuery(
-    orpcQuery.journeys.list.queryOptions(options),
-  );
-  const { data: costs } = useSuspenseQuery(
-    orpcQuery.costs.list.queryOptions(options),
-  );
-  const { data: documents } = useSuspenseQuery(
-    orpcQuery.documents.list.queryOptions(options),
-  );
-  const { data: preview } = useSuspenseQuery(
-    orpcQuery.claims.previewSubmission.queryOptions(options),
-  );
-  const { data: history } = useSuspenseQuery(
-    orpcQuery.claims.getHistory.queryOptions(options),
-  );
+  const [
+    draftQuery,
+    payoutQuery,
+    peopleQuery,
+    journeysQuery,
+    costsQuery,
+    documentsQuery,
+    previewQuery,
+    historyQuery,
+  ] = useSuspenseQueries({
+    queries: [
+      orpcQuery.claims.getDraft.queryOptions(options),
+      orpcQuery.claims.listPayoutAccounts.queryOptions(options),
+      orpcQuery.participations.listPartnership.queryOptions(options),
+      orpcQuery.journeys.list.queryOptions(options),
+      orpcQuery.costs.list.queryOptions(options),
+      orpcQuery.documents.list.queryOptions(options),
+      orpcQuery.claims.previewSubmission.queryOptions(options),
+      orpcQuery.claims.getHistory.queryOptions(options),
+    ],
+  });
+  const draft = draftQuery.data;
+  const payout = payoutQuery.data;
+  const people = peopleQuery.data;
+  const journeys = journeysQuery.data;
+  const costs = costsQuery.data;
+  const documents = documentsQuery.data;
+  const preview = previewQuery.data;
+  const history = historyQuery.data;
   const [feedback, setFeedback] = useState("");
   const [pending, setPending] = useState(false);
   const editable =

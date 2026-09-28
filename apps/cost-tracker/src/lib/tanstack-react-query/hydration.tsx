@@ -12,13 +12,13 @@ export const getQueryClient = cache(createQueryClient);
 
 /**
  * Lets a client suspense query retry if its optional server prefetch fails.
- * The error is deliberately logged during development rather than preventing
- * the page shell from streaming.
+ * Logs a safe error classification and lets the client retry the query.
+ * Avoid logging the error object: request and transport details may be sensitive.
  */
 export function swallowPrefetchError(error: unknown) {
-  if (process.env.NODE_ENV !== "production") {
-    console.error("[prefetch] swallowed error:", error);
-  }
+  console.error("[prefetch] request failed; the client will retry", {
+    type: error instanceof Error ? error.name : typeof error,
+  });
 }
 
 export function HydrateClient({

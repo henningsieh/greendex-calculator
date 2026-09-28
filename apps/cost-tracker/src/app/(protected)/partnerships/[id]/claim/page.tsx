@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
+import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { ClaimWorkspace } from "@/features/projects/components/claim-workspace";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
@@ -14,12 +16,11 @@ import {
 
 export const metadata: Metadata = { title: "Claim workspace" };
 
-export default async function ClaimPage({
+async function ClaimWorkspaceSection({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  if (!(await hasOrganizationMembership())) return null;
   const { id } = await params;
   const client = getQueryClient();
   const input = { partnershipId: id };
@@ -39,6 +40,22 @@ export default async function ClaimPage({
     ].map((promise) => promise.catch(swallowPrefetchError)),
   );
   return (
+    <HydrateClient client={client}>
+      <ProjectDataErrorBoundary resource="Claim workspace">
+        <ClaimWorkspace partnershipId={id} />
+      </ProjectDataErrorBoundary>
+    </HydrateClient>
+  );
+}
+
+export default async function ClaimPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  if (!(await hasOrganizationMembership())) return null;
+
+  return (
     <div className="space-y-8">
       <header className="space-y-3">
         <Link className={buttonVariants({ variant: "ghost" })} href="/projects">
@@ -46,11 +63,11 @@ export default async function ClaimPage({
         </Link>
         <h1 className="font-heading text-4xl font-semibold">Claim workspace</h1>
       </header>
-      <HydrateClient client={client}>
-        <ProjectDataErrorBoundary resource="Claim workspace">
-          <ClaimWorkspace partnershipId={id} />
-        </ProjectDataErrorBoundary>
-      </HydrateClient>
+      <Suspense
+        fallback={<PrefetchedSectionSkeleton label="Loading Claim workspace" />}
+      >
+        <ClaimWorkspaceSection params={params} />
+      </Suspense>
     </div>
   );
 }

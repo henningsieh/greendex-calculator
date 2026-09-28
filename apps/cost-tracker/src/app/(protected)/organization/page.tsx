@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
+import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { canManageOrganization } from "@/features/organizations/access";
 import { OrganizationTeam } from "@/features/organizations/components/organization-team";
+import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { requireSession } from "@/lib/session";
 import {
@@ -12,24 +15,7 @@ import {
 
 export const metadata: Metadata = { title: "Organization" };
 
-export default async function OrganizationPage() {
-  const session = await requireSession();
-
-  // Presentation-only gating; every procedure re-enforces owner/admin access.
-  if (!(await canManageOrganization())) {
-    return (
-      <div className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">Organization</p>
-        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          Organization
-        </h1>
-        <p className="mt-4 text-lg leading-8 text-muted-foreground">
-          Organization staff management is available to owners and admins.
-        </p>
-      </div>
-    );
-  }
-
+async function OrganizationTeamSection({ email }: { email: string }) {
   const queryClient = getQueryClient();
   await Promise.all([
     queryClient
@@ -51,6 +37,33 @@ export default async function OrganizationPage() {
   ]);
 
   return (
+    <HydrateClient client={queryClient}>
+      <ProjectDataErrorBoundary resource="Organization staff">
+        <OrganizationTeam currentUserEmail={email} />
+      </ProjectDataErrorBoundary>
+    </HydrateClient>
+  );
+}
+
+export default async function OrganizationPage() {
+  const session = await requireSession();
+
+  // Presentation-only gating; every procedure re-enforces owner/admin access.
+  if (!(await canManageOrganization())) {
+    return (
+      <div className="max-w-3xl">
+        <p className="text-sm font-medium text-primary">Organization</p>
+        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
+          Organization
+        </h1>
+        <p className="mt-4 text-lg leading-8 text-muted-foreground">
+          Organization staff management is available to owners and admins.
+        </p>
+      </div>
+    );
+  }
+
+  return (
     <div>
       <header className="max-w-3xl">
         <p className="text-sm font-medium text-primary">Organization</p>
@@ -64,9 +77,13 @@ export default async function OrganizationPage() {
       </header>
 
       <section className="mt-10">
-        <HydrateClient client={queryClient}>
-          <OrganizationTeam currentUserEmail={session.user.email} />
-        </HydrateClient>
+        <Suspense
+          fallback={
+            <PrefetchedSectionSkeleton label="Loading Organization staff" />
+          }
+        >
+          <OrganizationTeamSection email={session.user.email} />
+        </Suspense>
       </section>
     </div>
   );

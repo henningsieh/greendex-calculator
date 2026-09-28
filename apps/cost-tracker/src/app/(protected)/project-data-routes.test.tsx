@@ -24,6 +24,23 @@ const queryClient = { query: mocks.query };
 vi.mock("@/features/projects/components/project-list", () => ({
   ProjectList: () => <p>Project list</p>,
 }));
+vi.mock("@/features/projects/components/project-list-section", () => ({
+  ProjectListSection: () => <p>Project list section</p>,
+}));
+vi.mock("@/features/projects/components/project-partnership-section", () => ({
+  ProjectPartnershipSection: ({ canAssign }: { canAssign: boolean }) => (
+    <p data-can-assign={canAssign}>Project Partnership manager</p>
+  ),
+}));
+vi.mock(
+  "@/features/projects/components/partnership-participants-section",
+  () => ({
+    PartnershipParticipantsSection: () => <p>Partnership participants section</p>,
+  }),
+);
+vi.mock("@/features/projects/components/project-workspace-section", () => ({
+  ProjectWorkspaceSection: () => <p>Project workspace section</p>,
+}));
 vi.mock("@/features/projects/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: ({ canAssign }: { canAssign: boolean }) => (
     <p data-can-assign={canAssign}>Project Partnership manager</p>
@@ -66,6 +83,9 @@ vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { scopes: mocks.availableScopes } },
   orpcQuery: {
     projects: {
+      searchHosted: {
+        queryOptions: () => ({ queryKey: ["projects", "search-hosted"] }),
+      },
       get: {
         queryOptions: ({ input }: { input: { projectId: string } }) => ({
           queryKey: ["projects", "detail", input.projectId],
@@ -104,6 +124,22 @@ import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[id]/par
 import ProjectPage from "@/app/(protected)/projects/[id]/page";
 import ProjectsPage from "@/app/(protected)/projects/page";
 
+const { ProjectListSection: RealProjectListSection } = await vi.importActual<
+  typeof import("@/features/projects/components/project-list-section")
+>("@/features/projects/components/project-list-section");
+const { ProjectPartnershipSection: RealProjectPartnershipSection } =
+  await vi.importActual<
+    typeof import("@/features/projects/components/project-partnership-section")
+  >("@/features/projects/components/project-partnership-section");
+const { PartnershipParticipantsSection: RealPartnershipParticipantsSection } =
+  await vi.importActual<
+    typeof import("@/features/projects/components/partnership-participants-section")
+  >("@/features/projects/components/partnership-participants-section");
+const { ProjectWorkspaceSection: RealProjectWorkspaceSection } =
+  await vi.importActual<
+    typeof import("@/features/projects/components/project-workspace-section")
+  >("@/features/projects/components/project-workspace-section");
+
 describe("Cost Tracker Project data routes", () => {
   it("hides direct assignment for users without the create permission", async () => {
     mocks.hasCostTrackerPermissions.mockResolvedValueOnce(false);
@@ -119,8 +155,34 @@ describe("Cost Tracker Project data routes", () => {
     mocks.availableScopes.mockResolvedValue({ hosted: true, partner: true });
   });
 
-  it("defaults to Hosted and prefetches only the selected list", async () => {
+  it("renders the page shell without awaiting section prefetches", async () => {
     render(await ProjectsPage());
+
+    expect(screen.getByRole("heading", { name: "Projects" })).toBeTruthy();
+    expect(screen.getByText("Project list section")).toBeTruthy();
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
+
+  it("keeps the other Project page shells outside their async sections", async () => {
+    render(await PartnerOrganizationsPage());
+    render(
+      await PartnershipParticipantsPage({
+        params: Promise.resolve({ id: "partnership-1" }),
+      }),
+    );
+    render(
+      await ProjectPage({
+        params: Promise.resolve({ id: "project-1" }),
+      }),
+    );
+
+    expect(screen.getByText("Partnership participants section")).toBeTruthy();
+    expect(screen.getByText("Project workspace section")).toBeTruthy();
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
+
+  it("defaults to Hosted and prefetches only the selected list", async () => {
+    render(await RealProjectListSection({ searchParams: Promise.resolve({}) }));
 
     expect(mocks.availableScopes).toHaveBeenCalledOnce();
     expect(mocks.getListOptions).toHaveBeenCalledWith(
@@ -139,7 +201,7 @@ describe("Cost Tracker Project data routes", () => {
 
   it("uses Partner when requested and available", async () => {
     render(
-      await ProjectsPage({
+      await RealProjectListSection({
         searchParams: Promise.resolve({ scope: "partner", window: "open" }),
       }),
     );
@@ -154,7 +216,7 @@ describe("Cost Tracker Project data routes", () => {
   it("falls back to Partner when no Hosted Projects are available", async () => {
     mocks.availableScopes.mockResolvedValue({ hosted: false, partner: true });
 
-    render(await ProjectsPage());
+    render(await RealProjectListSection({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByText("Project list")).toBeTruthy();
   });
@@ -162,18 +224,33 @@ describe("Cost Tracker Project data routes", () => {
   it("does not prefetch an list when no Project scope is available", async () => {
     mocks.availableScopes.mockResolvedValue({ hosted: false, partner: false });
 
-    render(await ProjectsPage());
+    render(await RealProjectListSection({ searchParams: Promise.resolve({}) }));
 
     expect(mocks.getListOptions).not.toHaveBeenCalled();
     expect(mocks.query).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Project list")).toBeTruthy();
   });
 
+  it("prefetches the assigned-project branch when creation is allowed without a list scope", async () => {
+    mocks.availableScopes.mockResolvedValue({
+      hosted: false,
+      partner: false,
+      canCreate: true,
+    });
+
+    render(await RealProjectListSection({ searchParams: Promise.resolve({}) }));
+
+    expect(mocks.getListOptions).not.toHaveBeenCalled();
+    expect(mocks.query).toHaveBeenNthCalledWith(2, {
+      queryKey: ["projects", "search-hosted"],
+    });
+  });
+
   it("prefetches Hosted Projects without a stale Partner cursor", async () => {
     mocks.availableScopes.mockResolvedValue({ hosted: true, partner: false });
 
     render(
-      await ProjectsPage({
+      await RealProjectListSection({
         searchParams: Promise.resolve({
           cursor: "partner-cursor",
           scope: "partner",
@@ -188,7 +265,7 @@ describe("Cost Tracker Project data routes", () => {
   });
 
   it("prefetches Project Partnership management data", async () => {
-    render(await PartnerOrganizationsPage());
+    render(await RealProjectPartnershipSection({ canAssign: true }));
 
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["partnerships", "list"],
@@ -198,7 +275,7 @@ describe("Cost Tracker Project data routes", () => {
 
   it("prefetches only the requested Partnership's server-authorized list", async () => {
     render(
-      await PartnershipParticipantsPage({
+      await RealPartnershipParticipantsSection({
         params: Promise.resolve({ id: "own-partnership" }),
       }),
     );
@@ -210,7 +287,7 @@ describe("Cost Tracker Project data routes", () => {
 
   it("keeps Project authorization independent from the return destination", async () => {
     render(
-      await ProjectPage({
+      await RealProjectWorkspaceSection({
         params: Promise.resolve({ id: "project-1" }),
         searchParams: Promise.resolve({
           returnTo: "/projects?scope=partner&search=climate&cursor=opaque",

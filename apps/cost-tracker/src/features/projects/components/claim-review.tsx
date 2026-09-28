@@ -1,6 +1,6 @@
 "use client";
 
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -305,18 +305,19 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
   const client = useQueryClient();
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
-  const { data: claim } = useSuspenseQuery(
-    orpcQuery.claims.getDraft.queryOptions(options),
-  );
-  const { data: history } = useSuspenseQuery(
-    orpcQuery.claims.getHistory.queryOptions(options),
-  );
-  const { data: reviewer } = useSuspenseQuery(
-    orpcQuery.claims.reviewerAccess.queryOptions(options),
-  );
-  const { data: details } = useSuspenseQuery(
-    orpcQuery.claims.getReviewDetails.queryOptions(options),
-  );
+  const [claimQuery, historyQuery, reviewerQuery, detailsQuery] =
+    useSuspenseQueries({
+      queries: [
+        orpcQuery.claims.getDraft.queryOptions(options),
+        orpcQuery.claims.getHistory.queryOptions(options),
+        orpcQuery.claims.reviewerAccess.queryOptions(options),
+        orpcQuery.claims.getReviewDetails.queryOptions(options),
+      ],
+    });
+  const claim = claimQuery.data;
+  const history = historyQuery.data;
+  const reviewer = reviewerQuery.data;
+  const details = detailsQuery.data;
   async function decide(action: Decision, data: DecisionInput) {
     switch (action) {
       case "requestCorrection":

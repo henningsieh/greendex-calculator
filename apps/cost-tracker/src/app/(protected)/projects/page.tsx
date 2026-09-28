@@ -1,22 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
-import { ProjectList } from "@/features/projects/components/project-list";
-import {
-  getProjectAvailableScopesQueryOptions,
-  getProjectListQueryOptions,
-} from "@/features/projects/project-list-query-options";
-import {
-  loadProjectListSearchParams,
-  normalizeProjectListState,
-  resolveProjectListState,
-} from "@/features/projects/project-list-query-options";
+import { ProjectListSection } from "@/features/projects/components/project-list-section";
+import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
 import { hasOrganizationMembership } from "@/lib/session";
-import {
-  getQueryClient,
-  HydrateClient,
-  swallowPrefetchError,
-} from "@/lib/tanstack-react-query/hydration";
 
 export const metadata: Metadata = { title: "Projects" };
 
@@ -31,26 +18,6 @@ export default async function ProjectsPage(
 ) {
   if (!(await hasOrganizationMembership())) return null;
 
-  const queryClient = getQueryClient();
-  const [urlState, availableScopes] = await Promise.all([
-    loadProjectListSearchParams(searchParams),
-    queryClient
-      .query(getProjectAvailableScopesQueryOptions())
-      .catch(swallowPrefetchError),
-  ]);
-
-  if (availableScopes) {
-    const resolution = resolveProjectListState(
-      normalizeProjectListState(urlState),
-      availableScopes,
-    );
-    if (resolution.scope) {
-      await queryClient
-        .query(getProjectListQueryOptions(resolution.scope, resolution.state))
-        .catch(swallowPrefetchError);
-    }
-  }
-
   return (
     <div>
       <header className="max-w-3xl">
@@ -63,11 +30,9 @@ export default async function ProjectsPage(
         </p>
       </header>
 
-      <HydrateClient client={queryClient}>
-        <ProjectDataErrorBoundary resource="Projects">
-          <ProjectList />
-        </ProjectDataErrorBoundary>
-      </HydrateClient>
+      <Suspense fallback={<ProjectListSkeleton />}>
+        <ProjectListSection searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }
