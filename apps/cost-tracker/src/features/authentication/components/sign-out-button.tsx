@@ -6,6 +6,8 @@ import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 
+/* eslint-disable shadcn/no-restyle -- SignOutButton owns its prominent square header treatment. */
+
 type ButtonClickEvent = Parameters<
   NonNullable<ComponentProps<typeof Button>["onClick"]>
 >[0];

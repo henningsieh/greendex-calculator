@@ -53,13 +53,12 @@ export function ThemeSettings() {
         </ToggleGroup>
       </FieldSet>
 
-      <Alert className="border-primary/25 bg-primary/10 text-foreground after:bg-primary">
+      <Alert variant="accent">
         <KeyboardIcon aria-hidden="true" className="text-primary" />
         <AlertTitle>Switch from anywhere</AlertTitle>
-        <AlertDescription className="text-foreground/80">
-          Press <Kbd className="bg-primary/15 text-foreground">d</Kbd> anywhere in
-          Cost Tracker to switch between light and dark. The shortcut stays
-          inactive while you are typing.
+        <AlertDescription>
+          Press <Kbd>d</Kbd> anywhere in Cost Tracker to switch between light and
+          dark. The shortcut stays inactive while you are typing.
         </AlertDescription>
       </Alert>
     </div>

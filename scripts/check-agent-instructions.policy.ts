@@ -294,10 +294,10 @@ export const serverClientMarkers = {
 export const turboWildcardEnvTasks = ["build", "start"];
 
 export const designSystemPlugin = "@shadcn/lint";
-export const designSystemComponentOverrides = [
-  "apps/calculator/src/components/ui/**",
-  "apps/cost-tracker/src/components/ui/**",
-  "apps/documentation/src/components/ui/**",
+export const designSystemStrictScope = "apps/cost-tracker/src/**";
+export const designSystemDeferredScopes = [
+  "apps/calculator/src/**",
+  "apps/documentation/src/**",
 ];
 export const lintTaskInputs = [
   "$TURBO_ROOT$/.oxlintrc.json",

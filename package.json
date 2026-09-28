@@ -29,7 +29,7 @@
     "test:e2e:report": "turbo run test:e2e:report --",
     "test:cost-tracker-persistence-seam": "vitest run scripts/check-cost-tracker-persistence-seam.test.ts",
     "test:agent-instruction-policy": "vitest run scripts/check-agent-instructions.policy.test.ts",
-    "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/calculator/src apps/cost-tracker/src apps/documentation/src"
+    "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/cost-tracker/src"
   },
   "dependencies": {
     "dotenv-cli": "catalog:",

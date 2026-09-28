@@ -134,12 +134,12 @@ export function ProjectWorkspace({
           <CardHeader>
             <CardTitle>Schedule</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-3 text-sm">
+          <CardContent className="flex gap-3">
             <CalendarDaysIcon
               aria-hidden="true"
               className="size-5 text-muted-foreground"
             />
-            <span>
+            <span className="text-sm">
               {dateFormatter.format(project.startDate)} –{" "}
               {dateFormatter.format(project.endDate)}
             </span>
@@ -149,12 +149,12 @@ export function ProjectWorkspace({
           <CardHeader>
             <CardTitle>Location</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-3 text-sm">
+          <CardContent className="flex gap-3">
             <MapPinIcon
               aria-hidden="true"
               className="size-5 text-muted-foreground"
             />
-            <span>
+            <span className="text-sm">
               {[project.location, project.country].filter(Boolean).join(", ")}
             </span>
           </CardContent>
@@ -216,20 +216,20 @@ export function ProjectWorkspace({
           <CardHeader>
             <CardTitle>Project Partnership</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <p>
+          <CardContent className="space-y-3">
+            <p className="text-sm">
               <span className="text-muted-foreground">Claim readiness:</span>{" "}
               <ClaimReadiness status={project.partnership.claimStatus} />
             </p>
-            <p>
+            <p className="text-sm">
               <span className="text-muted-foreground">Hosting Organization:</span>{" "}
               {project.hostingOrganization.name}
             </p>
-            <p>
+            <p className="text-sm">
               <span className="text-muted-foreground">Assigned:</span>{" "}
               {dateTimeFormatter.format(project.partnership.assignedAt)}
             </p>
-            <p>
+            <p className="text-sm">
               <span className="text-muted-foreground">Assignment updated:</span>{" "}
               {dateTimeFormatter.format(project.partnership.updatedAt)}
             </p>
