@@ -54,7 +54,7 @@ export function AppNavigation({
   const pathname = usePathname();
   // Presentation-only: the Organization page and its procedures gate access.
   const navigationItems = showOrganization
-    ? [...baseNavigationItems, organizationNavigationItem]
+    ? [organizationNavigationItem, ...baseNavigationItems]
     : baseNavigationItems;
 
   return (
