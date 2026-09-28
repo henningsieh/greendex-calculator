@@ -23,7 +23,7 @@ Sharing a table does not make an application workflow repository-wide. Keep the 
 - [Task routes](agents/agent-workflows.md)
 - [Integration reference routes](agents/integrations.md)
 - [Domain documentation route](agents/domain.md)
-- [Context map](../CONTEXT-MAP.md) and [shared glossary](../DOMAIN-GLOSSARY.md)
+- [Contexts](../AGENTS.md#contexts) and [shared glossary](../DOMAIN-GLOSSARY.md): [Calculator](../apps/calculator/CONTEXT.md) · [Cost Tracker](../apps/cost-tracker/CONTEXT.md) · [Documentation](../apps/documentation/CONTEXT.md)
 - [Accepted architectural decisions](adr/)
 
 Use the [integration registry](agents/integrations.md) for vendor APIs. Its linked maps preserve Greendex ownership and invariants; official routes provide current library APIs.
@@ -46,6 +46,11 @@ Use the [integration registry](agents/integrations.md) for vendor APIs. Its link
 - [Cost Tracker documentation index](../apps/cost-tracker/docs/README.md)
 - [Cost Tracker Projects](../apps/cost-tracker/docs/projects/README.md)
 - [Cost model and proposed Drizzle schema](../apps/cost-tracker/docs/domain-model.md)
+
+### Documentation
+
+- [Documentation context](../apps/documentation/CONTEXT.md)
+- Published user documentation: `apps/documentation/content/docs/`
 
 ## Repository architecture and operations
 

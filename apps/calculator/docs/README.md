@@ -6,6 +6,7 @@ These documents describe behavior owned only by the Calculator application. Repo
 
 - [Calculator context](../CONTEXT.md)
 - [Shared Greendex language](../../../DOMAIN-GLOSSARY.md)
+- Other contexts: [Cost Tracker](../../../apps/cost-tracker/CONTEXT.md) · [Documentation](../../../apps/documentation/CONTEXT.md) — overview in [AGENTS.md](../../../AGENTS.md#contexts)
 
 ## Features
 

@@ -1,24 +1,14 @@
 /**
  * Guard against agent-instruction drift.
  *
- * Orchestration only: policy data lives in ./agent-instruction-policy.mjs
- * and filesystem/Markdown helpers in ./agent-check-utils.mjs.
+ * Orchestration only: policy data lives in ./check-agent-instructions.policy.ts
+ * and filesystem/Markdown helpers in ./check-agent-instructions.utils.ts.
  */
 import { lstat, readdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  createErrorCollector,
-  findFiles,
-  parseFrontmatter,
-  pathExists,
-  readJson,
-  readUtf8,
-  reportPatternHits,
-  validateMarkdownLinks,
-} from "./agent-check-utils.mjs";
 import {
   agentPointerPattern,
   appAgentFileNames,
@@ -39,7 +29,17 @@ import {
   serverClientMarkers,
   stalePatterns,
   turboWildcardEnvTasks,
-} from "./agent-instruction-policy.mjs";
+} from "./check-agent-instructions.policy";
+import {
+  createErrorCollector,
+  findFiles,
+  parseFrontmatter,
+  pathExists,
+  readJson,
+  readUtf8,
+  reportPatternHits,
+  validateMarkdownLinks,
+} from "./check-agent-instructions.utils";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
@@ -48,9 +48,13 @@ const instructionDirectory = path.join(root, "docs", "agents", "instructions");
 const routerPath = path.join(root, "AGENTS.md");
 const workflowPath = path.join(root, "docs", "agents", "agent-workflows.md");
 const legacyWorkflowPath = path.join(root, "docs", "agent-workflows.md");
-const resolveRoot = (relativePath) => path.join(root, relativePath);
+const resolveRoot = (relativePath: string): string =>
+  path.join(root, relativePath);
 
-const checkInstructionInventory = async () => {
+const checkInstructionInventory = async (): Promise<{
+  instructionFiles: string[];
+  router: string;
+}> => {
   const instructionFiles = (await readdir(instructionDirectory))
     .filter((fileName) => fileName.endsWith(".md"))
     .sort();
@@ -77,7 +81,7 @@ const checkInstructionInventory = async () => {
   return { instructionFiles, router };
 };
 
-const checkRepositoryPaths = async () => {
+const checkRepositoryPaths = async (): Promise<void> => {
   for (const relativePath of requiredRepositoryPaths) {
     assert(
       await pathExists(resolveRoot(relativePath)),
@@ -125,7 +129,7 @@ const checkRepositoryPaths = async () => {
   }
 };
 
-const checkNextJsSetup = async (router) => {
+const checkNextJsSetup = async (router: string): Promise<void> => {
   for (const { configPath, label } of nextConfigsToCheck) {
     const config = await readUtf8(resolveRoot(configPath));
     assert(
@@ -142,11 +146,11 @@ const checkNextJsSetup = async (router) => {
   // Next.js is centralized: one catalog-pinned install, exposed at the repository
   // root so the managed agent-rules block resolves `node_modules/next/dist/docs`.
   // This also keeps the bundled version-matched docs single-sourced.
-  let nextPackageJsonPath;
+  let nextPackageJsonPath: string | undefined;
   try {
     nextPackageJsonPath = require.resolve("next/package.json", {
       paths: [root],
-    });
+    }) as string;
   } catch {
     addError(
       "next is not resolvable from the repository root; the Next.js agent-rules block in AGENTS.md points at node_modules/next/dist/docs, so keep the single catalog install exposed with `publicHoistPattern: [next]` in pnpm-workspace.yaml",
@@ -154,8 +158,8 @@ const checkNextJsSetup = async (router) => {
   }
 
   if (nextPackageJsonPath) {
-    const installedNextVersion = JSON.parse(
-      await readUtf8(nextPackageJsonPath),
+    const installedNextVersion = (
+      JSON.parse(await readUtf8(nextPackageJsonPath)) as { version: string }
     ).version;
     const catalogNextVersion = (
       await readUtf8(resolveRoot("pnpm-workspace.yaml"))
@@ -183,7 +187,9 @@ const checkNextJsSetup = async (router) => {
     );
 
     if (router.includes("<!-- BEGIN:nextjs-agent-rules -->")) {
-      const generator = require("next/dist/server/lib/generate-agent-files");
+      const generator = require("next/dist/server/lib/generate-agent-files") as {
+        hasCurrentAgentRules: (root: string) => boolean;
+      };
       assert(
         generator.hasCurrentAgentRules(root),
         "AGENTS.md: the committed Next.js agent-rules block no longer matches the installed generator; refresh it from next/dist/server/lib/generate-agent-files",
@@ -204,7 +210,10 @@ const checkNextJsSetup = async (router) => {
       continue;
     }
 
-    const manifest = await readJson(manifestPath);
+    const manifest = (await readJson(manifestPath)) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
     const declaredNext =
       manifest.dependencies?.next ?? manifest.devDependencies?.next;
     assert(
@@ -224,7 +233,9 @@ const checkNextJsSetup = async (router) => {
   }
 };
 
-const checkScopedInstructions = async (instructionFiles) => {
+const checkScopedInstructions = async (
+  instructionFiles: string[],
+): Promise<string[]> => {
   const scannedFiles = [routerPath, workflowPath];
   for (const fileName of instructionFiles) {
     const filePath = path.join(instructionDirectory, fileName);
@@ -261,7 +272,9 @@ const checkScopedInstructions = async (instructionFiles) => {
   return scannedFiles;
 };
 
-const checkDocumentationRoutes = async (scannedFiles) => {
+const checkDocumentationRoutes = async (
+  scannedFiles: string[],
+): Promise<void> => {
   const integrationRegistry = await readUtf8(
     resolveRoot(path.join("docs", "agents", "integrations.md")),
   );
@@ -302,8 +315,10 @@ const checkDocumentationRoutes = async (scannedFiles) => {
   }
 };
 
-const checkArchitectureInvariants = async () => {
-  const skillLock = await readJson(resolveRoot("skills-lock.json"));
+const checkArchitectureInvariants = async (): Promise<void> => {
+  const skillLock = (await readJson(resolveRoot("skills-lock.json"))) as {
+    skills?: Record<string, { source?: string }>;
+  };
   for (const [skillName, source] of Object.entries(officialSkillSources)) {
     assert(
       skillLock.skills?.[skillName]?.source === source,
@@ -327,7 +342,9 @@ const checkArchitectureInvariants = async () => {
     "calculator locale layout no longer imports the server oRPC client",
   );
 
-  const turboConfig = await readJson(resolveRoot("turbo.json"));
+  const turboConfig = (await readJson(resolveRoot("turbo.json"))) as {
+    tasks?: Record<string, { env?: string[] }>;
+  };
   for (const taskName of turboWildcardEnvTasks) {
     const environment = turboConfig.tasks?.[taskName]?.env;
     assert(
@@ -337,20 +354,24 @@ const checkArchitectureInvariants = async () => {
   }
 };
 
-const checkDesignSystemLint = async () => {
+const checkDesignSystemLint = async (): Promise<void> => {
   // The design-system lint is a single root-level Oxlint JS plugin: the root config
   // registers it, the root manifest owns the version, and the lint task hashes both
   // so cached results cannot outlive a plugin or rule change.
-  const lintConfig = await readJson(resolveRoot(".oxlintrc.json"));
+  const lintConfig = (await readJson(resolveRoot(".oxlintrc.json"))) as {
+    jsPlugins?: string[];
+    rules?: Record<string, unknown>;
+    overrides?: { files?: string[]; rules?: Record<string, string> }[];
+  };
   assert(
     (lintConfig.jsPlugins ?? []).includes(designSystemPlugin),
     `.oxlintrc.json: register ${designSystemPlugin} in jsPlugins`,
   );
 
   const restyleRule = lintConfig.rules?.["shadcn/no-restyle"];
-  const [restyleSeverity, restyleOptions] = Array.isArray(restyleRule)
-    ? restyleRule
-    : [restyleRule];
+  const [restyleSeverity, restyleOptions] = (
+    Array.isArray(restyleRule) ? restyleRule : [restyleRule]
+  ) as [unknown, { allow?: unknown } | undefined];
   assert(
     restyleSeverity === "error",
     `.oxlintrc.json: shadcn/no-restyle must be "error" once its findings are resolved (found ${JSON.stringify(restyleSeverity)})`,
@@ -376,7 +397,10 @@ const checkDesignSystemLint = async () => {
     }
   }
 
-  const rootManifest = await readJson(resolveRoot("package.json"));
+  const rootManifest = (await readJson(resolveRoot("package.json"))) as {
+    devDependencies?: Record<string, string>;
+    scripts?: Record<string, string>;
+  };
   assert(
     rootManifest.devDependencies?.[designSystemPlugin],
     `package.json: declare ${designSystemPlugin} as a root devDependency so one version serves the workspace`,
@@ -386,7 +410,9 @@ const checkDesignSystemLint = async () => {
     "package.json: keep the focused `lint:design-system` script for the design-system rules",
   );
 
-  const turboConfig = await readJson(resolveRoot("turbo.json"));
+  const turboConfig = (await readJson(resolveRoot("turbo.json"))) as {
+    tasks?: Record<string, { inputs?: string[] }>;
+  };
   for (const lintInput of lintTaskInputs) {
     const inputs = turboConfig.tasks?.lint?.inputs;
     assert(
@@ -396,20 +422,27 @@ const checkDesignSystemLint = async () => {
   }
 };
 
-const { instructionFiles, router } = await checkInstructionInventory();
-await checkRepositoryPaths();
-await checkNextJsSetup(router);
-const scannedFiles = await checkScopedInstructions(instructionFiles);
-await checkDocumentationRoutes(scannedFiles);
-await checkArchitectureInvariants();
-await checkDesignSystemLint();
+const main = async (): Promise<void> => {
+  const { instructionFiles, router } = await checkInstructionInventory();
+  await checkRepositoryPaths();
+  await checkNextJsSetup(router);
+  const scannedFiles = await checkScopedInstructions(instructionFiles);
+  await checkDocumentationRoutes(scannedFiles);
+  await checkArchitectureInvariants();
+  await checkDesignSystemLint();
 
-if (errors.length > 0) {
-  console.error("Agent instruction drift detected:\n");
-  for (const error of errors) console.error(`- ${error}`);
+  if (errors.length > 0) {
+    console.error("Agent instruction drift detected:\n");
+    for (const error of errors) console.error(`- ${error}`);
+    process.exitCode = 1;
+  } else {
+    console.log(
+      `Agent instructions are synchronized (${instructionFiles.length} scoped files checked).`,
+    );
+  }
+};
+
+main().catch((error: unknown) => {
+  console.error(error);
   process.exitCode = 1;
-} else {
-  console.log(
-    `Agent instructions are synchronized (${instructionFiles.length} scoped files checked).`,
-  );
-}
+});

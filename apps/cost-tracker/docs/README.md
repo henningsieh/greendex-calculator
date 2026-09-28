@@ -5,6 +5,7 @@ These documents describe behavior owned by the Cost Tracker application.
 ## Read first
 
 - [Cost Tracking context](../CONTEXT.md)
+- Other contexts: [Calculator](../../../apps/calculator/CONTEXT.md) · [Documentation](../../../apps/documentation/CONTEXT.md) — overview in [AGENTS.md](../../../AGENTS.md#contexts)
 - [Cost Tracker architecture](architecture.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
 - [Architecture review and migration plan](architecture-review-and-migration-plan.md)

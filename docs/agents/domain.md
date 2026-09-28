@@ -4,11 +4,12 @@ Use this route before changing domain language, relationships, business rules, o
 
 ## Read in order
 
-1. [`CONTEXT-MAP.md`](../../CONTEXT-MAP.md) to identify the owning context and its relationships.
+1. [Contexts](../../AGENTS.md#contexts) to identify the owning context and its relationships.
 2. [`DOMAIN-GLOSSARY.md`](../../DOMAIN-GLOSSARY.md) for language shared by every application.
 3. The owning context:
    - [Calculator](../../apps/calculator/CONTEXT.md)
    - [Cost Tracker](../../apps/cost-tracker/CONTEXT.md)
+   - [Documentation](../../apps/documentation/CONTEXT.md)
 4. Accepted records in [`docs/adr/`](../adr/) that concern the change.
 5. The owning application's documentation index.
 
@@ -18,14 +19,16 @@ Proceed silently when a lazily created context or ADR directory does not yet exi
 
 ```text
 /
-├── CONTEXT-MAP.md                    ← context navigation and relationships
+├── AGENTS.md#contexts                 ← context navigation and relationships
 ├── DOMAIN-GLOSSARY.md                ← shared canonical language
 ├── docs/adr/                         ← cross-context architectural decisions
 ├── docs/projects/                    ← shared Project model and permissions
 ├── apps/calculator/CONTEXT.md        ← carbon-footprint language
 ├── apps/calculator/docs/             ← Calculator behavior
 ├── apps/cost-tracker/CONTEXT.md      ← cost-tracking language
-└── apps/cost-tracker/docs/           ← Cost Tracker behavior
+├── apps/cost-tracker/docs/           ← Cost Tracker behavior
+├── apps/documentation/CONTEXT.md     ← publishing language
+└── apps/documentation/content/docs/  ← published user documentation
 ```
 
 Root `docs/` contains repository-wide architecture, operations, decisions, and agent routes. App-specific flows belong under the owning application's `docs/` directory. Package-specific persistence or integration details belong with the owning package when introduced.

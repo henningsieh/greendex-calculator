@@ -1,12 +1,20 @@
 /**
  * Generic filesystem and Markdown helpers for the agent-instruction checks.
- * No repository policy lives here; see ./agent-instruction-policy.mjs.
+ * No repository policy lives here; see ./check-agent-instructions.policy.ts.
  */
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
-export const createErrorCollector = () => {
-  const errors = [];
+import type { AgentGuidancePattern } from "./check-agent-instructions.policy";
+
+type ErrorReporter = (message: string) => void;
+
+export const createErrorCollector = (): {
+  errors: string[];
+  addError: ErrorReporter;
+  assert: (condition: unknown, message: string) => void;
+} => {
+  const errors: string[] = [];
   return {
     errors,
     addError: (message) => errors.push(message),
@@ -16,11 +24,13 @@ export const createErrorCollector = () => {
   };
 };
 
-export const readUtf8 = async (filePath) => readFile(filePath, "utf8");
+export const readUtf8 = async (filePath: string): Promise<string> =>
+  readFile(filePath, "utf8");
 
-export const readJson = async (filePath) => JSON.parse(await readUtf8(filePath));
+export const readJson = async (filePath: string): Promise<unknown> =>
+  JSON.parse(await readUtf8(filePath));
 
-export const pathExists = async (targetPath) => {
+export const pathExists = async (targetPath: string): Promise<boolean> => {
   try {
     await stat(targetPath);
     return true;
@@ -29,10 +39,10 @@ export const pathExists = async (targetPath) => {
   }
 };
 
-export const findFiles = async (directoryPath) => {
+export const findFiles = async (directoryPath: string): Promise<string[]> => {
   if (!(await pathExists(directoryPath))) return [];
 
-  const files = [];
+  const files: string[] = [];
   for (const entry of await readdir(directoryPath, { withFileTypes: true })) {
     const entryPath = path.join(directoryPath, entry.name);
     if (entry.isDirectory()) files.push(...(await findFiles(entryPath)));
@@ -41,14 +51,18 @@ export const findFiles = async (directoryPath) => {
   return files;
 };
 
-export const parseFrontmatter = (content, fileName, addError) => {
+export const parseFrontmatter = (
+  content: string,
+  fileName: string,
+  addError: ErrorReporter,
+): Record<string, string> => {
   const match = content.match(/^---\n([\s\S]*?)\n---/u);
   if (!match) {
     addError(`${fileName}: missing YAML frontmatter`);
     return {};
   }
 
-  const values = {};
+  const values: Record<string, string> = {};
   for (const line of match[1].split("\n")) {
     const separator = line.indexOf(":");
     if (separator === -1) continue;
@@ -62,7 +76,12 @@ export const parseFrontmatter = (content, fileName, addError) => {
 };
 
 /** Assert that every `{ pattern, message }` hit in content becomes an error. */
-export const reportPatternHits = (content, patterns, relativePath, addError) => {
+export const reportPatternHits = (
+  content: string,
+  patterns: readonly AgentGuidancePattern[],
+  relativePath: string,
+  addError: ErrorReporter,
+): void => {
   for (const { pattern, message } of patterns) {
     pattern.lastIndex = 0;
     if (pattern.test(content)) addError(`${relativePath}: ${message}`);
@@ -70,12 +89,12 @@ export const reportPatternHits = (content, patterns, relativePath, addError) => 
 };
 
 export const validateMarkdownLinks = async (
-  filePath,
-  content,
-  root,
-  addError,
-  baseDirectory = path.dirname(filePath),
-) => {
+  filePath: string,
+  content: string,
+  root: string,
+  addError: ErrorReporter,
+  baseDirectory: string = path.dirname(filePath),
+): Promise<void> => {
   const linkPattern = /\[[^\]]*\]\(([^)]+)\)/gu;
   for (const match of content.matchAll(linkPattern)) {
     const rawTarget = match[1].trim().split(/\s+"/u)[0];
@@ -88,7 +107,7 @@ export const validateMarkdownLinks = async (
       continue;
     }
 
-    let decodedTarget;
+    let decodedTarget: string;
     try {
       decodedTarget = decodeURIComponent(rawTarget.split("#", 1)[0]);
     } catch (error) {

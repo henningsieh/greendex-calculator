@@ -1,6 +1,8 @@
 # Greendex Shared Language
 
-Greendex shares Organization, Project, and participation identities across applications while keeping carbon-footprint calculation and cost tracking as separate contexts.
+Canonical product language shared by every application. App-specific terms live in the owning app context: [Calculator](apps/calculator/CONTEXT.md), [Cost Tracker](apps/cost-tracker/CONTEXT.md), [Documentation](apps/documentation/CONTEXT.md). Context overview: [AGENTS.md](AGENTS.md#contexts); change route: [domain](docs/agents/domain.md).
+
+Greendex shares Organization, Project, and participation identities across applications while keeping carbon-footprint calculation and cost tracking as separate contexts. When a new term conflicts with existing language, resolve the conflict before changing code and update the owning glossary immediately.
 
 ## Language
 

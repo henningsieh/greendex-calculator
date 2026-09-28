@@ -71,3 +71,7 @@ _Avoid_: Ticket (when referring to the cost record), Participant Journey
 **Cost Allocation**:
 The association between one Travel Cost Entry and one covered Project Participation. The Travel Cost Entry selects one allocation method for all of its Cost Allocations.
 _Avoid_: Beneficiary, Claimant
+
+## Read next
+
+Owning behavior: [cost-tracker docs](docs/README.md). Other contexts: [Calculator](../../apps/calculator/CONTEXT.md), [Documentation](../../apps/documentation/CONTEXT.md). Change route: [domain](../../docs/agents/domain.md).

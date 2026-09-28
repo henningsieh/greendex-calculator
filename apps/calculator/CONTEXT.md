@@ -23,3 +23,7 @@ _Avoid_: Project Activity
 **Transport Emission Profile**:
 A configured transport choice and its calculation behavior. Cost Tracker reuses Calculator's Participant profile set (`PARTICIPANT_TRANSPORT_EMISSION_PROFILES`); Calculator's Project Shared Travel profile set remains narrower.
 _Avoid_: Cost category
+
+## Read next
+
+Owning behavior: [calculator docs](docs/README.md). Other contexts: [Cost Tracker](../../apps/cost-tracker/CONTEXT.md), [Documentation](../../apps/documentation/CONTEXT.md). Change route: [domain](../../docs/agents/domain.md).

@@ -1,15 +1,20 @@
 /**
- * Declarative policy for scripts/check-agent-instructions.mjs.
+ * Declarative policy for scripts/check-agent-instructions.ts.
  *
  * This module owns *what* is checked (paths, scopes, routes, patterns) but
  * never touches the filesystem. Filesystem and Markdown helpers live in
- * ./agent-check-utils.mjs; orchestration lives in
- * ./check-agent-instructions.mjs.
+ * ./check-agent-instructions.utils.ts; orchestration lives in
+ * ./check-agent-instructions.ts.
  */
+
+export interface AgentGuidancePattern {
+  pattern: RegExp;
+  message: string;
+}
 
 export const instructionLineBudget = 180;
 
-export const expectedScopes = {
+export const expectedScopes: Record<string, string> = {
   "architecture.md":
     "apps/*/src/**/*.ts,apps/*/src/**/*.tsx,packages/*/src/**/*.ts,packages/*/src/**/*.tsx",
   "better-auth.md":
@@ -100,7 +105,7 @@ export const requiredIntegrationAnchors = [
 
 export const requiredRepositoryPaths = [
   ".node-version",
-  "CONTEXT-MAP.md",
+  "apps/documentation/CONTEXT.md",
   "DOMAIN-GLOSSARY.md",
   "apps/calculator/CONTEXT.md",
   "apps/calculator/docs/README.md",
@@ -150,7 +155,7 @@ export const requiredRepositoryPaths = [
 /** Extra files scanned for retired pointers (beyond the router and workflow). */
 export const referenceFiles = [
   "README.md",
-  "CONTEXT-MAP.md",
+  "apps/documentation/CONTEXT.md",
   "DOMAIN-GLOSSARY.md",
   "docs/README.md",
   "docs/projects/README.md",
@@ -188,13 +193,13 @@ export const retiredDocumentationRoots = [
   "tanstack-react-query",
 ].map((directory) => `docs/${directory}`);
 
-export const agentPointerPattern = {
+export const agentPointerPattern: AgentGuidancePattern = {
   pattern:
     /\.github\/(?:copilot-instructions\.md|instructions|prompts)(?:\/|\b)/u,
   message: "replace pointers to retired GitHub Copilot agent guidance",
 };
 
-export const stalePatterns = [
+export const stalePatterns: AgentGuidancePattern[] = [
   { pattern: /\bbunx\b/iu, message: "replace stale bunx guidance with pnpm" },
   { pattern: /\bpnpmx\b/iu, message: "replace the invalid pnpmx command" },
   { pattern: /pnpm\.lockb/iu, message: "use pnpm-lock.yaml" },
@@ -229,7 +234,7 @@ export const stalePatterns = [
 const retiredVendorRoots =
   "(?:better-auth|clickdummy|fumadocs|i18n|next|oxc|orpc|react-email|shadcn|tanstack-react-query)";
 
-export const retiredPointerPatterns = [
+export const retiredPointerPatterns: AgentGuidancePattern[] = [
   {
     // Anchored with (?<![\w/]) so app-owned documentation such as
     // apps/cost-tracker/docs/clickdummy/ never matches: only the retired
@@ -266,7 +271,7 @@ export const appAgentFileNames = [
   "CLAUDE.MD",
 ];
 
-export const nextConfigsToCheck = [
+export const nextConfigsToCheck: { configPath: string; label: string }[] = [
   { configPath: "apps/calculator/next.config.ts", label: "calculator" },
   { configPath: "apps/documentation/next.config.mjs", label: "documentation" },
 ];
@@ -291,6 +296,7 @@ export const turboWildcardEnvTasks = ["build", "start"];
 export const designSystemPlugin = "@shadcn/lint";
 export const designSystemComponentOverrides = [
   "apps/calculator/src/components/ui/**",
+  "apps/cost-tracker/src/components/ui/**",
   "apps/documentation/src/components/ui/**",
 ];
 export const lintTaskInputs = [
@@ -303,14 +309,17 @@ export const lintTaskInputs = [
  * Test a text against a pattern list without leaking RegExp lastIndex state.
  * Exported for focused unit tests of the policy matchers.
  */
-export const findPatternHits = (text, patterns) =>
+export const findPatternHits = (
+  text: string,
+  patterns: AgentGuidancePattern[],
+): AgentGuidancePattern[] =>
   patterns.filter(({ pattern }) => {
     pattern.lastIndex = 0;
     return pattern.test(text);
   });
 
-export const matchesStaleGuidance = (text) =>
+export const matchesStaleGuidance = (text: string): boolean =>
   findPatternHits(text, stalePatterns).length > 0;
 
-export const matchesRetiredVendorPointer = (text) =>
+export const matchesRetiredVendorPointer = (text: string): boolean =>
   findPatternHits(text, retiredPointerPatterns).length > 0;

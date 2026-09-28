@@ -29,6 +29,7 @@ All resources are in project `t40wk84o88wkgcocs80k0wws`, environment `rc04oc8sks
 | Documentation | `nz8kya4kzwatnmbrnxktjkog` | Next.js/Fumadocs on `3001` |
 | Preview PostgreSQL | `gcmwapuqoz45mjvtdwl3vgg4` | Isolated PR-preview data on private port `5432` |
 | Live PostgreSQL | `a004oogs4cwss04cok0wwckk` | Shared development data on private port `5432` |
+| Local-dev PostgreSQL mirror | `m0w8wog0kgocssg4w4gg4wow` | Local dev mirror over public port `5444`; used by `apps/calculator/.env` |
 
 The deleted combined application `wokgg0808c8k44cgk480444c` is not a deployment target. Retrieve credentials from Coolify; keep tokens and environment values out of Git, terminal output, PR text, and chat.
 

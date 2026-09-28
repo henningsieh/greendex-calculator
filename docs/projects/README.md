@@ -7,7 +7,7 @@ Project is a shared Greendex feature used by Calculator and Cost Tracker. This d
 - [Project and Project Participation model](model.md)
 - [Shared permissions and Participant authentication](permissions.md)
 - [Shared domain language](../../DOMAIN-GLOSSARY.md)
-- [Context relationships](../../CONTEXT-MAP.md)
+- [Context relationships](../../AGENTS.md#contexts)
 
 ## Decisions
 

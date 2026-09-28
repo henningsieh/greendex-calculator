@@ -6,7 +6,7 @@ import {
   matchesStaleGuidance,
   retiredPointerPatterns,
   stalePatterns,
-} from "./agent-instruction-policy.mjs";
+} from "./check-agent-instructions.policy";
 
 describe("retired vendor-documentation pointer matcher", () => {
   it("flags pointers to retired root-level docs roots", () => {

@@ -31,7 +31,7 @@ Greendex uses these canonical terms for people in the system:
 - **Project Coordinator** — manages projects and coordinates Participants
 - **Participant** — takes part in a project and submits participation data
 
-These terms are the product language. Start with [`CONTEXT-MAP.md`](CONTEXT-MAP.md), then use the shared wording in [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md) and the owning application's context.
+Canonical product language lives in [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md). Find the owning context in [`AGENTS.md`](AGENTS.md#contexts): [Calculator](apps/calculator/CONTEXT.md), [Cost Tracker](apps/cost-tracker/CONTEXT.md), [Documentation](apps/documentation/CONTEXT.md).
 
 ---
 

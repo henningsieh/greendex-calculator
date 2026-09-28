@@ -25,7 +25,7 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 
 ## Cross-cutting sequence
 
-1. Read `AGENTS.md`, the required map, and the relevant integration route.
+1. Read `AGENTS.md`, the required app `CONTEXT.md`, and the relevant integration route.
 2. Inspect the named source-of-truth files and installed declarations.
 3. Implement the smallest coherent change at the owning layer.
 4. Add regression coverage at the lowest seam that reproduces the behavior.

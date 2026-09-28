@@ -10,7 +10,7 @@ Use `/grill-with-docs` to guide this work step by step. This is a discovery and 
 - Cost Tracker context: [`../../CONTEXT.md`](../../CONTEXT.md)
 - Cost Tracker documentation index: [`../README.md`](../README.md)
 - Repository domain route: [`../../../../docs/agents/domain.md`](../../../../docs/agents/domain.md)
-- Shared context map: [`../../../../CONTEXT-MAP.md`](../../../../CONTEXT-MAP.md)
+- Shared contexts: [`AGENTS.md`](../../../../AGENTS.md#contexts)
 - Shared glossary: [`../../../../DOMAIN-GLOSSARY.md`](../../../../DOMAIN-GLOSSARY.md)
 
 The clickdummy is authoritative evidence for intended actors, domain requirements, business rules, and use cases. Its terminology, information architecture, interaction patterns, visual design, source structure, and implementation choices are hypotheses to evaluate—not specifications to copy. Preserve traceability between every extracted requirement and its clickdummy evidence.

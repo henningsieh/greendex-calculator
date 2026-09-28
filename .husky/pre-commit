@@ -36,6 +36,11 @@ git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
   | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json
 
+# Keep agent-context quality high: the drift guard and its policy tests are
+# build-free reads (node + single-file vitest, ~seconds) and block the commit
+# on drift. Bypass with --no-verify when appropriate.
+pnpm run check:agent-instructions
+
 # Only re-stage files that were selected from the original staged snapshot.
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
