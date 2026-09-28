@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -45,6 +46,7 @@ describe("Cost Tracker RPC authentication transport", () => {
         return rpcResponse;
       },
     );
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
     const { orpc } = await import("@/lib/orpc/orpc");
 
     await expect(
