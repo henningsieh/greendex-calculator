@@ -1,9 +1,8 @@
 import { mkdirSync } from "fs";
 
+import { SEED_USER } from "@greendex/auth/seed-user";
 import en from "@greendex/i18n/locales/en.json" with { type: "json" };
 import { chromium, type FullConfig } from "@playwright/test";
-
-import { SEED_USER } from "../../../scripts/seed-user";
 
 /**
  * Global setup for Playwright tests

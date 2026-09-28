@@ -34,33 +34,39 @@ describe("Cost Tracker RPC authentication transport", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("forwards auth Set-Cookie headers through the real RPC route without exposing Better Auth output", async () => {
-    let rpcResponse: Response | undefined;
-    const { POST } = await import("@/app/api/rpc/[[...rest]]/route");
-    vi.stubGlobal(
-      "fetch",
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const request =
-          input instanceof Request ? input : new Request(input, init);
-        rpcResponse = await POST(request);
-        return rpcResponse;
-      },
-    );
-    const { env } = await import("@/env");
-    vi.stubGlobal("window", {
-      location: { origin: new URL(env.NEXT_PUBLIC_BASE_URL).origin },
-    });
-    const { orpc } = await import("@/lib/orpc/orpc");
+  // Imports the real route/router chain after a module reset, which can exceed
+  // the default 5s timeout when the full suite saturates the machine.
+  it(
+    "forwards auth Set-Cookie headers through the real RPC route without exposing Better Auth output",
+    { timeout: 30_000 },
+    async () => {
+      let rpcResponse: Response | undefined;
+      const { POST } = await import("@/app/api/rpc/[[...rest]]/route");
+      vi.stubGlobal(
+        "fetch",
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const request =
+            input instanceof Request ? input : new Request(input, init);
+          rpcResponse = await POST(request);
+          return rpcResponse;
+        },
+      );
+      const { env } = await import("@/env");
+      vi.stubGlobal("window", {
+        location: { origin: new URL(env.NEXT_PUBLIC_BASE_URL).origin },
+      });
+      const { orpc } = await import("@/lib/orpc/orpc");
 
-    await expect(
-      orpc.authentication.signIn({
-        email: "user@example.org",
-        password: "correct-horse-battery-staple",
-      }),
-    ).resolves.toEqual({ success: true });
+      await expect(
+        orpc.authentication.signIn({
+          email: "user@example.org",
+          password: "correct-horse-battery-staple",
+        }),
+      ).resolves.toEqual({ success: true });
 
-    expect(rpcResponse?.headers.getSetCookie()).toEqual([
-      "session=updated; Path=/; HttpOnly",
-    ]);
-  });
+      expect(rpcResponse?.headers.getSetCookie()).toEqual([
+        "session=updated; Path=/; HttpOnly",
+      ]);
+    },
+  );
 });

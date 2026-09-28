@@ -1,7 +1,5 @@
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { expect, test } from "@playwright/test";
-
-// oxlint-disable-next-line import/no-relative-parent-imports -- Reuses the seeded test identity.
-import { SEED_USER } from "../../../../calculator/scripts/seed-user";
 
 test("sign-in starts only one Projects navigation and hydrates it", async ({
   page,

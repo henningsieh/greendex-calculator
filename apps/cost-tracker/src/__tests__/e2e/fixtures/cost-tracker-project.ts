@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
@@ -8,9 +9,6 @@ import {
   user,
 } from "@greendex/database/schema";
 import { and, eq } from "drizzle-orm";
-
-// oxlint-disable-next-line import/no-relative-parent-imports -- Uses the canonical side-effect-free seed identity for a self-cleaning Cost Tracker fixture.
-import { SEED_USER } from "../../../../../calculator/scripts/seed-user";
 
 const seedOrganizationSlug = "seed-org";
 

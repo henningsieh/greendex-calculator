@@ -1,9 +1,7 @@
 import { mkdir } from "node:fs/promises";
 
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { chromium, expect, type FullConfig } from "@playwright/test";
-
-// oxlint-disable-next-line import/no-relative-parent-imports -- Uses the canonical side-effect-free seed identity.
-import { SEED_USER } from "../../../../calculator/scripts/seed-user";
 
 const storageStatePath = "src/__tests__/e2e/.auth/storage-state.json";
 
