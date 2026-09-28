@@ -1,6 +1,6 @@
 "use client";
 
-import { parseOrganizationRoles } from "@greendex/auth";
+import { parseOrganizationRoles } from "@greendex/auth/permissions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
 

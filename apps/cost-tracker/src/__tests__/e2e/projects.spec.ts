@@ -83,15 +83,35 @@ test.describe("Cost Tracker Project production path", () => {
       page.getByRole("heading", { name: "Partner Organizations" }),
     ).toBeVisible();
 
-    const rpcResponse = page.waitForResponse((response) =>
-      isRPCRequest(response.url()),
-    );
-    await page.getByLabel("Hosted Project ID").fill(fixture.projectId);
+    const assignment = page.locator("section").filter({
+      has: page.getByText("Assign an existing Organization", { exact: true }),
+    });
+    await assignment.getByRole("button", { name: "Hosted Project" }).click();
     await page
-      .getByLabel("Partner Organization ID")
+      .getByRole("combobox", { name: "Search Hosted Project by name or ID" })
+      .fill(fixture.projectId);
+    await page.getByRole("option").filter({ hasText: fixture.projectId }).click();
+
+    await assignment
+      .getByRole("button", { name: "Partner Organization" })
+      .click();
+    await page
+      .getByRole("combobox", {
+        name: "Search Partner Organization by name or ID",
+      })
       .fill(fixture.partnerOrganizationId);
-    await page.getByRole("button", { name: "Assign" }).click();
-    await rpcResponse;
+    await page
+      .getByRole("option")
+      .filter({ hasText: fixture.partnerOrganizationId })
+      .click();
+
+    const rpcResponse = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname ===
+        "/api/rpc/projectPartnerships/assign",
+    );
+    await assignment.getByRole("button", { name: "Assign" }).click();
+    expect((await rpcResponse).ok()).toBe(true);
     // Red if the mutation does not refresh the real Partnership query after a successful assignment.
     await expect(page.getByText(fixture.partnerOrganizationName)).toBeVisible();
 
@@ -99,4 +119,14 @@ test.describe("Cost Tracker Project production path", () => {
     // Red if the intentionally absent pre-release dashboard route is restored.
     expect(dashboardResponse?.status()).toBe(404);
   });
+});
+
+test("renders Organization staff controls without importing server auth into the browser", async ({
+  page,
+}) => {
+  const response = await page.goto("/organization");
+  expect(response?.ok()).toBe(true);
+  await expect(page.getByRole("heading", { name: "Organization" })).toBeVisible();
+  await expect(page.getByText("Members", { exact: true })).toBeVisible();
+  await expect(page.getByText("Invite staff", { exact: true })).toBeVisible();
 });
