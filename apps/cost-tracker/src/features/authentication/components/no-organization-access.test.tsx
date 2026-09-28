@@ -31,6 +31,18 @@ describe("NoOrganizationAccess", () => {
     mocks.replace.mockReset();
   });
 
+  it("navigates once after creating an Organization", async () => {
+    mocks.createOrganization.mockResolvedValue({});
+    const user = userEvent.setup();
+    render(<NoOrganizationAccess autoOpen />);
+
+    await user.type(screen.getByLabelText("Organization name"), "Northwind");
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
   it("clears pending state and gives safe feedback when Organization creation rejects", async () => {
     mocks.createOrganization.mockRejectedValue(new Error("network unavailable"));
     const user = userEvent.setup();

@@ -31,6 +31,17 @@ describe("SignOutButton", () => {
     mocks.toastAdd.mockReset();
   });
 
+  it("navigates once after sign-out", async () => {
+    mocks.signOut.mockResolvedValue({});
+    const user = userEvent.setup();
+    render(<SignOutButton />);
+
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
+
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
   it("keeps the control usable and reports a rejected sign-out request safely", async () => {
     mocks.signOut.mockRejectedValue(new Error("network unavailable"));
     const user = userEvent.setup();

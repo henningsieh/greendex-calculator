@@ -75,6 +75,7 @@ describe("ParticipantJoin", () => {
       }),
     );
     expect(mocks.replace).toHaveBeenCalledWith("/participant");
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
   it("never offers pending legal text as accept-worthy and does not call join", async () => {

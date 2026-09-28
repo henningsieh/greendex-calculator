@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 
-import { chromium, type FullConfig } from "@playwright/test";
+import { chromium, expect, type FullConfig } from "@playwright/test";
 
 // oxlint-disable-next-line import/no-relative-parent-imports -- Uses the canonical side-effect-free seed identity.
 import { SEED_USER } from "../../../../calculator/scripts/seed-user";
@@ -22,6 +22,11 @@ export default async function globalSetup(config: FullConfig) {
     await page.getByLabel("Password").fill(SEED_USER.password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL("**/projects");
+    // waitForURL observes the navigation start, not the streamed page finish.
+    // Closing this browser while its RSC response is still rendering aborts it.
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
 
     await mkdir("src/__tests__/e2e/.auth", { recursive: true });
     await page.context().storageState({ path: storageStatePath });

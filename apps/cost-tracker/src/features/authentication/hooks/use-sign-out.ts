@@ -16,7 +16,6 @@ export function useSignOut() {
     try {
       await orpc.authentication.signOut();
       router.replace("/");
-      router.refresh();
     } catch (error) {
       toast.add({
         description: getORPCRequestErrorMessage(error).text,

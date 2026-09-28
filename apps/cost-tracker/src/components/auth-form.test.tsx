@@ -36,6 +36,19 @@ describe("AuthForm", () => {
     mocks.startGoogleSignIn.mockReset();
   });
 
+  it("navigates once after sign-in without refreshing an in-flight Projects route", async () => {
+    mocks.signIn.mockResolvedValue({});
+    const user = userEvent.setup();
+    render(<AuthForm mode="sign-in" />);
+
+    await user.type(screen.getByLabelText("Email address"), "user@example.org");
+    await user.type(screen.getByLabelText("Password"), "example-password");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
   it("shows the safe rate-limit message returned by its oRPC command", async () => {
     mocks.signIn.mockRejectedValue(new ORPCError("TOO_MANY_REQUESTS"));
     const user = userEvent.setup();

@@ -53,8 +53,8 @@ export function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
+      // replace fetches the destination; a following refresh would start a second RSC request.
       router.replace("/projects");
-      router.refresh();
     } catch (error) {
       setError(getORPCRequestErrorMessage(error).text);
     }

@@ -105,7 +105,6 @@ export function ParticipantJoin({
         agreement: { accepted: true },
       });
       router.replace("/participant");
-      router.refresh();
     } catch (cause) {
       setError(getORPCRequestErrorMessage(cause).text);
     } finally {
