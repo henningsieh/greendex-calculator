@@ -1,12 +1,11 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-
-import { config } from "dotenv";
+import { loadEnvFile } from "node:process";
 
 const envPath = resolve(process.cwd(), ".env");
 
 if (existsSync(envPath)) {
-  config({ path: envPath, quiet: true });
+  loadEnvFile(envPath);
 }
 
 export default function setup() {}

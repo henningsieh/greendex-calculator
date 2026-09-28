@@ -11,6 +11,8 @@
  */
 
 import { Buffer } from "node:buffer";
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
 
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
 import {
@@ -22,7 +24,6 @@ import * as schema from "@greendex/database/schema";
 import { account, member, organization, user } from "@greendex/database/schema";
 import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { createId } from "@paralleldrive/cuid2";
-import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -30,7 +31,7 @@ import { Pool } from "pg";
 import { SEED_USER } from "./seed-user";
 
 // Load environment variables from .env file
-config({ path: ".env" });
+if (existsSync(".env")) loadEnvFile(".env");
 
 // Validate DATABASE_URL is available
 const DATABASE_URL = process.env.DATABASE_URL;

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -67,6 +68,27 @@ describe("environment entrypoints", () => {
     expect(calculatorPackage.scripts["auth:generate"]).toContain(
       "dotenv -e .env --",
     );
+  });
+
+  it("resolves dotenv-cli's dotenv command after installing workspace dependencies", () => {
+    for (const app of ["calculator", "cost-tracker"]) {
+      const cwd = path.resolve(`../../apps/${app}`);
+      const output = execFileSync(
+        "./node_modules/.bin/dotenv",
+        [
+          "-v",
+          "NODE_ENV=development",
+          "-e",
+          ".env",
+          "--",
+          process.execPath,
+          "-e",
+          'process.stdout.write(process.env.NODE_ENV === "development" ? "ready" : "wrong")',
+        ],
+        { cwd, encoding: "utf8" },
+      );
+      expect(output).toBe("ready");
+    }
   });
 
   it("configures every service port from the environment", () => {

@@ -9,8 +9,10 @@ export const auth = createServerAuth({
   appName: "Next WebSocket Server",
   baseURL: env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
-  experimental: {
-    joins: true,
+  advanced: {
+    database: {
+      joins: true,
+    },
   },
   emailSender,
   emailVerification: {

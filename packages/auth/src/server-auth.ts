@@ -50,8 +50,10 @@ export interface ServerAuthConfig {
     "sendEmailVerificationEmail" | "sendPasswordResetEmail"
   >;
   emailVerification?: Omit<EmailVerificationOptions, "sendOnSignUp">;
-  experimental?: {
-    joins?: boolean;
+  advanced?: {
+    database?: {
+      joins?: boolean;
+    };
   };
   organization?: Pick<OrganizationOptions, "sendInvitationEmail">;
   costTrackerRoles?: boolean;
@@ -69,7 +71,7 @@ export function createServerAuth(config: ServerAuthConfig) {
     appName: config.appName,
     baseURL: config.baseURL,
     secret: config.secret,
-    experimental: config.experimental,
+    advanced: config.advanced,
     database: drizzleAdapter(db, { provider: "pg", schema }),
     emailAndPassword: {
       enabled: true,
