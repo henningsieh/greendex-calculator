@@ -41,6 +41,9 @@ import { ClaimReviewQueue } from "@/features/projects/components/claim-review-qu
 describe("Host submitted Claim queue", () => {
   it("does not present failed draft requests as an empty successful queue", async () => {
     mocks.failDraft = true;
+    // React logs errors caught by boundaries; verify only this deliberate
+    // query failure was logged instead of emitting expected stderr in CI.
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       render(
         <QueryClientProvider
@@ -57,7 +60,18 @@ describe("Host submitted Claim queue", () => {
       expect(
         screen.queryByText("No submitted Claims available for review."),
       ).toBeNull();
+      expect(consoleError.mock.calls).toEqual([
+        [
+          "%o\n\n%s\n\n%s\n",
+          expect.objectContaining({ message: "Could not load draft" }),
+          "The above error occurred in the <ClaimReviewQueue> component.",
+          expect.stringContaining(
+            "React will try to recreate this component tree",
+          ),
+        ],
+      ]);
     } finally {
+      consoleError.mockRestore();
       mocks.failDraft = false;
     }
   });

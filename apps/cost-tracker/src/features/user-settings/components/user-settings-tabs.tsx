@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable shadcn/no-restyle -- Settings section tabs intentionally own the line-tab rhythm and trigger treatment. */
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditNameForm } from "@/features/user-settings/components/edit-name-form";

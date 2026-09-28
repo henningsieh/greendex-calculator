@@ -32,14 +32,15 @@ Review generated dependencies and code before retaining them.
 
 ## Design-system lint
 
-`@shadcn/lint` runs as an Oxlint JS plugin. The single source of truth is the repository-root `.oxlintrc.json`, which every workspace Oxlint run discovers, so `pnpm run lint` already includes these rules. `pnpm run lint:design-system` is the focused, check-only pass (no `--fix`) over both app sources.
+`@shadcn/lint` runs as an Oxlint JS plugin. The single source of truth is the repository-root `.oxlintrc.json`, which every workspace Oxlint run discovers, so `pnpm run lint` already includes these rules. `pnpm run lint:design-system` is the focused, check-only pass (no `--fix`) over the enforced app source.
 
 - The plugin is declared as a root devDependency; do not duplicate it per workspace.
-- `shadcn/no-restyle` is `error` with `allow: ["layout"]`; layout classes such as `mt-4` and `w-full` stay allowed.
-- Components own their appearance: the `overrides` entry turns `shadcn/no-restyle` off for `apps/*/src/components/ui/**`.
+- Enforcement follows the upstream [adoption guide](https://github.com/shadcn-ui/lint/blob/main/docs/adoption.md): one rule (`shadcn/no-restyle`), strict where clean, deferred elsewhere. Cost Tracker enforces it as `error` with `allow: ["layout"]` via an `overrides` entry for `apps/cost-tracker/src/**`; layout classes such as `mt-4` and `w-full` stay allowed. Calculator and Documentation keep the rule `off` in their own `overrides` entries until each app's migration resolves its findings, then flip to the same strict shape.
+- Do not reintroduce global `contracts` to silence a deferred app; fix its callers (variants first) and then promote its override.
 - Config paths in `ignorePatterns` and `overrides` resolve against the config file directory, so write them repository-root-relative (`apps/calculator/src/...`), not workspace-relative.
-- The adopted rule is clean, so it is promoted to `error` as recommended by the upstream adoption guide. Keep new exceptions explicit: use a variant for reusable appearances, a contract when callers own part of a component's API, a documented file-level disable only for dense bespoke screens, and `eslint-disable-next-line shadcn/no-restyle -- <reason>` for a single intentional treatment.
-- The focused `lint:design-system` command uses `-D shadcn/no-restyle` and fails on new violations. Do not add a warning cap; the rule is already enforced as an error.
+- The rule is enforced as `error` where the adoption reached clean; keep new exceptions explicit: use a variant for reusable appearances, a contract when callers own part of a component's API, a documented file-level disable only for dense bespoke screens, and `eslint-disable-next-line shadcn/no-restyle -- <reason>` for a single intentional treatment.
+- The cost-tracker scope currently carries four narrow contracts (callers own layout and spacing on `FieldGroup`, `CardHeader`, `CardContent`, and `PopoverContent`) and two documented single-file exceptions (`user-settings-tabs.tsx` owns its bespoke line-tab system; `sign-out-button.tsx` owns its prominent square header treatment). Point new cases at this list first; do not grow it silently.
+- The focused `lint:design-system` command uses `-D shadcn/no-restyle` and fails on new violations. Do not add a warning cap; the rule is already enforced as an error where it applies.
 - Re-run `pnpm run format && pnpm run lint` after changing component class usage, and never edit component internals to silence a caller-side finding.
 - `lint:design-system` pins the rules adopted so far (`shadcn/no-restyle`); extend that command when you adopt another rule.
 

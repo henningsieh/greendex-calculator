@@ -12,8 +12,9 @@ import { fileURLToPath } from "node:url";
 import {
   agentPointerPattern,
   appAgentFileNames,
-  designSystemComponentOverrides,
+  designSystemDeferredScopes,
   designSystemPlugin,
+  designSystemStrictScope,
   expectedScopes,
   instructionLineBudget,
   lintTaskInputs,
@@ -357,11 +358,15 @@ const checkArchitectureInvariants = async (): Promise<void> => {
 const checkDesignSystemLint = async (): Promise<void> => {
   // The design-system lint is a single root-level Oxlint JS plugin: the root config
   // registers it, the root manifest owns the version, and the lint task hashes both
-  // so cached results cannot outlive a plugin or rule change.
+  // so cached results cannot outlive a plugin or rule change. The policy is scoped
+  // per the upstream adoption guide (strict where clean, deferred elsewhere):
+  // cost-tracker enforces shadcn/no-restyle as an error, while calculator and
+  // documentation keep the rule off until their migration. Promote a deferred app
+  // by flipping its override to the strict shape once its findings are resolved.
   const lintConfig = (await readJson(resolveRoot(".oxlintrc.json"))) as {
     jsPlugins?: string[];
     rules?: Record<string, unknown>;
-    overrides?: { files?: string[]; rules?: Record<string, string> }[];
+    overrides?: { files?: string[]; rules?: Record<string, unknown> }[];
   };
   assert(
     (lintConfig.jsPlugins ?? []).includes(designSystemPlugin),
@@ -369,30 +374,43 @@ const checkDesignSystemLint = async (): Promise<void> => {
   );
 
   const restyleRule = lintConfig.rules?.["shadcn/no-restyle"];
+  assert(
+    restyleRule === undefined || restyleRule === "off",
+    `.oxlintrc.json: shadcn/no-restyle must not be enforced globally; scope it per app in overrides (found ${JSON.stringify(restyleRule)})`,
+  );
+
+  const findOverride = (file: string) =>
+    (lintConfig.overrides ?? []).find((entry) => entry.files?.includes(file));
+
+  const strictOverride = findOverride(designSystemStrictScope);
+  assert(
+    strictOverride,
+    `.oxlintrc.json: missing the ${designSystemStrictScope} override that enforces shadcn/no-restyle`,
+  );
   const [restyleSeverity, restyleOptions] = (
-    Array.isArray(restyleRule) ? restyleRule : [restyleRule]
+    Array.isArray(strictOverride?.rules?.["shadcn/no-restyle"])
+      ? strictOverride?.rules?.["shadcn/no-restyle"]
+      : [strictOverride?.rules?.["shadcn/no-restyle"]]
   ) as [unknown, { allow?: unknown } | undefined];
   assert(
     restyleSeverity === "error",
-    `.oxlintrc.json: shadcn/no-restyle must be "error" once its findings are resolved (found ${JSON.stringify(restyleSeverity)})`,
+    `.oxlintrc.json: ${designSystemStrictScope} must enforce shadcn/no-restyle as "error" (found ${JSON.stringify(restyleSeverity)})`,
   );
   assert(
     JSON.stringify(restyleOptions?.allow) === JSON.stringify(["layout"]),
-    `.oxlintrc.json: shadcn/no-restyle must allow layout classes (allow: ["layout"])`,
+    `.oxlintrc.json: ${designSystemStrictScope} must allow layout classes (allow: ["layout"])`,
   );
 
-  for (const componentDirectory of designSystemComponentOverrides) {
-    const override = (lintConfig.overrides ?? []).find((entry) =>
-      entry.files?.includes(componentDirectory),
-    );
+  for (const deferredScope of designSystemDeferredScopes) {
+    const override = findOverride(deferredScope);
     assert(
       override,
-      `.oxlintrc.json: missing the ${componentDirectory} override that lets components style themselves`,
+      `.oxlintrc.json: missing the ${deferredScope} override that defers shadcn/no-restyle`,
     );
     if (override) {
       assert(
         override.rules?.["shadcn/no-restyle"] === "off",
-        `.oxlintrc.json: ${componentDirectory} must turn shadcn/no-restyle off`,
+        `.oxlintrc.json: ${deferredScope} must turn shadcn/no-restyle off until its migration`,
       );
     }
   }
@@ -406,8 +424,10 @@ const checkDesignSystemLint = async (): Promise<void> => {
     `package.json: declare ${designSystemPlugin} as a root devDependency so one version serves the workspace`,
   );
   assert(
-    rootManifest.scripts?.["lint:design-system"],
-    "package.json: keep the focused `lint:design-system` script for the design-system rules",
+    rootManifest.scripts?.["lint:design-system"]?.includes(
+      designSystemStrictScope.replace("/**", ""),
+    ),
+    "package.json: keep the focused `lint:design-system` script for the design-system rules, scoped to the enforced app",
   );
 
   const turboConfig = (await readJson(resolveRoot("turbo.json"))) as {
