@@ -176,12 +176,21 @@ catalogs:
     better-auth:
       specifier: 1.7.3
       version: 1.7.3
+    dotenv-cli:
+      specifier: ^11.0.0
+      version: 11.0.0
     next:
       specifier: 16.3.5
       version: 16.3.5
     next-intl:
       specifier: 4.14.2
       version: 4.14.2
+    oxfmt:
+      specifier: ^0.66.0
+      version: 0.66.0
+    oxlint:
+      specifier: ^1.81.0
+      version: 1.81.0
     react:
       specifier: 19.2.8
       version: 19.2.8
@@ -191,6 +200,9 @@ catalogs:
     react-email:
       specifier: 6.9.3
       version: 6.9.3
+    tsx:
+      specifier: ^4.23.13 ,
+      version: 4.23.13
     typescript:
       specifier: 7.0.2
       version: 7.0.2
@@ -200,7 +212,7 @@ importers:
   .:
     dependencies:
       dotenv-cli:
-        specifier: ^11.0.0
+        specifier: 'catalog:'
         version: 11.0.0
       turbo:
         specifier: ^2.10.13
@@ -222,17 +234,23 @@ importers:
         specifier: ^9.1.7
         version: 9.1.7
       oxfmt:
-        specifier: ^0.66.0
+        specifier: 'catalog:'
         version: 0.66.0
       oxlint:
-        specifier: ^1.81.0
+        specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
       oxlint-tsgolint:
         specifier: ^7.0.2001
         version: 7.0.2001
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.13
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@26.4.1)(@vitest/ui@5.0.0)(jsdom@30.0.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
 
   apps/calculator:
     dependencies:
