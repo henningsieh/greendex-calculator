@@ -46,7 +46,10 @@ describe("Cost Tracker RPC authentication transport", () => {
         return rpcResponse;
       },
     );
-    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+    const { env } = await import("@/env");
+    vi.stubGlobal("window", {
+      location: { origin: new URL(env.NEXT_PUBLIC_BASE_URL).origin },
+    });
     const { orpc } = await import("@/lib/orpc/orpc");
 
     await expect(

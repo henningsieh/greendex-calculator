@@ -1,9 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL =
-  process.env.COST_TRACKER_E2E_BASE_URL ??
-  process.env.NEXT_PUBLIC_BASE_URL ??
-  "http://localhost:3002";
+  process.env.COST_TRACKER_E2E_BASE_URL ?? process.env.NEXT_PUBLIC_BASE_URL;
+
+if (!baseURL) {
+  throw new Error(
+    "Set NEXT_PUBLIC_BASE_URL (or COST_TRACKER_E2E_BASE_URL) before running Cost Tracker E2E tests.",
+  );
+}
 
 export default defineConfig({
   testDir: "./src/__tests__/e2e",
