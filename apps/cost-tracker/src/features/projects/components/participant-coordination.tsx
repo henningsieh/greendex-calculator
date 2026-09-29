@@ -284,7 +284,7 @@ export function ParticipantCoordination({
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
       <Card>
         <CardHeader>
-          <CardTitle>Add this registered User</CardTitle>
+          <CardTitle>Add a registered user to this project</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
