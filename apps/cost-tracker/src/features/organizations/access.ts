@@ -2,8 +2,7 @@ import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
 import { headers } from "next/headers";
 
-import { assignedPartnershipIds } from "@/features/projects/procedures/projects";
-import { auth } from "@/lib/auth";
+import { assignedPartnershipIds } from "@/features/projects/assigned-partnerships.server";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { getSession } from "@/lib/session";
 
@@ -14,6 +13,9 @@ import { getSession } from "@/lib/session";
  */
 export async function canManageOrganization(): Promise<boolean> {
   try {
+    // Lazy so pages that only need the assignment gate below never load the
+    // auth/email/env chain in light rendering or test environments.
+    const { auth } = await import("@/lib/auth");
     const requestHeaders = await headers();
     const [session, organization] = await Promise.all([
       getSession(),

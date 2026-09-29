@@ -5,7 +5,6 @@ import {
   claimsTable,
   member,
   organization,
-  partnerCoordinatorAssignmentsTable as partnerAssignments,
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -27,6 +26,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
+import { assignedPartnershipIds } from "@/features/projects/assigned-partnerships.server";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import {
   decodeProjectListCursor,
@@ -272,30 +272,6 @@ function getPartnerProjectScopeFilters(activeOrganizationId: string): SQL[] {
     eq(projectPartnerOrganizationsTable.organizationId, activeOrganizationId),
     eq(projectsTable.archived, false),
   ];
-}
-
-/**
- * Partnerships in one Organization explicitly assigned to one coordinator.
- * Assignment scope narrows Partner discovery: it never widens it.
- */
-export async function assignedPartnershipIds(
-  userId: string,
-  organizationId: string,
-): Promise<string[]> {
-  const rows = await db
-    .select({ id: projectPartnerOrganizationsTable.id })
-    .from(partnerAssignments)
-    .innerJoin(
-      projectPartnerOrganizationsTable,
-      eq(projectPartnerOrganizationsTable.id, partnerAssignments.partnershipId),
-    )
-    .where(
-      and(
-        eq(partnerAssignments.userId, userId),
-        eq(projectPartnerOrganizationsTable.organizationId, organizationId),
-      ),
-    );
-  return rows.map((row) => row.id);
 }
 
 function parseCursor(
