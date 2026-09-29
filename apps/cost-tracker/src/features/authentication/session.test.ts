@@ -18,7 +18,7 @@ vi.mock("@/lib/auth", () => ({
   auth: { api: { getSession: mocks.getSession } },
 }));
 
-import { requireSession } from "@/lib/session";
+import { invitationReturnTo, requireSession } from "@/lib/session";
 
 describe("Cost Tracker protected session", () => {
   beforeEach(() => {
@@ -30,6 +30,19 @@ describe("Cost Tracker protected session", () => {
 
     await expect(requireSession()).rejects.toThrow("NEXT_REDIRECT:/login");
     expect(mocks.redirect).toHaveBeenCalledWith("/login");
+  });
+
+  it("preserves a safe Organization Invitation destination on sign-in", async () => {
+    mocks.getSession.mockResolvedValue(null);
+    await expect(requireSession("/accept-invitation/invite-1")).rejects.toThrow(
+      "NEXT_REDIRECT:/login",
+    );
+    expect(mocks.redirect).toHaveBeenCalledWith(
+      "/login?next=%2Faccept-invitation%2Finvite-1",
+    );
+    expect(invitationReturnTo("https://elsewhere.example/")).toBeUndefined();
+    expect(invitationReturnTo("//elsewhere.example")).toBeUndefined();
+    expect(invitationReturnTo(["/accept-invitation/one"])).toBeUndefined();
   });
 
   it("returns the authenticated session for the protected shell", async () => {

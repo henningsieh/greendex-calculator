@@ -9,10 +9,24 @@ export const getSession = cache(async () =>
   auth.api.getSession({ headers: await headers() }),
 );
 
-export async function requireSession() {
+export function invitationReturnTo(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (typeof value !== "string") return undefined;
+  return /^\/accept-invitation\/[a-zA-Z0-9_-]{1,128}$/.test(value)
+    ? value
+    : undefined;
+}
+
+export async function requireSession(returnTo?: string) {
   const session = await getSession();
 
-  if (!session) redirect("/login");
+  if (!session)
+    redirect(
+      returnTo && invitationReturnTo(returnTo)
+        ? `/login?next=${encodeURIComponent(returnTo)}`
+        : "/login",
+    );
 
   return session;
 }
