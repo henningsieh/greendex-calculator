@@ -65,6 +65,7 @@ const mocks = vi.hoisted(() => ({
   submit: vi.fn(),
   saveDraft: vi.fn(),
   select: vi.fn(),
+  createAccount: vi.fn(),
   saveJourney: vi.fn(),
   updateJourney: vi.fn(),
   saveCost: vi.fn(),
@@ -94,6 +95,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       claims: {
         saveDraft: mocks.saveDraft,
         selectPayoutAccount: mocks.select,
+        createPayoutAccount: mocks.createAccount,
         submit: mocks.submit,
       },
       journeys: { save: mocks.saveJourney, update: mocks.updateJourney },
@@ -206,8 +208,18 @@ beforeEach(() => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
     return mocks.draft;
   });
-  mocks.select.mockReset().mockImplementation(async () => {
-    mocks.selected = "account";
+  mocks.select.mockReset().mockImplementation(async (input) => {
+    mocks.selected = input.payoutAccountId;
+  });
+  mocks.createAccount.mockReset().mockImplementation(async () => {
+    const account = {
+      id: "new-account",
+      accountHolder: "Example",
+      iban: "DE89370400440532013000",
+      bic: null,
+    };
+    mocks.accounts = [...mocks.accounts, account];
+    return account;
   });
   mocks.saveJourney.mockReset();
   mocks.updateJourney.mockReset().mockImplementation(async (input) => {
@@ -862,6 +874,69 @@ describe("Claim workspace", () => {
     expect(screen.getByRole("button", { name: "Save cost" })).toBeInTheDocument();
   });
 
+  it("creates an account from the empty state, refreshes options, and requires selection then explicit save", async () => {
+    mocks.accounts = [];
+    mocks.createAccount.mockRejectedValueOnce(
+      new ORPCError("BAD_REQUEST", {
+        data: { issues: [{ path: ["iban"], message: "Invalid IBAN checksum." }] },
+      }),
+    );
+    mount();
+    expect(
+      await screen.findByText(/No Payout Accounts available/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Save Claim draft" }),
+    ).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Account holder"), "Example");
+    await userEvent.type(screen.getByLabelText("IBAN"), "DE89370400440532013001");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create Payout Account" }),
+    );
+    expect(await screen.findByText("Invalid IBAN checksum.")).toBeInTheDocument();
+    expect(screen.getByLabelText("IBAN")).toHaveValue("DE89370400440532013001");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    await userEvent.clear(screen.getByLabelText("IBAN"));
+    await userEvent.type(
+      screen.getByLabelText("IBAN"),
+      "DE89 3704 0044 0532 0130 00",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create Payout Account" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("option", { name: /Example/ })).toHaveValue(
+        "new-account",
+      ),
+    );
+    expect(mocks.createAccount).toHaveBeenLastCalledWith({
+      partnershipId: "own",
+      accountHolder: "Example",
+      iban: "DE89 3704 0044 0532 0130 00",
+      bic: "",
+    });
+    expect(
+      screen.getByRole("button", { name: "Save Claim draft" }),
+    ).toBeDisabled();
+    expect(mocks.select).not.toHaveBeenCalled();
+    await userEvent.selectOptions(
+      screen.getByLabelText("Payout Account"),
+      "new-account",
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Save Claim draft" }),
+      ).toBeEnabled(),
+    );
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save Claim draft" }),
+    );
+    await waitFor(() =>
+      expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" }),
+    );
+  });
+
   it("shows account absence and saved journeys read-only", async () => {
     mocks.accounts = [];
     mocks.journeys = [
@@ -876,7 +951,7 @@ describe("Claim workspace", () => {
     ];
     mount();
     expect(
-      await screen.findByText(/Contact your Organization admin/),
+      await screen.findByText(/No Payout Accounts available/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Berlin → Riga/)).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Robin" })).toBeNull();

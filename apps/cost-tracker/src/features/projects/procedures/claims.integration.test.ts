@@ -237,6 +237,84 @@ describe("Claim drafts and Partnership payout selection", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("creates a normalized Partner account without selecting it or creating a Claim", async () => {
+    const created = await client.claims.createPayoutAccount({
+      partnershipId: own,
+      accountHolder: "  Example Partner  ",
+      iban: "de89 3704 0044 0532 0130 00",
+      bic: " deutdeff ",
+    });
+    expect(created).toMatchObject({
+      accountHolder: "Example Partner",
+      iban: "DE89370400440532013000",
+      bic: "DEUTDEFF",
+    });
+    expect(
+      (await client.claims.listPayoutAccounts({ partnershipId: own })).accounts,
+    ).toContainEqual(created);
+    expect(await client.claims.getDraft({ partnershipId: own })).toBeNull();
+    expect(
+      await db.select().from(selections).where(eq(selections.partnershipId, own)),
+    ).toEqual([]);
+    expect(
+      await db.select().from(accounts).where(eq(accounts.id, created.id)),
+    ).toMatchObject([{ organizationId: partner }]);
+    await db.delete(accounts).where(eq(accounts.id, created.id));
+  });
+
+  it("accepts a blank optional BIC as no BIC", async () => {
+    for (const bic of ["", "   "]) {
+      const created = await client.claims.createPayoutAccount({
+        partnershipId: own,
+        accountHolder: "Partner",
+        iban: "DE89370400440532013000",
+        bic,
+      });
+      expect(created.bic).toBeNull();
+      await db.delete(accounts).where(eq(accounts.id, created.id));
+    }
+    const omitted = await client.claims.createPayoutAccount({
+      partnershipId: own,
+      accountHolder: "Partner",
+      iban: "DE89370400440532013000",
+    });
+    expect(omitted.bic).toBeNull();
+    await db.delete(accounts).where(eq(accounts.id, omitted.id));
+  });
+
+  it("rejects malformed payout details without persisting an account", async () => {
+    for (const input of [
+      { accountHolder: "Partner", iban: "DE89370400440532013001" },
+      { accountHolder: "Partner", iban: "DE89--370400440532013000" },
+      { accountHolder: "   ", iban: "DE89370400440532013000" },
+      { accountHolder: "P".repeat(201), iban: "DE89370400440532013000" },
+      { accountHolder: "Partner", iban: "DE89370400440532013000", bic: "BAD" },
+    ]) {
+      await expect(
+        client.claims.createPayoutAccount({ partnershipId: own, ...input }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(
+      (await client.claims.listPayoutAccounts({ partnershipId: own })).accounts,
+    ).toHaveLength(2);
+  });
+
+  it("restricts creation to authorized Partner staff on their Partnership", async () => {
+    const input = { accountHolder: "Partner", iban: "DE89370400440532013000" };
+    await expect(
+      client.claims.createPayoutAccount({ partnershipId: foreign, ...input }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeOrg = host;
+    await expect(
+      client.claims.createPayoutAccount({ partnershipId: own, ...input }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeOrg = partner;
+    actor = participant;
+    await expect(
+      client.claims.createPayoutAccount({ partnershipId: own, ...input }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("reads an empty workspace without creating a Claim", async () => {
     expect(await client.claims.getDraft({ partnershipId: own })).toBeNull();
     expect(
