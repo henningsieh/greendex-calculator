@@ -18,10 +18,11 @@ subagent({
 })
 ```
 
-Prefix each worker's `task` prompt with the exact skill directive for its role:
+Prefix each child's `task` prompt with the exact skill directive for its role — and only that role's directive:
 
 - Implementation worker: `/skill:implement`
 - Worker reviewing previous code changes: `/skill:code-review`
+- Survey/recon scout (read-only inventory, classification, no edits): NO skill prefix — `/skill:implement` on a scout is wrong (scout tools are read-only anyway, but the directive misstates the role and confuses review).
 
 Place the directive at the very start of the prompt, before the ticket command
 and cold-start contract.
@@ -32,7 +33,7 @@ and cold-start contract.
   working: `openai-codex/gpt-6-sol`.
 - Thinking is a `:suffix`, not a field (`:xhigh`, `:high`, `:medium`, …).
   The `thinking` field is ignored on dispatch.
-- Used here: workers `high` (complex) or `medium` (well-scoped), reviewers
+- Used here: scouts `medium` (read-only survey is well-scoped), workers `high` (complex) or `medium` (well-scoped), reviewers
   `xhigh`. Always verify resolution in `status` output (`gpt-6-sol ·
   thinking xhigh`) — never assume; a typo silently falls back.
 - Async is default. Monitor via native notifications; `status` (+
@@ -57,6 +58,8 @@ deferrals), stop/escalate rules.
   your shell); kill by exact PID instead.
 - Subagents default cwd is not the repo — pass `cwd` or work lands elsewhere
   (plus trust prompts outside trusted dirs).
+- Match the skill directive to the role: scout prompts carry no `/skill:`
+  prefix; only worker prompts carry `/skill:implement` (2026-09-29).
 - Close-out rhythm per ticket: progress comment, keep open, merge, close.
   Stopped runs cannot resume; timed-out runs recover via inventory + landing
   worker, never by re-implementing.
