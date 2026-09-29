@@ -176,24 +176,26 @@ export function ProjectPartnershipManager({
                     </p>
                   </div>
                 </div>
-                <Button
-                  disabled={removeMutation.isPending}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Remove ${partnership.organizationName} from ${partnership.projectName}?`,
-                      )
-                    ) {
-                      setFeedback(undefined);
-                      removeMutation.mutate(partnership.id);
-                    }
-                  }}
-                  type="button"
-                  variant="destructive"
-                >
-                  <Trash2Icon aria-hidden="true" />
-                  Remove
-                </Button>
+                {canAssign && (
+                  <Button
+                    disabled={removeMutation.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Remove ${partnership.organizationName} from ${partnership.projectName}?`,
+                        )
+                      ) {
+                        setFeedback(undefined);
+                        removeMutation.mutate(partnership.id);
+                      }
+                    }}
+                    type="button"
+                    variant="destructive"
+                  >
+                    <Trash2Icon aria-hidden="true" />
+                    Remove
+                  </Button>
+                )}
               </li>
             ))}
           </ul>

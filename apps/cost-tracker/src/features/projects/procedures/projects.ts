@@ -278,7 +278,7 @@ function getPartnerProjectScopeFilters(activeOrganizationId: string): SQL[] {
  * Partnerships in one Organization explicitly assigned to one coordinator.
  * Assignment scope narrows Partner discovery: it never widens it.
  */
-async function assignedPartnershipIds(
+export async function assignedPartnershipIds(
   userId: string,
   organizationId: string,
 ): Promise<string[]> {
