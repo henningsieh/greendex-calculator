@@ -284,12 +284,12 @@ export function ParticipantCoordination({
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
       <Card>
         <CardHeader>
-          <CardTitle>Add an onboarded Participant</CardTitle>
+          <CardTitle>Add this registered User</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Only add a User who has completed account, profile, and agreement
-            onboarding. For someone not yet onboarded, send a Participant
+            Only add a registered User who has completed profile and agreement
+            acceptance. For someone not yet onboarded, send a Participant
             Invitation or create a Participant Registration Link below.
           </p>
           <form
@@ -301,9 +301,9 @@ export function ParticipantCoordination({
             }}
           >
             <div className="space-y-2">
-              <span className="text-sm font-medium">Onboarded Participant</span>
+              <span className="text-sm font-medium">Registered User</span>
               <EntityCombobox
-                label="Onboarded Participant"
+                label="Registered User"
                 value={userId}
                 onChange={setUserId}
                 search={searchOnboarded}

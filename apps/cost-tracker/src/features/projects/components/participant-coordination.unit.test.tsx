@@ -112,14 +112,14 @@ async function renderCoordination() {
   );
 }
 
-async function selectOnboardedParticipant(
+async function selectRegisteredUser(
   user: ReturnType<typeof userEvent.setup>,
   id: string,
   name: string,
 ) {
-  await user.click(screen.getByRole("button", { name: "Onboarded Participant" }));
+  await user.click(screen.getByRole("button", { name: "Registered User" }));
   await user.type(
-    screen.getByLabelText("Search Onboarded Participant by name, email or ID"),
+    screen.getByLabelText("Search Registered User by name, email or ID"),
     id,
   );
   await waitFor(() =>
@@ -225,7 +225,7 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await selectOnboardedParticipant(user, "user-existing", "Existing Candidate");
+    await selectRegisteredUser(user, "user-existing", "Existing Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     expect(mocks.create).toHaveBeenCalledWith({
       partnershipId: "own-partnership",
@@ -243,7 +243,7 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await selectOnboardedParticipant(user, "user-existing", "Existing Candidate");
+    await selectRegisteredUser(user, "user-existing", "Existing Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toContain(
@@ -259,7 +259,7 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await selectOnboardedParticipant(user, "host-user", "Host Candidate");
+    await selectRegisteredUser(user, "host-user", "Host Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     const notice = await screen.findByRole("alert");
     expect(notice.textContent).toContain("Access denied");
