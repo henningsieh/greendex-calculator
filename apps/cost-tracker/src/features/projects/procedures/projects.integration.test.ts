@@ -8,6 +8,7 @@ import {
   hostProjectAssignmentsTable as hostAssignments,
   member,
   organization,
+  partnerCoordinatorAssignmentsTable as partnerAssignments,
   projectPartnerOrganizationsTable,
   projectsTable,
   user,
@@ -1134,6 +1135,178 @@ describe("projects procedures", () => {
         projectId: archivedProjectId,
         archived: true,
       });
+    });
+  });
+
+  describe("assigned coordinator Partner discovery", () => {
+    const suffix = randomUUID();
+    const coord = `discovery-coord-${suffix}`;
+    const stranger = `discovery-stranger-${suffix}`;
+    const host = `discovery-host-${suffix}`;
+    const partner = `discovery-partner-${suffix}`;
+    const assignedProject = `discovery-assigned-${suffix}`;
+    const foreignProject = `discovery-foreign-${suffix}`;
+    const assignedPartnership = `discovery-link-own-${suffix}`;
+    const foreignPartnership = `discovery-link-other-${suffix}`;
+    const client = createRouterClient(router, {
+      context: async () => ({ headers: new Headers() }),
+    });
+    const useCoordinator = (userId: string) => {
+      authMocks.getSession.mockResolvedValue({
+        session: {
+          id: randomUUID(),
+          userId,
+          activeOrganizationId: partner,
+        },
+        user: {
+          id: userId,
+          name: "Discovery coordinator",
+          email: `${userId}@example.com`,
+        },
+      });
+    };
+
+    beforeAll(async () => {
+      const now = new Date();
+      await db.insert(user).values(
+        [coord, stranger].map((userId) => ({
+          id: userId,
+          name: "Discovery coordinator",
+          email: `${userId}@example.com`,
+          emailVerified: true,
+        })),
+      );
+      await db.insert(organization).values(
+        [host, partner].map((id) => ({
+          id,
+          name: id,
+          slug: id,
+          createdAt: now,
+        })),
+      );
+      await db.insert(member).values([
+        {
+          id: randomUUID(),
+          organizationId: partner,
+          userId: coord,
+          role: "project-coordinator",
+          createdAt: now,
+        },
+        {
+          id: randomUUID(),
+          organizationId: partner,
+          userId: stranger,
+          role: "project-coordinator",
+          createdAt: now,
+        },
+      ]);
+      await db.insert(projectsTable).values(
+        [assignedProject, foreignProject].map((id) => ({
+          id,
+          name: id,
+          startDate: now,
+          endDate: now,
+          location: "Riga",
+          country: "LV" as const,
+          organizationId: host,
+        })),
+      );
+      await db.insert(projectPartnerOrganizationsTable).values([
+        {
+          id: assignedPartnership,
+          projectId: assignedProject,
+          organizationId: partner,
+        },
+        {
+          id: foreignPartnership,
+          projectId: foreignProject,
+          organizationId: partner,
+        },
+      ]);
+      await db.insert(partnerAssignments).values({
+        partnershipId: assignedPartnership,
+        userId: coord,
+      });
+    });
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Deny every Organization-wide permission so only the assignment
+      // scope can grant access.
+      authMocks.hasPermission.mockResolvedValue({ success: false });
+      useCoordinator(coord);
+    });
+
+    afterAll(async () => {
+      await db
+        .delete(partnerAssignments)
+        .where(
+          inArray(partnerAssignments.partnershipId, [
+            assignedPartnership,
+            foreignPartnership,
+          ]),
+        );
+      await db
+        .delete(projectPartnerOrganizationsTable)
+        .where(
+          inArray(projectPartnerOrganizationsTable.id, [
+            assignedPartnership,
+            foreignPartnership,
+          ]),
+        );
+      await db
+        .delete(projectsTable)
+        .where(inArray(projectsTable.id, [assignedProject, foreignProject]));
+      await db.delete(member).where(inArray(member.userId, [coord, stranger]));
+      await db
+        .delete(organization)
+        .where(inArray(organization.id, [host, partner]));
+      await db.delete(user).where(inArray(user.id, [coord, stranger]));
+    });
+
+    it("announces exactly the assigned Partnership scope", async () => {
+      expect(await client.projects.scopes()).toEqual({
+        hosted: false,
+        partner: true,
+        canCreate: true,
+      });
+    });
+
+    it("lists exactly the assigned Project", async () => {
+      const result = await client.projects.listPartner({ pageSize: 25 });
+      expect(result.scope).toBe("partner");
+      expect(result.rows.map((row) => row.id)).toEqual([assignedProject]);
+      expect(result.metrics.whole.projectCount).toBe(1);
+    });
+
+    it("opens the assigned Project detail", async () => {
+      await expect(
+        client.projects.get({ projectId: assignedProject }),
+      ).resolves.toMatchObject({
+        relationship: "partner",
+        partnership: { id: assignedPartnership },
+      });
+    });
+
+    it("denies the unassigned Project in the same Organization", async () => {
+      await expect(
+        client.projects.get({ projectId: foreignProject }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
+
+    it("hides every scope from coordinators without assignment", async () => {
+      useCoordinator(stranger);
+      expect(await client.projects.scopes()).toEqual({
+        hosted: false,
+        partner: false,
+        canCreate: true,
+      });
+      await expect(
+        client.projects.listPartner({ pageSize: 25 }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        client.projects.get({ projectId: assignedProject }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
   });
 });

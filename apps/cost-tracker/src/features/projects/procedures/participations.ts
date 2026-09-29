@@ -68,6 +68,7 @@ export function createParticipationProcedures(
     .input(scopeInput)
     .output(
       z.object({
+        projectName: z.string(),
         participations: z.array(participation),
         invitations: z.array(
           z.object({
@@ -88,7 +89,7 @@ export function createParticipationProcedures(
         context.session.activeOrganizationId,
         errors,
       );
-      const [rows, invitations, registrationLinks] = await Promise.all([
+      const [rows, invitations, registrationLinks, project] = await Promise.all([
         db
           .select(selected)
           .from(participants)
@@ -111,8 +112,19 @@ export function createParticipationProcedures(
           .select({ id: links.id, enabled: links.enabled })
           .from(links)
           .where(eq(links.partnershipId, input.partnershipId)),
+        db
+          .select({ name: projects.name })
+          .from(projects)
+          .where(eq(projects.id, scope.projectId))
+          .limit(1)
+          .then((found) => found[0]),
       ]);
-      return { participations: rows, invitations, registrationLinks };
+      return {
+        projectName: project?.name ?? "",
+        participations: rows,
+        invitations,
+        registrationLinks,
+      };
     });
 
   const searchOnboarded = authorized

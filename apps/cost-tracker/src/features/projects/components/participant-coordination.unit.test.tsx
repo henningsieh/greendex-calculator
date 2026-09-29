@@ -143,6 +143,7 @@ describe("ParticipantCoordination", () => {
     );
     Element.prototype.scrollIntoView = vi.fn();
     mocks.list.mockReset().mockResolvedValue({
+      projectName: "Own Project",
       participations: [
         {
           id: "person-1",

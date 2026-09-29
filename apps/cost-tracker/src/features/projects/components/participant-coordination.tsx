@@ -281,6 +281,7 @@ export function ParticipantCoordination({
 
   return (
     <section className="space-y-6" aria-label="Project Participations">
+      <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
       <Card>
         <CardHeader>
           <CardTitle>Add an onboarded Participant</CardTitle>
