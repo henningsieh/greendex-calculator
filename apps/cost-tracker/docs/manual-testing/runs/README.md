@@ -1,6 +1,6 @@
 # Manual pair-test run notes
 
-Follow [the journey](../manual-test-journey.md). At the beginning of each run create a new `{key}.md` in this directory and update it **after each observed case**. A run log is a record of what happened, not a new specification. Do not commit logs containing sensitive data. Keep full setup/invitation/registration links, verification messages, passwords and banking details **outside** this directory.
+Follow [the journey(../journey.md). At the beginning of each run create a new `{key}.md` in this directory and update it **after each observed case**. A run log is a record of what happened, not a new specification. Do not commit logs containing sensitive data. Keep full setup/invitation/registration links, verification messages, passwords and banking details **outside** this directory.
 
 Copy this outline into the new run log:
 
