@@ -17,6 +17,48 @@ import {
 import { authorized } from "@/lib/orpc/middleware";
 
 const partnershipInput = z.object({ partnershipId: coordinationId });
+const accountSchema = z.object({
+  id: z.string(),
+  accountHolder: z.string(),
+  iban: z.string(),
+  bic: z.string().nullable(),
+});
+
+const accountHolderSchema = z.string().trim().min(1).max(200);
+const ibanSchema = z
+  .string()
+  .transform((value) => value.replace(/\s/g, "").toUpperCase())
+  .pipe(
+    z
+      .string()
+      .min(15)
+      .max(34)
+      .regex(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/)
+      .refine((iban) => {
+        const rearranged = iban.slice(4) + iban.slice(0, 4);
+        let remainder = 0;
+        for (const character of rearranged) {
+          const digits = /[A-Z]/.test(character)
+            ? String(character.charCodeAt(0) - 55)
+            : character;
+          for (const digit of digits)
+            remainder = (remainder * 10 + Number(digit)) % 97;
+        }
+        return remainder === 1;
+      }, "Invalid IBAN checksum."),
+  );
+const bicSchema = z
+  .string()
+  .trim()
+  .transform((value) => (value === "" ? null : value.toUpperCase()))
+  .pipe(
+    z
+      .string()
+      .regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$/)
+      .nullable(),
+  )
+  .optional()
+  .transform((value) => value ?? null);
 const draftSchema = z.object({
   id: z.string(),
   partnershipId: z.string(),
@@ -134,6 +176,40 @@ export const listPayoutAccounts = authorized
       accounts: available,
       selectedPayoutAccountId: selected[0]?.payoutAccountId ?? null,
     };
+  });
+
+/** Create an Organization-owned account without selecting it or starting a Claim. */
+export const createPayoutAccount = authorized
+  .input(
+    partnershipInput.extend({
+      accountHolder: accountHolderSchema,
+      iban: ibanSchema,
+      bic: bicSchema,
+    }),
+  )
+  .output(accountSchema)
+  .handler(async ({ input, context, errors }) => {
+    const scope = await requirePartnerSide(
+      input.partnershipId,
+      context.user.id,
+      context.session.activeOrganizationId,
+      errors,
+    );
+    const [account] = await db
+      .insert(accounts)
+      .values({
+        organizationId: scope.partnerId,
+        accountHolder: input.accountHolder,
+        iban: input.iban,
+        bic: input.bic,
+      })
+      .returning({
+        id: accounts.id,
+        accountHolder: accounts.accountHolder,
+        iban: accounts.iban,
+        bic: accounts.bic,
+      });
+    return account;
   });
 
 /** Select by reference on the Partnership, without starting a Claim. */

@@ -124,14 +124,38 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     );
 
     const memberHeaders = await signUpVerified("Staff Member", memberEmail);
-    const accepted = await auth.api.acceptInvitation({
-      body: { invitationId: invited.invitationId },
-      headers: memberHeaders,
+    await expect(
+      ownerClient.organizations.listMembers({}),
+    ).resolves.toBeDefined();
+    const wrongClient = createRouterClient(router, {
+      context: async () => ({ headers: ownerHeaders }),
     });
-    expect(accepted.member).toMatchObject({
-      organizationId: created.id,
-      role: "member",
+    await expect(
+      wrongClient.organizations.acceptInvitation({
+        invitationId: invited.invitationId,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const memberClient = createRouterClient(router, {
+      context: async () => ({ headers: memberHeaders }),
     });
+    await expect(
+      memberClient.organizations.acceptInvitation({
+        invitationId: invited.invitationId,
+      }),
+    ).resolves.toEqual({ organizationId: created.id });
+    const [accepted] = await db
+      .select()
+      .from(member)
+      .where(
+        and(
+          eq(member.organizationId, created.id),
+          eq(
+            member.userId,
+            (await auth.api.getSession({ headers: memberHeaders }))!.user.id,
+          ),
+        ),
+      );
+    expect(accepted.role).toBe("member");
 
     const members = await ownerClient.organizations.listMembers({});
     expect(
@@ -159,12 +183,36 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       "Cancelled User",
       cancelledEmail,
     );
+    const cancelledClient = createRouterClient(router, {
+      context: async () => ({ headers: cancelledHeaders }),
+    });
     await expect(
-      auth.api.acceptInvitation({
-        body: { invitationId: cancelled.invitationId },
-        headers: cancelledHeaders,
+      cancelledClient.organizations.acceptInvitation({
+        invitationId: cancelled.invitationId,
       }),
-    ).rejects.toBeTruthy();
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+    const expiredEmail = uniqueEmail("expired");
+    const expiredInvite = await ownerClient.organizations.inviteMember({
+      email: expiredEmail,
+      role: "member",
+    });
+    await db
+      .update(invitation)
+      .set({ expiresAt: new Date(0) })
+      .where(eq(invitation.id, expiredInvite.invitationId));
+    const expiredHeaders = await signUpVerified("Expired User", expiredEmail);
+    const expiredClient = createRouterClient(router, {
+      context: async () => ({ headers: expiredHeaders }),
+    });
+    await expect(
+      expiredClient.organizations.acceptInvitation({
+        invitationId: expiredInvite.invitationId,
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Organization Invitation has expired.",
+    });
 
     const pendingAfter = await ownerClient.organizations.listPendingInvitations(
       {},
@@ -172,6 +220,45 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     expect(pendingAfter.invitations.map((entry) => entry.id)).not.toContain(
       cancelled.invitationId,
     );
+  });
+
+  it("rejects Participant Invitations through the staff acceptance action", async () => {
+    const ownerEmail = uniqueEmail("bypass-owner");
+    const ownerHeaders = await signUpVerified("Bypass Owner", ownerEmail);
+    const created = await auth.api.createOrganization({
+      body: {
+        name: `Bypass Org ${randomUUID()}`,
+        slug: `bypass-${randomUUID()}`,
+      },
+      headers: ownerHeaders,
+    });
+    createdOrganizationIds.push(created.id);
+    const owner = await auth.api.getSession({ headers: ownerHeaders });
+    const inviteeEmail = uniqueEmail("invitee");
+    const [planted] = await db
+      .insert(invitation)
+      .values({
+        id: randomUUID(),
+        organizationId: created.id,
+        email: inviteeEmail,
+        role: "participant",
+        status: "pending",
+        expiresAt: new Date(Date.now() + 3600_000),
+        inviterId: owner!.user.id,
+      })
+      .returning({ id: invitation.id });
+    const inviteeHeaders = await signUpVerified("Invitee", inviteeEmail);
+    const inviteeClient = createRouterClient(router, {
+      context: async () => ({ headers: inviteeHeaders }),
+    });
+    await expect(
+      inviteeClient.organizations.acceptInvitation({
+        invitationId: planted.id,
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "This invitation is not an Organization staff invitation.",
+    });
   });
 
   it("lets an admin invite members but never owners", async () => {

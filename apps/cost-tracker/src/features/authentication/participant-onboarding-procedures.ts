@@ -24,7 +24,7 @@ export async function deliverParticipantInvitation(
   return deliverInvitation(email, invitationId);
 }
 
-// Tests can supply a published fixture; the deployed value is deliberately unpublishable.
+// Tests can supply fixtures; the deployed development draft is published
 export function createParticipantOnboardingProcedures(
   currentAgreement: () => ParticipantAgreementVersion = () =>
     CURRENT_PARTICIPANT_AGREEMENT_VERSION,

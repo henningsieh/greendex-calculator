@@ -5,6 +5,7 @@ import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { auth } from "@/lib/auth";
 import { base } from "@/lib/orpc/context";
 import { authorized } from "@/lib/orpc/middleware";
+import { invitationReturnTo } from "@/lib/session";
 
 const SignInInputSchema = z.object({
   email: z.email(),
@@ -20,6 +21,9 @@ const CreateOrganizationInputSchema = z.object({
   slug: z.string().trim().min(2).max(120),
 });
 
+const GoogleSignInInputSchema = z.object({
+  returnTo: z.string().optional(),
+});
 const SuccessSchema = z.object({ success: z.literal(true) });
 const SocialSignInSchema = z.object({ url: z.url() });
 const BetterAuthSocialResponseSchema = z.object({
@@ -107,12 +111,16 @@ export const signUp = base
   });
 
 export const startGoogleSignIn = base
+  .input(GoogleSignInInputSchema.optional())
   .output(SocialSignInSchema)
-  .handler(async ({ context, errors }) => {
+  .handler(async ({ context, errors, input }) => {
+    // Only the validated invitation route survives OAuth; anything else
+    // falls back to the Project list so callbackURL can never be abused.
+    const callbackURL = invitationReturnTo(input?.returnTo) ?? "/projects";
     const response = await callBetterAuth(context, errors, () =>
       auth.api.signInSocial({
         asResponse: true,
-        body: { callbackURL: "/projects", provider: "google" },
+        body: { callbackURL, provider: "google" },
         headers: context.headers,
       }),
     );

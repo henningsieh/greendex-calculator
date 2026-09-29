@@ -23,9 +23,10 @@ import { cn } from "@/lib/utils";
 
 type AuthFormProps = {
   mode: "sign-in" | "sign-up";
+  returnTo?: string;
 };
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({ mode, returnTo }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
@@ -54,7 +55,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
 
       // replace fetches the destination; a following refresh would start a second RSC request.
-      router.replace("/projects");
+      router.replace(returnTo ?? "/projects");
     } catch (error) {
       setError(getORPCRequestErrorMessage(error).text);
     }
@@ -64,7 +65,9 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError(undefined);
 
     try {
-      const { url } = await orpc.authentication.startGoogleSignIn();
+      const { url } = await orpc.authentication.startGoogleSignIn(
+        returnTo ? { returnTo } : {},
+      );
       window.location.assign(url);
     } catch (error) {
       setError(getORPCRequestErrorMessage(error).text);
@@ -149,7 +152,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         {isSignIn ? "New to Cost Tracker?" : "Already have an account?"}{" "}
         <Link
           className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
-          href={isSignIn ? "/register" : "/login"}
+          href={`${isSignIn ? "/register" : "/login"}${returnTo ? `?next=${encodeURIComponent(returnTo)}` : ""}`}
         >
           {isSignIn ? "Create an account" : "Sign in"}
         </Link>

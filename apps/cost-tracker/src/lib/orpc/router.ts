@@ -10,12 +10,14 @@ import {
   updateUser,
 } from "@/features/authentication/procedures";
 import {
+  acceptInvitation as acceptOrganizationInvitation,
   cancelInvitation as cancelOrganizationInvitation,
   inviteMember as inviteOrganizationMember,
   listMembers as listOrganizationMembers,
   listPendingInvitations as listOrganizationInvitations,
 } from "@/features/organizations/procedures/staff-invites";
 import {
+  createPayoutAccount,
   getDraft,
   listPayoutAccounts,
   saveDraft,
@@ -91,6 +93,7 @@ export const router = {
   duplicateReviews,
   claims: {
     getDraft,
+    createPayoutAccount,
     listPayoutAccounts,
     saveDraft,
     selectPayoutAccount,
@@ -115,6 +118,7 @@ export const router = {
     listMembers: listOrganizationMembers,
     listPendingInvitations: listOrganizationInvitations,
     inviteMember: inviteOrganizationMember,
+    acceptInvitation: acceptOrganizationInvitation,
     cancelInvitation: cancelOrganizationInvitation,
   },
   projects: {

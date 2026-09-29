@@ -20,6 +20,17 @@ type Participation =
   Outputs["participations"]["listPartnership"]["participations"][number];
 type Cost = Outputs["costs"]["list"]["entries"][number];
 type FieldErrors = Record<string, string>;
+// The router registration is supplied separately; keep this call typed until it is installed.
+const createPayoutAccount = (
+  orpc.claims as typeof orpc.claims & {
+    createPayoutAccount: (input: {
+      partnershipId: string;
+      accountHolder: string;
+      iban: string;
+      bic?: string;
+    }) => Promise<{ id: string }>;
+  }
+).createPayoutAccount;
 
 function errorsFor(error: unknown, root: string): FieldErrors {
   const errors: FieldErrors = {};
@@ -862,6 +873,10 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const history = historyQuery.data;
   const [feedback, setFeedback] = useState("");
   const [pending, setPending] = useState(false);
+  const [accountHolder, setAccountHolder] = useState("");
+  const [iban, setIban] = useState("");
+  const [bic, setBic] = useState("");
+  const [accountErrors, setAccountErrors] = useState<FieldErrors>({});
   const editable =
     !draft ||
     draft.status === "editable" ||
@@ -880,6 +895,26 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
         client.invalidateQueries({ queryKey: query.queryKey({ input }) }),
       ),
     );
+  }
+  async function addAccount(event: React.SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    setFeedback("");
+    setAccountErrors({});
+    try {
+      await createPayoutAccount({ partnershipId, accountHolder, iban, bic });
+      await client.invalidateQueries({
+        queryKey: orpcQuery.claims.listPayoutAccounts.queryKey({ input }),
+      });
+      setAccountHolder("");
+      setIban("");
+      setBic("");
+      setFeedback("Payout Account created. Select it to use it for this Claim.");
+    } catch (error) {
+      setAccountErrors(errorsFor(error, "account"));
+    } finally {
+      setPending(false);
+    }
   }
   async function selectAccount(id: string) {
     if (!id) return;
@@ -944,10 +979,46 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                 ))}
               </select>
             ) : (
-              <p>
-                No Payout Accounts available. Contact your Organization admin to
-                set one up.
-              </p>
+              <p>No Payout Accounts available. Create one below.</p>
+            )}
+            {editable && (
+              <form className="space-y-4" onSubmit={addAccount} noValidate>
+                <p>Create Payout Account</p>
+                <FieldError message={accountErrors.account} />
+                <div>
+                  <Label htmlFor="account-holder">Account holder</Label>
+                  <Input
+                    id="account-holder"
+                    value={accountHolder}
+                    onChange={(event) => setAccountHolder(event.target.value)}
+                    disabled={pending}
+                  />
+                  <FieldError message={accountErrors.accountHolder} />
+                </div>
+                <div>
+                  <Label htmlFor="account-iban">IBAN</Label>
+                  <Input
+                    id="account-iban"
+                    value={iban}
+                    onChange={(event) => setIban(event.target.value)}
+                    disabled={pending}
+                  />
+                  <FieldError message={accountErrors.iban} />
+                </div>
+                <div>
+                  <Label htmlFor="account-bic">BIC (optional)</Label>
+                  <Input
+                    id="account-bic"
+                    value={bic}
+                    onChange={(event) => setBic(event.target.value)}
+                    disabled={pending}
+                  />
+                  <FieldError message={accountErrors.bic} />
+                </div>
+                <Button type="submit" disabled={pending}>
+                  Create Payout Account
+                </Button>
+              </form>
             )}
             {payout.selectedPayoutAccountId && (
               <p>
