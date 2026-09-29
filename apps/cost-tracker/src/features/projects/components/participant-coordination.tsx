@@ -11,7 +11,13 @@ import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -326,6 +332,13 @@ export function ParticipantCoordination({
       <Card>
         <CardHeader>
           <CardTitle>Joined Participants</CardTitle>
+          {data.participations.length > 0 && (
+            <CardDescription>
+              {data.participations.length === 1
+                ? `1 Participant in ${data.projectName}`
+                : `${data.participations.length} Participants in ${data.projectName}`}
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           {data.participations.length === 0 ? (

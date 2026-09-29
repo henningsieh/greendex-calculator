@@ -188,6 +188,7 @@ describe("ParticipantCoordination", () => {
     expect(mocks.list).toHaveBeenCalledOnce();
     expect(screen.getByText("Own Person")).toBeTruthy();
     expect(screen.getByText("Joined")).toBeTruthy();
+    expect(screen.getByText("1 Participant in Own Project")).toBeTruthy();
     expect(screen.getByText("pending@example.org")).toBeTruthy();
     expect(screen.getByText("Invitation pending")).toBeTruthy();
     expect(screen.queryByText("Other Partnership Person")).toBeNull();
