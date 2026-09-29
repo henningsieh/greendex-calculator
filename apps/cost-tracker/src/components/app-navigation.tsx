@@ -27,12 +27,13 @@ import { cn } from "@/lib/utils";
 
 const baseNavigationItems = [
   { href: "/projects", icon: FolderKanbanIcon, label: "Projects" },
-  {
-    href: "/partner-organizations",
-    icon: Building2Icon,
-    label: "Partner organizations",
-  },
 ];
+
+const partnerOrganizationsNavigationItem = {
+  href: "/partner-organizations",
+  icon: Building2Icon,
+  label: "Partner organizations",
+};
 
 const organizationNavigationItem = {
   href: "/organization",
@@ -44,18 +45,23 @@ type AppNavigationProps = {
   email: string;
   name: string;
   showOrganization?: boolean;
+  showPartnerOrganizations?: boolean;
 };
 
 export function AppNavigation({
   email,
   name,
   showOrganization = false,
+  showPartnerOrganizations = true,
 }: AppNavigationProps) {
   const pathname = usePathname();
-  // Presentation-only: the Organization page and its procedures gate access.
-  const navigationItems = showOrganization
-    ? [organizationNavigationItem, ...baseNavigationItems]
-    : baseNavigationItems;
+  // Presentation-only: each page and its procedures gate access. The Partner
+  // Organizations tab hides for people who cannot use that page.
+  const navigationItems = [
+    ...(showOrganization ? [organizationNavigationItem] : []),
+    ...baseNavigationItems,
+    ...(showPartnerOrganizations ? [partnerOrganizationsNavigationItem] : []),
+  ];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">

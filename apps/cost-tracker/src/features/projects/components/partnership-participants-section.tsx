@@ -25,7 +25,7 @@ export async function PartnershipParticipantsSection({
 
   return (
     <HydrateClient client={queryClient}>
-      <ProjectDataErrorBoundary resource="Partnership Participants">
+      <ProjectDataErrorBoundary resource="Project Participations">
         <ParticipantCoordination partnershipId={id} />
       </ProjectDataErrorBoundary>
     </HydrateClient>

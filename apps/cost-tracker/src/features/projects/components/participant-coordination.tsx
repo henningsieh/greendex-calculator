@@ -11,7 +11,13 @@ import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -280,15 +286,16 @@ export function ParticipantCoordination({
   });
 
   return (
-    <section className="space-y-6" aria-label="Partnership Participants">
+    <section className="space-y-6" aria-label="Project Participations">
+      <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
       <Card>
         <CardHeader>
-          <CardTitle>Add an onboarded Participant</CardTitle>
+          <CardTitle>Add a registered user to this project</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Only add a User who has completed account, profile, and agreement
-            onboarding. For someone not yet onboarded, send a Participant
+            Only add a registered User who has completed profile and agreement
+            acceptance. For someone not yet onboarded, send a Participant
             Invitation or create a Participant Registration Link below.
           </p>
           <form
@@ -300,9 +307,9 @@ export function ParticipantCoordination({
             }}
           >
             <div className="space-y-2">
-              <span className="text-sm font-medium">Onboarded Participant</span>
+              <span className="text-sm font-medium">Registered User</span>
               <EntityCombobox
-                label="Onboarded Participant"
+                label="Registered User"
                 value={userId}
                 onChange={setUserId}
                 search={searchOnboarded}
@@ -325,6 +332,13 @@ export function ParticipantCoordination({
       <Card>
         <CardHeader>
           <CardTitle>Joined Participants</CardTitle>
+          {data.participations.length > 0 && (
+            <CardDescription>
+              {data.participations.length === 1
+                ? `1 Participant in ${data.projectName}`
+                : `${data.participations.length} Participants in ${data.projectName}`}
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           {data.participations.length === 0 ? (
@@ -356,7 +370,7 @@ export function ParticipantCoordination({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Participant entry points</CardTitle>
+          <CardTitle>Participant Invitations and Registration Links</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <form

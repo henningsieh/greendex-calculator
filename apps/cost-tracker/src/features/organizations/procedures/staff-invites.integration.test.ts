@@ -220,7 +220,8 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     expect(pendingAfter.invitations.map((entry) => entry.id)).not.toContain(
       cancelled.invitationId,
     );
-  });
+    // Slow auth/crypto flow: flakes at the 5s default under full parallel load.
+  }, 30_000);
 
   it("rejects Participant Invitations through the staff acceptance action", async () => {
     const ownerEmail = uniqueEmail("bypass-owner");

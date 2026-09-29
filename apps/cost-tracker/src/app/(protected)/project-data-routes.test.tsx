@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     queryKey: ["projects", scope],
   })),
   hasOrganizationMembership: vi.fn().mockResolvedValue(true),
+  getSession: vi.fn(),
   hasCostTrackerPermissions: vi.fn().mockResolvedValue(true),
   hydrateClient: vi.fn(
     ({ children }: { children: React.ReactNode; client: unknown }) => children,
@@ -107,11 +108,16 @@ vi.mock("@/lib/orpc/orpc", () => ({
 vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
 }));
+vi.mock("server-only", () => ({}));
+vi.mock("@/features/projects/assigned-partnerships.server", () => ({
+  assignedPartnershipIds: vi.fn(async () => []),
+}));
 vi.mock("@/lib/orpc/middleware", () => ({
   hasCostTrackerPermissions: mocks.hasCostTrackerPermissions,
 }));
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: mocks.hasOrganizationMembership,
+  getSession: mocks.getSession,
 }));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => queryClient,
@@ -141,14 +147,34 @@ const { ProjectWorkspaceSection: RealProjectWorkspaceSection } =
   >("@/features/projects/components/project-workspace-section");
 
 describe("Cost Tracker Project data routes", () => {
-  it("hides direct assignment for users without the create permission", async () => {
-    mocks.hasCostTrackerPermissions.mockResolvedValueOnce(false);
+  it("shows the manager without assignment tools when readable but not assignable", async () => {
+    // Gate check passes, create-grant check fails: list renders, tools hide.
+    mocks.getSession.mockResolvedValue({
+      session: {
+        id: "session-1",
+        userId: "user-1",
+        activeOrganizationId: "org-1",
+      },
+      user: { id: "user-1", name: "Viewer", email: "viewer@example.com" },
+    });
+    mocks.hasCostTrackerPermissions
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
     render(await PartnerOrganizationsPage());
     expect(
       screen
         .getByText("Project Partnership manager")
         .getAttribute("data-can-assign"),
     ).toBe("false");
+  });
+
+  it("shows a friendly note instead of a denial when nothing is viewable", async () => {
+    mocks.hasCostTrackerPermissions.mockResolvedValue(false);
+    render(await PartnerOrganizationsPage());
+    expect(
+      screen.getByText(/available to Hosting Organization staff/),
+    ).toBeTruthy();
+    expect(screen.queryByText("Project Partnership manager")).toBeNull();
   });
   beforeEach(() => {
     vi.clearAllMocks();

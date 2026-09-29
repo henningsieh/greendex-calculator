@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { PartnershipParticipantsSection } from "@/features/projects/components/partnership-participants-section";
 import { hasOrganizationMembership } from "@/lib/session";
 
-export const metadata: Metadata = { title: "Partnership Participants" };
+export const metadata: Metadata = { title: "Project Participations" };
 
 export default async function PartnershipParticipantsPage({
   params,
@@ -23,7 +23,7 @@ export default async function PartnershipParticipantsPage({
           Back to Projects
         </Link>
         <h1 className="font-heading text-4xl font-semibold">
-          Partnership Participants
+          Project Participations
         </h1>
         <p className="text-muted-foreground">
           Coordinate Participants for this Project Partnership.
@@ -31,7 +31,7 @@ export default async function PartnershipParticipantsPage({
       </header>
       <Suspense
         fallback={
-          <PrefetchedSectionSkeleton label="Loading Partnership Participants" />
+          <PrefetchedSectionSkeleton label="Loading Project Participations" />
         }
       >
         <PartnershipParticipantsSection params={params} />

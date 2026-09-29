@@ -5,9 +5,10 @@ import {
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
-import { and, asc, eq, exists, notExists } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, notExists } from "drizzle-orm";
 import { z } from "zod";
 
+import { assignedPartnershipIds } from "@/features/projects/procedures/assigned-partnerships";
 import { resolveRelationship } from "@/features/projects/procedures/projects";
 import {
   AssignProjectPartnershipInputSchema,
@@ -15,7 +16,11 @@ import {
   RemoveProjectPartnershipInputSchema,
   RemoveProjectPartnershipResultSchema,
 } from "@/features/projects/validation-schemas";
-import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
+import {
+  authorized,
+  hasCostTrackerPermissions,
+  requireCostTrackerPermissions,
+} from "@/lib/orpc/middleware";
 
 function getPostgresErrorCode(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;
@@ -38,15 +43,40 @@ function isExpectedORPCError(error: unknown): boolean {
 }
 
 export const listPartnerships = authorized
-  .use(
-    requireCostTrackerPermissions({
+  .output(z.array(ProjectPartnershipSchema))
+  .handler(async ({ context, errors }) => {
+    const activeOrganizationId = context.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      throw errors.FORBIDDEN({
+        message:
+          "Select an active Organization before accessing Cost Tracker data.",
+      });
+    }
+    // Same checks as the UI gate: Organization-wide readers see hosted
+    // Partnerships; assigned coordinators see exactly their assignments.
+    const canRead = await hasCostTrackerPermissions(context.headers, {
       project: ["read"],
       projectPartnership: ["read"],
-    }),
-  )
-  .output(z.array(ProjectPartnershipSchema))
-  .handler(async ({ context }) =>
-    db
+    });
+    const assignedIds = canRead
+      ? []
+      : await assignedPartnershipIds(context.user.id, activeOrganizationId);
+    if (!canRead && assignedIds.length === 0) {
+      throw errors.FORBIDDEN({
+        message:
+          "The active Organization role cannot access this Cost Tracker resource.",
+      });
+    }
+    const scopeFilter = assignedIds.length
+      ? and(
+          inArray(projectPartnerOrganizationsTable.id, assignedIds),
+          eq(projectsTable.archived, false),
+        )
+      : and(
+          eq(projectsTable.organizationId, activeOrganizationId),
+          eq(projectsTable.archived, false),
+        );
+    return db
       .select({
         id: projectPartnerOrganizationsTable.id,
         projectId: projectsTable.id,
@@ -65,18 +95,13 @@ export const listPartnerships = authorized
         organization,
         eq(organization.id, projectPartnerOrganizationsTable.organizationId),
       )
-      .where(
-        and(
-          eq(projectsTable.organizationId, context.session.activeOrganizationId!),
-          eq(projectsTable.archived, false),
-        ),
-      )
+      .where(scopeFilter)
       .orderBy(
         asc(organization.name),
         asc(projectsTable.name),
         asc(projectPartnerOrganizationsTable.id),
-      ),
-  );
+      );
+  });
 
 /**
  * Assigns an existing Organization to a Project hosted by the active Organization.

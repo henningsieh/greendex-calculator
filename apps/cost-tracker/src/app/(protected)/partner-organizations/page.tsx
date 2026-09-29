@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Suspense } from "react";
 
 import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
+import { canViewPartnerNetwork } from "@/features/organizations/access";
 import { ProjectPartnershipSection } from "@/features/projects/components/project-partnership-section";
 import { SetupLinkCreator } from "@/features/projects/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
@@ -12,6 +13,23 @@ export const metadata: Metadata = { title: "Partner Organizations" };
 
 export default async function PartnerOrganizationsPage() {
   if (!(await hasOrganizationMembership())) return null;
+
+  // Same gate as projectPartnerships.list: without it the section below
+  // would only render a denial. Assignment holders see their own rows.
+  if (!(await canViewPartnerNetwork())) {
+    return (
+      <div className="max-w-3xl">
+        <p className="text-sm font-medium text-primary">Project network</p>
+        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
+          Partner Organizations
+        </h1>
+        <p className="mt-4 text-lg leading-8 text-muted-foreground">
+          Partner Organization management is available to Hosting Organization
+          staff. Coordinators work from their assigned Projects.
+        </p>
+      </div>
+    );
+  }
 
   const canAssign = await hasCostTrackerPermissions(await headers(), {
     projectPartnership: ["create"],
@@ -29,9 +47,11 @@ export default async function PartnerOrganizationsPage() {
         </p>
       </header>
 
-      <section className="mt-10">
-        <SetupLinkCreator />
-      </section>
+      {canAssign && (
+        <section className="mt-10">
+          <SetupLinkCreator />
+        </section>
+      )}
 
       <Suspense
         fallback={
