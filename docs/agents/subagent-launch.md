@@ -18,6 +18,14 @@ subagent({
 })
 ```
 
+Prefix each worker's `task` prompt with the exact skill directive for its role:
+
+- Implementation worker: `/skill:implement`
+- Worker reviewing previous code changes: `/skill:code-review`
+
+Place the directive at the very start of the prompt, before the ticket command
+and cold-start contract.
+
 ## Model and thinking
 
 - Exact `provider/id` required; bare ids resolve only when unique. Verified
