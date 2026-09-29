@@ -30,7 +30,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 - Touching the SSR/oRPC seam → [oRPC](docs/agents/instructions/orpc.md): preserve both `@/lib/orpc/client.server` imports and their evaluation order.
 - UI components → [UI components](docs/agents/instructions/shadcn.md) (`@shadcn/lint` rules in the root `.oxlintrc.json`).
 - Issue-tracked work → [issue tracker](docs/agents/issue-tracker.md), [triage labels](docs/agents/triage-labels.md).
-- Subagents on `openai-*` models → check the 5h usage meter first ([procedure](docs/codex-usage-meter.md)); below 15% remaining, route to an alternate provider ([mechanics](docs/agents/subagent-launch.md)).
+- Subagents on `openai-*` models → check the 5h usage meter first ([procedure](docs/agents/codex-usage-meter.md)); below 15% remaining, route to an alternate provider ([mechanics](docs/agents/subagent-launch.md)).
 
 ## Commit Conventions
 
