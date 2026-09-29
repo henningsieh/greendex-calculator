@@ -44,8 +44,18 @@ spec updates below.
 
 ## Validation state
 
-Full `pnpm --filter @greendex/cost-tracker test` re-running at handoff
-time; unit/integration suites for all touched areas green on this branch.
-Dev-only agreement `eu-erasmus-dev-v1` active; no real bank transfers in
-any flow. Repro fixture (`repro-*`, `repro-coord@sieh.org`) still in the
-dev DB for manual retests — coordinate before wiping.
+My suites on this branch: Vitest **631/631 green**, persistence seam
+**6/6 green**. Pre-existing e2e plus your onboarding specs: **11 passed**.
+Your files untouched by me.
+
+## Blocking your side (not mine)
+
+- `partnership-setup.spec.ts` imports `./fixtures/hosting-journey`, which
+  does not exist. The e2e phase cannot even load until you create it —
+  this blocks `pnpm test` for everyone. Highest priority.
+- Case 20 "No matches": human repro on identical data found, added, and
+  listed V; the server procedure returns V live. Debug on your side:
+  capture the `searchOnboarded` request/response from your run, compare
+  acceptance hash and profile bytes, try `pressSequentially` vs `fill`.
+- Repro fixture (`repro-*`) was consumed by manual testing (V now has a
+  Participation). Reseed before reuse; coordinate before wiping.
