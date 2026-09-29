@@ -25,8 +25,8 @@ type Projects = Awaited<
 >;
 type DashboardState = "loading" | "profile" | "agreement" | "ready" | "error";
 
-// A published hash alone is not displayable legal copy; acceptance stays disabled
-// until approved content is also supplied. The deployed version is PENDING.
+// Acceptance requires a published version plus displayable copy. The deployed
+// development draft supplies both; counsel-approved copy needs a new version.
 function hasAgreementCopy(
   agreement: Agreement,
 ): agreement is Agreement & { content: string } {

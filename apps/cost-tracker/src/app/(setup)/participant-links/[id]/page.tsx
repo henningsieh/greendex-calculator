@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 
 import { ParticipantJoin } from "@/features/authentication/components/participant-onboarding";
-import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/authentication/participant-agreement";
+import {
+  AGREEMENT_COPY,
+  CURRENT_PARTICIPANT_AGREEMENT_VERSION,
+} from "@/features/authentication/participant-agreement";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Join Project" };
@@ -18,7 +21,10 @@ export default async function ParticipantLinkPage({
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-10">
       <ParticipantJoin
-        agreement={CURRENT_PARTICIPANT_AGREEMENT_VERSION}
+        agreement={{
+          ...CURRENT_PARTICIPANT_AGREEMENT_VERSION,
+          content: AGREEMENT_COPY,
+        }}
         source={
           id && typeof secret === "string" && secret
             ? { kind: "link", id, secret }

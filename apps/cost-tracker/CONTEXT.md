@@ -17,7 +17,7 @@ An Organization assigned to one Project through a Project Partnership. The same 
 _Avoid_: Partner (when referring to the Organization)
 
 **Participant Agreement**:
-The app-wide versioned EU–Erasmus agreement in Cost Tracker. Acceptance belongs to the User, not to the Project Participation, and is stored with version and content hash as historical evidence. The current version gates Participant access: `join` and `listMyProjects` require acceptance of the current version; a new version requires renewed acceptance. The deployed value is `"PENDING-LEGAL-001"` until approved copy lands.
+The app-wide versioned EU–Erasmus agreement in Cost Tracker. Acceptance belongs to the User, not to the Project Participation, and is stored with version and content hash as historical evidence. The current version gates Participant access: `join` and `listMyProjects` require acceptance of the current version; a new version requires renewed acceptance. The current `eu-erasmus-dev-v1` copy is a development-only draft; production use requires counsel-approved replacement copy and a new version.
 _Avoid_: Rules, Project-specific agreement
 
 **Invitee**:

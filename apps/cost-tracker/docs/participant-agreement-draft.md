@@ -1,52 +1,9 @@
-# Participant Agreement — Draft Only
+# Participant Agreement — Development Draft Only
 
-Status: DRAFT. Not legal text. Do not publish.
+Status: `eu-erasmus-dev-v1` is wired into the Cost Tracker development onboarding pages. It is **fictional test copy, not counsel-approved legal text**. Never use this version for real Participants or production onboarding. The application currently does not enforce a production-only block: deployment owners must ensure this draft cannot be used in production.
 
-- Production stays on `"PENDING-LEGAL-001"`.
-- `join` and `listMyProjects` stay closed in production.
-- Tests continue with fixture `id` plus fixture `contentHash`.
-- The project owner must supply the approved copy.
-- Only then does `"PENDING-LEGAL-001"` change.
+The exact UTF-8 bytes of `AGREEMENT_COPY` in [`participant-agreement.ts`](../src/features/authentication/participant-agreement.ts) are SHA-256 hashed into `CURRENT_PARTICIPANT_AGREEMENT_VERSION.contentHash`; a test guards against drift. Acceptance records the version and hash as evidence of terms acceptance, **not GDPR consent**. Acceptance is app-wide for a User and a new version requires renewed acceptance.
 
-This draft exists for technical work only. It is a best guess. It creates no legal evidence.
+The draft covers parties and signed-grant precedence, conduct, Participant Journeys, unit-cost versus actual-cost funding, Claim evidence and review, audits, insurance, privacy, and exit. It supplies no action-specific eligibility, payment, insurance, retention, controller, or legal basis determinations. The app record does not replace a signed participant grant agreement.
 
-## Draft Structure (Placeholder)
-
-1. Purpose
-   - This `Participant Agreement` defines the conditions for `Participant` access in Cost Tracker.
-   - Owner to confirm the exact purpose.
-
-2. Scope
-   - App-wide. Versioned. EU–Erasmus scope per "ADR-0005".
-   - One acceptance is valid for all `Project Participation` records of the same `User`.
-   - Owner to confirm the scope.
-
-3. Profile Data
-   - The `User` provides a full name.
-   - The profile belongs to the `User`, not to the `Project Participation`.
-   - Owner to confirm the required fields.
-
-4. Acceptance Storage
-   - Acceptance stores version `id` plus `contentHash` as historical evidence.
-   - A new version requires new acceptance.
-   - Old acceptances stay stored.
-   - Owner to confirm the storage rule.
-
-5. Access Rule
-   - No `Participant` action without acceptance of the current version.
-   - This includes `join` and `listMyProjects`.
-   - Owner to confirm the rule.
-
-6. Roles
-   - `User`, `Participant`, `Project Participation`, `Hosting Organization` per `apps/cost-tracker/CONTEXT.md`.
-   - Owner to confirm the role names.
-
-## Owner Decision Required
-
-- [ ] Supply the approved copy, or approve this draft as a starting point.
-- [ ] Assign the first public version `id` (example format: `eu-erasmus-v1`).
-- [ ] Confirm the `contentHash` rule: hash of the exact published bytes.
-- [ ] Confirm that every text change needs a new version plus new acceptance.
-- [ ] Confirm where the copy lives in code (current proposal: next to `CURRENT_PARTICIPANT_AGREEMENT_VERSION`).
-
-Until then: no code change. `"PENDING-LEGAL-001"` stays.
+Before production: confirm action/call year, signed participant grant agreement and National Agency rules; obtain programme staff and qualified contract/privacy counsel approval of operative copy and privacy notice; confirm actual controller(s), lawful bases, insurer, deadlines, evidence and dispute routes; publish a **new** approved version ID and its exact-copy hash. Do not rename this development draft into production copy.

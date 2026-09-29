@@ -28,6 +28,7 @@ vi.mock("@greendex/database", () => ({
   },
 }));
 
+import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/authentication/participant-agreement";
 import { createParticipantOnboardingProcedures } from "@/features/authentication/participant-onboarding-procedures";
 
 function client(version?: { id: string; contentHash: string }) {
@@ -57,15 +58,29 @@ beforeEach(() => {
 });
 
 describe("participant onboarding agreement procedures", () => {
-  it("refuses pending legal copy before writing any acceptance or membership", async () => {
+  it("records acceptance of the current development version", async () => {
     await expect(
       client().participantOnboarding.acceptAgreement({ accepted: true }),
+    ).resolves.toEqual({ version: "eu-erasmus-dev-v1" });
+    expect(mocks.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        version: CURRENT_PARTICIPANT_AGREEMENT_VERSION.id,
+        contentHash: CURRENT_PARTICIPANT_AGREEMENT_VERSION.contentHash,
+        userId: "user-1",
+      }),
+    );
+  });
+
+  it("refuses an explicitly unpublished fixture before writing any acceptance or membership", async () => {
+    const unpublished = client({ id: "PENDING-LEGAL-001", contentHash: "" });
+    await expect(
+      unpublished.participantOnboarding.acceptAgreement({ accepted: true }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       message: "Participant agreement is not yet available.",
     });
     await expect(
-      client().participantOnboarding.join({
+      unpublished.participantOnboarding.join({
         profile: { fullName: "Alice" },
         agreement: { accepted: true },
         source: { kind: "link", id: "link-1", secret: "secret" },
