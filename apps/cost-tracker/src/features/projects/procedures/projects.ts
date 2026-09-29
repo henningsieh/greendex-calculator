@@ -5,6 +5,7 @@ import {
   claimsTable,
   member,
   organization,
+  partnerCoordinatorAssignmentsTable as partnerAssignments,
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -26,7 +27,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
-import { assignedPartnershipIds } from "@/features/projects/assigned-partnerships.server";
+import { assignedPartnershipIds } from "@/features/projects/procedures/assigned-partnerships";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import {
   decodeProjectListCursor,

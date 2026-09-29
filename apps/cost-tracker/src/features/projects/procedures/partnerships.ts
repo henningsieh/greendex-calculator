@@ -8,7 +8,7 @@ import {
 import { and, asc, eq, exists, inArray, notExists } from "drizzle-orm";
 import { z } from "zod";
 
-import { assignedPartnershipIds } from "@/features/projects/assigned-partnerships.server";
+import { assignedPartnershipIds } from "@/features/projects/procedures/assigned-partnerships";
 import { resolveRelationship } from "@/features/projects/procedures/projects";
 import {
   AssignProjectPartnershipInputSchema,
