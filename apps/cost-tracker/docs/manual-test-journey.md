@@ -1,159 +1,122 @@
-# Cost Tracker Manual Test Journey
+# Cost Tracker manual test journey — pair-testing script
 
-Pair walkthrough on the real dev server. Proves the implemented Claim workflow end to end through human eyes: onboarding, coordination, journeys, costs, claims, review, payment, readiness, completion — plus the security and abuse cases the automated suites assert blind.
-Traceability: `[...] ` tags map each case to a ticket (`#164`–`#187`), ADR, or clickdummy use case (`CD-02`–`CD-11`). Normative behavior: [Claim workflow](claim-workflow.md), [use-case traceability](clickdummy/requirements-traceability.md).
+**Contract:** We test together. I (the assistant) give you **one step at a time**, the exact account and link, the expected result, and a short reason. You (the actor) use the Cost Tracker dev server in your desktop browser and tell me what happened. I record the result **before** giving the next step. This is a plan, not evidence that tests passed.
 
-## Personas and shorthand
+**Source of truth:** [shared glossary](../../../DOMAIN-GLOSSARY.md), [Cost Tracker context](../CONTEXT.md), [accepted ADRs](../../../docs/adr/), [Claim workflow](claim-workflow.md), [clickdummy outcomes and intentional replacements](clickdummy/requirements-traceability.md), [shared Projects](../../../docs/projects/README.md). UI/code describe what exists today; deviations from requirements are findings. A User has Organization Memberships; a Project Participation is not a Membership; a Project Partnership assigns one Partner Organization to one Project. An Organization Invitation, Participant Invitation, Participant Registration Link, and Partner-Organization Setup Link are **four different things**.
 
-- **H** — Hosting Organization Owner (staff side).
-- **P** — Partner-side coordinator, shown in UI as Group Organizer (partner side).
-- **T**, **U** — Participants (travelers).
-- **F** — Foreign coordinator (second Partner Organization; isolation checks).
-- **X** — plain member / stranger (denial checks).
-  `→` means "expect". All Partner-side work happens in P's Partnership and Project unless stated otherwise.
+Decisions most directly exercised: [ADR-0001 relationships](../../../docs/adr/0001-model-project-organizations-and-participation.md), [0002 Participant auth](../../../docs/adr/0002-integrate-participants-with-better-auth.md), [0004 coordination scope](../../../docs/adr/0004-scope-project-coordination-through-assignments.md), [0006 allocations](../../../docs/adr/0006-derive-claim-participants-through-cost-allocations.md), [0007 journeys/rates](../../../docs/adr/0007-share-participant-journeys-and-cap-claims-by-funding-rules.md), [0008 correction](../../../docs/adr/0008-return-claims-for-partner-correction.md), [0009 approval/payment](../../../docs/adr/0009-approve-claims-before-recording-payment.md), [0010 rejection/reopen](../../../docs/adr/0010-reject-and-reopen-claims.md), [0011 completion](../../../docs/adr/0011-complete-claim-submission-and-payment-workflow.md). `CD-xx` tags refer to the linked clickdummy traceability table; `#nnn` tags are issue numbers, not evidence of a passing test.
 
-## 0. Prerequisites and known blockers (read first)
+## Stop signs (read first)
 
-- Dev database migrated through `0026`, dev server running, disposable accounts per persona (see [E2E test account](README.md#end-to-end-test-account) pattern; use fresh addresses per run).
-- **BLOCKED until legal publishes (see #184):** anything requiring agreement acceptance (join completion, dashboard access, Participant-gated actions). The app must refuse with "not yet available" — verifying the refusal IS the test until then; full join flows unlock after publication.
-- **Email:** invitation delivery needs a dev SMTP sink; without one, assert the invitation record plus bridge exist and the recipient link is redeemable — actual inbox arrival stays unverified (see #182).
-- Cost Tracker and Calculator share auth data: do not reuse personas across apps in one run.
+1. **Stay in Cost Tracker** (`http://localhost:3002` by default; confirm `COST_TRACKER_PORT`). Create Projects at `/projects`, invite staff at `/organization`, create Organizations at the no-access screen or through setup links. The old Calculator detours are obsolete.
+2. **Legal gate:** [the current Participant Agreement](../src/features/authentication/participant-agreement.ts) is `PENDING-LEGAL-001`, with no content hash. Never fabricate consent or change legal copy for this test. Verify the “not yet available” refusal. Join completion and Participant-gated actions are **BLOCKED: agreement** until approved copy is published. If downstream Claim work requires joined Participants, mark it blocked rather than seeding fake agreement acceptance.
+3. **Payout Account creation:** the Claim workspace now has a **“Create Payout Account”** form beside the selector (account holder, IBAN with server mod-97 check, optional BIC). Creating an account does **not** create a Claim: after creation, explicitly select the account and press **“Save Claim draft”**.
+4. **Participant entry-point controls:** the participants page now offers **“Send Participant Invitation”** (email), **“Reissue Participant Invitation”**, **“Create Participant Registration Link”**, and close actions. Invitation status still does **not** show profile/agreement progress. Cases 14–19 are executable up to the legal gate: use only links created through this UI.
+5. **Staff invitation acceptance:** Cost Tracker now has an `/accept-invitation/{id}` page with an explicit **“Accept Organization Invitation”** button (no auto-accept on load). Mail delivery plus registration/verification alone still do not grant Membership: the recipient must open the link and press the button. Google sign-in also preserves the invitation destination — but only the validated `/accept-invitation/{id}` route can pass through OAuth; anything else falls back to `/projects`.
+6. No production changes, real bank transfers, database edits, or invitations to third parties. Server-only security and concurrency cases are **AUTOMATED-ONLY** unless an authorized browser action genuinely tests them. Never put passwords, bank details, verification URLs or link tokens in a tracked file or issue.
 
-## 1. Project lifecycle (hosting side)
+## 0. Run card — fill together before testing
 
-Prerequisite for §2 onward: at least one Project must exist. If any case
-below has no UI surface, record it as a gap instead of working around it.
+Pick a fresh **run key** `YYYYMMDD-xxxx` (four random lowercase hex characters; example `20261001-a7c3`). Substitute the **same key** in every address below. These are separate, dedicated `@sieh.org` aliases per run, not shared accounts. First check that aliases actually deliver to your inbox; owning the domain does not guarantee catch-all delivery. If delivery fails, **STOP: mail infrastructure**; do not silently bypass verification. Store distinct passwords in a password manager, never here. Capture delivery evidence before deleting _only this run's_ messages. Preserve reissued/old invitations until their outcome is checked. IMAP/SMTP credentials stay in local configuration.
 
-- T01 — H (Owner/Admin) creates a Project in the Calculator app projects page (Cost Tracker has no creation UI; projects are shared rows in the common database: http://localhost:3000/en/org/projects) with name, dates, location, country;
-  it appears in the projects list with derived readiness. [#166]
-- T02 — Member/Participant attempts project creation → denied server-side.
-  [#179]
-- T03 — H designates the hosting-side coordinator (project responsible user);
-  that coordinator gains host-scoped powers (review queue, issuance) while
-  unrelated projects stay out of reach. [ADR-0004, #166]
-- T04 — Archived project: creation-type actions (setup links, invitations)
-  are denied; existing data stays readable. [#164]
+| Code | Exact email for this run       | Identity and planned scope                                                                              |
+| ---- | ------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| H    | `ct-{key}-host@sieh.org`       | Hosting Organization Owner                                                                              |
+| A    | `ct-{key}-admin@sieh.org`      | Hosting Organization Admin via **Organization Invitation**                                              |
+| P    | `ct-{key}-partner@sieh.org`    | Partner A Owner exercising Organization-wide Partner authority; not proof of Group Organizer assignment |
+| F    | `ct-{key}-foreign@sieh.org`    | Partner B Owner, never assigned to P's Partnership                                                      |
+| E    | `ct-{key}-existing@sieh.org`   | Owner of third Organization for existing-Organization setup                                             |
+| M    | `ct-{key}-member@sieh.org`     | Member, not Owner, of E's Organization                                                                  |
+| Q    | `ct-{key}-hostmember@sieh.org` | Member of Hosting Organization, reserved for role-preservation test                                     |
+| T    | `ct-{key}-invited@sieh.org`    | Initially no Membership; email-invited Participant                                                      |
+| U    | `ct-{key}-link@sieh.org`       | Initially no Membership; shareable-link Participant                                                     |
+| V    | `ct-{key}-third@sieh.org`      | Initially no Membership; third Participant for exact thirds                                             |
+| X    | `ct-{key}-stranger@sieh.org`   | No Membership; wrong-email/denial checks                                                                |
 
-## 2. Hosting setup
+**Run key:** ___ **Date/time and timezone:** ___ **Base URL:** ___ **Tester:** ___ **Disposable database?:** ___ **Mail delivery confirmed?:** ___ **Staff acceptance UI?:** ___ **Participant links UI?:** ___ **Agreement published?:** ___ **Payout creation available?:** ___
 
-- T05 — H signs in, creates/selects the Hosting Organization. [#164]
-- T06 — H invites a colleague as Organization Admin in the Calculator app team page (Cost Tracker has no staff-invite UI; membership is org-level and shared: http://localhost:3000/en/org/team); colleague accepts and sees the org. [CD-02, #164]
-- T07 — X (no membership) opening any protected page → access-denied surface, no data. [#179]
+Names: `CT {key} Host`, etc. Organizations: `CT {key} Hosting`, `CT {key} Partner A`, `CT {key} Partner B`, `CT {key} Existing`. Projects: `CT {key} Main`, `CT {key} Existing`, `CT {key} Isolation`. Select only this run's records. Fill in _actual UI-derived_ destinations during testing: `MAIN_PROJECT_URL`, `P_PARTNERSHIP_ID`, `F_PARTNERSHIP_ID`, `EXISTING_PROJECT_URL`, `T_INVITE_URL`, `U_LINK_URL`, `P_SETUP_URL`, `E_SETUP_URL`. **The review URL `/claims/review/{id}` uses the Partnership ID, not the Claim ID.** Keep token-bearing links in private ephemeral notes/password manager; log only redacted paths or last four characters.
 
-## 3. Partner setup link (org-less recipient flow)
+### Handoffs and notes
 
-- T08 — H creates a recipient-bound Setup Link for Project + email (project must exist — see T01); copies it (`Kopieren`). [#164, #173]
-- T09 — Recipient opens link signed out → guided to sign-in, link preserved for revisit after sign-in (no returnTo magic; manual revisit works). [#173]
-- T10 — Wrong email signs in and redeems → distinct wrong-email error, no side effects. [#164]
-- T11 — Disabled link → distinct disabled error. [#164]
-- T12 — Recipient creates a NEW Organization → Partnership created exactly once; replaying the link reuses it (idempotent, no duplicate). [#164]
-- T13 — Recipient picks an EXISTING Organization → Owner verification gate renders; non-Owner cannot complete. [#164, #173]
-- T14 — Completed flow grants NO Hosting membership anywhere. [#164]
-- T15 — `Neuer Link` adds an additional link; old links stay alive; closing one link leaves siblings working. [#181]
+Prefer one labeled browser profile per User. Otherwise sign out, sign in as the next User, **check the email in the account menu**, then act. Register the exact recipient email, verify from that inbox, sign in, and **reopen the original link manually**: `/login` redirects to `/projects`, not back to the link. Never redeem P's link in H's session. If T/U/X see “No Organization access yet”, **do not create one**; use their Participant link or record the gate. There is currently **no active-Organization switcher** in Cost Tracker navigation: avoid relying on a User acting under multiple Organizations. If an assignment creates a second Membership and the active scope cannot be changed in-app, mark that branch **UI GAP**, not PASS.
 
-## 4. Participant onboarding (both paths, same result)
+At the start of our session create a separate persistent run log `apps/cost-tracker/docs/manual-test-runs/{key}.md`; update it **after every case**, not at the end. Format each line: `Case | User and active Organization | redacted URL | PASS / FAIL / BLOCKED / AUTOMATED-ONLY / NOT-RUN | actual vs expected | issue | next dependency`. Keep private links/credentials out of git. If a case fails, stop its dependent branch, record exact reproduction and expected/actual, ask before filing an issue, and continue only an independent branch. An automated test result never counts as a browser PASS. My turn-by-turn prompt will always be **“Your turn: [one action]. Tell me [one observable result].”**
 
-- T16 — Known email: P (or H) triggers invitation → T signs in → profile → agreement → Membership (`participant`) plus Participation. [#165]
-- T17 — Unknown email: T opens reusable Registration Link → same onboarding → identical resulting state (role, Participation, dashboard). [#165]
-- T18 — Same User joins the same Project via a second Partner Organization → blocked with clear error. [#165]
-- T19 — Already a plain org member joining → gains `participant`, keeps `member`; owner/admin keep their roles untouched. [#165]
-- T20 — Stale agreement version → Participant actions blocked until re-accepted; earlier acceptances preserved in history. [#165]
-- T21 — Registration link close/reopen before submission works; closed link rejects. [#165]
-- T22 — Invitation reissue retires the old identity; exactly one live invitation per email; revoked links reject. [#181]
-- T23 — Invitation email arrives (needs SMTP sink); reissue re-sends the new identity only. [#182]
+## 1. Hosting setup
 
-## 5. Participant coordination (Group Organizer surface)
+| Case | Actor · link                             | Action → expected outcome / reason                                                                                                                                                                                                                                                                                |
+| ---- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01   | H · `/register`, `/login`, `/projects`   | Register, verify email, sign in; “Create Organization” = `CT {key} Hosting` → H owns it, no stale run data. [CD-01, ADR-0001]                                                                                                                                                                                     |
+| 02   | H · `/projects`                          | “Create Project” = `CT {key} Main`, dates, location, country. Save `MAIN_PROJECT_URL`; see **Hosted Project**. Also create `CT {key} Existing` and `CT {key} Isolation`. Project creation assigns the creator Hosting-side coordinator scope; do not assume there is UI to assign someone else. [CD-01, ADR-0004] |
+| 03   | H → A · `/organization`                  | Invite A as **admin**; check delivery and pending row. A registers/verifies/signs in, opens the emailed `/accept-invitation/{id}` link and presses **“Accept Organization Invitation”** (no auto-accept). Members then shows A as Admin, not Participant. [#164]                                                  |
+| 04   | X · `/projects`, then `MAIN_PROJECT_URL` | Register/verify/sign in X, **do not create Organization**; direct Main URL shows no Hosting data. A hidden link alone does not prove server denial. [#179]                                                                                                                                                        |
 
-- T24 — P sees ONLY their Partnership's Participations with per-person onboarding state (joined vs invitation-pending). [#166, #175, #185]
-- T25 — P creates a Participation for an onboarded User; update and pre-Claim removal work. [#166]
-- T26 — Duplicate identity (same User or normalized email, incl. case variants) → merge-review task, never a silent duplicate. [#166, #186]
-- T27 — Review tasks: open → assigned (self) → resolved with survivor decision; cross-Partnership assignment denied. [#186]
-- T28 — F (foreign partnership) reads/writes P's Participations → denied server-side; nothing renders. [#166, #179]
-- T29 — T sees only their own Participation; Participants create/edit nothing financial. [#166, #179]
+**Checkpoint:** If Cost Tracker has no way to assign a _different_ Hosting Project Coordinator, note **UI GAP** for that role test. Use H and A (after 03 acceptance) for Hosting decisions. Never archive Main while subsequent cases need it.
 
-## 6. Participant Journeys (one per Participation)
+**Permission conflict to investigate:** [Shared Project permissions](../../../docs/projects/permissions.md) say fallback `member` grants no Cost Tracker authority, yet the current Cost Tracker Project-creation procedure accepts any active Organization Membership and makes its creator a hosting-side coordinator. Do **not** record member-created Project as a requirements PASS or uncritically assert denial; **after staff acceptance works**, use M in E's Organization on a disposable Project, record actual behavior and raise the discrepancy for product resolution. A Participant without that Membership is a different case.
 
-- T30 — P records a journey (origin, destination, one-way/round-trip, Erasmus calculator distance); missing fields reported item by item. [#168]
-- T31 — Second journey for the same Participation → rejected. [#168]
-- T32 — First journey freezes the Project funding snapshot (verify: band values match current config at save time). [#168, ADR-0007]
-- T33 — Saved journey renders read-only; no edit affordance (update lives only in correction flow, see T46). [#176, #187]
+## 2. Partnerships: Project-specific, not global
 
-## 7. Travel costs, allocations, documents
+| Case | Actor · link                                                  | Action → expected outcome / reason                                                                                                                                                                                                                                                                                                                                      |
+| ---- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 05   | H · `/partner-organizations`                                  | Choose **Main** from Hosted Project selector, recipient P; create/copy **Partner-Organization Setup Link** and save `P_SETUP_URL` privately. This is _not_ an Organization Invitation. [CD-02, #164]                                                                                                                                                                    |
+| 06   | P · `P_SETUP_URL`, `/register`, `/login`                      | Open signed out → sign-in; register/verify P's **exact** address; sign in and reopen link. “New Organization” = Partner A, Complete setup → one Main/Partner A Partnership; P owns Partner A but has **no Hosting Membership**. Revisit link → no duplicate. [#164, #173]                                                                                               |
+| 07   | X · **fresh, unredeemed** setup link addressed to P           | Sign in X and attempt completion → wrong-email refusal, no Organization/Partnership created. Do not sacrifice the happy-path link. [#164]                                                                                                                                                                                                                               |
+| 08   | H → F · `/partner-organizations`, setup URL                   | Repeat 05–06 for F and Partner B on **Main** → two separate Main Partnerships; F cannot act in P's Partnership. [ADR-0001, #180]                                                                                                                                                                                                                                        |
+| 09   | E · `/projects`; H · `/partner-organizations`                 | E registers/verifies, creates `CT {key} Existing` Organization via no-access screen. H creates setup link to E for **Existing Project**. E chooses **Existing Organization** = E's Organization and completes → one Project-specific assignment, no Hosting Membership. [#164]                                                                                          |
+| 10   | E → M · `/organization`                                       | E invites M as **member**; inspect delivery/pending row. M registers/verifies/signs in, opens the emailed link and accepts: Membership only, not Participation/Partnership. [ADR-0002]                                                                                                                                                                                  |
+| 11   | M · fresh setup link addressed to M for **Isolation Project** | **After 10 succeeds:** existing-Organization selector lists only Organizations M **owns**; E's Organization is absent. Server Owner-only refusal for forged selection is **AUTOMATED-ONLY**. [#164, #173]                                                                                                                                                               |
+| 12   | H · `/partner-organizations`                                  | If direct “Assign an existing Organization” is available, assign E's Organization to Isolation → **same Organization, different Project, different Partnership**; Existing Project unaffected. Try own Hosting Organization or duplicate same Project+Organization: selector/validation should prevent it. UI filtering ≠ proof against forged input. [ADR-0001, CD-02] |
+| 13   | H · `/partner-organizations`                                  | With spare links test “Neuer Link” and “Kopieren”. **Currently no existing-link list or “Schließen” control**: mark closing one while retaining siblings **UI GAP**, not PASS. Never close the only link needed later. [#181]                                                                                                                                           |
 
-- T34 — Cost entry: one transport choice, one exact EUR total; zero/negative/ missing rejected with field-mapped errors. [#169]
-- T35 — Equal split across three people: server derives shares summing exactly to the total at read time (thirds check). [#169]
-- T36 — Percentage shares must total exactly 100; amount shares exactly the entry total; mixed methods rejected. [#169]
-- T37 — Upload receipt (progress visible) → stable reference → link to entry; Claim-scoped document picker lists only this Claim's documents. [#163, #169, #176]
-- T38 — Cross-Partnership allocation attempt → server-side denial. [#169]
-- T39 — Covered Participants derive from allocations (no copies); group cost keeps one real total. [#169, ADR-0006]
-- T40 — Empty payout-account list shows contact-admin instruction (no bank detail creation in-app). [#176]
+**Checkpoint:** H sees Partner A and B once each on Main. P and F see only their respective work. E's Organization has assignments to Existing and Isolation, not a global partnership. Setup creates a Partnership and (if new) an Organization Owner, **not** a Partnership-scoped `project-coordinator`. P's Owner powers cannot validate Group Organizer scope. Record any wording or route that differs from this table.
 
-## 8. Claim draft and payout selection
+**Runnable gate checks, with real links only:** P opens `/partnerships/{P_PARTNERSHIP_ID}/claim`: opening saves no Claim. With no Payout Account, use the new **“Create Payout Account”** form (record **G1: creation then select then Save draft**; creation alone must not create a Claim). Register/verify T on its dedicated email and open `/participant` (no Project link): if agreement is unpublished, check the unavailable state and disabled consent action (**G2: legal gate**). This does **not** test invitation redemption, saved profile, or join; those still require a genuine link from case 14/15. Also note that Setup Links are copied for private sharing, not delivered automatically as invitation email.
 
-- T41 — Opening the workspace persists NOTHING (zero Claim rows). [#167]
-- T42 — First save creates exactly one editable Claim; double-save reuses it (no duplicates). [#167]
-- T43 — Creation without selected Payout Account → clear rejection; select by reference, reusable across Partnerships. [#167]
-- T44 — Payout selection changeable while editable. [#167]
+## 3. Participant onboarding — legal gate
 
-## 9. Submission (seven-point checklist + derived payable)
+P opens Main → **Coordinate Participants** (`/partnerships/{P_PARTNERSHIP_ID}/participants`) in Partner A's Owner session. **First confirm issuance controls exist; currently they do not.** An Invitation binds an email; a Registration Link is shareable, not email-bound. Both should eventually create a Hosting `participant` Membership **plus** a Partner A Project Participation; **no** Partner A Membership. [ADR-0002, CD-03–04]
 
-- T45 — Checklist renders item by item (payout, entries, allocations, documents, coverage, journeys, rules); each gap links to its fix; submit disabled until all pass. [#170, #177]
-- T46 — Payable displays as calculated (never editable); verify it equals min(approved costs, summed entitlements) on a mixed standard/green example. [#170]
-- T47 — Submit confirms the lock consequence; post-submit workspace is read-only; history records submission with actor/time. [#170]
-- T48 — Transport choice removed from live config after freeze still submits (snapshot governs); choice absent from snapshot fails itemized. [#170]
+| Case | Actor · link                                      | Action → expected outcome / reason                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 14   | P · participants page                             | Invite T through **“Send Participant Invitation”**; check delivery and keep the link. **“Reissue” before redemption**: old link refuses, new link succeeds once legal permits. Invitation status does **not** show profile/agreement progress. [#165, #181–182]                                                                                                                                                    |
+| 15   | P · participants page                             | Create U's shareable link via **“Create Participant Registration Link”** (copy the URL once — the secret is not recoverable). Close → refusal, reopen → available. [#165]                                                                                                                                                                                                                                          |
+| 16   | T · latest invitation link                        | **Only if 14 produced a real link:** register/verify, sign in, reopen it; enter profile. With unpublished agreement, Join is disabled: do **not** call typed-but-unsaved profile “complete”. Verify “not yet available” refusal; completed join **BLOCKED: agreement**. When published: save profile, accept, join → Hosting `participant` role and Partner A Participation, no Partner A Membership. [#165, #174] |
+| 17   | U · registration link                             | Register/verify U, sign in, reopen shareable link; same profile/agreement/join end state. Today same legal refusal/block. V joins only after publication. [#165]                                                                                                                                                                                                                                                   |
+| 18   | T/U · `/participant`; P · participants page       | **Only after actual join:** each Participant sees own Project; P sees only Partner A's Participants, F sees none of P's. Before publication **BLOCKED**, not a blank-dashboard success. [#166, #179]                                                                                                                                                                                                               |
+| 19   | T · second Partnership's invitation/link for Main | **Only after actual join:** same User trying Main through Partner B is blocked; a different Project is distinct. For role preservation H first invites **Q** as Hosting `member`; Q accepts via `/accept-invitation/{id}`, then joins via its own Participant link. Check both roles remain; never repurpose T/M. [#165, ADR-0001–0002]                                                                            |
 
-## 10. Host review loop
+**Stop here if agreement pending.** Do not seed fake acceptance. Resume cases 16–19 after approved copy is published, logging its version and the changed preconditions.
 
-- T49 — H sees the submitted queue; single-request view shows costs, evidence, journeys, payable; reasons render on both sides. [#171, #178]
-- T50 — Correction request (reason required) unlocks Partner editing; P sees reason plus required actions; P corrects and resubmits (relocks); journey correction works in this window. [#171, #187]
-- T51 — Approval confirms payable, locks permanently; approval of incomplete Claims impossible. [#171]
-- T52 — Rejection (reason required) locks and bars payment; stays readable with history. [#171]
-- T53 — Reopen unpaid rejection (authorized roles only) returns to Hosting review WITHOUT unlocking Partner edits; reopen-while-paid and unauthorized reopen rejected. [#171]
-- T54 — Role matrix spot-checks: Participant decides nothing; F decides nothing outside their Partnership; fallback member decides nothing. [#179]
+## 4. Conditional follow-on: Claim lifecycle
 
-## 11. Payment and correction
+Requires genuinely joined T, U, V. Mark every dependent case **BLOCKED: agreement** otherwise. Take all IDs from clicked UI links, never guess raw IDs. Use current Project funding configuration; do not assert a hard-coded band.
 
-- T55 — Approved-unpaid vs paid states unmistakably distinct; mark paid only after one full transfer equal to the approved amount (partial/mismatch rejected). [#172, #178]
-- T56 — Paid-flag correction (reason required) restores unpaid; BOTH events stay in history (record correction, not a bank reversal). [#172]
-- T57 — Post-approval payout changes rejected. [#172]
-- T58 — Second mark-paid on a paid Claim: single paid event, deterministic outcome, no duplication. [#172]
+| Case | Actor · link                                               | Action → expected outcome / reason                                                                                                                                                                                                                                                                                                                                              |
+| ---- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 20   | P · `/partnerships/{P_PARTNERSHIP_ID}/participants`        | Add onboarded User using selector; UI edits **country only**. Removal and Review Task list/assign/resolve **currently have no UI**: record UI GAP; duplicate same User/normalized email behavior requires separate automated evidence. Never remove a claimed Participation. [CD-03, #166, #186]                                                                                |
+| 21   | P · `/partnerships/{P_PARTNERSHIP_ID}/claim`               | Open → no Claim saved. With no account, use **“Create Payout Account”** (holder, IBAN, optional BIC), then select it by reference and explicitly Save draft → one editable Claim; reload/double-save → still one. No bank details typed into the Claim itself. [CD-05, CD-08, #167]                                                                                             |
+| 22   | P · same Claim page                                        | Record **individual** origin, destination, trip type, Erasmus distance for T/U/V (may happen before case 21's Save). Incomplete fields fail; second Journey rejected. First Journey freezes Project funding snapshot; saved Journey read-only except correction window. [CD-06–07, ADR-0007, #168]                                                                              |
+| 23   | P · same Claim page                                        | Add one Travel Cost Entry (configured choice, exact `100.00 EUR`) with equal split T/U/V → shares total **exactly** `100.00`, not three `33.33`s. Try zero, invalid percentages/amount sums first. Upload Proof Document, link to entry; picker only shows this Claim's documents. [ADR-0006, #163, #169]                                                                       |
+| 24   | P · same Claim page                                        | Checklist explains payout, entries, allocations, documents, covered Participants' Journeys, rules. Fix gaps; payable = lower of allocated approved costs and **sum of individual** entitlements (green/standard). Confirm Submit → locked; history actor/time; Back/Reload cannot reopen. [CD-05–07, #170]                                                                      |
+| 25   | H · `/claims/review` → `/claims/review/{P_PARTNERSHIP_ID}` | Find submitted Claim; **save the full review URL now**: the queue lists only submitted Claims and the item disappears after a decision. Review costs, document metadata, journeys, payable (document download is not currently offered). Request correction with required reason → P sees reason, edits its data/Journey, resubmits. H never edits P's costs. [CD-09, ADR-0008] |
+| 26   | A (if 03 succeeded), otherwise H · saved review URL        | Approve resubmission → **approved-unpaid**, not paid. On a **different Claim/Partnership** reject with reason, then reopen unpaid rejection → Hosting review, not Partner editing. Do not reject the only payment-branch Claim. Independent reviewer A participates once 03 acceptance is done. [CD-10, ADR-0009–0010]                                                          |
+| 27   | H · saved review URL                                       | Mark paid **only after a real full matching transfer**. This script does not authorize one; without an explicitly safe approved simulation, **NOT-RUN: payment prerequisite**. Paid-flag correction requires reason, preserves both history events; it is not a bank reversal. [#172, ADR-0009]                                                                                 |
+| 28   | H · `MAIN_PROJECT_URL`                                     | Partner A terminal and Partner B claimless/editable → **Complete Project button is hidden**; readiness shows independent states. Server error with named blockers is **AUTOMATED-ONLY**. Only after B has a real paid/rejected Claim should Main complete. E's other Project cannot affect Main; no manual Project-wide Claim phase. [CD-11, ADR-0011, #180]                    |
 
-## 12. History, readiness, completion
+## 5. Negative and rare checks — preserve the main path
 
-- T59 — Claim history shows every transition with actor, time, reason where applicable, append-only. [#153 story 23-24]
-- T60 — Project readiness derives per-Partnership states (active, correction, approved-unpaid, paid, rejected) without blocking unrelated Partnerships. [#180]
-- T61 — Completion with any non-terminal Claim or claimless Partnership → rejected NAMING the blockers. [#180]
-- T62 — All-paid-or-rejected Project completes; unauthorized completion denied. [#180]
-- T63 — OPEN PRODUCT QUESTION: zero-Partnership project completes vacuously today — confirm intended or file to block. [#180]
-
-## 13. Abuse and isolation sweep
-
-- T64 — Participant attempts every write endpoint (draft, journey, cost, submit, review, payment) → all denied. [#179]
-- T65 — Partner coordinator operates outside their Partnership → denied everywhere. [#179]
-- T66 — Double-submit, double-decision, double-payment under retry → single rows, single history events. [#179]
-- T67 — Stale/expired/revoked/forged links and invitations → clean denials, zero writes. [#165, #181]
-- T68 — Payout change post-approval, edits post-submit/approval/rejection, payment on unapproved/rejected → all fail, state unchanged. [#179]
-
-## 14. UI wording and states
-
-- T69 — Link surfaces use exactly Kopieren / Neuer Link / Schließen; no secret/hash terminology anywhere. [#181]
-- T70 — Hosting scope says Project Coordinator, Partner scope says Group Organizer. [Glossary 66393b5]
-- T71 — Derived values marked computed; payable never editable; approved vs paid visually distinct. [#176-#178]
-- T72 — PENDING agreement renders "not yet available" (join disabled with reason), never placeholder-as-consent. [#174]
-
-## 15. Browser, session, and infrastructure edge cases
-
-- T73 — Double-click Submit (and every decisive button): rapid double activation yields one Claim, one history event, no duplicate. [#179]
-- T74 — Deep-link the claim workspace URL directly (no navigation): loads correctly scoped or denies; Reload mid-draft preserves server-saved slices. [#176]
-- T75 — Back button after submit: no resubmission, no editable resurrection; Forward returns to the locked view. [#170]
-- T76 — Second Hosting reviewer (different admin) sees the same queue and history; decisions by either are attributed correctly. [#171]
-- T77 — Multi-Partnership project: progress one Partnership to paid while another sits editable; readiness shows both states without cross-blocking. [#180]
-- T78 — Run the Garage smoke script (`test:garage-storage`) and confirm round-trip plus cleanup; note orphan policy if objects remain. [#163]
-- T79 — Verify migration state on the dev database (journal through `0026`, no pending). [ops]
-- T80 — Sign out mid-onboarding, sign back in: progress (profile, invitation, bridge) resumes where left; no duplicate Membership. [#165]
-- T81 — Invitation expiry cannot be waited out (48h/7d) — document as untestable manually; expiry logic stays covered by automated tests. [#164]
-- T82 — Two browsers (org-less recipient vs coordinator) side by side: no session bleed, no cross-visible data. [#179]
+| Case | Actor · link                                                                | Expected result / method                                                                                                                                                                                                                                                                     |
+| ---- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| N1   | X → Main, P's participants/Claim, H's review URLs; F → P's Partnership URLs | Denial/no foreign data, not merely hidden navigation. Server authorization needs automated confirmation. [#179]                                                                                                                                                                              |
+| N2   | H → claimless Isolation Project                                             | A claimless Partnership hides completion; server blocker-name check is **AUTOMATED-ONLY**. Zero-Partnership completion is an **open product question**: record observed behavior, do not click an irreversible Complete button just to investigate. Do not complete Main prematurely. [#180] |
+| N3   | T/P/H → financial and decision pages                                        | Participant writes denied; Partner cannot decide; Hosting cannot directly edit Partner costs. UI affordances plus automated server tests. [#179]                                                                                                                                             |
+| N4   | Spare setup/registration/invitation links                                   | Revocation, reissue, sign-out midway, browser isolation. Expired/forged tokens and 48h/7d expiry are **AUTOMATED-ONLY** without safe clock controls. Never log tokens. [#165, #181]                                                                                                          |
+| N5   | Claim and review, if unblocked                                              | Double-click/retry, deep link, reload, Back/Forward, wrong active Organization → no duplicate Claim/history or editable resurrection. Inspect uncertain mutation result **before retrying**. [#179]                                                                                          |
+| N6   | H/A/M and project coordinator                                               | Owner/Admin Organization-wide vs Project-/Partnership-scoped `project-coordinator`. If assignment UI for someone other than Project creator is missing, **UI GAP**; do not seed roles and call it a browser pass. [ADR-0004]                                                                 |
+| N7   | Separate infrastructure tests                                               | `pnpm --filter @greendex/cost-tracker test:email-delivery` and `test:garage-storage` plus migration status check are **infrastructure evidence**, not proof that a human invitation arrived or a Claim passed. Run only when safe. [#163, #182]                                              |
 
 ## Sign-off
 
-Record date, tester, environment, and per-case pass/fail with issue links for failures. Failing cases become GitHub issues; this file gains their numbers. Coverage claim: T01–T82 span every ticket `#161`–`#183`, `#185`–`#187`, every ADR `0004`–`0011`, and clickdummy outcomes `CD-02`–`CD-11`.
+Count PASS / FAIL / BLOCKED / AUTOMATED-ONLY / NOT-RUN separately. A legal-refusal PASS does **not** pass onboarding. Record each blocker, issue, last successful case and resume step in the persistent log. Before claiming coverage, compare results with [clickdummy traceability](clickdummy/requirements-traceability.md), [Claim workflow](claim-workflow.md) and accepted ADRs. The previous T01–T82 list was not proof of 82 executable browser tests.
