@@ -30,6 +30,12 @@ export const USERS_SORT_FIELDS = [
 /**
  * Organization member role definitions
  * Maps display names to database role values
+ *
+ * NOTE: `ProjectCoordinator: "admin"` is a legacy Calculator mapping and does
+ * NOT mean the same as Cost Tracker's assignment-scoped `project-coordinator`
+ * role (one explicit Project/Partnership assignment, no Organization-wide
+ * authority). Same word, different role per app — see the backlog todo to
+ * rename the Calculator key and stop the confusion.
  */
 export const MEMBER_ROLES = {
   OrganizationAdministrator: "owner",
