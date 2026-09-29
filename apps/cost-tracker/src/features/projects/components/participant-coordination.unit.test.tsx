@@ -12,6 +12,11 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   searchOnboarded: vi.fn(),
   update: vi.fn(),
+  issueInvitation: vi.fn(),
+  reissueInvitation: vi.fn(),
+  createRegistrationLink: vi.fn(),
+  setInvitationOpen: vi.fn(),
+  setRegistrationLinkOpen: vi.fn(),
 }));
 
 vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
@@ -19,6 +24,13 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   return {
     ...original,
     orpc: {
+      participantOnboarding: {
+        issueInvitation: mocks.issueInvitation,
+        reissueInvitation: mocks.reissueInvitation,
+        createRegistrationLink: mocks.createRegistrationLink,
+        setInvitationOpen: mocks.setInvitationOpen,
+        setRegistrationLinkOpen: mocks.setRegistrationLinkOpen,
+      },
       participations: {
         create: mocks.create,
         searchOnboarded: mocks.searchOnboarded,
@@ -149,6 +161,7 @@ describe("ParticipantCoordination", () => {
           status: "pending",
         },
       ],
+      registrationLinks: [{ id: "link-1", enabled: true }],
     });
     mocks.create.mockReset();
     mocks.searchOnboarded.mockReset().mockResolvedValue([
@@ -156,6 +169,17 @@ describe("ParticipantCoordination", () => {
       { id: "host-user", name: "Host Candidate" },
     ]);
     mocks.update.mockReset();
+    mocks.issueInvitation
+      .mockReset()
+      .mockResolvedValue({ invitationId: "invite-2", delivery: "sent" });
+    mocks.reissueInvitation
+      .mockReset()
+      .mockResolvedValue({ invitationId: "invite-3", delivery: "failed" });
+    mocks.createRegistrationLink
+      .mockReset()
+      .mockResolvedValue({ id: "new-link", secret: "one-time-secret" });
+    mocks.setInvitationOpen.mockReset().mockResolvedValue({ open: false });
+    mocks.setRegistrationLinkOpen.mockReset().mockResolvedValue({ open: false });
   });
 
   it("renders only the server-scoped Partnership response with honest joined and invitation states", async () => {
@@ -240,6 +264,113 @@ describe("ParticipantCoordination", () => {
     expect(notice.textContent).toContain("Access denied");
     expect(notice.textContent).toContain("You do not have permission");
     expect(notice.textContent).not.toContain("private role details");
+  });
+
+  it("issues email invitations and distinguishes already-issued from delivery failure", async () => {
+    mocks.issueInvitation.mockResolvedValue({
+      invitationId: "invite-1",
+      delivery: "already-issued",
+    });
+    const user = userEvent.setup();
+    await renderCoordination();
+    await user.type(screen.getByLabelText("Invitee email"), "new@example.org");
+    await user.click(
+      screen.getByRole("button", { name: "Send Participant Invitation" }),
+    );
+    await waitFor(() =>
+      expect(mocks.issueInvitation).toHaveBeenCalledWith({
+        partnershipId: "own-partnership",
+        email: "new@example.org",
+      }),
+    );
+    expect(
+      (await screen.findByText("Invitation already issued")).textContent,
+    ).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", {
+        name: "Reissue invitation for pending@example.org",
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.reissueInvitation).toHaveBeenCalledWith({
+        partnershipId: "own-partnership",
+        email: "pending@example.org",
+      }),
+    );
+    expect(await screen.findByText("Email delivery failed")).toBeTruthy();
+  });
+
+  it("shows a new secret URL only on creation and closes listed entry points", async () => {
+    const user = userEvent.setup();
+    await renderCoordination();
+    await user.click(
+      screen.getByRole("button", {
+        name: "Create Participant Registration Link",
+      }),
+    );
+    expect(mocks.createRegistrationLink).toHaveBeenCalledWith({
+      partnershipId: "own-partnership",
+    });
+    expect(
+      (
+        (await screen.findByLabelText(
+          "New registration link (copy now)",
+        )) as HTMLInputElement
+      ).value,
+    ).toContain("/participant-links/new-link?secret=one-time-secret");
+    await user.click(
+      screen.getByRole("button", {
+        name: "Close invitation for pending@example.org",
+      }),
+    );
+    await waitFor(() =>
+      expect(mocks.setInvitationOpen).toHaveBeenCalledWith({
+        invitationId: "invite-1",
+        open: false,
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Close registration link link-1" }),
+    );
+    await waitFor(() =>
+      expect(mocks.setRegistrationLinkOpen).toHaveBeenCalledWith({
+        id: "link-1",
+        open: false,
+      }),
+    );
+  });
+
+  it("keeps the previous link URL when creation fails", async () => {
+    const user = userEvent.setup();
+    await renderCoordination();
+    await user.click(
+      screen.getByRole("button", {
+        name: "Create Participant Registration Link",
+      }),
+    );
+    expect(
+      (
+        (await screen.findByLabelText(
+          "New registration link (copy now)",
+        )) as HTMLInputElement
+      ).value,
+    ).toContain("/participant-links/new-link?secret=one-time-secret");
+    mocks.createRegistrationLink.mockRejectedValueOnce(
+      new ORPCError("FORBIDDEN"),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Create Participant Registration Link",
+      }),
+    );
+    await screen.findByText("Entry point unavailable");
+    expect(
+      (
+        screen.getByLabelText(
+          "New registration link (copy now)",
+        ) as HTMLInputElement
+      ).value,
+    ).toContain("/participant-links/new-link?secret=one-time-secret");
   });
 
   it("edits only the scoped Participation using the server mutation", async () => {

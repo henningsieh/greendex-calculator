@@ -7,6 +7,7 @@ import {
   member,
   participantAgreementAcceptancesTable as acceptances,
   participantInvitationBridgesTable as bridges,
+  participantRegistrationLinksTable as links,
   participantJourneysTable as journeys,
   participantProfilesTable as profiles,
   projectParticipantsTable as participants,
@@ -75,6 +76,9 @@ export function createParticipationProcedures(
             status: z.string(),
           }),
         ),
+        registrationLinks: z.array(
+          z.object({ id: z.string(), enabled: z.boolean() }),
+        ),
       }),
     )
     .handler(async ({ input, context, errors }) => {
@@ -84,7 +88,7 @@ export function createParticipationProcedures(
         context.session.activeOrganizationId,
         errors,
       );
-      const [rows, invitations] = await Promise.all([
+      const [rows, invitations, registrationLinks] = await Promise.all([
         db
           .select(selected)
           .from(participants)
@@ -103,8 +107,12 @@ export function createParticipationProcedures(
           })
           .from(bridges)
           .where(eq(bridges.partnershipId, input.partnershipId)),
+        db
+          .select({ id: links.id, enabled: links.enabled })
+          .from(links)
+          .where(eq(links.partnershipId, input.partnershipId)),
       ]);
-      return { participations: rows, invitations };
+      return { participations: rows, invitations, registrationLinks };
     });
 
   const searchOnboarded = authorized

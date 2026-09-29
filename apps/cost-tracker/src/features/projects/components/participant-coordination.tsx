@@ -156,6 +156,16 @@ export function ParticipantCoordination({
     }),
   );
   const [userId, setUserId] = useState("");
+  const [email, setEmail] = useState("");
+  const [createdLink, setCreatedLink] = useState<{
+    partnershipId: string;
+    id: string;
+    url: string;
+  }>();
+  const [entryFeedback, setEntryFeedback] = useState<{
+    title: string;
+    description: string;
+  }>();
   const searchOnboarded = (search: string) =>
     orpc.participations.searchOnboarded({ partnershipId, search });
   const [feedback, setFeedback] = useState<{
@@ -169,6 +179,91 @@ export function ParticipantCoordination({
       }),
     });
   };
+  const entryError = (error: unknown) =>
+    setEntryFeedback({
+      title: "Entry point unavailable",
+      description: getORPCRequestErrorMessage(error).text,
+    });
+  const deliveryFeedback = (delivery: "sent" | "failed" | "already-issued") => {
+    setEntryFeedback(
+      delivery === "sent"
+        ? { title: "Invitation sent", description: "Email delivery succeeded." }
+        : delivery === "already-issued"
+          ? {
+              title: "Invitation already issued",
+              description: "No new email was sent. Reissue explicitly to resend.",
+            }
+          : {
+              title: "Email delivery failed",
+              description:
+                "The invitation was created, but email delivery failed. Reissue to try again.",
+            },
+    );
+  };
+  const issueInvitation = useMutation({
+    mutationFn: () =>
+      orpc.participantOnboarding.issueInvitation({ partnershipId, email }),
+    onSuccess: async (result) => {
+      deliveryFeedback(result.delivery);
+      await refresh();
+    },
+    onError: entryError,
+  });
+  const reissueInvitation = useMutation({
+    mutationFn: (invitationEmail: string) =>
+      orpc.participantOnboarding.reissueInvitation({
+        partnershipId,
+        email: invitationEmail,
+      }),
+    onSuccess: async (result) => {
+      deliveryFeedback(result.delivery);
+      await refresh();
+    },
+    onError: entryError,
+  });
+  const createLink = useMutation({
+    mutationFn: () =>
+      orpc.participantOnboarding.createRegistrationLink({ partnershipId }),
+    onSuccess: async ({ id, secret }) => {
+      setCreatedLink({
+        partnershipId,
+        id,
+        url: `${window.location.origin}/participant-links/${encodeURIComponent(id)}?secret=${encodeURIComponent(secret)}`,
+      });
+      setEntryFeedback({
+        title: "Registration link created",
+        description:
+          "Copy it now. The secret cannot be recovered after leaving this page.",
+      });
+      await refresh();
+    },
+    onError: entryError,
+  });
+  const closeInvitation = useMutation({
+    mutationFn: (invitationId: string) =>
+      orpc.participantOnboarding.setInvitationOpen({ invitationId, open: false }),
+    onSuccess: async () => {
+      setEntryFeedback({
+        title: "Invitation closed",
+        description: "The invitation can no longer be used.",
+      });
+      await refresh();
+    },
+    onError: entryError,
+  });
+  const closeLink = useMutation({
+    mutationFn: (id: string) =>
+      orpc.participantOnboarding.setRegistrationLinkOpen({ id, open: false }),
+    onSuccess: async (_result, id) => {
+      setCreatedLink((current) => (current?.id === id ? undefined : current));
+      setEntryFeedback({
+        title: "Registration link closed",
+        description: "The link can no longer be used.",
+      });
+      await refresh();
+    },
+    onError: entryError,
+  });
   // Hosts may read server-authorized oversight data, but cannot manage Partner
   // Participations here; denied writes show the access-denied surface below.
   const create = useMutation({
@@ -193,8 +288,8 @@ export function ParticipantCoordination({
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Only add a User who has completed account, profile, and agreement
-            onboarding. For someone not yet onboarded, use the Hosting
-            Organization&apos;s Participant invitation path.
+            onboarding. For someone not yet onboarded, send a Participant
+            Invitation or create a Participant Registration Link below.
           </p>
           <form
             className="flex flex-wrap items-end gap-3"
@@ -261,6 +356,67 @@ export function ParticipantCoordination({
       </Card>
       <Card>
         <CardHeader>
+          <CardTitle>Participant entry points</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form
+            className="flex flex-wrap items-end gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setEntryFeedback(undefined);
+              issueInvitation.mutate();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="participant-invitation-email">Invitee email</Label>
+              <input
+                id="participant-invitation-email"
+                className="h-9 rounded-md border bg-background px-3 text-sm"
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
+            <Button disabled={issueInvitation.isPending} type="submit">
+              Send Participant Invitation
+            </Button>
+          </form>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={createLink.isPending}
+            onClick={() => {
+              setEntryFeedback(undefined);
+              createLink.mutate();
+            }}
+          >
+            Create Participant Registration Link
+          </Button>
+          {createdLink?.partnershipId === partnershipId && (
+            <div className="space-y-2">
+              <Label htmlFor="new-participant-link">
+                New registration link (copy now)
+              </Label>
+              <input
+                id="new-participant-link"
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                readOnly
+                value={createdLink.url}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+            </div>
+          )}
+          {entryFeedback && (
+            <Alert>
+              <AlertTitle>{entryFeedback.title}</AlertTitle>
+              <AlertDescription>{entryFeedback.description}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <CardTitle>Invitations</CardTitle>
         </CardHeader>
         <CardContent>
@@ -279,6 +435,32 @@ export function ParticipantCoordination({
                       ? "Invitation pending"
                       : `Invitation ${invitation.status}`}
                   </Badge>
+                  {invitation.status === "pending" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        reissueInvitation.isPending || closeInvitation.isPending
+                      }
+                      onClick={() => reissueInvitation.mutate(invitation.email)}
+                    >
+                      Reissue invitation for {invitation.email}
+                    </Button>
+                  )}
+                  {invitation.status === "pending" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        closeInvitation.isPending || reissueInvitation.isPending
+                      }
+                      onClick={() =>
+                        closeInvitation.mutate(invitation.invitationId)
+                      }
+                    >
+                      Close invitation for {invitation.email}
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -286,6 +468,40 @@ export function ParticipantCoordination({
           <p className="mt-4 text-sm text-muted-foreground">
             Invitation status does not show profile or agreement progress.
           </p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Registration links</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.registrationLinks.length === 0 ? (
+            <p>No registration links are recorded for this Partnership.</p>
+          ) : (
+            <ul className="divide-y">
+              {data.registrationLinks.map((link) => (
+                <li
+                  key={link.id}
+                  className="flex flex-wrap items-center gap-3 py-3"
+                >
+                  <span>Link {link.id}</span>
+                  <Badge variant="secondary">
+                    {link.enabled ? "Open" : "Closed"}
+                  </Badge>
+                  {link.enabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={closeLink.isPending}
+                      onClick={() => closeLink.mutate(link.id)}
+                    >
+                      Close registration link {link.id}
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </section>

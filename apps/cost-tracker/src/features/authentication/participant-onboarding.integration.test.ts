@@ -59,6 +59,7 @@ import {
   createParticipantOnboardingProcedures,
   deliverParticipantInvitation,
 } from "@/features/authentication/participant-onboarding-procedures";
+import { createParticipationProcedures } from "@/features/projects/procedures/participations";
 
 const suffix = randomUUID();
 const host = `onboarding-host-${suffix}`;
@@ -74,7 +75,10 @@ let actor = owner;
 let activeOrganizationId = partner;
 let version = { id: "fixture-agreement-v1", contentHash: "fixture-hash-v1" };
 const client = createRouterClient(
-  { participantOnboarding: createParticipantOnboardingProcedures(() => version) },
+  {
+    participantOnboarding: createParticipantOnboardingProcedures(() => version),
+    participations: createParticipationProcedures(() => version),
+  },
   {
     context: async () => ({ headers: new Headers() }),
   },
@@ -357,6 +361,20 @@ describe("Participant onboarding procedures", () => {
       id: first.id,
       open: false,
     });
+    const scoped = await client.participations.listPartnership({
+      partnershipId: partnership,
+    });
+    expect(scoped.registrationLinks).toEqual(
+      expect.arrayContaining([
+        { id: first.id, enabled: false },
+        { id: second.id, enabled: true },
+      ]),
+    );
+    expect(JSON.stringify(scoped)).not.toContain(first.secret);
+    expect(JSON.stringify(scoped)).not.toContain("secretHash");
+    await expect(
+      client.participations.listPartnership({ partnershipId: otherPartnership }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
     const rows = await db
       .select()
       .from(links)
