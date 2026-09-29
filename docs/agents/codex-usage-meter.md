@@ -11,4 +11,4 @@
   wait ~6s, then `tmux capture-pane -t cx -p -S -80 | rg -a "5h limit|Weekly limit|resets"`
   `tmux kill-session -t cx` afterwards
 - Trust "Trust this folder?" only for known dirs; pin subagent cwd to the repo.
-- Run rule: check before launching ticket subagents; below 15% stop, tree clean, report.
+- Run rule: check before launching ticket subagents; 5h below 15% → stop, tree clean, report. Weekly moves slowly — informational only, never a launch gate.
