@@ -201,7 +201,7 @@ describe("ParticipantCoordination", () => {
     client.setDefaultOptions({ queries: { retry: false } });
     render(
       <QueryClientProvider client={client}>
-        <ProjectDataErrorBoundary resource="Partnership Participants">
+        <ProjectDataErrorBoundary resource="Project Participations">
           <Suspense fallback={<p>Loading Participants</p>}>
             <ParticipantCoordination partnershipId="foreign-partnership" />
           </Suspense>

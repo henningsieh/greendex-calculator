@@ -280,7 +280,7 @@ export function ParticipantCoordination({
   });
 
   return (
-    <section className="space-y-6" aria-label="Partnership Participants">
+    <section className="space-y-6" aria-label="Project Participations">
       <Card>
         <CardHeader>
           <CardTitle>Add an onboarded Participant</CardTitle>
@@ -356,7 +356,7 @@ export function ParticipantCoordination({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Participant entry points</CardTitle>
+          <CardTitle>Participant Invitations and Registration Links</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <form
