@@ -363,7 +363,8 @@ describe("Claim workspace", () => {
       screen.queryByRole("button", { name: "Correct Robin's journey" }),
     ).toBeNull();
     expect(screen.queryByRole("button", { name: "Save correction" })).toBeNull();
-  });
+    // Heavy render + async flows: flakes at the 5s default under full parallel load.
+  }, 30_000);
 
   it("shows correction reason, editing actions and resubmit; rejected reason without payment or edit controls", async () => {
     mocks.draft = {

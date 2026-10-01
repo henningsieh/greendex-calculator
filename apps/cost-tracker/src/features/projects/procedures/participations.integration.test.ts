@@ -385,6 +385,10 @@ describe("assignment-scoped participation coordination", () => {
       (await client.participations.listPartnership({ partnershipId: own }))
         .participations,
     ).toHaveLength(1);
+    expect(
+      (await client.participations.listPartnership({ partnershipId: own }))
+        .projectName,
+    ).toBe("Project");
     actor = candidate;
     activeOrg = host;
     expect(

@@ -5,6 +5,7 @@ import {
   claimsTable,
   member,
   organization,
+  partnerCoordinatorAssignmentsTable as partnerAssignments,
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -26,6 +27,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
+import { assignedPartnershipIds } from "@/features/projects/procedures/assigned-partnerships";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import {
   decodeProjectListCursor,
@@ -561,22 +563,41 @@ export const listHosted = authorized
   });
 
 export const listPartner = authorized
-  .use(
-    requireCostTrackerPermissions({
-      project: ["read"],
-      projectPartnership: ["read"],
-    }),
-  )
   .input(PartnerProjectListInputSchema)
   .output(PartnerProjectListSchema)
   .handler(async ({ context, errors, input }) => {
-    const activeOrganizationId = context.session.activeOrganizationId!;
+    const activeOrganizationId = context.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      throw errors.FORBIDDEN({
+        message:
+          "Select an active Organization before accessing Cost Tracker data.",
+      });
+    }
+    // Organization-wide readers see every Partnership; assigned coordinators
+    // see exactly their assigned Partnerships and nothing else.
+    const canReadPartner = await hasCostTrackerPermissions(context.headers, {
+      project: ["read"],
+      projectPartnership: ["read"],
+    });
+    const assignedIds = canReadPartner
+      ? []
+      : await assignedPartnershipIds(context.user.id, activeOrganizationId);
+    if (!canReadPartner && assignedIds.length === 0) {
+      throw errors.FORBIDDEN({
+        message:
+          "The active Organization role cannot access this Cost Tracker resource.",
+      });
+    }
     const fingerprint = getProjectListFingerprint({
       scope: "partner",
       ...input,
     });
     const cursor = parseCursor(input, fingerprint, errors);
     const wholeFilters = getPartnerProjectScopeFilters(activeOrganizationId);
+    if (assignedIds.length > 0)
+      wholeFilters.push(
+        inArray(projectPartnerOrganizationsTable.id, assignedIds),
+      );
     const filteredScopeFilters = [...wholeFilters, ...getProjectFilters(input)];
     const pageFilters = [...filteredScopeFilters];
     const sortDescription = getProjectSortDescription(input.sort);
@@ -633,13 +654,15 @@ export const availableScopes = authorized
       });
     }
 
-    const [canReadHostedPermission, canReadPartner] = await Promise.all([
-      hasCostTrackerPermissions(context.headers, { project: ["read"] }),
-      hasCostTrackerPermissions(context.headers, {
-        project: ["read"],
-        projectPartnership: ["read"],
-      }),
-    ]);
+    const [canReadHostedPermission, canReadPartnerPermission] = await Promise.all(
+      [
+        hasCostTrackerPermissions(context.headers, { project: ["read"] }),
+        hasCostTrackerPermissions(context.headers, {
+          project: ["read"],
+          projectPartnership: ["read"],
+        }),
+      ],
+    );
     const [membership] = await db
       .select({ role: member.role })
       .from(member)
@@ -655,6 +678,12 @@ export const availableScopes = authorized
       !!membership &&
       (hasOrganizationRole(membership.role, "owner") ||
         hasOrganizationRole(membership.role, "admin"));
+    // Assigned coordinators discover exactly their Partnerships; the role
+    // alone still grants no Organization-wide overview.
+    const assignedIds = canReadPartnerPermission
+      ? []
+      : await assignedPartnershipIds(context.user.id, activeOrganizationId);
+    const canReadPartner = canReadPartnerPermission || assignedIds.length > 0;
     const [hostedRows, partnerRows] = await Promise.all([
       canReadHosted
         ? db
@@ -755,10 +784,24 @@ export const getProject = authorized
 
     if (relationship.kind === "partner") {
       if (!canReadPartner) {
-        throw errors.FORBIDDEN({
-          message:
-            "The active Organization role cannot read this Project Partnership.",
-        });
+        // Assignment-scoped coordinators may read exactly the Partnership
+        // they are assigned to; membership plus assignment, never role alone.
+        const [assignment] = await db
+          .select({ userId: partnerAssignments.userId })
+          .from(partnerAssignments)
+          .where(
+            and(
+              eq(partnerAssignments.partnershipId, relationship.partnershipId),
+              eq(partnerAssignments.userId, context.user.id),
+            ),
+          )
+          .limit(1);
+        if (!assignment || !membership) {
+          throw errors.FORBIDDEN({
+            message:
+              "The active Organization role cannot read this Project Partnership.",
+          });
+        }
       }
 
       const [claim] = await db
