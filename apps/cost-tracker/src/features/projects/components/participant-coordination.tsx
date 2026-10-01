@@ -320,6 +320,151 @@ function ReviewTasks({ partnershipId }: { partnershipId: string }) {
   );
 }
 
+function PartnerCoordinatorControls({
+  partnershipId,
+}: {
+  partnershipId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [targetUserId, setTargetUserId] = useState("");
+  const [feedback, setFeedback] = useState("");
+  // This existing read is owner/admin-only; the mutations separately enforce
+  // that the active Organization is this Project Partnership's Partner side.
+  const members = useQuery(
+    orpcQuery.organizations.listMembers.queryOptions({
+      input: {},
+      meta: { costTrackerORPC: true },
+      retry: false,
+    }),
+  );
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: orpcQuery.projects.listPartner.key({ type: "query" }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: orpcQuery.projects.scopes.key({ type: "query" }),
+      }),
+    ]);
+  };
+  const onError = (error: unknown) =>
+    setFeedback(getORPCRequestErrorMessage(error).text);
+  const assign = useMutation({
+    mutationFn: () =>
+      orpc.projectPartnerships.assignPartnerCoordinator({
+        partnershipId,
+        userId: targetUserId,
+      }),
+    onSuccess: async () => {
+      setFeedback("Group Organizer assigned to this Project Partnership.");
+      await refresh();
+    },
+    onError,
+  });
+  const revoke = useMutation({
+    mutationFn: () =>
+      orpc.projectPartnerships.removePartnerCoordinator({
+        partnershipId,
+        userId: targetUserId,
+      }),
+    onSuccess: async () => {
+      setFeedback(
+        "Group Organizer assignment revoked for this Project Partnership. Organization Membership roles are unchanged.",
+      );
+      await refresh();
+    },
+    onError,
+  });
+  if (members.isPending) return <output>Loading Registered Users…</output>;
+  if (members.isError)
+    return (
+      <Alert>
+        <AlertTitle>Group Organizer management unavailable</AlertTitle>
+        <AlertDescription>
+          {getORPCRequestErrorMessage(members.error).text}
+        </AlertDescription>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void members.refetch()}
+        >
+          Retry Registered Users
+        </Button>
+      </Alert>
+    );
+  const eligible = members.data.members.filter((entry) =>
+    entry.role
+      .split(",")
+      .some((role) =>
+        ["owner", "admin", "member", "project-coordinator"].includes(role.trim()),
+      ),
+  );
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Organization Owners and Organization Admins may assign or revoke a Group
+        Organizer for this Project Partnership. Assignment does not change
+        Organization Membership roles; the project-coordinator role is required
+        for assignment-scoped access.
+      </p>
+      <div className="space-y-2">
+        <Label htmlFor={`group-organizer-${partnershipId}`}>
+          Registered User for Group Organizer assignment
+        </Label>
+        <select
+          id={`group-organizer-${partnershipId}`}
+          className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+          value={targetUserId}
+          disabled={assign.isPending || revoke.isPending}
+          onChange={(event) => {
+            setTargetUserId(event.target.value);
+            setFeedback("");
+          }}
+        >
+          <option value="">Select a Registered User</option>
+          {eligible.map((entry) => (
+            <option key={entry.userId} value={entry.userId}>
+              {entry.name} ({entry.email})
+            </option>
+          ))}
+        </select>
+      </div>
+      {eligible.length === 0 && (
+        <p>No eligible Registered Users in this Organization.</p>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <Button
+          type="button"
+          disabled={!targetUserId || assign.isPending || revoke.isPending}
+          onClick={() => {
+            setFeedback("");
+            assign.mutate();
+          }}
+        >
+          Assign Group Organizer
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!targetUserId || assign.isPending || revoke.isPending}
+          onClick={() => {
+            setFeedback("");
+            revoke.mutate();
+          }}
+        >
+          Revoke Group Organizer assignment
+        </Button>
+      </div>
+      {feedback && (
+        <Alert>
+          <AlertTitle>Group Organizer update</AlertTitle>
+          <AlertDescription>{feedback}</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
+
 /** The list and mutations are scoped by the server's Partnership authorization, not client filtering. */
 export function ParticipantCoordination({
   partnershipId,
@@ -336,6 +481,7 @@ export function ParticipantCoordination({
   const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [coordinatorsOpen, setCoordinatorsOpen] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
     partnershipId: string;
     id: string;
@@ -614,6 +760,26 @@ export function ParticipantCoordination({
                 </li>
               ))}
             </ul>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Group Organizers</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            type="button"
+            variant="outline"
+            aria-expanded={coordinatorsOpen}
+            onClick={() => setCoordinatorsOpen((open) => !open)}
+          >
+            {coordinatorsOpen
+              ? "Hide Group Organizer management"
+              : "Manage Group Organizers"}
+          </Button>
+          {coordinatorsOpen && (
+            <PartnerCoordinatorControls partnershipId={partnershipId} />
           )}
         </CardContent>
       </Card>
