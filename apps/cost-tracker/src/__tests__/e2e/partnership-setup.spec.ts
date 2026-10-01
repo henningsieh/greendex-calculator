@@ -44,8 +44,10 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 // 12 forged/self/duplicate enforcement (partnerships.integration.test.ts).
 // UI GAP (13): no existing-link list or close control; creation/copy does not
 // demonstrate revocation while retaining sibling links.
-// PRODUCT-RESOLUTION-PENDING: the disposable member-created Project observation
-// below records current behavior only, never a requirements PASS.
+// BLOCKED / PRODUCT-RESOLUTION-PENDING: M's Project creation attempt encounters
+// a denied Projects page, without a New project button. The observation below is
+// NOT a requirements PASS; procedure-level creation is covered separately in
+// create.integration.test.ts. The UI/procedure discrepancy needs product resolution.
 const fixture = new HostingJourneyFixture();
 const suffix = fixture.suffix;
 const names = {
@@ -534,7 +536,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     });
   });
 
-  test("member-created Project observation — product resolution pending, not a requirements PASS", async ({
+  test("member-created Project observation — UI BLOCKED, product resolution pending, not a requirements PASS", async ({
     browser,
     baseURL,
   }) => {
@@ -545,15 +547,23 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     expect(membership?.role).toBe("member");
     const context = await actorContext(browser, "M", baseURL!);
     const page = await context.newPage();
-    // Current browser behavior: M can create a disposable Hosted Project despite
-    // fallback member's documented lack of Cost Tracker authority. Observation
-    // only, NOT a requirements PASS; no subsequent test uses this Project.
-    await createProject(page, memberProjectName);
+    // Actual browser disposition: creation is BLOCKED before any form can open.
+    // The procedure permits member creation, but this UI does not expose it.
+    // This is an observation, NOT a requirements PASS or server-denial evidence.
+    await page.goto("/projects");
+    await expect(
+      page.getByRole("heading", { name: "Projects", exact: true }),
+    ).toBeVisible();
+    const denial = page.getByRole("alert").filter({ hasText: "Unable to load Projects" });
+    await expect(denial).toBeVisible();
+    await expect(denial).toContainText("You do not have permission to access this resource.");
+    await expect(denial.getByRole("button", { name: "Retry" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "New project" })).toHaveCount(0);
     const [created] = await db
-      .select({ organizationId: projectsTable.organizationId })
+      .select({ value: count() })
       .from(projectsTable)
       .where(eq(projectsTable.name, memberProjectName));
-    expect(created?.organizationId).toBe(membership!.organizationId);
+    expect(created!.value).toBe(0);
   });
 
   test.describe("member Owner-selection precondition", () => {
