@@ -54,7 +54,7 @@ At the start of our session create a separate persistent run log `apps/cost-trac
 
 **Checkpoint:** If Cost Tracker has no way to assign a _different_ Hosting Project Coordinator, note **UI GAP** for that role test. Use H and A (after 03 acceptance) for Hosting decisions. Never archive Main while subsequent cases need it.
 
-**Role ban ([ADR-0012](../../../../docs/adr/0012-ban-fallback-member-role-in-cost-tracker.md)):** Better Auth's fallback role value `member` is forbidden in Cost Tracker: never invite, assign, or seed it. Case 10 uses a real Organization Admin. `hosting-setup.spec.ts` uses an unassigned `project-coordinator` for the disposable creation/assigned-scope checks; this is not a fallback-role permission observation.
+**Role ban ([ADR-0012](../../../../docs/adr/0012-ban-fallback-member-role-in-cost-tracker.md)):** Better Auth's fallback role value `member` is forbidden in Cost Tracker: never invite, assign, or seed it. Case 10 uses a real Organization Admin. `hosting-setup.spec.ts` uses a real `participant` Membership for the disposable creation/assigned-scope checks: assigned-list search denies that role; existing Project creation grants the creator an explicit coordinator assignment without removing `participant`. This is not a fallback-role permission observation.
 
 ## 2. Partnerships: Project-specific, not global
 

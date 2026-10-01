@@ -155,7 +155,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     // Server authorization is separately covered by projects.integration.test.ts.
   });
 
-  test("04a an unassigned coordinator can create a disposable Project despite denied assigned-list access", async ({
+  test("04a a Participant Membership can create a disposable Project despite denied assigned-list access", async ({
     browser,
     baseURL,
   }) => {
@@ -165,13 +165,13 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       .where(eq(organization.name, fixture.organizationName));
     expect(hosting).toBeDefined();
     const membershipId = randomUUID();
-    const projectName = `CT ${fixture.suffix} Coordinator disposable`;
+    const projectName = `CT ${fixture.suffix} Participant disposable`;
     // Setup-only Membership: never send an Organization Invitation on real SMTP.
     await db.insert(member).values({
       id: membershipId,
       organizationId: hosting!.id,
       userId: fixture.actors.X.id,
-      role: "project-coordinator",
+      role: "participant",
       createdAt: new Date(),
     });
     try {
@@ -185,6 +185,11 @@ test.describe.serial("Hosting Organization journey section 1", () => {
         page.getByRole("button", { name: "New project" }),
       ).toBeVisible();
       const projectURL = await createProject(page, projectName);
+      const [createdMembership] = await db
+        .select({ role: member.role })
+        .from(member)
+        .where(eq(member.id, membershipId));
+      expect(createdMembership?.role).toBe("participant,project-coordinator");
       await page.goto("/projects");
       await expect(page.getByRole("link", { name: projectName })).toBeVisible();
       await page.goto(projectURL);
