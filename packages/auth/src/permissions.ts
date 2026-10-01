@@ -26,7 +26,7 @@ const statement = {
 
 export const accessControl = createAccessControl(statement);
 
-export const organisationOwner = accessControl.newRole({
+export const organizationAdministratorRole = accessControl.newRole({
   ...ownerAc.statements,
   project: ["create", "read", "update", "delete", "archive"],
   projectPartnership: ["create", "read", "update", "delete"],
@@ -40,12 +40,6 @@ export const legacyCalculatorAdminRole = accessControl.newRole({
   projectParticipation: ["create", "read", "update", "merge"],
 });
 
-// Organization Admin keeps the existing admin permission statements; its definition
-// name is distinct from Calculator's legacy admin meaning, not a new stored role.
-export const organizationAdmin = accessControl.newRole({
-  ...legacyCalculatorAdminRole.statements,
-});
-
 // Assignment-bound Cost Tracker procedures grant coordination. The role alone grants no broad access.
 export const projectCoordinatorRole = accessControl.newRole({
   ...memberAc.statements,
@@ -55,7 +49,7 @@ export const legacyCalculatorMemberRole = accessControl.newRole({
   ...memberAc.statements,
 });
 
-export const projectParticipant = accessControl.newRole({
+export const projectParticipantRole = accessControl.newRole({
   ...memberAc.statements,
   project: ["read"],
   projectParticipation: ["read", "update"],
@@ -69,25 +63,24 @@ export const organizationRoles = {
   member: legacyCalculatorMemberRole,
 
   // Domain-named role definitions; these keys are not persisted role values.
-  organisationOwner,
-  organizationAdmin,
-  projectParticipant,
+  organisationAdmin: organizationAdministratorRole,
+  projectParticipant: projectParticipantRole,
 };
 
 // Better Auth's creatorRole and existing rows use owner/participant. Resolve the
 // domain-named definitions to those unchanged runtime keys: no authority or data
 // migration is implied by renaming the definition map.
 export const calculatorOrganizationRoles = {
-  owner: organizationRoles.organisationOwner,
+  owner: organizationRoles.organisationAdmin,
   admin: organizationRoles.admin,
   member: organizationRoles.member,
   participant: organizationRoles.projectParticipant,
 };
 
 export const costTrackerOrganizationRoles = {
-  owner: organisationOwner,
-  admin: organizationAdmin,
-  participant: projectParticipant,
+  owner: organizationRoles.organisationAdmin,
+  admin: organizationRoles.admin,
+  participant: organizationRoles.projectParticipant,
   "project-coordinator": projectCoordinatorRole,
 };
 
