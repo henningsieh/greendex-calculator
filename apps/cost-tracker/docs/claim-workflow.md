@@ -15,7 +15,7 @@ editable → submitted → correction requested → submitted
                      ↘ rejected → reopened for Hosting review
 ```
 
-Opening Claim UI persists nothing; there is no separate start ceremony. Explicit Save creates the Claim on its first save, after the Project Partnership has selected a Payout Account. A submitted Claim is locked. Only a correction request unlocks Partner-side editing. Reopening a rejection does not unlock Partner-side editing; Hosting staff either review it again or issue a correction request.
+Opening Claim UI persists nothing; there is no separate start ceremony. Explicit Save creates the Claim on its first save, after the Project Partnership has selected a Payout Account. A submitted Claim is locked. Browser Back/Forward restoration revalidates the Claim's saved state and history rather than trusting a pre-submission snapshot; reload also preserves the lock. Only a correction request unlocks Partner-side editing. Reopening a rejection does not unlock Partner-side editing; Hosting staff either review it again or issue a correction request.
 
 There is no manually opened or closed Project-wide Claim phase. A Partner-side Project Coordinator may prepare its Claim whenever its Project Partnership is set up and has selected a Payout Account.
 
