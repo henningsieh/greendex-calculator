@@ -396,7 +396,7 @@ function PartnerCoordinatorControls({
     entry.role
       .split(",")
       .some((role) =>
-        ["owner", "admin", "member", "project-coordinator"].includes(role.trim()),
+        ["owner", "admin", "project-coordinator"].includes(role.trim()),
       ),
   );
   return (

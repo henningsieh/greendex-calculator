@@ -1,11 +1,13 @@
 import { createServerAuth } from "@greendex/auth";
 
 import { env } from "@/env";
+import { costTrackerOrganizationHooks } from "@/features/organizations/roles";
 import { emailSender } from "@/lib/email";
 
 export const auth = createServerAuth({
   appName: "Cost Tracker",
   costTrackerRoles: true,
+  organizationHooks: costTrackerOrganizationHooks,
   baseURL: env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
   socialProviders: {
