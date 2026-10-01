@@ -12,29 +12,33 @@
 subagent({
   agent: "worker",            // worker implements, reviewer reviews, delegate runs errands
   task: "<verbatim ticket command + cold-start contract, see below>",
-  model: "openai-codex/gpt-6-sol:xhigh",
+  model: "openai-codex/gpt-6.1-sol:high",
   maxRuntimeMs: 3600000,      // 60 min: integration suites + typegen need it
   // cwd defaults to runtime cwd; set explicitly or workers land in /tmp
 })
 ```
 
-Prefix each worker's `task` prompt with the exact skill directive for its role:
+Prefix each child's `task` prompt with the exact skill directive for its role — and only that role's directive:
 
 - Implementation worker: `/skill:implement`
 - Worker reviewing previous code changes: `/skill:code-review`
+- Survey/recon scout (read-only inventory, classification, no edits): NO skill prefix — `/skill:implement` on a scout is wrong (scout tools are read-only anyway, but the directive misstates the role and confuses review).
 
 Place the directive at the very start of the prompt, before the ticket command
 and cold-start contract.
 
 ## Model and thinking
 
-- Exact `provider/id` required; bare ids resolve only when unique. Verified
-  working: `openai-codex/gpt-6-sol`.
-- Thinking is a `:suffix`, not a field (`:xhigh`, `:high`, `:medium`, …).
+- Exact `provider/id` required; bare ids resolve only when unique. Default:
+  `openai-codex/gpt-6.1-sol` — cheaper and better than `gpt-6-sol`
+  (verified in registry 2026-10-01); use it unless a task needs otherwise.
+- Thinking is a `:suffix`, not a field. Allowed levels: `:medium`, `:high`,
+  and rarely `:xhigh` — only when you expect the task to be hard and complex.
   The `thinking` field is ignored on dispatch.
-- Used here: workers `high` (complex) or `medium` (well-scoped), reviewers
-  `xhigh`. Always verify resolution in `status` output (`gpt-6-sol ·
-  thinking xhigh`) — never assume; a typo silently falls back.
+- Used here: scouts `medium` (read-only survey is well-scoped), workers
+  `medium` (well-scoped) or `high` (complex), reviewers `xhigh`. Always
+  verify resolution in `status` output (`gpt-6.1-sol · thinking xhigh`) —
+  never assume; a typo silently falls back.
 - Async is default. Monitor via native notifications; `status` (+
   `view: "transcript"`) to inspect, `steer` for live guidance,
   `subagent_supervisor({action: "reply", replyTo, message})` for child
@@ -57,6 +61,8 @@ deferrals), stop/escalate rules.
   your shell); kill by exact PID instead.
 - Subagents default cwd is not the repo — pass `cwd` or work lands elsewhere
   (plus trust prompts outside trusted dirs).
+- Match the skill directive to the role: scout prompts carry no `/skill:`
+  prefix; only worker prompts carry `/skill:implement` (2026-09-29).
 - Close-out rhythm per ticket: progress comment, keep open, merge, close.
   Stopped runs cannot resume; timed-out runs recover via inventory + landing
   worker, never by re-implementing.

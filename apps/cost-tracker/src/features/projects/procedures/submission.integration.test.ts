@@ -665,7 +665,8 @@ describe("Claim submission", () => {
       "journey_updated",
       "resubmitted",
     ]);
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("concurrent resubmission retries write one resubmitted event", async () => {
     await prepare();
@@ -759,7 +760,8 @@ describe("Claim submission", () => {
       false,
     );
     expect(preview?.calculatedPayableEur).toBeNull();
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("previews the same calculated payable as submission without writing", async () => {
     await prepare();
@@ -1556,7 +1558,8 @@ describe("Claim payment recording", () => {
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
     ).toBe("rejected");
     expect(await events()).toEqual(before);
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("rejects partial, excessive and invalid transfer amounts without changing an approved Claim", async () => {
     const payable = await approvedClaim();
@@ -1614,7 +1617,8 @@ describe("Claim payment recording", () => {
         payoutAccountId: alternate,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("concurrent paid-flag correction retries retain one correction event", async () => {
     const payable = await approvedClaim();
@@ -1669,7 +1673,8 @@ describe("Claim payment recording", () => {
         payoutAccountId: alternate,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
     const payable = await approvedClaim();

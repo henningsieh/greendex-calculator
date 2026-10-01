@@ -24,7 +24,7 @@ export default async function globalSetup(config: FullConfig) {
     // Closing this browser while its RSC response is still rendering aborts it.
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     await mkdir("src/__tests__/e2e/.auth", { recursive: true });
     await page.context().storageState({ path: storageStatePath });
