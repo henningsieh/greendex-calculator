@@ -326,9 +326,6 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     browser,
     baseURL,
   }) => {
-    // Defect: browser Back restores a stale editable Claim after successful submit.
-    // Preserve the failing invariant until the client invalidates its history state.
-    test.fail();
     const p = await pageFor(browser, "P", baseURL!);
     await p.goto(claimURL);
     // These rows are test-only submission prerequisites, not browser evidence for cost entry/upload.

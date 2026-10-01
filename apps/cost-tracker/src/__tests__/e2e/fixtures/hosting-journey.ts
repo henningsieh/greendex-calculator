@@ -14,6 +14,8 @@ import { type Browser, type BrowserContext, expect } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { count, eq, inArray } from "drizzle-orm";
 
+import { registerPrivateValues } from "./artifact-privacy";
+
 // Only setup-only auth operations live here. Browser actions remain in the specs.
 export class HostingJourneyFixture {
   readonly suffix = randomUUID();
@@ -78,6 +80,9 @@ export class HostingJourneyFixture {
   }
 
   async setup() {
+    registerPrivateValues(
+      ...Object.values(this.actors).map((actor) => actor.password),
+    );
     this.baseline = await this.counts();
     for (const actor of Object.values(this.actors)) {
       await db.insert(user).values({

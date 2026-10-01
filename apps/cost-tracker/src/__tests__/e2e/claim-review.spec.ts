@@ -25,17 +25,23 @@ import {
   travelCostEntryDocumentsTable as entryDocuments,
   user,
 } from "@greendex/database/schema";
-import {
-  expect,
-  test,
-  type Browser,
-  type BrowserContext,
-} from "@playwright/test";
+import { type Browser, type BrowserContext } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { count, eq, inArray } from "drizzle-orm";
 
 import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/authentication/participant-agreement";
 
+import {
+  expectPrivateURL,
+  expect,
+  test,
+  registerPrivateValues,
+} from "./fixtures/artifact-privacy";
+
+// MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
+// from traces. URL/value checks report booleans without weakening their matches.
+// Automatic DOM snapshots and reporter API diagnostics remain known risks; the
+// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: beforeAll inserts verified disposable Users and credentials,
 // Hosting/Partner Organizations and memberships, one Project, two Project Partnerships,
 // joined Project Participations, frozen funding rules, Participant Journeys, Payout
@@ -72,6 +78,7 @@ const actors = Object.fromEntries(
   "H" | "P" | "F",
   { id: string; email: string; name: string; password: string }
 >;
+registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
 const projectName = `CT ${suffix} Main`;
 const partnerNames = [`CT ${suffix} Partner A`, `CT ${suffix} Partner B`];
 const personNames = [`CT ${suffix} Participant A`, `CT ${suffix} Participant B`];
@@ -213,7 +220,12 @@ async function events(index: number) {
 }
 
 // Disable traces for every context in this file, including auth API requests.
-test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  trace: "off",
+  screenshot: "off",
+  video: "off",
+});
 
 test.describe.serial("Claim review journey 25–26", () => {
   test.beforeAll(async () => {
@@ -492,7 +504,8 @@ test.describe.serial("Claim review journey 25–26", () => {
       host.getByRole("link", { name: `${projectName} · ${partnerNames[1]}` }),
     ).toBeVisible();
     await first.click();
-    await expect(host).toHaveURL(`/claims/review/${ids.partnerships[0]}`);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(host, `/claims/review/${ids.partnerships[0]}`);
     reviewURL = host.url();
     expect(new URL(reviewURL).pathname).toBe(
       `/claims/review/${ids.partnerships[0]}`,
@@ -630,7 +643,8 @@ test.describe.serial("Claim review journey 25–26", () => {
     await host
       .getByRole("link", { name: `${projectName} · ${partnerNames[1]}` })
       .click();
-    await expect(host).toHaveURL(`/claims/review/${ids.partnerships[1]}`);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(host, `/claims/review/${ids.partnerships[1]}`);
     await expect(
       review.getByText("Submitted · awaiting Hosting review"),
     ).toBeVisible();

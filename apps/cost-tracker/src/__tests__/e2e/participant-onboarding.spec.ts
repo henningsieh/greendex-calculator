@@ -16,16 +16,21 @@ import {
   session,
   user,
 } from "@greendex/database/schema";
-import {
-  expect,
-  test,
-  type Browser,
-  type BrowserContext,
-  type Page,
-} from "@playwright/test";
+import { type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { and, count, eq, inArray } from "drizzle-orm";
 
+import {
+  expectPrivateURL,
+  expect,
+  test,
+  registerPrivateValues,
+} from "./fixtures/artifact-privacy";
+
+// MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
+// from traces. URL/value checks report booleans without weakening their matches.
+// Automatic DOM snapshots and reporter API diagnostics remain known risks; the
+// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: verified disposable Users, credential accounts, Organizations,
 // Projects, Partnerships, and native Participant/Organization Invitations with their
 // bridge records are inserted in beforeAll. The initial Participant Invitation and
@@ -75,6 +80,7 @@ const actors = Object.fromEntries(
     password: string;
   }
 >;
+registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
 type Actor = keyof typeof actors;
 const contexts: BrowserContext[] = [];
 let sharedLink: string;
@@ -225,7 +231,8 @@ async function join(page: Page, url: string, actor: Actor) {
   await page.getByLabel("Full name").fill(actors[actor].name);
   await page.getByLabel("I accept the current Participant agreement").check();
   await page.getByRole("button", { name: "Join Project" }).click();
-  await expect(page).toHaveURL(/\/participant$/);
+  // Preserve the original full-URL match; only the diagnostic receives a boolean.
+  await expectPrivateURL(page, /\/participant$/);
   await expect(page.getByText(names.main, { exact: true })).toBeVisible();
 }
 
@@ -271,7 +278,12 @@ async function assertJoined(
 }
 
 // Disable traces for every context in this file, including auth API requests.
-test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  trace: "off",
+  screenshot: "off",
+  video: "off",
+});
 
 test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
   test.beforeAll(async () => {
@@ -689,7 +701,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
-    await expect(t).toHaveURL(/\/participant$/);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(t, /\/participant$/);
     await expect(t.getByText(names.other, { exact: true })).toBeVisible();
     await assertJoined("T", ids.partner, ids.other);
 
@@ -702,7 +715,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .getByRole("button", { name: "Accept Organization Invitation" })
       .click();
     await expect(q.locator('section p[role="alert"]')).toHaveCount(0);
-    await expect(q).toHaveURL(/\/projects$/);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(q, /\/projects$/);
     expect(await membershipRole("Q", ids.host)).toEqual([{ role: "member" }]);
     await join(q, sharedLink, "Q");
     await assertJoined("Q");

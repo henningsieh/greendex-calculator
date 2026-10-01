@@ -3,7 +3,7 @@
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { ORPCError } from "@orpc/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -881,7 +881,8 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
     !draft ||
     draft.status === "editable" ||
     draft.status === "correction_requested";
-  async function refresh() {
+  const refresh = useCallback(async () => {
+    const input = { partnershipId };
     await Promise.all(
       [
         orpcQuery.claims.getDraft,
@@ -895,7 +896,23 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
         client.invalidateQueries({ queryKey: query.queryKey({ input }) }),
       ),
     );
-  }
+  }, [client, partnershipId]);
+
+  useEffect(() => {
+    // History can replay the pre-mutation HTML/RSC snapshot into a new QueryClient.
+    // Its hydration timestamp is not evidence that the Claim is still editable.
+    const navigation = performance.getEntriesByType("navigation")[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    if (navigation?.type === "back_forward") void refresh();
+
+    function revalidateRestoredPage(event: PageTransitionEvent) {
+      if (event.persisted) void refresh();
+    }
+    window.addEventListener("pageshow", revalidateRestoredPage);
+    return () => window.removeEventListener("pageshow", revalidateRestoredPage);
+  }, [refresh]);
+
   async function addAccount(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
