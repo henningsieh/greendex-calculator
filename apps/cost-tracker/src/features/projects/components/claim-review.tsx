@@ -231,7 +231,13 @@ export function ClaimDecisionPanel({
   );
 }
 
-export function ClaimReviewDetails({ details }: { details: ReviewDetails }) {
+export function ClaimReviewDetails({
+  details,
+  partnershipId,
+}: {
+  details: ReviewDetails;
+  partnershipId: string;
+}) {
   return (
     <Card>
       <CardHeader>
@@ -274,7 +280,14 @@ export function ClaimReviewDetails({ details }: { details: ReviewDetails }) {
                   {entry.documents.map((document) => (
                     <li key={document.id}>
                       Proof Document: {document.originalFileName} (
-                      {document.mediaType}, {document.byteSize} bytes)
+                      {document.mediaType}, {document.byteSize} bytes){" "}
+                      <a
+                        className="underline underline-offset-4"
+                        href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
+                        download
+                      >
+                        Download Proof Document: {document.originalFileName}
+                      </a>
                     </li>
                   ))}
                 </ul>
@@ -373,7 +386,7 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
           onDecision={decide}
         />
       )}
-      <ClaimReviewDetails details={details} />
+      <ClaimReviewDetails details={details} partnershipId={partnershipId} />
       <ClaimHistory events={history} />
     </section>
   );
