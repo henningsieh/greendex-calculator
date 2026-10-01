@@ -14,8 +14,6 @@ import {
   user,
 } from "@greendex/database/schema";
 import {
-  expect,
-  test,
   type Browser,
   type BrowserContext,
   type Locator,
@@ -24,8 +22,18 @@ import {
 import { hashPassword } from "better-auth/crypto";
 import { and, count, eq, inArray } from "drizzle-orm";
 
+import {
+  expectPrivateURL,
+  expect,
+  test,
+  registerPrivateValues,
+} from "./fixtures/artifact-privacy";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 
+// MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
+// from traces. URL/value checks report booleans without weakening their matches.
+// Automatic DOM snapshots and reporter API diagnostics remain known risks; the
+// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: beforeAll seeds verified P/F/E/M Users and credential
 // accounts, then signs each into its own browser context through the auth API.
 // Reauthentication after new-Organization setup picks the new active Membership.
@@ -36,8 +44,7 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 // verification, or mail-sending invitation form is submitted in a browser.
 // Setup-link creation (05/08/09/13) is UI-only: createSetupLink in
 // features/projects/procedures/setup-links.ts persists a hash and returns a
-// secret; it does not invoke mail delivery. This spec does not explicitly persist
-// secrets or credentials, and file-level trace: "off" excludes them from traces.
+// secret; it does not invoke mail delivery. Artifact protection is described above.
 // Mail delivery is covered by setup-links.integration.test.ts and manual testing.
 // AUTOMATED-ONLY: 07 wrong-email server denial, 11 forged Owner-selection
 // (entity-search.integration.test.ts and setup-links.integration.test.ts),
@@ -69,6 +76,7 @@ const actors = Object.fromEntries(
   "P" | "F" | "E" | "M",
   { id: string; name: string; email: string; password: string }
 >;
+registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
 const memberProjectName = `CT ${suffix} Member Observation`;
 const ownedProjectNames = [...fixture.projectNames, memberProjectName];
 const invitationId = randomUUID();
@@ -212,12 +220,18 @@ async function issueThroughUI(
   await creator.getByLabel("Recipient email").fill(recipient);
   await creator.getByRole("button", { name: "Neuer Link", exact: true }).click();
   const field = creator.getByLabel("Recipient setup link");
-  await expect(field).toHaveValue(/\/setup-links\/[^?]+\?secret=/);
+  // Preserve the original setup-link value regex, without reporting its value.
+  await expect
+    .poll(async () =>
+      /\/setup-links\/[^?]+\?secret=/.test(await field.inputValue()),
+    )
+    .toBe(true);
   const url = await field.inputValue();
   const parsed = new URL(url);
   expect(parsed.origin).toBe(new URL(page.url()).origin);
   issuedLinks.push(parsed.pathname.split("/").at(-1)!);
-  // Copy is a visible user action; no token is written to a file or test output.
+  // Copy is a visible user action. Value matcher diagnostics are boolean-only;
+  // reporter/snapshot privacy remains the documented follow-up.
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await creator.getByRole("button", { name: "Kopieren" }).click();
   await expect(page.getByText("Link kopiert.", { exact: false })).toBeVisible();
@@ -282,7 +296,12 @@ async function partnershipCount(projectName: string, organizationName: string) {
 }
 
 // Disable traces for every context in this file, including auth API requests.
-test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  trace: "off",
+  screenshot: "off",
+  video: "off",
+});
 
 test.describe.serial("Partner Organization setup journey section 2", () => {
   test.beforeAll(async () => {
@@ -367,7 +386,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     contexts.push(anonymous);
     const signedOut = await anonymous.newPage();
     await signedOut.goto(setupURL);
-    await expect(signedOut).toHaveURL(/\/login/);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(signedOut, /\/login/);
     const partner = await actorContext(browser, "P", baseURL!);
     const page = await partner.newPage();
     await page.goto("/projects");
@@ -516,7 +536,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await page
         .getByRole("button", { name: "Accept Organization Invitation" })
         .click();
-      await expect(page).toHaveURL(/\/projects$/);
+      // Preserve the original full-URL match; only the diagnostic receives a boolean.
+      await expectPrivateURL(page, /\/projects$/);
       await page.goto("/organization");
       await expect(
         page.getByText(

@@ -17,23 +17,27 @@ import {
   session,
   user,
 } from "@greendex/database/schema";
-import {
-  expect,
-  test,
-  type Browser,
-  type BrowserContext,
-  type Page,
-} from "@playwright/test";
+import { type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { count, eq, inArray } from "drizzle-orm";
 
+import {
+  expectPrivateURL,
+  expect,
+  test,
+  registerPrivateValues,
+} from "./fixtures/artifact-privacy";
+
+// MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
+// from traces. URL/value checks report booleans without weakening their matches.
+// Automatic DOM snapshots and reporter API diagnostics remain known risks; the
+// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: verified disposable Users, credential accounts, Partner
 // Organizations and Partnerships are DB preconditions. A's Organization Invitation
 // is DB-issued (never submitted through real SMTP); acceptance and Project creation
 // are browser actions. N3 seeds T's Hosting participant Membership and Main Project
 // Participation, then removes them before N4's no-join checks. No mail-producing
-// form is submitted. Browser sessions are isolated. This spec does not explicitly
-// persist tokens or credentials; file-level trace: "off" excludes them from traces.
+// form is submitted. Browser sessions are isolated; artifact protection is above.
 // Shared global setup's Project-list hydration wait is 15s (approved one-line
 // exception for slow streamed navigation; no change to test semantics).
 // AUTOMATED-ONLY: server authorization in projects.integration.test.ts,
@@ -76,6 +80,7 @@ const actors = Object.fromEntries(
   "H" | "A" | "P" | "F" | "T" | "X",
   { id: string; name: string; email: string; password: string }
 >;
+registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
 type Actor = keyof typeof actors;
 const contexts: BrowserContext[] = [];
 let projectId: string;
@@ -184,7 +189,12 @@ async function partnerPage(page: Page) {
   });
 }
 
-test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  trace: "off",
+  screenshot: "off",
+  video: "off",
+});
 
 test.describe.serial("N1 N3 N4 N6 access and links", () => {
   // Warm dev-server application work can take 30–80s per navigation.
@@ -319,7 +329,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await dialog.getByLabel("Location").fill("Berlin");
     await dialog.getByLabel("Country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create project" }).click();
-    await expect(h).toHaveURL(/\/projects\/[^/]+$/);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(h, /\/projects\/[^/]+$/);
     projectId = new URL(h.url()).pathname.split("/").at(-1)!;
     await expect(h.getByRole("heading", { name: names.project })).toBeVisible({
       timeout: 90_000,
@@ -336,7 +347,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await a
       .getByRole("button", { name: "Accept Organization Invitation" })
       .click();
-    await expect(a).toHaveURL(/\/projects$/, { timeout: 90_000 });
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(a, /\/projects$/, { timeout: 90_000 });
     for (const page of [h, a]) {
       await page.goto(`/projects/${projectId}`);
       await expect(
@@ -525,7 +537,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     const replacement = await creator
       .getByLabel("Recipient setup link")
       .inputValue();
-    expect(new URL(replacement).pathname).not.toBe(new URL(first).pathname);
+    // Preserve the original pathname inequality without printing either private ID.
+    expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
     await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
     await x.getByRole("button", { name: "Complete setup" }).click();
@@ -537,7 +550,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     contexts.push(fresh);
     const separate = await fresh.newPage();
     await separate.goto(replacement);
-    await expect(separate).toHaveURL(/\/login/);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(separate, /\/login/);
     await expect(separate.getByText(names.project)).toHaveCount(0);
     await x.goto("/projects");
     await expect(x.getByText("No Organization access yet")).toBeVisible();
@@ -550,9 +564,11 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       x.getByRole("dialog", { name: "Create Organization" }),
     ).toBeHidden();
     await x.getByRole("button", { name: "Sign out" }).click();
-    await expect(x).toHaveURL(new URL("/", baseURL!).toString());
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(x, new URL("/", baseURL!).toString());
     await x.goto(replacement);
-    await expect(x).toHaveURL(/\/login/);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(x, /\/login/);
     // Do not redeem replacement: it is a spare link addressed to X.
   });
 
@@ -669,6 +685,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     contexts.push(anonymous);
     const page = await anonymous.newPage();
     await page.goto(link);
-    await expect(page).toHaveURL(/\/login/);
+    // Preserve the original full-URL match; only the diagnostic receives a boolean.
+    await expectPrivateURL(page, /\/login/);
   });
 });

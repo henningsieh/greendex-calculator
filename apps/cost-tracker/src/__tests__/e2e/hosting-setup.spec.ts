@@ -1,7 +1,12 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
+import { expectPrivateURL, expect, test } from "./fixtures/artifact-privacy";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 
+// MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
+// from traces. URL/value checks report booleans without weakening their matches.
+// Automatic DOM snapshots and reporter API diagnostics remain known risks; the
+// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: beforeAll creates verified Users and credential accounts in
 // the DB; the nested beforeAll issues A's Organization Invitation only after H
 // creates the Hosting Organization in the UI. Login uses a private API request
@@ -31,7 +36,12 @@ async function createProject(page: Page, name: string) {
 }
 
 // Disable traces for every context in this file, including auth API requests.
-test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  trace: "off",
+  screenshot: "off",
+  video: "off",
+});
 
 test.describe.serial("Hosting Organization journey section 1", () => {
   test.beforeAll(async () => {
@@ -112,7 +122,8 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await page
         .getByRole("button", { name: "Accept Organization Invitation" })
         .click();
-      await expect(page).toHaveURL(/\/projects$/);
+      // Preserve the original full-URL match; only the diagnostic receives a boolean.
+      await expectPrivateURL(page, /\/projects$/);
       await page.goto("/organization");
       await expect(
         page.getByRole("row").filter({ hasText: fixture.actors.A.email }),

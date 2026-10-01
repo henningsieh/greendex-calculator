@@ -11,10 +11,21 @@ import {
   session,
   user,
 } from "@greendex/database/schema";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { type Browser, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { count, inArray } from "drizzle-orm";
 
+import {
+  expectPrivateURL,
+  expect,
+  test,
+  registerPrivateValues,
+} from "./fixtures/artifact-privacy";
+
+// MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
+// from traces. URL/value checks report booleans without weakening their matches.
+// Automatic DOM snapshots and reporter API diagnostics remain known risks; the
+// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: beforeAll seeds verified H/E Users, credential login,
 // Organization Memberships, Projects, Project Partnerships and two Claim states.
 // Rejected is a fixture precondition, NOT evidence of a browser review decision;
@@ -50,6 +61,7 @@ const names = {
   partnerB: `CT ${suffix} Partner B`,
 };
 const password = randomUUID();
+registerPrivateValues(password);
 const hostEmail = `ct-${suffix}-h@example.invalid`;
 const projectIds = [ids.main, ids.isolation, ids.zero, ids.other];
 const partnershipIds = [ids.mainA, ids.mainB, ids.isolationA, ids.otherB];
@@ -92,7 +104,8 @@ async function ownedCounts() {
 async function openHostedProject(page: Page, name: string, url: string) {
   await page.goto("/projects");
   await page.getByRole("link", { name, exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`${url}(?:\\?.*)?$`));
+  // Preserve the original full-URL match; only the diagnostic receives a boolean.
+  await expectPrivateURL(page, new RegExp(`${url}(?:\\?.*)?$`));
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   await expect(page.getByText("Hosted Project", { exact: true })).toBeVisible();
   await expect(page.getByText("Assigned Partner Organizations")).toBeVisible();
@@ -103,7 +116,12 @@ function partnerRow(page: Page, name: string) {
 }
 
 // Disable traces for every context in this file, including auth API requests.
-test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  trace: "off",
+  screenshot: "off",
+  video: "off",
+});
 
 test.describe.serial("Project readiness journey 28 and N2", () => {
   let hostContext: Awaited<ReturnType<Browser["newContext"]>> | undefined;

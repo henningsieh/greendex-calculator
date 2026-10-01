@@ -28,13 +28,24 @@ import {
   travelCostEntriesTable,
   user,
 } from "@greendex/database/schema";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { type Browser, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { and, count, eq } from "drizzle-orm";
 
 import { env } from "@/env";
 import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/authentication/participant-agreement";
 
+import {
+  expectPrivateURL,
+  expect,
+  test,
+  registerPrivateValues,
+} from "./fixtures/artifact-privacy";
+
+// MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
+// from traces. URL/value checks report booleans without weakening their matches.
+// Automatic DOM snapshots and reporter API diagnostics remain known risks; the
+// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: beforeAll seeds a verified Partner coordinator, three
 // disposable onboarded Users (profile + current development Participant Agreement),
 // Hosting/Partner Organizations, Project and Project Partnership. No mail-producing
@@ -51,6 +62,7 @@ const projectId = randomUUID();
 const partnershipId = randomUUID();
 const coordinatorId = randomUUID();
 const password = randomUUID();
+registerPrivateValues(password);
 const coordinatorName = `CT ${suffix} Group Organizer`;
 const coordinatorEmail = `ct-${suffix}-coordinator@example.invalid`;
 const names = ["T", "U", "V"].map((name) => `CT ${suffix} ${name}`);
@@ -105,7 +117,9 @@ async function openPartnership(
           : "Open Claim workspace",
     })
     .click();
-  await expect(page).toHaveURL(
+  // Preserve the original full-URL match; only the diagnostic receives a boolean.
+  await expectPrivateURL(
+    page,
     destination === "participants" ? participantsURL : claimURL,
   );
 }
@@ -123,7 +137,12 @@ async function coordinatorContext(browser: Browser, baseURL: string) {
 }
 
 // Disable traces for every context in this file, including auth API requests.
-test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  trace: "off",
+  screenshot: "off",
+  video: "off",
+});
 
 test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
   test.beforeAll(async () => {
