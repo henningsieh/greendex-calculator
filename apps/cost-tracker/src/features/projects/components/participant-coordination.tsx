@@ -3,6 +3,7 @@
 import { ORPCError } from "@orpc/client";
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -73,7 +74,7 @@ function mutationFeedback(error: unknown) {
     return {
       title: "Review request",
       description:
-        "This identity may already participate in this Project. Check the person's account and existing Participation, then contact the Hosting Organization to request a merge review. No new Participation was added.",
+        "This Registered User may already participate in this Project. Open Review Tasks to review the duplicate identity, then contact the Hosting Organization to request a merge review if needed. No new Project Participation was added.",
     };
   }
   if (error instanceof ORPCError && error.code === "FORBIDDEN") {
@@ -148,6 +149,177 @@ function CountryEditor({
   );
 }
 
+type ReviewTask = Outputs["duplicateReviews"]["list"][number];
+type ReviewDecision = NonNullable<ReviewTask["decision"]>;
+const reviewDecisions: { value: ReviewDecision; label: string }[] = [
+  { value: "same_person", label: "Same person" },
+  { value: "distinct_persons", label: "Distinct persons" },
+  { value: "dismiss", label: "Dismiss" },
+];
+
+function ReviewTaskControls({
+  task,
+  refresh,
+  onFeedback,
+}: {
+  task: ReviewTask;
+  refresh: () => Promise<void>;
+  onFeedback: (message: string) => void;
+}) {
+  const [decision, setDecision] = useState<ReviewDecision>("same_person");
+  const onError = (error: unknown) =>
+    onFeedback(
+      error instanceof ORPCError && error.code === "BAD_REQUEST"
+        ? "The Review Task is no longer available for this action. Only its assigned Registered User may resolve it with the existing Project Participation. Refresh the list and try again."
+        : getORPCRequestErrorMessage(error).text,
+    );
+  const assign = useMutation({
+    mutationFn: () =>
+      orpc.duplicateReviews.assign({
+        partnershipId: task.partnershipId,
+        id: task.id,
+      }),
+    onSuccess: async () => {
+      onFeedback("Review Task assigned to you.");
+      await refresh();
+    },
+    onError,
+  });
+  const resolve = useMutation({
+    mutationFn: () =>
+      orpc.duplicateReviews.resolve({
+        partnershipId: task.partnershipId,
+        id: task.id,
+        decision,
+        survivorParticipationId: task.existingParticipationId,
+      }),
+    onSuccess: async () => {
+      onFeedback(
+        "Review Task resolved. The existing Project Participation is retained; no merge was performed.",
+      );
+      await refresh();
+    },
+    onError,
+  });
+  return (
+    <li className="space-y-3 py-4">
+      <p>Registered User: {task.candidateEmail}</p>
+      <Badge variant="secondary">Review Task {task.status}</Badge>
+      <p className="text-sm">
+        Existing Project Participation: {task.existingParticipationId}
+      </p>
+      {task.assignedToUserId && (
+        <p className="text-sm">
+          Assigned Registered User: {task.assignedToUserId}
+        </p>
+      )}
+      {task.status === "open" && (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={assign.isPending}
+          onClick={() => assign.mutate()}
+        >
+          Assign Review Task to me
+        </Button>
+      )}
+      {task.status === "assigned" && (
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-2">
+            <Label htmlFor={`review-decision-${task.id}`}>
+              Review Task decision
+            </Label>
+            <select
+              className="h-9 rounded-md border bg-background px-3 text-sm"
+              id={`review-decision-${task.id}`}
+              value={decision}
+              onChange={(event) => {
+                const selected = reviewDecisions.find(
+                  (entry) => entry.value === event.target.value,
+                );
+                if (selected) setDecision(selected.value);
+              }}
+            >
+              {reviewDecisions.map((entry) => (
+                <option key={entry.value} value={entry.value}>
+                  {entry.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button
+            type="button"
+            disabled={resolve.isPending}
+            onClick={() => resolve.mutate()}
+          >
+            Resolve Review Task
+          </Button>
+        </div>
+      )}
+      {task.decision && (
+        <p>
+          Decision:{" "}
+          {reviewDecisions.find((entry) => entry.value === task.decision)?.label}
+        </p>
+      )}
+    </li>
+  );
+}
+
+function ReviewTasks({ partnershipId }: { partnershipId: string }) {
+  const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState("");
+  const options = orpcQuery.duplicateReviews.list.queryOptions({
+    input: { partnershipId },
+    meta: { costTrackerORPC: true },
+    retry: false,
+  });
+  const tasks = useQuery(options);
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: options.queryKey });
+  };
+  return (
+    <section aria-label="Review Tasks" className="space-y-4">
+      {tasks.isPending ? (
+        <output>Loading Review Tasks…</output>
+      ) : tasks.isError ? (
+        <Alert>
+          <AlertTitle>Unable to load Review Tasks</AlertTitle>
+          <AlertDescription>
+            {getORPCRequestErrorMessage(tasks.error).text}
+          </AlertDescription>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void tasks.refetch()}
+          >
+            Retry Review Tasks
+          </Button>
+        </Alert>
+      ) : tasks.data.length === 0 ? (
+        <p>No Review Tasks are recorded for this Project Partnership.</p>
+      ) : (
+        <ul className="divide-y">
+          {tasks.data.map((task) => (
+            <ReviewTaskControls
+              key={task.id}
+              task={task}
+              refresh={refresh}
+              onFeedback={setFeedback}
+            />
+          ))}
+        </ul>
+      )}
+      {feedback && (
+        <Alert>
+          <AlertTitle>Review Task update</AlertTitle>
+          <AlertDescription>{feedback}</AlertDescription>
+        </Alert>
+      )}
+    </section>
+  );
+}
+
 /** The list and mutations are scoped by the server's Partnership authorization, not client filtering. */
 export function ParticipantCoordination({
   partnershipId,
@@ -163,6 +335,7 @@ export function ParticipantCoordination({
   );
   const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
+  const [reviewsOpen, setReviewsOpen] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
     partnershipId: string;
     id: string;
@@ -184,6 +357,12 @@ export function ParticipantCoordination({
         input: { partnershipId },
       }),
     });
+    if (reviewsOpen)
+      await queryClient.invalidateQueries({
+        queryKey: orpcQuery.duplicateReviews.list.queryKey({
+          input: { partnershipId },
+        }),
+      });
   };
   const entryError = (error: unknown) =>
     setEntryFeedback({
@@ -332,7 +511,10 @@ export function ParticipantCoordination({
       });
       await refresh();
     },
-    onError: (error) => setFeedback(mutationFeedback(error)),
+    onError: async (error) => {
+      setFeedback(mutationFeedback(error));
+      if (reviewsOpen) await refresh();
+    },
   });
 
   return (
@@ -433,6 +615,26 @@ export function ParticipantCoordination({
               ))}
             </ul>
           )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Review Tasks</CardTitle>
+          <CardDescription>
+            Review duplicate Registered User identities. Resolution retains the
+            existing Project Participation and does not perform a merge.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setReviewsOpen((open) => !open)}
+            aria-expanded={reviewsOpen}
+          >
+            {reviewsOpen ? "Hide Review Tasks" : "Show Review Tasks"}
+          </Button>
+          {reviewsOpen && <ReviewTasks partnershipId={partnershipId} />}
         </CardContent>
       </Card>
       <Card>
