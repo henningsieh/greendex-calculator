@@ -52,7 +52,8 @@ import {
 // registration/invitation submit is driven by the browser; browser clicks create
 // every Claim-owned record and the additional Participation. DB reads assert exact
 // cardinality, frozen rules and cleanup, not substitute for UI actions.
-// UI GAP (20): Participation removal and Review Task list/assign/resolve have no UI.
+// Case 20 removal is browser-driven; reference and Claim-lock refusals are visible.
+// UI GAP (20): Review Task list/assign/resolve has no UI.
 // Server authorization/concurrency are AUTOMATED-ONLY: submission.integration.test.ts.
 // Proof Document bytes are synthetic; afterAll deletes the uploaded object and rows.
 const suffix = randomUUID();
@@ -441,12 +442,76 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .from(projectParticipantsTable)
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
-      // UI GAP: no remove Participation or Review Task controls on this page.
+      // UI GAP: no Review Task controls on this page.
       await expect(
         page.getByRole("button", {
-          name: /Remove Participation|Assign Review Task|Resolve Review Task/,
+          name: /Assign Review Task|Resolve Review Task/,
         }),
       ).toHaveCount(0);
+    } finally {
+      await actor.close();
+    }
+  });
+
+  test("20 removes an unreferenced Project Participation and restores V through the selector", async ({
+    browser,
+    baseURL,
+  }) => {
+    const actor = await coordinatorContext(browser, baseURL!);
+    try {
+      const page = await actor.newPage();
+      // Control-only coverage uses direct navigation; the original journey cases
+      // retain Project-detail → workspace navigation coverage.
+      await page.goto(participantsURL);
+      const row = page.getByRole("listitem").filter({ hasText: people[2]!.name });
+      await expect(row).toBeVisible();
+      const [original] = await db
+        .select({ id: projectParticipantsTable.id })
+        .from(projectParticipantsTable)
+        .where(
+          and(
+            eq(projectParticipantsTable.projectId, projectId),
+            eq(projectParticipantsTable.userId, people[2]!.id),
+          ),
+        );
+      page.once("dialog", (dialog) => dialog.accept());
+      await row
+        .getByRole("button", {
+          name: `Remove Project Participation for ${people[2]!.name}`,
+        })
+        .click();
+      await expect(
+        page.getByText("Project Participation removed", { exact: true }),
+      ).toBeVisible();
+      await expect(row).toHaveCount(0);
+      expect(
+        await db
+          .select()
+          .from(projectParticipantsTable)
+          .where(eq(projectParticipantsTable.id, original!.id)),
+      ).toHaveLength(0);
+      await page.reload();
+      await expect(row).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "Registered User", exact: true })
+        .click();
+      await page
+        .getByRole("combobox", { name: /Search Registered User/ })
+        .pressSequentially(people[2]!.name, { delay: 35 });
+      await page
+        .getByRole("option", { name: new RegExp(people[2]!.name) })
+        .click();
+      await page.getByRole("button", { name: "Add Participation" }).click();
+      await expect(
+        page.getByText("Participation added", { exact: true }),
+      ).toBeVisible();
+      await expect(row).toBeVisible();
+      expect(
+        await db
+          .select()
+          .from(projectParticipantsTable)
+          .where(eq(projectParticipantsTable.projectId, projectId)),
+      ).toHaveLength(3);
     } finally {
       await actor.close();
     }
@@ -576,6 +641,41 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       ).toHaveCount(1);
       // The selector excludes saved Journeys: a second cannot be initiated in the UI.
       // Forged second-Journey rejection is AUTOMATED-ONLY in journeys.integration.test.ts.
+    } finally {
+      await actor.close();
+    }
+  });
+
+  test("20 Participant Journey reference visibly refuses Project Participation removal", async ({
+    browser,
+    baseURL,
+  }) => {
+    const actor = await coordinatorContext(browser, baseURL!);
+    try {
+      const page = await actor.newPage();
+      await page.goto(participantsURL);
+      const row = page.getByRole("listitem").filter({ hasText: people[0]!.name });
+      await expect(row).toBeVisible();
+      page.once("dialog", (dialog) => dialog.accept());
+      await row
+        .getByRole("button", {
+          name: `Remove Project Participation for ${people[0]!.name}`,
+        })
+        .click();
+      await expect(
+        page
+          .getByRole("alert")
+          .filter({ hasText: "Unable to remove Project Participation" }),
+      ).toContainText(
+        "This Project Participation is referenced by a Participant Journey, Claim or merge data. Request review instead.",
+      );
+      await expect(row).toBeVisible();
+      expect(
+        await db
+          .select()
+          .from(projectParticipantsTable)
+          .where(eq(projectParticipantsTable.id, initialParticipationIds[0]!)),
+      ).toHaveLength(1);
     } finally {
       await actor.close();
     }
@@ -751,6 +851,30 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       const event = events[0]!;
       expect(event.actorUserId).toBe(coordinatorId);
       expect(event.occurredAt).toBeInstanceOf(Date);
+      // A locked Claim refuses the new removal control without deleting the row.
+      await page.goto(participantsURL);
+      const row = page.getByRole("listitem").filter({ hasText: people[0]!.name });
+      await expect(row).toBeVisible();
+      page.once("dialog", (dialog) => dialog.accept());
+      await row
+        .getByRole("button", {
+          name: `Remove Project Participation for ${people[0]!.name}`,
+        })
+        .click();
+      await expect(
+        page
+          .getByRole("alert")
+          .filter({ hasText: "Unable to remove Project Participation" }),
+      ).toContainText(
+        "A locked Claim prevents removal of this Project Participation.",
+      );
+      await expect(row).toBeVisible();
+      expect(
+        await db
+          .select()
+          .from(projectParticipantsTable)
+          .where(eq(projectParticipantsTable.id, initialParticipationIds[0]!)),
+      ).toHaveLength(1);
     } finally {
       await actor.close();
     }

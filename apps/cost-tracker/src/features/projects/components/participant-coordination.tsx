@@ -293,6 +293,33 @@ export function ParticipantCoordination({
       } else entryError(error);
     },
   });
+  const removeParticipation = useMutation({
+    mutationFn: (id: string) => orpc.participations.remove({ partnershipId, id }),
+    onSuccess: async () => {
+      setFeedback({
+        title: "Project Participation removed",
+        description: "The scoped list has been refreshed.",
+      });
+      await refresh();
+    },
+    onError: (error) => {
+      const refusals: Record<string, string> = {
+        "Locked Claim prevents Participation removal.":
+          "A locked Claim prevents removal of this Project Participation.",
+        "Participation is referenced by Claim or merge data; request review instead.":
+          "This Project Participation is referenced by a Participant Journey, Claim or merge data. Request review instead.",
+        "Participation is referenced; request review instead.":
+          "This Project Participation is referenced by other records. Request review instead.",
+      };
+      setFeedback({
+        title: "Unable to remove Project Participation",
+        description:
+          error instanceof ORPCError && error.code === "BAD_REQUEST"
+            ? (refusals[error.message] ?? getORPCRequestErrorMessage(error).text)
+            : getORPCRequestErrorMessage(error).text,
+      });
+    },
+  });
   // Hosts may read server-authorized oversight data, but cannot manage Partner
   // Participations here; denied writes show the access-denied surface below.
   const create = useMutation({
@@ -385,6 +412,23 @@ export function ParticipantCoordination({
                     onSaved={refresh}
                     onError={(error) => setFeedback(mutationFeedback(error))}
                   />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={removeParticipation.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Remove the Project Participation for ${participant.displayName}?`,
+                        )
+                      ) {
+                        setFeedback(undefined);
+                        removeParticipation.mutate(participant.id);
+                      }
+                    }}
+                  >
+                    Remove Project Participation for {participant.displayName}
+                  </Button>
                 </li>
               ))}
             </ul>
