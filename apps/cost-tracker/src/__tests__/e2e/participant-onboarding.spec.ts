@@ -7,6 +7,7 @@ import {
   invitation,
   member,
   organization,
+  partnerCoordinatorAssignmentsTable as coordinatorAssignments,
   participantAgreementAcceptancesTable as acceptances,
   participantInvitationBridgesTable as bridges,
   participantProfilesTable as profiles,
@@ -33,12 +34,13 @@ import {
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
 // deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: verified disposable Users, credential accounts, Organizations,
-// Projects, Partnerships, and native Participant/Organization Invitations with their
+// Projects, Partnerships, a role-only Group Organizer C, and native Participant/Organization Invitations with their
 // bridge records are inserted in beforeAll. The initial Participant Invitation and
 // its replacement are never submitted through the UI: both issue and reissue send
 // real SMTP mail. Browser redemption, profile, draft acceptance, join and link
 // creation/closure/reopening do not send mail. Mail delivery remains manual/Vitest evidence.
 // Case 15 reopens in-browser; a setup-seeded non-editable Claim proves visible refusal.
+// Case 203 assigns/revokes Group Organizer scope in-browser without changing roles.
 // UI GAP (14): reissue is visible, but cannot be clicked against real SMTP.
 const suffix = randomUUID();
 const names = {
@@ -62,7 +64,7 @@ const ids = {
   staffInvitation: randomUUID(),
 };
 const actors = Object.fromEntries(
-  (["H", "P", "F", "T", "U", "V", "Q"] as const).map((code) => [
+  (["H", "P", "F", "T", "U", "V", "Q", "C"] as const).map((code) => [
     code,
     {
       id: randomUUID(),
@@ -72,7 +74,7 @@ const actors = Object.fromEntries(
     },
   ]),
 ) as Record<
-  "H" | "P" | "F" | "T" | "U" | "V" | "Q",
+  "H" | "P" | "F" | "T" | "U" | "V" | "Q" | "C",
   {
     id: string;
     name: string;
@@ -331,6 +333,13 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         role: "owner",
         createdAt: now,
       },
+      {
+        id: randomUUID(),
+        userId: actors.C.id,
+        organizationId: ids.partner,
+        role: "project-coordinator",
+        createdAt: now,
+      },
     ]);
     await db.insert(projects).values([
       {
@@ -406,6 +415,15 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .delete(claimsTable)
       .where(eq(claimsTable.partnershipId, ids.otherPartnership));
     await db
+      .delete(coordinatorAssignments)
+      .where(
+        inArray(coordinatorAssignments.partnershipId, [
+          ids.partnership,
+          ids.foreignPartnership,
+          ids.otherPartnership,
+        ]),
+      );
+    await db
       .delete(participants)
       .where(inArray(participants.projectId, [ids.main, ids.other]));
     await db
@@ -452,6 +470,18 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       await db.delete(user).where(eq(user.id, actor.id));
     }
     expect(await counts()).toEqual(baseline);
+    expect(
+      await db
+        .select()
+        .from(coordinatorAssignments)
+        .where(
+          inArray(coordinatorAssignments.partnershipId, [
+            ids.partnership,
+            ids.foreignPartnership,
+            ids.otherPartnership,
+          ]),
+        ),
+    ).toHaveLength(0);
   });
 
   test("G2 T saves a profile and sees the development draft without joining", async ({
@@ -790,5 +820,113 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     expect(await membershipRole("Q", ids.host)).toEqual([{ role: "member" }]);
     await join(q, sharedLink, "Q");
     await assertJoined("Q");
+  });
+
+  test("203 P assigns and revokes C's Group Organizer scope without changing Membership roles", async ({
+    browser,
+    baseURL,
+  }) => {
+    test.setTimeout(120_000); // Owner action plus independent coordinator access checks.
+    const p = await pageFor(browser, "P", baseURL!);
+    await p.goto(participantsURL);
+    await p
+      .getByRole("button", { name: "Manage Group Organizers", exact: true })
+      .click();
+    const target = p.getByLabel(
+      "Registered User for Group Organizer assignment",
+      { exact: true },
+    );
+    await expect(target).toBeVisible();
+    await target.selectOption(actors.C.id);
+    const c = await pageFor(browser, "C", baseURL!);
+    await c.goto("/projects");
+    await expect(
+      c.getByRole("link", { name: names.main, exact: true }),
+    ).toHaveCount(0);
+    await p
+      .getByRole("button", { name: "Assign Group Organizer", exact: true })
+      .click();
+    await expect(
+      p.getByRole("alert").filter({ hasText: "Group Organizer update" }),
+    ).toContainText("Group Organizer assigned to this Project Partnership.");
+    expect(
+      await db
+        .select()
+        .from(coordinatorAssignments)
+        .where(
+          and(
+            eq(coordinatorAssignments.partnershipId, ids.partnership),
+            eq(coordinatorAssignments.userId, actors.C.id),
+          ),
+        ),
+    ).toHaveLength(1);
+    expect(await membershipRole("C", ids.partner)).toEqual([
+      { role: "project-coordinator" },
+    ]);
+    await c.goto("/projects");
+    await expect(
+      c.getByRole("link", { name: names.main, exact: true }),
+    ).toBeVisible();
+    await expect(
+      c.getByRole("link", { name: names.other, exact: true }),
+    ).toHaveCount(0);
+    await c.getByRole("link", { name: names.main, exact: true }).click();
+    await c
+      .getByRole("link", { name: "Coordinate Participants", exact: true })
+      .click();
+    await expect(
+      c.locator('section[aria-label="Project Participations"]'),
+    ).toBeVisible();
+    const joined = c.locator('[data-slot="card"]').filter({
+      has: c.getByText("Joined Participants", { exact: true }),
+    });
+    await expect(joined.getByText(actors.T.email, { exact: true })).toBeVisible();
+    await c
+      .getByRole("button", { name: "Manage Group Organizers", exact: true })
+      .click();
+    await expect(
+      c
+        .getByRole("alert")
+        .filter({ hasText: "Group Organizer management unavailable" }),
+    ).toContainText("You do not have permission to access this resource.");
+    await expect(
+      c.getByRole("button", { name: "Assign Group Organizer", exact: true }),
+    ).toHaveCount(0);
+    await p
+      .getByRole("button", {
+        name: "Revoke Group Organizer assignment",
+        exact: true,
+      })
+      .click();
+    await expect(
+      p.getByRole("alert").filter({ hasText: "Group Organizer update" }),
+    ).toContainText(
+      "Group Organizer assignment revoked for this Project Partnership.",
+    );
+    expect(
+      await db
+        .select()
+        .from(coordinatorAssignments)
+        .where(
+          and(
+            eq(coordinatorAssignments.partnershipId, ids.partnership),
+            eq(coordinatorAssignments.userId, actors.C.id),
+          ),
+        ),
+    ).toHaveLength(0);
+    expect(await membershipRole("C", ids.partner)).toEqual([
+      { role: "project-coordinator" },
+    ]);
+    await c.goto("/projects");
+    await expect(
+      c.getByRole("link", { name: names.main, exact: true }),
+    ).toHaveCount(0);
+    await c.goto(participantsURL);
+    await expect(
+      c
+        .getByRole("alert")
+        .filter({ hasText: "Unable to load Project Participations" }),
+    ).toContainText("You do not have permission to access this resource.");
+    await expect(c.getByText(actors.T.email, { exact: true })).toHaveCount(0);
   });
 });
