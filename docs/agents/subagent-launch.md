@@ -36,10 +36,9 @@ and cold-start contract.
   and rarely `:xhigh` — only when you expect the task to be hard and complex.
   The `thinking` field is ignored on dispatch.
 - Used here: scouts `medium` (read-only survey is well-scoped), workers
-  `medium` (well-scoped) or `high` (complex), reviewers `high` — `xhigh`
-  only for hard, complex reviews. Always verify resolution in `status`
-  output (`gpt-6.1-sol · thinking high`) — never assume; a typo silently
-  falls back.
+  `medium` (well-scoped) or `high` (complex), reviewers `xhigh`. Always
+  verify resolution in `status` output (`gpt-6.1-sol · thinking xhigh`) —
+  never assume; a typo silently falls back.
 - Async is default. Monitor via native notifications; `status` (+
   `view: "transcript"`) to inspect, `steer` for live guidance,
   `subagent_supervisor({action: "reply", replyTo, message})` for child
