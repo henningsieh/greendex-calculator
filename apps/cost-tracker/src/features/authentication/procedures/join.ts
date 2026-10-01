@@ -20,6 +20,7 @@ import {
   joinInput,
   type RequirePublishedAgreement,
 } from "@/features/authentication/procedures/shared";
+import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -142,6 +143,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           ),
         )
         .limit(1);
+      if (membership) requireCostTrackerRole(membership.role, errors.BAD_REQUEST);
       if (!membership) {
         const response = await auth.api.addMember({
           asResponse: true,

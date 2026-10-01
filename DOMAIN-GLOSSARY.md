@@ -15,6 +15,7 @@ _Avoid_: Participant (when referring only to login identity)
 
 **Organization Membership**:
 A User's membership in one Organization. A Membership may assign several distinct Organization-level roles to the User.
+In Cost Tracker, Better Auth's fallback role value `member` is forbidden: never invite, assign, or seed it, including in combined roles. Use the defined `owner`, `admin`, `project-coordinator`, or `participant` role with its proper scope. Library table/field names and ordinary Membership wording are unaffected. See [ADR-0012](docs/adr/0012-ban-fallback-member-role-in-cost-tracker.md).
 _Avoid_: Project Participation
 
 **Organization Owner**:
