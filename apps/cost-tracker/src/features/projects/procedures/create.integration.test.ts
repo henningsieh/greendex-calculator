@@ -93,7 +93,7 @@ describe("projects.create", () => {
       id: randomUUID(),
       userId: actor,
       organizationId: host,
-      role: "member,participant",
+      role: "participant",
       createdAt: now,
     });
     await db.insert(projectsTable).values([
@@ -117,7 +117,7 @@ describe("projects.create", () => {
     authMocks.hasPermission.mockResolvedValue({ success: false });
     await db
       .update(member)
-      .set({ role: "member,participant" })
+      .set({ role: "participant" })
       .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
     await db
       .delete(projectsTable)
@@ -142,7 +142,7 @@ describe("projects.create", () => {
   it("upgrades a host member without removing roles and assigns only created Projects", async () => {
     const first = await client.projects.create(input);
     expect(first).toEqual({ id: expect.any(String) });
-    expect(await role()).toBe("member,participant,project-coordinator");
+    expect(await role()).toBe("participant,project-coordinator");
     expect(await assignments()).toEqual([{ projectId: first.id }]);
     await expect(
       requireHostCoordination(first.id, actor, host, {
@@ -167,7 +167,7 @@ describe("projects.create", () => {
       }),
     ).rejects.toThrow();
     const second = await client.projects.create(input);
-    expect(await role()).toBe("member,participant,project-coordinator");
+    expect(await role()).toBe("participant,project-coordinator");
     expect(
       (await assignments()).map(({ projectId }) => projectId).sort(),
     ).toEqual([first.id, second.id].sort());
@@ -210,7 +210,7 @@ describe("projects.create", () => {
       code: "UNAUTHORIZED",
     });
     expect(await assignments()).toEqual([]);
-    expect(await role()).toBe("member,participant");
+    expect(await role()).toBe("participant");
   });
 
   it("rejects invalid details and server-owned fields", async () => {

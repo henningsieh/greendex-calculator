@@ -77,14 +77,14 @@ beforeAll(async () => {
       id: randomUUID(),
       organizationId: partner,
       userId: actor,
-      role: "member,owner",
+      role: "project-coordinator,owner",
       createdAt: now,
     },
     {
       id: randomUUID(),
       organizationId: foreign,
       userId: actor,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
   ]);
@@ -188,7 +188,7 @@ describe("entity picker procedures", () => {
   });
 
   it("uses hasOrganizationRole for the owned search predicate", async () => {
-    const combinedRole = "member,\uFEFFowner";
+    const combinedRole = "project-coordinator,\uFEFFowner";
     expect(hasOrganizationRole(combinedRole, "owner")).toBe(true);
     await db
       .update(member)
@@ -201,7 +201,7 @@ describe("entity picker procedures", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "member,owner" })
+        .set({ role: "project-coordinator,owner" })
         .where(inArray(member.organizationId, [partner]));
     }
   });
@@ -219,7 +219,7 @@ describe("entity picker procedures", () => {
         id: randomUUID(),
         userId: actor,
         organizationId: id,
-        role: index < 30 ? "member" : "owner",
+        role: index < 30 ? "project-coordinator" : "owner",
         createdAt: new Date(),
       })),
     );
@@ -261,7 +261,7 @@ describe("entity picker procedures", () => {
           id: randomUUID(),
           userId: actor,
           organizationId: id,
-          role: index === 1001 ? "member,owner" : "member",
+          role: index === 1001 ? "project-coordinator,owner" : "project-coordinator",
           createdAt: new Date(),
         })),
       );

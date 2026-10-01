@@ -51,9 +51,8 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 // 12 forged/self/duplicate enforcement (partnerships.integration.test.ts).
 // Case 13 proves persisted Hosting-scoped setup-link rows, one-link closure,
 // disabled-link refusal, and independent redemption of both sibling links.
-// PRODUCT-RESOLUTION-PENDING: member creation follows the existing server grant
-// despite denied assigned-list access (#206). The disposable browser observation
-// is NOT a requirements PASS; the member permission policy still needs resolution.
+// ADR-0012: M is an Organization Admin, never Better Auth's fallback role.
+// Membership grants no Project Participation or Organization ownership.
 const fixture = new HostingJourneyFixture();
 const suffix = fixture.suffix;
 const names = {
@@ -76,8 +75,8 @@ const actors = Object.fromEntries(
   { id: string; name: string; email: string; password: string }
 >;
 registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
-const memberProjectName = `CT ${suffix} Member Observation`;
-const ownedProjectNames = [...fixture.projectNames, memberProjectName];
+const adminProjectName = `CT ${suffix} Admin disposable`;
+const ownedProjectNames = [...fixture.projectNames, adminProjectName];
 const invitationId = randomUUID();
 const contexts: BrowserContext[] = [];
 const issuedLinks: string[] = [];
@@ -500,7 +499,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     expect(await partnershipCount(fixture.projectNames[1]!, names.E)).toBe(1);
   });
 
-  test.describe("member invitation precondition", () => {
+  test.describe("admin invitation precondition", () => {
     test.beforeAll(async () => {
       const [org] = await db
         .select({ id: organization.id })
@@ -511,13 +510,13 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         id: invitationId,
         organizationId: org!.id,
         email: actors.M.email,
-        role: "member",
+        role: "admin",
         status: "pending",
         expiresAt: new Date(Date.now() + 3_600_000),
         inviterId: actors.E.id,
       });
     });
-    test("10 M explicitly accepts E's Organization Invitation as member, not Participant", async ({
+    test("10 M explicitly accepts E's Organization Invitation as admin, not Participant", async ({
       browser,
       baseURL,
     }) => {
@@ -526,7 +525,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await ownerPage.goto("/organization");
       await expect(
         ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("member");
+      ).toContainText("admin");
       const context = await actorContext(browser, "M", baseURL!);
       const page = await context.newPage();
       await page.goto(`/accept-invitation/${invitationId}`);
@@ -540,15 +539,14 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       // Preserve the original full-URL match; only the diagnostic receives a boolean.
       await expectPrivateURL(page, /\/projects$/);
       await page.goto("/organization");
+      await expect(page.getByText("Invite staff", { exact: true })).toBeVisible();
       await expect(
-        page.getByText(
-          "Organization staff management is available to owners and admins.",
-        ),
-      ).toBeVisible();
+        page.getByRole("row").filter({ hasText: actors.M.email }),
+      ).toContainText("admin");
       await ownerPage.reload();
       await expect(
         ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("member");
+      ).toContainText("admin");
       const [participation] = await db
         .select({ id: projectParticipantsTable.id })
         .from(projectParticipantsTable)
@@ -558,7 +556,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     });
   });
 
-  test("member-created Project observation — usable creation, product resolution pending, not a requirements PASS", async ({
+  test("admin-created disposable Project stays in E's Organization", async ({
     browser,
     baseURL,
   }) => {
@@ -566,46 +564,41 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .select({ role: member.role, organizationId: member.organizationId })
       .from(member)
       .where(eq(member.userId, actors.M.id));
-    expect(membership?.role).toBe("member");
+    expect(membership?.role).toBe("admin");
     const context = await actorContext(browser, "M", baseURL!);
     const page = await context.newPage();
-    // List denial must not remove the independently authorized creation path.
-    // This records server behavior, NOT a requirements PASS.
+    // Admin authority is Organization-wide, unlike assignment-only coordination.
     await page.goto("/projects");
     await expect(
       page.getByRole("heading", { name: "Projects", exact: true }),
     ).toBeVisible();
-    const denial = page
-      .getByRole("alert")
-      .filter({ hasText: "Unable to load Assigned Projects" });
-    await expect(denial).toBeVisible();
-    await expect(denial).toContainText(
-      "You do not have permission to access this resource.",
-    );
-    await expect(denial.getByRole("button", { name: "Retry" })).toBeVisible();
+    await expect(
+      page.getByText("Unable to load Assigned Projects"),
+    ).toHaveCount(0);
+    await expect(page.locator('[aria-label="Project list"][data-hydrated="true"]')).toBeVisible();
     await expect(page.getByRole("button", { name: "New project" })).toBeVisible();
     try {
-      await createProject(page, memberProjectName);
+      await createProject(page, adminProjectName);
       await page.goto("/projects");
       await expect(
-        page.getByRole("link", { name: memberProjectName }),
+        page.getByRole("link", { name: adminProjectName }),
       ).toBeVisible();
       const [created] = await db
         .select({ organizationId: projectsTable.organizationId })
         .from(projectsTable)
-        .where(eq(projectsTable.name, memberProjectName));
+        .where(eq(projectsTable.name, adminProjectName));
       expect(created?.organizationId).toBe(membership!.organizationId);
     } finally {
       await db
         .delete(projectsTable)
-        .where(eq(projectsTable.name, memberProjectName));
+        .where(eq(projectsTable.name, adminProjectName));
     }
   });
 
-  test.describe("member Owner-selection precondition", () => {
-    let memberSetupURL: string;
+  test.describe("admin Owner-selection precondition", () => {
+    let adminSetupURL: string;
     test.beforeAll(async () => {
-      memberSetupURL = await issueInSetup(
+      adminSetupURL = await issueInSetup(
         fixture.projectNames[2]!,
         actors.M.email,
       );
@@ -616,7 +609,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     }) => {
       const context = await actorContext(browser, "M", baseURL!);
       const page = await context.newPage();
-      await page.goto(memberSetupURL);
+      await page.goto(adminSetupURL);
       await page.getByRole("radio", { name: "Existing Organization" }).check();
       await page
         .getByRole("button", { name: "Organization", exact: true })

@@ -33,7 +33,7 @@ A shareable app-owned registration entry point for exactly one Project Partnersh
 _Avoid_: Participant Invitation, Organization Invitation
 
 **Organization Invitation**:
-A Better Auth invitation into an Organization role (`owner`, `admin`, `member`) for colleagues. It carries no Project Partnership bridge and grants no Participant access.
+A Better Auth invitation into an Organization role (`owner`, `admin`) for colleagues. Better Auth's fallback role value `member` is forbidden (ADR-0012); it must never be invited, assigned, or seeded. It carries no Project Partnership bridge and grants no Participant access.
 _Avoid_: Participant Invitation, Participant Registration Link
 
 **Review Task**:

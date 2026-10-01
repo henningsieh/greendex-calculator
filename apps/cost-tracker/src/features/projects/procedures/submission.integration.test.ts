@@ -104,14 +104,14 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: participantUser,
       organizationId: host,
-      role: "member",
+      role: "participant",
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: actor,
       organizationId: other,
-      role: "member",
+      role: "participant",
       createdAt: now,
     },
     {
@@ -356,9 +356,9 @@ const roles = [
     assigned: false,
   },
   {
-    name: "Partner fallback member",
+    name: "Partner unassigned participant",
     side: "partner",
-    role: "member",
+    role: "participant",
     assigned: false,
   },
   {
@@ -382,9 +382,9 @@ const roles = [
     assigned: false,
   },
   {
-    name: "Hosting fallback member",
+    name: "Hosting unassigned participant",
     side: "host",
-    role: "member",
+    role: "participant",
     assigned: false,
   },
   {
@@ -1410,7 +1410,7 @@ describe("Host Claim review", () => {
         });
       }
     }
-    await asHost("member");
+    await asHost("participant");
     for (const action of actions) {
       await db
         .update(claims)
@@ -1418,7 +1418,7 @@ describe("Host Claim review", () => {
         .where(eq(claims.id, claimId));
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
-    for (const role of ["member", "project-coordinator"]) {
+    for (const role of ["participant", "project-coordinator"]) {
       await asHost(role, participantUser);
       for (const action of actions) {
         await db
@@ -1428,7 +1428,7 @@ describe("Host Claim review", () => {
         await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
       }
     }
-    await asHost("member", participantUser);
+    await asHost("participant", participantUser);
     for (const action of actions) {
       await db
         .update(claims)
@@ -1683,7 +1683,7 @@ describe("Claim payment recording", () => {
       await markPaid(payable);
       await correctPayment("Incorrect flag");
     }
-    await asHost("member", participantUser);
+    await asHost("participant", participantUser);
     await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await db.update(claims).set({ status: "paid" }).where(eq(claims.id, claimId));
     await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({

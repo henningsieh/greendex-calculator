@@ -82,10 +82,10 @@ describe("organizations staff invites", () => {
     const memberships: [string, string][] = [
       [ownerId, "owner"],
       [adminId, "admin"],
-      [memberId, "member"],
+      [memberId, "project-coordinator"],
       [participantId, "participant"],
       [hybridAdminId, "admin,participant"],
-      [hybridMemberId, "member,participant"],
+      [hybridMemberId, "project-coordinator,participant"],
     ];
     for (const [userId, role] of memberships) {
       await db.insert(member).values({
@@ -136,8 +136,8 @@ describe("organizations staff invites", () => {
       [
         "admin",
         "admin,participant",
-        "member",
-        "member,participant",
+        "project-coordinator",
+        "project-coordinator,participant",
         "owner",
         "participant",
       ].sort(),
@@ -175,7 +175,7 @@ describe("organizations staff invites", () => {
     await expect(
       client.organizations.inviteMember({
         email: "new-member@example.org",
-        role: "member",
+        role: "admin",
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
@@ -199,7 +199,7 @@ describe("organizations staff invites", () => {
       await expect(
         client.organizations.inviteMember({
           email: "staff-target@example.org",
-          role: role as "member",
+          role: role as "admin",
         }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     }
@@ -259,7 +259,7 @@ describe("organizations staff invites", () => {
         id: pendingId,
         organizationId: orgId,
         email: "leaving@example.org",
-        role: "member",
+        role: "admin",
         status: "pending",
         expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
         createdAt: now,
@@ -269,7 +269,7 @@ describe("organizations staff invites", () => {
         id: otherInvitationId,
         organizationId: otherOrgId,
         email: "elsewhere@example.org",
-        role: "member",
+        role: "admin",
         status: "pending",
         expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
         createdAt: now,

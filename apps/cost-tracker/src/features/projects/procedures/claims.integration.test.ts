@@ -90,7 +90,7 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: participant,
       organizationId: host,
-      role: "member",
+      role: "project-coordinator",
       createdAt: now,
     },
     {
@@ -204,7 +204,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "member" })
+        .set({ role: "project-coordinator" })
         .where(
           and(eq(member.userId, participant), eq(member.organizationId, host)),
         );

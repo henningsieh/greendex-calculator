@@ -51,7 +51,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
               {
                 id: "invitation-1",
                 email: "pending@example.org",
-                role: "member",
+                role: "admin",
                 expiresAt: new Date("2026-02-01T00:00:00.000Z").toISOString(),
                 createdAt: new Date("2026-01-03T00:00:00.000Z").toISOString(),
               },
@@ -83,7 +83,7 @@ beforeEach(() => {
   mocks.inviteMember.mockResolvedValue({
     invitationId: "invitation-2",
     email: "new@example.org",
-    role: "member",
+    role: "admin",
   });
   mocks.cancelInvitation.mockResolvedValue({ success: true });
 });
@@ -109,7 +109,7 @@ describe("Organization team", () => {
     await waitFor(() =>
       expect(mocks.inviteMember).toHaveBeenCalledWith({
         email: "new@example.org",
-        role: "member",
+        role: "admin",
       }),
     );
     expect(
