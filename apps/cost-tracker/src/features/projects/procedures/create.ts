@@ -8,7 +8,6 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { ProjectCreateInputSchema } from "@/features/projects/validation-schemas";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -39,7 +38,6 @@ export const create = authorized
         });
       }
 
-      requireCostTrackerRole(membership.role, errors.BAD_REQUEST);
       const [project] = await tx
         .insert(projectsTable)
         .values({ ...input, organizationId })

@@ -45,42 +45,25 @@ export const projectCoordinatorRole = accessControl.newRole({
   ...memberAc.statements,
 });
 
-export const legacyCalculatorMemberRole = accessControl.newRole({
+export const memberRole = accessControl.newRole({
   ...memberAc.statements,
 });
 
-export const projectParticipantRole = accessControl.newRole({
+export const participantRole = accessControl.newRole({
   ...memberAc.statements,
   project: ["read"],
   projectParticipation: ["read", "update"],
 });
 
 export const organizationRoles = {
-  // Legacy roles retained for Calculator. The bare member role is forbidden in
-  // Cost Tracker, which drops it via its runtime role map and ban hooks.
-  // Any future Calculator role adaptation must confront these legacy entries.
+  owner: organizationAdministratorRole,
   admin: legacyCalculatorAdminRole,
-  member: legacyCalculatorMemberRole,
-
-  // Domain-named role definitions; these keys are not persisted role values.
-  organisationAdmin: organizationAdministratorRole,
-  projectParticipant: projectParticipantRole,
-};
-
-// Better Auth's creatorRole and existing rows use owner/participant. Resolve the
-// domain-named definitions to those unchanged runtime keys: no authority or data
-// migration is implied by renaming the definition map.
-export const calculatorOrganizationRoles = {
-  owner: organizationRoles.organisationAdmin,
-  admin: organizationRoles.admin,
-  member: organizationRoles.member,
-  participant: organizationRoles.projectParticipant,
+  member: memberRole,
+  participant: participantRole,
 };
 
 export const costTrackerOrganizationRoles = {
-  owner: organizationRoles.organisationAdmin,
-  admin: organizationRoles.admin,
-  participant: organizationRoles.projectParticipant,
+  ...organizationRoles,
   "project-coordinator": projectCoordinatorRole,
 };
 

@@ -73,7 +73,6 @@ import {
   consumeSetupLink,
   createSetupLink,
   disableSetupLink,
-  listSetupLinks,
 } from "@/features/projects/procedures/setup-links";
 import {
   previewSubmission,
@@ -136,7 +135,6 @@ export const router = {
     list: listPartnerships,
     remove: removePartnership,
     createSetupLink,
-    listSetupLinks,
     disableSetupLink,
     consumeSetupLink,
     assignPartnerCoordinator,

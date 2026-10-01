@@ -3,7 +3,6 @@
 import { ORPCError } from "@orpc/client";
 import {
   useMutation,
-  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -74,7 +73,7 @@ function mutationFeedback(error: unknown) {
     return {
       title: "Review request",
       description:
-        "This Registered User may already participate in this Project. Open Review Tasks to review the duplicate identity, then contact the Hosting Organization to request a merge review if needed. No new Project Participation was added.",
+        "This identity may already participate in this Project. Check the person's account and existing Participation, then contact the Hosting Organization to request a merge review. No new Participation was added.",
     };
   }
   if (error instanceof ORPCError && error.code === "FORBIDDEN") {
@@ -149,322 +148,6 @@ function CountryEditor({
   );
 }
 
-type ReviewTask = Outputs["duplicateReviews"]["list"][number];
-type ReviewDecision = NonNullable<ReviewTask["decision"]>;
-const reviewDecisions: { value: ReviewDecision; label: string }[] = [
-  { value: "same_person", label: "Same person" },
-  { value: "distinct_persons", label: "Distinct persons" },
-  { value: "dismiss", label: "Dismiss" },
-];
-
-function ReviewTaskControls({
-  task,
-  refresh,
-  onFeedback,
-}: {
-  task: ReviewTask;
-  refresh: () => Promise<void>;
-  onFeedback: (message: string) => void;
-}) {
-  const [decision, setDecision] = useState<ReviewDecision>("same_person");
-  const onError = (error: unknown) =>
-    onFeedback(
-      error instanceof ORPCError && error.code === "BAD_REQUEST"
-        ? "The Review Task is no longer available for this action. Only its assigned Registered User may resolve it with the existing Project Participation. Refresh the list and try again."
-        : getORPCRequestErrorMessage(error).text,
-    );
-  const assign = useMutation({
-    mutationFn: () =>
-      orpc.duplicateReviews.assign({
-        partnershipId: task.partnershipId,
-        id: task.id,
-      }),
-    onSuccess: async () => {
-      onFeedback("Review Task assigned to you.");
-      await refresh();
-    },
-    onError,
-  });
-  const resolve = useMutation({
-    mutationFn: () =>
-      orpc.duplicateReviews.resolve({
-        partnershipId: task.partnershipId,
-        id: task.id,
-        decision,
-        survivorParticipationId: task.existingParticipationId,
-      }),
-    onSuccess: async () => {
-      onFeedback(
-        "Review Task resolved. The existing Project Participation is retained; no merge was performed.",
-      );
-      await refresh();
-    },
-    onError,
-  });
-  return (
-    <li className="space-y-3 py-4">
-      <p>Registered User: {task.candidateEmail}</p>
-      <Badge variant="secondary">Review Task {task.status}</Badge>
-      <p className="text-sm">
-        Existing Project Participation: {task.existingParticipationId}
-      </p>
-      {task.assignedToUserId && (
-        <p className="text-sm">
-          Assigned Registered User: {task.assignedToUserId}
-        </p>
-      )}
-      {task.status === "open" && (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={assign.isPending}
-          onClick={() => assign.mutate()}
-        >
-          Assign Review Task to me
-        </Button>
-      )}
-      {task.status === "assigned" && (
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-2">
-            <Label htmlFor={`review-decision-${task.id}`}>
-              Review Task decision
-            </Label>
-            <select
-              className="h-9 rounded-md border bg-background px-3 text-sm"
-              id={`review-decision-${task.id}`}
-              value={decision}
-              onChange={(event) => {
-                const selected = reviewDecisions.find(
-                  (entry) => entry.value === event.target.value,
-                );
-                if (selected) setDecision(selected.value);
-              }}
-            >
-              {reviewDecisions.map((entry) => (
-                <option key={entry.value} value={entry.value}>
-                  {entry.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button
-            type="button"
-            disabled={resolve.isPending}
-            onClick={() => resolve.mutate()}
-          >
-            Resolve Review Task
-          </Button>
-        </div>
-      )}
-      {task.decision && (
-        <p>
-          Decision:{" "}
-          {reviewDecisions.find((entry) => entry.value === task.decision)?.label}
-        </p>
-      )}
-    </li>
-  );
-}
-
-function ReviewTasks({ partnershipId }: { partnershipId: string }) {
-  const queryClient = useQueryClient();
-  const [feedback, setFeedback] = useState("");
-  const options = orpcQuery.duplicateReviews.list.queryOptions({
-    input: { partnershipId },
-    meta: { costTrackerORPC: true },
-    retry: false,
-  });
-  const tasks = useQuery(options);
-  const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: options.queryKey });
-  };
-  return (
-    <section aria-label="Review Tasks" className="space-y-4">
-      {tasks.isPending ? (
-        <output>Loading Review Tasks…</output>
-      ) : tasks.isError ? (
-        <Alert>
-          <AlertTitle>Unable to load Review Tasks</AlertTitle>
-          <AlertDescription>
-            {getORPCRequestErrorMessage(tasks.error).text}
-          </AlertDescription>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void tasks.refetch()}
-          >
-            Retry Review Tasks
-          </Button>
-        </Alert>
-      ) : tasks.data.length === 0 ? (
-        <p>No Review Tasks are recorded for this Project Partnership.</p>
-      ) : (
-        <ul className="divide-y">
-          {tasks.data.map((task) => (
-            <ReviewTaskControls
-              key={task.id}
-              task={task}
-              refresh={refresh}
-              onFeedback={setFeedback}
-            />
-          ))}
-        </ul>
-      )}
-      {feedback && (
-        <Alert>
-          <AlertTitle>Review Task update</AlertTitle>
-          <AlertDescription>{feedback}</AlertDescription>
-        </Alert>
-      )}
-    </section>
-  );
-}
-
-function PartnerCoordinatorControls({
-  partnershipId,
-}: {
-  partnershipId: string;
-}) {
-  const queryClient = useQueryClient();
-  const [targetUserId, setTargetUserId] = useState("");
-  const [feedback, setFeedback] = useState("");
-  // This existing read is owner/admin-only; the mutations separately enforce
-  // that the active Organization is this Project Partnership's Partner side.
-  const members = useQuery(
-    orpcQuery.organizations.listMembers.queryOptions({
-      input: {},
-      meta: { costTrackerORPC: true },
-      retry: false,
-    }),
-  );
-  const refresh = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.listPartner.key({ type: "query" }),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.scopes.key({ type: "query" }),
-      }),
-    ]);
-  };
-  const onError = (error: unknown) =>
-    setFeedback(getORPCRequestErrorMessage(error).text);
-  const assign = useMutation({
-    mutationFn: () =>
-      orpc.projectPartnerships.assignPartnerCoordinator({
-        partnershipId,
-        userId: targetUserId,
-      }),
-    onSuccess: async () => {
-      setFeedback("Group Organizer assigned to this Project Partnership.");
-      await refresh();
-    },
-    onError,
-  });
-  const revoke = useMutation({
-    mutationFn: () =>
-      orpc.projectPartnerships.removePartnerCoordinator({
-        partnershipId,
-        userId: targetUserId,
-      }),
-    onSuccess: async () => {
-      setFeedback(
-        "Group Organizer assignment revoked for this Project Partnership. Organization Membership roles are unchanged.",
-      );
-      await refresh();
-    },
-    onError,
-  });
-  if (members.isPending) return <output>Loading Registered Users…</output>;
-  if (members.isError)
-    return (
-      <Alert>
-        <AlertTitle>Group Organizer management unavailable</AlertTitle>
-        <AlertDescription>
-          {getORPCRequestErrorMessage(members.error).text}
-        </AlertDescription>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void members.refetch()}
-        >
-          Retry Registered Users
-        </Button>
-      </Alert>
-    );
-  const eligible = members.data.members.filter((entry) =>
-    entry.role
-      .split(",")
-      .some((role) =>
-        ["owner", "admin", "project-coordinator"].includes(role.trim()),
-      ),
-  );
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Organization Owners and Organization Admins may assign or revoke a Group
-        Organizer for this Project Partnership. Assignment does not change
-        Organization Membership roles; the project-coordinator role is required
-        for assignment-scoped access.
-      </p>
-      <div className="space-y-2">
-        <Label htmlFor={`group-organizer-${partnershipId}`}>
-          Registered User for Group Organizer assignment
-        </Label>
-        <select
-          id={`group-organizer-${partnershipId}`}
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-          value={targetUserId}
-          disabled={assign.isPending || revoke.isPending}
-          onChange={(event) => {
-            setTargetUserId(event.target.value);
-            setFeedback("");
-          }}
-        >
-          <option value="">Select a Registered User</option>
-          {eligible.map((entry) => (
-            <option key={entry.userId} value={entry.userId}>
-              {entry.name} ({entry.email})
-            </option>
-          ))}
-        </select>
-      </div>
-      {eligible.length === 0 && (
-        <p>No eligible Registered Users in this Organization.</p>
-      )}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          type="button"
-          disabled={!targetUserId || assign.isPending || revoke.isPending}
-          onClick={() => {
-            setFeedback("");
-            assign.mutate();
-          }}
-        >
-          Assign Group Organizer
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={!targetUserId || assign.isPending || revoke.isPending}
-          onClick={() => {
-            setFeedback("");
-            revoke.mutate();
-          }}
-        >
-          Revoke Group Organizer assignment
-        </Button>
-      </div>
-      {feedback && (
-        <Alert>
-          <AlertTitle>Group Organizer update</AlertTitle>
-          <AlertDescription>{feedback}</AlertDescription>
-        </Alert>
-      )}
-    </div>
-  );
-}
-
 /** The list and mutations are scoped by the server's Partnership authorization, not client filtering. */
 export function ParticipantCoordination({
   partnershipId,
@@ -480,8 +163,6 @@ export function ParticipantCoordination({
   );
   const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
-  const [reviewsOpen, setReviewsOpen] = useState(false);
-  const [coordinatorsOpen, setCoordinatorsOpen] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
     partnershipId: string;
     id: string;
@@ -503,12 +184,6 @@ export function ParticipantCoordination({
         input: { partnershipId },
       }),
     });
-    if (reviewsOpen)
-      await queryClient.invalidateQueries({
-        queryKey: orpcQuery.duplicateReviews.list.queryKey({
-          input: { partnershipId },
-        }),
-      });
   };
   const entryError = (error: unknown) =>
     setEntryFeedback({
@@ -595,56 +270,6 @@ export function ParticipantCoordination({
     },
     onError: entryError,
   });
-  const reopenLink = useMutation({
-    mutationFn: (id: string) =>
-      orpc.participantOnboarding.setRegistrationLinkOpen({ id, open: true }),
-    onSuccess: async () => {
-      setEntryFeedback({
-        title: "Registration link reopened",
-        description: "The existing link can be used again.",
-      });
-      await refresh();
-    },
-    onError: (error) => {
-      if (
-        error instanceof ORPCError &&
-        error.code === "BAD_REQUEST" &&
-        error.message === "A submitted Claim prevents reopening registration."
-      ) {
-        setEntryFeedback({
-          title: "Registration link cannot be reopened",
-          description: "A non-editable Claim prevents reopening registration.",
-        });
-      } else entryError(error);
-    },
-  });
-  const removeParticipation = useMutation({
-    mutationFn: (id: string) => orpc.participations.remove({ partnershipId, id }),
-    onSuccess: async () => {
-      setFeedback({
-        title: "Project Participation removed",
-        description: "The scoped list has been refreshed.",
-      });
-      await refresh();
-    },
-    onError: (error) => {
-      const refusals: Record<string, string> = {
-        "Locked Claim prevents Participation removal.":
-          "A locked Claim prevents removal of this Project Participation.",
-        "Participation is referenced by Claim or merge data; request review instead.":
-          "This Project Participation is referenced by a Participant Journey, Claim or merge data. Request review instead.",
-        "Participation is referenced; request review instead.":
-          "This Project Participation is referenced by other records. Request review instead.",
-      };
-      setFeedback({
-        title: "Unable to remove Project Participation",
-        description:
-          error instanceof ORPCError && error.code === "BAD_REQUEST"
-            ? (refusals[error.message] ?? getORPCRequestErrorMessage(error).text)
-            : getORPCRequestErrorMessage(error).text,
-      });
-    },
-  });
   // Hosts may read server-authorized oversight data, but cannot manage Partner
   // Participations here; denied writes show the access-denied surface below.
   const create = useMutation({
@@ -657,10 +282,7 @@ export function ParticipantCoordination({
       });
       await refresh();
     },
-    onError: async (error) => {
-      setFeedback(mutationFeedback(error));
-      if (reviewsOpen) await refresh();
-    },
+    onError: (error) => setFeedback(mutationFeedback(error)),
   });
 
   return (
@@ -740,67 +362,10 @@ export function ParticipantCoordination({
                     onSaved={refresh}
                     onError={(error) => setFeedback(mutationFeedback(error))}
                   />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={removeParticipation.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Remove the Project Participation for ${participant.displayName}?`,
-                        )
-                      ) {
-                        setFeedback(undefined);
-                        removeParticipation.mutate(participant.id);
-                      }
-                    }}
-                  >
-                    Remove Project Participation for {participant.displayName}
-                  </Button>
                 </li>
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Group Organizers</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
-            type="button"
-            variant="outline"
-            aria-expanded={coordinatorsOpen}
-            onClick={() => setCoordinatorsOpen((open) => !open)}
-          >
-            {coordinatorsOpen
-              ? "Hide Group Organizer management"
-              : "Manage Group Organizers"}
-          </Button>
-          {coordinatorsOpen && (
-            <PartnerCoordinatorControls partnershipId={partnershipId} />
-          )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Review Tasks</CardTitle>
-          <CardDescription>
-            Review duplicate Registered User identities. Resolution retains the
-            existing Project Participation and does not perform a merge.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setReviewsOpen((open) => !open)}
-            aria-expanded={reviewsOpen}
-          >
-            {reviewsOpen ? "Hide Review Tasks" : "Show Review Tasks"}
-          </Button>
-          {reviewsOpen && <ReviewTasks partnershipId={partnershipId} />}
         </CardContent>
       </Card>
       <Card>
@@ -941,23 +506,10 @@ export function ParticipantCoordination({
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={closeLink.isPending || reopenLink.isPending}
+                      disabled={closeLink.isPending}
                       onClick={() => closeLink.mutate(link.id)}
                     >
                       Close registration link {link.id}
-                    </Button>
-                  )}
-                  {!link.enabled && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={reopenLink.isPending || closeLink.isPending}
-                      onClick={() => {
-                        setEntryFeedback(undefined);
-                        reopenLink.mutate(link.id);
-                      }}
-                    >
-                      Reopen registration link {link.id}
                     </Button>
                   )}
                 </li>

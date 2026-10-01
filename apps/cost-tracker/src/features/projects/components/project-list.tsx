@@ -44,7 +44,6 @@ import {
 import { toast } from "@/components/ui/toast";
 import { AssignedProjectList } from "@/features/projects/components/assigned-project-list";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import {
   getProjectAvailableScopesQueryOptions,
   getProjectListQueryOptions,
@@ -210,9 +209,7 @@ export function ProjectList() {
       return (
         <>
           <CreateProjectDialog />
-          <ProjectDataErrorBoundary resource="Assigned Projects">
-            <AssignedProjectList />
-          </ProjectDataErrorBoundary>
+          <AssignedProjectList />
         </>
       );
     }
@@ -234,9 +231,7 @@ export function ProjectList() {
   return (
     <>
       {availableScopes.canCreate && <CreateProjectDialog />}
-      <ProjectDataErrorBoundary resource="Projects">
-        <AvailableProjectList availableScopes={availableScopes} />
-      </ProjectDataErrorBoundary>
+      <AvailableProjectList availableScopes={availableScopes} />
     </>
   );
 }

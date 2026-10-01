@@ -45,7 +45,7 @@ export const INVITATION_TTL_MS = 48 * 60 * 60 * 1000;
 
 export function shouldGrantParticipantRole(role: string): boolean {
   return (
-    hasOrganizationRole(role, "project-coordinator") &&
+    hasOrganizationRole(role, "member") &&
     !["participant", "owner", "admin"].some((existing) =>
       role.split(",").some((value) => value.trim() === existing),
     )

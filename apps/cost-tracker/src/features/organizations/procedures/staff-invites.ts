@@ -12,26 +12,19 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { normalizedEmail } from "@/features/authentication/procedures/shared";
-import {
-  BANNED_ROLE_MESSAGE,
-  hasBannedOrganizationRole,
-  requireCostTrackerRole,
-} from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
 import { authorized } from "@/lib/orpc/middleware";
 
-const STAFF_ROLES = ["owner", "admin"] as const;
+const STAFF_ROLES = ["owner", "admin", "member"] as const;
 type StaffRole = (typeof STAFF_ROLES)[number];
 
-const StaffRoleSchema = z
-  .string()
-  .refine((role) => !hasBannedOrganizationRole(role), BANNED_ROLE_MESSAGE)
-  .pipe(z.enum(STAFF_ROLES));
+const StaffRoleSchema = z.enum(STAFF_ROLES);
 
 /** Lower rank outranks: an inviter can only grant their own rank or below. */
 const ROLE_RANK: Record<StaffRole, number> = {
   owner: 0,
   admin: 1,
+  member: 2,
 };
 
 const MemberSchema = z.object({
@@ -252,7 +245,6 @@ export const acceptInvitation = authorized
 
     if (!pending)
       throw errors.NOT_FOUND({ message: "Organization Invitation not found." });
-    requireCostTrackerRole(pending.role, errors.BAD_REQUEST);
     // Participant Invitations share this table with role "participant" plus a
     // bridge row; accepting one here would bypass agreement and Project
     // Participation checks, so only staff invitations may proceed.
