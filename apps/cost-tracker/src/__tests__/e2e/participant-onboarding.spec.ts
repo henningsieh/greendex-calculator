@@ -153,12 +153,7 @@ async function counts() {
     db
       .select({ value: count() })
       .from(invitation)
-      .where(
-        inArray(invitation.id, [
-          ids.oldInvitation,
-          ids.invitation,
-        ]),
-      ),
+      .where(inArray(invitation.id, [ids.oldInvitation, ids.invitation])),
     db
       .select({ value: count() })
       .from(bridges)
@@ -382,7 +377,6 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         expiresAt: new Date(Date.now() + 3_600_000),
         inviterId: actors.P.id,
       },
-
     ]);
     // Hosting coordinator provisioning has no product UI yet (ADR-0012).
     // Setup-only real Membership, never an invitation or fake acceptance.
@@ -439,12 +433,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       );
     await db
       .delete(invitation)
-      .where(
-        inArray(invitation.id, [
-          ids.oldInvitation,
-          ids.invitation,
-        ]),
-      );
+      .where(inArray(invitation.id, [ids.oldInvitation, ids.invitation]));
     await db
       .delete(partnerships)
       .where(

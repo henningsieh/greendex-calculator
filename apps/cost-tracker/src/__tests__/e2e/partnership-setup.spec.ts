@@ -572,10 +572,12 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(
       page.getByRole("heading", { name: "Projects", exact: true }),
     ).toBeVisible();
+    await expect(page.getByText("Unable to load Assigned Projects")).toHaveCount(
+      0,
+    );
     await expect(
-      page.getByText("Unable to load Assigned Projects"),
-    ).toHaveCount(0);
-    await expect(page.locator('[aria-label="Project list"][data-hydrated="true"]')).toBeVisible();
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "New project" })).toBeVisible();
     try {
       await createProject(page, adminProjectName);

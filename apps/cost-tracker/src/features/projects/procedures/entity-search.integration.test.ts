@@ -84,7 +84,7 @@ beforeAll(async () => {
       id: randomUUID(),
       organizationId: foreign,
       userId: actor,
-      role: "project-coordinator",
+      role: "participant",
       createdAt: now,
     },
   ]);
@@ -261,7 +261,8 @@ describe("entity picker procedures", () => {
           id: randomUUID(),
           userId: actor,
           organizationId: id,
-          role: index === 1001 ? "project-coordinator,owner" : "project-coordinator",
+          role:
+            index === 1001 ? "project-coordinator,owner" : "project-coordinator",
           createdAt: new Date(),
         })),
       );
