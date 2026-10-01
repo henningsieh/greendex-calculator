@@ -23,7 +23,7 @@ Prefix each child's `task` prompt with the exact skill directive for its role â€
 - Implementation worker: `/skill:implement`
 - Worker reviewing previous code changes: `/skill:code-review`
 - Survey/recon scout (read-only inventory, classification, no edits): NO skill prefix â€” `/skill:implement` on a scout is wrong (scout tools are read-only anyway, but the directive misstates the role and confuses review).
-- Merge-conflict resolver: `/skill:resolving-merge-conflicts`, thinking `high` (conflict surgery needs full reasoning; never `medium`).
+- Merge-conflict resolver: `/skill:resolving-merge-conflicts`, thinking `high` (conflict surgery needs full reasoning; never `medium` and some helpful context in the prompt).
 
 Place the directive at the very start of the prompt, before the ticket command
 and cold-start contract.
