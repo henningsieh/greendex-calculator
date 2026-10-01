@@ -270,6 +270,29 @@ export function ParticipantCoordination({
     },
     onError: entryError,
   });
+  const reopenLink = useMutation({
+    mutationFn: (id: string) =>
+      orpc.participantOnboarding.setRegistrationLinkOpen({ id, open: true }),
+    onSuccess: async () => {
+      setEntryFeedback({
+        title: "Registration link reopened",
+        description: "The existing link can be used again.",
+      });
+      await refresh();
+    },
+    onError: (error) => {
+      if (
+        error instanceof ORPCError &&
+        error.code === "BAD_REQUEST" &&
+        error.message === "A submitted Claim prevents reopening registration."
+      ) {
+        setEntryFeedback({
+          title: "Registration link cannot be reopened",
+          description: "A non-editable Claim prevents reopening registration.",
+        });
+      } else entryError(error);
+    },
+  });
   // Hosts may read server-authorized oversight data, but cannot manage Partner
   // Participations here; denied writes show the access-denied surface below.
   const create = useMutation({
@@ -506,10 +529,23 @@ export function ParticipantCoordination({
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={closeLink.isPending}
+                      disabled={closeLink.isPending || reopenLink.isPending}
                       onClick={() => closeLink.mutate(link.id)}
                     >
                       Close registration link {link.id}
+                    </Button>
+                  )}
+                  {!link.enabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={reopenLink.isPending || closeLink.isPending}
+                      onClick={() => {
+                        setEntryFeedback(undefined);
+                        reopenLink.mutate(link.id);
+                      }}
+                    >
+                      Reopen registration link {link.id}
                     </Button>
                   )}
                 </li>

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "@greendex/database";
 import {
   account,
+  claimsTable,
   invitation,
   member,
   organization,
@@ -36,9 +37,8 @@ import {
 // bridge records are inserted in beforeAll. The initial Participant Invitation and
 // its replacement are never submitted through the UI: both issue and reissue send
 // real SMTP mail. Browser redemption, profile, draft acceptance, join and link
-// creation/closure do not send mail. Mail delivery remains manual/Vitest evidence.
-// UI GAP (15): the participants page lists closed links but has no reopen control;
-// reopening below uses a DB test-helper operation, not a browser PASS for reopening.
+// creation/closure/reopening do not send mail. Mail delivery remains manual/Vitest evidence.
+// Case 15 reopens in-browser; a setup-seeded non-editable Claim proves visible refusal.
 // UI GAP (14): reissue is visible, but cannot be clicked against real SMTP.
 const suffix = randomUUID();
 const names = {
@@ -394,8 +394,17 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     });
   });
 
+  // Actor state lives in the database, not an open page. Release browser
+  // contexts between cases so retained renderers cannot starve the dev server.
+  test.afterEach(async () => {
+    await Promise.all(contexts.splice(0).map((context) => context.close()));
+  });
+
   test.afterAll(async () => {
-    await Promise.all(contexts.map((context) => context.close()));
+    await Promise.all(contexts.splice(0).map((context) => context.close()));
+    await db
+      .delete(claimsTable)
+      .where(eq(claimsTable.partnershipId, ids.otherPartnership));
     await db
       .delete(participants)
       .where(inArray(participants.projectId, [ids.main, ids.other]));
@@ -544,7 +553,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
   });
 
-  test("15 P creates a shareable link, closes it; setup reopens the missing UI control", async ({
+  test("15 P creates a shareable link, closes it and reopens it in-browser", async ({
     browser,
     baseURL,
   }) => {
@@ -576,16 +585,77 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .from(participants)
         .where(eq(participants.userId, actors.U.id)),
     ).toHaveLength(0);
-    // UI GAP: no reopen button. Restore via test-helper DB operation; browser
-    // redemption after restore is exercised in case 17, not credited as UI reopen.
-    await db
-      .update(links)
-      .set({ enabled: true, closedAt: null, closedByUserId: null })
-      .where(eq(links.id, id));
+    await p
+      .getByRole("button", { name: `Reopen registration link ${id}` })
+      .click();
+    await expect(
+      p.getByText("Registration link reopened", { exact: true }),
+    ).toBeVisible();
+    const row = p.getByRole("listitem").filter({ hasText: `Link ${id}` });
+    await expect(row.getByText("Open", { exact: true })).toBeVisible();
+    expect(
+      (await db.select().from(links).where(eq(links.id, id)))[0]?.enabled,
+    ).toBe(true);
     await p.reload();
     await expect(
       p.getByRole("button", { name: `Close registration link ${id}` }),
     ).toBeVisible();
+  });
+
+  test("15 non-editable Claim visibly refuses reopening a closed registration link", async ({
+    browser,
+    baseURL,
+  }) => {
+    const p = await pageFor(browser, "P", baseURL!);
+    // Isolate control coverage from the intermittently stuck Project-detail → desk
+    // navigation seam; the existing journey tests still exercise that navigation.
+    await p.goto(`/partnerships/${ids.otherPartnership}/participants`);
+    await expect(
+      p.locator('section[aria-label="Project Participations"]'),
+    ).toBeVisible();
+    await p
+      .getByRole("button", { name: "Create Participant Registration Link" })
+      .click();
+    await expect(
+      p.getByText("Registration link created", { exact: true }),
+    ).toBeVisible();
+    const url = await p
+      .getByLabel("New registration link (copy now)")
+      .inputValue();
+    const id = new URL(url).pathname.split("/").at(-1)!;
+    await p
+      .getByRole("button", { name: `Close registration link ${id}` })
+      .click();
+    await expect(
+      p.getByText("Registration link closed", { exact: true }),
+    ).toBeVisible();
+    // API-setup exception: the unrelated Partnership's Claim lock is a refusal precondition.
+    await db
+      .insert(claimsTable)
+      .values({ partnershipId: ids.otherPartnership, status: "submitted" });
+    try {
+      await p
+        .getByRole("button", { name: `Reopen registration link ${id}` })
+        .click();
+      await expect(
+        p
+          .getByRole("alert")
+          .filter({ hasText: "Registration link cannot be reopened" }),
+      ).toContainText("A non-editable Claim prevents reopening registration.");
+      await expect(
+        p
+          .getByRole("listitem")
+          .filter({ hasText: `Link ${id}` })
+          .getByText("Closed", { exact: true }),
+      ).toBeVisible();
+      expect(
+        (await db.select().from(links).where(eq(links.id, id)))[0]?.enabled,
+      ).toBe(false);
+    } finally {
+      await db
+        .delete(claimsTable)
+        .where(eq(claimsTable.partnershipId, ids.otherPartnership));
+    }
   });
 
   test("16 T joins through the replacement Participant Invitation", async ({
