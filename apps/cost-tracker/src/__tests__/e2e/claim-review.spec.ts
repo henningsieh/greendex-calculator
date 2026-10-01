@@ -216,7 +216,6 @@ async function events(index: number) {
 test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
 
 test.describe.serial("Claim review journey 25–26", () => {
-
   test.beforeAll(async () => {
     baseline = await counts();
     const now = new Date();

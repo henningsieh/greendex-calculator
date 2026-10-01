@@ -283,7 +283,6 @@ async function partnershipCount(projectName: string, organizationName: string) {
 test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
 
 test.describe.serial("Partner Organization setup journey section 2", () => {
-
   test.beforeAll(async () => {
     baseline = await counts();
     await fixture.setup();

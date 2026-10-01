@@ -126,7 +126,6 @@ async function coordinatorContext(browser: Browser, baseURL: string) {
 test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
 
 test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
-
   test.beforeAll(async () => {
     const now = new Date();
     await db.insert(user).values([

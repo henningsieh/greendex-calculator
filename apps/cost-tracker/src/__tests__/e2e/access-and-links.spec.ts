@@ -447,7 +447,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       ).toEqual([{ role: "participant", organizationId: ids.host }]);
       expect(
         await db
-          .select({ userId: participations.userId, projectId: participations.projectId })
+          .select({
+            userId: participations.userId,
+            projectId: participations.projectId,
+          })
           .from(participations)
           .where(eq(participations.id, ids.participation)),
       ).toEqual([{ userId: actors.T.id, projectId }]);
@@ -456,7 +459,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await denied(t, "Claim workspace");
       await expect(t.getByText("No Organization access yet")).toHaveCount(0);
       await expect(
-        t.getByRole("button", { name: /Save Claim draft|Save cost|Submit Claim/ }),
+        t.getByRole("button", {
+          name: /Save Claim draft|Save cost|Submit Claim/,
+        }),
       ).toHaveCount(0);
       const h = await pageFor(browser, "H", baseURL!);
       await h.goto(`/partnerships/${ids.partnership}/claim`);
@@ -471,7 +476,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
           .where(eq(claimsTable.partnershipId, ids.partnership)),
       ).toHaveLength(0);
     } finally {
-      await db.delete(participations).where(eq(participations.id, ids.participation));
+      await db
+        .delete(participations)
+        .where(eq(participations.id, ids.participation));
       await db.delete(member).where(eq(member.id, ids.participantMembership));
     }
   });

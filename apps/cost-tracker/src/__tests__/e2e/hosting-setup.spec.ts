@@ -34,7 +34,6 @@ async function createProject(page: Page, name: string) {
 test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
 
 test.describe.serial("Hosting Organization journey section 1", () => {
-
   test.beforeAll(async () => {
     await fixture.setup();
   });
