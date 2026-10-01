@@ -12,7 +12,7 @@
 subagent({
   agent: "worker",            // worker implements, reviewer reviews, delegate runs errands
   task: "<verbatim ticket command + cold-start contract, see below>",
-  model: "openai-codex/gpt-6-sol:xhigh",
+  model: "openai-codex/gpt-6.1-sol:high",
   maxRuntimeMs: 3600000,      // 60 min: integration suites + typegen need it
   // cwd defaults to runtime cwd; set explicitly or workers land in /tmp
 })
@@ -29,13 +29,17 @@ and cold-start contract.
 
 ## Model and thinking
 
-- Exact `provider/id` required; bare ids resolve only when unique. Verified
-  working: `openai-codex/gpt-6-sol`.
-- Thinking is a `:suffix`, not a field (`:xhigh`, `:high`, `:medium`, …).
+- Exact `provider/id` required; bare ids resolve only when unique. Default:
+  `openai-codex/gpt-6.1-sol` — cheaper and better than `gpt-6-sol`
+  (verified in registry 2026-10-01); use it unless a task needs otherwise.
+- Thinking is a `:suffix`, not a field. Allowed levels: `:medium`, `:high`,
+  and rarely `:xhigh` — only when you expect the task to be hard and complex.
   The `thinking` field is ignored on dispatch.
-- Used here: scouts `medium` (read-only survey is well-scoped), workers `high` (complex) or `medium` (well-scoped), reviewers
-  `xhigh`. Always verify resolution in `status` output (`gpt-6-sol ·
-  thinking xhigh`) — never assume; a typo silently falls back.
+- Used here: scouts `medium` (read-only survey is well-scoped), workers
+  `medium` (well-scoped) or `high` (complex), reviewers `high` — `xhigh`
+  only for hard, complex reviews. Always verify resolution in `status`
+  output (`gpt-6.1-sol · thinking high`) — never assume; a typo silently
+  falls back.
 - Async is default. Monitor via native notifications; `status` (+
   `view: "transcript"`) to inspect, `steer` for live guidance,
   `subagent_supervisor({action: "reply", replyTo, message})` for child
