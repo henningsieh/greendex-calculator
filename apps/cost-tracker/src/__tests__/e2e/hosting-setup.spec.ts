@@ -30,8 +30,10 @@ async function createProject(page: Page, name: string) {
   return new URL(page.url()).pathname;
 }
 
+// Disable traces for every context in this file, including auth API requests.
+test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+
 test.describe.serial("Hosting Organization journey section 1", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
 
   test.beforeAll(async () => {
     await fixture.setup();

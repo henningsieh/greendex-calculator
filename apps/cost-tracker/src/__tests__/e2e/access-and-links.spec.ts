@@ -30,8 +30,10 @@ import { count, eq, inArray } from "drizzle-orm";
 // API-setup exceptions: verified disposable Users, credential accounts, Partner
 // Organizations and Partnerships are DB preconditions. A's Organization Invitation
 // is DB-issued (never submitted through real SMTP); acceptance and Project creation
-// are browser actions. No mail-producing form is submitted. Browser sessions are
-// isolated. Tokens stay in memory; Playwright traces are disabled for this spec.
+// are browser actions. N3 seeds T's Hosting participant Membership and Main Project
+// Participation, then removes them before N4's no-join checks. No mail-producing
+// form is submitted. Browser sessions are isolated. This spec does not explicitly
+// persist tokens or credentials; file-level trace: "off" excludes them from traces.
 // Shared global setup's Project-list hydration wait is 15s (approved one-line
 // exception for slow streamed navigation; no change to test semantics).
 // AUTOMATED-ONLY: server authorization in projects.integration.test.ts,
@@ -51,6 +53,8 @@ const ids = {
   invitation: randomUUID(),
   oldParticipantInvitation: randomUUID(),
   newParticipantInvitation: randomUUID(),
+  participantMembership: randomUUID(),
+  participation: randomUUID(),
 };
 const names = {
   host: `CT ${suffix} Hosting`,
@@ -88,6 +92,8 @@ async function counts() {
     [links],
     [registrations],
     [claims],
+    [participantMemberships],
+    [participantRows],
   ] = await Promise.all([
     db
       .select({ value: count() })
@@ -127,6 +133,14 @@ async function counts() {
           ids.foreignPartnership,
         ]),
       ),
+    db
+      .select({ value: count() })
+      .from(member)
+      .where(eq(member.id, ids.participantMembership)),
+    db
+      .select({ value: count() })
+      .from(participations)
+      .where(eq(participations.id, ids.participation)),
   ]);
   return {
     users: users!.value,
@@ -136,6 +150,8 @@ async function counts() {
     links: links!.value,
     registrations: registrations!.value,
     claims: claims!.value,
+    participantMemberships: participantMemberships!.value,
+    participations: participantRows!.value,
   };
 }
 
@@ -406,23 +422,58 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     browser,
     baseURL,
   }) => {
-    const t = await pageFor(browser, "T", baseURL!);
-    await t.goto(`/partnerships/${ids.partnership}/claim`);
-    await expect(
-      t.getByRole("button", { name: /Save Claim draft|Save cost|Submit Claim/ }),
-    ).toHaveCount(0);
-    const h = await pageFor(browser, "H", baseURL!);
-    await h.goto(`/partnerships/${ids.partnership}/claim`);
-    await denied(h, "Claim workspace");
-    await expect(
-      h.getByRole("button", { name: /Save cost|Save Claim draft/ }),
-    ).toHaveCount(0);
-    expect(
-      await db
-        .select()
-        .from(claimsTable)
-        .where(eq(claimsTable.partnershipId, ids.partnership)),
-    ).toHaveLength(0);
+    // Isolated setup adaptation, not browser evidence of Participant onboarding.
+    // Keep N4's zero-Participation preconditions by removing these rows afterwards.
+    try {
+      await db.insert(member).values({
+        id: ids.participantMembership,
+        userId: actors.T.id,
+        organizationId: ids.host,
+        role: "participant",
+        createdAt: new Date(),
+      });
+      await db.insert(participations).values({
+        id: ids.participation,
+        userId: actors.T.id,
+        projectId,
+        representedOrganizationId: ids.partner,
+        displayName: actors.T.name,
+      });
+      expect(
+        await db
+          .select({ role: member.role, organizationId: member.organizationId })
+          .from(member)
+          .where(eq(member.userId, actors.T.id)),
+      ).toEqual([{ role: "participant", organizationId: ids.host }]);
+      expect(
+        await db
+          .select({ userId: participations.userId, projectId: participations.projectId })
+          .from(participations)
+          .where(eq(participations.id, ids.participation)),
+      ).toEqual([{ userId: actors.T.id, projectId }]);
+      const t = await pageFor(browser, "T", baseURL!);
+      await t.goto(`/partnerships/${ids.partnership}/claim`);
+      await denied(t, "Claim workspace");
+      await expect(t.getByText("No Organization access yet")).toHaveCount(0);
+      await expect(
+        t.getByRole("button", { name: /Save Claim draft|Save cost|Submit Claim/ }),
+      ).toHaveCount(0);
+      const h = await pageFor(browser, "H", baseURL!);
+      await h.goto(`/partnerships/${ids.partnership}/claim`);
+      await denied(h, "Claim workspace");
+      await expect(
+        h.getByRole("button", { name: /Save cost|Save Claim draft/ }),
+      ).toHaveCount(0);
+      expect(
+        await db
+          .select()
+          .from(claimsTable)
+          .where(eq(claimsTable.partnershipId, ids.partnership)),
+      ).toHaveLength(0);
+    } finally {
+      await db.delete(participations).where(eq(participations.id, ids.participation));
+      await db.delete(member).where(eq(member.id, ids.participantMembership));
+    }
   });
 
   test("N4 spare Partner-Organization Setup Link is disabled, replacement is isolated across browsers", async ({

@@ -36,13 +36,16 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 // verification, or mail-sending invitation form is submitted in a browser.
 // Setup-link creation (05/08/09/13) is UI-only: createSetupLink in
 // features/projects/procedures/setup-links.ts persists a hash and returns a
-// secret; it does not invoke mail delivery. Secrets remain in memory only.
+// secret; it does not invoke mail delivery. This spec does not explicitly persist
+// secrets or credentials, and file-level trace: "off" excludes them from traces.
 // Mail delivery is covered by setup-links.integration.test.ts and manual testing.
 // AUTOMATED-ONLY: 07 wrong-email server denial, 11 forged Owner-selection
 // (entity-search.integration.test.ts and setup-links.integration.test.ts),
 // 12 forged/self/duplicate enforcement (partnerships.integration.test.ts).
 // UI GAP (13): no existing-link list or close control; creation/copy does not
 // demonstrate revocation while retaining sibling links.
+// PRODUCT-RESOLUTION-PENDING: the disposable member-created Project observation
+// below records current behavior only, never a requirements PASS.
 const fixture = new HostingJourneyFixture();
 const suffix = fixture.suffix;
 const names = {
@@ -64,6 +67,8 @@ const actors = Object.fromEntries(
   "P" | "F" | "E" | "M",
   { id: string; name: string; email: string; password: string }
 >;
+const memberProjectName = `CT ${suffix} Member Observation`;
+const ownedProjectNames = [...fixture.projectNames, memberProjectName];
 const invitationId = randomUUID();
 const contexts: BrowserContext[] = [];
 const issuedLinks: string[] = [];
@@ -97,7 +102,7 @@ async function counts() {
     db
       .select({ value: count() })
       .from(projectsTable)
-      .where(inArray(projectsTable.name, fixture.projectNames)),
+      .where(inArray(projectsTable.name, ownedProjectNames)),
     db
       .select({ value: count() })
       .from(setupLinks)
@@ -108,7 +113,7 @@ async function counts() {
       .select({ value: count() })
       .from(partnerships)
       .innerJoin(projectsTable, eq(partnerships.projectId, projectsTable.id))
-      .where(inArray(projectsTable.name, fixture.projectNames)),
+      .where(inArray(projectsTable.name, ownedProjectNames)),
     db
       .select({ value: count() })
       .from(invitation)
@@ -274,8 +279,10 @@ async function partnershipCount(projectName: string, organizationName: string) {
   return result!.value;
 }
 
+// Disable traces for every context in this file, including auth API requests.
+test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+
 test.describe.serial("Partner Organization setup journey section 2", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
 
   test.beforeAll(async () => {
     baseline = await counts();
@@ -302,7 +309,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     if (issuedLinks.length)
       await db.delete(setupLinks).where(inArray(setupLinks.id, issuedLinks));
     await db.delete(invitation).where(eq(invitation.id, invitationId));
-    for (const name of fixture.projectNames)
+    for (const name of ownedProjectNames)
       await db.delete(projectsTable).where(eq(projectsTable.name, name));
     for (const name of [names.P, names.F, names.E]) {
       const [org] = await db
@@ -526,6 +533,28 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       expect(participation).toBeUndefined();
       expect(await partnershipCount(fixture.projectNames[1]!, names.E)).toBe(1);
     });
+  });
+
+  test("member-created Project observation — product resolution pending, not a requirements PASS", async ({
+    browser,
+    baseURL,
+  }) => {
+    const [membership] = await db
+      .select({ role: member.role, organizationId: member.organizationId })
+      .from(member)
+      .where(eq(member.userId, actors.M.id));
+    expect(membership?.role).toBe("member");
+    const context = await actorContext(browser, "M", baseURL!);
+    const page = await context.newPage();
+    // Current browser behavior: M can create a disposable Hosted Project despite
+    // fallback member's documented lack of Cost Tracker authority. Observation
+    // only, NOT a requirements PASS; no subsequent test uses this Project.
+    await createProject(page, memberProjectName);
+    const [created] = await db
+      .select({ organizationId: projectsTable.organizationId })
+      .from(projectsTable)
+      .where(eq(projectsTable.name, memberProjectName));
+    expect(created?.organizationId).toBe(membership!.organizationId);
   });
 
   test.describe("member Owner-selection precondition", () => {

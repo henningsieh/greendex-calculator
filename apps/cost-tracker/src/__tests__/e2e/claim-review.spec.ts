@@ -212,8 +212,10 @@ async function events(index: number) {
     .where(eq(history.claimId, ids.claims[index]!));
 }
 
+// Disable traces for every context in this file, including auth API requests.
+test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+
 test.describe.serial("Claim review journey 25–26", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
 
   test.beforeAll(async () => {
     baseline = await counts();

@@ -270,8 +270,10 @@ async function assertJoined(
   ).toHaveLength(1);
 }
 
+// Disable traces for every context in this file, including auth API requests.
+test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+
 test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
   test.beforeAll(async () => {
     baseline = await counts();
     for (const actor of Object.values(actors)) {

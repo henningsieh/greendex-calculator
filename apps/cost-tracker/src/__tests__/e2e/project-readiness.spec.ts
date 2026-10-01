@@ -102,8 +102,10 @@ function partnerRow(page: Page, name: string) {
   return page.getByRole("listitem").filter({ hasText: name });
 }
 
+// Disable traces for every context in this file, including auth API requests.
+test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+
 test.describe.serial("Project readiness journey 28 and N2", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
   let hostContext: Awaited<ReturnType<Browser["newContext"]>> | undefined;
 
   test.beforeAll(async () => {

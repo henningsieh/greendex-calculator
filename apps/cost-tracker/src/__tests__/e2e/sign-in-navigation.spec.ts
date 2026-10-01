@@ -1,6 +1,9 @@
 import { SEED_USER } from "@greendex/auth/seed-user";
 import { expect, test } from "@playwright/test";
 
+// Sign-in credentials must not be captured by retry tracing.
+test.use({ trace: "off" });
+
 test("sign-in starts only one Projects navigation and hydrates it", async ({
   page,
 }) => {

@@ -122,8 +122,10 @@ async function coordinatorContext(browser: Browser, baseURL: string) {
   return actor;
 }
 
+// Disable traces for every context in this file, including auth API requests.
+test.use({ storageState: { cookies: [], origins: [] }, trace: "off" });
+
 test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
 
   test.beforeAll(async () => {
     const now = new Date();
