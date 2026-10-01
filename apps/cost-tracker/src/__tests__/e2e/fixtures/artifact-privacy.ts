@@ -183,8 +183,6 @@ export const experimentalTest = base.extend<{
 
 export const test = base.extend({});
 
-test.use({ trace: "off", screenshot: "off", video: "off" });
-
 // Match the same complete URL that toHaveURL would, but never hand it to the
 // matcher diagnostic. In particular, login redirects can embed a private URL.
 export async function expectPrivateURL(

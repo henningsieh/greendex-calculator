@@ -15,6 +15,8 @@ import {
 // Safe MVP probes use synthetic URLs and never navigate to a private link.
 // Deep-hook probes below are retained but NOT registered/executed; see backlog.
 // Trace/video/screenshots are off; automatic DOM snapshots remain a known risk.
+test.use({ trace: "off", screenshot: "off", video: "off" });
+
 export function experimentalStepPrivacyProbe() {
   const secret = randomBytes(24).toString("base64url");
   registerPrivateValues(secret);
