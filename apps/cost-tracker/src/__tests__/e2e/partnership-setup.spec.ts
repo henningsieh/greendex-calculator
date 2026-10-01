@@ -49,8 +49,8 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 // AUTOMATED-ONLY: 07 wrong-email server denial, 11 forged Owner-selection
 // (entity-search.integration.test.ts and setup-links.integration.test.ts),
 // 12 forged/self/duplicate enforcement (partnerships.integration.test.ts).
-// UI GAP (13): no existing-link list or close control; creation/copy does not
-// demonstrate revocation while retaining sibling links.
+// Case 13 proves persisted Hosting-scoped setup-link rows, one-link closure,
+// disabled-link refusal, and independent redemption of both sibling links.
 // PRODUCT-RESOLUTION-PENDING: member creation follows the existing server grant
 // despite denied assigned-list access (#206). The disposable browser observation
 // is NOT a requirements PASS; the member permission policy still needs resolution.
@@ -84,6 +84,8 @@ const issuedLinks: string[] = [];
 let projectURLs: string[] = [];
 let setupURL = "";
 let existingSetupURL = "";
+let closedSetupURL = "";
+let siblingSetupURLs: string[] = [];
 let baseline: {
   users: number;
   organizations: number;
@@ -655,23 +657,91 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     // are asserted in partnerships.integration.test.ts (AUTOMATED-ONLY).
   });
 
-  test("13 H creates and copies a spare link; existing-link closure remains UI GAP", async ({
+  test("13 H lists existing setup links and closes one; both siblings remain usable", async ({
     browser,
     baseURL,
   }) => {
     const context = await fixture.actorContext(browser, "H", baseURL!);
     const page = await context.newPage();
-    await issueThroughUI(page, fixture.projectNames[2]!, actors.P.email);
+    closedSetupURL = await issueThroughUI(
+      page,
+      fixture.projectNames[2]!,
+      actors.P.email,
+    );
+    siblingSetupURLs = [
+      await issueThroughUI(page, fixture.projectNames[2]!, actors.P.email),
+      await issueThroughUI(page, fixture.projectNames[2]!, actors.F.email),
+    ];
+    const idFrom = (url: string) => new URL(url).pathname.split("/").at(-1)!;
+    await page.reload();
+    const list = page.getByRole("region", {
+      name: "Existing Partner Organization Setup Links",
+    });
+    for (const id of issuedLinks)
+      await expect(list.locator(`[data-setup-link-id="${id}"]`)).toHaveCount(1);
+    const closedRow = list.locator(
+      `[data-setup-link-id="${idFrom(closedSetupURL)}"]`,
+    );
+    await expect(closedRow).toContainText(actors.P.email);
+    await closedRow
+      .getByRole("button", { name: "Close Partner Organization Setup Link" })
+      .click();
     await expect(
-      page.getByRole("heading", { name: "Current Project Partnerships" }),
+      closedRow.getByRole("cell", { name: "Closed", exact: true }),
     ).toBeVisible();
+    await expect(closedRow.getByRole("button")).toBeDisabled();
+    for (const url of siblingSetupURLs)
+      await expect(
+        list
+          .locator(`[data-setup-link-id="${idFrom(url)}"]`)
+          .getByRole("cell", { name: "Open", exact: true }),
+      ).toBeVisible();
+    await page.reload();
     await expect(
-      page.getByRole("button", { name: /Close setup link|Schließen/ }),
-    ).toHaveCount(0);
+      closedRow.getByRole("cell", { name: "Closed", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("13a closed setup link refuses completion; both siblings redeem independently", async ({
+    browser,
+    baseURL,
+  }) => {
+    const partner = await actorContext(browser, "P", baseURL!);
+    const recipient = await partner.newPage();
+    await recipient.goto(closedSetupURL);
+    await recipient.getByRole("radio", { name: "Existing Organization" }).check();
+    await selectEntity(recipient, "Organization", names.P);
+    await recipient.getByRole("button", { name: "Complete setup" }).click();
     await expect(
-      page.getByRole("heading", { name: /Existing setup links/i }),
-    ).toHaveCount(0);
-    // UI GAP: no closure/list action is possible. This is not a closure PASS.
+      recipient.getByText("Disabled setup link", { exact: true }),
+    ).toBeVisible();
+    expect(await partnershipCount(fixture.projectNames[2]!, names.P)).toBe(0);
+    for (const [index, actor] of (["P", "F"] as const).entries()) {
+      const sibling = await actorContext(browser, actor, baseURL!);
+      const siblingPage = await sibling.newPage();
+      await siblingPage.goto(siblingSetupURLs[index]!);
+      await siblingPage
+        .getByRole("radio", { name: "Existing Organization" })
+        .check();
+      await selectEntity(siblingPage, "Organization", names[actor]);
+      await siblingPage.getByRole("button", { name: "Complete setup" }).click();
+      await expect(
+        siblingPage.getByText("Project Partnership created"),
+      ).toBeVisible();
+      expect(await partnershipCount(fixture.projectNames[2]!, names[actor])).toBe(
+        1,
+      );
+    }
+    const otherHosting = await actorContext(browser, "E", baseURL!);
+    const otherPage = await otherHosting.newPage();
+    await otherPage.goto("/partner-organizations");
+    await expect(
+      otherPage.getByText("No Partner Organization Setup Links yet."),
+    ).toBeVisible();
+    for (const id of issuedLinks)
+      await expect(otherPage.locator(`[data-setup-link-id="${id}"]`)).toHaveCount(
+        0,
+      );
   });
 
   test("section-2 checkpoint: H sees both Main Partnerships; P/F isolated; E is Project-specific", async ({
