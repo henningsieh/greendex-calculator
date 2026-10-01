@@ -554,11 +554,17 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(
       page.getByRole("heading", { name: "Projects", exact: true }),
     ).toBeVisible();
-    const denial = page.getByRole("alert").filter({ hasText: "Unable to load Projects" });
+    const denial = page
+      .getByRole("alert")
+      .filter({ hasText: "Unable to load Projects" });
     await expect(denial).toBeVisible();
-    await expect(denial).toContainText("You do not have permission to access this resource.");
+    await expect(denial).toContainText(
+      "You do not have permission to access this resource.",
+    );
     await expect(denial.getByRole("button", { name: "Retry" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "New project" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "New project" })).toHaveCount(
+      0,
+    );
     const [created] = await db
       .select({ value: count() })
       .from(projectsTable)
