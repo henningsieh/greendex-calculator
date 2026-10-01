@@ -1,8 +1,8 @@
 export {
   accessControl as ac,
-  organizationAdministratorRole as owner,
+  organisationOwner as owner,
   legacyCalculatorMemberRole as member,
-  projectParticipantRole as participant,
+  projectParticipant as participant,
   legacyCalculatorAdminRole as admin,
   type ProjectPermission,
 } from "@greendex/auth/permissions";
