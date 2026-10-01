@@ -12,7 +12,7 @@ This supersedes ADR-0004's technical-fallback allowance for Cost Tracker only. V
 
 ## Enforcement
 
-Cost Tracker supplies native Better Auth hooks for invitation creation and acceptance, membership addition, and role updates through an optional shared-factory injection point. The same validation gates app-owned acceptance and direct role-preserving writes. Organization staff invitations offer only `owner` and `admin`.
+Cost Tracker supplies native Better Auth hooks for invitation creation and acceptance, membership addition, and role updates through an optional shared-factory injection point. An early native invitation handler gate also validates requested roles and pending roles on resend: Better Auth 1.7 otherwise updates expiry and sends mail before its creation hook. Refusal tests model legacy pending roles only in memory, never by seeding forbidden values. The same validation gates app-owned acceptance and direct role-preserving writes. Organization staff invitations offer only `owner` and `admin`.
 
 Journey case 10 invites M as `admin`: M is an Organization Admin, not its Owner, and has Organization-wide staff authority. ADR-0001 keeps Organization relationships separate from Membership; ADR-0002 keeps Membership separate from Project Participation. Acceptance creates neither Participation nor Partnership. M remains unable to select E's Organization as its Owner. Q uses `project-coordinator`, preserving that real role when onboarding adds `participant`.
 

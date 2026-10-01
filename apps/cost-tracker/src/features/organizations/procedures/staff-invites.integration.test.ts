@@ -198,6 +198,96 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     expect(emailMocks.sendOrganizationInvitation).not.toHaveBeenCalled();
   }, 30_000);
 
+  it("refuses native resends before expiry updates or mail, including legacy pending roles", async () => {
+    const headers = await signUpVerified(
+      "Resend Owner",
+      uniqueEmail("resend-owner"),
+    );
+    const created = await auth.api.createOrganization({
+      body: {
+        name: `Resend Org ${randomUUID()}`,
+        slug: `resend-${randomUUID()}`,
+      },
+      headers,
+    });
+    createdOrganizationIds.push(created.id);
+    const email = uniqueEmail("resend-target");
+    const pending = await auth.api.createInvitation({
+      body: { organizationId: created.id, email, role: "admin" },
+      headers,
+    });
+    const expiresAt = new Date(Date.now() + 60_000);
+    await db
+      .update(invitation)
+      .set({ expiresAt })
+      .where(eq(invitation.id, pending.id));
+    emailMocks.sendOrganizationInvitation.mockClear();
+    for (const role of ["member", ["admin", "member"]]) {
+      await expect(
+        auth.api.createInvitation({
+          body: {
+            organizationId: created.id,
+            email,
+            role: role as "admin",
+            resend: true,
+          },
+          headers,
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        body: { message: BANNED_ROLE_MESSAGE },
+      });
+    }
+    // Model a legacy pending row in-memory only: never seed a forbidden value.
+    const authContext = await auth.$context;
+    const pendingRead = vi
+      .spyOn(authContext.adapter, "findMany")
+      .mockResolvedValueOnce([{ ...pending, expiresAt, role: "member" }]);
+    try {
+      await expect(
+        auth.api.createInvitation({
+          body: {
+            organizationId: created.id,
+            email,
+            role: "admin",
+            resend: true,
+          },
+          headers,
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        body: { message: BANNED_ROLE_MESSAGE },
+      });
+      expect(pendingRead).toHaveBeenCalledWith(
+        expect.objectContaining({ model: "invitation" }),
+      );
+    } finally {
+      pendingRead.mockRestore();
+    }
+    expect(
+      (
+        await db
+          .select({ role: invitation.role, expiresAt: invitation.expiresAt })
+          .from(invitation)
+          .where(eq(invitation.id, pending.id))
+      )[0],
+    ).toEqual({ role: "admin", expiresAt });
+    expect(emailMocks.sendOrganizationInvitation).not.toHaveBeenCalled();
+    await auth.api.createInvitation({
+      body: { organizationId: created.id, email, role: "admin", resend: true },
+      headers,
+    });
+    expect(emailMocks.sendOrganizationInvitation).toHaveBeenCalledTimes(1);
+    expect(
+      (
+        await db
+          .select({ expiresAt: invitation.expiresAt })
+          .from(invitation)
+          .where(eq(invitation.id, pending.id))
+      )[0]!.expiresAt.getTime(),
+    ).toBeGreaterThan(expiresAt.getTime());
+  }, 30_000);
+
   it("invites, accepts with the exact role, and cancels pending invites", async () => {
     const ownerEmail = uniqueEmail("owner");
     const ownerHeaders = await signUpVerified("Staff Owner", ownerEmail);
