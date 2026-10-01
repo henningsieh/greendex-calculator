@@ -3,11 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   addOrganizationRole,
   hasOrganizationRole,
-  memberRole,
+  legacyCalculatorMemberRole,
   organizationRoles,
   organizationAdministratorRole,
   parseOrganizationRoles,
-  participantRole,
+  projectParticipantRole,
+  calculatorOrganizationRoles,
   projectCoordinatorRole,
   costTrackerOrganizationRoles,
 } from "./permissions";
@@ -42,6 +43,7 @@ describe("organization permissions", () => {
         .success,
     ).toBe(true);
     expect(Object.keys(organizationRoles)).not.toContain("project-coordinator");
+    expect(Object.keys(costTrackerOrganizationRoles)).not.toContain("member");
   });
 
   it("keeps project coordinators from deleting projects", () => {
@@ -55,19 +57,77 @@ describe("organization permissions", () => {
 
   it("gives participants personal read and update access without partnership access", () => {
     expect(
-      participantRole.authorize({
+      projectParticipantRole.authorize({
         project: ["read"],
         projectParticipation: ["read", "update"],
       }).success,
     ).toBe(true);
     expect(
-      participantRole.authorize({ projectPartnership: ["read"] }).success,
+      projectParticipantRole.authorize({ projectPartnership: ["read"] }).success,
     ).toBe(false);
   });
 
   it("does not treat a generic organization member as a participant", () => {
-    expect(memberRole.authorize({ project: ["read"] }).success).toBe(false);
+    expect(
+      legacyCalculatorMemberRole.authorize({ project: ["read"] }).success,
+    ).toBe(false);
+    expect(organizationRoles.member).toBe(legacyCalculatorMemberRole);
+    expect(calculatorOrganizationRoles.member).toBe(legacyCalculatorMemberRole);
   });
+});
+
+describe("definition-map rename preserves stored-role authority", () => {
+  it("uses exactly the requested definition names, not new persisted role values", () => {
+    expect(Object.keys(organizationRoles)).toEqual([
+      "admin",
+      "member",
+      "organisationAdmin",
+      "projectParticipant",
+    ]);
+    expect(Object.keys(calculatorOrganizationRoles)).toEqual([
+      "owner",
+      "admin",
+      "member",
+      "participant",
+    ]);
+    expect(Object.keys(costTrackerOrganizationRoles)).toEqual([
+      "owner",
+      "admin",
+      "participant",
+      "project-coordinator",
+    ]);
+  });
+
+  it.each([
+    "owner",
+    "admin",
+    "member",
+    "participant",
+    "owner,participant",
+    "admin,participant",
+  ])(
+    "keeps the same stored user %s and every permission before/after",
+    (storedRole) => {
+      const sameUser = { id: "existing-calculator-user", role: storedRole };
+      // The pre-rename runtime map, explicitly frozen from the original definitions.
+      const before = {
+        owner: organizationAdministratorRole,
+        admin: organizationRoles.admin,
+        member: legacyCalculatorMemberRole,
+        participant: projectParticipantRole,
+      };
+      for (const role of sameUser.role.split(",") as (keyof typeof before)[]) {
+        expect(calculatorOrganizationRoles[role]).toBe(before[role]);
+        expect(calculatorOrganizationRoles[role].statements).toEqual(
+          before[role].statements,
+        );
+        if (role !== "member") {
+          expect(costTrackerOrganizationRoles[role]).toBe(before[role]);
+        }
+      }
+      expect(sameUser.role).toBe(storedRole);
+    },
+  );
 });
 
 describe("membership roles", () => {
