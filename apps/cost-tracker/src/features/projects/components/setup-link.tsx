@@ -1,6 +1,7 @@
 "use client";
 
 import { ORPCError } from "@orpc/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,9 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
-import { orpc } from "@/lib/orpc/orpc";
+import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
 const searchOwnedOrganizations = (search: string) =>
@@ -142,6 +151,31 @@ function SetupStatus({ state }: { state: SetupError }) {
 }
 
 export function SetupLinkCreator() {
+  const client = useQueryClient();
+  const existingLinks = useQuery(
+    orpcQuery.projectPartnerships.listSetupLinks.queryOptions({
+      meta: { costTrackerORPC: true },
+    }),
+  );
+  const [closingId, setClosingId] = useState<string>();
+  const refreshLinks = () =>
+    client.invalidateQueries({
+      queryKey: orpcQuery.projectPartnerships.listSetupLinks.key({
+        type: "query",
+      }),
+    });
+  async function closeLink(id: string) {
+    setError("");
+    setClosingId(id);
+    try {
+      await orpc.projectPartnerships.disableSetupLink({ id });
+      await refreshLinks();
+    } catch (cause) {
+      setError(getORPCRequestErrorMessage(cause).text);
+    } finally {
+      setClosingId(undefined);
+    }
+  }
   const [projectId, setProjectId] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [link, setLink] = useState("");
@@ -166,6 +200,7 @@ export function SetupLinkCreator() {
       );
       url.searchParams.set("secret", result.secret);
       setLink(url.toString());
+      await refreshLinks();
     } catch (cause) {
       setError(getORPCRequestErrorMessage(cause).text);
     } finally {
@@ -210,6 +245,83 @@ export function SetupLinkCreator() {
           </div>
         </form>
         {error && <p role="alert">{error}</p>}
+        <section
+          aria-label="Existing Partner Organization Setup Links"
+          className="space-y-3"
+        >
+          <h3 className="font-semibold">
+            Existing Partner Organization Setup Links
+          </h3>
+          <p>
+            Only the newly created link can be copied. Existing link secrets are
+            not stored.
+          </p>
+          {existingLinks.isPending ? (
+            <output>Loading Partner Organization Setup Links…</output>
+          ) : existingLinks.isError ? (
+            <Alert variant="destructive">
+              <AlertTitle>
+                Unable to load Partner Organization Setup Links
+              </AlertTitle>
+              <AlertDescription>
+                {getORPCRequestErrorMessage(existingLinks.error).text}
+              </AlertDescription>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void existingLinks.refetch()}
+              >
+                Retry
+              </Button>
+            </Alert>
+          ) : existingLinks.data.length === 0 ? (
+            <p>No Partner Organization Setup Links yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Hosted Project</TableHead>
+                  <TableHead>Recipient email</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {existingLinks.data.map((existing) => (
+                  <TableRow key={existing.id} data-setup-link-id={existing.id}>
+                    <TableCell>{existing.projectName}</TableCell>
+                    <TableCell>{existing.recipientEmail}</TableCell>
+                    <TableCell>
+                      {!existing.enabled
+                        ? "Closed"
+                        : existing.consumedAt
+                          ? "Used"
+                          : existing.expiresAt <= new Date()
+                            ? "Expired"
+                            : "Open"}
+                    </TableCell>
+                    <TableCell>
+                      {existing.expiresAt.toISOString().slice(0, 10)}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!existing.enabled || !!closingId}
+                        onClick={() => void closeLink(existing.id)}
+                      >
+                        {closingId === existing.id
+                          ? "Closing…"
+                          : "Close Partner Organization Setup Link"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </section>
         {link && (
           <div className="space-y-2">
             <Label htmlFor="recipient-link">Recipient setup link</Label>
