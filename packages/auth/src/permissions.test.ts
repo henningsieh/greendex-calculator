@@ -1,3 +1,8 @@
+import {
+  adminAc,
+  memberAc,
+  ownerAc,
+} from "better-auth/plugins/organization/access";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -5,18 +10,19 @@ import {
   hasOrganizationRole,
   legacyCalculatorMemberRole,
   organizationRoles,
-  organizationAdministratorRole,
+  organisationOwner,
+  organizationAdmin,
   parseOrganizationRoles,
-  projectParticipantRole,
+  projectParticipant,
   calculatorOrganizationRoles,
   projectCoordinatorRole,
   costTrackerOrganizationRoles,
 } from "./permissions";
 
 describe("organization permissions", () => {
-  it("gives organization administrators full project and partnership access", () => {
+  it("gives Organization Owners full project and partnership access", () => {
     expect(
-      organizationAdministratorRole.authorize({
+      organisationOwner.authorize({
         project: ["delete"],
         projectPartnership: ["delete"],
         projectParticipation: ["merge"],
@@ -44,6 +50,7 @@ describe("organization permissions", () => {
     ).toBe(true);
     expect(Object.keys(organizationRoles)).not.toContain("project-coordinator");
     expect(Object.keys(costTrackerOrganizationRoles)).not.toContain("member");
+    expect(costTrackerOrganizationRoles.admin).toBe(organizationAdmin);
   });
 
   it("keeps project coordinators from deleting projects", () => {
@@ -57,13 +64,13 @@ describe("organization permissions", () => {
 
   it("gives participants personal read and update access without partnership access", () => {
     expect(
-      projectParticipantRole.authorize({
+      projectParticipant.authorize({
         project: ["read"],
         projectParticipation: ["read", "update"],
       }).success,
     ).toBe(true);
     expect(
-      projectParticipantRole.authorize({ projectPartnership: ["read"] }).success,
+      projectParticipant.authorize({ projectPartnership: ["read"] }).success,
     ).toBe(false);
   });
 
@@ -81,7 +88,8 @@ describe("definition-map rename preserves stored-role authority", () => {
     expect(Object.keys(organizationRoles)).toEqual([
       "admin",
       "member",
-      "organisationAdmin",
+      "organisationOwner",
+      "organizationAdmin",
       "projectParticipant",
     ]);
     expect(Object.keys(calculatorOrganizationRoles)).toEqual([
@@ -111,18 +119,33 @@ describe("definition-map rename preserves stored-role authority", () => {
       const sameUser = { id: "existing-calculator-user", role: storedRole };
       // The pre-rename runtime map, explicitly frozen from the original definitions.
       const before = {
-        owner: organizationAdministratorRole,
-        admin: organizationRoles.admin,
-        member: legacyCalculatorMemberRole,
-        participant: projectParticipantRole,
+        owner: {
+          ...ownerAc.statements,
+          project: ["create", "read", "update", "delete", "archive"],
+          projectPartnership: ["create", "read", "update", "delete"],
+          projectParticipation: ["create", "read", "update", "merge"],
+        },
+        admin: {
+          ...adminAc.statements,
+          project: ["create", "read", "update", "archive"],
+          projectPartnership: ["create", "read", "update", "delete"],
+          projectParticipation: ["create", "read", "update", "merge"],
+        },
+        member: { ...memberAc.statements },
+        participant: {
+          ...memberAc.statements,
+          project: ["read"],
+          projectParticipation: ["read", "update"],
+        },
       };
       for (const role of sameUser.role.split(",") as (keyof typeof before)[]) {
-        expect(calculatorOrganizationRoles[role]).toBe(before[role]);
         expect(calculatorOrganizationRoles[role].statements).toEqual(
-          before[role].statements,
+          before[role],
         );
         if (role !== "member") {
-          expect(costTrackerOrganizationRoles[role]).toBe(before[role]);
+          expect(costTrackerOrganizationRoles[role].statements).toEqual(
+            before[role],
+          );
         }
       }
       expect(sameUser.role).toBe(storedRole);
