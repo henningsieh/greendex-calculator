@@ -54,6 +54,8 @@ At the start of our session create a separate persistent run log `apps/cost-trac
 
 **Checkpoint:** If Cost Tracker has no way to assign a _different_ Hosting Project Coordinator, note **UI GAP** for that role test. Use H and A (after 03 acceptance) for Hosting decisions. Never archive Main while subsequent cases need it.
 
+**Observed member creation (#206):** The assigned-list denial now degrades only that list; “New project” remains usable. `hosting-setup.spec.ts` proves a plain member creates a disposable Project and then sees only their assigned Project, not Main. This records existing server behavior, not a new permission policy or requirements PASS.
+
 **Permission conflict to investigate:** [Shared Project permissions](../../../../docs/projects/permissions.md) say fallback `member` grants no Cost Tracker authority, yet the current Cost Tracker Project-creation procedure accepts any active Organization Membership and makes its creator a hosting-side coordinator. Do **not** record member-created Project as a requirements PASS or uncritically assert denial; **after staff acceptance works**, use M in E's Organization on a disposable Project, record actual behavior and raise the discrepancy for product resolution. A Participant without that Membership is a different case.
 
 ## 2. Partnerships: Project-specific, not global
