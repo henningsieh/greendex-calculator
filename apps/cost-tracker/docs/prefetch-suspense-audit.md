@@ -55,7 +55,8 @@ flow is explicitly redesigned.
   and the browser provider retains prior cached data on refresh errors. On
   `/projects`, nested list boundaries keep an independently permitted “New
   project” dialog visible when a selected/assigned-list query denies access
-  (#206); `hosting-setup.spec.ts` exercises member creation in the browser.
+  (#206); `hosting-setup.spec.ts` exercises disposable Project creation by an
+  unassigned `project-coordinator` in the browser. ADR-0012 forbids the fallback role.
 
 ## Verification and remaining tradeoffs
 
