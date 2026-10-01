@@ -45,8 +45,18 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     const page = await context.newPage();
     await page.goto("/projects");
     await expect(page.getByText("No Organization access yet")).toBeVisible();
-    await page.getByRole("button", { name: "Create Organization" }).click();
     const dialog = page.getByRole("dialog", { name: "Create Organization" });
+    if (!(await dialog.isVisible())) {
+      // The no-access screen can open the portal during pointer-down; it then
+      // intercepts the final click on the button beneath it.
+      await page
+        .getByRole("button", { name: "Create Organization" })
+        .click({ timeout: 3_000 })
+        .catch(async () => {
+          await expect(dialog).toBeVisible();
+        });
+    }
+    await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
