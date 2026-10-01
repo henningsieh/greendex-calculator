@@ -11,6 +11,7 @@ import {
   claimHistoryTable,
   claimsTable,
   costAllocationsTable,
+  duplicateReviewTasksTable,
   member,
   organization,
   partnerCoordinatorAssignmentsTable,
@@ -53,7 +54,8 @@ import {
 // every Claim-owned record and the additional Participation. DB reads assert exact
 // cardinality, frozen rules and cleanup, not substitute for UI actions.
 // Case 20 removal is browser-driven; reference and Claim-lock refusals are visible.
-// UI GAP (20): Review Task list/assign/resolve has no UI.
+// Case 20 creates duplicate attempts in-browser, self-assigns Review Tasks, and
+// resolves each decision without creating another Project Participation.
 // Server authorization/concurrency are AUTOMATED-ONLY: submission.integration.test.ts.
 // Proof Document bytes are synthetic; afterAll deletes the uploaded object and rows.
 const suffix = randomUUID();
@@ -311,6 +313,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       .delete(projectFundingSnapshotsTable)
       .where(eq(projectFundingSnapshotsTable.projectId, projectId));
     await db
+      .delete(duplicateReviewTasksTable)
+      .where(eq(duplicateReviewTasksTable.partnershipId, partnershipId));
+    await db
       .delete(projectParticipantsTable)
       .where(eq(projectParticipantsTable.projectId, projectId));
     await db
@@ -347,6 +352,12 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       .from(projectsTable)
       .where(eq(projectsTable.id, projectId));
     expect(remaining!.value).toBe(0);
+    expect(
+      await db
+        .select()
+        .from(duplicateReviewTasksTable)
+        .where(eq(duplicateReviewTasksTable.partnershipId, partnershipId)),
+    ).toHaveLength(0);
   });
 
   test("20 adds registered V via selector and edits country only", async ({
@@ -442,12 +453,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .from(projectParticipantsTable)
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
-      // UI GAP: no Review Task controls on this page.
       await expect(
-        page.getByRole("button", {
-          name: /Assign Review Task|Resolve Review Task/,
-        }),
-      ).toHaveCount(0);
+        page.getByRole("button", { name: "Show Review Tasks", exact: true }),
+      ).toBeVisible();
     } finally {
       await actor.close();
     }
@@ -506,6 +514,129 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         page.getByText("Participation added", { exact: true }),
       ).toBeVisible();
       await expect(row).toBeVisible();
+      expect(
+        await db
+          .select()
+          .from(projectParticipantsTable)
+          .where(eq(projectParticipantsTable.projectId, projectId)),
+      ).toHaveLength(3);
+    } finally {
+      await actor.close();
+    }
+  });
+
+  test("20 duplicate attempts create Review Tasks that self-assign and resolve all decisions", async ({
+    browser,
+    baseURL,
+  }) => {
+    test.setTimeout(120_000); // Three independent duplicate attempts and task lifecycles.
+    const actor = await coordinatorContext(browser, baseURL!);
+    try {
+      const page = await actor.newPage();
+      await page.goto(participantsURL);
+      await page
+        .getByRole("button", { name: "Show Review Tasks", exact: true })
+        .click();
+      const tasks = page.getByRole("region", {
+        name: "Review Tasks",
+        exact: true,
+      });
+      await expect(
+        tasks.getByText(
+          "No Review Tasks are recorded for this Project Partnership.",
+        ),
+      ).toBeVisible();
+      const decisions = [
+        { value: "same_person", label: "Same person" },
+        { value: "distinct_persons", label: "Distinct persons" },
+        { value: "dismiss", label: "Dismiss" },
+      ] as const;
+      for (const [index, person] of people.entries()) {
+        await page
+          .getByRole("button", { name: "Registered User", exact: true })
+          .click();
+        const search = page.getByRole("combobox", {
+          name: /Search Registered User/,
+        });
+        await search.fill("");
+        await search.pressSequentially(person.name, { delay: 35 });
+        await page.getByRole("option", { name: new RegExp(person.name) }).click();
+        await page
+          .getByRole("button", { name: "Add Participation", exact: true })
+          .click();
+        await expect(
+          page.getByRole("alert").filter({ hasText: "Review request" }),
+        ).toContainText("No new Project Participation was added.");
+        const row = tasks.getByRole("listitem").filter({ hasText: person.email });
+        await expect(
+          row.getByText("Review Task open", { exact: true }),
+        ).toBeVisible();
+        await row
+          .getByRole("button", { name: "Assign Review Task to me", exact: true })
+          .click();
+        await expect(
+          row.getByText("Review Task assigned", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          row.getByText(`Assigned Registered User: ${coordinatorId}`, {
+            exact: true,
+          }),
+        ).toBeVisible();
+        await row
+          .getByLabel("Review Task decision", { exact: true })
+          .selectOption(decisions[index]!.value);
+        await row
+          .getByRole("button", { name: "Resolve Review Task", exact: true })
+          .click();
+        await expect(
+          row.getByText("Review Task resolved", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          row.getByText(`Decision: ${decisions[index]!.label}`, { exact: true }),
+        ).toBeVisible();
+        await expect(row.getByRole("button")).toHaveCount(0);
+        const [task] = await db
+          .select()
+          .from(duplicateReviewTasksTable)
+          .where(
+            and(
+              eq(duplicateReviewTasksTable.partnershipId, partnershipId),
+              eq(duplicateReviewTasksTable.candidateUserId, person.id),
+            ),
+          );
+        expect(task).toMatchObject({
+          status: "resolved",
+          assignedToUserId: coordinatorId,
+          decision: decisions[index]!.value,
+          survivorParticipationId: task!.existingParticipationId,
+        });
+      }
+      await page.reload();
+      await page
+        .getByRole("button", { name: "Show Review Tasks", exact: true })
+        .click();
+      await expect(
+        tasks.getByText("Review Task resolved", { exact: true }),
+      ).toHaveCount(3);
+      // Resolved Review Tasks retain their survivor references; the removal
+      // control must surface that refusal rather than deleting the survivor.
+      const survivor = page
+        .getByRole("listitem")
+        .filter({ hasText: people[0]!.name });
+      page.once("dialog", (dialog) => dialog.accept());
+      await survivor
+        .getByRole("button", {
+          name: `Remove Project Participation for ${people[0]!.name}`,
+        })
+        .click();
+      await expect(
+        page
+          .getByRole("alert")
+          .filter({ hasText: "Unable to remove Project Participation" }),
+      ).toContainText(
+        "This Project Participation is referenced by other records. Request review instead.",
+      );
+      await expect(survivor).toBeVisible();
       expect(
         await db
           .select()
