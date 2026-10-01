@@ -1,9 +1,12 @@
 import { readFileSync } from "node:fs";
 
 import { ORPCError } from "@orpc/client";
-import { render, screen } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -11,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   writeText: vi.fn(),
   searchHosted: vi.fn(),
   listMine: vi.fn(),
+  listSetupLinks: vi.fn(),
 }));
 vi.mock("@/components/ui/popover", async () => {
   const { createContext, useContext, cloneElement } = await import("react");
@@ -42,16 +46,37 @@ vi.mock("@/components/ui/popover", async () => {
       useContext(OpenContext).open ? <div>{children}</div> : null,
   };
 });
-vi.mock("@/lib/orpc/orpc", () => ({
-  orpc: {
-    projectPartnerships: {
-      createSetupLink: mocks.create,
-      consumeSetupLink: mocks.consume,
+vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/orpc/orpc")>();
+  return {
+    ...original,
+    orpc: {
+      projectPartnerships: {
+        createSetupLink: mocks.create,
+        consumeSetupLink: mocks.consume,
+      },
+      projects: { searchHosted: mocks.searchHosted },
+      organizations: { listMine: mocks.listMine },
     },
-    projects: { searchHosted: mocks.searchHosted },
-    organizations: { listMine: mocks.listMine },
-  },
-}));
+    orpcQuery: {
+      projectPartnerships: {
+        listSetupLinks: {
+          ...original.orpcQuery.projectPartnerships.listSetupLinks,
+          queryOptions: (
+            ...args: Parameters<
+              typeof original.orpcQuery.projectPartnerships.listSetupLinks.queryOptions
+            >
+          ) => ({
+            ...original.orpcQuery.projectPartnerships.listSetupLinks.queryOptions(
+              ...args,
+            ),
+            queryFn: mocks.listSetupLinks,
+          }),
+        },
+      },
+    },
+  };
+});
 
 import {
   SetupLinkCreator,
@@ -76,6 +101,7 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal("navigator", { clipboard: { writeText: mocks.writeText } });
   mocks.writeText.mockResolvedValue(undefined);
+  mocks.listSetupLinks.mockResolvedValue([]);
   mocks.create.mockResolvedValue({
     id: "link-1",
     secret: "private-secret",
@@ -97,6 +123,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+function creator() {
+  const client = createQueryClient();
+  client.setDefaultOptions({ queries: { retry: false } });
+  return render(
+    <QueryClientProvider client={client}>
+      <SetupLinkCreator />
+    </QueryClientProvider>,
+  );
+}
 
 function recipient(secret = "private-secret") {
   return render(<SetupLinkRecipient id="link-1" secret={secret} />);
@@ -124,7 +160,8 @@ describe("Setup Link UI", () => {
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
       mocks.writeText,
     );
-    render(<SetupLinkCreator />);
+    creator();
+    await screen.findByText("No Partner Organization Setup Links yet.");
     await user.click(screen.getByRole("button", { name: "Hosted Project" }));
     await user.type(
       screen.getByLabelText("Search Hosted Project by name or ID"),
@@ -136,6 +173,7 @@ describe("Setup Link UI", () => {
       "partner@example.com",
     );
     await user.click(screen.getByRole("button", { name: "Neuer Link" }));
+    await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(2));
     expect(mocks.create).toHaveBeenCalledWith({
       projectId: "project-1",
       recipientEmail: "partner@example.com",
@@ -149,7 +187,7 @@ describe("Setup Link UI", () => {
   it("uses the approved new-link wording while issuance is pending", async () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));
-    render(<SetupLinkCreator />);
+    creator();
     await user.click(screen.getByRole("button", { name: "Hosted Project" }));
     await user.type(
       screen.getByLabelText("Search Hosted Project by name or ID"),
