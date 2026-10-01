@@ -86,7 +86,9 @@ export async function downloadProofDocument(input: {
   ) {
     throw new ProofNotFound();
   }
-  await requirePartner(
+  // The same oversight grant as Claim review: Hosting Owners/Admins or assigned
+  // Project Coordinators; Partner staff retain their existing scope.
+  await requirePartnerCoordination(
     input.partnershipId,
     input.actorId,
     input.activeOrganizationId,

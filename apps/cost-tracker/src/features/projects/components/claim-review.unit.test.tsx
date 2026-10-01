@@ -41,6 +41,7 @@ describe("Claim decisions", () => {
   it("renders a Hosting reviewer snapshot with cost allocations, proof references, payout and journeys", () => {
     render(
       <ClaimReviewDetails
+        partnershipId="partner"
         details={{
           approvedAmountEur: "726.00",
           payoutAccount: { accountHolder: "Partner", iban: "DE123", bic: null },
@@ -83,7 +84,13 @@ describe("Claim decisions", () => {
     );
     expect(screen.getByText(/Partner · DE123/)).toBeInTheDocument();
     expect(screen.getByText(/train · 800.00 EUR/)).toBeInTheDocument();
-    expect(screen.getByText(/receipt.pdf/)).toBeInTheDocument();
+    expect(screen.getByText(/^Proof Document: receipt.pdf/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Download Proof Document: receipt.pdf" }),
+    ).toHaveAttribute(
+      "href",
+      "/api/proof-documents?partnershipId=partner&documentId=proof",
+    );
     expect(screen.getByText(/Berlin → Riga/)).toBeInTheDocument();
     expect(screen.getByText(/726.00 EUR/)).toBeInTheDocument();
   });

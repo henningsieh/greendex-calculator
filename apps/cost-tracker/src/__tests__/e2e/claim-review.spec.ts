@@ -1,5 +1,11 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
+import {
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
@@ -7,6 +13,7 @@ import {
   claimHistoryTable as history,
   claimsTable as claims,
   costAllocationsTable as allocations,
+  hostProjectAssignmentsTable as hostAssignments,
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
@@ -27,8 +34,9 @@ import {
 } from "@greendex/database/schema";
 import { type Browser, type BrowserContext } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
-import { count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 
+import { env } from "@/env";
 import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/authentication/participant-agreement";
 
 import {
@@ -48,7 +56,8 @@ import {
 // Account references, submitted Claims, exact Travel Cost Entries/Cost Allocations,
 // synthetic Proof Document metadata and submission history. These are prerequisites,
 // not browser evidence for cases 20–24. No browser mail-producing form is submitted.
-// Proof metadata points to no storage object; review download remains a UI GAP.
+// Unique synthetic PDF bytes are seeded in S3 and deleted with the fixture;
+// Hosting review download is real browser evidence, not a mocked byte response.
 // The test-only payout reference is deliberately NOT an IBAN or bank account.
 // Case 27 is NOT-RUN: no transfer or paid marking is authorized.
 const suffix = randomUUID();
@@ -83,6 +92,22 @@ const projectName = `CT ${suffix} Main`;
 const partnerNames = [`CT ${suffix} Partner A`, `CT ${suffix} Partner B`];
 const personNames = [`CT ${suffix} Participant A`, `CT ${suffix} Participant B`];
 const proofNames = [`proof-${suffix}-a.pdf`, `proof-${suffix}-b.pdf`];
+const proofBytes = Buffer.from(
+  "%PDF-1.4\n% Disposable journey Proof Document\n%%EOF\n",
+);
+const proofReferences = ids.documents.map(
+  (id) => `journey-tests/${suffix}/${id}`,
+);
+const uploadedReferences = new Set<string>();
+const storage = new S3Client({
+  endpoint: env.S3_ENDPOINT,
+  region: env.S3_REGION,
+  forcePathStyle: env.S3_FORCE_PATH_STYLE,
+  credentials: {
+    accessKeyId: env.S3_ACCESS_KEY_ID,
+    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+  },
+});
 const correctionReason = `Correct the origin for ${personNames[0]}`;
 const rejectionReason = `Ineligible funding for ${partnerNames[1]}`;
 const contexts: BrowserContext[] = [];
@@ -393,15 +418,26 @@ test.describe.serial("Claim review journey 25–26", () => {
         projectParticipantId: ids.participants[index]!,
       })),
     );
+    for (const reference of proofReferences) {
+      await storage.send(
+        new PutObjectCommand({
+          Bucket: env.S3_BUCKET,
+          Key: reference,
+          Body: proofBytes,
+          ContentType: "application/pdf",
+        }),
+      );
+      uploadedReferences.add(reference);
+    }
     await db.insert(documents).values(
       ids.documents.map((id, index) => ({
         id,
         claimId: ids.claims[index]!,
-        fileReference: `test-only/no-object/${id}`,
+        fileReference: proofReferences[index]!,
         originalFileName: proofNames[index]!,
         mediaType: "application/pdf",
-        byteSize: 1,
-        checksum: "test-only",
+        byteSize: proofBytes.length,
+        checksum: createHash("sha256").update(proofBytes).digest("hex"),
       })),
     );
     await db.insert(entryDocuments).values(
@@ -445,46 +481,73 @@ test.describe.serial("Claim review journey 25–26", () => {
 
   test.afterAll(async () => {
     await Promise.all(contexts.map((context) => context.close()));
-    await db.delete(history).where(inArray(history.claimId, ids.claims));
-    await db.delete(claims).where(inArray(claims.id, ids.claims));
-    await db
-      .delete(journeys)
-      .where(inArray(journeys.projectParticipantId, ids.participants));
-    await db
-      .delete(participants)
-      .where(inArray(participants.id, ids.participants));
-    await db
-      .delete(selections)
-      .where(inArray(selections.partnershipId, ids.partnerships));
-    await db
-      .delete(payoutAccounts)
-      .where(inArray(payoutAccounts.id, ids.payoutAccounts));
-    await db.delete(snapshots).where(eq(snapshots.projectId, ids.project));
-    await db
-      .delete(partnerships)
-      .where(inArray(partnerships.id, ids.partnerships));
-    await db.delete(projects).where(eq(projects.id, ids.project));
-    await db
-      .delete(member)
-      .where(inArray(member.organizationId, [ids.host, ...ids.partners]));
-    await db
-      .delete(organization)
-      .where(inArray(organization.id, [ids.host, ...ids.partners]));
-    await db
-      .delete(acceptances)
-      .where(inArray(acceptances.userId, ids.participantUsers));
-    await db
-      .delete(profiles)
-      .where(inArray(profiles.userId, ids.participantUsers));
-    for (const actor of Object.values(actors)) {
-      await db.delete(session).where(eq(session.userId, actor.id));
-      await db.delete(user).where(eq(user.id, actor.id));
+    try {
+      for (const reference of uploadedReferences) {
+        await storage.send(
+          new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: reference }),
+        );
+        let missing = false;
+        try {
+          await storage.send(
+            new HeadObjectCommand({ Bucket: env.S3_BUCKET, Key: reference }),
+          );
+        } catch (error) {
+          if (error instanceof Error && "$metadata" in error) {
+            const metadata = error.$metadata;
+            missing =
+              typeof metadata === "object" &&
+              metadata !== null &&
+              "httpStatusCode" in metadata &&
+              metadata.httpStatusCode === 404;
+          }
+          if (!missing) throw error;
+        }
+        expect(missing, "fixture Proof Document bytes removed").toBe(true);
+      }
+    } finally {
+      storage.destroy();
+      // Always remove database fixtures, even if object cleanup reports a failure.
+      await db.delete(history).where(inArray(history.claimId, ids.claims));
+      await db.delete(claims).where(inArray(claims.id, ids.claims));
+      await db
+        .delete(journeys)
+        .where(inArray(journeys.projectParticipantId, ids.participants));
+      await db
+        .delete(participants)
+        .where(inArray(participants.id, ids.participants));
+      await db
+        .delete(selections)
+        .where(inArray(selections.partnershipId, ids.partnerships));
+      await db
+        .delete(payoutAccounts)
+        .where(inArray(payoutAccounts.id, ids.payoutAccounts));
+      await db.delete(snapshots).where(eq(snapshots.projectId, ids.project));
+      await db
+        .delete(partnerships)
+        .where(inArray(partnerships.id, ids.partnerships));
+      await db.delete(projects).where(eq(projects.id, ids.project));
+      await db
+        .delete(member)
+        .where(inArray(member.organizationId, [ids.host, ...ids.partners]));
+      await db
+        .delete(organization)
+        .where(inArray(organization.id, [ids.host, ...ids.partners]));
+      await db
+        .delete(acceptances)
+        .where(inArray(acceptances.userId, ids.participantUsers));
+      await db
+        .delete(profiles)
+        .where(inArray(profiles.userId, ids.participantUsers));
+      for (const actor of Object.values(actors)) {
+        await db.delete(session).where(eq(session.userId, actor.id));
+        await db.delete(user).where(eq(user.id, actor.id));
+      }
+      await db.delete(user).where(inArray(user.id, ids.participantUsers));
+      expect(
+        await counts(),
+        "all own records including Claim history removed",
+      ).toEqual(baseline);
     }
-    await db.delete(user).where(inArray(user.id, ids.participantUsers));
-    expect(
-      await counts(),
-      "all own records including Claim history removed",
-    ).toEqual(baseline);
   });
 
   test("25 Hosting requests a required correction; Partner corrects its Participant Journey and resubmits", async ({
@@ -522,7 +585,11 @@ test.describe.serial("Claim review journey 25–26", () => {
       review.getByText(`${personNames[0]}: Equal share (computed on submission)`),
     ).toBeVisible();
     await expect(
-      review.getByText(new RegExp(proofNames[0]!.replaceAll(".", "\\."))),
+      review.getByText(
+        new RegExp(
+          `^Proof Document: ${proofNames[0]!.replaceAll(".", "\\.")} \\(`,
+        ),
+      ),
     ).toBeVisible();
     await expect(
       review.getByText(
@@ -533,7 +600,22 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
       0,
     );
-    await expect(review.getByRole("link", { name: /Download/ })).toHaveCount(0); // UI GAP: no review download.
+    const downloadPromise = host.waitForEvent("download");
+    await review
+      .getByRole("link", { name: `Download Proof Document: ${proofNames[0]}` })
+      .click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe(proofNames[0]);
+    expect(await download.failure()).toBeNull();
+    const stream = await download.createReadStream();
+    expect(stream).not.toBeNull();
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+    expect(
+      Buffer.concat(chunks).equals(proofBytes),
+      "Hosting downloaded exact linked Proof Document bytes",
+    ).toBe(true);
+    await download.delete();
     await review.getByRole("button", { name: "Request correction" }).click();
     const confirm = review.getByRole("button", {
       name: "Confirm correction request",
@@ -594,6 +676,52 @@ test.describe.serial("Claim review journey 25–26", () => {
       "journey_updated",
       "resubmitted",
     ]);
+  });
+
+  test("25a Proof Document transport preserves Partner isolation and Hosting assignment scope", async ({
+    browser,
+    baseURL,
+  }) => {
+    const url = `/api/proof-documents?${new URLSearchParams({ partnershipId: ids.partnerships[0]!, documentId: ids.documents[0]! })}`;
+    const partner = await pageFor(browser, "P", baseURL!);
+    const own = await partner.request.get(url);
+    expect(own.status()).toBe(200);
+    expect((await own.body()).equals(proofBytes)).toBe(true);
+    const foreign = await pageFor(browser, "F", baseURL!);
+    expect((await foreign.request.get(url)).status()).toBe(403);
+    const host = await pageFor(browser, "H", baseURL!);
+    const mismatch = `/api/proof-documents?${new URLSearchParams({ partnershipId: ids.partnerships[1]!, documentId: ids.documents[0]! })}`;
+    expect((await host.request.get(mismatch)).status()).toBe(404);
+    // Setup-only scope changes exercise the existing oversight guard, not UI role assignment.
+    const membership = and(
+      eq(member.userId, actors.H.id),
+      eq(member.organizationId, ids.host),
+    );
+    try {
+      await db.update(member).set({ role: "member" }).where(membership);
+      expect((await host.request.get(url)).status()).toBe(403);
+      await db
+        .update(member)
+        .set({ role: "project-coordinator" })
+        .where(membership);
+      expect((await host.request.get(url)).status()).toBe(403);
+      await db
+        .insert(hostAssignments)
+        .values({ projectId: ids.project, userId: actors.H.id });
+      const assigned = await host.request.get(url);
+      expect(assigned.status()).toBe(200);
+      expect((await assigned.body()).equals(proofBytes)).toBe(true);
+    } finally {
+      await db
+        .delete(hostAssignments)
+        .where(
+          and(
+            eq(hostAssignments.projectId, ids.project),
+            eq(hostAssignments.userId, actors.H.id),
+          ),
+        );
+      await db.update(member).set({ role: "owner" }).where(membership);
+    }
   });
 
   test("26 Hosting approves unpaid resubmission; rejects and reopens a different Project Partnership", async ({
