@@ -9,7 +9,7 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable,
 } from "@greendex/database/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
@@ -72,6 +72,39 @@ export const createSetupLink = authorized
       return { id: link!.id, secret, expiresAt };
     });
   });
+
+/** Hosting-scoped metadata only: raw secrets cannot be recovered from stored hashes. */
+export const listSetupLinks = authorized
+  .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
+  .output(
+    z.array(
+      z.object({
+        id: z.string(),
+        projectName: z.string(),
+        recipientEmail: z.string(),
+        enabled: z.boolean(),
+        expiresAt: z.date(),
+        consumedAt: z.date().nullable(),
+      }),
+    ),
+  )
+  .handler(async ({ context }) =>
+    db
+      .select({
+        id: links.id,
+        projectName: projectsTable.name,
+        recipientEmail: links.recipientEmail,
+        enabled: links.enabled,
+        expiresAt: links.expiresAt,
+        consumedAt: links.consumedAt,
+      })
+      .from(links)
+      .innerJoin(projectsTable, eq(links.projectId, projectsTable.id))
+      .where(
+        eq(projectsTable.organizationId, context.session.activeOrganizationId!),
+      )
+      .orderBy(desc(links.createdAt), desc(links.id)),
+  );
 
 export const disableSetupLink = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))

@@ -17,7 +17,7 @@ import { desc, eq, ilike } from "drizzle-orm";
 import {
   accessControl,
   costTrackerOrganizationRoles,
-  organizationRoles,
+  calculatorOrganizationRoles,
 } from "./permissions";
 
 type EmailVerificationOptions = NonNullable<
@@ -95,7 +95,7 @@ export function createServerAuth(config: ServerAuthConfig) {
         ac: accessControl,
         roles: config.costTrackerRoles
           ? costTrackerOrganizationRoles
-          : organizationRoles,
+          : calculatorOrganizationRoles,
         ...config.organization,
         allowUserToCreateOrganization: async (user) => {
           const membership = await db.query.member.findFirst({

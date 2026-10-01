@@ -10,6 +10,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { authorized } from "@/lib/orpc/middleware";
 
 export const coordinationId = z.string().trim().min(1).max(128);
@@ -179,14 +180,13 @@ export const assignPartnerCoordinator = authorized
         and(eq(member.organizationId, orgId), eq(member.userId, input.userId)),
       )
       .limit(1);
+    if (target) requireCostTrackerRole(target.role, errors.BAD_REQUEST);
     if (
       !target ||
       !target.role
         .split(",")
         .some((role) =>
-          ["owner", "admin", "member", "project-coordinator"].includes(
-            role.trim(),
-          ),
+          ["owner", "admin", "project-coordinator"].includes(role.trim()),
         )
     )
       throw errors.BAD_REQUEST({
