@@ -1,4 +1,9 @@
+import { randomUUID } from "node:crypto";
+
+import { db } from "@greendex/database";
+import { member, organization, projectsTable } from "@greendex/database/schema";
 import { type Page } from "@playwright/test";
+import { and, eq } from "drizzle-orm";
 
 import { expectPrivateURL, expect, test } from "./fixtures/artifact-privacy";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
@@ -148,6 +153,64 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await expect(page.getByText(fixture.projectNames[0]!)).toHaveCount(0);
     await expect(page.getByText(fixture.organizationName)).toHaveCount(0);
     // Server authorization is separately covered by projects.integration.test.ts.
+  });
+
+  test("04a a member can create a disposable Project despite denied assigned-list access", async ({
+    browser,
+    baseURL,
+  }) => {
+    const [hosting] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, fixture.organizationName));
+    expect(hosting).toBeDefined();
+    const membershipId = randomUUID();
+    const projectName = `CT ${fixture.suffix} Member disposable`;
+    // Setup-only Membership: never send an Organization Invitation on real SMTP.
+    await db.insert(member).values({
+      id: membershipId,
+      organizationId: hosting!.id,
+      userId: fixture.actors.X.id,
+      role: "member",
+      createdAt: new Date(),
+    });
+    try {
+      const context = await fixture.actorContext(browser, "X", baseURL!);
+      const page = await context.newPage();
+      await page.goto("/projects");
+      await expect(
+        page.getByText("Unable to load Assigned Projects"),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "New project" }),
+      ).toBeVisible();
+      const projectURL = await createProject(page, projectName);
+      await page.goto("/projects");
+      await expect(page.getByRole("link", { name: projectName })).toBeVisible();
+      await page.goto(projectURL);
+      await expect(
+        page.getByRole("heading", { name: projectName }),
+      ).toBeVisible();
+      await page.goto(mainProjectURL);
+      await expect(
+        page.getByRole("heading", { name: fixture.projectNames[0]! }),
+      ).toHaveCount(0);
+    } finally {
+      await db
+        .delete(projectsTable)
+        .where(
+          and(
+            eq(projectsTable.organizationId, hosting!.id),
+            eq(projectsTable.name, projectName),
+          ),
+        );
+      await db.delete(member).where(eq(member.id, membershipId));
+      const [remaining] = await db
+        .select({ id: projectsTable.id })
+        .from(projectsTable)
+        .where(eq(projectsTable.name, projectName));
+      expect(remaining).toBeUndefined();
+    }
   });
 
   test("section-1 checkpoint: H and A retain Hosting decisions; X does not", async ({

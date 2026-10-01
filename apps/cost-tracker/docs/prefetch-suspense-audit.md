@@ -52,7 +52,10 @@ flow is explicitly redesigned.
   prefetches concurrently. `/projects` resolves scope before its dependent
   selected-list query, and shallow nuqs changes use corresponding query keys.
 - The client `ProjectDataErrorBoundary` supports initial suspense query retry,
-  and the browser provider retains prior cached data on refresh errors.
+  and the browser provider retains prior cached data on refresh errors. On
+  `/projects`, nested list boundaries keep an independently permitted “New
+  project” dialog visible when a selected/assigned-list query denies access
+  (#206); `hosting-setup.spec.ts` exercises member creation in the browser.
 
 ## Verification and remaining tradeoffs
 
