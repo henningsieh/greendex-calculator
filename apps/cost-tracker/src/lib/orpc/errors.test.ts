@@ -1055,3 +1055,108 @@ it("submissionIncomplete preserves server-produced field issues", () => {
     issues,
   });
 });
+
+it("partnerDocumentsRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerDocumentsRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may manage Proof Documents.",
+    data: { reason: "PARTNER_DOCUMENTS_REQUIRED" },
+  });
+});
+it("proofNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Proof Document not found in scope.",
+    data: { reason: "PROOF_DOCUMENT_NOT_FOUND" },
+  });
+});
+it("proofSelectionRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofSelectionRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Select a file and Project Partnership.",
+    data: { reason: "PROOF_SELECTION_REQUIRED" },
+  });
+});
+it("proofMediaUnsupported fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofMediaUnsupported()).toMatchObject({
+    code: "UNSUPPORTED_MEDIA_TYPE",
+    status: 415,
+    message: "Choose a PDF, JPEG, or PNG Proof Document.",
+    data: { reason: "PROOF_MEDIA_UNSUPPORTED" },
+  });
+});
+it("proofFileTooLarge fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofFileTooLarge()).toMatchObject({
+    code: "PAYLOAD_TOO_LARGE",
+    status: 413,
+    message: "Choose a Proof Document no larger than 10 MB.",
+    data: { reason: "PROOF_FILE_TOO_LARGE" },
+  });
+});
+it("proofFileEmpty fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofFileEmpty()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Choose a non-empty Proof Document.",
+    data: { reason: "PROOF_FILE_EMPTY" },
+  });
+});
+it("proofFileNameRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofFileNameRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Choose a Proof Document with a file name.",
+    data: { reason: "PROOF_FILE_NAME_REQUIRED" },
+  });
+});
+it("claimRequiredForProof fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimRequiredForProof()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Save an editable Claim before uploading a Proof Document.",
+    data: { reason: "CLAIM_REQUIRED_FOR_PROOF" },
+  });
+});
+it("proofOriginDenied fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofOriginDenied()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Invalid upload origin.",
+    data: { reason: "PROOF_ORIGIN_DENIED" },
+  });
+});
+it("proofTransportTooLarge fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofTransportTooLarge()).toMatchObject({
+    code: "PAYLOAD_TOO_LARGE",
+    status: 413,
+    message: "The upload request is too large.",
+    data: { reason: "PROOF_TRANSPORT_TOO_LARGE" },
+  });
+});
+it("proofMultipartInvalid fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofMultipartInvalid()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Invalid multipart upload.",
+    data: { reason: "PROOF_MULTIPART_INVALID" },
+  });
+});
+it("proofUploadFailed fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofUploadFailed()).toMatchObject({
+    code: "INTERNAL_SERVER_ERROR",
+    status: 500,
+    message: "Upload failed. Please try again.",
+    data: { reason: "PROOF_UPLOAD_FAILED" },
+  });
+});
+it("proofDownloadFailed fixes code/status/message/reason", () => {
+  expect(createSituationErrors().proofDownloadFailed()).toMatchObject({
+    code: "INTERNAL_SERVER_ERROR",
+    status: 500,
+    message: "Download failed. Please try again.",
+    data: { reason: "PROOF_DOWNLOAD_FAILED" },
+  });
+});

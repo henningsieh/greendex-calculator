@@ -6,7 +6,6 @@ import {
   claimsTable as claims,
   proofDocumentsTable as documents,
 } from "@greendex/database/schema";
-import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -15,6 +14,7 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 import { getProofFile, putProofFile } from "@/lib/proof-storage";
 
@@ -45,7 +45,7 @@ async function requirePartner(
     errors,
   );
   if (scope.partnerId !== activeOrganizationId)
-    throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
+    throw createSituationErrors(errors).partnerDocumentsRequired();
   return scope;
 }
 
@@ -71,7 +71,7 @@ export const list = authorized
       .where(eq(documents.claimId, claim.id));
   });
 
-export class ProofNotFound extends Error {}
+const proofErrors = createSituationErrors();
 
 /** Called by the download route; authorize the Partnership before resolving its Claim-owned object key. */
 export async function downloadProofDocument(input: {
@@ -84,7 +84,7 @@ export async function downloadProofDocument(input: {
     !scopeInput.safeParse({ partnershipId: input.partnershipId }).success ||
     !coordinationId.safeParse(input.documentId).success
   ) {
-    throw new ProofNotFound();
+    throw proofErrors.proofNotFound();
   }
   // The same oversight grant as Claim review: Hosting Owners/Admins or assigned
   // Project Coordinators; Partner staff retain their existing scope.
@@ -92,7 +92,7 @@ export async function downloadProofDocument(input: {
     input.partnershipId,
     input.actorId,
     input.activeOrganizationId,
-    { FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options) },
+    {},
   );
   const [document] = await db
     .select({
@@ -109,7 +109,7 @@ export async function downloadProofDocument(input: {
       ),
     )
     .limit(1);
-  if (!document) throw new ProofNotFound();
+  if (!document) throw proofErrors.proofNotFound();
   const bytes = await getProofFile(document.fileReference);
   return {
     bytes,
@@ -129,23 +129,18 @@ export async function uploadProofDocument(input: {
   activeOrganizationId: string | null | undefined;
 }) {
   const parsed = scopeInput.safeParse({ partnershipId: input.partnershipId });
-  if (
-    !parsed.success ||
-    !(input.file instanceof File) ||
-    !allowedMediaTypes.has(input.file.type) ||
-    input.file.size < 1 ||
-    input.file.size > maximumBytes ||
-    !input.file.name.trim()
-  ) {
-    return { status: 400 as const };
-  }
+  if (!parsed.success || !(input.file instanceof File))
+    throw proofErrors.proofSelectionRequired();
+  if (!allowedMediaTypes.has(input.file.type))
+    throw proofErrors.proofMediaUnsupported();
+  if (input.file.size < 1) throw proofErrors.proofFileEmpty();
+  if (input.file.size > maximumBytes) throw proofErrors.proofFileTooLarge();
+  if (!input.file.name.trim()) throw proofErrors.proofFileNameRequired();
   const scope = await requirePartner(
     input.partnershipId,
     input.actorId,
     input.activeOrganizationId,
-    {
-      FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
-    },
+    {},
   );
   // Never materialize an empty Claim from a file upload. First save is explicit.
   return db.transaction(async (tx) => {
@@ -155,8 +150,8 @@ export async function uploadProofDocument(input: {
       .where(eq(claims.partnershipId, parsed.data.partnershipId))
       .for("update")
       .limit(1);
-    if (!claim || isPartnerEditLocked(claim.status))
-      return { status: 400 as const };
+    if (!claim) throw proofErrors.claimRequiredForProof();
+    if (isPartnerEditLocked(claim.status)) throw proofErrors.claimNotEditable();
     const bytes = Buffer.from(await input.file.arrayBuffer());
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
     await putProofFile(reference, bytes, input.file.type);
@@ -171,6 +166,10 @@ export async function uploadProofDocument(input: {
         checksum: createHash("sha256").update(bytes).digest("hex"),
       })
       .returning(projection);
+    if (!saved) {
+      console.error("[Proof upload] Insert returned no document");
+      throw proofErrors.proofUploadFailed();
+    }
     return { status: 201 as const, document: saved };
   });
 }

@@ -14,6 +14,9 @@ export function createSituationErrors(
   overrides: Partial<SituationErrorConstructors> = {},
 ) {
   const errors: SituationErrorConstructors = {
+    PAYLOAD_TOO_LARGE: (options) => new ORPCError("PAYLOAD_TOO_LARGE", options),
+    UNSUPPORTED_MEDIA_TYPE: (options) =>
+      new ORPCError("UNSUPPORTED_MEDIA_TYPE", options),
     BAD_REQUEST: (options) => new ORPCError("BAD_REQUEST", options),
     UNAUTHORIZED: (options) => new ORPCError("UNAUTHORIZED", options),
     FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
@@ -767,6 +770,97 @@ export function createSituationErrors(
           issues,
         }),
       }),
+    partnerDocumentsRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerDocumentsRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerDocumentsRequired.reason,
+        }),
+      }),
+    proofNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.proofNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofNotFound.reason,
+        }),
+      }),
+    proofSelectionRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.proofSelectionRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofSelectionRequired.reason,
+        }),
+      }),
+    proofMediaUnsupported: () =>
+      errors.UNSUPPORTED_MEDIA_TYPE({
+        message: situationCatalog.proofMediaUnsupported.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofMediaUnsupported.reason,
+        }),
+      }),
+    proofFileTooLarge: () =>
+      errors.PAYLOAD_TOO_LARGE({
+        message: situationCatalog.proofFileTooLarge.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofFileTooLarge.reason,
+        }),
+      }),
+    proofFileEmpty: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.proofFileEmpty.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofFileEmpty.reason,
+        }),
+      }),
+    proofFileNameRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.proofFileNameRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofFileNameRequired.reason,
+        }),
+      }),
+    claimRequiredForProof: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimRequiredForProof.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimRequiredForProof.reason,
+        }),
+      }),
+    proofOriginDenied: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.proofOriginDenied.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofOriginDenied.reason,
+        }),
+      }),
+    proofTransportTooLarge: () =>
+      errors.PAYLOAD_TOO_LARGE({
+        message: situationCatalog.proofTransportTooLarge.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofTransportTooLarge.reason,
+        }),
+      }),
+    proofMultipartInvalid: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.proofMultipartInvalid.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofMultipartInvalid.reason,
+        }),
+      }),
+    proofUploadFailed: () =>
+      errors.INTERNAL_SERVER_ERROR({
+        message: situationCatalog.proofUploadFailed.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofUploadFailed.reason,
+        }),
+      }),
+    proofDownloadFailed: () =>
+      errors.INTERNAL_SERVER_ERROR({
+        message: situationCatalog.proofDownloadFailed.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.proofDownloadFailed.reason,
+        }),
+      }),
     badInput: () =>
       errors.BAD_REQUEST({
         message: situationCatalog.badInput.message,
@@ -829,7 +923,7 @@ export function createSituationErrors(
 export type ScopeErrorConstructors = Partial<
   Pick<SituationErrorConstructors, "BAD_REQUEST" | "NOT_FOUND">
 > & {
-  FORBIDDEN: (options: {
+  FORBIDDEN?: (options: {
     message: string;
     data?: { reason: string };
   }) => ORPCError<string, unknown>;

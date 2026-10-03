@@ -2,23 +2,46 @@ import { ORPCError } from "@orpc/server";
 
 import {
   downloadProofDocument,
-  ProofNotFound,
   uploadProofDocument,
 } from "@/features/projects/procedures/documents";
 import { auth } from "@/lib/auth";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
+import { createSituationErrors } from "@/lib/orpc/errors";
+
+const proofErrors = createSituationErrors();
+
+function proofErrorResponse(error: unknown, fallback: "upload" | "download") {
+  const situation =
+    error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
+  if (situation)
+    return Response.json(
+      {
+        error: situation.message,
+        code: situation.code,
+        reason: situation.reason,
+      },
+      { status: situation.status },
+    );
+  console.error(`[Proof ${fallback}]`, error);
+  return proofErrorResponse(
+    fallback === "upload"
+      ? proofErrors.proofUploadFailed()
+      : proofErrors.proofDownloadFailed(),
+    fallback,
+  );
+}
 
 // Uploaded proof bytes in megabytes; mirrored in the streamed-bytes cap below.
 const MAX_UPLOAD_BYTES = 11 * 1024 * 1024;
 
 export async function GET(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.session || !session.user)
-    return Response.json({ error: "Sign in to continue." }, { status: 401 });
-  const { searchParams } = new URL(request.url);
-  const partnershipId = searchParams.get("partnershipId") ?? "";
-  const documentId = searchParams.get("documentId") ?? "";
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.session || !session.user)
+      return proofErrorResponse(proofErrors.unauthenticated(), "download");
+    const { searchParams } = new URL(request.url);
+    const partnershipId = searchParams.get("partnershipId") ?? "";
+    const documentId = searchParams.get("documentId") ?? "";
     const document = await downloadProofDocument({
       partnershipId,
       documentId,
@@ -40,26 +63,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    const situation =
-      error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
-    if (situation && [400, 403, 404].includes(situation.status))
-      return Response.json(
-        { error: situation.message },
-        { status: situation.status },
-      );
-    if (
-      error instanceof ORPCError &&
-      error.code === "FORBIDDEN" &&
-      error.status === 403
-    )
-      return Response.json({ error: "Access denied." }, { status: 403 });
-    if (error instanceof ProofNotFound)
-      return Response.json({ error: "Document not found." }, { status: 404 });
-    console.error("[Proof download]", error);
-    return Response.json(
-      { error: "Download failed. Please try again." },
-      { status: 500 },
-    );
+    return proofErrorResponse(error, "download");
   }
 }
 
@@ -69,86 +73,61 @@ export async function POST(request: Request) {
   // enforces transport-level gates (origin, session, size caps) and delegates
   // all authorization plus persistence to the owning feature procedure.
   if (request.headers.get("origin") !== new URL(request.url).origin) {
-    return Response.json({ error: "Invalid origin." }, { status: 403 });
+    return proofErrorResponse(proofErrors.proofOriginDenied(), "upload");
   }
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.session || !session.user)
-    return Response.json({ error: "Sign in to continue." }, { status: 401 });
-  if (Number(request.headers.get("content-length")) > MAX_UPLOAD_BYTES)
-    return Response.json({ error: "File is too large." }, { status: 413 });
-  let data: FormData;
   try {
-    // Do not trust Content-Length; cap streamed bytes before multipart parsing.
-    const chunks: Uint8Array[] = [];
-    let total = 0;
-    const reader = request.body?.getReader();
-    if (!reader)
-      return Response.json({ error: "Invalid upload." }, { status: 400 });
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > MAX_UPLOAD_BYTES) {
-        await reader.cancel();
-        return Response.json({ error: "File is too large." }, { status: 413 });
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.session || !session.user)
+      return proofErrorResponse(proofErrors.unauthenticated(), "upload");
+    if (Number(request.headers.get("content-length")) > MAX_UPLOAD_BYTES)
+      return proofErrorResponse(proofErrors.proofTransportTooLarge(), "upload");
+    let data: FormData;
+    try {
+      // Do not trust Content-Length; cap streamed bytes before multipart parsing.
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      const reader = request.body?.getReader();
+      if (!reader)
+        return proofErrorResponse(proofErrors.proofMultipartInvalid(), "upload");
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_UPLOAD_BYTES) {
+          await reader.cancel();
+          return proofErrorResponse(
+            proofErrors.proofTransportTooLarge(),
+            "upload",
+          );
+        }
+        chunks.push(value);
       }
-      chunks.push(value);
+      const bytes = new Uint8Array(total);
+      let offset = 0;
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+      data = await new Request(request.url, {
+        method: "POST",
+        headers: { "content-type": request.headers.get("content-type") ?? "" },
+        body: new Blob([bytes]),
+      }).formData();
+    } catch {
+      return proofErrorResponse(proofErrors.proofMultipartInvalid(), "upload");
     }
-    const bytes = new Uint8Array(total);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    data = await new Request(request.url, {
-      method: "POST",
-      headers: { "content-type": request.headers.get("content-type") ?? "" },
-      body: new Blob([bytes]),
-    }).formData();
-  } catch {
-    return Response.json({ error: "Invalid upload." }, { status: 400 });
-  }
-  const partnershipId = data.get("partnershipId");
-  const file = data.get("file");
-  if (typeof partnershipId !== "string" || !(file instanceof File))
-    return Response.json(
-      { error: "Select a file and Partnership." },
-      { status: 400 },
-    );
-  try {
+    const partnershipId = data.get("partnershipId");
+    const file = data.get("file");
+    if (typeof partnershipId !== "string" || !(file instanceof File))
+      return proofErrorResponse(proofErrors.proofSelectionRequired(), "upload");
     const result = await uploadProofDocument({
       partnershipId,
       file,
       actorId: session.user.id,
       activeOrganizationId: session.session.activeOrganizationId,
     });
-    return Response.json(
-      result.status === 201
-        ? result.document
-        : {
-            error:
-              "Choose a PDF, JPEG, or PNG under 10 MB for an editable Claim.",
-          },
-      { status: result.status },
-    );
+    return Response.json(result.document, { status: result.status });
   } catch (error) {
-    const situation =
-      error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
-    if (situation && [400, 403, 404].includes(situation.status))
-      return Response.json(
-        { error: situation.message },
-        { status: situation.status },
-      );
-    if (
-      error instanceof ORPCError &&
-      error.code === "FORBIDDEN" &&
-      error.status === 403
-    )
-      return Response.json({ error: "Access denied." }, { status: 403 });
-    console.error("[Proof upload]", error);
-    return Response.json(
-      { error: "Upload failed. Please try again." },
-      { status: 500 },
-    );
+    return proofErrorResponse(error, "upload");
   }
 }
