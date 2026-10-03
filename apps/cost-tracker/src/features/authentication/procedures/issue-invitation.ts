@@ -20,6 +20,11 @@ import {
   partnershipForIssuer,
 } from "@/features/authentication/procedures/shared";
 import { auth } from "@/lib/auth";
+import {
+  normalizeBetterAuthError,
+  normalizeBetterAuthResponse,
+} from "@/lib/orpc/better-auth-errors";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildIssueInvitation() {
@@ -48,9 +53,7 @@ export function buildIssueInvitation() {
         )
         .limit(1);
       if (existingParticipation)
-        throw errors.BAD_REQUEST({
-          message: "This person already participates in this Project.",
-        });
+        throw createSituationErrors(errors).participantAlreadyParticipates();
       const [existingBridge] = await db
         .select({
           invitationId: bridges.invitationId,
@@ -67,9 +70,7 @@ export function buildIssueInvitation() {
         .limit(1);
       if (existingBridge) {
         if (existingBridge.partnershipId !== partnership.id)
-          throw errors.BAD_REQUEST({
-            message: "This person already has an invitation to this Project.",
-          });
+          throw createSituationErrors(errors).participantAlreadyInvited();
         const [native] = await db
           .select({
             status: invitation.status,
@@ -108,19 +109,29 @@ export function buildIssueInvitation() {
       }
       let invitationId: string;
       if (partnership.hostCanInvite) {
-        const response = await auth.api.createInvitation({
-          asResponse: true,
-          headers: context.headers,
-          body: {
-            email: input.email,
-            role: "participant",
-            organizationId: partnership.hostId,
-          },
-        });
-        if (!response.ok)
-          throw errors.BAD_REQUEST({
-            message: "Better Auth invitation issuance failed.",
+        const response = await auth.api
+          .createInvitation({
+            asResponse: true,
+            headers: context.headers,
+            body: {
+              email: input.email,
+              role: "participant",
+              organizationId: partnership.hostId,
+            },
+          })
+          .catch((error: unknown) => {
+            throw normalizeBetterAuthError(
+              error,
+              createSituationErrors(errors),
+              context.resHeaders,
+            );
           });
+        if (!response.ok)
+          throw await normalizeBetterAuthResponse(
+            response,
+            createSituationErrors(errors),
+            context.resHeaders,
+          );
         invitationId = z
           .object({ id: z.string() })
           .parse(await response.json()).id;

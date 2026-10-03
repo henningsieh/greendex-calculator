@@ -97,3 +97,43 @@ export async function normalizeBetterAuthResponse(
   }
   return mapFailure(response.status, body, errors);
 }
+
+// addMember is a privileged server command. Permission/session/selection failures
+// there describe server configuration, not the already authenticated Invitee.
+function normalizeParticipantMembershipFailure(
+  error: ORPCError<string, unknown>,
+  errors: Situations,
+) {
+  if (
+    ["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code) &&
+    error.data &&
+    typeof error.data === "object" &&
+    "reason" in error.data &&
+    error.data.reason !== "EMAIL_VERIFICATION_REQUIRED"
+  )
+    return errors.internalFailure();
+  if (error.code === "BAD_REQUEST") return errors.internalFailure();
+  return error;
+}
+
+export function normalizeParticipantMembershipError(
+  error: unknown,
+  errors: Situations,
+  resHeaders?: Headers,
+) {
+  return normalizeParticipantMembershipFailure(
+    normalizeBetterAuthError(error, errors, resHeaders),
+    errors,
+  );
+}
+
+export async function normalizeParticipantMembershipResponse(
+  response: Response,
+  errors: Situations,
+  resHeaders?: Headers,
+) {
+  return normalizeParticipantMembershipFailure(
+    await normalizeBetterAuthResponse(response, errors, resHeaders),
+    errors,
+  );
+}

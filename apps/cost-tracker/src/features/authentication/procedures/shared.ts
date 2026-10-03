@@ -77,14 +77,15 @@ export function makeRequirePublishedAgreement(
   currentAgreement: () => ParticipantAgreementVersion = () =>
     CURRENT_PARTICIPANT_AGREEMENT_VERSION,
 ) {
-  return function requirePublishedAgreement(errors: {
-    BAD_REQUEST: (args: { message: string }) => Error;
-  }) {
+  return function requirePublishedAgreement(
+    errors: Pick<
+      import("@/lib/orpc/errors").SituationErrorConstructors,
+      "BAD_REQUEST"
+    >,
+  ) {
     const version = currentAgreement();
     if (!isPublishedAgreement(version))
-      throw errors.BAD_REQUEST({
-        message: "Participant agreement is not yet available.",
-      });
+      throw createSituationErrors(errors).agreementUnavailable();
     return version;
   };
 }

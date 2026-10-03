@@ -411,3 +411,132 @@ it("projectCompletionBlocked preserves scoped names and statuses without changin
     data: { reason: "PROJECT_COMPLETION_BLOCKED" },
   });
 });
+
+it("registrationLinkNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().registrationLinkNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Registration link not found.",
+    data: { reason: "REGISTRATION_LINK_NOT_FOUND" },
+  });
+});
+
+it("registrationLinkClosed fixes code/status/message/reason", () => {
+  expect(createSituationErrors().registrationLinkClosed()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Registration link is closed.",
+    data: { reason: "REGISTRATION_LINK_CLOSED" },
+  });
+});
+
+it("participantInvitationNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participantInvitationNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Participant Invitation not found.",
+    data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
+  });
+});
+
+it("participantInvitationWrongAccount fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().participantInvitationWrongAccount(),
+  ).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Invitation is not for this account.",
+    data: { reason: "PARTICIPANT_INVITATION_WRONG_ACCOUNT" },
+  });
+});
+
+it("participantInvitationClosed fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participantInvitationClosed()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Invitation is closed.",
+    data: { reason: "PARTICIPANT_INVITATION_CLOSED" },
+  });
+});
+
+it("participantInvitationExpired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participantInvitationExpired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Participant Invitation has expired.",
+    data: { reason: "PARTICIPANT_INVITATION_EXPIRED" },
+  });
+});
+
+it("participantAlreadyParticipates fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participantAlreadyParticipates()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "This person already participates in this Project.",
+    data: { reason: "PARTICIPANT_ALREADY_PARTICIPATES" },
+  });
+});
+
+it("participantAlreadyInvited fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participantAlreadyInvited()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "This person already has an invitation to this Project.",
+    data: { reason: "PARTICIPANT_ALREADY_INVITED" },
+  });
+});
+
+it("joinedOtherPartner fixes code/status/message/reason", () => {
+  expect(createSituationErrors().joinedOtherPartner()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message:
+      "You already joined this Project through another Partner Organization.",
+    data: { reason: "JOINED_OTHER_PARTNER" },
+  });
+});
+
+it("membershipChanged fixes code/status/message/reason", () => {
+  expect(createSituationErrors().membershipChanged()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Membership changed; please retry onboarding.",
+    data: { reason: "MEMBERSHIP_CHANGED" },
+  });
+});
+
+it("participationIdentityConflict fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationIdentityConflict()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "This identity already participates in this Project.",
+    data: { reason: "PARTICIPATION_IDENTITY_CONFLICT" },
+  });
+});
+
+it("participantInvitationAccepted fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participantInvitationAccepted()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Accepted invitations cannot be changed.",
+    data: { reason: "PARTICIPANT_INVITATION_ACCEPTED" },
+  });
+});
+
+it("registrationClaimLocked fixes code/status/message/reason", () => {
+  expect(createSituationErrors().registrationClaimLocked()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "A non-editable Claim prevents reopening registration.",
+    data: { reason: "REGISTRATION_CLAIM_LOCKED" },
+  });
+});
+
+it("agreementUnavailable fixes code/status/message/reason", () => {
+  expect(createSituationErrors().agreementUnavailable()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Participant agreement is not yet available.",
+    data: { reason: "PARTICIPANT_AGREEMENT_UNAVAILABLE" },
+  });
+});

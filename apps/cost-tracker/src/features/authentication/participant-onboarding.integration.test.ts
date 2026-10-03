@@ -20,6 +20,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { ORPCError, createRouterClient } from "@orpc/server";
+import { APIError } from "better-auth/api";
 import { and, eq } from "drizzle-orm";
 import {
   afterAll,
@@ -232,6 +233,161 @@ afterAll(async () => {
 });
 
 describe("Participant onboarding procedures", () => {
+  it("distinguishes missing invitation, wrong account and expired state without writes", async () => {
+    const input = (invitationId: string) => ({
+      source: { kind: "invitation" as const, invitationId },
+      profile: { fullName: "Recipient" },
+      agreement: { accepted: true as const },
+    });
+    actor = recipient;
+    await expect(
+      client.participantOnboarding.join(input("missing")),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+      data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
+    });
+    actor = owner;
+    const issued = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    await expect(
+      client.participantOnboarding.join(input(issued.invitationId)),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      data: { reason: "PARTICIPANT_INVITATION_WRONG_ACCOUNT" },
+    });
+    await db
+      .update(invitation)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(invitation.id, issued.invitationId));
+    actor = recipient;
+    await expect(
+      client.participantOnboarding.join(input(issued.invitationId)),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "PARTICIPANT_INVITATION_EXPIRED" },
+    });
+    expect(authMocks.acceptInvitation).not.toHaveBeenCalled();
+    expect(await memberships()).toHaveLength(0);
+    expect(
+      await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+    ).toHaveLength(0);
+  });
+
+  it("names absent invitation/link resources and absent replacement", async () => {
+    await expect(
+      client.participantOnboarding.setInvitationOpen({
+        invitationId: "missing",
+        open: true,
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
+    });
+    await expect(
+      client.participantOnboarding.setRegistrationLinkOpen({
+        id: "missing",
+        open: true,
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      data: { reason: "REGISTRATION_LINK_NOT_FOUND" },
+    });
+    await expect(
+      client.participantOnboarding.reissueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
+    });
+    expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [401, "SESSION_REQUIRED"],
+    [429, "RATE_LIMITED"],
+    [503, "SERVICE_UNAVAILABLE"],
+    [500, "INTERNAL_FAILURE"],
+  ] as const)(
+    "preserves BA acceptance status %s without app writes",
+    async (status, reason) => {
+      const issued = await client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      });
+      actor = recipient;
+      authMocks.acceptInvitation.mockResolvedValueOnce(
+        new Response(null, { status }),
+      );
+      await expect(
+        client.participantOnboarding.join({
+          source: { kind: "invitation", invitationId: issued.invitationId },
+          profile: { fullName: "Recipient" },
+          agreement: { accepted: true },
+        }),
+      ).rejects.toMatchObject({ status, data: { reason } });
+      expect(await memberships()).toHaveLength(0);
+      expect(
+        await db
+          .select()
+          .from(participants)
+          .where(eq(participants.projectId, project)),
+      ).toHaveLength(0);
+      expect(
+        await db
+          .select()
+          .from(acceptances)
+          .where(eq(acceptances.userId, recipient)),
+      ).toHaveLength(0);
+    },
+  );
+
+  it("normalizes thrown BA verification and privileged addMember permission failures", async () => {
+    const issued = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    actor = recipient;
+    authMocks.acceptInvitation.mockRejectedValueOnce(
+      new APIError("FORBIDDEN", { code: "EMAIL_NOT_VERIFIED" }),
+    );
+    await expect(
+      client.participantOnboarding.join({
+        source: { kind: "invitation", invitationId: issued.invitationId },
+        profile: { fullName: "Recipient" },
+        agreement: { accepted: true },
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
+    });
+    actor = owner;
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    actor = recipient;
+    authMocks.addMember.mockResolvedValueOnce(
+      new Response(null, { status: 403 }),
+    );
+    await expect(
+      client.participantOnboarding.join({
+        source: { kind: "link", id: link.id, secret: link.secret },
+        profile: { fullName: "Recipient" },
+        agreement: { accepted: true },
+      }),
+    ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR", status: 500 });
+    expect(await memberships()).toHaveLength(0);
+    expect(
+      await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+    ).toHaveLength(0);
+  });
+
   it("separately gates missing profile and stale agreement before listing Participations", async () => {
     actor = recipient;
     await expect(
@@ -771,7 +927,9 @@ describe("Participant onboarding procedures", () => {
       agreement: { accepted: true as const },
     };
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "FORBIDDEN",
+      status: 403,
+      data: { reason: "ACCESS_DENIED" },
     });
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
@@ -1004,7 +1162,11 @@ describe("Participant onboarding procedures", () => {
           partnershipId: partnership,
           email: recipientEmail,
         }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        data: { reason: "ACCESS_DENIED" },
+      });
       expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
       expect(
         await db.select().from(bridges).where(eq(bridges.projectId, project)),

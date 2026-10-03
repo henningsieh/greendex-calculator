@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeBetterAuthError,
   normalizeBetterAuthResponse,
+  normalizeParticipantMembershipError,
+  normalizeParticipantMembershipResponse,
 } from "@/lib/orpc/better-auth-errors";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
@@ -113,5 +115,59 @@ describe("Better Auth error adapter", () => {
       apiTarget,
     );
     expect(apiTarget.getSetCookie()).toEqual(headers.getSetCookie());
+  });
+});
+
+describe("privileged Participant membership failures", () => {
+  it.each([400, 401, 403, 404, 500])(
+    "does not blame the Invitee for server addMember status %s",
+    async (status) => {
+      expect(
+        await normalizeParticipantMembershipResponse(
+          new Response(null, { status }),
+          errors,
+        ),
+      ).toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        status: 500,
+        data: { reason: "INTERNAL_FAILURE" },
+      });
+    },
+  );
+  it.each([
+    [429, "RATE_LIMITED"],
+    [503, "SERVICE_UNAVAILABLE"],
+  ] as const)("preserves upstream %s", async (status, reason) => {
+    expect(
+      await normalizeParticipantMembershipResponse(
+        new Response(null, { status }),
+        errors,
+      ),
+    ).toMatchObject({ status, data: { reason } });
+  });
+  it("preserves verification and failure cookies but masks a thrown non-member cause", () => {
+    const headers = new Headers({ "set-cookie": "fixture=; Max-Age=0" });
+    const target = new Headers();
+    expect(
+      normalizeParticipantMembershipError(
+        new APIError(
+          "UNAUTHORIZED",
+          { code: "USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION" },
+          headers,
+        ),
+        errors,
+        target,
+      ),
+    ).toMatchObject({ code: "INTERNAL_SERVER_ERROR", status: 500 });
+    expect(target.getSetCookie()).toEqual(headers.getSetCookie());
+    expect(
+      normalizeParticipantMembershipError(
+        new APIError("FORBIDDEN", { code: "EMAIL_NOT_VERIFIED" }),
+        errors,
+      ),
+    ).toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
+    });
   });
 });

@@ -27,3 +27,9 @@ Closed, expired, used, duplicate, referenced, and completion states deliberately
 Wave 3 deferrals: Participant invitation/join adapters and remaining Claim/Participant producers; full proof transport/upload policy; 409/503 policy refinement; safe field-issue/completion-blocker catalogs; reason-based toast grouping and static guards.
 
 Wave 2 validation: all 22 affected suites are green across final runs (521 tests), including the complete 242-test submission suite, shared-denial fanout, staff Better Auth boundaries, coupled consumers, and HTTP/direct-SSR regressions. Cost Tracker type-check and repository format/lint passed; existing lint warnings remain. The constrained-machine harness uses CLI-only 30-second test/hook limits and one worker; no source timeouts or assertions were relaxed. Browser expectations were synchronized, but E2E was not run.
+
+## Wave 3 — Participant invitation flows
+
+Join, issue/reissue, and invitation/registration-link open controls use named outcomes. Missing links, bridge/native invitation rows, replacement invitations and scoped Partnerships return404; wrong invited accounts remain403. Closed/expired/accepted/duplicate/race states keep400. Reopening copy now describes a non-editable Claim, not only a submitted one; its consumer validates the reason. Join's insert conflict describes an identity conflict without asserting this User already joined. The agreement publication guard stays in shared.ts and keeps400.
+
+Better Auth issue/accept failures preserve authoritative causes and failure cookies. Privileged server `addMember` permission/session/selection/configuration failures are safe500 rather than blaming the Invitee; verification, throttling and upstream unavailability remain actionable. No roles, lock order, idempotency, native auth transport or delivery behavior changed. Focused invitation/adapter/factory/coordination suites: 129 tests passed. Business409/503 refinement remains deferred.

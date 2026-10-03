@@ -298,6 +298,104 @@ export function createSituationErrors(
         message: `Cannot complete Project: ${blockers.map(({ name, status }) => `${name} (${status ?? "no Claim"})`).join(", ")}.`,
         data: SafeErrorDataSchema.parse({ reason: "PROJECT_COMPLETION_BLOCKED" }),
       }),
+    registrationLinkNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.registrationLinkNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.registrationLinkNotFound.reason,
+        }),
+      }),
+    registrationLinkClosed: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.registrationLinkClosed.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.registrationLinkClosed.reason,
+        }),
+      }),
+    participantInvitationNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.participantInvitationNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participantInvitationNotFound.reason,
+        }),
+      }),
+    participantInvitationWrongAccount: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.participantInvitationWrongAccount.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participantInvitationWrongAccount.reason,
+        }),
+      }),
+    participantInvitationClosed: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participantInvitationClosed.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participantInvitationClosed.reason,
+        }),
+      }),
+    participantInvitationExpired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participantInvitationExpired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participantInvitationExpired.reason,
+        }),
+      }),
+    participantAlreadyParticipates: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participantAlreadyParticipates.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participantAlreadyParticipates.reason,
+        }),
+      }),
+    participantAlreadyInvited: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participantAlreadyInvited.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participantAlreadyInvited.reason,
+        }),
+      }),
+    joinedOtherPartner: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.joinedOtherPartner.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.joinedOtherPartner.reason,
+        }),
+      }),
+    membershipChanged: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.membershipChanged.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.membershipChanged.reason,
+        }),
+      }),
+    participationIdentityConflict: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationIdentityConflict.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationIdentityConflict.reason,
+        }),
+      }),
+    participantInvitationAccepted: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participantInvitationAccepted.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participantInvitationAccepted.reason,
+        }),
+      }),
+    registrationClaimLocked: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.registrationClaimLocked.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.registrationClaimLocked.reason,
+        }),
+      }),
+    agreementUnavailable: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.agreementUnavailable.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.agreementUnavailable.reason,
+        }),
+      }),
     badInput: () =>
       errors.BAD_REQUEST({
         message: situationCatalog.badInput.message,

@@ -11,6 +11,7 @@ import {
   id,
   partnershipForIssuer,
 } from "@/features/authentication/procedures/shared";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildSetRegistrationLinkOpen() {
@@ -23,7 +24,7 @@ export function buildSetRegistrationLinkOpen() {
         .from(links)
         .where(eq(links.id, input.id))
         .limit(1);
-      if (!link) throw errors.NOT_FOUND();
+      if (!link) throw createSituationErrors(errors).registrationLinkNotFound();
       await partnershipForIssuer(
         link.partnershipId,
         context.user.id,
@@ -37,9 +38,7 @@ export function buildSetRegistrationLinkOpen() {
           .where(eq(claimsTable.partnershipId, link.partnershipId))
           .limit(1);
         if (claim && claim.status !== "editable")
-          throw errors.BAD_REQUEST({
-            message: "A submitted Claim prevents reopening registration.",
-          });
+          throw createSituationErrors(errors).registrationClaimLocked();
       }
       await db
         .update(links)

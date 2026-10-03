@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -608,8 +609,7 @@ export function ParticipantCoordination({
     onError: (error) => {
       if (
         error instanceof ORPCError &&
-        error.code === "BAD_REQUEST" &&
-        error.message === "A submitted Claim prevents reopening registration."
+        getSafeErrorSituation(error)?.reason === "REGISTRATION_CLAIM_LOCKED"
       ) {
         setEntryFeedback({
           title: "Registration link cannot be reopened",
