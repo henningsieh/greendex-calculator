@@ -1,5 +1,7 @@
 # Architecture review and migration plan
 
+> Historical snapshot of the Phase 8 architecture review and migration plan, produced on 2026-09-08 and last revised on 2026-09-10. Its “Verified repository baseline” and binding decision log describe that reviewed state, **not the current branch**: `/projects/[id]`, the Claim, Cost, Journey, Document, and Participation procedures, `nuqs`, `@tanstack/react-table`, and migrations beyond `0015` have since shipped. See [the final migration review](architecture-migration-final-review.md) for the current disposition of the Phase 6–8 work, and [the architecture migration fix plan](architecture-migration-fix-plan.md) for which findings were scheduled. Open questions carried here that are still live have been moved to current documents; do not settle them from this file alone.
+
 Full visual report opened at:
 
 /tmp/architecture-review-20260908-121953.html
@@ -298,7 +300,7 @@ Binding decision log
 13. Q13 — Recency meaning — “Latest operational activity” eventually includes Project and Cost Submission activity, not only `Project.updatedAt`.
 14. Q14 — Recency release — Defer Latest operational activity until Cost Submission persistence and event projection exist.
 15. Q15 — Name search — Case-insensitive substring matching, debounced, with a three-character minimum and an indexed database implementation.
-16. Q16 — Partner filter — Permit multiple Partner Organizations with match-any semantics, scoped to Partners of visible hosted Projects.
+16. Q16 — Partner filter — Permit multiple Partner Organizations with match-any semantics, scoped to Partners of visible hosted Projects. The many-Partners premise is unverified: it is inherited from singular clickdummy language and no programme dataset has confirmed it. Resolve the Project/Partner cardinality question in [the Project/Partner cardinality backlog item](../backlog/project-partner-cardinality.md) before implementing Q16, Q39, or Project completion.
 17. Q17 — Metric scopes — Show both whole-scope totals and totals for the current filters.
 18. Q18 — Hosting target metrics — Project count, open-window count, distinct Partner Organization count, Cost Submission volume, and exact EUR total; Cost-derived metrics are deferred by Q41.
 19. Q19 — EUR meaning — Sum each current original Travel Cost Entry exactly once for Cost Submissions belonging to matching Projects; Project dates are not a financial reporting period.
@@ -448,11 +450,14 @@ Conflicts and qualifications
 
 Open questions retained for implementation or follow-up
 
+> **Superseded as a tracking surface.** The six questions below were migrated to [the backlog](../backlog/architecture-review-open-questions.md) so they stay visible after this file was archived. The 42-entry Binding decision log above is a closed record, not a work list: every entry already states its answer.
+
 1. What persisted timestamp/event and exact duration define “recently closed”? Until answered, the filter is unavailable.
 2. How should authenticated staff be distinguished from the existing/future `participant` role when both may hold `project:read`, especially before financial fields are enabled?
 3. How should the route determine Hosted-scope availability, and what should it render when the active Organization has neither hosted nor assigned non-archived Projects? Q24 defines the selection rule but not this mechanism/empty-state detail.
 4. What Organization-directory discovery policy permits Hosting staff to search/select existing Partner Organizations without exposing an unintended global Organization directory?
 5. What concrete production dataset and response-time budget govern cursor encoding, exact global/filtered count strategy, query composition, and final index selection?
+6. Can a Project have more than one Partner Organization in the real programme, or is 1..n speculative generality inherited from singular clickdummy language? Q16 builds the Partner filter on the 1..n premise without confirming it. Tracked in [the Project/Partner cardinality backlog item](../backlog/project-partner-cardinality.md); resolve before implementing Q16, Q39, or the Project completion rule.
 
 Deferred / Not in Phase 8
 

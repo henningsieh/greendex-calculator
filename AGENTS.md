@@ -15,7 +15,26 @@ Read the owning app's context before changing its code. Shared language lives in
 - [Cost Tracker](apps/cost-tracker/CONTEXT.md): journey-ticket costs per Partner Organization; owns Project Partnerships and the Hosting/Partner distinction (hidden from Calculator).
 - [Documentation](apps/documentation/CONTEXT.md): published user documentation (Fumadocs); not engineering documentation.
 
-Both applications reference the same Organizations, Projects, Users, and Project Participations. CO₂ and cost records stay independent. Domain route: [domain](docs/agents/domain.md); shared features: [Projects](docs/projects/README.md); decisions: [ADRs](docs/adr/).
+Both applications reference the same Organizations, Projects, Users, and Project Participations. CO₂ and cost records stay independent. Domain route: [domain](docs/agents/domain.md); shared features: [Projects](docs/projects/README.md); decisions: [ADRs](docs/adr/README.md).
+
+## Where Does a Statement Belong?
+
+Documentation has five kinds with different rules. Placing a statement in the wrong kind is the most common way this repo gets confusing, so pick deliberately before writing.
+
+| Kind            | Rule                                                               | Lives in                                                                                              | Answers                               |
+| --------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **Decision**    | Immutable. Reversal means a new ADR that supersedes the old one.   | [`docs/adr/`](docs/adr/README.md)                                                                     | Why this shape, and what was rejected |
+| **Instruction** | Mutable current rules. Rewrite when the practice changes.          | [`docs/agents/instructions/`](docs/agents/instructions/)                                              | How to work here now                  |
+| **Model**       | Mutable description of the domain. Must match the code and schema. | `CONTEXT.md`, [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md), [`docs/projects/`](docs/projects/README.md) | What the things are                   |
+| **Open work**   | Mutable. Needs a decision or an implementation.                    | [GitHub issues](docs/agents/issue-tracker.md); app `docs/backlog/`                                    | What still needs doing                |
+| **Archive**     | Frozen. Never follow as instructions.                              | app `docs/archive/`                                                                                   | What was true at a past review        |
+
+Rules that follow from this:
+
+- An archived document states what was true at its review. It is not a decision record and never regains authority. When its content describes a codebase that no longer exists, move it to `archive/` and link the live replacement from the index.
+- A "Q" numbered entry in an archived review is a closed decision unless the surrounding section says otherwise. Do not read a binding decision log as a work list.
+- Deferred work belongs in an issue or the backlog, never inside an archived file. Keep the backlog linked from the app's documentation index; an unindexed backlog is a backlog nobody reads.
+- Never link from a live document to a file that does not exist on the current branch. Check directory links too, not only file links.
 
 ## Read Conditionally (Default: Read Nothing Up Front)
 

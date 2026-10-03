@@ -12,9 +12,13 @@ fi
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -n "$staged" ] || exit 0
 
-# Protect unrelated unstaged edits while tools write the selected files.
+# Protect unstaged edits, but only for the files the tools below actually write.
+# They only touch staged files, so unstaged edits elsewhere cannot be affected and
+# do not need protecting. Stashing those anyway makes `git stash pop` fail whenever
+# oxfmt reformats a staged file (realigning a Markdown table, for example), because
+# the stash still holds the pre-format content.
 stash_created=0
-if ! git diff --quiet; then
+if ! git diff --quiet -- $staged; then
   git stash push --keep-index --message 'husky pre-commit unstaged changes' >/dev/null
   stash_created=1
 fi

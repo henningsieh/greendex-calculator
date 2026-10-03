@@ -1,6 +1,22 @@
 # Backlog (low priority)
 
-Manually curated. Not referenced from any index on purpose.
+Manually curated, and linked from the [Cost Tracker documentation index](../README.md).
+
+An item here is deferred work that still needs a decision or an implementation. It is **not** finished history — see [archive/](../archive/) for that.
+
+## Needs a decision
+
+- [Architecture review open questions](architecture-review-open-questions.md) — six questions deferred by the Phase 0–8 architecture review, including the definition of "recently closed" and the production volume budget.
+- [Project/Partner cardinality](project-partner-cardinality.md) — can one Project have more than one Partner Organization, or is one Partner Organization per Project the real rule?
+
+## Migrating to GitHub issues
+
+`docs/agents/issue-tracker.md` states that issues and specs live as [GitHub issues](https://github.com/henningsieh/greendex-calculator/issues). This folder is the interim home. Migrate each item to an issue, then keep only a pointer here.
+
+Items still tracked only in this folder:
+
+- [E2E artifact privacy follow-up](e2e-artifact-privacy-followup.md) — non-blocking; not an MVP acceptance gate.
+- [Error semantics follow-ups](error-semantics-followups.md) — wave 1 checklist, mostly closed.
 
 ## 1. `useSyncExternalStore` refactoring
 
