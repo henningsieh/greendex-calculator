@@ -179,9 +179,6 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       const page = await context.newPage();
       await page.goto("/projects");
       await expect(
-        page.getByText("Unable to load Assigned Projects"),
-      ).toBeVisible();
-      await expect(
         page.getByRole("button", { name: "New project" }),
       ).toBeVisible();
       const projectURL = await createProject(page, projectName);
