@@ -557,8 +557,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the participantInvitationClosed factory copy.
     await expect(t.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "Invitation is closed.",
     );
     expect(
       await db
@@ -593,8 +594,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await u.getByLabel("Full name").fill(actors.U.name);
     await u.getByLabel("I accept the current Participant agreement").check();
     await u.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the registrationLinkClosed factory copy.
     await expect(u.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "Registration link is closed.",
     );
     expect(
       await db
@@ -747,8 +749,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the joinedOtherPartner factory copy.
     await expect(t.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "You already joined this Project through another Partner Organization.",
     );
     expect(
       await db
