@@ -12,19 +12,31 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { normalizedEmail } from "@/features/authentication/procedures/shared";
+import {
+  BANNED_ROLE_MESSAGE,
+  hasBannedOrganizationRole,
+  requireCostTrackerRole,
+} from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
+import {
+  normalizeBetterAuthError,
+  normalizeBetterAuthResponse,
+} from "@/lib/orpc/better-auth-errors";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const STAFF_ROLES = ["owner", "admin", "member"] as const;
+const STAFF_ROLES = ["owner", "admin"] as const;
 type StaffRole = (typeof STAFF_ROLES)[number];
 
-const StaffRoleSchema = z.enum(STAFF_ROLES);
+const StaffRoleSchema = z
+  .string()
+  .refine((role) => !hasBannedOrganizationRole(role), BANNED_ROLE_MESSAGE)
+  .pipe(z.enum(STAFF_ROLES));
 
 /** Lower rank outranks: an inviter can only grant their own rank or below. */
 const ROLE_RANK: Record<StaffRole, number> = {
   owner: 0,
   admin: 1,
-  member: 2,
 };
 
 const MemberSchema = z.object({
@@ -66,9 +78,7 @@ function requireActiveOrganization(
   errors: ProcedureErrors["errors"],
 ): string {
   if (!activeOrganizationId) {
-    throw errors.FORBIDDEN({
-      message: "Select an active Organization before managing its staff.",
-    });
+    throw createSituationErrors(errors).selectOrganization();
   }
   return activeOrganizationId;
 }
@@ -92,17 +102,13 @@ async function requireOrganizationManager(
     .limit(1);
 
   if (!membership) {
-    throw errors.FORBIDDEN({
-      message: "Organization management is unavailable.",
-    });
+    throw createSituationErrors(errors).notMember();
   }
 
   if (hasOrganizationRole(membership.role, "owner")) return "owner";
   if (hasOrganizationRole(membership.role, "admin")) return "admin";
 
-  throw errors.FORBIDDEN({
-    message: "Organization management is unavailable.",
-  });
+  throw createSituationErrors(errors).organizationManagementRequired();
 }
 
 export const listMembers = authorized
@@ -188,9 +194,7 @@ export const inviteMember = authorized
     );
 
     if (ROLE_RANK[input.role] < ROLE_RANK[actorRole]) {
-      throw errors.FORBIDDEN({
-        message: "This invitation would grant a role above your own.",
-      });
+      throw createSituationErrors(errors).staffInvitationRoleTooHigh();
     }
 
     let invitationId: string;
@@ -205,9 +209,11 @@ export const inviteMember = authorized
         },
       });
       if (!response.ok) {
-        throw errors.BAD_REQUEST({
-          message: "Could not send the invitation.",
-        });
+        throw await normalizeBetterAuthResponse(
+          response,
+          createSituationErrors(errors),
+          context.resHeaders,
+        );
       }
       invitationId = z.object({ id: z.string() }).parse(await response.json()).id;
     } catch (error) {
@@ -216,9 +222,11 @@ export const inviteMember = authorized
         organizationId,
         role: input.role,
       });
-      throw errors.BAD_REQUEST({
-        message: "Could not send the invitation.",
-      });
+      throw normalizeBetterAuthError(
+        error,
+        createSituationErrors(errors),
+        context.resHeaders,
+      );
     }
 
     return {
@@ -243,36 +251,27 @@ export const acceptInvitation = authorized
       .where(eq(invitation.id, input.invitationId))
       .limit(1);
 
-    if (!pending)
-      throw errors.NOT_FOUND({ message: "Organization Invitation not found." });
+    if (!pending) throw createSituationErrors(errors).staffInvitationNotFound();
+    requireCostTrackerRole(pending.role, () =>
+      createSituationErrors(errors).invalidOrganizationRole(),
+    );
     // Participant Invitations share this table with role "participant" plus a
     // bridge row; accepting one here would bypass agreement and Project
     // Participation checks, so only staff invitations may proceed.
     if (pending.role === "participant")
-      throw errors.BAD_REQUEST({
-        message: "This invitation is not an Organization staff invitation.",
-      });
+      throw createSituationErrors(errors).staffInvitationWrongKind();
     const [bridge] = await db
       .select({ invitationId: bridges.invitationId })
       .from(bridges)
       .where(eq(bridges.invitationId, input.invitationId))
       .limit(1);
-    if (bridge)
-      throw errors.BAD_REQUEST({
-        message: "This invitation is not an Organization staff invitation.",
-      });
+    if (bridge) throw createSituationErrors(errors).staffInvitationWrongKind();
     if (pending.status !== "pending")
-      throw errors.BAD_REQUEST({
-        message: "Organization Invitation is no longer pending.",
-      });
+      throw createSituationErrors(errors).staffInvitationClosed();
     if (pending.expiresAt < new Date())
-      throw errors.BAD_REQUEST({
-        message: "Organization Invitation has expired.",
-      });
+      throw createSituationErrors(errors).staffInvitationExpired();
     if (pending.email.toLowerCase() !== context.user.email.toLowerCase())
-      throw errors.FORBIDDEN({
-        message: "Sign in with the invited email address.",
-      });
+      throw createSituationErrors(errors).staffInvitationWrongEmail();
 
     try {
       const accepted = await auth.api.acceptInvitation({
@@ -285,10 +284,11 @@ export const acceptInvitation = authorized
         // Do not log invitation identifiers or invitee email addresses.
         errorCode: error instanceof Error ? error.name : "unknown",
       });
-      throw errors.BAD_REQUEST({
-        message:
-          "Could not accept this Organization Invitation. It may no longer be valid.",
-      });
+      throw normalizeBetterAuthError(
+        error,
+        createSituationErrors(errors),
+        context.resHeaders,
+      );
     }
   });
 
@@ -313,12 +313,10 @@ export const cancelInvitation = authorized
       .limit(1);
 
     if (!pending || pending.organizationId !== organizationId) {
-      throw errors.NOT_FOUND({ message: "Invitation not found." });
+      throw createSituationErrors(errors).staffInvitationNotFound();
     }
     if (pending.status !== "pending") {
-      throw errors.BAD_REQUEST({
-        message: "This invitation is no longer pending.",
-      });
+      throw createSituationErrors(errors).staffInvitationClosed();
     }
 
     try {
@@ -326,14 +324,15 @@ export const cancelInvitation = authorized
         headers: context.headers,
         body: { invitationId: input.invitationId },
       });
-    } catch {
+    } catch (error) {
       console.error("Organization staff invitation cancellation failed", {
         organizationId,
-        invitationId: input.invitationId,
       });
-      throw errors.BAD_REQUEST({
-        message: "Could not cancel the invitation.",
-      });
+      throw normalizeBetterAuthError(
+        error,
+        createSituationErrors(errors),
+        context.resHeaders,
+      );
     }
 
     return { success: true as const };

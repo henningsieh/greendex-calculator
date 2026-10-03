@@ -7,6 +7,9 @@ const nextConfig = {
   agentRules: false,
   typedRoutes: true,
   reactStrictMode: true,
+  experimental: {
+    requestInsights: true,
+  },
   async rewrites() {
     return [
       {

@@ -1,12 +1,20 @@
 import { os } from "@orpc/server";
 
+import { normalizeBetterAuthError } from "@/lib/orpc/better-auth-errors";
+import { errorDefinitions } from "@/lib/orpc/error-contract";
+import { createSituationErrors } from "@/lib/orpc/errors";
+
 export const base = os
   .$context<{ headers: Headers; resHeaders?: Headers }>()
-  .errors({
-    BAD_REQUEST: { message: "Bad request" },
-    NOT_FOUND: { message: "Resource not found" },
-    FORBIDDEN: { message: "Access forbidden" },
-    UNAUTHORIZED: { message: "Unauthorized" },
-    TOO_MANY_REQUESTS: { message: "Too many requests" },
-    INTERNAL_SERVER_ERROR: { message: "Internal server error" },
+  .errors(errorDefinitions)
+  .use(async ({ context, errors, next }) => {
+    try {
+      return await next();
+    } catch (error) {
+      throw normalizeBetterAuthError(
+        error,
+        createSituationErrors(errors),
+        context.resHeaders,
+      );
+    }
   });

@@ -17,6 +17,11 @@ import {
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
 import { requirePartnerCoordination } from "@/features/projects/procedures/coordination";
+import {
+  createSituationErrors,
+  type ScopeErrorConstructors,
+  type SituationErrorConstructors,
+} from "@/lib/orpc/errors";
 
 export const id = z.string().min(1).max(128);
 export const normalizedEmail = z.string().trim().toLowerCase().pipe(z.email());
@@ -45,7 +50,7 @@ export const INVITATION_TTL_MS = 48 * 60 * 60 * 1000;
 
 export function shouldGrantParticipantRole(role: string): boolean {
   return (
-    hasOrganizationRole(role, "member") &&
+    hasOrganizationRole(role, "project-coordinator") &&
     !["participant", "owner", "admin"].some((existing) =>
       role.split(",").some((value) => value.trim() === existing),
     )
@@ -73,14 +78,12 @@ export function makeRequirePublishedAgreement(
   currentAgreement: () => ParticipantAgreementVersion = () =>
     CURRENT_PARTICIPANT_AGREEMENT_VERSION,
 ) {
-  return function requirePublishedAgreement(errors: {
-    BAD_REQUEST: (args: { message: string }) => Error;
-  }) {
+  return function requirePublishedAgreement(
+    errors: Pick<SituationErrorConstructors, "BAD_REQUEST">,
+  ) {
     const version = currentAgreement();
     if (!isPublishedAgreement(version))
-      throw errors.BAD_REQUEST({
-        message: "Participant agreement is not yet available.",
-      });
+      throw createSituationErrors(errors).agreementUnavailable();
     return version;
   };
 }
@@ -93,8 +96,10 @@ export async function partnershipForIssuer(
   partnershipId: string,
   userId: string,
   activeOrganizationId: string | null | undefined,
-  errors: { FORBIDDEN: (args: { message: string }) => Error },
+  errors: ScopeErrorConstructors,
 ) {
+  const situation = createSituationErrors(errors);
+  if (!activeOrganizationId) throw situation.selectOrganization();
   const [partnership] = await db
     .select({
       id: partnerships.id,
@@ -113,7 +118,7 @@ export async function partnershipForIssuer(
     (activeOrganizationId !== partnership.partnerId &&
       activeOrganizationId !== partnership.hostId)
   )
-    throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
+    throw situation.partnershipNotFound();
   const roles = await db
     .select({ organizationId: member.organizationId, role: member.role })
     .from(member)

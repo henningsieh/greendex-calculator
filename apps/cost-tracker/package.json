@@ -17,6 +17,7 @@
     "test": "pnpm run test:run && pnpm -w run test:cost-tracker-persistence-seam && pnpm run test:e2e",
     "test:run": "vitest run",
     "test:e2e": "dotenv -e .env -- playwright test",
+    "test:e2e:headed": "dotenv -e .env -- playwright test --headed",
     "test:e2e:report": "playwright show-report src/__tests__/e2e/.playwright/report",
     "clean": "rm -rf .next .turbo node_modules",
     "test:email-delivery": "dotenv -e .env -- tsx scripts/verify-email-delivery.ts",

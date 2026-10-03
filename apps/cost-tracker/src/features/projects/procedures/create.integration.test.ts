@@ -10,7 +10,7 @@ import {
   projectsTable,
   user,
 } from "@greendex/database/schema";
-import { createRouterClient } from "@orpc/server";
+import { ORPCError, createRouterClient } from "@orpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import {
   afterAll,
@@ -29,6 +29,7 @@ const authMocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
+import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { router } from "@/lib/orpc/router";
 
@@ -93,7 +94,7 @@ describe("projects.create", () => {
       id: randomUUID(),
       userId: actor,
       organizationId: host,
-      role: "member,participant",
+      role: "participant",
       createdAt: now,
     });
     await db.insert(projectsTable).values([
@@ -117,7 +118,7 @@ describe("projects.create", () => {
     authMocks.hasPermission.mockResolvedValue({ success: false });
     await db
       .update(member)
-      .set({ role: "member,participant" })
+      .set({ role: "participant" })
       .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
     await db
       .delete(projectsTable)
@@ -139,14 +140,32 @@ describe("projects.create", () => {
     await db.delete(user).where(eq(user.id, actor));
   });
 
-  it("upgrades a host member without removing roles and assigns only created Projects", async () => {
+  it("adds coordination to a Participant without removing roles and assigns only created Projects", async () => {
+    // ADR-0012: fallback roles are refused in memory, never seeded or upgraded.
+    for (const bannedRole of ["member", "member,participant"]) {
+      let refusal: unknown;
+      try {
+        requireCostTrackerRole(
+          bannedRole,
+          (options) => new ORPCError("BAD_REQUEST", options),
+        );
+      } catch (error) {
+        refusal = error;
+      }
+      expect(refusal).toMatchObject({
+        code: "BAD_REQUEST",
+        status: 400,
+        message:
+          'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
+      });
+    }
     const first = await client.projects.create(input);
     expect(first).toEqual({ id: expect.any(String) });
-    expect(await role()).toBe("member,participant,project-coordinator");
+    expect(await role()).toBe("participant,project-coordinator");
     expect(await assignments()).toEqual([{ projectId: first.id }]);
     await expect(
       requireHostCoordination(first.id, actor, host, {
-        FORBIDDEN: ({ message }) => new Error(message),
+        FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
       }),
     ).resolves.toBeDefined();
     expect(await client.projects.get({ projectId: first.id })).toMatchObject({
@@ -159,15 +178,31 @@ describe("projects.create", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(
       client.projects.get({ projectId: foreignProject }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+      message: "Project not found in scope.",
+      data: { reason: "PROJECT_NOT_FOUND" },
+    });
     authMocks.hasPermission.mockResolvedValue({ success: false });
     await expect(
       requireHostCoordination(foreignProject, actor, otherHost, {
-        FORBIDDEN: ({ message }) => new Error(message),
+        FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
       }),
     ).rejects.toThrow();
+    await expect(
+      requireHostCoordination(unassignedProject, actor, host, {
+        FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message:
+        "You need Hosting Organization staff access or an assignment to this Project.",
+      data: { reason: "HOST_COORDINATION_REQUIRED" },
+    });
     const second = await client.projects.create(input);
-    expect(await role()).toBe("member,participant,project-coordinator");
+    expect(await role()).toBe("participant,project-coordinator");
     expect(
       (await assignments()).map(({ projectId }) => projectId).sort(),
     ).toEqual([first.id, second.id].sort());
@@ -177,6 +212,39 @@ describe("projects.create", () => {
     await expect(
       client.projects.get({ projectId: first.id }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("distinguishes missing selection, membership, and scoped Project in the shared Hosting guard", async () => {
+    const errors = {
+      FORBIDDEN: (options: { message: string; data?: { reason: string } }) =>
+        new ORPCError("FORBIDDEN", options),
+    };
+    await expect(
+      requireHostCoordination("missing", actor, null, errors),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
+    await expect(
+      requireHostCoordination("missing", "not-a-member", host, errors),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Membership in the active Organization is required.",
+      data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    });
+    await expect(
+      requireHostCoordination("missing", actor, host, errors),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+      message: "Project not found in scope.",
+      data: { reason: "PROJECT_NOT_FOUND" },
+    });
+    expect(await assignments()).toEqual([]);
   });
 
   it.each(["owner", "admin"])(
@@ -199,7 +267,9 @@ describe("projects.create", () => {
     });
     session(null);
     await expect(client.projects.create(input)).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
     });
     session(host, "not-a-member");
     await expect(client.projects.create(input)).rejects.toMatchObject({
@@ -210,7 +280,7 @@ describe("projects.create", () => {
       code: "UNAUTHORIZED",
     });
     expect(await assignments()).toEqual([]);
-    expect(await role()).toBe("member,participant");
+    expect(await role()).toBe("participant");
   });
 
   it("rejects invalid details and server-owned fields", async () => {

@@ -251,7 +251,11 @@ describe("Project Partnership procedures", () => {
         projectId: foreignProjectId,
         organizationId: candidateOrganizationId,
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+      data: { reason: "PROJECT_NOT_FOUND" },
+    });
   });
 
   it("removes an unreferenced Partnership", async () => {
@@ -304,7 +308,11 @@ describe("Project Partnership procedures", () => {
       await ownershipChange;
 
       await expect(assignment).resolves.toMatchObject({
-        error: { code: "FORBIDDEN" },
+        error: {
+          code: "NOT_FOUND",
+          status: 404,
+          data: { reason: "PROJECT_NOT_FOUND" },
+        },
       });
     } finally {
       releaseOwnershipChange?.();

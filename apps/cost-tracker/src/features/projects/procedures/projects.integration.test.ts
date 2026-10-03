@@ -343,10 +343,10 @@ describe("projects procedures", () => {
       },
     );
 
-    it("denies assigned fallback members without the coordinator role", async () => {
+    it("denies assigned participants without the coordinator role", async () => {
       await db
         .update(member)
-        .set({ role: "member" })
+        .set({ role: "participant" })
         .where(eq(member.organizationId, host));
       await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
       const [record] = await db
@@ -356,7 +356,7 @@ describe("projects procedures", () => {
       expect(record?.completedAt).toBeNull();
     });
 
-    it.each(["member", "participant", "project-coordinator"])(
+    it.each(["participant", "participant", "project-coordinator"])(
       "denies Hosting %s without assignment",
       async (role) => {
         await db
@@ -379,7 +379,11 @@ describe("projects procedures", () => {
 
     it("denies Partner-side and unauthenticated completion", async () => {
       useSession(partnerIds[0]!);
-      await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(complete()).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        status: 404,
+        data: { reason: "PROJECT_NOT_FOUND" },
+      });
       authMocks.getSession.mockResolvedValue(null);
       await expect(complete()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     });
@@ -438,6 +442,15 @@ describe("projects procedures", () => {
         role: "owner",
         createdAt: now,
       });
+      await db.insert(member).values(
+        [partnerId, unrelatedId].map((organizationId) => ({
+          id: randomUUID(),
+          userId,
+          organizationId,
+          role: "owner",
+          createdAt: now,
+        })),
+      );
       await db.insert(projectsTable).values({
         id: projectId,
         name: "Detail Project",
@@ -512,11 +525,14 @@ describe("projects procedures", () => {
       expect(detail).not.toHaveProperty("amount");
     });
 
-    it("returns FORBIDDEN for an inaccessible Project", async () => {
+    it("returns NOT_FOUND for an inaccessible Project", async () => {
       useSession(unrelatedId);
 
       await expect(client.projects.get({ projectId })).rejects.toMatchObject({
-        code: "FORBIDDEN",
+        code: "NOT_FOUND",
+        status: 404,
+        message: "Project not found in scope.",
+        data: { reason: "PROJECT_NOT_FOUND" },
       });
     });
 
@@ -952,10 +968,10 @@ describe("projects procedures", () => {
     });
 
     it.each([
-      "member",
+      "participant",
       "participant",
       "project-coordinator",
-      "member,participant,project-coordinator",
+      "participant,project-coordinator",
     ])(
       "denies org-wide hosted overview to %s even with project.read",
       async (role) => {

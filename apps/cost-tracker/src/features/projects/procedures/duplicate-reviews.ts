@@ -8,6 +8,7 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const input = z.object({ partnershipId: coordinationId });
@@ -39,9 +40,7 @@ async function requirePartnerSide(
     errors,
   );
   if (scope.partnerId !== organizationId)
-    throw errors.FORBIDDEN({
-      message: "Only the Partner Organization may review duplicate identities.",
-    });
+    throw createSituationErrors(errors).partnerDuplicateReviewRequired();
   return scope;
 }
 
@@ -82,10 +81,25 @@ const assign = authorized
         ),
       )
       .returning();
-    if (!assigned)
-      throw errors.BAD_REQUEST({
-        message: "Review Task is not open or unavailable.",
-      });
+    if (!assigned) {
+      const [task] = await db
+        .select({ status: tasks.status })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.id, input.id),
+            eq(tasks.partnershipId, input.partnershipId),
+          ),
+        )
+        .limit(1);
+      if (!task) throw createSituationErrors(errors).reviewTaskNotFound();
+      if (task.status !== "open")
+        throw createSituationErrors(errors).reviewTaskNotOpen();
+      console.error(
+        "Review Task assignment refused despite matching scoped state",
+      );
+      throw createSituationErrors(errors).internalFailure();
+    }
     return assigned;
   });
 
@@ -124,10 +138,33 @@ const resolve = authorized
         ),
       )
       .returning();
-    if (!resolved)
-      throw errors.BAD_REQUEST({
-        message: "Review Task cannot be resolved with this survivor.",
-      });
+    if (!resolved) {
+      const [task] = await db
+        .select({
+          status: tasks.status,
+          assignedToUserId: tasks.assignedToUserId,
+          existingParticipationId: tasks.existingParticipationId,
+        })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.id, input.id),
+            eq(tasks.partnershipId, input.partnershipId),
+          ),
+        )
+        .limit(1);
+      if (!task) throw createSituationErrors(errors).reviewTaskNotFound();
+      if (task.status !== "assigned")
+        throw createSituationErrors(errors).reviewTaskNotAssigned();
+      if (task.assignedToUserId !== context.user.id)
+        throw createSituationErrors(errors).reviewTaskAssigneeRequired();
+      if (task.existingParticipationId !== input.survivorParticipationId)
+        throw createSituationErrors(errors).reviewTaskSurvivorRequired();
+      console.error(
+        "Review Task resolution refused despite matching scoped state",
+      );
+      throw createSituationErrors(errors).internalFailure();
+    }
     return resolved;
   });
 

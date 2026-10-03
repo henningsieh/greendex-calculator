@@ -225,7 +225,7 @@ describe("Claim cost procedures", () => {
     expect(await client.documents.list({ partnershipId: next })).toEqual([]);
     await expect(
       client.documents.list({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("uploads only to an editable Claim with authenticated Partner scope", async () => {
@@ -248,8 +248,20 @@ describe("Claim cost procedures", () => {
     expect(authMocks.put).not.toHaveBeenCalled();
     authMocks.getSession.mockResolvedValueOnce(null);
     expect((await upload(request(own))).status).toBe(401);
-    expect((await upload(request(next))).status).toBe(400);
-    expect((await upload(request(foreign))).status).toBe(403);
+    const missingClaim = await upload(request(next));
+    expect(missingClaim.status).toBe(400);
+    expect(await missingClaim.json()).toEqual({
+      error: "Save an editable Claim before uploading a Proof Document.",
+      code: "BAD_REQUEST",
+      reason: "CLAIM_REQUIRED_FOR_PROOF",
+    });
+    const foreignPartnership = await upload(request(foreign));
+    expect(foreignPartnership.status).toBe(404);
+    expect(await foreignPartnership.json()).toEqual({
+      error: "Project Partnership not found in scope.",
+      code: "NOT_FOUND",
+      reason: "PROJECT_PARTNERSHIP_NOT_FOUND",
+    });
     const response = await upload(request(own));
     expect(response.status).toBe(201);
     expect(authMocks.put).toHaveBeenCalledWith(
@@ -276,7 +288,13 @@ describe("Claim cost procedures", () => {
       .set({ status: "submitted" })
       .where(eq(claims.id, ownClaim));
     try {
-      expect((await upload(request(own))).status).toBe(400);
+      const lockedClaim = await upload(request(own));
+      expect(lockedClaim.status).toBe(400);
+      expect(await lockedClaim.json()).toEqual({
+        error: "Claim is not editable.",
+        code: "BAD_REQUEST",
+        reason: "CLAIM_NOT_EDITABLE",
+      });
       expect(authMocks.put).toHaveBeenCalledTimes(1);
     } finally {
       await db
@@ -313,14 +331,25 @@ describe("Claim cost procedures", () => {
       );
     authMocks.getSession.mockResolvedValueOnce(null);
     expect((await download(request(own))).status).toBe(401);
-    expect((await download(request(foreign))).status).toBe(403);
+    authMocks.getSession.mockResolvedValueOnce({
+      session: { activeOrganizationId: null },
+      user: { id: coordinator },
+    });
+    const selectionFailure = await download(request(own));
+    expect(selectionFailure.status).toBe(400);
+    expect(await selectionFailure.json()).toEqual({
+      error: "Select an active Organization before accessing Cost Tracker data.",
+      code: "BAD_REQUEST",
+      reason: "ACTIVE_ORGANIZATION_REQUIRED",
+    });
+    expect((await download(request(foreign))).status).toBe(404);
     expect((await download(request(next))).status).toBe(404);
     expect((await download(request(own, foreignProof))).status).toBe(404);
     actor = participantUser;
     expect((await download(request(own))).status).toBe(403);
     actor = coordinator;
     activeOrg = other;
-    expect((await download(request(own))).status).toBe(403);
+    expect((await download(request(own))).status).toBe(404);
     activeOrg = partner;
     expect(authMocks.get).not.toHaveBeenCalled();
     const response = await download(request(own));
@@ -518,7 +547,7 @@ describe("Claim cost procedures", () => {
         entryId: saved.id,
         proofDocumentId: proof,
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await db
       .update(claims)
       .set({ status: "submitted" })
@@ -552,6 +581,6 @@ describe("Claim cost procedures", () => {
     activeOrg = partner;
     await expect(
       client.costs.list({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });

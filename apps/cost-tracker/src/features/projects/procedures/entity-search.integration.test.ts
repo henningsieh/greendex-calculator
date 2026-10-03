@@ -11,7 +11,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -77,14 +77,14 @@ beforeAll(async () => {
       id: randomUUID(),
       organizationId: partner,
       userId: actor,
-      role: "member,owner",
+      role: "project-coordinator,owner",
       createdAt: now,
     },
     {
       id: randomUUID(),
       organizationId: foreign,
       userId: actor,
-      role: "member",
+      role: "participant",
       createdAt: now,
     },
   ]);
@@ -140,7 +140,13 @@ describe("entity picker procedures", () => {
     session(null);
     await expect(
       client.organizations.search({ search: "Part" }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
   });
 
   it("caps Organization search at 20 id/name matches", async () => {
@@ -188,7 +194,7 @@ describe("entity picker procedures", () => {
   });
 
   it("uses hasOrganizationRole for the owned search predicate", async () => {
-    const combinedRole = "member,\uFEFFowner";
+    const combinedRole = "project-coordinator,\uFEFFowner";
     expect(hasOrganizationRole(combinedRole, "owner")).toBe(true);
     await db
       .update(member)
@@ -201,7 +207,7 @@ describe("entity picker procedures", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "member,owner" })
+        .set({ role: "project-coordinator,owner" })
         .where(inArray(member.organizationId, [partner]));
     }
   });
@@ -219,7 +225,7 @@ describe("entity picker procedures", () => {
         id: randomUUID(),
         userId: actor,
         organizationId: id,
-        role: index < 30 ? "member" : "owner",
+        role: index < 30 ? "project-coordinator" : "owner",
         createdAt: new Date(),
       })),
     );
@@ -261,7 +267,8 @@ describe("entity picker procedures", () => {
           id: randomUUID(),
           userId: actor,
           organizationId: id,
-          role: index === 1001 ? "member,owner" : "member",
+          role:
+            index === 1001 ? "project-coordinator,owner" : "project-coordinator",
           createdAt: new Date(),
         })),
       );
@@ -283,6 +290,49 @@ describe("entity picker procedures", () => {
       );
     }
   }, 20_000);
+
+  it("distinguishes Hosted search selection, Membership, and staff requirements", async () => {
+    session(null);
+    await expect(
+      client.projects.searchHosted({ search: "" }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
+    session("missing-organization");
+    await expect(
+      client.projects.searchHosted({ search: "" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Membership in the active Organization is required.",
+      data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    });
+    session(host);
+    await db
+      .update(member)
+      .set({ role: "participant" })
+      .where(eq(member.organizationId, host));
+    try {
+      await expect(
+        client.projects.searchHosted({ search: "" }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        message:
+          "You need Hosting Organization Owner, Admin, or Project Coordinator access.",
+        data: { reason: "HOSTING_STAFF_REQUIRED" },
+      });
+    } finally {
+      await db
+        .update(member)
+        .set({ role: "owner" })
+        .where(eq(member.organizationId, host));
+    }
+  });
 
   it("scopes hosted search by active host membership and coordinator assignment", async () => {
     expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([

@@ -50,7 +50,7 @@ The direct router client must exist before the owning app's `src/lib/orpc/orpc.t
 2. Define Zod input/output schemas at the boundary and add `.route(...)` metadata for REST/OpenAPI procedures.
 3. Use `base` for public procedures and `authorized` for authenticated procedures; apply permission middleware after `authorized`.
 4. Constrain tenant-owned persistence by `context.session.activeOrganizationId`.
-5. Throw errors from the typed error map and test procedure and consumer behavior.
+5. Throw errors from the typed error map and test procedure and consumer behavior. Cost Tracker business outcomes use named methods from `src/lib/orpc/errors.ts`; their fixed code/status/reason and local copy live in `error-contract.ts`. Do not construct free-form domain errors in producers or discriminate by remote prose in consumers. `error-centralization.test.ts` pins the matrix and guards construction sites; native Better Auth and exact private invariant exceptions remain separate.
 6. Server Components call `orpc` directly or prefetch `orpcQuery.*.queryOptions()` into the request QueryClient.
 7. Client Components use `orpcQuery` with TanStack Query; follow [TanStack Query project rules](tanstack-query.md).
 8. Hydrate prefetched data before suspense consumers render, and handle typed navigation errors explicitly.

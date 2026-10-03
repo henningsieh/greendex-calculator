@@ -19,6 +19,7 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const scopeInput = z.object({ partnershipId: coordinationId });
@@ -63,9 +64,7 @@ async function requirePartnerSide(
     errors,
   );
   if (scope.partnerId !== activeOrganizationId)
-    throw errors.FORBIDDEN({
-      message: "Only the Partner Organization may manage Participant Journeys.",
-    });
+    throw createSituationErrors(errors).partnerJourneysRequired();
   return scope;
 }
 
@@ -122,9 +121,7 @@ export const save = authorized
         .for("update")
         .limit(1);
       if (!lockedProject)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
+        throw createSituationErrors(errors).partnershipNotFound();
       const [lockedPartnership] = await tx
         .select({ id: partnerships.id })
         .from(partnerships)
@@ -132,18 +129,14 @@ export const save = authorized
         .for("update")
         .limit(1);
       if (!lockedPartnership)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
+        throw createSituationErrors(errors).partnershipNotFound();
       const [claim] = await tx
         .select({ status: claims.status })
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
       if (claim && isPartnerEditLocked(claim.status))
-        throw errors.BAD_REQUEST({
-          message: "Claim is locked; Participant Journeys cannot change.",
-        });
+        throw createSituationErrors(errors).journeysLocked();
       const [participation] = await tx
         .select({ id: participants.id })
         .from(participants)
@@ -157,18 +150,13 @@ export const save = authorized
         )
         .limit(1);
       if (!participation)
-        throw errors.BAD_REQUEST({
-          message: "Select a Participation in this Project Partnership.",
-        });
+        throw createSituationErrors(errors).participationSelectionRequired();
       const [existing] = await tx
         .select({ id: journeys.id })
         .from(journeys)
         .where(eq(journeys.projectParticipantId, participation.id))
         .limit(1);
-      if (existing)
-        throw errors.BAD_REQUEST({
-          message: "This Participation already has a Participant Journey.",
-        });
+      if (existing) throw createSituationErrors(errors).journeyAlreadyExists();
       const [snapshot] = await tx
         .select({ projectId: snapshots.projectId })
         .from(snapshots)
@@ -240,20 +228,16 @@ export const update = authorized
         .for("update")
         .limit(1);
       if (!project || !partnership)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
+        throw createSituationErrors(errors).partnershipNotFound();
       const [claim] = await tx
         .select({ id: claims.id, status: claims.status })
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
-      if (!claim || isPartnerEditLocked(claim.status))
-        throw errors.BAD_REQUEST({
-          message:
-            "Save an editable Claim before updating a Participant Journey.",
-        });
+      if (!claim) throw createSituationErrors(errors).claimRequiredForJourney();
+      if (isPartnerEditLocked(claim.status))
+        throw createSituationErrors(errors).journeysLocked();
       const [existing] = await tx
         .select({ id: journeys.id })
         .from(journeys)
@@ -271,10 +255,7 @@ export const update = authorized
         )
         .limit(1);
       if (!existing)
-        throw errors.BAD_REQUEST({
-          message:
-            "Select an existing Participant Journey in this Project Partnership.",
-        });
+        throw createSituationErrors(errors).journeySelectionRequired();
       const matchingBands = await tx
         .select({ id: bands.id })
         .from(bands)
@@ -285,19 +266,12 @@ export const update = authorized
             gte(bands.maxKm, input.erasmusDistanceKm),
           ),
         );
-      if (matchingBands.length !== 1)
-        throw errors.BAD_REQUEST({
-          message: "Journey distance must have exactly one frozen funding band.",
-          data: {
-            issues: [
-              {
-                path: ["erasmusDistanceKm"],
-                message:
-                  "Journey distance must have exactly one frozen funding band.",
-              },
-            ],
-          },
-        });
+      if (matchingBands.length > 1) {
+        console.error("Frozen Project funding bands overlap");
+        throw createSituationErrors(errors).internalFailure();
+      }
+      if (!matchingBands.length)
+        throw createSituationErrors(errors).journeyDistanceOutsideBands();
       const [updated] = await tx
         .update(journeys)
         .set({

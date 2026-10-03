@@ -20,6 +20,7 @@ import {
   normalizedEmail,
   partnershipForIssuer,
 } from "@/features/authentication/procedures/shared";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildReissueInvitation() {
@@ -48,9 +49,7 @@ export function buildReissueInvitation() {
         )
         .limit(1);
       if (existingParticipation)
-        throw errors.BAD_REQUEST({
-          message: "This person already participates in this Project.",
-        });
+        throw createSituationErrors(errors).participantAlreadyParticipates();
       const { invitationId } = await db.transaction(async (tx) => {
         // Serialize rotations across every Partnership in this Project.
         await tx
@@ -73,9 +72,7 @@ export function buildReissueInvitation() {
           )
           .limit(1);
         if (!previous)
-          throw errors.BAD_REQUEST({
-            message: "No active Participant Invitation to replace.",
-          });
+          throw createSituationErrors(errors).participantInvitationNotFound();
         if (previous.partnershipId !== target.id)
           await partnershipForIssuer(
             previous.partnershipId,

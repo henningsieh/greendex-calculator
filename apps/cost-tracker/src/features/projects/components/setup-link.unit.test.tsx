@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
-
 import { ORPCError } from "@orpc/client";
-import { render, screen } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   writeText: vi.fn(),
   searchHosted: vi.fn(),
   listMine: vi.fn(),
+  listSetupLinks: vi.fn(),
 }));
 vi.mock("@/components/ui/popover", async () => {
   const { createContext, useContext, cloneElement } = await import("react");
@@ -42,26 +44,42 @@ vi.mock("@/components/ui/popover", async () => {
       useContext(OpenContext).open ? <div>{children}</div> : null,
   };
 });
-vi.mock("@/lib/orpc/orpc", () => ({
-  orpc: {
-    projectPartnerships: {
-      createSetupLink: mocks.create,
-      consumeSetupLink: mocks.consume,
+vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/orpc/orpc")>();
+  return {
+    ...original,
+    orpc: {
+      projectPartnerships: {
+        createSetupLink: mocks.create,
+        consumeSetupLink: mocks.consume,
+      },
+      projects: { searchHosted: mocks.searchHosted },
+      organizations: { listMine: mocks.listMine },
     },
-    projects: { searchHosted: mocks.searchHosted },
-    organizations: { listMine: mocks.listMine },
-  },
-}));
+    orpcQuery: {
+      projectPartnerships: {
+        listSetupLinks: {
+          ...original.orpcQuery.projectPartnerships.listSetupLinks,
+          queryOptions: (
+            ...args: Parameters<
+              typeof original.orpcQuery.projectPartnerships.listSetupLinks.queryOptions
+            >
+          ) => ({
+            ...original.orpcQuery.projectPartnerships.listSetupLinks.queryOptions(
+              ...args,
+            ),
+            queryFn: mocks.listSetupLinks,
+          }),
+        },
+      },
+    },
+  };
+});
 
 import {
   SetupLinkCreator,
   SetupLinkRecipient,
 } from "@/features/projects/components/setup-link";
-
-const source = readFileSync(
-  "src/features/projects/procedures/setup-links.ts",
-  "utf8",
-);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -76,6 +94,7 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal("navigator", { clipboard: { writeText: mocks.writeText } });
   mocks.writeText.mockResolvedValue(undefined);
+  mocks.listSetupLinks.mockResolvedValue([]);
   mocks.create.mockResolvedValue({
     id: "link-1",
     secret: "private-secret",
@@ -97,6 +116,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+function creator() {
+  const client = createQueryClient();
+  client.setDefaultOptions({ queries: { retry: false } });
+  return render(
+    <QueryClientProvider client={client}>
+      <SetupLinkCreator />
+    </QueryClientProvider>,
+  );
+}
 
 function recipient(secret = "private-secret") {
   return render(<SetupLinkRecipient id="link-1" secret={secret} />);
@@ -124,7 +153,8 @@ describe("Setup Link UI", () => {
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
       mocks.writeText,
     );
-    render(<SetupLinkCreator />);
+    creator();
+    await screen.findByText("No Partner Organization Setup Links yet.");
     await user.click(screen.getByRole("button", { name: "Hosted Project" }));
     await user.type(
       screen.getByLabelText("Search Hosted Project by name or ID"),
@@ -136,6 +166,7 @@ describe("Setup Link UI", () => {
       "partner@example.com",
     );
     await user.click(screen.getByRole("button", { name: "Neuer Link" }));
+    await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(2));
     expect(mocks.create).toHaveBeenCalledWith({
       projectId: "project-1",
       recipientEmail: "partner@example.com",
@@ -149,7 +180,7 @@ describe("Setup Link UI", () => {
   it("uses the approved new-link wording while issuance is pending", async () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));
-    render(<SetupLinkCreator />);
+    creator();
     await user.click(screen.getByRole("button", { name: "Hosted Project" }));
     await user.type(
       screen.getByLabelText("Search Hosted Project by name or ID"),
@@ -208,60 +239,76 @@ describe("Setup Link UI", () => {
 
   const states = [
     {
+      code: "FORBIDDEN",
+      message: "Verify your email before continuing.",
+      reason: "EMAIL_VERIFICATION_REQUIRED",
+      heading: "Verify your email",
+    },
+    {
       code: "NOT_FOUND",
       message: "Setup link not found.",
+      reason: "SETUP_LINK_NOT_FOUND",
       heading: "Invalid setup link",
     },
     {
       code: "BAD_REQUEST",
       message: "This setup link is disabled.",
+      reason: "SETUP_LINK_DISABLED",
       heading: "Disabled setup link",
     },
     {
       code: "BAD_REQUEST",
       message: "This setup link has expired.",
+      reason: "SETUP_LINK_EXPIRED",
       heading: "Expired setup link",
     },
     {
       code: "FORBIDDEN",
       message: "This setup link belongs to another email address.",
+      reason: "SETUP_LINK_WRONG_EMAIL",
       heading: "Wrong email address",
     },
     {
       code: "BAD_REQUEST",
       message: "This setup link has already been used for another Organization.",
+      reason: "SETUP_LINK_USED",
       heading: "Setup already completed",
     },
     {
       code: "FORBIDDEN",
       message: "You must be an Owner of the selected Organization.",
+      reason: "ORGANIZATION_OWNER_REQUIRED",
       heading: "Owner verification required",
     },
     {
       code: "BAD_REQUEST",
       message: "This Organization is already assigned to the Project.",
+      reason: "PARTNERSHIP_ALREADY_ASSIGNED",
       heading: "Setup already completed",
     },
     {
-      code: "BAD_REQUEST",
+      code: "NOT_FOUND",
       message: "This Project is no longer available.",
+      reason: "PROJECT_NOT_FOUND",
       heading: "Project unavailable",
     },
     {
       code: "BAD_REQUEST",
       message: "The Hosting Organization cannot be its own Partner Organization.",
+      reason: "SELF_PARTNERSHIP",
       heading: "Invalid Partner Organization",
     },
   ];
 
   it.each(states)(
     "maps $code / $message to $heading without displaying remote text",
-    async ({ code, message, heading }) => {
-      const escaped = message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      expect(source).toMatch(
-        new RegExp(`errors\\.${code}\\(\\{\\s*message:\\s*"${escaped}"`, "s"),
+    async ({ code, message, reason, heading }) => {
+      mocks.consume.mockRejectedValue(
+        new ORPCError(code, {
+          message: "Untrusted remote copy",
+          data: { reason },
+        }),
       );
-      mocks.consume.mockRejectedValue(new ORPCError(code, { message }));
       recipient();
       await submitExisting();
       expect(await screen.findByText(heading)).toBeTruthy();
@@ -271,7 +318,24 @@ describe("Setup Link UI", () => {
 
   it("does not mistake a known message paired with the wrong code for a link state", async () => {
     mocks.consume.mockRejectedValue(
-      new ORPCError("FORBIDDEN", { message: "This setup link is disabled." }),
+      new ORPCError("FORBIDDEN", {
+        message: "This setup link is disabled.",
+        data: { reason: "SETUP_LINK_DISABLED" },
+      }),
+    );
+    recipient();
+    await submitExisting();
+    expect(await screen.findByText("Could not complete setup")).toBeTruthy();
+    expect(screen.queryByText("Disabled setup link")).toBeNull();
+  });
+
+  it("does not activate link-state copy for contradictory status metadata", async () => {
+    mocks.consume.mockRejectedValue(
+      new ORPCError("BAD_REQUEST", {
+        status: 403,
+        message: "This setup link is disabled.",
+        data: { reason: "SETUP_LINK_DISABLED" },
+      }),
     );
     recipient();
     await submitExisting();

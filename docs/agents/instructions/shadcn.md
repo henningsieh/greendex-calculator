@@ -22,6 +22,8 @@ Within the owning app:
 - Global styles: `src/app/globals.css`
 - shadcn configuration: `components.json`
 
+The current design and colors are from the [shadcn template generator preset](https://ui.shadcn.com/create?preset=b3adko9VFA).
+
 Add a missing upstream component with:
 
 ```bash

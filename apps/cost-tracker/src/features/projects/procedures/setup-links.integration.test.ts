@@ -156,7 +156,41 @@ describe("Partner Organization setup links", () => {
     ).rejects.toThrow("already assigned");
   });
 
-  it.each(["member,owner", "owner,participant"])(
+
+  it("separates an unverified recipient from a wrong recipient without consuming the link", async () => {
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    authMocks.getSession.mockResolvedValue({
+      session: { id, userId, activeOrganizationId: hostId },
+      user: {
+        id: userId,
+        email: recipientEmail,
+        emailVerified: false,
+        name: "Setup User",
+      },
+    });
+    await expect(
+      client.projectPartnerships.consumeSetupLink({
+        id: link.id,
+        secret: link.secret,
+        organization: { kind: "existing", organizationId: partnerId },
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Verify your email before continuing.",
+      data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
+    });
+    const [unchanged] = await db
+      .select({ partnershipId: links.partnershipId })
+      .from(links)
+      .where(eq(links.id, link.id));
+    expect(unchanged?.partnershipId).toBeNull();
+  });
+
+  it.each(["project-coordinator,owner", "owner,participant"])(
     "offers and consumes an existing Organization with %s membership",
     async (role) => {
       const combinedOrgId = `setup-combined-${role}-${id}`;
@@ -267,7 +301,7 @@ describe("Partner Organization setup links", () => {
 
   it.each([
     { role: "project-coordinator", allowed: true },
-    { role: "member", allowed: false },
+    { role: "participant", allowed: false },
     { role: "participant", allowed: false },
     { role: "admin", allowed: true },
     { role: "owner", allowed: true },
@@ -312,7 +346,13 @@ describe("Partner Organization setup links", () => {
           projectId: otherProjectId,
           recipientEmail,
         }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        message:
+          "You need Hosting Organization staff access or an assignment to this Project.",
+        data: { reason: "HOST_COORDINATION_REQUIRED" },
+      });
       await expect(
         client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
       ).resolves.toHaveProperty("secret");
@@ -339,7 +379,7 @@ describe("Partner Organization setup links", () => {
     });
     await db
       .update(member)
-      .set({ role: "member" })
+      .set({ role: "participant" })
       .where(eq(member.organizationId, partnerId));
     await expect(
       client.projectPartnerships.consumeSetupLink({

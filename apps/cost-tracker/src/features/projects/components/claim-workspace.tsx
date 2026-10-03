@@ -3,7 +3,7 @@
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { ORPCError } from "@orpc/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ClaimHistory } from "@/features/projects/components/claim-review";
 import { ClaimSubmission } from "@/features/projects/components/claim-submission";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -56,12 +57,11 @@ function errorsFor(error: unknown, root: string): FieldErrors {
         }
       }
     }
-    if (error.message === "This Participation already has a Participant Journey.")
-      errors[root] = error.message;
-    if (
-      error.message === "Select a Partner Payout Account before saving the Claim."
-    )
-      errors.payoutAccount = error.message;
+    const situation = getSafeErrorSituation(error);
+    if (situation?.reason === "JOURNEY_ALREADY_EXISTS")
+      errors[root] = situation.message;
+    if (situation?.reason === "PAYOUT_ACCOUNT_REQUIRED")
+      errors.payoutAccount = situation.message;
   }
   if (!Object.keys(errors).length)
     errors[root] = getORPCRequestErrorMessage(error).text;
@@ -669,10 +669,29 @@ function ProofEditor({
         setFeedback("Proof Document uploaded.");
         form.reset();
         void refresh();
-      } else
-        setFeedback(
-          "Upload failed. Choose a PDF, JPEG, or PNG under 10 MB for an editable Claim.",
-        );
+      } else {
+        let text = "Upload failed. Please try again.";
+        try {
+          const body: unknown = JSON.parse(request.responseText);
+          if (
+            body &&
+            typeof body === "object" &&
+            "code" in body &&
+            typeof body.code === "string" &&
+            "reason" in body
+          ) {
+            const situation = getSafeErrorSituation({
+              code: body.code,
+              status: request.status,
+              data: { reason: body.reason },
+            });
+            if (situation) text = situation.message;
+          }
+        } catch {
+          // A malformed response must not expose remote prose or guessed causes.
+        }
+        setFeedback(text);
+      }
     };
     request.onerror = () => {
       setBusy(false);
@@ -881,7 +900,8 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
     !draft ||
     draft.status === "editable" ||
     draft.status === "correction_requested";
-  async function refresh() {
+  const refresh = useCallback(async () => {
+    const input = { partnershipId };
     await Promise.all(
       [
         orpcQuery.claims.getDraft,
@@ -895,7 +915,23 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
         client.invalidateQueries({ queryKey: query.queryKey({ input }) }),
       ),
     );
-  }
+  }, [client, partnershipId]);
+
+  useEffect(() => {
+    // History can replay the pre-mutation HTML/RSC snapshot into a new QueryClient.
+    // Its hydration timestamp is not evidence that the Claim is still editable.
+    const navigation = performance.getEntriesByType("navigation")[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    if (navigation?.type === "back_forward") void refresh();
+
+    function revalidateRestoredPage(event: PageTransitionEvent) {
+      if (event.persisted) void refresh();
+    }
+    window.addEventListener("pageshow", revalidateRestoredPage);
+    return () => window.removeEventListener("pageshow", revalidateRestoredPage);
+  }, [refresh]);
+
   async function addAccount(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);

@@ -11,6 +11,7 @@ import {
   id,
   partnershipForIssuer,
 } from "@/features/authentication/procedures/shared";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildSetInvitationOpen() {
@@ -23,7 +24,8 @@ export function buildSetInvitationOpen() {
         .from(bridges)
         .where(eq(bridges.invitationId, input.invitationId))
         .limit(1);
-      if (!bridge) throw errors.NOT_FOUND();
+      if (!bridge)
+        throw createSituationErrors(errors).participantInvitationNotFound();
       await partnershipForIssuer(
         bridge.partnershipId,
         context.user.id,
@@ -31,20 +33,18 @@ export function buildSetInvitationOpen() {
         errors,
       );
       if (bridge.status === "accepted")
-        throw errors.BAD_REQUEST({
-          message: "Accepted invitations cannot be changed.",
-        });
+        throw createSituationErrors(errors).participantInvitationAccepted();
       const [native] = await db
         .select({ status: invitation.status, expiresAt: invitation.expiresAt })
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))
         .limit(1);
-      if (
-        !native ||
-        native.status !== "pending" ||
-        native.expiresAt <= new Date()
-      )
-        throw errors.BAD_REQUEST({ message: "Invitation is unavailable." });
+      if (!native)
+        throw createSituationErrors(errors).participantInvitationNotFound();
+      if (native.status !== "pending")
+        throw createSituationErrors(errors).participantInvitationClosed();
+      if (native.expiresAt <= new Date())
+        throw createSituationErrors(errors).participantInvitationExpired();
       // Revocation also cancels the native invitation: a revoked bridge blocks
       // app join, but the native row would otherwise stay acceptable through
       // BA's public endpoint. Reopening never resurrects a canceled native row

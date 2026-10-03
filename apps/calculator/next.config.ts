@@ -43,6 +43,8 @@ const nextConfig = {
   },
 
   experimental: {
+    // Record App Router request spans for the Next.js devtools MCP server
+    requestInsights: true,
     // Enable filesystem caching for `next dev`
     turbopackFileSystemCacheForDev: true,
     // Enable filesystem caching for `next build`

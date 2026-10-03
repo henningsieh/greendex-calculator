@@ -2,13 +2,24 @@ import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ResponseHeadersPlugin } from "@orpc/server/plugins";
 
+import { normalizeBetterAuthError } from "@/lib/orpc/better-auth-errors";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { router } from "@/lib/orpc/router";
 
 const handler = new RPCHandler(router, {
   plugins: [new ResponseHeadersPlugin()],
   interceptors: [
+    async (options) => {
+      try {
+        return await options.next();
+      } catch (error) {
+        throw normalizeBetterAuthError(error, createSituationErrors());
+      }
+    },
     onError((error) => {
-      console.error("[Cost Tracker oRPC]", error);
+      console.error("[Cost Tracker oRPC]", {
+        code: normalizeBetterAuthError(error, createSituationErrors()).code,
+      });
     }),
   ],
 });

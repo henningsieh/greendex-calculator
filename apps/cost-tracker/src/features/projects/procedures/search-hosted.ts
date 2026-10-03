@@ -9,6 +9,7 @@ import {
 import { and, asc, eq, exists, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export const searchHosted = authorized
@@ -25,7 +26,7 @@ export const searchHosted = authorized
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId)
-      throw errors.FORBIDDEN({ message: "Select an active Organization." });
+      throw createSituationErrors(errors).selectOrganization();
     const [membership] = await db
       .select({ role: member.role })
       .from(member)
@@ -36,8 +37,7 @@ export const searchHosted = authorized
         ),
       )
       .limit(1);
-    if (!membership)
-      throw errors.FORBIDDEN({ message: "Hosted Projects are unavailable." });
+    if (!membership) throw createSituationErrors(errors).notMember();
     const isManager =
       hasOrganizationRole(membership.role, "owner") ||
       hasOrganizationRole(membership.role, "admin");
@@ -45,7 +45,7 @@ export const searchHosted = authorized
       !isManager &&
       !hasOrganizationRole(membership.role, "project-coordinator")
     )
-      throw errors.FORBIDDEN({ message: "Hosted Projects are unavailable." });
+      throw createSituationErrors(errors).hostingStaffRequired();
 
     const escaped = input.search.replace(/[\\%_]/g, "\\$&");
     const pattern = `%${escaped}%`;

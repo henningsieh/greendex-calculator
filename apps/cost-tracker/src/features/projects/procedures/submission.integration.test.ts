@@ -104,14 +104,14 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: participantUser,
       organizationId: host,
-      role: "member",
+      role: "participant",
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: actor,
       organizationId: other,
-      role: "member",
+      role: "participant",
       createdAt: now,
     },
     {
@@ -356,9 +356,9 @@ const roles = [
     assigned: false,
   },
   {
-    name: "Partner fallback member",
+    name: "Partner unassigned participant",
     side: "partner",
-    role: "member",
+    role: "participant",
     assigned: false,
   },
   {
@@ -382,9 +382,9 @@ const roles = [
     assigned: false,
   },
   {
-    name: "Hosting fallback member",
+    name: "Hosting unassigned participant",
     side: "host",
-    role: "member",
+    role: "participant",
     assigned: false,
   },
   {
@@ -665,7 +665,8 @@ describe("Claim submission", () => {
       "journey_updated",
       "resubmitted",
     ]);
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("concurrent resubmission retries write one resubmitted event", async () => {
     await prepare();
@@ -759,7 +760,8 @@ describe("Claim submission", () => {
       false,
     );
     expect(preview?.calculatedPayableEur).toBeNull();
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("previews the same calculated payable as submission without writing", async () => {
     await prepare();
@@ -886,7 +888,7 @@ describe("Claim submission", () => {
   it("rejects Hosting, Participant and other Partnership submission", async () => {
     await expect(
       client.claims.submit({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     activeOrg = host;
     await expect(submit()).rejects.toMatchObject({ code: "FORBIDDEN" });
     activeOrg = partner;
@@ -1043,6 +1045,22 @@ async function submittedClaim() {
 }
 
 describe("Claim lock abuse", () => {
+  it("does not hide a submitted retry's missing saved payable amount as an edit lock", async () => {
+    await submittedClaim();
+    await db
+      .update(claims)
+      .set({ approvedAmountEur: null })
+      .where(eq(claims.id, claimId));
+    const before = await events();
+    activeOrg = partner;
+    await expect(submit()).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      status: 500,
+      data: { reason: "INTERNAL_FAILURE" },
+    });
+    expect(await events()).toEqual(before);
+  });
+
   it.each(["submitted", "approved", "rejected", "paid"] as const)(
     "%s blocks every Partner edit without changing Claim data or history",
     async (status) => {
@@ -1310,10 +1328,43 @@ describe("Host Claim review", () => {
     await expect(submit()).rejects.toMatchObject({ code: "BAD_REQUEST" });
   }, 15_000);
 
+  it("names a missing scoped Claim instead of a review/payment state, while submit retains save-first400", async () => {
+    await db.delete(claims).where(eq(claims.id, claimId));
+    await asHost();
+    for (const action of [
+      "approve",
+      "getReviewDetails",
+      "markPaid",
+      "correctPayment",
+    ] as const) {
+      await expect(
+        client.claims[action]({
+          partnershipId: own,
+          amountEur: "101.01",
+          reason: "Correction",
+        }),
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        status: 404,
+        message: "Claim not found in scope.",
+        data: { reason: "CLAIM_NOT_FOUND" },
+      });
+    }
+    expect(await events()).toEqual([]);
+    activeOrg = partner;
+    await expect(submit()).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "CLAIM_REQUIRED_FOR_SUBMISSION" },
+    });
+  });
+
   it("cannot approve incomplete or unsubmitted Claims, confirms submitted payable and permanently locks Partner editing", async () => {
     await asHost();
     await expect(review("approve")).rejects.toMatchObject({
       code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "CLAIM_SUBMITTED_REQUIRED" },
     });
     activeOrg = partner;
     await prepare("100.01");
@@ -1326,7 +1377,9 @@ describe("Host Claim review", () => {
       .set({ status: "submitted", approvedAmountEur: null })
       .where(eq(claims.id, claimId));
     await expect(review("approve")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "INTERNAL_SERVER_ERROR",
+      status: 500,
+      data: { reason: "INTERNAL_FAILURE" },
     });
     await db
       .update(claims)
@@ -1408,7 +1461,7 @@ describe("Host Claim review", () => {
         });
       }
     }
-    await asHost("member");
+    await asHost("participant");
     for (const action of actions) {
       await db
         .update(claims)
@@ -1416,7 +1469,7 @@ describe("Host Claim review", () => {
         .where(eq(claims.id, claimId));
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
-    for (const role of ["member", "project-coordinator"]) {
+    for (const role of ["participant", "project-coordinator"]) {
       await asHost(role, participantUser);
       for (const action of actions) {
         await db
@@ -1426,7 +1479,7 @@ describe("Host Claim review", () => {
         await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
       }
     }
-    await asHost("member", participantUser);
+    await asHost("participant", participantUser);
     for (const action of actions) {
       await db
         .update(claims)
@@ -1438,10 +1491,38 @@ describe("Host Claim review", () => {
       activeOrg = org;
       activeActor = actor;
       for (const action of actions)
-        await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
+        await expect(review(action)).rejects.toMatchObject(
+          org === other
+            ? {
+                code: "NOT_FOUND",
+                status: 404,
+                message: "Project Partnership not found in scope.",
+                data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+              }
+            : {
+                code: "FORBIDDEN",
+                status: 403,
+                message: "Only Hosting staff may review Claims.",
+              },
+        );
       await expect(
         client.claims.getHistory({ partnershipId: foreign }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject(
+        org === other
+          ? {
+              code: "FORBIDDEN",
+              status: 403,
+              message:
+                "You need Partner Organization staff access or an assignment to this Project Partnership.",
+              data: { reason: "PARTNER_COORDINATION_REQUIRED" },
+            }
+          : {
+              code: "NOT_FOUND",
+              status: 404,
+              message: "Project Partnership not found in scope.",
+              data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+            },
+      );
     }
     activeOrg = partner;
     activeActor = participantUser;
@@ -1454,7 +1535,11 @@ describe("Host Claim review", () => {
     for (const action of actions)
       await expect(
         client.claims[action]({ partnershipId: foreign, reason: "Reason" }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        status: 404,
+        data: { reason: "CLAIM_NOT_FOUND" },
+      });
   }, 15_000);
 });
 
@@ -1539,7 +1624,9 @@ describe("Claim payment recording", () => {
     await asHost();
     await expect(markPaid("101.01")).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      message: expect.stringMatching(/approved.*unpaid/i),
+      status: 400,
+      message: "Claim must be approved to record payment.",
+      data: { reason: "CLAIM_APPROVAL_REQUIRED" },
     });
     expect(await events()).toEqual([]);
     activeOrg = partner;
@@ -1556,7 +1643,8 @@ describe("Claim payment recording", () => {
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
     ).toBe("rejected");
     expect(await events()).toEqual(before);
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("rejects partial, excessive and invalid transfer amounts without changing an approved Claim", async () => {
     const payable = await approvedClaim();
@@ -1614,7 +1702,8 @@ describe("Claim payment recording", () => {
         payoutAccountId: alternate,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("concurrent paid-flag correction retries retain one correction event", async () => {
     const payable = await approvedClaim();
@@ -1669,7 +1758,8 @@ describe("Claim payment recording", () => {
         payoutAccountId: alternate,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  });
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
 
   it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
     const payable = await approvedClaim();
@@ -1678,7 +1768,7 @@ describe("Claim payment recording", () => {
       await markPaid(payable);
       await correctPayment("Incorrect flag");
     }
-    await asHost("member", participantUser);
+    await asHost("participant", participantUser);
     await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await db.update(claims).set({ status: "paid" }).where(eq(claims.id, claimId));
     await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({
@@ -1687,12 +1777,34 @@ describe("Claim payment recording", () => {
     for (const org of [partner, other]) {
       activeOrg = org;
       activeActor = actor;
-      await expect(markPaid(payable)).rejects.toMatchObject({
-        code: "FORBIDDEN",
-      });
-      await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({
-        code: "FORBIDDEN",
-      });
+      await expect(markPaid(payable)).rejects.toMatchObject(
+        org === other
+          ? {
+              code: "NOT_FOUND",
+              status: 404,
+              message: "Project Partnership not found in scope.",
+              data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+            }
+          : {
+              code: "FORBIDDEN",
+              status: 403,
+              message: "Only Hosting staff may record payment.",
+            },
+      );
+      await expect(correctPayment("Incorrect flag")).rejects.toMatchObject(
+        org === other
+          ? {
+              code: "NOT_FOUND",
+              status: 404,
+              message: "Project Partnership not found in scope.",
+              data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+            }
+          : {
+              code: "FORBIDDEN",
+              status: 403,
+              message: "Only Hosting staff may correct payment.",
+            },
+      );
     }
   });
 });

@@ -13,6 +13,7 @@ import {
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
 import { decimalUnits } from "@/features/projects/procedures/payable";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const claimInput = z.object({ partnershipId: coordinationId });
@@ -40,9 +41,7 @@ export const markPaid = authorized
       errors,
     );
     if (scope.hostId !== context.session.activeOrganizationId)
-      throw errors.FORBIDDEN({
-        message: "Only Hosting staff may record payment.",
-      });
+      throw createSituationErrors(errors).hostingPaymentRequired();
     return db.transaction(async (tx) => {
       // Shared Project → Partnership → Claim lock order (claim-locks.ts) so
       // payment cannot race a decision or payout change.
@@ -51,19 +50,19 @@ export const markPaid = authorized
         { projectId: scope.projectId, partnershipId: input.partnershipId },
         errors,
       );
-      if (!claim || !["approved", "paid"].includes(claim.status))
-        throw errors.BAD_REQUEST({
-          message: "Claim must be approved and unpaid to record payment.",
-        });
+      if (!claim) throw createSituationErrors(errors).claimNotFound();
+      if (!["approved", "paid"].includes(claim.status))
+        throw createSituationErrors(errors).claimApprovalRequired();
+      if (claim.approvedAmountEur === null) {
+        console.error("Approved/paid Claim lacks an approved amount");
+        throw createSituationErrors(errors).internalFailure();
+      }
       if (
-        claim.approvedAmountEur === null ||
         decimalUnits(input.amountEur, 2) !==
           decimalUnits(claim.approvedAmountEur, 2) ||
         decimalUnits(input.amountEur, 2) <= BigInt(0)
       )
-        throw errors.BAD_REQUEST({
-          message: "Transfer must equal the full approved EUR amount.",
-        });
+        throw createSituationErrors(errors).fullTransferRequired();
       // Repeating the same confirmed transfer does not create another payment or history entry.
       if (claim.status === "paid")
         return {
@@ -100,9 +99,7 @@ export const correctPayment = authorized
       errors,
     );
     if (scope.hostId !== context.session.activeOrganizationId)
-      throw errors.FORBIDDEN({
-        message: "Only Hosting staff may correct payment.",
-      });
+      throw createSituationErrors(errors).hostingPaymentCorrectionRequired();
     return db.transaction(async (tx) => {
       const { claim } = await lockClaimScope(
         tx,
@@ -126,10 +123,13 @@ export const correctPayment = authorized
             approvedAmountEur: claim.approvedAmountEur,
           };
       }
-      if (!claim || claim.status !== "paid" || claim.approvedAmountEur === null)
-        throw errors.BAD_REQUEST({
-          message: "Only a paid Claim can have its paid flag corrected.",
-        });
+      if (!claim) throw createSituationErrors(errors).claimNotFound();
+      if (claim.status !== "paid")
+        throw createSituationErrors(errors).claimPaidRequired();
+      if (claim.approvedAmountEur === null) {
+        console.error("Paid Claim lacks an approved amount");
+        throw createSituationErrors(errors).internalFailure();
+      }
       await tx
         .update(claims)
         .set({ status: "approved" })

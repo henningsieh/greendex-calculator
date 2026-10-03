@@ -15,14 +15,15 @@ _Avoid_: Participant (when referring only to login identity)
 
 **Organization Membership**:
 A User's membership in one Organization. A Membership may assign several distinct Organization-level roles to the User.
+In Cost Tracker, Better Auth's fallback role value `member` is forbidden: never invite, assign, or seed it, including in combined roles. Use the defined `owner`, `admin`, `project-coordinator`, or `participant` role with its proper scope. Library table/field names and ordinary Membership wording are unaffected. See [ADR-0012](docs/adr/0012-ban-fallback-member-role-in-cost-tracker.md).
 _Avoid_: Project Participation
 
 **Organization Owner**:
-A User with Better Auth role `owner` and full authority over one Organization, including its Users, settings, and Projects.
+A User with Better Auth role `owner` and full authority over one Organization, including its Users, settings, and Projects. The permission definition is `organisationOwner` (exact identifier spelling); Cost Tracker's runtime role map resolves `owner` to it.
 _Avoid_: Organization Administrator, Administrator
 
 **Organization Admin**:
-A User with Better Auth role `admin` and Organization-wide administrative authority below the Organization Owner.
+A User with Better Auth role `admin` and Organization-wide administrative authority below the Organization Owner. Cost Tracker's permission definition is `organizationAdmin` (exact identifier spelling); Calculator retains `legacyCalculatorAdminRole` for its existing `admin` behavior.
 _Avoid_: Project Coordinator, Owner
 
 **Project Coordinator**:
@@ -30,7 +31,7 @@ A User with Better Auth role `project-coordinator` and one explicit assignment. 
 _Avoid_: Organization Admin, Employee, Project Manager, Coordinator
 
 **Participant Role**:
-A persistent Better Auth role `participant` that grants Participant-facing capability in one Hosting Organization. It may coexist with other roles on the same Organization Membership and never identifies the Projects in which the User participates.
+A persistent Better Auth role `participant`, defined by `projectParticipant`, that grants Participant-facing capability in one Hosting Organization. It may coexist with other roles on the same Organization Membership and never identifies the Projects in which the User participates.
 _Avoid_: Member, Project Participation
 
 **Project**:

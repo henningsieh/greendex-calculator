@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig = {
   reactCompiler: true,
   experimental: {
+    requestInsights: true,
     turbopackFileSystemCacheForBuild: true,
     turbopackFileSystemCacheForDev: true,
   },

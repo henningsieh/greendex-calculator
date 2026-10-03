@@ -1,5 +1,4 @@
 "use client";
-
 import { ORPCError } from "@orpc/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
@@ -13,6 +12,7 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
@@ -163,11 +163,6 @@ export function ParticipantJoin({
   );
 }
 
-const missingProfile =
-  "Complete your Participant profile before accessing Projects.";
-const staleAgreement =
-  "Accept the current Participant agreement before accessing Projects.";
-
 export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
   const [state, setState] = useState<DashboardState>("loading");
   const [projects, setProjects] = useState<Projects>([]);
@@ -184,14 +179,12 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
   const failed = useCallback((cause: unknown) => {
     if (
       cause instanceof ORPCError &&
-      cause.code === "FORBIDDEN" &&
-      cause.message === missingProfile
+      getSafeErrorSituation(cause)?.reason === "PARTICIPANT_PROFILE_REQUIRED"
     ) {
       setState("profile");
     } else if (
       cause instanceof ORPCError &&
-      cause.code === "FORBIDDEN" &&
-      cause.message === staleAgreement
+      getSafeErrorSituation(cause)?.reason === "PARTICIPANT_AGREEMENT_REQUIRED"
     ) {
       setState("agreement");
     } else {

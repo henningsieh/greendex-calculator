@@ -38,9 +38,9 @@ import {
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
-type StaffRole = "owner" | "admin" | "member";
+type StaffRole = "owner" | "admin";
 
-const STAFF_ROLES: StaffRole[] = ["owner", "admin", "member"];
+const STAFF_ROLES: StaffRole[] = ["owner", "admin"];
 
 const membersOptions = {
   ...orpcQuery.organizations.listMembers.queryOptions({
@@ -74,7 +74,7 @@ export function OrganizationTeam({
     queries: [membersOptions, pendingOptions],
   });
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<StaffRole>("member");
+  const [role, setRole] = useState<StaffRole>("admin");
   const [notice, setNotice] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -102,7 +102,7 @@ export function OrganizationTeam({
       orpc.organizations.inviteMember(input),
     onSuccess: async (result) => {
       setEmail("");
-      setRole("member");
+      setRole("admin");
       setFormError("");
       setNotice(`Invitation sent to ${result.email}.`);
       await refresh();
@@ -192,9 +192,8 @@ export function OrganizationTeam({
         <CardHeader>
           <CardTitle>Invite staff</CardTitle>
           <CardDescription>
-            Owners can invite owners, admins, and members. Admins can invite
-            admins and members. Coordination stays assignment-based and is never
-            granted here.
+            Owners can invite owners and admins. Admins can invite admins.
+            Coordination stays assignment-based and is never granted here.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -258,7 +257,7 @@ export function OrganizationTeam({
               {invitationRows.map((entry) => (
                 <TableRow key={entry.id}>
                   <TableCell>{entry.email}</TableCell>
-                  <TableCell>{entry.role ?? "member"}</TableCell>
+                  <TableCell>{entry.role ?? "No role"}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       disabled={cancel.isPending && cancel.variables === entry.id}

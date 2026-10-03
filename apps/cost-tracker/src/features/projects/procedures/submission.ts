@@ -16,7 +16,6 @@ import {
   travelCostEntriesTable as entries,
   travelCostEntryDocumentsTable as links,
 } from "@greendex/database/schema";
-import { ORPCError } from "@orpc/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -29,6 +28,7 @@ import {
   decimalUnits,
   derivePayable,
 } from "@/features/projects/procedures/payable";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const issue = (path: string[], message: string) => ({ path, message });
@@ -380,9 +380,7 @@ export const previewSubmission = authorized
       errors,
     );
     if (scope.partnerId !== context.session.activeOrganizationId)
-      throw errors.FORBIDDEN({
-        message: "Only the Partner Organization may preview its Claim.",
-      });
+      throw createSituationErrors(errors).partnerClaimPreviewRequired();
     return db.transaction(async (tx) => {
       const [claim] = await tx
         .select({ id: claims.id, status: claims.status })
@@ -421,9 +419,7 @@ export const submit = authorized
       errors,
     );
     if (scope.partnerId !== context.session.activeOrganizationId)
-      throw errors.FORBIDDEN({
-        message: "Only the Partner Organization may submit its Claim.",
-      });
+      throw createSituationErrors(errors).partnerClaimSubmitRequired();
     return db.transaction(async (tx) => {
       const [project] = await tx
         .select({ id: projects.id })
@@ -446,9 +442,7 @@ export const submit = authorized
         .for("update")
         .limit(1);
       if (!project || !partnership)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
+        throw createSituationErrors(errors).partnershipNotFound();
       const [claim] = await tx
         .select({ id: claims.id, status: claims.status })
         .from(claims)
@@ -468,18 +462,21 @@ export const submit = authorized
             .from(claims)
             .where(eq(claims.id, claim.id))
             .limit(1);
-          if (saved.approvedAmountEur !== null)
-            return {
-              id: claim.id,
-              status: "submitted" as const,
-              approvedAmountEur: saved.approvedAmountEur,
-            };
+          if (saved.approvedAmountEur === null) {
+            console.error("Submitted Claim history lacks a saved payable amount");
+            throw createSituationErrors(errors).internalFailure();
+          }
+          return {
+            id: claim.id,
+            status: "submitted" as const,
+            approvedAmountEur: saved.approvedAmountEur,
+          };
         }
       }
-      if (!claim || isPartnerEditLocked(claim.status))
-        throw errors.BAD_REQUEST({
-          message: "Save an editable Claim before submitting.",
-        });
+      if (!claim)
+        throw createSituationErrors(errors).claimRequiredForSubmission();
+      if (isPartnerEditLocked(claim.status))
+        throw createSituationErrors(errors).claimNotEditable();
 
       const { issues, approvedAmountEur } = await evaluateSubmission(
         tx,
@@ -487,11 +484,12 @@ export const submit = authorized
         input.partnershipId,
         scope,
       );
-      if (issues.length || approvedAmountEur === null)
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Claim submission checklist is incomplete.",
-          data: { issues },
-        });
+      if (issues.length)
+        throw createSituationErrors(errors).submissionIncomplete(issues);
+      if (approvedAmountEur === null) {
+        console.error("Complete Claim checklist has no payable amount");
+        throw createSituationErrors(errors).internalFailure();
+      }
       await tx
         .update(claims)
         .set({ status: "submitted", approvedAmountEur })
