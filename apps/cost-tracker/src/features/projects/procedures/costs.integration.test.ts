@@ -248,8 +248,20 @@ describe("Claim cost procedures", () => {
     expect(authMocks.put).not.toHaveBeenCalled();
     authMocks.getSession.mockResolvedValueOnce(null);
     expect((await upload(request(own))).status).toBe(401);
-    expect((await upload(request(next))).status).toBe(400);
-    expect((await upload(request(foreign))).status).toBe(404);
+    const missingClaim = await upload(request(next));
+    expect(missingClaim.status).toBe(400);
+    expect(await missingClaim.json()).toEqual({
+      error: "Save an editable Claim before uploading a Proof Document.",
+      code: "BAD_REQUEST",
+      reason: "CLAIM_REQUIRED_FOR_PROOF",
+    });
+    const foreignPartnership = await upload(request(foreign));
+    expect(foreignPartnership.status).toBe(404);
+    expect(await foreignPartnership.json()).toEqual({
+      error: "Project Partnership not found in scope.",
+      code: "NOT_FOUND",
+      reason: "PROJECT_PARTNERSHIP_NOT_FOUND",
+    });
     const response = await upload(request(own));
     expect(response.status).toBe(201);
     expect(authMocks.put).toHaveBeenCalledWith(
@@ -276,7 +288,13 @@ describe("Claim cost procedures", () => {
       .set({ status: "submitted" })
       .where(eq(claims.id, ownClaim));
     try {
-      expect((await upload(request(own))).status).toBe(400);
+      const lockedClaim = await upload(request(own));
+      expect(lockedClaim.status).toBe(400);
+      expect(await lockedClaim.json()).toEqual({
+        error: "Claim is not editable.",
+        code: "BAD_REQUEST",
+        reason: "CLAIM_NOT_EDITABLE",
+      });
       expect(authMocks.put).toHaveBeenCalledTimes(1);
     } finally {
       await db
@@ -321,6 +339,8 @@ describe("Claim cost procedures", () => {
     expect(selectionFailure.status).toBe(400);
     expect(await selectionFailure.json()).toEqual({
       error: "Select an active Organization before accessing Cost Tracker data.",
+      code: "BAD_REQUEST",
+      reason: "ACTIVE_ORGANIZATION_REQUIRED",
     });
     expect((await download(request(foreign))).status).toBe(404);
     expect((await download(request(next))).status).toBe(404);

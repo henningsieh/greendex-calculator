@@ -140,7 +140,13 @@ describe("entity picker procedures", () => {
     session(null);
     await expect(
       client.organizations.search({ search: "Part" }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
   });
 
   it("caps Organization search at 20 id/name matches", async () => {
