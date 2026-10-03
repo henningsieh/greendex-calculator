@@ -6,7 +6,7 @@ type Situation = (typeof situationCatalog)[keyof typeof situationCatalog];
 export type SituationErrorConstructors = {
   [Code in Situation["code"]]: (options: {
     message: string;
-    data: { reason: string };
+    data: { reason: string; issues?: { path: string[]; message: string }[] };
   }) => ORPCError<string, unknown>;
 };
 
@@ -394,6 +394,377 @@ export function createSituationErrors(
         message: situationCatalog.agreementUnavailable.message,
         data: SafeErrorDataSchema.parse({
           reason: situationCatalog.agreementUnavailable.reason,
+        }),
+      }),
+    partnerClaimEditRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerClaimEditRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerClaimEditRequired.reason,
+        }),
+      }),
+    payoutSelectionLocked: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.payoutSelectionLocked.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.payoutSelectionLocked.reason,
+        }),
+      }),
+    partnerPayoutSelectionRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.partnerPayoutSelectionRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerPayoutSelectionRequired.reason,
+        }),
+      }),
+    payoutAccountRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.payoutAccountRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.payoutAccountRequired.reason,
+        }),
+      }),
+    claimNotEditable: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimNotEditable.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimNotEditable.reason,
+        }),
+      }),
+    claimRequiredForCosts: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimRequiredForCosts.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimRequiredForCosts.reason,
+        }),
+      }),
+    partnerCostsRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerCostsRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerCostsRequired.reason,
+        }),
+      }),
+    allocationParticipationRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.allocationParticipationRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.allocationParticipationRequired.reason,
+        }),
+      }),
+    costEntryRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.costEntryRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.costEntryRequired.reason,
+        }),
+      }),
+    claimDocumentReferencesRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimDocumentReferencesRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimDocumentReferencesRequired.reason,
+        }),
+      }),
+    partnerJourneysRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerJourneysRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerJourneysRequired.reason,
+        }),
+      }),
+    journeysLocked: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.journeysLocked.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.journeysLocked.reason,
+        }),
+      }),
+    participationSelectionRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationSelectionRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationSelectionRequired.reason,
+        }),
+      }),
+    journeyAlreadyExists: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.journeyAlreadyExists.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.journeyAlreadyExists.reason,
+        }),
+      }),
+    claimRequiredForJourney: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimRequiredForJourney.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimRequiredForJourney.reason,
+        }),
+      }),
+    journeySelectionRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.journeySelectionRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.journeySelectionRequired.reason,
+        }),
+      }),
+    partnerOnboardingProgressRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerOnboardingProgressRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerOnboardingProgressRequired.reason,
+        }),
+      }),
+    partnerParticipantSearchRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerParticipantSearchRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerParticipantSearchRequired.reason,
+        }),
+      }),
+    partnerParticipationCreateRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerParticipationCreateRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerParticipationCreateRequired.reason,
+        }),
+      }),
+    participationCreateLocked: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationCreateLocked.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationCreateLocked.reason,
+        }),
+      }),
+    eligibleParticipantRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.eligibleParticipantRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.eligibleParticipantRequired.reason,
+        }),
+      }),
+    participationDuplicate: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationDuplicate.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationDuplicate.reason,
+        }),
+      }),
+    participationRepresentationConflict: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationRepresentationConflict.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationRepresentationConflict.reason,
+        }),
+      }),
+    partnerParticipationUpdateRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerParticipationUpdateRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerParticipationUpdateRequired.reason,
+        }),
+      }),
+    participationUpdateLocked: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationUpdateLocked.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationUpdateLocked.reason,
+        }),
+      }),
+    participationNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.participationNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationNotFound.reason,
+        }),
+      }),
+    partnerParticipationRemoveRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerParticipationRemoveRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerParticipationRemoveRequired.reason,
+        }),
+      }),
+    participationRemoveLocked: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationRemoveLocked.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationRemoveLocked.reason,
+        }),
+      }),
+    participationJourneyOrCostReferenced: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationJourneyOrCostReferenced.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationJourneyOrCostReferenced.reason,
+        }),
+      }),
+    participationReferenced: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.participationReferenced.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.participationReferenced.reason,
+        }),
+      }),
+    partnerDuplicateReviewRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerDuplicateReviewRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerDuplicateReviewRequired.reason,
+        }),
+      }),
+    reviewTaskNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.reviewTaskNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.reviewTaskNotFound.reason,
+        }),
+      }),
+    reviewTaskNotOpen: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.reviewTaskNotOpen.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.reviewTaskNotOpen.reason,
+        }),
+      }),
+    reviewTaskNotAssigned: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.reviewTaskNotAssigned.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.reviewTaskNotAssigned.reason,
+        }),
+      }),
+    reviewTaskAssigneeRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.reviewTaskAssigneeRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.reviewTaskAssigneeRequired.reason,
+        }),
+      }),
+    reviewTaskSurvivorRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.reviewTaskSurvivorRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.reviewTaskSurvivorRequired.reason,
+        }),
+      }),
+    partnerClaimPreviewRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerClaimPreviewRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerClaimPreviewRequired.reason,
+        }),
+      }),
+    partnerClaimSubmitRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerClaimSubmitRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerClaimSubmitRequired.reason,
+        }),
+      }),
+    claimRequiredForSubmission: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimRequiredForSubmission.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimRequiredForSubmission.reason,
+        }),
+      }),
+    reviewReasonRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.reviewReasonRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.reviewReasonRequired.reason,
+        }),
+      }),
+    hostingClaimReviewRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.hostingClaimReviewRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.hostingClaimReviewRequired.reason,
+        }),
+      }),
+    claimNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.claimNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimNotFound.reason,
+        }),
+      }),
+    claimSubmittedRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimSubmittedRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimSubmittedRequired.reason,
+        }),
+      }),
+    claimRejectedRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimRejectedRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimRejectedRequired.reason,
+        }),
+      }),
+    claimReviewUnavailable: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimReviewUnavailable.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimReviewUnavailable.reason,
+        }),
+      }),
+    hostingPaymentRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.hostingPaymentRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.hostingPaymentRequired.reason,
+        }),
+      }),
+    hostingPaymentCorrectionRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.hostingPaymentCorrectionRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.hostingPaymentCorrectionRequired.reason,
+        }),
+      }),
+    claimApprovalRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimApprovalRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimApprovalRequired.reason,
+        }),
+      }),
+    fullTransferRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.fullTransferRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.fullTransferRequired.reason,
+        }),
+      }),
+    claimPaidRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.claimPaidRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.claimPaidRequired.reason,
+        }),
+      }),
+    journeyDistanceOutsideBands: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.journeyDistanceOutsideBands.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.journeyDistanceOutsideBands.reason,
+          issues: [
+            {
+              path: ["erasmusDistanceKm"],
+              message: situationCatalog.journeyDistanceOutsideBands.message,
+            },
+          ],
+        }),
+      }),
+    submissionIncomplete: (issues: { path: string[]; message: string }[]) =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.submissionIncomplete.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.submissionIncomplete.reason,
+          issues,
         }),
       }),
     badInput: () =>

@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   searchOnboarded: vi.fn(),
   update: vi.fn(),
+  remove: vi.fn(),
   issueInvitation: vi.fn(),
   reissueInvitation: vi.fn(),
   createRegistrationLink: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
         create: mocks.create,
         searchOnboarded: mocks.searchOnboarded,
         update: mocks.update,
+        remove: mocks.remove,
       },
     },
     orpcQuery: {
@@ -170,6 +172,7 @@ describe("ParticipantCoordination", () => {
       { id: "host-user", name: "Host Candidate" },
     ]);
     mocks.update.mockReset();
+    mocks.remove.mockReset();
     mocks.issueInvitation
       .mockReset()
       .mockResolvedValue({ invitationId: "invite-2", delivery: "sent" });
@@ -217,11 +220,11 @@ describe("ParticipantCoordination", () => {
     consoleError.mockRestore();
   });
 
-  it("surfaces an actionable review request only for the exact known duplicate response", async () => {
+  it("surfaces an actionable review request only for a validated duplicate reason", async () => {
     mocks.create.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
-        message:
-          "Identity already participates in this Project; request merge review.",
+        message: "hostile remote text",
+        data: { reason: "PARTICIPATION_DUPLICATE" },
       }),
     );
     const user = userEvent.setup();
@@ -252,6 +255,86 @@ describe("ParticipantCoordination", () => {
       ),
     );
     expect(screen.queryByText("database secret")).toBeNull();
+  });
+
+  it.each([
+    new ORPCError("BAD_REQUEST", {
+      message:
+        "Identity already participates in this Project; request merge review.",
+    }),
+    new ORPCError("FORBIDDEN", { data: { reason: "PARTICIPATION_DUPLICATE" } }),
+    new ORPCError("BAD_REQUEST", {
+      status: 409,
+      data: { reason: "PARTICIPATION_DUPLICATE" },
+    }),
+  ])(
+    "does not activate duplicate recovery for legacy prose or wrong code/status",
+    async (error) => {
+      mocks.create.mockRejectedValue(error);
+      const user = userEvent.setup();
+      await renderCoordination();
+      await selectRegisteredUser(user, "user-existing", "Existing Candidate");
+      await user.click(screen.getByRole("button", { name: "Add Participation" }));
+      const notice = await screen.findByRole("alert");
+      expect(notice.textContent).not.toContain("Review request");
+      expect(notice.textContent).not.toContain("Identity already participates");
+    },
+  );
+
+  it("shows non-editable Claim feedback for a validated registration reopening denial", async () => {
+    const user = userEvent.setup();
+    await renderCoordination();
+    const closeButton = screen.getByRole("button", {
+      name: "Close registration link link-1",
+    });
+    mocks.list.mockResolvedValue({
+      projectName: "Own Project",
+      participations: [],
+      invitations: [],
+      registrationLinks: [{ id: "link-1", enabled: false }],
+    });
+    mocks.setRegistrationLinkOpen.mockResolvedValueOnce({ open: false });
+    await user.click(closeButton);
+    mocks.setRegistrationLinkOpen.mockRejectedValueOnce(
+      new ORPCError("BAD_REQUEST", {
+        message: "hostile remote text",
+        data: { reason: "REGISTRATION_CLAIM_LOCKED" },
+      }),
+    );
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Reopen registration link link-1",
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "A non-editable Claim prevents reopening registration.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText("hostile remote text")).toBeNull();
+  });
+
+  it("names only Journey/Cost Allocation references for validated removal refusal", async () => {
+    vi.spyOn(window, "confirm").mockReturnValueOnce(true);
+    mocks.remove.mockRejectedValueOnce(
+      new ORPCError("BAD_REQUEST", {
+        message: "private SQL",
+        data: { reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED" },
+      }),
+    );
+    const user = userEvent.setup();
+    await renderCoordination();
+    await user.click(
+      screen.getByRole("button", {
+        name: "Remove Project Participation for Own Person",
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText("private SQL")).toBeNull();
   });
 
   it("shows access denied when the server forbids a Partner-side write", async () => {

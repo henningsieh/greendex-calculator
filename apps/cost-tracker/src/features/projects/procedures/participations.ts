@@ -29,6 +29,7 @@ import {
   requireHostCoordination,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const participation = z.object({
@@ -51,8 +52,6 @@ const selected = {
 };
 const scopeInput = z.object({ partnershipId: coordinationId });
 const rowInput = scopeInput.extend({ id: coordinationId });
-const mergeMessage =
-  "Identity already participates in this Project; request merge review.";
 
 function postgresCode(error: unknown): string | undefined {
   if (!error || typeof error !== "object") return undefined;
@@ -138,15 +137,10 @@ export function createParticipationProcedures(
         errors,
       );
       if (scope.partnerId !== context.session.activeOrganizationId)
-        throw errors.FORBIDDEN({
-          message:
-            "Only the Partner Organization may search onboarded Participants.",
-        });
+        throw createSituationErrors(errors).partnerParticipantSearchRequired();
       const agreement = currentAgreement();
       if (!isPublishedAgreement(agreement))
-        throw errors.BAD_REQUEST({
-          message: "Participant agreement is not yet available.",
-        });
+        throw createSituationErrors(errors).agreementUnavailable();
       const escaped = input.search.replace(/[\\%_]/g, "\\$&");
       const pattern = `%${escaped}%`;
       return db
@@ -194,15 +188,10 @@ export function createParticipationProcedures(
         errors,
       );
       if (scope.partnerId !== context.session.activeOrganizationId)
-        throw errors.FORBIDDEN({
-          message: "Only the Partner Organization may create its Participation.",
-        });
+        throw createSituationErrors(errors).partnerParticipationCreateRequired();
       const agreement = currentAgreement();
       if (!isPublishedAgreement(agreement))
-        throw errors.BAD_REQUEST({
-          message:
-            "Participant agreement is not yet available; use the invitation onboarding path later.",
-        });
+        throw createSituationErrors(errors).agreementUnavailable();
       try {
         const outcome = await db.transaction(async (tx) => {
           const [partnership] = await tx
@@ -217,18 +206,14 @@ export function createParticipationProcedures(
             .for("update")
             .limit(1);
           if (!partnership)
-            throw errors.FORBIDDEN({
-              message: "Project Partnership is unavailable.",
-            });
+            throw createSituationErrors(errors).partnershipNotFound();
           const [claim] = await tx
             .select({ status: claims.status })
             .from(claims)
             .where(eq(claims.partnershipId, input.partnershipId))
             .limit(1);
           if (claim && isPartnerEditLocked(claim.status))
-            throw errors.BAD_REQUEST({
-              message: "Locked Claim prevents Participation creation.",
-            });
+            throw createSituationErrors(errors).participationCreateLocked();
           const [candidate] = await tx
             .select({
               id: user.id,
@@ -262,10 +247,7 @@ export function createParticipationProcedures(
             )
             .limit(1);
           if (!candidate)
-            throw errors.BAD_REQUEST({
-              message:
-                "User has not completed onboarding; use a Participant invitation instead.",
-            });
+            throw createSituationErrors(errors).eligibleParticipantRequired();
           const email = candidate.email.trim().toLowerCase();
           const [duplicate] = await tx
             .select({ id: participants.id })
@@ -305,11 +287,14 @@ export function createParticipationProcedures(
               displayName: candidate.name,
             })
             .returning(selected);
-          if (!created) throw new Error("Participation insert returned no row");
+          if (!created) {
+            console.error("Participation insert returned no row");
+            throw createSituationErrors(errors).internalFailure();
+          }
           return { duplicate: false as const, created };
         });
         if (outcome.duplicate)
-          throw errors.BAD_REQUEST({ message: mergeMessage });
+          throw createSituationErrors(errors).participationDuplicate();
         return outcome.created;
       } catch (error) {
         if (postgresCode(error) === "23505") {
@@ -338,7 +323,7 @@ export function createParticipationProcedures(
                 ),
               )
               .limit(1);
-            if (duplicate)
+            if (duplicate) {
               await db
                 .insert(reviewTasks)
                 .values({
@@ -348,13 +333,16 @@ export function createParticipationProcedures(
                   candidateEmail: email,
                 })
                 .onConflictDoNothing();
+              throw createSituationErrors(errors).participationDuplicate();
+            }
           }
-          throw errors.BAD_REQUEST({ message: mergeMessage });
+          console.error("Participation unique conflict has no scoped duplicate");
+          throw createSituationErrors(errors).internalFailure();
         }
         if (postgresCode(error) === "23514")
-          throw errors.FORBIDDEN({
-            message: "Project Partnership is unavailable.",
-          });
+          throw createSituationErrors(
+            errors,
+          ).participationRepresentationConflict();
         throw error;
       }
     });
@@ -404,9 +392,7 @@ export function createParticipationProcedures(
         errors,
       );
       if (scope.partnerId !== context.session.activeOrganizationId)
-        throw errors.FORBIDDEN({
-          message: "Only the Partner Organization may update its Participation.",
-        });
+        throw createSituationErrors(errors).partnerParticipationUpdateRequired();
       return db.transaction(async (tx) => {
         const [partnership] = await tx
           .select({ id: partnerships.id })
@@ -420,18 +406,14 @@ export function createParticipationProcedures(
           .for("update")
           .limit(1);
         if (!partnership)
-          throw errors.FORBIDDEN({
-            message: "Project Partnership is unavailable.",
-          });
+          throw createSituationErrors(errors).partnershipNotFound();
         const [submitted] = await tx
           .select({ status: claims.status })
           .from(claims)
           .where(eq(claims.partnershipId, input.partnershipId))
           .limit(1);
         if (submitted && isPartnerEditLocked(submitted.status))
-          throw errors.BAD_REQUEST({
-            message: "Locked Claim prevents Participation changes.",
-          });
+          throw createSituationErrors(errors).participationUpdateLocked();
         const [changed] = await tx
           .update(participants)
           .set({ country: input.country })
@@ -444,8 +426,7 @@ export function createParticipationProcedures(
             ),
           )
           .returning(selected);
-        if (!changed)
-          throw errors.FORBIDDEN({ message: "Participation is unavailable." });
+        if (!changed) throw createSituationErrors(errors).participationNotFound();
         return changed;
       });
     });
@@ -461,9 +442,7 @@ export function createParticipationProcedures(
         errors,
       );
       if (scope.partnerId !== context.session.activeOrganizationId)
-        throw errors.FORBIDDEN({
-          message: "Only the Partner Organization may remove its Participation.",
-        });
+        throw createSituationErrors(errors).partnerParticipationRemoveRequired();
       try {
         return await db.transaction(async (tx) => {
           const [partnership] = await tx
@@ -478,9 +457,7 @@ export function createParticipationProcedures(
             .for("update")
             .limit(1);
           if (!partnership)
-            throw errors.FORBIDDEN({
-              message: "Project Partnership is unavailable.",
-            });
+            throw createSituationErrors(errors).partnershipNotFound();
           const [row] = await tx
             .select({ id: participants.id })
             .from(participants)
@@ -494,17 +471,14 @@ export function createParticipationProcedures(
             )
             .for("update")
             .limit(1);
-          if (!row)
-            throw errors.FORBIDDEN({ message: "Participation is unavailable." });
+          if (!row) throw createSituationErrors(errors).participationNotFound();
           const [claim] = await tx
             .select({ status: claims.status })
             .from(claims)
             .where(eq(claims.partnershipId, input.partnershipId))
             .limit(1);
           if (claim && isPartnerEditLocked(claim.status))
-            throw errors.BAD_REQUEST({
-              message: "Locked Claim prevents Participation removal.",
-            });
+            throw createSituationErrors(errors).participationRemoveLocked();
           const [reference] = await tx
             .select({ id: participants.id })
             .from(participants)
@@ -531,18 +505,15 @@ export function createParticipationProcedures(
             )
             .limit(1);
           if (reference)
-            throw errors.BAD_REQUEST({
-              message:
-                "Participation is referenced by Claim or merge data; request review instead.",
-            });
+            throw createSituationErrors(
+              errors,
+            ).participationJourneyOrCostReferenced();
           await tx.delete(participants).where(eq(participants.id, input.id));
           return { removed: true as const };
         });
       } catch (error) {
         if (postgresCode(error) === "23503")
-          throw errors.BAD_REQUEST({
-            message: "Participation is referenced; request review instead.",
-          });
+          throw createSituationErrors(errors).participationReferenced();
         throw error;
       }
     });
@@ -573,21 +544,26 @@ export function createParticipationProcedures(
     .output(z.array(participation))
     .handler(async ({ input, context, errors }) => {
       const agreement = currentAgreement();
-      if (!isPublishedAgreement(agreement)) throw errors.FORBIDDEN();
-      const [eligible] = await db
+      if (!isPublishedAgreement(agreement))
+        throw createSituationErrors(errors).agreementUnavailable();
+      const [profile] = await db
         .select({ id: profiles.userId })
         .from(profiles)
-        .innerJoin(
-          acceptances,
+        .where(eq(profiles.userId, context.user.id))
+        .limit(1);
+      if (!profile) throw createSituationErrors(errors).incompleteProfile();
+      const [acceptance] = await db
+        .select({ id: acceptances.userId })
+        .from(acceptances)
+        .where(
           and(
-            eq(acceptances.userId, profiles.userId),
+            eq(acceptances.userId, context.user.id),
             eq(acceptances.version, agreement.id),
             eq(acceptances.contentHash, agreement.contentHash),
           ),
         )
-        .where(eq(profiles.userId, context.user.id))
         .limit(1);
-      if (!eligible) throw errors.FORBIDDEN();
+      if (!acceptance) throw createSituationErrors(errors).agreementRequired();
       return db
         .select(selected)
         .from(participants)

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ClaimHistory } from "@/features/projects/components/claim-review";
 import { ClaimSubmission } from "@/features/projects/components/claim-submission";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -56,12 +57,11 @@ function errorsFor(error: unknown, root: string): FieldErrors {
         }
       }
     }
-    if (error.message === "This Participation already has a Participant Journey.")
-      errors[root] = error.message;
-    if (
-      error.message === "Select a Partner Payout Account before saving the Claim."
-    )
-      errors.payoutAccount = error.message;
+    const situation = getSafeErrorSituation(error);
+    if (situation?.reason === "JOURNEY_ALREADY_EXISTS")
+      errors[root] = situation.message;
+    if (situation?.reason === "PAYOUT_ACCOUNT_REQUIRED")
+      errors.payoutAccount = situation.message;
   }
   if (!Object.keys(errors).length)
     errors[root] = getORPCRequestErrorMessage(error).text;

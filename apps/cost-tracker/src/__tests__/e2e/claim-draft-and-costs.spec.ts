@@ -798,7 +798,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .getByRole("alert")
           .filter({ hasText: "Unable to remove Project Participation" }),
       ).toContainText(
-        "This Project Participation is referenced by a Participant Journey, Claim or merge data. Request review instead.",
+        "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
       );
       await expect(row).toBeVisible();
       expect(

@@ -121,6 +121,7 @@ export function normalizeParticipantMembershipError(
   errors: Situations,
   resHeaders?: Headers,
 ) {
+  if (error instanceof ORPCError) return error;
   return normalizeParticipantMembershipFailure(
     normalizeBetterAuthError(error, errors, resHeaders),
     errors,

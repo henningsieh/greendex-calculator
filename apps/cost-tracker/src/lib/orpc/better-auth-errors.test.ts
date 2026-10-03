@@ -119,6 +119,10 @@ describe("Better Auth error adapter", () => {
 });
 
 describe("privileged Participant membership failures", () => {
+  it("preserves an already-normalized oRPC failure at the privileged boundary", () => {
+    const failure = errors.badInput();
+    expect(normalizeParticipantMembershipError(failure, errors)).toBe(failure);
+  });
   it.each([400, 401, 403, 404, 500])(
     "does not blame the Invitee for server addMember status %s",
     async (status) => {

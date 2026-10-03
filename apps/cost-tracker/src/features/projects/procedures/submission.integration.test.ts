@@ -1045,6 +1045,22 @@ async function submittedClaim() {
 }
 
 describe("Claim lock abuse", () => {
+  it("does not hide a submitted retry's missing saved payable amount as an edit lock", async () => {
+    await submittedClaim();
+    await db
+      .update(claims)
+      .set({ approvedAmountEur: null })
+      .where(eq(claims.id, claimId));
+    const before = await events();
+    activeOrg = partner;
+    await expect(submit()).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      status: 500,
+      data: { reason: "INTERNAL_FAILURE" },
+    });
+    expect(await events()).toEqual(before);
+  });
+
   it.each(["submitted", "approved", "rejected", "paid"] as const)(
     "%s blocks every Partner edit without changing Claim data or history",
     async (status) => {
@@ -1312,10 +1328,43 @@ describe("Host Claim review", () => {
     await expect(submit()).rejects.toMatchObject({ code: "BAD_REQUEST" });
   }, 15_000);
 
+  it("names a missing scoped Claim instead of a review/payment state, while submit retains save-first400", async () => {
+    await db.delete(claims).where(eq(claims.id, claimId));
+    await asHost();
+    for (const action of [
+      "approve",
+      "getReviewDetails",
+      "markPaid",
+      "correctPayment",
+    ] as const) {
+      await expect(
+        client.claims[action]({
+          partnershipId: own,
+          amountEur: "101.01",
+          reason: "Correction",
+        }),
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        status: 404,
+        message: "Claim not found in scope.",
+        data: { reason: "CLAIM_NOT_FOUND" },
+      });
+    }
+    expect(await events()).toEqual([]);
+    activeOrg = partner;
+    await expect(submit()).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "CLAIM_REQUIRED_FOR_SUBMISSION" },
+    });
+  });
+
   it("cannot approve incomplete or unsubmitted Claims, confirms submitted payable and permanently locks Partner editing", async () => {
     await asHost();
     await expect(review("approve")).rejects.toMatchObject({
       code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "CLAIM_SUBMITTED_REQUIRED" },
     });
     activeOrg = partner;
     await prepare("100.01");
@@ -1328,7 +1377,9 @@ describe("Host Claim review", () => {
       .set({ status: "submitted", approvedAmountEur: null })
       .where(eq(claims.id, claimId));
     await expect(review("approve")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "INTERNAL_SERVER_ERROR",
+      status: 500,
+      data: { reason: "INTERNAL_FAILURE" },
     });
     await db
       .update(claims)
@@ -1484,7 +1535,11 @@ describe("Host Claim review", () => {
     for (const action of actions)
       await expect(
         client.claims[action]({ partnershipId: foreign, reason: "Reason" }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        status: 404,
+        data: { reason: "CLAIM_NOT_FOUND" },
+      });
   }, 15_000);
 });
 
@@ -1569,7 +1624,9 @@ describe("Claim payment recording", () => {
     await asHost();
     await expect(markPaid("101.01")).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      message: expect.stringMatching(/approved.*unpaid/i),
+      status: 400,
+      message: "Claim must be approved to record payment.",
+      data: { reason: "CLAIM_APPROVAL_REQUIRED" },
     });
     expect(await events()).toEqual([]);
     activeOrg = partner;

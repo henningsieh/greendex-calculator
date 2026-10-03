@@ -353,6 +353,43 @@ describe("assignment-scoped participation coordination", () => {
     }
   });
 
+  it("separates the actor's missing saved profile from current agreement acceptance", async () => {
+    actor = candidate;
+    activeOrg = host;
+    await db.delete(acceptances).where(eq(acceptances.userId, candidate));
+    try {
+      await expect(
+        client.participations.listMine({ projectId: project }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
+      });
+      await db.delete(profiles).where(eq(profiles.userId, candidate));
+      await expect(
+        client.participations.listMine({ projectId: project }),
+      ).rejects.toMatchObject({
+        code: "UNPROCESSABLE_CONTENT",
+        status: 422,
+        data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
+      });
+    } finally {
+      await db
+        .insert(profiles)
+        .values({ userId: candidate, fullName: "Candidate" })
+        .onConflictDoNothing();
+      await db
+        .insert(acceptances)
+        .values({
+          userId: candidate,
+          version: version.id,
+          contentHash: version.contentHash,
+          answers: '{"accepted":true}',
+        })
+        .onConflictDoNothing();
+    }
+  });
+
   it("does not search against an unpublished agreement", async () => {
     const unpublished = createRouterClient(
       {
@@ -603,7 +640,11 @@ describe("assignment-scoped participation coordination", () => {
           decision: "dismiss",
           survivorParticipationId: existing.id,
         }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        data: { reason: "REVIEW_TASK_ASSIGNEE_REQUIRED" },
+      });
     } finally {
       actor = coordinator;
       await db.delete(assignments).where(eq(assignments.userId, candidate));
@@ -796,7 +837,11 @@ describe("assignment-scoped participation coordination", () => {
     });
     await expect(
       client.participations.remove({ partnershipId: own, id: created.id }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED" },
+    });
     await db.delete(journeys).where(eq(journeys.id, candidate));
     const [claim] = await db
       .insert(claims)

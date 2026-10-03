@@ -503,6 +503,40 @@ describe("Participant Journey procedures", () => {
     ).toEqual(originalBands);
   });
 
+  it("treats overlapping frozen bands as a server invariant without changing the Journey", async () => {
+    const saved = await client.journeys.save(journey);
+    await createEditableClaim();
+    const [overlap] = await db
+      .insert(bands)
+      .values({
+        projectId: project,
+        minKm: "800",
+        maxKm: "900",
+        standardEur: "10",
+        greenEur: "20",
+      })
+      .returning({ id: bands.id });
+    try {
+      await expect(
+        client.journeys.update({ ...journey, origin: "Changed" }),
+      ).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        status: 500,
+        message: "Internal server error",
+        data: { reason: "INTERNAL_FAILURE" },
+      });
+      expect(
+        (await db.select().from(journeys).where(eq(journeys.id, saved.id)))[0]
+          .origin,
+      ).toBe(journey.origin);
+      expect(
+        await db.select().from(history).where(eq(history.claimId, claimId!)),
+      ).toHaveLength(0);
+    } finally {
+      await db.delete(bands).where(eq(bands.id, overlap!.id));
+    }
+  });
+
   it.each([
     "editable",
     "correction_requested",

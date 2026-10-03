@@ -540,3 +540,518 @@ it("agreementUnavailable fixes code/status/message/reason", () => {
     data: { reason: "PARTICIPANT_AGREEMENT_UNAVAILABLE" },
   });
 });
+
+it("partnerClaimEditRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerClaimEditRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may edit its Claim.",
+    data: { reason: "PARTNER_CLAIM_EDIT_REQUIRED" },
+  });
+});
+
+it("payoutSelectionLocked fixes code/status/message/reason", () => {
+  expect(createSituationErrors().payoutSelectionLocked()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message:
+      "Payout Account selection is locked while the Claim is not editable.",
+    data: { reason: "PAYOUT_SELECTION_LOCKED" },
+  });
+});
+
+it("partnerPayoutSelectionRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerPayoutSelectionRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Select a Payout Account belonging to the Partner Organization.",
+    data: { reason: "PARTNER_PAYOUT_SELECTION_REQUIRED" },
+  });
+});
+
+it("payoutAccountRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().payoutAccountRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Select a Partner Payout Account before saving the Claim.",
+    data: { reason: "PAYOUT_ACCOUNT_REQUIRED" },
+  });
+});
+
+it("claimNotEditable fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimNotEditable()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Claim is not editable.",
+    data: { reason: "CLAIM_NOT_EDITABLE" },
+  });
+});
+
+it("claimRequiredForCosts fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimRequiredForCosts()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Save an editable Claim before adding costs.",
+    data: { reason: "CLAIM_REQUIRED_FOR_COSTS" },
+  });
+});
+
+it("partnerCostsRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerCostsRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may manage Claim costs.",
+    data: { reason: "PARTNER_COSTS_REQUIRED" },
+  });
+});
+
+it("allocationParticipationRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().allocationParticipationRequired()).toMatchObject(
+    {
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Each allocation must reference a Participation in this Project Partnership.",
+      data: { reason: "ALLOCATION_PARTICIPATION_REQUIRED" },
+    },
+  );
+});
+
+it("costEntryRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().costEntryRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Cost entry does not belong to this Claim.",
+    data: { reason: "COST_ENTRY_REQUIRED" },
+  });
+});
+
+it("claimDocumentReferencesRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimDocumentReferencesRequired()).toMatchObject(
+    {
+      code: "BAD_REQUEST",
+      status: 400,
+      message: "Cost entry and Proof Document must belong to this Claim.",
+      data: { reason: "CLAIM_DOCUMENT_REFERENCES_REQUIRED" },
+    },
+  );
+});
+
+it("partnerJourneysRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerJourneysRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may manage Participant Journeys.",
+    data: { reason: "PARTNER_JOURNEYS_REQUIRED" },
+  });
+});
+
+it("journeysLocked fixes code/status/message/reason", () => {
+  expect(createSituationErrors().journeysLocked()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Claim is locked; Participant Journeys cannot change.",
+    data: { reason: "JOURNEYS_LOCKED" },
+  });
+});
+
+it("participationSelectionRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationSelectionRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Select a Participation in this Project Partnership.",
+    data: { reason: "PARTICIPATION_SELECTION_REQUIRED" },
+  });
+});
+
+it("journeyAlreadyExists fixes code/status/message/reason", () => {
+  expect(createSituationErrors().journeyAlreadyExists()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "This Participation already has a Participant Journey.",
+    data: { reason: "JOURNEY_ALREADY_EXISTS" },
+  });
+});
+
+it("claimRequiredForJourney fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimRequiredForJourney()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Save an editable Claim before updating a Participant Journey.",
+    data: { reason: "CLAIM_REQUIRED_FOR_JOURNEY" },
+  });
+});
+
+it("journeySelectionRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().journeySelectionRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message:
+      "Select an existing Participant Journey in this Project Partnership.",
+    data: { reason: "JOURNEY_SELECTION_REQUIRED" },
+  });
+});
+
+it("partnerOnboardingProgressRequired fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().partnerOnboardingProgressRequired(),
+  ).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message:
+      "Only the Partner Organization may read Participant onboarding progress.",
+    data: { reason: "PARTNER_ONBOARDING_PROGRESS_REQUIRED" },
+  });
+});
+
+it("partnerParticipantSearchRequired fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().partnerParticipantSearchRequired(),
+  ).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may search onboarded Participants.",
+    data: { reason: "PARTNER_PARTICIPANT_SEARCH_REQUIRED" },
+  });
+});
+
+it("partnerParticipationCreateRequired fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().partnerParticipationCreateRequired(),
+  ).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may create its Participation.",
+    data: { reason: "PARTNER_PARTICIPATION_CREATE_REQUIRED" },
+  });
+});
+
+it("participationCreateLocked fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationCreateLocked()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Locked Claim prevents Participation creation.",
+    data: { reason: "PARTICIPATION_CREATE_LOCKED" },
+  });
+});
+
+it("eligibleParticipantRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().eligibleParticipantRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Select an eligible onboarded User or use a Participant invitation.",
+    data: { reason: "ELIGIBLE_PARTICIPANT_REQUIRED" },
+  });
+});
+
+it("participationDuplicate fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationDuplicate()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message:
+      "Identity already participates in this Project; request merge review.",
+    data: { reason: "PARTICIPATION_DUPLICATE" },
+  });
+});
+
+it("participationRepresentationConflict fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().participationRepresentationConflict(),
+  ).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Participation cannot be created for this Project Partnership.",
+    data: { reason: "PARTICIPATION_REPRESENTATION_CONFLICT" },
+  });
+});
+
+it("partnerParticipationUpdateRequired fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().partnerParticipationUpdateRequired(),
+  ).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may update its Participation.",
+    data: { reason: "PARTNER_PARTICIPATION_UPDATE_REQUIRED" },
+  });
+});
+
+it("participationUpdateLocked fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationUpdateLocked()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Locked Claim prevents Participation changes.",
+    data: { reason: "PARTICIPATION_UPDATE_LOCKED" },
+  });
+});
+
+it("participationNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Participation not found in scope.",
+    data: { reason: "PARTICIPATION_NOT_FOUND" },
+  });
+});
+
+it("partnerParticipationRemoveRequired fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().partnerParticipationRemoveRequired(),
+  ).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may remove its Participation.",
+    data: { reason: "PARTNER_PARTICIPATION_REMOVE_REQUIRED" },
+  });
+});
+
+it("participationRemoveLocked fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationRemoveLocked()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Locked Claim prevents Participation removal.",
+    data: { reason: "PARTICIPATION_REMOVE_LOCKED" },
+  });
+});
+
+it("participationJourneyOrCostReferenced fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().participationJourneyOrCostReferenced(),
+  ).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message:
+      "Participation is referenced by a Participant Journey or Cost Allocation; request review instead.",
+    data: { reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED" },
+  });
+});
+
+it("participationReferenced fixes code/status/message/reason", () => {
+  expect(createSituationErrors().participationReferenced()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Participation is referenced; request review instead.",
+    data: { reason: "PARTICIPATION_REFERENCED" },
+  });
+});
+
+it("partnerDuplicateReviewRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerDuplicateReviewRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may review duplicate identities.",
+    data: { reason: "PARTNER_DUPLICATE_REVIEW_REQUIRED" },
+  });
+});
+
+it("reviewTaskNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().reviewTaskNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Review Task not found in scope.",
+    data: { reason: "REVIEW_TASK_NOT_FOUND" },
+  });
+});
+
+it("reviewTaskNotOpen fixes code/status/message/reason", () => {
+  expect(createSituationErrors().reviewTaskNotOpen()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Review Task is not open.",
+    data: { reason: "REVIEW_TASK_NOT_OPEN" },
+  });
+});
+
+it("reviewTaskNotAssigned fixes code/status/message/reason", () => {
+  expect(createSituationErrors().reviewTaskNotAssigned()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Review Task must be assigned before resolution.",
+    data: { reason: "REVIEW_TASK_NOT_ASSIGNED" },
+  });
+});
+
+it("reviewTaskAssigneeRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().reviewTaskAssigneeRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the assigned reviewer may resolve this Review Task.",
+    data: { reason: "REVIEW_TASK_ASSIGNEE_REQUIRED" },
+  });
+});
+
+it("reviewTaskSurvivorRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().reviewTaskSurvivorRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Review Task cannot be resolved with this survivor.",
+    data: { reason: "REVIEW_TASK_SURVIVOR_REQUIRED" },
+  });
+});
+
+it("partnerClaimPreviewRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerClaimPreviewRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may preview its Claim.",
+    data: { reason: "PARTNER_CLAIM_PREVIEW_REQUIRED" },
+  });
+});
+
+it("partnerClaimSubmitRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerClaimSubmitRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only the Partner Organization may submit its Claim.",
+    data: { reason: "PARTNER_CLAIM_SUBMIT_REQUIRED" },
+  });
+});
+
+it("claimRequiredForSubmission fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimRequiredForSubmission()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Save an editable Claim before submitting.",
+    data: { reason: "CLAIM_REQUIRED_FOR_SUBMISSION" },
+  });
+});
+
+it("reviewReasonRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().reviewReasonRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "A review reason is required.",
+    data: { reason: "REVIEW_REASON_REQUIRED" },
+  });
+});
+
+it("hostingClaimReviewRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().hostingClaimReviewRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only Hosting staff may review Claims.",
+    data: { reason: "HOSTING_CLAIM_REVIEW_REQUIRED" },
+  });
+});
+
+it("claimNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Claim not found in scope.",
+    data: { reason: "CLAIM_NOT_FOUND" },
+  });
+});
+
+it("claimSubmittedRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimSubmittedRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Claim must be submitted for this review decision.",
+    data: { reason: "CLAIM_SUBMITTED_REQUIRED" },
+  });
+});
+
+it("claimRejectedRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimRejectedRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Claim must be rejected for this review decision.",
+    data: { reason: "CLAIM_REJECTED_REQUIRED" },
+  });
+});
+
+it("claimReviewUnavailable fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimReviewUnavailable()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "No submitted Claim is available for review.",
+    data: { reason: "CLAIM_REVIEW_UNAVAILABLE" },
+  });
+});
+
+it("hostingPaymentRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().hostingPaymentRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only Hosting staff may record payment.",
+    data: { reason: "HOSTING_PAYMENT_REQUIRED" },
+  });
+});
+
+it("hostingPaymentCorrectionRequired fixes code/status/message/reason", () => {
+  expect(
+    createSituationErrors().hostingPaymentCorrectionRequired(),
+  ).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message: "Only Hosting staff may correct payment.",
+    data: { reason: "HOSTING_PAYMENT_CORRECTION_REQUIRED" },
+  });
+});
+
+it("claimApprovalRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimApprovalRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Claim must be approved to record payment.",
+    data: { reason: "CLAIM_APPROVAL_REQUIRED" },
+  });
+});
+
+it("fullTransferRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().fullTransferRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Transfer must equal the full approved EUR amount.",
+    data: { reason: "FULL_TRANSFER_REQUIRED" },
+  });
+});
+
+it("claimPaidRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().claimPaidRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Only a paid Claim can have its paid flag corrected.",
+    data: { reason: "CLAIM_PAID_REQUIRED" },
+  });
+});
+
+it("journeyDistanceOutsideBands fixes code/status/message/reason", () => {
+  expect(createSituationErrors().journeyDistanceOutsideBands()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Journey distance must have exactly one frozen funding band.",
+    data: { reason: "JOURNEY_DISTANCE_OUTSIDE_BANDS" },
+  });
+});
+
+it("submissionIncomplete fixes code/status/message/reason", () => {
+  expect(createSituationErrors().submissionIncomplete([])).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message: "Claim submission checklist is incomplete.",
+    data: { reason: "CLAIM_SUBMISSION_INCOMPLETE" },
+  });
+});
+
+it("journeyDistanceOutsideBands preserves its field issue", () => {
+  expect(createSituationErrors().journeyDistanceOutsideBands().data).toEqual({
+    reason: "JOURNEY_DISTANCE_OUTSIDE_BANDS",
+    issues: [
+      {
+        path: ["erasmusDistanceKm"],
+        message: "Journey distance must have exactly one frozen funding band.",
+      },
+    ],
+  });
+});
+it("submissionIncomplete preserves server-produced field issues", () => {
+  const issues = [
+    { path: ["entries", "entry-id"], message: "Add a Proof Document." },
+  ];
+  expect(createSituationErrors().submissionIncomplete(issues).data).toEqual({
+    reason: "CLAIM_SUBMISSION_INCOMPLETE",
+    issues,
+  });
+});

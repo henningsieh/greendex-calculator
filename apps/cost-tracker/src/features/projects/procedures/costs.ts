@@ -17,6 +17,7 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const scopeInput = z.object({ partnershipId: coordinationId });
@@ -177,9 +178,7 @@ async function requirePartnerSide(
     errors,
   );
   if (scope.partnerId !== activeOrganizationId)
-    throw errors.FORBIDDEN({
-      message: "Only the Partner Organization may manage Claim costs.",
-    });
+    throw createSituationErrors(errors).partnerCostsRequired();
   return scope;
 }
 
@@ -278,10 +277,9 @@ export const save = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
-      if (!claim || isPartnerEditLocked(claim.status))
-        throw errors.BAD_REQUEST({
-          message: "Save an editable Claim before adding costs.",
-        });
+      if (!claim) throw createSituationErrors(errors).claimRequiredForCosts();
+      if (isPartnerEditLocked(claim.status))
+        throw createSituationErrors(errors).claimNotEditable();
       const valid = await tx
         .select({ id: participants.id })
         .from(participants)
@@ -299,10 +297,7 @@ export const save = authorized
           ),
         );
       if (valid.length !== input.allocations.length)
-        throw errors.BAD_REQUEST({
-          message:
-            "Each allocation must reference a Participation in this Project Partnership.",
-        });
+        throw createSituationErrors(errors).allocationParticipationRequired();
       if (input.entryId) {
         const [existing] = await tx
           .select({ id: entries.id })
@@ -311,10 +306,7 @@ export const save = authorized
             and(eq(entries.id, input.entryId), eq(entries.claimId, claim.id)),
           )
           .limit(1);
-        if (!existing)
-          throw errors.BAD_REQUEST({
-            message: "Cost entry does not belong to this Claim.",
-          });
+        if (!existing) throw createSituationErrors(errors).costEntryRequired();
         await tx
           .update(entries)
           .set({
@@ -388,8 +380,9 @@ export const linkDocument = authorized
         .where(eq(claims.partnershipId, input.partnershipId))
         .for("update")
         .limit(1);
-      if (!claim || isPartnerEditLocked(claim.status))
-        throw errors.BAD_REQUEST({ message: "Claim is not editable." });
+      if (!claim) throw createSituationErrors(errors).claimRequiredForCosts();
+      if (isPartnerEditLocked(claim.status))
+        throw createSituationErrors(errors).claimNotEditable();
       const [entry] = await tx
         .select({ id: entries.id })
         .from(entries)
@@ -406,9 +399,7 @@ export const linkDocument = authorized
         )
         .limit(1);
       if (!entry || !document)
-        throw errors.BAD_REQUEST({
-          message: "Cost entry and Proof Document must belong to this Claim.",
-        });
+        throw createSituationErrors(errors).claimDocumentReferencesRequired();
       await tx
         .insert(links)
         .values({ travelCostEntryId: entry.id, proofDocumentId: document.id })

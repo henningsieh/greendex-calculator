@@ -20,6 +20,7 @@ import { requirePartnerCoordination } from "@/features/projects/procedures/coord
 import {
   createSituationErrors,
   type ScopeErrorConstructors,
+  type SituationErrorConstructors,
 } from "@/lib/orpc/errors";
 
 export const id = z.string().min(1).max(128);
@@ -78,10 +79,7 @@ export function makeRequirePublishedAgreement(
     CURRENT_PARTICIPANT_AGREEMENT_VERSION,
 ) {
   return function requirePublishedAgreement(
-    errors: Pick<
-      import("@/lib/orpc/errors").SituationErrorConstructors,
-      "BAD_REQUEST"
-    >,
+    errors: Pick<SituationErrorConstructors, "BAD_REQUEST">,
   ) {
     const version = currentAgreement();
     if (!isPublishedAgreement(version))

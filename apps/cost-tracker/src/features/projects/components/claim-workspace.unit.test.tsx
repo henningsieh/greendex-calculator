@@ -498,7 +498,8 @@ describe("Claim workspace", () => {
   it("surfaces the server one-journey rule at Participation without clearing the form", async () => {
     mocks.saveJourney.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
-        message: "This Participation already has a Participant Journey.",
+        message: "hostile remote text",
+        data: { reason: "JOURNEY_ALREADY_EXISTS" },
       }),
     );
     mount();
