@@ -8,11 +8,6 @@ These documents describe behavior owned by the Cost Tracker application.
 - Other contexts: [Calculator](../../../apps/calculator/CONTEXT.md) · [Documentation](../../../apps/documentation/CONTEXT.md) — overview in [AGENTS.md](../../../AGENTS.md#contexts)
 - [Cost Tracker architecture](architecture.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
-- [Architecture review and migration plan](architecture-review-and-migration-plan.md) — historical Phase 8 snapshot; its repository baseline is obsolete
-- [Architecture review after the migration fix (13 findings)](architecture-review-after-migration-fix.md)
-- [Architecture migration fix plan](architecture-migration-fix-plan.md)
-- [Final Cost Tracker migration review](architecture-migration-final-review.md)
-- [Phase 0 – kurze Erklärung](phase-0-erklaerung.md)
 - [Shared Greendex language](../../../DOMAIN-GLOSSARY.md)
 - [Shared Projects documentation](../../../docs/projects/README.md)
 - [Cost Tracker Projects](projects/README.md)
@@ -23,17 +18,34 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Garage S3 infrastructure](infrastructure/garage.md)
 - [Manual pair-testing (journey script, run logs, session protocol)](manual-testing/)
 
+## Open work
+
+Start here when you need to know what still needs a decision. Nothing in this list is history.
+
+- [Backlog](backlog/) — deferred questions and follow-ups. Begin with the [six open questions from the Phase 0–8 architecture review](backlog/architecture-review-open-questions.md).
+- [Project/Partner cardinality](backlog/project-partner-cardinality.md) — can one Project have more than one Partner Organization, or is one Partner Organization per Project the real rule?
+- [GitHub issues](https://github.com/henningsieh/greendex-calculator/issues) — canonical surface for issues and specs; see [`docs/agents/issue-tracker.md`](../../../docs/agents/issue-tracker.md).
+
+## Archive
+
+Finished work. These files describe the codebase as it stood in September 2026. Do not follow them as instructions.
+
+- [Archived architecture reviews](archive/) — the completed Phase 0–8 migration review, its findings, its fix plan, and its final verdict. The architecture migration is accepted and closed.
+
 ## Decisions
 
 - [Project Organizations and Project Participation](../../../docs/adr/0001-model-project-organizations-and-participation.md)
 - [Participant integration with Better Auth](../../../docs/adr/0002-integrate-participants-with-better-auth.md)
-- [Cost Submissions and Travel Costs](../../../docs/adr/0003-model-cost-submissions-and-travel-costs.md) — superseded in part by ADR-0006
+- [Cost Submissions and Travel Costs](../../../docs/adr/0003-model-cost-submissions-and-travel-costs.md) — superseded by ADR-0006, ADR-0007, and ADR-0011
+- [Scope Project Coordination Through Assignments](../../../docs/adr/0004-scope-project-coordination-through-assignments.md)
+- [Require Authenticated Participant Onboarding and an App-Wide Agreement](../../../docs/adr/0005-require-authenticated-participant-onboarding.md) — supersedes ADR-0002 in part
 - [Derive Claim Participants Through Cost Allocations](../../../docs/adr/0006-derive-claim-participants-through-cost-allocations.md)
 - [Share Participant Journeys and Cap Claims by Funding Rules](../../../docs/adr/0007-share-participant-journeys-and-cap-claims-by-funding-rules.md)
 - [Return Claims for Partner Correction](../../../docs/adr/0008-return-claims-for-partner-correction.md)
 - [Approve Claims Before Recording Payment](../../../docs/adr/0009-approve-claims-before-recording-payment.md)
 - [Reject and Reopen Claims](../../../docs/adr/0010-reject-and-reopen-claims.md)
 - [Complete Claim Submission and Payment Workflow](../../../docs/adr/0011-complete-claim-submission-and-payment-workflow.md)
+- [Ban Better Auth's Fallback Role in Cost Tracker](../../../docs/adr/0012-ban-fallback-member-role-in-cost-tracker.md)
 
 ## End-to-end test account
 
