@@ -1,6 +1,6 @@
 # Agent Task Routes
 
-This opt-in router complements `AGENTS.md`. Start at the matching row, then follow the linked map and the integration registry.
+This opt-in router complements `AGENTS.md` for unfamiliar or cross-cutting implementation. Start at the matching row; open only the linked sources needed for that change.
 
 ## Choose the task route
 
@@ -35,3 +35,7 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 ## Next.js work
 
 For any Next.js task, read the version-matched docs bundled in the single catalog-resolved Next.js install at `node_modules/next/dist/docs/` (entry `index.md`); they upgrade with the `next` package, so there is no download or regeneration step. The catalog pins one Next.js version for the whole workspace and `publicHoistPattern` exposes that one install at the repository root; do not reintroduce per-app doc pointers. The legacy `.next-docs/` corpus and the `agents-md` download are obsolete on Next.js 16.3+.
+
+## Delegated implementation
+
+The main agent passes the matching route, relevant paths, and acceptance criteria; the child reads the owning app context and scoped instructions. Return changed files, check results, blockers, and evidence paths rather than copying documentation or logs into the main chat. The main agent verifies the affected diff and evidence, reading deeper only where needed. Launch and recovery mechanics live in [subagent launch](subagent-launch.md).

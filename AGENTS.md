@@ -30,7 +30,13 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 - Touching the SSR/oRPC seam → [oRPC](docs/agents/instructions/orpc.md): preserve both `@/lib/orpc/client.server` imports and their evaluation order.
 - UI components → [UI components](docs/agents/instructions/shadcn.md) (`@shadcn/lint` rules in the root `.oxlintrc.json`).
 - Issue-tracked work → [issue tracker](docs/agents/issue-tracker.md), [triage labels](docs/agents/triage-labels.md).
-- Subagents on `openai-*` models → check the 5h usage meter first ([procedure](docs/agents/codex-usage-meter.md)); below 15% remaining, route to an alternate provider ([mechanics](docs/agents/subagent-launch.md)).
+- Delegation or child recovery → [subagent launch](docs/agents/subagent-launch.md); its Codex quota gate pauses new launches until reset + 2 minutes (CEST).
+
+## Delegation
+
+For requested repo work, the main agent may delegate bounded implementation, research, and review when a child earns its overhead; do tiny tasks directly. The main agent owns scope, decisions, review sequencing, and final acceptance. Children execute their contract and escalate decisions; they do not launch other agents. Commits and external writes require explicit task permission.
+
+Use fresh child context with relevant paths, repo rules, and a short task contract. Routine results: at most 200 words plus evidence/artifact paths, not raw logs. Children read their matching app/scoped docs; the main agent reads deeper only to resolve a decision or verify evidence. Keep one writer per worktree, including formatting and lint fixes; the main agent does not edit an active child's worktree.
 
 ## Commit Conventions
 
@@ -64,7 +70,7 @@ The instruction files below live under [`docs/agents/instructions/`](docs/agents
 
 ## Agent Checklist
 
-Before submitting work:
+Before final delivery (the main agent owns these gates after shared-worktree children finish; children run their assigned focused checks):
 
 - [ ] No forbidden commands were executed
 - [ ] Only the matching scoped instruction(s) were read — no speculative pre-reading
