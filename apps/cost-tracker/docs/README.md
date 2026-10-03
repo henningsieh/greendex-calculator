@@ -8,7 +8,7 @@ These documents describe behavior owned by the Cost Tracker application.
 - Other contexts: [Calculator](../../../apps/calculator/CONTEXT.md) · [Documentation](../../../apps/documentation/CONTEXT.md) — overview in [AGENTS.md](../../../AGENTS.md#contexts)
 - [Cost Tracker architecture](architecture.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
-- [Architecture review and migration plan](architecture-review-and-migration-plan.md)
+- [Architecture review and migration plan](architecture-review-and-migration-plan.md) — historical Phase 8 snapshot; its repository baseline is obsolete
 - [Architecture review after the migration fix (13 findings)](architecture-review-after-migration-fix.md)
 - [Architecture migration fix plan](architecture-migration-fix-plan.md)
 - [Final Cost Tracker migration review](architecture-migration-final-review.md)
