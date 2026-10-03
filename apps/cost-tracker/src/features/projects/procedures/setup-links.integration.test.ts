@@ -312,7 +312,13 @@ describe("Partner Organization setup links", () => {
           projectId: otherProjectId,
           recipientEmail,
         }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        message:
+          "You need Hosting Organization staff access or an assignment to this Project.",
+        data: { reason: "HOST_COORDINATION_REQUIRED" },
+      });
       await expect(
         client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
       ).resolves.toHaveProperty("secret");

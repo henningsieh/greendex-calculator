@@ -11,6 +11,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireCostTrackerRole } from "@/features/organizations/roles";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export const coordinationId = z.string().trim().min(1).max(128);
@@ -68,7 +69,7 @@ export async function requireHostCoordination(
       .limit(1);
     if (assignment) return project;
   }
-  throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
+  throw createSituationErrors().hostCoordinationRequired();
 }
 
 /** Verifies both the active Organization and the actor's persisted staff scope. */
