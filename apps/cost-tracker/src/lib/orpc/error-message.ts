@@ -1,5 +1,7 @@
 import { ORPCError } from "@orpc/client";
 
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
+
 export type ORPCRequestErrorMessage = {
   sessionExpired: boolean;
   text: string;
@@ -13,6 +15,12 @@ export function getORPCRequestErrorMessage(
   error: unknown,
 ): ORPCRequestErrorMessage {
   if (error instanceof ORPCError) {
+    const situation = getSafeErrorSituation(error);
+    if (situation)
+      return {
+        sessionExpired: situation.reason === "SESSION_REQUIRED",
+        text: situation.message,
+      };
     if (error.status === 400 || error.code === "BAD_REQUEST") {
       return {
         sessionExpired: false,
