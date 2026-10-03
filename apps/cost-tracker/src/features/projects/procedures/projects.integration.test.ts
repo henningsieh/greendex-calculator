@@ -343,10 +343,10 @@ describe("projects procedures", () => {
       },
     );
 
-    it("denies assigned fallback members without the coordinator role", async () => {
+    it("denies assigned participants without the coordinator role", async () => {
       await db
         .update(member)
-        .set({ role: "member" })
+        .set({ role: "participant" })
         .where(eq(member.organizationId, host));
       await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
       const [record] = await db
@@ -356,7 +356,7 @@ describe("projects procedures", () => {
       expect(record?.completedAt).toBeNull();
     });
 
-    it.each(["member", "participant", "project-coordinator"])(
+    it.each(["participant", "participant", "project-coordinator"])(
       "denies Hosting %s without assignment",
       async (role) => {
         await db
@@ -968,10 +968,10 @@ describe("projects procedures", () => {
     });
 
     it.each([
-      "member",
+      "participant",
       "participant",
       "project-coordinator",
-      "member,participant,project-coordinator",
+      "participant,project-coordinator",
     ])(
       "denies org-wide hosted overview to %s even with project.read",
       async (role) => {

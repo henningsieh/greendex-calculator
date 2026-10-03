@@ -11,6 +11,10 @@ export const ORGANIZATION_ROLES = {
   ProjectCoordinator: "project-coordinator",
   OrganizationAdmin: "admin",
   Participant: "participant",
+  // Legacy Better Auth default retained ONLY for Calculator (which still
+  // stores this value). Forbidden in Cost Tracker: ban hooks refuse it and
+  // costTrackerOrganizationRoles drops it. Any future Calculator role
+  // adaptation must confront this legacy entry.
   Member: "member",
 } as const;
 

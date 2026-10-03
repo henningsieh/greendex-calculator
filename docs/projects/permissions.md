@@ -22,7 +22,7 @@ Neither answer replaces the other. A role never grants access to every Project, 
 | Project Coordinator | `project-coordinator` | Coordination capability narrowed by an explicit hosted-Project or Project-Partnership assignment. |
 | Participant | `participant` | Participant-facing capability narrowed by the User's own Project Participation. |
 
-Better Auth's default `member` role is a technical fallback. It is not a named Greendex actor and grants no Cost Tracker authority unless a future use case explicitly defines one.
+Better Auth's default role value `member` is forbidden in Cost Tracker: never invite, assign, or seed it, alone or in combined roles. It is not a named Greendex actor. [ADR-0012](../adr/0012-ban-fallback-member-role-in-cost-tracker.md) supersedes the prior technical-fallback allowance; Calculator compatibility is unchanged.
 
 One Membership may hold several roles. Assigning `participant` or `project-coordinator` never removes an existing role.
 

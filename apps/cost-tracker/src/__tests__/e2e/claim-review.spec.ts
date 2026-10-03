@@ -698,7 +698,7 @@ test.describe.serial("Claim review journey 25–26", () => {
       eq(member.organizationId, ids.host),
     );
     try {
-      await db.update(member).set({ role: "member" }).where(membership);
+      await db.update(member).set({ role: "participant" }).where(membership);
       expect((await host.request.get(url)).status()).toBe(403);
       await db
         .update(member)

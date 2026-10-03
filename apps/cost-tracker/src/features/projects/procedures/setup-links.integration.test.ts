@@ -156,6 +156,7 @@ describe("Partner Organization setup links", () => {
     ).rejects.toThrow("already assigned");
   });
 
+
   it("separates an unverified recipient from a wrong recipient without consuming the link", async () => {
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
@@ -189,7 +190,7 @@ describe("Partner Organization setup links", () => {
     expect(unchanged?.partnershipId).toBeNull();
   });
 
-  it.each(["member,owner", "owner,participant"])(
+  it.each(["project-coordinator,owner", "owner,participant"])(
     "offers and consumes an existing Organization with %s membership",
     async (role) => {
       const combinedOrgId = `setup-combined-${role}-${id}`;
@@ -300,7 +301,7 @@ describe("Partner Organization setup links", () => {
 
   it.each([
     { role: "project-coordinator", allowed: true },
-    { role: "member", allowed: false },
+    { role: "participant", allowed: false },
     { role: "participant", allowed: false },
     { role: "admin", allowed: true },
     { role: "owner", allowed: true },
@@ -378,7 +379,7 @@ describe("Partner Organization setup links", () => {
     });
     await db
       .update(member)
-      .set({ role: "member" })
+      .set({ role: "participant" })
       .where(eq(member.organizationId, partnerId));
     await expect(
       client.projectPartnerships.consumeSetupLink({

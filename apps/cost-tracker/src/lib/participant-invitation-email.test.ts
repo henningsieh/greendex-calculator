@@ -60,7 +60,7 @@ describe("Cost Tracker invitation email routing", () => {
     await sendInvitationEmail(data);
     expect(mocks.sendParticipantInvitation).not.toHaveBeenCalled();
     expect(mocks.sendOrganizationInvitation).not.toHaveBeenCalled();
-    await sendInvitationEmail({ ...data, role: "member" });
+    await sendInvitationEmail({ ...data, role: "admin" });
     expect(mocks.sendOrganizationInvitation).toHaveBeenCalledWith(
       expect.objectContaining({
         email: data.email,

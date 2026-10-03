@@ -583,7 +583,7 @@ describe("Participant onboarding procedures", () => {
     ).toBe(false);
   });
 
-  it("keeps owner/admin/participant roles and adds participant to a Project Coordinator", async () => {
+  it("keeps existing owner/admin/participant roles, and grants participant to coordinators without removing roles", async () => {
     const link = await client.participantOnboarding.createRegistrationLink({
       partnershipId: partnership,
     });
@@ -594,7 +594,14 @@ describe("Participant onboarding procedures", () => {
         profile: { fullName: "Recipient" },
         agreement: { accepted: true as const },
       });
-    for (const role of ["owner", "admin", "participant", "project-coordinator"]) {
+    for (const role of [
+      "owner",
+      "admin",
+      "participant",
+      "project-coordinator",
+      "project-coordinator,participant",
+    ]) {
+
       await db.delete(participants).where(eq(participants.projectId, project));
       await db.delete(member).where(eq(member.userId, recipient));
       await db.insert(member).values({
@@ -1184,7 +1191,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       organizationId: host,
       userId: owner,
-      role: "member",
+      role: "participant",
       createdAt: new Date(),
     });
     await expect(
@@ -1236,7 +1243,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       organizationId: partner,
       userId: recipient,
-      role: "member",
+      role: "participant",
       createdAt: new Date(),
     });
     await expect(

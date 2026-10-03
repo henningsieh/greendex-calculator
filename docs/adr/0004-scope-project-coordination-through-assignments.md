@@ -4,6 +4,8 @@ status: accepted
 
 # Scope Project Coordination Through Assignments, Not Separate Host and Partner Roles
 
+> **Superseded in part by [ADR-0012](0012-ban-fallback-member-role-in-cost-tracker.md):** Cost Tracker forbids inviting, assigning, or seeding the fallback role value `member`. The original fallback description below is historical, not permission to use it.
+
 `project-coordinator` is one distinct Better Auth role in every Organization. Whether it coordinates the Host side or a Partner side of a Project is decided by the assignment relationship, not by a separate role.
 
 ## Context

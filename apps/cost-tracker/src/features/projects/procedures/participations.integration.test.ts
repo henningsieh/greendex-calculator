@@ -221,7 +221,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: true,
         org: host,
-        role: "member",
+        role: "project-coordinator",
       },
       {
         key: "wrong-org",

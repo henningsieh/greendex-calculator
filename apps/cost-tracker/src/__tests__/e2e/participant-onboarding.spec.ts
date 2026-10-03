@@ -61,7 +61,6 @@ const ids = {
   otherPartnership: randomUUID(),
   oldInvitation: randomUUID(),
   invitation: randomUUID(),
-  staffInvitation: randomUUID(),
 };
 const actors = Object.fromEntries(
   (["H", "P", "F", "T", "U", "V", "Q", "C"] as const).map((code) => [
@@ -154,13 +153,7 @@ async function counts() {
     db
       .select({ value: count() })
       .from(invitation)
-      .where(
-        inArray(invitation.id, [
-          ids.oldInvitation,
-          ids.invitation,
-          ids.staffInvitation,
-        ]),
-      ),
+      .where(inArray(invitation.id, [ids.oldInvitation, ids.invitation])),
     db
       .select({ value: count() })
       .from(bridges)
@@ -256,7 +249,7 @@ async function assertJoined(
   projectId = ids.main,
 ) {
   expect(await membershipRole(actor, ids.host)).toEqual([
-    { role: actor === "Q" ? "member,participant" : "participant" },
+    { role: actor === "Q" ? "project-coordinator,participant" : "participant" },
   ]);
   expect(await membershipRole(actor, partnerId)).toHaveLength(0);
   expect(
@@ -384,16 +377,16 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         expiresAt: new Date(Date.now() + 3_600_000),
         inviterId: actors.P.id,
       },
-      {
-        id: ids.staffInvitation,
-        organizationId: ids.host,
-        email: actors.Q.email,
-        role: "member",
-        status: "pending",
-        expiresAt: new Date(Date.now() + 3_600_000),
-        inviterId: actors.H.id,
-      },
     ]);
+    // Hosting coordinator provisioning has no product UI yet (ADR-0012).
+    // Setup-only real Membership, never an invitation or fake acceptance.
+    await db.insert(member).values({
+      id: randomUUID(),
+      organizationId: ids.host,
+      userId: actors.Q.id,
+      role: "project-coordinator",
+      createdAt: now,
+    });
     await db.insert(bridges).values({
       invitationId: ids.oldInvitation,
       partnershipId: ids.partnership,
@@ -440,13 +433,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       );
     await db
       .delete(invitation)
-      .where(
-        inArray(invitation.id, [
-          ids.oldInvitation,
-          ids.invitation,
-          ids.staffInvitation,
-        ]),
-      );
+      .where(inArray(invitation.id, [ids.oldInvitation, ids.invitation]));
     await db
       .delete(partnerships)
       .where(
@@ -570,8 +557,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the participantInvitationClosed factory copy.
     await expect(t.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "Invitation is closed.",
     );
     expect(
       await db
@@ -606,8 +594,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await u.getByLabel("Full name").fill(actors.U.name);
     await u.getByLabel("I accept the current Participant agreement").check();
     await u.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the registrationLinkClosed factory copy.
     await expect(u.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "Registration link is closed.",
     );
     expect(
       await db
@@ -741,7 +730,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(f.getByText(actors.T.email)).toHaveCount(0);
   });
 
-  test("19 cross-Partnership refusal, distinct Project, and Q Hosting member role preservation", async ({
+  test("19 cross-Partnership refusal, distinct Project, and Q Hosting coordinator role preservation", async ({
     browser,
     baseURL,
   }) => {
@@ -760,8 +749,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the joinedOtherPartner factory copy.
     await expect(t.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "You already joined this Project through another Partner Organization.",
     );
     expect(
       await db
@@ -807,17 +797,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await assertJoined("T", ids.partner, ids.other);
 
     const q = await pageFor(browser, "Q", baseURL!);
-    await q.goto(`/accept-invitation/${ids.staffInvitation}`);
-    await expect(
-      q.getByRole("heading", { name: "Organization Invitation" }),
-    ).toBeVisible();
-    await q
-      .getByRole("button", { name: "Accept Organization Invitation" })
-      .click();
-    await expect(q.locator('section p[role="alert"]')).toHaveCount(0);
-    // Preserve the original full-URL match; only the diagnostic receives a boolean.
-    await expectPrivateURL(q, /\/projects$/);
-    expect(await membershipRole("Q", ids.host)).toEqual([{ role: "member" }]);
+    expect(await membershipRole("Q", ids.host)).toEqual([
+      { role: "project-coordinator" },
+    ]);
     await join(q, sharedLink, "Q");
     await assertJoined("Q");
   });
