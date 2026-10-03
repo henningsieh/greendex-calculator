@@ -19,7 +19,7 @@ import {
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
-import { createRouterClient } from "@orpc/server";
+import { ORPCError, createRouterClient } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import {
   afterAll,
@@ -59,6 +59,7 @@ import {
   createParticipantOnboardingProcedures,
   deliverParticipantInvitation,
 } from "@/features/authentication/participant-onboarding-procedures";
+import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { createParticipationProcedures } from "@/features/projects/procedures/participations";
 
 const suffix = randomUUID();
@@ -236,7 +237,9 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.listMyProjects(),
     ).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "UNPROCESSABLE_CONTENT",
+      status: 422,
+      data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
       message: "Complete your Participant profile before accessing Projects.",
     });
     await client.participantOnboarding.saveProfile({ fullName: "Recipient" });
@@ -244,6 +247,8 @@ describe("Participant onboarding procedures", () => {
       client.participantOnboarding.listMyProjects(),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
+      status: 403,
+      data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
       message:
         "Accept the current Participant agreement before accessing Projects.",
     });
@@ -278,6 +283,8 @@ describe("Participant onboarding procedures", () => {
       client.participantOnboarding.listMyProjects(),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
+      status: 403,
+      data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
       message:
         "Accept the current Participant agreement before accessing Projects.",
     });
@@ -420,7 +427,7 @@ describe("Participant onboarding procedures", () => {
     ).toBe(false);
   });
 
-  it("keeps existing owner/admin/participant roles, and grants participant to a plain member only", async () => {
+  it("keeps owner/admin/participant roles and adds participant to a Project Coordinator", async () => {
     const link = await client.participantOnboarding.createRegistrationLink({
       partnershipId: partnership,
     });
@@ -431,13 +438,7 @@ describe("Participant onboarding procedures", () => {
         profile: { fullName: "Recipient" },
         agreement: { accepted: true as const },
       });
-    for (const role of [
-      "owner",
-      "admin",
-      "participant",
-      "member",
-      "member,project-coordinator",
-    ]) {
+    for (const role of ["owner", "admin", "participant", "project-coordinator"]) {
       await db.delete(participants).where(eq(participants.projectId, project));
       await db.delete(member).where(eq(member.userId, recipient));
       await db.insert(member).values({
@@ -449,11 +450,29 @@ describe("Participant onboarding procedures", () => {
       });
       await join();
       expect(await memberships()).toEqual([
-        { role: role.startsWith("member") ? `${role},participant` : role },
+        { role: role === "project-coordinator" ? `${role},participant` : role },
       ]);
     }
     expect(authMocks.addMember).not.toHaveBeenCalled();
-    expect(authMocks.update).toHaveBeenCalledTimes(2);
+    expect(authMocks.update).toHaveBeenCalledTimes(1);
+    // ADR-0012: fallback roles are refused in memory, never seeded or upgraded.
+    for (const bannedRole of ["member", "member,project-coordinator"]) {
+      let refusal: unknown;
+      try {
+        requireCostTrackerRole(
+          bannedRole,
+          (options) => new ORPCError("BAD_REQUEST", options),
+        );
+      } catch (error) {
+        refusal = error;
+      }
+      expect(refusal).toMatchObject({
+        code: "BAD_REQUEST",
+        status: 400,
+        message:
+          'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
+      });
+    }
   });
 
   it("cancels the native invitation on revoke and requires re-issue to recover", async () => {

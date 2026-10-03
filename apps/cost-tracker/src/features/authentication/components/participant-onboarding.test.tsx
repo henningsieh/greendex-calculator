@@ -3,6 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createSituationErrors } from "@/lib/orpc/errors";
+
 const mocks = vi.hoisted(() => ({
   join: vi.fn(),
   listMyProjects: vi.fn(),
@@ -45,7 +47,6 @@ const projects = [
     hostingOrganizationName: "Host B",
   },
 ];
-const forbidden = (message: string) => new ORPCError("FORBIDDEN", { message });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -147,14 +148,8 @@ describe("ParticipantDashboard", () => {
 
   it("blocks missing profiles until saved, then requests current agreement", async () => {
     mocks.listMyProjects
-      .mockRejectedValueOnce(
-        forbidden("Complete your Participant profile before accessing Projects."),
-      )
-      .mockRejectedValueOnce(
-        forbidden(
-          "Accept the current Participant agreement before accessing Projects.",
-        ),
-      )
+      .mockRejectedValueOnce(createSituationErrors().incompleteProfile())
+      .mockRejectedValueOnce(createSituationErrors().agreementRequired())
       .mockResolvedValueOnce(projects);
     const user = userEvent.setup();
     render(<ParticipantDashboard agreement={published} />);
@@ -172,13 +167,23 @@ describe("ParticipantDashboard", () => {
     expect(mocks.acceptAgreement).toHaveBeenCalledWith({ accepted: true });
   });
 
+  it("does not activate profile completion from prose or wrong code/reason", async () => {
+    mocks.listMyProjects.mockRejectedValue(
+      new ORPCError("FORBIDDEN", {
+        message: "Complete your Participant profile before accessing Projects.",
+        data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
+      }),
+    );
+    render(<ParticipantDashboard agreement={published} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "You do not have permission to access this resource.",
+    );
+    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
+  });
+
   it("blocks stale agreement until accepted", async () => {
     mocks.listMyProjects
-      .mockRejectedValueOnce(
-        forbidden(
-          "Accept the current Participant agreement before accessing Projects.",
-        ),
-      )
+      .mockRejectedValueOnce(createSituationErrors().agreementRequired())
       .mockResolvedValueOnce(projects);
     const user = userEvent.setup();
     render(<ParticipantDashboard agreement={published} />);
