@@ -381,7 +381,7 @@ describe("Participant onboarding procedures", () => {
     expect(JSON.stringify(scoped)).not.toContain("secretHash");
     await expect(
       client.participations.listPartnership({ partnershipId: otherPartnership }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     const rows = await db
       .select()
       .from(links)
@@ -617,7 +617,7 @@ describe("Participant onboarding procedures", () => {
         partnershipId: otherPartnership,
         email: recipientEmail,
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(
       (
         await db
@@ -641,7 +641,7 @@ describe("Participant onboarding procedures", () => {
           partnershipId: otherPartnership,
           email: recipientEmail,
         }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
       expect(
         (
           await db
@@ -1067,7 +1067,7 @@ describe("Participant onboarding procedures", () => {
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     actor = recipient;
     activeOrganizationId = partner;
     await db.insert(member).values({
@@ -1128,7 +1128,7 @@ describe("Participant onboarding procedures", () => {
           partnershipId: otherPartnership,
           email: `another-${suffix}@example.org`,
         }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
     } finally {
       await db.delete(bridges).where(eq(bridges.projectId, project));
       await db.delete(invitation).where(eq(invitation.organizationId, host));

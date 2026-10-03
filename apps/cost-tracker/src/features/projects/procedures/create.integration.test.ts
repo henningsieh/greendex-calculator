@@ -165,7 +165,7 @@ describe("projects.create", () => {
     expect(await assignments()).toEqual([{ projectId: first.id }]);
     await expect(
       requireHostCoordination(first.id, actor, host, {
-        FORBIDDEN: ({ message }) => new Error(message),
+        FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
       }),
     ).resolves.toBeDefined();
     expect(await client.projects.get({ projectId: first.id })).toMatchObject({
@@ -182,7 +182,7 @@ describe("projects.create", () => {
     authMocks.hasPermission.mockResolvedValue({ success: false });
     await expect(
       requireHostCoordination(foreignProject, actor, otherHost, {
-        FORBIDDEN: ({ message }) => new Error(message),
+        FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
       }),
     ).rejects.toThrow();
     await expect(
@@ -207,6 +207,39 @@ describe("projects.create", () => {
     await expect(
       client.projects.get({ projectId: first.id }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("distinguishes missing selection, membership, and scoped Project in the shared Hosting guard", async () => {
+    const errors = {
+      FORBIDDEN: (options: { message: string; data?: { reason: string } }) =>
+        new ORPCError("FORBIDDEN", options),
+    };
+    await expect(
+      requireHostCoordination("missing", actor, null, errors),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
+    await expect(
+      requireHostCoordination("missing", "not-a-member", host, errors),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Membership in the active Organization is required.",
+      data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    });
+    await expect(
+      requireHostCoordination("missing", actor, host, errors),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+      message: "Project not found in scope.",
+      data: { reason: "PROJECT_NOT_FOUND" },
+    });
+    expect(await assignments()).toEqual([]);
   });
 
   it.each(["owner", "admin"])(

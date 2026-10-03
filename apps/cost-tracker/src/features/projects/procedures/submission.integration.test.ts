@@ -888,7 +888,7 @@ describe("Claim submission", () => {
   it("rejects Hosting, Participant and other Partnership submission", async () => {
     await expect(
       client.claims.submit({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     activeOrg = host;
     await expect(submit()).rejects.toMatchObject({ code: "FORBIDDEN" });
     activeOrg = partner;
@@ -1443,7 +1443,7 @@ describe("Host Claim review", () => {
         await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(
         client.claims.getHistory({ partnershipId: foreign }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
     }
     activeOrg = partner;
     activeActor = participantUser;

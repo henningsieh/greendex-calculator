@@ -3,7 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { SafeErrorDataSchema, situationCatalog } from "@/lib/orpc/error-contract";
 
 type Situation = (typeof situationCatalog)[keyof typeof situationCatalog];
-type Constructors = {
+export type SituationErrorConstructors = {
   [Code in Situation["code"]]: (options: {
     message: string;
     data: { reason: string };
@@ -11,7 +11,9 @@ type Constructors = {
 };
 
 export function createSituationErrors(
-  errors: Constructors = {
+  overrides: Partial<SituationErrorConstructors> = {},
+) {
+  const errors: SituationErrorConstructors = {
     BAD_REQUEST: (options) => new ORPCError("BAD_REQUEST", options),
     UNAUTHORIZED: (options) => new ORPCError("UNAUTHORIZED", options),
     FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
@@ -24,8 +26,8 @@ export function createSituationErrors(
       new ORPCError("SERVICE_UNAVAILABLE", options),
     INTERNAL_SERVER_ERROR: (options) =>
       new ORPCError("INTERNAL_SERVER_ERROR", options),
-  },
-) {
+    ...overrides,
+  };
   return {
     unauthenticated: () =>
       errors.UNAUTHORIZED({
@@ -81,6 +83,41 @@ export function createSituationErrors(
         message: situationCatalog.hostCoordinationRequired.message,
         data: SafeErrorDataSchema.parse({
           reason: situationCatalog.hostCoordinationRequired.reason,
+        }),
+      }),
+    projectNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.projectNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.projectNotFound.reason,
+        }),
+      }),
+    partnershipNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.partnershipNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnershipNotFound.reason,
+        }),
+      }),
+    organizationManagementRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.organizationManagementRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.organizationManagementRequired.reason,
+        }),
+      }),
+    partnerCoordinationRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.partnerCoordinationRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerCoordinationRequired.reason,
+        }),
+      }),
+    coordinatorSelectionRequired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.coordinatorSelectionRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.coordinatorSelectionRequired.reason,
         }),
       }),
     badInput: () =>
@@ -141,3 +178,12 @@ export function createSituationErrors(
       }),
   };
 }
+
+export type ScopeErrorConstructors = Partial<
+  Pick<SituationErrorConstructors, "BAD_REQUEST" | "NOT_FOUND">
+> & {
+  FORBIDDEN: (options: {
+    message: string;
+    data?: { reason: string };
+  }) => ORPCError<string, unknown>;
+};

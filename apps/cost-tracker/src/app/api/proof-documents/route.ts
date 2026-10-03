@@ -1,3 +1,5 @@
+import { ORPCError } from "@orpc/server";
+
 import {
   downloadProofDocument,
   ProofAccessDenied,
@@ -5,6 +7,7 @@ import {
   uploadProofDocument,
 } from "@/features/projects/procedures/documents";
 import { auth } from "@/lib/auth";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 
 // Uploaded proof bytes in megabytes; mirrored in the streamed-bytes cap below.
 const MAX_UPLOAD_BYTES = 11 * 1024 * 1024;
@@ -38,7 +41,21 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    if (error instanceof ProofAccessDenied)
+    if (
+      error instanceof ORPCError &&
+      getSafeErrorSituation(error) &&
+      [400, 403, 404].includes(error.status)
+    )
+      return Response.json(
+        { error: getSafeErrorSituation(error)!.message },
+        { status: error.status },
+      );
+    if (
+      error instanceof ProofAccessDenied ||
+      (error instanceof ORPCError &&
+        error.code === "FORBIDDEN" &&
+        error.status === 403)
+    )
       return Response.json({ error: "Access denied." }, { status: 403 });
     if (error instanceof ProofNotFound)
       return Response.json({ error: "Document not found." }, { status: 404 });
@@ -119,7 +136,21 @@ export async function POST(request: Request) {
       { status: result.status },
     );
   } catch (error) {
-    if (error instanceof ProofAccessDenied)
+    if (
+      error instanceof ORPCError &&
+      getSafeErrorSituation(error) &&
+      [400, 403, 404].includes(error.status)
+    )
+      return Response.json(
+        { error: getSafeErrorSituation(error)!.message },
+        { status: error.status },
+      );
+    if (
+      error instanceof ProofAccessDenied ||
+      (error instanceof ORPCError &&
+        error.code === "FORBIDDEN" &&
+        error.status === 403)
+    )
       return Response.json({ error: "Access denied." }, { status: 403 });
     console.error("[Proof upload]", error);
     return Response.json(

@@ -11,12 +11,15 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireCostTrackerRole } from "@/features/organizations/roles";
-import { createSituationErrors } from "@/lib/orpc/errors";
+import {
+  createSituationErrors,
+  type ScopeErrorConstructors,
+} from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export const coordinationId = z.string().trim().min(1).max(128);
 
-type Denial = { FORBIDDEN: (options: { message: string }) => Error };
+type Denial = ScopeErrorConstructors;
 
 /** Verifies hosted Project membership and explicit Host-side coordination. */
 export async function requireHostCoordination(
@@ -26,6 +29,8 @@ export async function requireHostCoordination(
   errors: Denial,
   executor: Pick<typeof db, "select"> = db,
 ) {
+  const situation = createSituationErrors(errors);
+  if (!activeOrganizationId) throw situation.selectOrganization();
   const [project] = await executor
     .select({ id: projects.id })
     .from(projects)
@@ -49,8 +54,8 @@ export async function requireHostCoordination(
         )
         .limit(1)
     : [];
-  if (!project || !membership)
-    throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
+  if (!membership) throw situation.notMember();
+  if (!project) throw situation.projectNotFound();
   if (
     hasOrganizationRole(membership.role, "owner") ||
     hasOrganizationRole(membership.role, "admin")
@@ -69,7 +74,7 @@ export async function requireHostCoordination(
       .limit(1);
     if (assignment) return project;
   }
-  throw createSituationErrors().hostCoordinationRequired();
+  throw situation.hostCoordinationRequired();
 }
 
 /** Verifies both the active Organization and the actor's persisted staff scope. */
@@ -79,6 +84,8 @@ export async function requirePartnerCoordination(
   activeOrganizationId: string | null | undefined,
   errors: Denial,
 ) {
+  const situation = createSituationErrors(errors);
+  if (!activeOrganizationId) throw situation.selectOrganization();
   const [scope] = await db
     .select({
       projectId: partnerships.projectId,
@@ -91,11 +98,10 @@ export async function requirePartnerCoordination(
     .limit(1);
   if (
     !scope ||
-    !activeOrganizationId ||
     (activeOrganizationId !== scope.partnerId &&
       activeOrganizationId !== scope.hostId)
   )
-    throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
+    throw situation.partnershipNotFound();
   const [membership] = await db
     .select({ role: member.role })
     .from(member)
@@ -106,15 +112,14 @@ export async function requirePartnerCoordination(
       ),
     )
     .limit(1);
-  if (!membership)
-    throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
+  if (!membership) throw situation.notMember();
   if (
     hasOrganizationRole(membership.role, "owner") ||
     hasOrganizationRole(membership.role, "admin")
   )
     return scope;
   if (!hasOrganizationRole(membership.role, "project-coordinator"))
-    throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
+    throw situation.partnerCoordinationRequired();
   if (activeOrganizationId === scope.partnerId) {
     const [assignment] = await db
       .select({ userId: assignments.userId })
@@ -136,7 +141,7 @@ export async function requirePartnerCoordination(
     );
     return scope;
   }
-  throw errors.FORBIDDEN({ message: "Project Partnership is unavailable." });
+  throw situation.partnerCoordinationRequired();
 }
 
 /** Organization owners/admins appoint and revoke Partner coordinators without altering roles. */
@@ -144,7 +149,9 @@ export const assignPartnerCoordinator = authorized
   .input(z.object({ partnershipId: coordinationId, userId: coordinationId }))
   .output(z.object({ assigned: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
+    const situation = createSituationErrors(errors);
     const orgId = context.session.activeOrganizationId;
+    if (!orgId) throw situation.selectOrganization();
     const [partnership] = await db
       .select({ organizationId: partnerships.organizationId })
       .from(partnerships)
@@ -158,7 +165,7 @@ export const assignPartnerCoordinator = authorized
       .where(eq(partnerships.id, input.partnershipId))
       .limit(1);
     if (!partnership || partnership.organizationId !== orgId)
-      throw errors.FORBIDDEN();
+      throw situation.partnershipNotFound();
     const [actor] = await db
       .select({ role: member.role })
       .from(member)
@@ -166,14 +173,14 @@ export const assignPartnerCoordinator = authorized
         and(eq(member.organizationId, orgId), eq(member.userId, context.user.id)),
       )
       .limit(1);
+    if (!actor) throw situation.notMember();
     if (
-      !actor ||
       !(
         hasOrganizationRole(actor.role, "owner") ||
         hasOrganizationRole(actor.role, "admin")
       )
     )
-      throw errors.FORBIDDEN();
+      throw situation.organizationManagementRequired();
     const [target] = await db
       .select({ id: member.id, role: member.role })
       .from(member)
@@ -190,9 +197,7 @@ export const assignPartnerCoordinator = authorized
           ["owner", "admin", "project-coordinator"].includes(role.trim()),
         )
     )
-      throw errors.BAD_REQUEST({
-        message: "Coordinator must be a member of the Partner Organization.",
-      });
+      throw situation.coordinatorSelectionRequired();
     await db.insert(assignments).values(input).onConflictDoNothing();
     return { assigned: true as const };
   });
@@ -201,7 +206,9 @@ export const removePartnerCoordinator = authorized
   .input(z.object({ partnershipId: coordinationId, userId: coordinationId }))
   .output(z.object({ removed: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
+    const situation = createSituationErrors(errors);
     const orgId = context.session.activeOrganizationId;
+    if (!orgId) throw situation.selectOrganization();
     const [partnership] = await db
       .select({ organizationId: partnerships.organizationId })
       .from(partnerships)
@@ -215,7 +222,7 @@ export const removePartnerCoordinator = authorized
       .where(eq(partnerships.id, input.partnershipId))
       .limit(1);
     if (!partnership || partnership.organizationId !== orgId)
-      throw errors.FORBIDDEN();
+      throw situation.partnershipNotFound();
     const [actor] = await db
       .select({ role: member.role })
       .from(member)
@@ -223,14 +230,14 @@ export const removePartnerCoordinator = authorized
         and(eq(member.organizationId, orgId), eq(member.userId, context.user.id)),
       )
       .limit(1);
+    if (!actor) throw situation.notMember();
     if (
-      !actor ||
       !(
         hasOrganizationRole(actor.role, "owner") ||
         hasOrganizationRole(actor.role, "admin")
       )
     )
-      throw errors.FORBIDDEN();
+      throw situation.organizationManagementRequired();
     await db
       .delete(assignments)
       .where(

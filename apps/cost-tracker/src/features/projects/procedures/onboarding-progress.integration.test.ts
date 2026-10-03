@@ -336,7 +336,7 @@ describe("Partner invitee onboarding progress", () => {
   it("denies foreign scope, Host-side access and Participants", async () => {
     await expect(
       client.progress({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     activeOrg = host;
     await expect(client.progress({ partnershipId: own })).rejects.toMatchObject({
       code: "FORBIDDEN",

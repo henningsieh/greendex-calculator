@@ -9,3 +9,9 @@ Wave 1 checklist. Fix code, safe message and stable reason together; update prod
 Validation: 14 focused suites / 115 tests passed; Cost Tracker type-check and repository format/lint passed (existing lint warnings remain). Factory tests cover all 16 named methods' exact code/status/message/reason; adapter tests cover authoritative Better Auth reasons, safe status fallbacks, malformed/oversized bodies, forged exceptions and failure cookies.
 
 Deferred to later waves: app-wide throw-site migration; broader 409/503 business-policy conversions; splitting mixed selection/membership/scoped-row predicates; invitation/join/staff adapters; proof-document transport semantics; remaining prose-dependent consumers; field-issue/completion-blocker catalogs; reason-based toast grouping and static guardrails. No native Better Auth transport or authorization grants changed.
+
+## Wave 2 — shared denial fanout
+
+Shared Hosting/Partner guards and issuer scope now separate missing Organization selection (400), missing Membership (403), missing scoped Project/Partnership (404), and missing staff/assignment capability (403). Coordinator appointment requires eligible Partner staff, not merely Membership. Claim locks retain Project → Partnership → Claim order and return 404 when a scoped row disappears. Proof download/upload adapt these shared outcomes without changing upload rules, caps, origin checks, or Claim prerequisites. No unrestricted existence probe or authorization grant was added.
+
+The unpublished-agreement 400 guard and all business-state 409/503 policy refinements remain deferred.

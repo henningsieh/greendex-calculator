@@ -234,7 +234,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     expect(await client.claims.getDraft({ partnershipId: own })).toBeNull();
     await expect(
       client.claims.listPayoutAccounts({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("creates a normalized Partner account without selecting it or creating a Claim", async () => {
@@ -303,7 +303,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     const input = { accountHolder: "Partner", iban: "DE89370400440532013000" };
     await expect(
       client.claims.createPayoutAccount({ partnershipId: foreign, ...input }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     activeOrg = host;
     await expect(
       client.claims.createPayoutAccount({ partnershipId: own, ...input }),
@@ -407,16 +407,16 @@ describe("Claim drafts and Partnership payout selection", () => {
     for (const partnershipId of [foreign, "nonexistent"]) {
       await expect(
         client.claims.saveDraft({ partnershipId }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
       await expect(
         client.claims.selectPayoutAccount({
           partnershipId,
           payoutAccountId: account,
         }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
       await expect(
         client.claims.getDraft({ partnershipId }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
     }
     activeOrg = host;
     await expect(

@@ -564,7 +564,7 @@ describe("Participant Journey procedures", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       client.journeys.update({ ...journey, partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     activeOrg = host;
     await expect(client.journeys.update(journey)).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -582,7 +582,7 @@ describe("Participant Journey procedures", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       client.journeys.save({ ...journey, partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     activeOrg = host;
     await expect(client.journeys.save(journey)).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -602,6 +602,6 @@ describe("Participant Journey procedures", () => {
     ]);
     await expect(
       client.journeys.list({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });

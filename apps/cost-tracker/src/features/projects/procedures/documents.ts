@@ -6,6 +6,7 @@ import {
   claimsTable as claims,
   proofDocumentsTable as documents,
 } from "@greendex/database/schema";
+import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -92,7 +93,7 @@ export async function downloadProofDocument(input: {
     input.partnershipId,
     input.actorId,
     input.activeOrganizationId,
-    { FORBIDDEN: () => new ProofAccessDenied() },
+    { FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options) },
   );
   const [document] = await db
     .select({
@@ -144,8 +145,7 @@ export async function uploadProofDocument(input: {
     input.actorId,
     input.activeOrganizationId,
     {
-      FORBIDDEN: () =>
-        new ProofAccessDenied("Project Partnership is unavailable."),
+      FORBIDDEN: (options) => new ORPCError("FORBIDDEN", options),
     },
   );
   // Never materialize an empty Claim from a file upload. First save is explicit.

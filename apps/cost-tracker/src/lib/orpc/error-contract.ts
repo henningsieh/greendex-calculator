@@ -51,6 +51,39 @@ export const situationCatalog = {
     message:
       "You need Hosting Organization staff access or an assignment to this Project.",
   },
+  projectNotFound: {
+    code: "NOT_FOUND",
+    status: 404,
+    reason: "PROJECT_NOT_FOUND",
+    message: "Project not found in scope.",
+  },
+  partnershipNotFound: {
+    code: "NOT_FOUND",
+    status: 404,
+    reason: "PROJECT_PARTNERSHIP_NOT_FOUND",
+    message: "Project Partnership not found in scope.",
+  },
+  organizationManagementRequired: {
+    code: "FORBIDDEN",
+    status: 403,
+    reason: "ORGANIZATION_MANAGEMENT_REQUIRED",
+    message:
+      "You need Organization Owner or Admin access to manage this Organization.",
+  },
+  partnerCoordinationRequired: {
+    code: "FORBIDDEN",
+    status: 403,
+    reason: "PARTNER_COORDINATION_REQUIRED",
+    message:
+      "You need Partner Organization staff access or an assignment to this Project Partnership.",
+  },
+  coordinatorSelectionRequired: {
+    code: "BAD_REQUEST",
+    status: 400,
+    reason: "ELIGIBLE_COORDINATOR_REQUIRED",
+    message:
+      "Select an Owner, Admin, or Project Coordinator in the Partner Organization.",
+  },
   badInput: {
     code: "BAD_REQUEST",
     status: 400,
@@ -112,6 +145,11 @@ export const ErrorReasonSchema = z.enum([
   "PARTICIPANT_AGREEMENT_REQUIRED",
   "EMAIL_VERIFICATION_REQUIRED",
   "HOST_COORDINATION_REQUIRED",
+  "PROJECT_NOT_FOUND",
+  "PROJECT_PARTNERSHIP_NOT_FOUND",
+  "ORGANIZATION_MANAGEMENT_REQUIRED",
+  "PARTNER_COORDINATION_REQUIRED",
+  "ELIGIBLE_COORDINATOR_REQUIRED",
   "INVALID_INPUT",
   "ACCESS_DENIED",
   "RESOURCE_NOT_FOUND",

@@ -138,3 +138,51 @@ describe("named situation errors", () => {
     });
   });
 });
+
+it("projectNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().projectNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Project not found in scope.",
+    data: { reason: "PROJECT_NOT_FOUND" },
+  });
+});
+
+it("partnershipNotFound fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnershipNotFound()).toMatchObject({
+    code: "NOT_FOUND",
+    status: 404,
+    message: "Project Partnership not found in scope.",
+    data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+  });
+});
+
+it("organizationManagementRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().organizationManagementRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message:
+      "You need Organization Owner or Admin access to manage this Organization.",
+    data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+  });
+});
+
+it("partnerCoordinationRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().partnerCoordinationRequired()).toMatchObject({
+    code: "FORBIDDEN",
+    status: 403,
+    message:
+      "You need Partner Organization staff access or an assignment to this Project Partnership.",
+    data: { reason: "PARTNER_COORDINATION_REQUIRED" },
+  });
+});
+
+it("coordinatorSelectionRequired fixes code/status/message/reason", () => {
+  expect(createSituationErrors().coordinatorSelectionRequired()).toMatchObject({
+    code: "BAD_REQUEST",
+    status: 400,
+    message:
+      "Select an Owner, Admin, or Project Coordinator in the Partner Organization.",
+    data: { reason: "ELIGIBLE_COORDINATOR_REQUIRED" },
+  });
+});
