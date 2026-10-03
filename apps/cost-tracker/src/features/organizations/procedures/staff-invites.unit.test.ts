@@ -10,6 +10,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
+import { APIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -17,6 +18,7 @@ const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   createInvitation: vi.fn(),
   cancelInvitation: vi.fn(),
+  acceptInvitation: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
@@ -125,7 +127,11 @@ describe("organizations staff invites", () => {
     }
     session(memberId, null);
     await expect(client.organizations.listMembers({})).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
     });
   });
 
@@ -206,6 +212,30 @@ describe("organizations staff invites", () => {
     expect(authMocks.createInvitation).not.toHaveBeenCalled();
   });
 
+  it.each(["member", "owner,member", "member,participant"])(
+    "rejects banned invitation role %s before calling Better Auth",
+    async (role) => {
+      session(ownerId);
+      const before = authMocks.createInvitation.mock.calls.length;
+      await expect(
+        client.organizations.inviteMember({ email: "target@example.org", role }),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        status: 400,
+        message: "Input validation failed",
+        data: {
+          issues: expect.arrayContaining([
+            expect.objectContaining({
+              message:
+                'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
+            }),
+          ]),
+        },
+      });
+      expect(authMocks.createInvitation).toHaveBeenCalledTimes(before);
+    },
+  );
+
   it("invites with the exact requested role within the inviter's rank", async () => {
     const invitationId = randomUUID();
     authMocks.createInvitation.mockResolvedValueOnce({
@@ -241,6 +271,127 @@ describe("organizations staff invites", () => {
         role: "owner",
       }),
     ).resolves.toMatchObject({ role: "owner" });
+  });
+
+  it.each([
+    [
+      401,
+      "UNAUTHORIZED",
+      "SESSION_REQUIRED",
+      "Your session is missing or has expired. Sign in to continue.",
+    ],
+    [
+      403,
+      "FORBIDDEN",
+      "ACCESS_DENIED",
+      "You do not have permission to access this resource.",
+    ],
+    [
+      429,
+      "TOO_MANY_REQUESTS",
+      "RATE_LIMITED",
+      "Too many requests were sent. Wait a moment and try again.",
+    ],
+    [
+      503,
+      "SERVICE_UNAVAILABLE",
+      "SERVICE_UNAVAILABLE",
+      "The service is temporarily unavailable. Try again later.",
+    ],
+    [500, "INTERNAL_SERVER_ERROR", "INTERNAL_FAILURE", "Internal server error"],
+  ])(
+    "preserves upstream invitation response status %s safely",
+    async (status, code, reason, message) => {
+      session(ownerId);
+      authMocks.createInvitation.mockResolvedValueOnce(
+        Response.json(
+          { message: "private vendor text" },
+          { status: Number(status) },
+        ),
+      );
+      await expect(
+        client.organizations.inviteMember({
+          email: "target@example.org",
+          role: "admin",
+        }),
+      ).rejects.toMatchObject({
+        code,
+        status: Number(status),
+        message,
+        data: { reason },
+      });
+    },
+  );
+
+  it("normalizes thrown invitation and cancellation causes instead of blaming input", async () => {
+    session(ownerId);
+    authMocks.createInvitation.mockRejectedValueOnce(
+      new APIError("UNAUTHORIZED", {
+        code: "USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION",
+        message: "private",
+      }),
+    );
+    await expect(
+      client.organizations.inviteMember({
+        email: "target@example.org",
+        role: "admin",
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Membership in the active Organization is required.",
+      data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    });
+    authMocks.createInvitation.mockRejectedValueOnce(new Error("private"));
+    await expect(
+      client.organizations.inviteMember({
+        email: "target@example.org",
+        role: "admin",
+      }),
+    ).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      status: 500,
+      message: "Internal server error",
+      data: { reason: "INTERNAL_FAILURE" },
+    });
+    const id = randomUUID();
+    await db.insert(invitation).values({
+      id,
+      organizationId: orgId,
+      email: `${ownerId}@example.org`,
+      role: "admin",
+      status: "pending",
+      expiresAt: new Date(Date.now() + 3600_000),
+      inviterId: ownerId,
+    });
+    try {
+      authMocks.acceptInvitation.mockRejectedValueOnce(
+        new APIError("FORBIDDEN", {
+          code: "EMAIL_NOT_VERIFIED",
+          message: "private",
+        }),
+      );
+      await expect(
+        client.organizations.acceptInvitation({ invitationId: id }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        message: "Verify your email before continuing.",
+        data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
+      });
+      authMocks.cancelInvitation.mockRejectedValueOnce(new Error("private"));
+      await expect(
+        client.organizations.cancelInvitation({ invitationId: id }),
+      ).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        status: 500,
+        message: "Internal server error",
+        data: { reason: "INTERNAL_FAILURE" },
+      });
+      expect(await invitationStatus(id)).toBe("pending");
+    } finally {
+      await db.delete(invitation).where(eq(invitation.id, id));
+    }
   });
 
   it("cancels a pending invitation and rejects unknown or settled rows", async () => {

@@ -5,6 +5,7 @@ import {
   createORPCErrorToastGrouper,
   ORPC_ERROR_TOAST_GROUPING_INTERVAL_MS,
 } from "@/lib/orpc/error-toast-grouping";
+import { createSituationErrors } from "@/lib/orpc/errors";
 
 describe("Cost Tracker oRPC error toast grouping", () => {
   it("shows the first failure and groups an identical burst", () => {
@@ -33,4 +34,23 @@ describe("Cost Tracker oRPC error toast grouping", () => {
     expect(grouper.shouldShow({ reason: "offline" })).toBe(true);
     expect(grouper.shouldShow({ reason: "timeout" })).toBe(true);
   });
+});
+
+it("keeps valid reasons apart while malformed reasons share the generic group", () => {
+  const grouper = createORPCErrorToastGrouper();
+  const errors = createSituationErrors();
+  expect(grouper.shouldShow(errors.invalidCredentials())).toBe(true);
+  expect(grouper.shouldShow(errors.unauthenticated())).toBe(true);
+  expect(grouper.shouldShow(errors.invalidCredentials())).toBe(false);
+  expect(
+    grouper.shouldShow(
+      new ORPCError("BAD_REQUEST", { data: { reason: "SESSION_REQUIRED" } }),
+    ),
+  ).toBe(true);
+  expect(
+    grouper.shouldShow(
+      new ORPCError("BAD_REQUEST", { data: { reason: "SQL secret" } }),
+    ),
+  ).toBe(false);
+  expect(grouper.shouldShow(errors.selectOrganization())).toBe(true);
 });

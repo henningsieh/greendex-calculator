@@ -4,13 +4,15 @@ import type {
 } from "@greendex/auth";
 
 import { auth } from "@/lib/auth";
+import { normalizeBetterAuthError } from "@/lib/orpc/better-auth-errors";
 import { base } from "@/lib/orpc/context";
+import { createSituationErrors } from "@/lib/orpc/errors";
 
-const authMiddleware = base.middleware(async ({ context, errors, next }) => {
+export const authorized = base.use(async ({ context, errors, next }) => {
   const sessionData = await auth.api.getSession({ headers: context.headers });
 
   if (!(sessionData?.session && sessionData.user)) {
-    throw errors.UNAUTHORIZED();
+    throw createSituationErrors(errors).unauthenticated();
   }
 
   return next({
@@ -21,8 +23,6 @@ const authMiddleware = base.middleware(async ({ context, errors, next }) => {
   });
 });
 
-export const authorized = base.use(authMiddleware);
-
 type CostTrackerPermissions = {
   project?: ProjectPermission[];
   projectPartnership?: ProjectPartnershipPermission[];
@@ -32,12 +32,16 @@ export async function hasCostTrackerPermissions(
   headers: Headers,
   permissions: CostTrackerPermissions,
 ) {
-  const result = await auth.api.hasPermission({
-    headers,
-    body: { permissions },
-  });
+  try {
+    const result = await auth.api.hasPermission({
+      headers,
+      body: { permissions },
+    });
 
-  return result.success;
+    return result.success;
+  } catch (error) {
+    throw normalizeBetterAuthError(error, createSituationErrors());
+  }
 }
 
 export const requireCostTrackerPermissions =
@@ -48,17 +52,11 @@ export const requireCostTrackerPermissions =
     next,
   }: Parameters<Parameters<typeof authorized.use>[0]>[0]) => {
     if (!context.session.activeOrganizationId) {
-      throw errors.FORBIDDEN({
-        message:
-          "Select an active Organization before accessing Cost Tracker data.",
-      });
+      throw createSituationErrors(errors).selectOrganization();
     }
 
     if (!(await hasCostTrackerPermissions(context.headers, permissions))) {
-      throw errors.FORBIDDEN({
-        message:
-          "The active Organization role cannot access this Cost Tracker resource.",
-      });
+      throw createSituationErrors(errors).accessDenied();
     }
 
     return next();

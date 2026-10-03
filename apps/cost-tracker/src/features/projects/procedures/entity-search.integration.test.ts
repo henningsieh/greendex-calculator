@@ -11,7 +11,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -140,7 +140,13 @@ describe("entity picker procedures", () => {
     session(null);
     await expect(
       client.organizations.search({ search: "Part" }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
   });
 
   it("caps Organization search at 20 id/name matches", async () => {
@@ -284,6 +290,49 @@ describe("entity picker procedures", () => {
       );
     }
   }, 20_000);
+
+  it("distinguishes Hosted search selection, Membership, and staff requirements", async () => {
+    session(null);
+    await expect(
+      client.projects.searchHosted({ search: "" }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      message:
+        "Select an active Organization before accessing Cost Tracker data.",
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
+    session("missing-organization");
+    await expect(
+      client.projects.searchHosted({ search: "" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Membership in the active Organization is required.",
+      data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    });
+    session(host);
+    await db
+      .update(member)
+      .set({ role: "participant" })
+      .where(eq(member.organizationId, host));
+    try {
+      await expect(
+        client.projects.searchHosted({ search: "" }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        message:
+          "You need Hosting Organization Owner, Admin, or Project Coordinator access.",
+        data: { reason: "HOSTING_STAFF_REQUIRED" },
+      });
+    } finally {
+      await db
+        .update(member)
+        .set({ role: "owner" })
+        .where(eq(member.organizationId, host));
+    }
+  });
 
   it("scopes hosted search by active host membership and coordinator assignment", async () => {
     expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([

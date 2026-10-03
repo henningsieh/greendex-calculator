@@ -21,6 +21,7 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const progress = z.object({
@@ -76,9 +77,7 @@ export function createOnboardingProgressProcedure(
         errors,
       );
       if (scope.partnerId !== context.session.activeOrganizationId)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
+        throw createSituationErrors(errors).partnerOnboardingProgressRequired();
 
       const [joined, issued] = await Promise.all([
         db

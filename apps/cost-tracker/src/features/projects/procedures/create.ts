@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { ProjectCreateInputSchema } from "@/features/projects/validation-schemas";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export const create = authorized
@@ -18,7 +19,7 @@ export const create = authorized
   .handler(async ({ context, errors, input }) => {
     const organizationId = context.session.activeOrganizationId;
     if (!organizationId) {
-      throw errors.FORBIDDEN({ message: "Select an active Organization first." });
+      throw createSituationErrors(errors).selectOrganization();
     }
 
     return db.transaction(async (tx) => {
@@ -34,17 +35,17 @@ export const create = authorized
         .for("update")
         .limit(1);
       if (!membership) {
-        throw errors.FORBIDDEN({
-          message: "Hosting Organization membership is required.",
-        });
+        throw createSituationErrors(errors).notMember();
       }
 
-      requireCostTrackerRole(membership.role, errors.BAD_REQUEST);
+      requireCostTrackerRole(membership.role, () =>
+        createSituationErrors(errors).invalidOrganizationRole(),
+      );
       const [project] = await tx
         .insert(projectsTable)
         .values({ ...input, organizationId })
         .returning({ id: projectsTable.id });
-      if (!project) throw errors.INTERNAL_SERVER_ERROR();
+      if (!project) throw createSituationErrors(errors).internalFailure();
 
       await tx.insert(hostProjectAssignmentsTable).values({
         projectId: project.id,

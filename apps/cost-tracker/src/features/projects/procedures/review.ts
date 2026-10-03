@@ -20,6 +20,7 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const claimInput = z.object({ partnershipId: coordinationId });
@@ -42,7 +43,7 @@ function decision(action: Decision) {
         (action === "reject" || action === "requestCorrection") &&
         !input.reason
       )
-        throw errors.BAD_REQUEST({ message: "A review reason is required." });
+        throw createSituationErrors(errors).reviewReasonRequired();
       const scope = await requirePartnerCoordination(
         input.partnershipId,
         context.user.id,
@@ -50,9 +51,7 @@ function decision(action: Decision) {
         errors,
       );
       if (scope.hostId !== context.session.activeOrganizationId)
-        throw errors.FORBIDDEN({
-          message: "Only Hosting staff may review Claims.",
-        });
+        throw createSituationErrors(errors).hostingClaimReviewRequired();
       return db.transaction(async (tx) => {
         // Shared Project → Partnership → Claim lock order (claim-locks.ts).
         const { claim } = await lockClaimScope(
@@ -60,6 +59,15 @@ function decision(action: Decision) {
           { projectId: scope.projectId, partnershipId: input.partnershipId },
           errors,
         );
+        if (
+          action === "approve" &&
+          claim &&
+          ["submitted", "approved"].includes(claim.status) &&
+          claim.approvedAmountEur === null
+        ) {
+          console.error("Submitted/approved Claim lacks an approved amount");
+          throw createSituationErrors(errors).internalFailure();
+        }
         const expectedStatus = action === "reopen" ? "rejected" : "submitted";
         const nextStatus =
           action === "requestCorrection"
@@ -88,14 +96,11 @@ function decision(action: Decision) {
               approvedAmountEur: claim.approvedAmountEur,
             };
         }
-        if (
-          !claim ||
-          claim.status !== expectedStatus ||
-          (action === "approve" && claim.approvedAmountEur === null)
-        )
-          throw errors.BAD_REQUEST({
-            message: `Claim must be ${expectedStatus} for this review decision.`,
-          });
+        if (!claim) throw createSituationErrors(errors).claimNotFound();
+        if (claim.status !== expectedStatus)
+          throw action === "reopen"
+            ? createSituationErrors(errors).claimRejectedRequired()
+            : createSituationErrors(errors).claimSubmittedRequired();
         const status = nextStatus;
         const reason =
           action === "reject" || action === "requestCorrection"
@@ -193,9 +198,7 @@ export const getReviewDetails = authorized
       errors,
     );
     if (scope.hostId !== context.session.activeOrganizationId)
-      throw errors.FORBIDDEN({
-        message: "Only Hosting staff may review Claims.",
-      });
+      throw createSituationErrors(errors).hostingClaimReviewRequired();
     const [claim] = await db
       .select({
         id: claims.id,
@@ -205,8 +208,8 @@ export const getReviewDetails = authorized
       .from(claims)
       .where(eq(claims.partnershipId, input.partnershipId))
       .limit(1);
+    if (!claim) throw createSituationErrors(errors).claimNotFound();
     if (
-      !claim ||
       ![
         "submitted",
         "correction_requested",
@@ -215,9 +218,7 @@ export const getReviewDetails = authorized
         "paid",
       ].includes(claim.status)
     )
-      throw errors.BAD_REQUEST({
-        message: "No submitted Claim is available for review.",
-      });
+      throw createSituationErrors(errors).claimReviewUnavailable();
     const [payout, costRows, journeyRows] = await Promise.all([
       db
         .select({

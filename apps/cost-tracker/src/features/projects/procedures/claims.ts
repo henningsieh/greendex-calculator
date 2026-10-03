@@ -14,6 +14,7 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const partnershipInput = z.object({ partnershipId: coordinationId });
@@ -84,9 +85,7 @@ async function requirePartnerSide(
     errors,
   );
   if (scope.partnerId !== activeOrganizationId) {
-    throw errors.FORBIDDEN({
-      message: "Only the Partner Organization may edit its Claim.",
-    });
+    throw createSituationErrors(errors).partnerClaimEditRequired();
   }
   return scope;
 }
@@ -236,20 +235,14 @@ export const selectPayoutAccount = authorized
         )
         .for("update")
         .limit(1);
-      if (!partnership)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
+      if (!partnership) throw createSituationErrors(errors).partnershipNotFound();
       const [claim] = await tx
         .select({ status: claims.status })
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
       if (claim && isPartnerEditLocked(claim.status)) {
-        throw errors.BAD_REQUEST({
-          message:
-            "Payout Account selection is locked while the Claim is not editable.",
-        });
+        throw createSituationErrors(errors).payoutSelectionLocked();
       }
       const [account] = await tx
         .select({ id: accounts.id })
@@ -262,10 +255,7 @@ export const selectPayoutAccount = authorized
         )
         .limit(1);
       if (!account)
-        throw errors.BAD_REQUEST({
-          message:
-            "Select a Payout Account belonging to the Partner Organization.",
-        });
+        throw createSituationErrors(errors).partnerPayoutSelectionRequired();
       await tx
         .insert(selections)
         .values(input)
@@ -300,10 +290,7 @@ export const saveDraft = authorized
         )
         .for("update")
         .limit(1);
-      if (!partnership)
-        throw errors.FORBIDDEN({
-          message: "Project Partnership is unavailable.",
-        });
+      if (!partnership) throw createSituationErrors(errors).partnershipNotFound();
       const [selected] = await tx
         .select({ id: selections.payoutAccountId })
         .from(selections)
@@ -316,10 +303,7 @@ export const saveDraft = authorized
         )
         .where(eq(selections.partnershipId, input.partnershipId))
         .limit(1);
-      if (!selected)
-        throw errors.BAD_REQUEST({
-          message: "Select a Partner Payout Account before saving the Claim.",
-        });
+      if (!selected) throw createSituationErrors(errors).payoutAccountRequired();
       const [existing] = await tx
         .select(selectedDraft)
         .from(claims)
@@ -327,7 +311,7 @@ export const saveDraft = authorized
         .limit(1);
       if (existing) {
         if (isPartnerEditLocked(existing.status))
-          throw errors.BAD_REQUEST({ message: "Claim is not editable." });
+          throw createSituationErrors(errors).claimNotEditable();
         return draftSchema.parse(existing);
       }
       const [created] = await tx
@@ -341,8 +325,11 @@ export const saveDraft = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (raced && !isPartnerEditLocked(raced.status))
-        return draftSchema.parse(raced);
-      throw errors.BAD_REQUEST({ message: "Claim is not editable." });
+      if (!raced) {
+        console.error("Claim insert conflict returned no scoped Claim");
+        throw createSituationErrors(errors).internalFailure();
+      }
+      if (!isPartnerEditLocked(raced.status)) return draftSchema.parse(raced);
+      throw createSituationErrors(errors).claimNotEditable();
     });
   });

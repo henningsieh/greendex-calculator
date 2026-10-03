@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -62,14 +63,10 @@ function isCountry(value: string): value is Country {
   return countries.some((country) => country === value);
 }
 
-const duplicateMessage =
-  "Identity already participates in this Project; request merge review.";
-
 function mutationFeedback(error: unknown) {
   if (
     error instanceof ORPCError &&
-    error.code === "BAD_REQUEST" &&
-    error.message === duplicateMessage
+    getSafeErrorSituation(error)?.reason === "PARTICIPATION_DUPLICATE"
   ) {
     return {
       title: "Review request",
@@ -608,8 +605,7 @@ export function ParticipantCoordination({
     onError: (error) => {
       if (
         error instanceof ORPCError &&
-        error.code === "BAD_REQUEST" &&
-        error.message === "A submitted Claim prevents reopening registration."
+        getSafeErrorSituation(error)?.reason === "REGISTRATION_CLAIM_LOCKED"
       ) {
         setEntryFeedback({
           title: "Registration link cannot be reopened",
@@ -629,18 +625,19 @@ export function ParticipantCoordination({
     },
     onError: (error) => {
       const refusals: Record<string, string> = {
-        "Locked Claim prevents Participation removal.":
+        PARTICIPATION_REMOVE_LOCKED:
           "A locked Claim prevents removal of this Project Participation.",
-        "Participation is referenced by Claim or merge data; request review instead.":
-          "This Project Participation is referenced by a Participant Journey, Claim or merge data. Request review instead.",
-        "Participation is referenced; request review instead.":
+        PARTICIPATION_JOURNEY_OR_COST_REFERENCED:
+          "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
+        PARTICIPATION_REFERENCED:
           "This Project Participation is referenced by other records. Request review instead.",
       };
       setFeedback({
         title: "Unable to remove Project Participation",
         description:
           error instanceof ORPCError && error.code === "BAD_REQUEST"
-            ? (refusals[error.message] ?? getORPCRequestErrorMessage(error).text)
+            ? (refusals[getSafeErrorSituation(error)?.reason ?? ""] ??
+              getORPCRequestErrorMessage(error).text)
             : getORPCRequestErrorMessage(error).text,
       });
     },

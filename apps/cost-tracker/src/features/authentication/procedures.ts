@@ -1,9 +1,13 @@
-import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { auth } from "@/lib/auth";
+import {
+  normalizeBetterAuthError,
+  normalizeBetterAuthResponse,
+} from "@/lib/orpc/better-auth-errors";
 import { base } from "@/lib/orpc/context";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 import { invitationReturnTo } from "@/lib/session";
 
@@ -48,21 +52,6 @@ function forwardCookies(response: Response, context: ProcedureContext) {
   }
 }
 
-function throwSafeAuthError(response: Response, errors: ProcedureErrors): never {
-  switch (response.status) {
-    case 400:
-      throw errors.BAD_REQUEST();
-    case 401:
-      throw errors.UNAUTHORIZED();
-    case 403:
-      throw errors.FORBIDDEN();
-    case 429:
-      throw errors.TOO_MANY_REQUESTS();
-    default:
-      throw errors.INTERNAL_SERVER_ERROR();
-  }
-}
-
 async function callBetterAuth(
   context: ProcedureContext,
   errors: ProcedureErrors,
@@ -71,12 +60,18 @@ async function callBetterAuth(
   try {
     const response = await request();
     forwardCookies(response, context);
-    if (!response.ok) throwSafeAuthError(response, errors);
+    if (!response.ok)
+      throw await normalizeBetterAuthResponse(
+        response,
+        createSituationErrors(errors),
+      );
     return response;
   } catch (error) {
-    if (error instanceof ORPCError) throw error;
-    console.error("Cost Tracker authentication command failed", error);
-    throw errors.INTERNAL_SERVER_ERROR();
+    throw normalizeBetterAuthError(
+      error,
+      createSituationErrors(errors),
+      context.resHeaders,
+    );
   }
 }
 

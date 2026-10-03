@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { APIError } from "better-auth/api";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -55,6 +56,23 @@ describe("Cost Tracker server oRPC client", () => {
       },
     });
     mocks.hasPermission.mockResolvedValue({ success: true });
+  });
+
+  it("maps projects/get non-members to 403 through direct SSR", async () => {
+    mocks.headers.mockResolvedValue(firstRequestHeaders);
+    mocks.hasPermission.mockRejectedValue(
+      new APIError("UNAUTHORIZED", {
+        code: "USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION",
+      }),
+    );
+    await expect(
+      orpc.projects.get({ projectId: "project-id" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Membership in the active Organization is required.",
+      data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    });
   });
 
   it("uses the direct router client without making an RPC request", async () => {

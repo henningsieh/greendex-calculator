@@ -7,21 +7,21 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
-// Allowlisted server messages mapped to actionable copy. Never render a
-// remote error message directly; unknown failures use the generic helper.
+// Validated code/status/reason selects local copy, never remote prose.
 const ACCEPTANCE_ERROR_COPY: Record<string, string> = {
-  "Organization Invitation not found.":
+  STAFF_INVITATION_NOT_FOUND:
     "This Organization Invitation is expired, cancelled, or addressed to another email address.",
-  "Organization Invitation is no longer pending.":
+  STAFF_INVITATION_CLOSED:
     "This Organization Invitation is no longer valid. Ask for a new invitation.",
-  "Organization Invitation has expired.":
+  STAFF_INVITATION_EXPIRED:
     "This Organization Invitation has expired. Ask for a new invitation.",
-  "Sign in with the invited email address.":
+  STAFF_INVITATION_WRONG_EMAIL:
     "This invitation was sent to a different email address. Sign in with the invited address.",
-  "This invitation is not an Organization staff invitation.":
+  STAFF_INVITATION_WRONG_KIND:
     "This link is not a staff Organization Invitation. Participant invitations are accepted through the Project join flow.",
 };
 
@@ -64,8 +64,10 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
       await orpc.organizations.acceptInvitation({ invitationId });
       router.replace("/projects");
     } catch (error) {
-      if (error instanceof ORPCError && ACCEPTANCE_ERROR_COPY[error.message])
-        setError(ACCEPTANCE_ERROR_COPY[error.message]);
+      const situation =
+        error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
+      if (situation && ACCEPTANCE_ERROR_COPY[situation.reason])
+        setError(ACCEPTANCE_ERROR_COPY[situation.reason]);
       else setError(getORPCRequestErrorMessage(error).text);
     } finally {
       setPending(false);

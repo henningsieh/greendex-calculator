@@ -13,6 +13,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { type RequirePublishedAgreement } from "@/features/authentication/procedures/shared";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildListMyProjects(
@@ -48,18 +49,12 @@ export function buildListMyProjects(
         .where(eq(acceptances.userId, context.user.id))
         .orderBy(desc(acceptances.acceptedAt), desc(acceptances.id))
         .limit(1);
-      if (!profile)
-        throw errors.FORBIDDEN({
-          message: "Complete your Participant profile before accessing Projects.",
-        });
+      if (!profile) throw createSituationErrors(errors).incompleteProfile();
       if (
         latest?.version !== version.id ||
         latest.contentHash !== version.contentHash
       )
-        throw errors.FORBIDDEN({
-          message:
-            "Accept the current Participant agreement before accessing Projects.",
-        });
+        throw createSituationErrors(errors).agreementRequired();
       return db
         .select({
           participationId: participants.id,

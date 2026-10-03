@@ -1,5 +1,27 @@
 import { ORPCError } from "@orpc/client";
 
+import {
+  getSafeErrorSituation,
+  situationCatalog,
+} from "@/lib/orpc/error-contract";
+
+const genericSituations = [
+  situationCatalog.badInput,
+  situationCatalog.unauthenticated,
+  situationCatalog.accessDenied,
+  situationCatalog.notFound,
+  situationCatalog.conflict,
+  situationCatalog.proofTransportTooLarge,
+  situationCatalog.proofMediaUnsupported,
+  situationCatalog.unprocessable,
+  situationCatalog.rateLimited,
+  {
+    ...situationCatalog.internalFailure,
+    message: "The request could not be completed. Try again.",
+  },
+  situationCatalog.unavailable,
+];
+
 export type ORPCRequestErrorMessage = {
   sessionExpired: boolean;
   text: string;
@@ -13,37 +35,23 @@ export function getORPCRequestErrorMessage(
   error: unknown,
 ): ORPCRequestErrorMessage {
   if (error instanceof ORPCError) {
-    if (error.status === 400 || error.code === "BAD_REQUEST") {
+    const situation = getSafeErrorSituation(error);
+    if (situation)
       return {
-        sessionExpired: false,
-        text: "We could not complete that request. Check your details and try again.",
+        sessionExpired: situation.reason === "SESSION_REQUIRED",
+        text:
+          situation.reason === "INTERNAL_FAILURE"
+            ? "The request could not be completed. Try again."
+            : situation.message,
       };
-    }
-
-    if (error.status === 401 || error.code === "UNAUTHORIZED") {
-      return {
-        sessionExpired: true,
-        text: "Your session is missing or has expired. Sign in to continue.",
-      };
-    }
-
-    if (error.status === 403 || error.code === "FORBIDDEN") {
-      return {
-        sessionExpired: false,
-        text: "You do not have permission to access this resource.",
-      };
-    }
-
-    if (error.status === 429 || error.code === "TOO_MANY_REQUESTS") {
-      return {
-        sessionExpired: false,
-        text: "Too many requests were sent. Wait a moment and try again.",
-      };
-    }
-
+    // Unknown metadata never activates reason-specific recovery. Require the
+    // canonical code/status pair even for the generic sign-in fallback.
+    const fallback = genericSituations.find(
+      (entry) => entry.code === error.code && entry.status === error.status,
+    );
     return {
-      sessionExpired: false,
-      text: `The request failed with HTTP ${error.status}. Try again.`,
+      sessionExpired: fallback?.reason === "SESSION_REQUIRED",
+      text: fallback?.message ?? "The request could not be completed. Try again.",
     };
   }
 

@@ -498,7 +498,8 @@ describe("Claim workspace", () => {
   it("surfaces the server one-journey rule at Participation without clearing the form", async () => {
     mocks.saveJourney.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
-        message: "This Participation already has a Participant Journey.",
+        message: "hostile remote text",
+        data: { reason: "JOURNEY_ALREADY_EXISTS" },
       }),
     );
     mount();
@@ -958,3 +959,137 @@ describe("Claim workspace", () => {
     expect(screen.queryByRole("option", { name: "Robin" })).toBeNull();
   });
 });
+
+it.each([
+  [
+    "oversized file",
+    413,
+    {
+      code: "PAYLOAD_TOO_LARGE",
+      reason: "PROOF_FILE_TOO_LARGE",
+      error: "private token",
+    },
+    "Choose a Proof Document no larger than 10 MB.",
+  ],
+  [
+    "unsupported media",
+    415,
+    { code: "UNSUPPORTED_MEDIA_TYPE", reason: "PROOF_MEDIA_UNSUPPORTED" },
+    "Choose a PDF, JPEG, or PNG Proof Document.",
+  ],
+  [
+    "missing Claim",
+    400,
+    { code: "BAD_REQUEST", reason: "CLAIM_REQUIRED_FOR_PROOF" },
+    "Save an editable Claim before uploading a Proof Document.",
+  ],
+  [
+    "locked Claim",
+    400,
+    { code: "BAD_REQUEST", reason: "CLAIM_NOT_EDITABLE" },
+    "Claim is not editable.",
+  ],
+  [
+    "missing selection",
+    400,
+    { code: "BAD_REQUEST", reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    "Select an active Organization before accessing Cost Tracker data.",
+  ],
+  [
+    "missing Membership",
+    403,
+    { code: "FORBIDDEN", reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    "Membership in the active Organization is required.",
+  ],
+  [
+    "scoped absence",
+    404,
+    { code: "NOT_FOUND", reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+    "Project Partnership not found in scope.",
+  ],
+  [
+    "missing session",
+    401,
+    { code: "UNAUTHORIZED", reason: "SESSION_REQUIRED" },
+    "Your session is missing or has expired. Sign in to continue.",
+  ],
+  [
+    "storage failure",
+    500,
+    { code: "INTERNAL_SERVER_ERROR", reason: "PROOF_UPLOAD_FAILED" },
+    "Upload failed. Please try again.",
+  ],
+  [
+    "wrong status",
+    400,
+    { code: "UNAUTHORIZED", reason: "SESSION_REQUIRED", error: "private token" },
+    "Upload failed. Please try again.",
+  ],
+  [
+    "wrong code",
+    403,
+    { code: "FORBIDDEN", reason: "PROOF_FILE_TOO_LARGE" },
+    "Upload failed. Please try again.",
+  ],
+  [
+    "hostile reason",
+    400,
+    { code: "BAD_REQUEST", reason: "private token" },
+    "Upload failed. Please try again.",
+  ],
+  [
+    "legacy prose",
+    413,
+    { error: "Choose a Proof Document no larger than 10 MB." },
+    "Upload failed. Please try again.",
+  ],
+  [
+    "malformed JSON",
+    500,
+    "not JSON private token",
+    "Upload failed. Please try again.",
+  ],
+] as const)(
+  "proof upload renders validated %s outcome",
+  async (_name, status, body, text) => {
+    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    const requests: FakeUploadRequest[] = [];
+    class FakeUploadRequest {
+      upload = { onprogress: null };
+      onload: null | (() => void) = null;
+      onerror = null;
+      status = status;
+      responseText = typeof body === "string" ? body : JSON.stringify(body);
+      open = vi.fn();
+      send = vi.fn();
+      constructor() {
+        requests.push(this);
+      }
+    }
+    const original = globalThis.XMLHttpRequest;
+    vi.stubGlobal("XMLHttpRequest", FakeUploadRequest);
+    try {
+      mount();
+      const user = userEvent.setup();
+      await user.upload(
+        await screen.findByLabelText(/Upload Proof Document/),
+        new File(["test"], "test.pdf", { type: "application/pdf" }),
+      );
+      await user.click(screen.getByRole("button", { name: "Upload document" }));
+      expect(requests[0].open).toHaveBeenCalledWith(
+        "POST",
+        "/api/proof-documents",
+      );
+      expect(requests[0].send).toHaveBeenCalledOnce();
+      requests[0].onload?.();
+      expect(await screen.findByText(text)).toBeInTheDocument();
+      expect(screen.queryByText("private token")).toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Upload document" }),
+      ).toBeEnabled();
+      expect(screen.queryByText("Proof Document uploaded.")).toBeNull();
+    } finally {
+      vi.stubGlobal("XMLHttpRequest", original);
+    }
+  },
+);

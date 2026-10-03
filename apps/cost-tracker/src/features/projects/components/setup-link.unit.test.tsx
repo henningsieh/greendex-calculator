@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -82,11 +80,6 @@ import {
   SetupLinkCreator,
   SetupLinkRecipient,
 } from "@/features/projects/components/setup-link";
-
-const source = readFileSync(
-  "src/features/projects/procedures/setup-links.ts",
-  "utf8",
-);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -246,60 +239,76 @@ describe("Setup Link UI", () => {
 
   const states = [
     {
+      code: "FORBIDDEN",
+      message: "Verify your email before continuing.",
+      reason: "EMAIL_VERIFICATION_REQUIRED",
+      heading: "Verify your email",
+    },
+    {
       code: "NOT_FOUND",
       message: "Setup link not found.",
+      reason: "SETUP_LINK_NOT_FOUND",
       heading: "Invalid setup link",
     },
     {
       code: "BAD_REQUEST",
       message: "This setup link is disabled.",
+      reason: "SETUP_LINK_DISABLED",
       heading: "Disabled setup link",
     },
     {
       code: "BAD_REQUEST",
       message: "This setup link has expired.",
+      reason: "SETUP_LINK_EXPIRED",
       heading: "Expired setup link",
     },
     {
       code: "FORBIDDEN",
       message: "This setup link belongs to another email address.",
+      reason: "SETUP_LINK_WRONG_EMAIL",
       heading: "Wrong email address",
     },
     {
       code: "BAD_REQUEST",
       message: "This setup link has already been used for another Organization.",
+      reason: "SETUP_LINK_USED",
       heading: "Setup already completed",
     },
     {
       code: "FORBIDDEN",
       message: "You must be an Owner of the selected Organization.",
+      reason: "ORGANIZATION_OWNER_REQUIRED",
       heading: "Owner verification required",
     },
     {
       code: "BAD_REQUEST",
       message: "This Organization is already assigned to the Project.",
+      reason: "PARTNERSHIP_ALREADY_ASSIGNED",
       heading: "Setup already completed",
     },
     {
-      code: "BAD_REQUEST",
+      code: "NOT_FOUND",
       message: "This Project is no longer available.",
+      reason: "PROJECT_NOT_FOUND",
       heading: "Project unavailable",
     },
     {
       code: "BAD_REQUEST",
       message: "The Hosting Organization cannot be its own Partner Organization.",
+      reason: "SELF_PARTNERSHIP",
       heading: "Invalid Partner Organization",
     },
   ];
 
   it.each(states)(
     "maps $code / $message to $heading without displaying remote text",
-    async ({ code, message, heading }) => {
-      const escaped = message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      expect(source).toMatch(
-        new RegExp(`errors\\.${code}\\(\\{\\s*message:\\s*"${escaped}"`, "s"),
+    async ({ code, message, reason, heading }) => {
+      mocks.consume.mockRejectedValue(
+        new ORPCError(code, {
+          message: "Untrusted remote copy",
+          data: { reason },
+        }),
       );
-      mocks.consume.mockRejectedValue(new ORPCError(code, { message }));
       recipient();
       await submitExisting();
       expect(await screen.findByText(heading)).toBeTruthy();
@@ -309,7 +318,24 @@ describe("Setup Link UI", () => {
 
   it("does not mistake a known message paired with the wrong code for a link state", async () => {
     mocks.consume.mockRejectedValue(
-      new ORPCError("FORBIDDEN", { message: "This setup link is disabled." }),
+      new ORPCError("FORBIDDEN", {
+        message: "This setup link is disabled.",
+        data: { reason: "SETUP_LINK_DISABLED" },
+      }),
+    );
+    recipient();
+    await submitExisting();
+    expect(await screen.findByText("Could not complete setup")).toBeTruthy();
+    expect(screen.queryByText("Disabled setup link")).toBeNull();
+  });
+
+  it("does not activate link-state copy for contradictory status metadata", async () => {
+    mocks.consume.mockRejectedValue(
+      new ORPCError("BAD_REQUEST", {
+        status: 403,
+        message: "This setup link is disabled.",
+        data: { reason: "SETUP_LINK_DISABLED" },
+      }),
     );
     recipient();
     await submitExisting();

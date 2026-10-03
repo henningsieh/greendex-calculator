@@ -176,7 +176,7 @@ describe("assignment-scoped participation coordination", () => {
       code: "BAD_REQUEST",
     });
     await expect(query(candidate, foreign)).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "NOT_FOUND",
     });
     activeOrg = host;
     await expect(query(candidate)).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -353,6 +353,43 @@ describe("assignment-scoped participation coordination", () => {
     }
   });
 
+  it("separates the actor's missing saved profile from current agreement acceptance", async () => {
+    actor = candidate;
+    activeOrg = host;
+    await db.delete(acceptances).where(eq(acceptances.userId, candidate));
+    try {
+      await expect(
+        client.participations.listMine({ projectId: project }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
+      });
+      await db.delete(profiles).where(eq(profiles.userId, candidate));
+      await expect(
+        client.participations.listMine({ projectId: project }),
+      ).rejects.toMatchObject({
+        code: "UNPROCESSABLE_CONTENT",
+        status: 422,
+        data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
+      });
+    } finally {
+      await db
+        .insert(profiles)
+        .values({ userId: candidate, fullName: "Candidate" })
+        .onConflictDoNothing();
+      await db
+        .insert(acceptances)
+        .values({
+          userId: candidate,
+          version: version.id,
+          contentHash: version.contentHash,
+          answers: '{"accepted":true}',
+        })
+        .onConflictDoNothing();
+    }
+  });
+
   it("does not search against an unpublished agreement", async () => {
     const unpublished = createRouterClient(
       {
@@ -414,20 +451,20 @@ describe("assignment-scoped participation coordination", () => {
     });
     await expect(
       client.participations.create({ partnershipId: foreign, userId: candidate }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       client.participations.listPartnership({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       client.participations.update({
         partnershipId: foreign,
         id: created.id,
         country: "FR",
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       client.participations.remove({ partnershipId: foreign, id: created.id }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     activeOrg = host;
     expect(
       await client.participations.listHosted({ projectId: project }),
@@ -573,10 +610,10 @@ describe("assignment-scoped participation coordination", () => {
     activeOrg = partner;
     await expect(
       client.duplicateReviews.list({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       client.duplicateReviews.assign({ partnershipId: foreign, id: task!.id }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(
       await client.duplicateReviews.assign({ partnershipId: own, id: task!.id }),
     ).toMatchObject({ status: "assigned", assignedToUserId: coordinator });
@@ -603,7 +640,11 @@ describe("assignment-scoped participation coordination", () => {
           decision: "dismiss",
           survivorParticipationId: existing.id,
         }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+        data: { reason: "REVIEW_TASK_ASSIGNEE_REQUIRED" },
+      });
     } finally {
       actor = coordinator;
       await db.delete(assignments).where(eq(assignments.userId, candidate));
@@ -624,7 +665,7 @@ describe("assignment-scoped participation coordination", () => {
         decision: "same_person",
         survivorParticipationId: existing.id,
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(
       await client.duplicateReviews.resolve({
         partnershipId: own,
@@ -710,7 +751,7 @@ describe("assignment-scoped participation coordination", () => {
       ).toEqual([]);
       await expect(
         client.participations.listPartnership({ partnershipId: foreign }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
       actor = coordinator;
       await client.assignments.remove({ partnershipId: own, userId: candidate });
       actor = candidate;
@@ -767,7 +808,7 @@ describe("assignment-scoped participation coordination", () => {
     ).toEqual([]);
     await expect(
       client.participations.listPartnership({ partnershipId: foreign }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await db.delete(bridges).where(eq(bridges.invitationId, inviteId));
     await db.insert(bridges).values({
       invitationId: inviteId,
@@ -796,7 +837,11 @@ describe("assignment-scoped participation coordination", () => {
     });
     await expect(
       client.participations.remove({ partnershipId: own, id: created.id }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED" },
+    });
     await db.delete(journeys).where(eq(journeys.id, candidate));
     const [claim] = await db
       .insert(claims)

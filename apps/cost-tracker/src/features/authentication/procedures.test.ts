@@ -30,6 +30,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 import { createRouterClient } from "@orpc/server";
+import { APIError } from "better-auth/api";
 
 import { router } from "@/lib/orpc/router";
 
@@ -106,6 +107,51 @@ describe("Cost Tracker authentication procedures", () => {
       ).rejects.toMatchObject({ status });
     },
   );
+
+  it("preserves failure cookies and distinguishes invalid credentials", async () => {
+    const headers = new Headers();
+    mocks.signInEmail.mockResolvedValue(
+      response(401, { code: "INVALID_EMAIL_OR_PASSWORD", message: "private" }),
+    );
+    await expect(
+      createClient(headers).authentication.signIn({
+        email: "user@example.org",
+        password: "correct-horse-battery-staple",
+      }),
+    ).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+      status: 401,
+      message: "Incorrect email or password.",
+      data: { reason: "INVALID_CREDENTIALS" },
+    });
+    expect(headers.getSetCookie()).toEqual(["session=updated; Path=/; HttpOnly"]);
+  });
+  it("normalizes thrown APIErrors and residual unknown failures at the shared base", async () => {
+    mocks.getSession.mockRejectedValue(
+      new APIError("UNAUTHORIZED", {
+        code: "USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION",
+      }),
+    );
+    await expect(
+      createClient().authentication.updateUser({ name: "Updated" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
+    });
+    mocks.signInEmail.mockRejectedValue(new Error("private internal detail"));
+    await expect(
+      createClient().authentication.signIn({
+        email: "user@example.org",
+        password: "correct-horse-battery-staple",
+      }),
+    ).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      status: 500,
+      message: "Internal server error",
+      data: { reason: "INTERNAL_FAILURE" },
+    });
+  });
 
   it("returns only the validated Google redirect URL", async () => {
     await expect(

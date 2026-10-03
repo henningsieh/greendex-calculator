@@ -49,6 +49,10 @@ import {
   ProjectListScopeAvailabilitySchema,
 } from "@/features/projects/validation-schemas";
 import {
+  createSituationErrors,
+  type SituationErrorConstructors,
+} from "@/lib/orpc/errors";
+import {
   authorized,
   hasCostTrackerPermissions,
   requireCostTrackerPermissions,
@@ -278,7 +282,7 @@ function getPartnerProjectScopeFilters(activeOrganizationId: string): SQL[] {
 function parseCursor(
   input: ProjectListInput,
   fingerprint: string,
-  errors: { BAD_REQUEST: (options?: { message?: string }) => Error },
+  errors: Pick<SituationErrorConstructors, "BAD_REQUEST">,
 ): ProjectListCursor | undefined {
   if (!input.cursor) return undefined;
 
@@ -289,9 +293,7 @@ function parseCursor(
     decodedCursor.status === "invalid" ||
     decodedCursor.cursor.sort !== input.sort
   ) {
-    throw errors.BAD_REQUEST({
-      message: "The Project page cursor is invalid for these filters.",
-    });
+    throw createSituationErrors(errors).invalidProjectCursor();
   }
 
   return decodedCursor.cursor;
@@ -469,16 +471,14 @@ export const listHosted = authorized
         ),
       )
       .limit(1);
+    if (!membership) throw createSituationErrors(errors).notMember();
     if (
-      !membership ||
       !(
         hasOrganizationRole(membership.role, "owner") ||
         hasOrganizationRole(membership.role, "admin")
       )
     ) {
-      throw errors.FORBIDDEN({
-        message: "Hosted Project overview is unavailable.",
-      });
+      throw createSituationErrors(errors).organizationManagementRequired();
     }
     const fingerprint = getProjectListFingerprint({
       scope: "hosted",
@@ -568,10 +568,7 @@ export const listPartner = authorized
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
-      throw errors.FORBIDDEN({
-        message:
-          "Select an active Organization before accessing Cost Tracker data.",
-      });
+      throw createSituationErrors(errors).selectOrganization();
     }
     // Organization-wide readers see every Partnership; assigned coordinators
     // see exactly their assigned Partnerships and nothing else.
@@ -583,10 +580,7 @@ export const listPartner = authorized
       ? []
       : await assignedPartnershipIds(context.user.id, activeOrganizationId);
     if (!canReadPartner && assignedIds.length === 0) {
-      throw errors.FORBIDDEN({
-        message:
-          "The active Organization role cannot access this Cost Tracker resource.",
-      });
+      throw createSituationErrors(errors).accessDenied();
     }
     const fingerprint = getProjectListFingerprint({
       scope: "partner",
@@ -649,9 +643,7 @@ export const availableScopes = authorized
   .handler(async ({ context, errors }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
-      throw errors.FORBIDDEN({
-        message: "Select an active Organization before accessing Projects.",
-      });
+      throw createSituationErrors(errors).selectOrganization();
     }
 
     const [canReadHostedPermission, canReadPartnerPermission] = await Promise.all(
@@ -726,9 +718,7 @@ export const getProject = authorized
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
-      throw errors.FORBIDDEN({
-        message: "Select an active Organization before opening a Project.",
-      });
+      throw createSituationErrors(errors).selectOrganization();
     }
 
     const [canReadHosted, canReadPartner] = await Promise.all([
@@ -748,15 +738,14 @@ export const getProject = authorized
         ),
       )
       .limit(1);
+    if (!membership) throw createSituationErrors(errors).notMember();
     const canCoordinateHosted =
       membership &&
       (hasOrganizationRole(membership.role, "owner") ||
         hasOrganizationRole(membership.role, "admin") ||
         hasOrganizationRole(membership.role, "project-coordinator"));
     if (!(canReadHosted || canReadPartner || canCoordinateHosted)) {
-      throw errors.FORBIDDEN({
-        message: "The active Organization role cannot read this Project.",
-      });
+      throw createSituationErrors(errors).projectReadRequired();
     }
 
     const relationship = await resolveRelationship({
@@ -764,9 +753,7 @@ export const getProject = authorized
       projectId: input.projectId,
     });
     if (relationship.kind === "inaccessible") {
-      throw errors.FORBIDDEN({
-        message: "The active Organization cannot access this Project.",
-      });
+      throw createSituationErrors(errors).projectNotFound();
     }
 
     const project = {
@@ -797,10 +784,7 @@ export const getProject = authorized
           )
           .limit(1);
         if (!assignment || !membership) {
-          throw errors.FORBIDDEN({
-            message:
-              "The active Organization role cannot read this Project Partnership.",
-          });
+          throw createSituationErrors(errors).partnerCoordinationRequired();
         }
       }
 
@@ -824,9 +808,7 @@ export const getProject = authorized
     }
 
     if (!canCoordinateHosted) {
-      throw errors.FORBIDDEN({
-        message: "The active Organization role cannot read this hosted Project.",
-      });
+      throw createSituationErrors(errors).hostingStaffRequired();
     }
 
     const partnerOrganizations = await db.transaction(async (transaction) => {
@@ -842,9 +824,7 @@ export const getProject = authorized
         .for("share")
         .limit(1);
       if (!hostedProject) {
-        throw errors.FORBIDDEN({
-          message: "The active Organization cannot access this Project.",
-        });
+        throw createSituationErrors(errors).projectNotFound();
       }
       await requireHostCoordination(
         hostedProject.id,
@@ -896,7 +876,7 @@ export const complete = authorized
   )
   .handler(async ({ input, context, errors }) => {
     const orgId = context.session.activeOrganizationId;
-    if (!orgId) throw errors.FORBIDDEN();
+    if (!orgId) throw createSituationErrors(errors).selectOrganization();
 
     return db.transaction(async (tx) => {
       const [project] = await tx
@@ -914,8 +894,7 @@ export const complete = authorized
         )
         .for("update")
         .limit(1);
-      if (!project)
-        throw errors.FORBIDDEN({ message: "Hosted Project is unavailable." });
+      if (!project) throw createSituationErrors(errors).projectNotFound();
       await requireHostCoordination(
         project.id,
         context.user.id,
@@ -924,7 +903,7 @@ export const complete = authorized
         tx,
       );
       if (project.completedAt)
-        throw errors.BAD_REQUEST({ message: "Project is already completed." });
+        throw createSituationErrors(errors).projectAlreadyCompleted();
 
       const partnerships = await tx
         .select({ name: organization.name, status: claimsTable.status })
@@ -943,9 +922,7 @@ export const complete = authorized
         ({ status }) => status !== "paid" && status !== "rejected",
       );
       if (blockers.length)
-        throw errors.BAD_REQUEST({
-          message: `Cannot complete Project: ${blockers.map(({ name, status }) => `${name} (${status ?? "no Claim"})`).join(", ")}.`,
-        });
+        throw createSituationErrors(errors).projectCompletionBlocked(blockers);
       const [completed] = await tx
         .update(projectsTable)
         .set({ completedAt: new Date(), completedByUserId: context.user.id })
@@ -960,7 +937,7 @@ export const complete = authorized
           completedByUserId: projectsTable.completedByUserId,
         });
       if (!completed?.completedAt || !completed.completedByUserId)
-        throw errors.INTERNAL_SERVER_ERROR();
+        throw createSituationErrors(errors).internalFailure();
       return {
         projectId: project.id,
         completed: true as const,

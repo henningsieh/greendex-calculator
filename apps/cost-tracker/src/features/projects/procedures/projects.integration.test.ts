@@ -379,7 +379,11 @@ describe("projects procedures", () => {
 
     it("denies Partner-side and unauthenticated completion", async () => {
       useSession(partnerIds[0]!);
-      await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(complete()).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        status: 404,
+        data: { reason: "PROJECT_NOT_FOUND" },
+      });
       authMocks.getSession.mockResolvedValue(null);
       await expect(complete()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     });
@@ -438,6 +442,15 @@ describe("projects procedures", () => {
         role: "owner",
         createdAt: now,
       });
+      await db.insert(member).values(
+        [partnerId, unrelatedId].map((organizationId) => ({
+          id: randomUUID(),
+          userId,
+          organizationId,
+          role: "owner",
+          createdAt: now,
+        })),
+      );
       await db.insert(projectsTable).values({
         id: projectId,
         name: "Detail Project",
@@ -512,11 +525,14 @@ describe("projects procedures", () => {
       expect(detail).not.toHaveProperty("amount");
     });
 
-    it("returns FORBIDDEN for an inaccessible Project", async () => {
+    it("returns NOT_FOUND for an inaccessible Project", async () => {
       useSession(unrelatedId);
 
       await expect(client.projects.get({ projectId })).rejects.toMatchObject({
-        code: "FORBIDDEN",
+        code: "NOT_FOUND",
+        status: 404,
+        message: "Project not found in scope.",
+        data: { reason: "PROJECT_NOT_FOUND" },
       });
     });
 

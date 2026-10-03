@@ -22,6 +22,13 @@ import {
 } from "@/features/authentication/procedures/shared";
 import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
+import {
+  normalizeBetterAuthError,
+  normalizeBetterAuthResponse,
+  normalizeParticipantMembershipError,
+  normalizeParticipantMembershipResponse,
+} from "@/lib/orpc/better-auth-errors";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) {
@@ -31,7 +38,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
     .handler(async ({ context, input, errors }) => {
       const version = requirePublishedAgreement(errors);
       if (!context.user.emailVerified)
-        throw errors.FORBIDDEN({ message: "Verify your email before joining." });
+        throw createSituationErrors(errors).verifyEmail();
       let partnershipId: string;
       let bridgeId: string | undefined;
       if (input.source.kind === "link") {
@@ -41,9 +48,9 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           .where(eq(links.id, input.source.id))
           .limit(1);
         if (!link || link.secretHash !== secretHash(input.source.secret))
-          throw errors.NOT_FOUND({ message: "Registration link not found." });
+          throw createSituationErrors(errors).registrationLinkNotFound();
         if (!link.enabled)
-          throw errors.BAD_REQUEST({ message: "Registration link is closed." });
+          throw createSituationErrors(errors).registrationLinkClosed();
         partnershipId = link.partnershipId;
       } else {
         const [bridge] = await db
@@ -51,31 +58,30 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           .from(bridges)
           .where(eq(bridges.invitationId, input.source.invitationId))
           .limit(1);
-        if (!bridge || bridge.email !== context.user.email.trim().toLowerCase())
-          throw errors.FORBIDDEN({
-            message: "Invitation is not for this account.",
-          });
+        if (!bridge)
+          throw createSituationErrors(errors).participantInvitationNotFound();
+        if (bridge.email !== context.user.email.trim().toLowerCase())
+          throw createSituationErrors(errors).participantInvitationWrongAccount();
         if (bridge.status !== "pending" && bridge.status !== "accepted")
-          throw errors.BAD_REQUEST({ message: "Invitation is closed." });
+          throw createSituationErrors(errors).participantInvitationClosed();
         const [nativeInvitation] = await db
           .select({ expiresAt: invitation.expiresAt, status: invitation.status })
           .from(invitation)
           .where(eq(invitation.id, bridge.invitationId))
           .limit(1);
+        if (!nativeInvitation)
+          throw createSituationErrors(errors).participantInvitationNotFound();
         if (
-          !nativeInvitation ||
-          (bridge.status === "pending" &&
-            nativeInvitation.expiresAt <= new Date())
+          bridge.status === "pending" &&
+          nativeInvitation.expiresAt <= new Date()
         )
-          throw errors.BAD_REQUEST({
-            message: "Invitation is expired or unavailable.",
-          });
+          throw createSituationErrors(errors).participantInvitationExpired();
         if (
           bridge.status === "pending" &&
           nativeInvitation.status !== "pending" &&
           nativeInvitation.status !== "accepted"
         )
-          throw errors.BAD_REQUEST({ message: "Invitation is closed." });
+          throw createSituationErrors(errors).participantInvitationClosed();
         partnershipId = bridge.partnershipId;
         bridgeId = bridge.invitationId;
       }
@@ -91,7 +97,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         .where(eq(partnerships.id, partnershipId))
         .limit(1);
       if (!partnership || partnership.archived)
-        throw errors.BAD_REQUEST({ message: "Project is unavailable." });
+        throw createSituationErrors(errors).partnershipNotFound();
       const [previous] = await db
         .select({
           id: participants.id,
@@ -106,10 +112,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         )
         .limit(1);
       if (previous && previous.partnerId !== partnership.partnerId)
-        throw errors.BAD_REQUEST({
-          message:
-            "You already joined this Project through another Partner Organization.",
-        });
+        throw createSituationErrors(errors).joinedOtherPartner();
       if (bridgeId && !previous) {
         const [existingMembership] = await db
           .select({ id: member.id })
@@ -122,15 +125,25 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           )
           .limit(1);
         if (!existingMembership) {
-          const response = await auth.api.acceptInvitation({
-            asResponse: true,
-            headers: context.headers,
-            body: { invitationId: bridgeId },
-          });
-          if (!response.ok)
-            throw errors.BAD_REQUEST({
-              message: "Better Auth invitation acceptance failed; please retry.",
+          const response = await auth.api
+            .acceptInvitation({
+              asResponse: true,
+              headers: context.headers,
+              body: { invitationId: bridgeId },
+            })
+            .catch((error: unknown) => {
+              throw normalizeBetterAuthError(
+                error,
+                createSituationErrors(errors),
+                context.resHeaders,
+              );
             });
+          if (!response.ok)
+            throw await normalizeBetterAuthResponse(
+              response,
+              createSituationErrors(errors),
+              context.resHeaders,
+            );
         }
       }
       const [membership] = await db
@@ -143,20 +156,33 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           ),
         )
         .limit(1);
-      if (membership) requireCostTrackerRole(membership.role, errors.BAD_REQUEST);
+      if (membership)
+        requireCostTrackerRole(membership.role, () =>
+          createSituationErrors(errors).invalidOrganizationRole(),
+        );
       if (!membership) {
-        const response = await auth.api.addMember({
-          asResponse: true,
-          body: {
-            userId: context.user.id,
-            organizationId: partnership.hostId,
-            role: "participant",
-          },
-        });
-        if (!response.ok)
-          throw errors.BAD_REQUEST({
-            message: "Membership creation failed; please retry.",
+        const response = await auth.api
+          .addMember({
+            asResponse: true,
+            body: {
+              userId: context.user.id,
+              organizationId: partnership.hostId,
+              role: "participant",
+            },
+          })
+          .catch((error: unknown) => {
+            throw normalizeParticipantMembershipError(
+              error,
+              createSituationErrors(errors),
+              context.resHeaders,
+            );
           });
+        if (!response.ok)
+          throw await normalizeParticipantMembershipResponse(
+            response,
+            createSituationErrors(errors),
+            context.resHeaders,
+          );
         console.info("Participant membership created", {
           actor: context.user.id,
           linkId: input.source.kind === "link" ? input.source.id : bridgeId,
@@ -176,10 +202,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           ],
           update: { role: updatedRole },
         });
-        if (!updated)
-          throw errors.BAD_REQUEST({
-            message: "Membership changed; please retry onboarding.",
-          });
+        if (!updated) throw createSituationErrors(errors).membershipChanged();
         console.info("Participant membership updated", {
           actor: context.user.id,
           linkId: input.source.kind === "link" ? input.source.id : bridgeId,
@@ -201,8 +224,10 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             )
             .for("update")
             .limit(1);
-          if (!link?.enabled)
-            throw errors.BAD_REQUEST({ message: "Registration link is closed." });
+          if (!link)
+            throw createSituationErrors(errors).registrationLinkNotFound();
+          if (!link.enabled)
+            throw createSituationErrors(errors).registrationLinkClosed();
         } else {
           const [bridge] = await tx
             .select({ status: bridges.status })
@@ -210,11 +235,10 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             .where(eq(bridges.invitationId, bridgeId!))
             .for("update")
             .limit(1);
-          if (
-            !bridge ||
-            (bridge.status !== "pending" && bridge.status !== "accepted")
-          )
-            throw errors.BAD_REQUEST({ message: "Invitation is closed." });
+          if (!bridge)
+            throw createSituationErrors(errors).participantInvitationNotFound();
+          if (bridge.status !== "pending" && bridge.status !== "accepted")
+            throw createSituationErrors(errors).participantInvitationClosed();
         }
         const [existing] = await tx
           .select({
@@ -230,10 +254,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           )
           .limit(1);
         if (existing && existing.partnerId !== partnership.partnerId)
-          throw errors.BAD_REQUEST({
-            message:
-              "You already joined this Project through another Partner Organization.",
-          });
+          throw createSituationErrors(errors).joinedOtherPartner();
         await tx
           .insert(profiles)
           .values({ userId: context.user.id, fullName: input.profile.fullName })
@@ -264,9 +285,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             .onConflictDoNothing()
             .returning({ id: participants.id });
           if (!created)
-            throw errors.BAD_REQUEST({
-              message: "You already joined this Project.",
-            });
+            throw createSituationErrors(errors).participationIdentityConflict();
           participationId = created.id;
         }
         if (bridgeId) {

@@ -7,6 +7,11 @@ import {
 } from "@greendex/database/schema";
 import { and, eq } from "drizzle-orm";
 
+import {
+  createSituationErrors,
+  type ScopeErrorConstructors,
+} from "@/lib/orpc/errors";
+
 type ClaimStatus = (typeof claimStatusEnum.enumValues)[number];
 
 type ClaimScopeTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -16,9 +21,7 @@ interface ClaimScope {
   partnershipId: string;
 }
 
-interface ClaimScopeErrors {
-  FORBIDDEN: (args: { message: string }) => Error;
-}
+type ClaimScopeErrors = ScopeErrorConstructors;
 
 /** A correction request reopens all Partner-side edits, including the selected payout account. */
 export function isPartnerEditLocked(status: ClaimStatus): boolean {
@@ -53,9 +56,7 @@ export async function lockClaimScope(
     .for("update")
     .limit(1);
   if (!project || !partnership)
-    throw errors.FORBIDDEN({
-      message: "Project Partnership is unavailable.",
-    });
+    throw createSituationErrors(errors).partnershipNotFound();
   const [claim] = await tx
     .select({
       id: claims.id,
