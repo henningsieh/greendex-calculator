@@ -156,6 +156,39 @@ describe("Partner Organization setup links", () => {
     ).rejects.toThrow("already assigned");
   });
 
+  it("separates an unverified recipient from a wrong recipient without consuming the link", async () => {
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    authMocks.getSession.mockResolvedValue({
+      session: { id, userId, activeOrganizationId: hostId },
+      user: {
+        id: userId,
+        email: recipientEmail,
+        emailVerified: false,
+        name: "Setup User",
+      },
+    });
+    await expect(
+      client.projectPartnerships.consumeSetupLink({
+        id: link.id,
+        secret: link.secret,
+        organization: { kind: "existing", organizationId: partnerId },
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      message: "Verify your email before continuing.",
+      data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
+    });
+    const [unchanged] = await db
+      .select({ partnershipId: links.partnershipId })
+      .from(links)
+      .where(eq(links.id, link.id));
+    expect(unchanged?.partnershipId).toBeNull();
+  });
+
   it.each(["member,owner", "owner,participant"])(
     "offers and consumes an existing Organization with %s membership",
     async (role) => {

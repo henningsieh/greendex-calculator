@@ -688,7 +688,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect(own.status()).toBe(200);
     expect((await own.body()).equals(proofBytes)).toBe(true);
     const foreign = await pageFor(browser, "F", baseURL!);
-    expect((await foreign.request.get(url)).status()).toBe(403);
+    expect((await foreign.request.get(url)).status()).toBe(404);
     const host = await pageFor(browser, "H", baseURL!);
     const mismatch = `/api/proof-documents?${new URLSearchParams({ partnershipId: ids.partnerships[1]!, documentId: ids.documents[0]! })}`;
     expect((await host.request.get(mismatch)).status()).toBe(404);

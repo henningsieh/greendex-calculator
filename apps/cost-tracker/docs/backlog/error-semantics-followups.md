@@ -15,3 +15,15 @@ Deferred to later waves: app-wide throw-site migration; broader 409/503 business
 Shared Hosting/Partner guards and issuer scope now separate missing Organization selection (400), missing Membership (403), missing scoped Project/Partnership (404), and missing staff/assignment capability (403). Coordinator appointment requires eligible Partner staff, not merely Membership. Claim locks retain Project → Partnership → Claim order and return 404 when a scoped row disappears. Proof download/upload adapt these shared outcomes without changing upload rules, caps, origin checks, or Claim prerequisites. No unrestricted existence probe or authorization grant was added.
 
 The unpublished-agreement 400 guard and all business-state 409/503 policy refinements remain deferred.
+
+## Wave 2 — Project and Organization entry points
+
+Project lists/search/create/detail/completion, Partnership entry points, setup links, and staff invitations use named errors. Missing selection is 400; missing Membership and known missing capability remain 403; scoped missing Projects, Partnerships, setup links, and staff invitations are 404. Setup redemption distinguishes the wrong recipient from an unverified recipient, and both setup and staff-invitation views select local copy using validated code/status/reason rather than remote English prose.
+
+Staff invitation create/accept/cancel preserve authoritative Better Auth causes; unknown or malformed upstream failures are safe 500, not blanket client-input errors. Guarded Partnership removal rereads only permitted scope: absence is 404, proven references remain 400, unexplained refusal is 500. An unidentified assignment foreign-key failure no longer claims a particular Organization is missing. Completion still names scoped blockers and keeps its existing 400 policy.
+
+Closed, expired, used, duplicate, referenced, and completion states deliberately retain 400 in this wave. A used setup link is described as used, without asserting a different Organization; Partnership invariant copy no longer names a database invariant. Native Better Auth, lock order, idempotency, roles, and upload policy remain unchanged.
+
+Wave 3 deferrals: Participant invitation/join adapters and remaining Claim/Participant producers; full proof transport/upload policy; 409/503 policy refinement; safe field-issue/completion-blocker catalogs; reason-based toast grouping and static guards.
+
+Wave 2 validation: all 22 affected suites are green across final runs (521 tests), including the complete 242-test submission suite, shared-denial fanout, staff Better Auth boundaries, coupled consumers, and HTTP/direct-SSR regressions. Cost Tracker type-check and repository format/lint passed; existing lint warnings remain. The constrained-machine harness uses CLI-only 30-second test/hook limits and one worker; no source timeouts or assertions were relaxed. Browser expectations were synchronized, but E2E was not run.

@@ -1440,10 +1440,38 @@ describe("Host Claim review", () => {
       activeOrg = org;
       activeActor = actor;
       for (const action of actions)
-        await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
+        await expect(review(action)).rejects.toMatchObject(
+          org === other
+            ? {
+                code: "NOT_FOUND",
+                status: 404,
+                message: "Project Partnership not found in scope.",
+                data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+              }
+            : {
+                code: "FORBIDDEN",
+                status: 403,
+                message: "Only Hosting staff may review Claims.",
+              },
+        );
       await expect(
         client.claims.getHistory({ partnershipId: foreign }),
-      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      ).rejects.toMatchObject(
+        org === other
+          ? {
+              code: "FORBIDDEN",
+              status: 403,
+              message:
+                "You need Partner Organization staff access or an assignment to this Project Partnership.",
+              data: { reason: "PARTNER_COORDINATION_REQUIRED" },
+            }
+          : {
+              code: "NOT_FOUND",
+              status: 404,
+              message: "Project Partnership not found in scope.",
+              data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+            },
+      );
     }
     activeOrg = partner;
     activeActor = participantUser;
@@ -1692,12 +1720,34 @@ describe("Claim payment recording", () => {
     for (const org of [partner, other]) {
       activeOrg = org;
       activeActor = actor;
-      await expect(markPaid(payable)).rejects.toMatchObject({
-        code: "FORBIDDEN",
-      });
-      await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({
-        code: "FORBIDDEN",
-      });
+      await expect(markPaid(payable)).rejects.toMatchObject(
+        org === other
+          ? {
+              code: "NOT_FOUND",
+              status: 404,
+              message: "Project Partnership not found in scope.",
+              data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+            }
+          : {
+              code: "FORBIDDEN",
+              status: 403,
+              message: "Only Hosting staff may record payment.",
+            },
+      );
+      await expect(correctPayment("Incorrect flag")).rejects.toMatchObject(
+        org === other
+          ? {
+              code: "NOT_FOUND",
+              status: 404,
+              message: "Project Partnership not found in scope.",
+              data: { reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
+            }
+          : {
+              code: "FORBIDDEN",
+              status: 403,
+              message: "Only Hosting staff may correct payment.",
+            },
+      );
     }
   });
 });

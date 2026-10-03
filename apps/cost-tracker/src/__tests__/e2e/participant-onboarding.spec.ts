@@ -888,7 +888,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       c
         .getByRole("alert")
         .filter({ hasText: "Group Organizer management unavailable" }),
-    ).toContainText("You do not have permission to access this resource.");
+    ).toContainText(
+      "You need Organization Owner or Admin access to manage this Organization.",
+    );
     await expect(
       c.getByRole("button", { name: "Assign Group Organizer", exact: true }),
     ).toHaveCount(0);
@@ -926,7 +928,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       c
         .getByRole("alert")
         .filter({ hasText: "Unable to load Project Participations" }),
-    ).toContainText("You do not have permission to access this resource.");
+    ).toContainText(
+      "You need Partner Organization staff access or an assignment to this Project Partnership.",
+    );
     await expect(c.getByText(actors.T.email, { exact: true })).toHaveCount(0);
   });
 });

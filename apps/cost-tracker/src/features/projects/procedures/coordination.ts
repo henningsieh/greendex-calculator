@@ -188,7 +188,10 @@ export const assignPartnerCoordinator = authorized
         and(eq(member.organizationId, orgId), eq(member.userId, input.userId)),
       )
       .limit(1);
-    if (target) requireCostTrackerRole(target.role, errors.BAD_REQUEST);
+    if (target)
+      requireCostTrackerRole(target.role, () =>
+        situation.invalidOrganizationRole(),
+      );
     if (
       !target ||
       !target.role

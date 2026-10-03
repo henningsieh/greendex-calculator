@@ -2,7 +2,6 @@ import { ORPCError } from "@orpc/server";
 
 import {
   downloadProofDocument,
-  ProofAccessDenied,
   ProofNotFound,
   uploadProofDocument,
 } from "@/features/projects/procedures/documents";
@@ -41,20 +40,17 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    if (
-      error instanceof ORPCError &&
-      getSafeErrorSituation(error) &&
-      [400, 403, 404].includes(error.status)
-    )
+    const situation =
+      error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
+    if (situation && [400, 403, 404].includes(situation.status))
       return Response.json(
-        { error: getSafeErrorSituation(error)!.message },
-        { status: error.status },
+        { error: situation.message },
+        { status: situation.status },
       );
     if (
-      error instanceof ProofAccessDenied ||
-      (error instanceof ORPCError &&
-        error.code === "FORBIDDEN" &&
-        error.status === 403)
+      error instanceof ORPCError &&
+      error.code === "FORBIDDEN" &&
+      error.status === 403
     )
       return Response.json({ error: "Access denied." }, { status: 403 });
     if (error instanceof ProofNotFound)
@@ -136,20 +132,17 @@ export async function POST(request: Request) {
       { status: result.status },
     );
   } catch (error) {
-    if (
-      error instanceof ORPCError &&
-      getSafeErrorSituation(error) &&
-      [400, 403, 404].includes(error.status)
-    )
+    const situation =
+      error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
+    if (situation && [400, 403, 404].includes(situation.status))
       return Response.json(
-        { error: getSafeErrorSituation(error)!.message },
-        { status: error.status },
+        { error: situation.message },
+        { status: situation.status },
       );
     if (
-      error instanceof ProofAccessDenied ||
-      (error instanceof ORPCError &&
-        error.code === "FORBIDDEN" &&
-        error.status === 403)
+      error instanceof ORPCError &&
+      error.code === "FORBIDDEN" &&
+      error.status === 403
     )
       return Response.json({ error: "Access denied." }, { status: 403 });
     console.error("[Proof upload]", error);

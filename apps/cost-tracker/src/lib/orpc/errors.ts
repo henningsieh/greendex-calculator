@@ -120,6 +120,184 @@ export function createSituationErrors(
           reason: situationCatalog.coordinatorSelectionRequired.reason,
         }),
       }),
+    invalidProjectCursor: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.invalidProjectCursor.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.invalidProjectCursor.reason,
+        }),
+      }),
+    projectReadRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.projectReadRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.projectReadRequired.reason,
+        }),
+      }),
+    hostingStaffRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.hostingStaffRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.hostingStaffRequired.reason,
+        }),
+      }),
+    hostingSideRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.hostingSideRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.hostingSideRequired.reason,
+        }),
+      }),
+    selfPartnership: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.selfPartnership.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.selfPartnership.reason,
+        }),
+      }),
+    partnerOrganizationNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.partnerOrganizationNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnerOrganizationNotFound.reason,
+        }),
+      }),
+    partnershipAlreadyAssigned: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.partnershipAlreadyAssigned.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnershipAlreadyAssigned.reason,
+        }),
+      }),
+    partnershipInvariant: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.partnershipInvariant.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnershipInvariant.reason,
+        }),
+      }),
+    partnershipReferenced: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.partnershipReferenced.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.partnershipReferenced.reason,
+        }),
+      }),
+    projectAlreadyCompleted: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.projectAlreadyCompleted.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.projectAlreadyCompleted.reason,
+        }),
+      }),
+    setupLinkNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.setupLinkNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.setupLinkNotFound.reason,
+        }),
+      }),
+    setupLinkWrongEmail: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.setupLinkWrongEmail.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.setupLinkWrongEmail.reason,
+        }),
+      }),
+    setupLinkDisabled: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.setupLinkDisabled.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.setupLinkDisabled.reason,
+        }),
+      }),
+    setupLinkExpired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.setupLinkExpired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.setupLinkExpired.reason,
+        }),
+      }),
+    organizationOwnerRequired: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.organizationOwnerRequired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.organizationOwnerRequired.reason,
+        }),
+      }),
+    setupLinkUsed: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.setupLinkUsed.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.setupLinkUsed.reason,
+        }),
+      }),
+    staffInvitationRoleTooHigh: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.staffInvitationRoleTooHigh.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.staffInvitationRoleTooHigh.reason,
+        }),
+      }),
+    staffInvitationNotFound: () =>
+      errors.NOT_FOUND({
+        message: situationCatalog.staffInvitationNotFound.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.staffInvitationNotFound.reason,
+        }),
+      }),
+    staffInvitationWrongKind: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.staffInvitationWrongKind.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.staffInvitationWrongKind.reason,
+        }),
+      }),
+    staffInvitationClosed: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.staffInvitationClosed.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.staffInvitationClosed.reason,
+        }),
+      }),
+    staffInvitationExpired: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.staffInvitationExpired.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.staffInvitationExpired.reason,
+        }),
+      }),
+    staffInvitationWrongEmail: () =>
+      errors.FORBIDDEN({
+        message: situationCatalog.staffInvitationWrongEmail.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.staffInvitationWrongEmail.reason,
+        }),
+      }),
+    invalidOrganizationRole: () =>
+      errors.BAD_REQUEST({
+        message: situationCatalog.invalidOrganizationRole.message,
+        data: SafeErrorDataSchema.parse({
+          reason: situationCatalog.invalidOrganizationRole.reason,
+        }),
+      }),
+    projectCompletionBlocked: (
+      blockers: readonly {
+        name: string;
+        status:
+          | "editable"
+          | "correction_requested"
+          | "submitted"
+          | "approved"
+          | "rejected"
+          | "paid"
+          | null;
+      }[],
+    ) =>
+      errors.BAD_REQUEST({
+        message: `Cannot complete Project: ${blockers.map(({ name, status }) => `${name} (${status ?? "no Claim"})`).join(", ")}.`,
+        data: SafeErrorDataSchema.parse({ reason: "PROJECT_COMPLETION_BLOCKED" }),
+      }),
     badInput: () =>
       errors.BAD_REQUEST({
         message: situationCatalog.badInput.message,

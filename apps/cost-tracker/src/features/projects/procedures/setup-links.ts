@@ -13,6 +13,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 const identifier = z.string().trim().min(1).max(128);
@@ -28,6 +29,8 @@ export const createSetupLink = authorized
   .output(z.object({ id: z.string(), secret: z.string(), expiresAt: z.date() }))
   .handler(async ({ input, context, errors }) => {
     const secret = randomBytes(32).toString("base64url");
+    if (!context.session.activeOrganizationId)
+      throw createSituationErrors(errors).selectOrganization();
     return db.transaction(async (tx) => {
       const [project] = await tx
         .select({
@@ -46,11 +49,7 @@ export const createSetupLink = authorized
         )
         .for("update")
         .limit(1);
-      if (!project)
-        throw errors.FORBIDDEN({
-          message:
-            "Only assigned Hosting staff can create a setup link for this Project.",
-        });
+      if (!project) throw createSituationErrors(errors).projectNotFound();
       await requireHostCoordination(
         project.id,
         context.user.id,
@@ -123,7 +122,7 @@ export const disableSetupLink = authorized
         ),
       )
       .returning({ id: links.id });
-    if (!link) throw errors.NOT_FOUND({ message: "Setup link not found." });
+    if (!link) throw createSituationErrors(errors).setupLinkNotFound();
     return { disabled: true as const };
   });
 
@@ -151,18 +150,14 @@ export const consumeSetupLink = authorized
         .for("update")
         .limit(1);
       if (!link || link.secretHash !== hash(input.secret))
-        throw errors.NOT_FOUND({ message: "Setup link not found." });
-      if (
-        !context.user.emailVerified ||
-        context.user.email.toLowerCase() !== link.recipientEmail
-      )
-        throw errors.FORBIDDEN({
-          message: "This setup link belongs to another email address.",
-        });
-      if (!link.enabled)
-        throw errors.BAD_REQUEST({ message: "This setup link is disabled." });
+        throw createSituationErrors(errors).setupLinkNotFound();
+      if (context.user.email.toLowerCase() !== link.recipientEmail)
+        throw createSituationErrors(errors).setupLinkWrongEmail();
+      if (!context.user.emailVerified)
+        throw createSituationErrors(errors).verifyEmail();
+      if (!link.enabled) throw createSituationErrors(errors).setupLinkDisabled();
       if (link.expiresAt <= new Date())
-        throw errors.BAD_REQUEST({ message: "This setup link has expired." });
+        throw createSituationErrors(errors).setupLinkExpired();
 
       if (input.organization.kind === "existing") {
         const [ownership] = await tx
@@ -176,9 +171,7 @@ export const consumeSetupLink = authorized
           )
           .limit(1);
         if (!ownership || !hasOrganizationRole(ownership.role, "owner"))
-          throw errors.FORBIDDEN({
-            message: "You must be an Owner of the selected Organization.",
-          });
+          throw createSituationErrors(errors).organizationOwnerRequired();
       }
       if (link.partnershipId) {
         const [previous] = await tx
@@ -200,10 +193,7 @@ export const consumeSetupLink = authorized
             organizationId: previous.organizationId,
           };
         }
-        throw errors.BAD_REQUEST({
-          message:
-            "This setup link has already been used for another Organization.",
-        });
+        throw createSituationErrors(errors).setupLinkUsed();
       }
 
       const [project] = await tx
@@ -217,10 +207,7 @@ export const consumeSetupLink = authorized
         )
         .for("update")
         .limit(1);
-      if (!project)
-        throw errors.BAD_REQUEST({
-          message: "This Project is no longer available.",
-        });
+      if (!project) throw createSituationErrors(errors).projectNotFound();
 
       let organizationId: string;
       if (input.organization.kind === "new") {
@@ -242,10 +229,7 @@ export const consumeSetupLink = authorized
         organizationId = input.organization.organizationId;
       }
       if (organizationId === project.hostId)
-        throw errors.BAD_REQUEST({
-          message:
-            "The Hosting Organization cannot be its own Partner Organization.",
-        });
+        throw createSituationErrors(errors).selfPartnership();
       const [existing] = await tx
         .select({ id: partnerships.id })
         .from(partnerships)
@@ -257,9 +241,7 @@ export const consumeSetupLink = authorized
         )
         .limit(1);
       if (existing)
-        throw errors.BAD_REQUEST({
-          message: "This Organization is already assigned to the Project.",
-        });
+        throw createSituationErrors(errors).partnershipAlreadyAssigned();
       const [partnership] = await tx
         .insert(partnerships)
         .values({ projectId: project.id, organizationId })

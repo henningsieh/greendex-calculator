@@ -178,7 +178,12 @@ describe("projects.create", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(
       client.projects.get({ projectId: foreignProject }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+      message: "Project not found in scope.",
+      data: { reason: "PROJECT_NOT_FOUND" },
+    });
     authMocks.hasPermission.mockResolvedValue({ success: false });
     await expect(
       requireHostCoordination(foreignProject, actor, otherHost, {
@@ -262,7 +267,9 @@ describe("projects.create", () => {
     });
     session(null);
     await expect(client.projects.create(input)).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
     });
     session(host, "not-a-member");
     await expect(client.projects.create(input)).rejects.toMatchObject({

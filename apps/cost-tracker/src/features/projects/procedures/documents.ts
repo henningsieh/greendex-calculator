@@ -71,7 +71,6 @@ export const list = authorized
       .where(eq(documents.claimId, claim.id));
   });
 
-export class ProofAccessDenied extends Error {}
 export class ProofNotFound extends Error {}
 
 /** Called by the download route; authorize the Partnership before resolving its Claim-owned object key. */

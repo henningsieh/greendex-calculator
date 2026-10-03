@@ -67,6 +67,7 @@ describe("Organization Invitation acceptance", () => {
     mocks.acceptInvitation.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
         message: "Organization Invitation has expired.",
+        data: { reason: "STAFF_INVITATION_EXPIRED" },
       }),
     );
     render(<InvitationAcceptance invitationId="invite-1" />);
@@ -79,4 +80,21 @@ describe("Organization Invitation acceptance", () => {
     );
     expect(mocks.replace).not.toHaveBeenCalled();
   });
+});
+
+it("ignores known invitation prose with a contradictory code/reason", async () => {
+  const { ORPCError } = await import("@orpc/client");
+  mocks.acceptInvitation.mockRejectedValue(
+    new ORPCError("FORBIDDEN", {
+      message: "Organization Invitation has expired.",
+      data: { reason: "STAFF_INVITATION_EXPIRED" },
+    }),
+  );
+  render(<InvitationAcceptance invitationId="invite-1" />);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Accept Organization Invitation" }),
+  );
+  expect(await screen.findByRole("alert")).not.toHaveTextContent(
+    /has expired. Ask for a new invitation/,
+  );
 });

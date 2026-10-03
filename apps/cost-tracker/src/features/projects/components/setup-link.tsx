@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
@@ -30,61 +31,26 @@ type SetupError =
   | "disabled"
   | "expired"
   | "wrong-email"
+  | "verify-email"
   | "duplicate"
   | "owner"
   | "unavailable"
   | "host"
   | "generic";
 
-// #164 reuses BAD_REQUEST and FORBIDDEN for several distinct states. Both code AND
-// exact procedure message must match; never display a remote message directly.
-const knownErrors: readonly {
-  code: string;
-  message: string;
-  state: SetupError;
-}[] = [
-  { code: "NOT_FOUND", message: "Setup link not found.", state: "invalid" },
-  {
-    code: "BAD_REQUEST",
-    message: "This setup link is disabled.",
-    state: "disabled",
-  },
-  {
-    code: "BAD_REQUEST",
-    message: "This setup link has expired.",
-    state: "expired",
-  },
-  {
-    code: "FORBIDDEN",
-    message: "This setup link belongs to another email address.",
-    state: "wrong-email",
-  },
-  {
-    code: "BAD_REQUEST",
-    message: "This setup link has already been used for another Organization.",
-    state: "duplicate",
-  },
-  {
-    code: "BAD_REQUEST",
-    message: "This Organization is already assigned to the Project.",
-    state: "duplicate",
-  },
-  {
-    code: "FORBIDDEN",
-    message: "You must be an Owner of the selected Organization.",
-    state: "owner",
-  },
-  {
-    code: "BAD_REQUEST",
-    message: "This Project is no longer available.",
-    state: "unavailable",
-  },
-  {
-    code: "BAD_REQUEST",
-    message: "The Hosting Organization cannot be its own Partner Organization.",
-    state: "host",
-  },
-];
+// Local presentation is selected only by validated code/status/reason metadata.
+const knownErrors: Readonly<Record<string, SetupError>> = {
+  SETUP_LINK_NOT_FOUND: "invalid",
+  SETUP_LINK_DISABLED: "disabled",
+  SETUP_LINK_EXPIRED: "expired",
+  SETUP_LINK_WRONG_EMAIL: "wrong-email",
+  SETUP_LINK_USED: "duplicate",
+  PARTNERSHIP_ALREADY_ASSIGNED: "duplicate",
+  ORGANIZATION_OWNER_REQUIRED: "owner",
+  PROJECT_NOT_FOUND: "unavailable",
+  SELF_PARTNERSHIP: "host",
+  EMAIL_VERIFICATION_REQUIRED: "verify-email",
+};
 
 const errorCopy: Record<SetupError, { title: string; description: string }> = {
   invalid: {
@@ -103,6 +69,10 @@ const errorCopy: Record<SetupError, { title: string; description: string }> = {
     title: "Wrong email address",
     description:
       "Sign in with the verified recipient email address and try again.",
+  },
+  "verify-email": {
+    title: "Verify your email",
+    description: "Verify your recipient email address before completing setup.",
   },
   duplicate: {
     title: "Setup already completed",
@@ -132,11 +102,8 @@ const errorCopy: Record<SetupError, { title: string; description: string }> = {
 
 function setupError(error: unknown): SetupError {
   if (error instanceof ORPCError) {
-    return (
-      knownErrors.find(
-        ({ code, message }) => error.code === code && error.message === message,
-      )?.state ?? "generic"
-    );
+    const situation = getSafeErrorSituation(error);
+    return situation ? (knownErrors[situation.reason] ?? "generic") : "generic";
   }
   return "generic";
 }
