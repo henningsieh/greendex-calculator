@@ -26,6 +26,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
 }));
 
 import { AuthForm } from "@/components/auth-form";
+import { createSituationErrors } from "@/lib/orpc/errors";
 
 describe("AuthForm", () => {
   beforeEach(() => {
@@ -69,3 +70,24 @@ describe("AuthForm", () => {
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 });
+
+it.each([
+  [createSituationErrors().invalidCredentials(), "Incorrect email or password."],
+  [
+    createSituationErrors().unauthenticated(),
+    "Your session is missing or has expired. Sign in to continue.",
+  ],
+  [createSituationErrors().verifyEmail(), "Verify your email before continuing."],
+])(
+  "renders credential/session/verification distinction $data.reason",
+  async (error, text) => {
+    mocks.signIn.mockRejectedValue(error);
+    const user = userEvent.setup();
+    render(<AuthForm mode="sign-in" />);
+    await user.type(screen.getByLabelText("Email address"), "user@example.org");
+    await user.type(screen.getByLabelText("Password"), "example-password");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText(text)).toBeTruthy();
+    expect(screen.queryByText("private SQL token")).toBeNull();
+  },
+);

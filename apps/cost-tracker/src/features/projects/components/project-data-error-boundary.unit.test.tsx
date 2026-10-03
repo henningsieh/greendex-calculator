@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
+import { createSituationErrors } from "@/lib/orpc/errors";
 
 let shouldThrow = true;
 
@@ -35,7 +36,7 @@ describe("ProjectDataErrorBoundary", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });
 
-  it("shows an HTTP status without exposing remote error details", () => {
+  it("shows safe unavailable copy without exposing remote error details", () => {
     shouldThrow = true;
     vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -52,7 +53,9 @@ describe("ProjectDataErrorBoundary", () => {
       </ProjectDataErrorBoundary>,
     );
 
-    expect(screen.getByRole("alert").textContent).toContain("HTTP 503");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "The service is temporarily unavailable. Try again later.",
+    );
     expect(screen.queryByText("database password leaked")).toBeNull();
   });
 
@@ -96,3 +99,35 @@ describe("ProjectDataErrorBoundary", () => {
     });
   });
 });
+
+it.each([
+  [
+    createSituationErrors().notMember(),
+    "Membership in the active Organization is required.",
+  ],
+  [createSituationErrors().notFound(), "Resource not found in scope."],
+  [
+    createSituationErrors().conflict(),
+    "The resource state conflicts with this request. Reload and try again.",
+  ],
+  [
+    createSituationErrors().incompleteProfile(),
+    "Complete your Participant profile before accessing Projects.",
+  ],
+  [createSituationErrors().invalidCredentials(), "Incorrect email or password."],
+])(
+  "non-session $code/$data.reason has retry, not sign-in recovery",
+  (error, text) => {
+    shouldThrow = true;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    render(
+      <ProjectDataErrorBoundary resource="Projects">
+        <FailingProjectDataView error={error} />
+      </ProjectDataErrorBoundary>,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(text);
+    expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
+    vi.restoreAllMocks();
+  },
+);

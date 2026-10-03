@@ -669,10 +669,29 @@ function ProofEditor({
         setFeedback("Proof Document uploaded.");
         form.reset();
         void refresh();
-      } else
-        setFeedback(
-          "Upload failed. Choose a PDF, JPEG, or PNG under 10 MB for an editable Claim.",
-        );
+      } else {
+        let text = "Upload failed. Please try again.";
+        try {
+          const body: unknown = JSON.parse(request.responseText);
+          if (
+            body &&
+            typeof body === "object" &&
+            "code" in body &&
+            typeof body.code === "string" &&
+            "reason" in body
+          ) {
+            const situation = getSafeErrorSituation({
+              code: body.code,
+              status: request.status,
+              data: { reason: body.reason },
+            });
+            if (situation) text = situation.message;
+          }
+        } catch {
+          // A malformed response must not expose remote prose or guessed causes.
+        }
+        setFeedback(text);
+      }
     };
     request.onerror = () => {
       setBusy(false);

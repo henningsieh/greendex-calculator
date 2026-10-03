@@ -227,7 +227,7 @@ describe("ProjectPartnershipManager", () => {
     await user.click(screen.getByRole("button", { name: "Assign" }));
 
     expect(
-      await screen.findByText("The request failed with HTTP 500. Try again."),
+      await screen.findByText("The request could not be completed. Try again."),
     ).toBeTruthy();
     expect(
       screen.queryByText(/internal-user|secret|database\/private/),
