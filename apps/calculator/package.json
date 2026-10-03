@@ -93,7 +93,7 @@
     "i18n-iso-countries": "^7.14.0",
     "input-otp": "^1.5.0",
     "lucide-react": "catalog:",
-    "motion": "^13.4.4",
+    "motion": "^13.4.6",
     "next": "catalog:",
     "next-intl": "catalog:",
     "next-themes": "catalog:",
@@ -101,7 +101,7 @@
     "qrcode": "^1.5.4",
     "radix-ui": "^1.6.7",
     "react": "catalog:",
-    "react-day-picker": "^10.0.1",
+    "react-day-picker": "^10.0.2",
     "react-dom": "catalog:",
     "react-error-boundary": "catalog:",
     "react-hook-form": "catalog:",
@@ -124,7 +124,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "@vitest/ui": "^5.0.2",
+    "@vitest/ui": "^5.0.3",
     "auth": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "jsdom": "catalog:",
@@ -140,6 +140,6 @@
     "vitest": "catalog:"
   },
   "config": {
-    "scalarVersion": "1.25.0"
+    "scalarVersion": "1.72.3"
   }
 }
