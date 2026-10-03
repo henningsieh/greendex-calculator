@@ -628,8 +628,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the participantInvitationClosed factory copy.
     await expect(t.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "Invitation is closed.",
     );
     expect(
       await db
@@ -669,8 +670,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
+    // Error centralization: join uses the registrationLinkClosed factory copy.
     await expect(t.locator("form p[role='alert']")).toContainText(
-      "We could not complete that request.",
+      "Registration link is closed.",
     );
     expect(
       await db
