@@ -1,12 +1,62 @@
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import {
+  delegationGuidanceFiles,
   findPatternHits,
   matchesRetiredVendorPointer,
   matchesStaleGuidance,
   retiredPointerPatterns,
+  referenceFiles,
+  requiredRepositoryPaths,
   stalePatterns,
 } from "./check-agent-instructions.policy";
+import { readJson } from "./check-agent-instructions.utils";
+
+describe("delegation guidance coverage", () => {
+  it("preserves the approved default model and reviewer thinking policy", async () => {
+    const settings = await readJson(
+      fileURLToPath(new URL("../.pi/settings.json", import.meta.url)),
+    );
+    expect(settings).toMatchObject({
+      subagents: {
+        defaultModel: "openai-codex/gpt-6.1-sol",
+        agentOverrides: { reviewer: { thinking: "xhigh" } },
+      },
+    });
+  });
+
+  it("requires and checks links in both launch and quota runbooks", () => {
+    expect(delegationGuidanceFiles).toEqual([
+      "docs/agents/subagent-launch.md",
+      "docs/agents/codex-usage-meter.md",
+    ]);
+    for (const filePath of delegationGuidanceFiles) {
+      expect(requiredRepositoryPaths).toContain(filePath);
+      expect(referenceFiles).toContain(filePath);
+    }
+    expect(requiredRepositoryPaths).toContain(".pi/settings.json");
+  });
+
+  it("keeps ordinary children fresh and supervisor-controlled in project settings", async () => {
+    const settings = await readJson(
+      fileURLToPath(new URL("../.pi/settings.json", import.meta.url)),
+    );
+    const roles = ["delegate", "worker", "scout", "researcher", "reviewer"];
+    expect(settings).toMatchObject({
+      subagents: {
+        projectRootResolution: "git-root",
+        agentOverrides: Object.fromEntries(
+          roles.map((name) => [
+            name,
+            { defaultContext: "fresh", allowNestedSubagents: false },
+          ]),
+        ),
+      },
+    });
+  });
+});
 
 describe("retired vendor-documentation pointer matcher", () => {
   it("flags pointers to retired root-level docs roots", () => {

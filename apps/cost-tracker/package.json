@@ -23,7 +23,7 @@
     "test:garage-storage": "dotenv -e .env -- tsx scripts/verify-garage-storage.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/client-s3": "^3.1144.0",
     "@base-ui/react": "^1.8.0",
     "@greendex/auth": "workspace:*",
     "@greendex/config": "workspace:*",
@@ -66,10 +66,10 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@types/ws": "^8.18.1",
+    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
-    "imapflow": "^2.0.7",
+    "imapflow": "^2.1.2",
     "jsdom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
