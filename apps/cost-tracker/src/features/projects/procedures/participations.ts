@@ -6,6 +6,7 @@ import {
   costAllocationsTable as allocations,
   duplicateReviewTasksTable as reviewTasks,
   member,
+  organization,
   participantAgreementAcceptancesTable as acceptances,
   participantEntryTokensTable as entryTokens,
   participantJourneysTable as journeys,
@@ -15,7 +16,7 @@ import {
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
-import { and, asc, eq, exists, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -24,6 +25,10 @@ import {
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
 import { memberHasParticipantAccess } from "@/features/organizations/roles";
+import {
+  groupHostedParticipants,
+  type HostedParticipantRow,
+} from "@/features/projects/hosted-participant-report";
 import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -66,6 +71,37 @@ const scopeContext = z.object({
 });
 const scopeInput = z.object({ partnershipId: coordinationId });
 const rowInput = scopeInput.extend({ id: coordinationId });
+
+/**
+ * The Hosting Project report of Participants (ADR-0016): one group per
+ * represented Partner Organization, carrying only counts and read-only
+ * Participant data. It carries no edit, invitation or removal capability.
+ */
+const hostedReportParticipant = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  email: z.string().nullable(),
+  country: z.string().nullable(),
+  agreement: z.enum(["completed", "pending"]),
+});
+const hostedReport = z.object({
+  projectId: z.string(),
+  agreement: z.object({
+    versionId: z.string(),
+    published: z.boolean(),
+  }),
+  organizations: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      country: z.string().nullable(),
+      participantCount: z.number().int().nonnegative(),
+      completedCount: z.number().int().nonnegative(),
+      pendingCount: z.number().int().nonnegative(),
+      participants: z.array(hostedReportParticipant),
+    }),
+  ),
+});
 
 function postgresCode(error: unknown): string | undefined {
   if (!error || typeof error !== "object") return undefined;
@@ -602,6 +638,73 @@ export function createParticipationProcedures(
         );
     });
 
+  /**
+   * The read-only Hosting report for one hosted Project. Hosting-side
+   * coordination is the same authority the Projects list and Claims review
+   * use, so an unrelated Organization and an unassigned coordinator are
+   * refused here too.
+   */
+  const listHostedReport = authorized
+    .input(z.object({ projectId: coordinationId }))
+    .output(hostedReport)
+    .handler(async ({ input, context, errors }) => {
+      await requireHostCoordination(
+        input.projectId,
+        context.user.id,
+        context.session.activeOrganizationId,
+        errors,
+      );
+      const agreement = currentAgreement();
+      const rows: HostedParticipantRow[] = await db
+        .select({
+          participationId: participants.id,
+          organizationId: participants.representedOrganizationId,
+          organizationName: organization.name,
+          displayName: participants.displayName,
+          email: participants.email,
+          accountEmail: user.email,
+          country: participants.country,
+          userId: participants.userId,
+        })
+        .from(participants)
+        .innerJoin(
+          organization,
+          eq(organization.id, participants.representedOrganizationId),
+        )
+        .leftJoin(user, eq(user.id, participants.userId))
+        .where(
+          and(
+            eq(participants.projectId, input.projectId),
+            isNull(participants.mergedIntoParticipantId),
+          ),
+        );
+      const userIds = [
+        ...new Set(rows.flatMap((row) => (row.userId ? [row.userId] : []))),
+      ];
+      const published = isPublishedAgreement(agreement);
+      const accepted =
+        published && userIds.length
+          ? await db
+              .select({ userId: acceptances.userId })
+              .from(acceptances)
+              .where(
+                and(
+                  inArray(acceptances.userId, userIds),
+                  eq(acceptances.version, agreement.id),
+                  eq(acceptances.contentHash, agreement.contentHash),
+                ),
+              )
+          : [];
+      const acceptsCurrentVersion = new Set(accepted.map((row) => row.userId));
+      return {
+        projectId: input.projectId,
+        agreement: { versionId: agreement.id, published },
+        organizations: groupHostedParticipants(rows, (userId) =>
+          acceptsCurrentVersion.has(userId),
+        ),
+      };
+    });
+
   const listMine = authorized
     .input(z.object({ projectId: coordinationId }))
     .output(z.array(participation))
@@ -654,6 +757,7 @@ export function createParticipationProcedures(
     get,
     listPartnership,
     listHosted,
+    listHostedReport,
     listMine,
     update,
     remove,
