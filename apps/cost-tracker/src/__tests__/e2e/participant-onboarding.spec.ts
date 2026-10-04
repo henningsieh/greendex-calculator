@@ -8,9 +8,8 @@ import {
   organization,
   partnerCoordinatorAssignmentsTable as coordinatorAssignments,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationsTable as invitations,
+  participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
-  participantRegistrationLinksTable as links,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
   projectsTable as projects,
@@ -162,12 +161,12 @@ async function counts() {
       .where(inArray(acceptances.userId, actorIds)),
     db
       .select({ value: count() })
-      .from(invitations)
-      .where(inArray(invitations.id, [ids.oldInvitation, ids.invitation])),
+      .from(entryTokens)
+      .where(inArray(entryTokens.id, [ids.oldInvitation, ids.invitation])),
     db
       .select({ value: count() })
-      .from(links)
-      .where(inArray(links.partnershipId, partnershipIds)),
+      .from(entryTokens)
+      .where(inArray(entryTokens.partnershipId, partnershipIds)),
   ]);
   return {
     users: users!.value,
@@ -372,7 +371,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         organizationId: ids.partner,
       },
     ]);
-    await db.insert(invitations).values([
+    await db.insert(entryTokens).values([
       {
         id: ids.oldInvitation,
         partnershipId: ids.partnership,
@@ -419,17 +418,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .delete(participants)
       .where(inArray(participants.projectId, [ids.main, ids.other]));
     await db
-      .delete(invitations)
-      .where(inArray(invitations.projectId, [ids.main, ids.other]));
-    await db
-      .delete(links)
-      .where(
-        inArray(links.partnershipId, [
-          ids.partnership,
-          ids.foreignPartnership,
-          ids.otherPartnership,
-        ]),
-      );
+      .delete(entryTokens)
+      .where(inArray(entryTokens.projectId, [ids.main, ids.other]));
     await db
       .delete(partnerships)
       .where(
@@ -520,10 +510,10 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ).toBeVisible();
     // Reissue UI sends mail. Rotate app-owned invitation records in setup instead.
     await db
-      .update(invitations)
+      .update(entryTokens)
       .set({ status: "revoked" })
-      .where(eq(invitations.id, ids.oldInvitation));
-    await db.insert(invitations).values({
+      .where(eq(entryTokens.id, ids.oldInvitation));
+    await db.insert(entryTokens).values({
       id: ids.invitation,
       partnershipId: ids.partnership,
       projectId: ids.main,
@@ -599,8 +589,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const row = p.getByRole("listitem").filter({ hasText: `Link ${id}` });
     await expect(row.getByText("Open", { exact: true })).toBeVisible();
     expect(
-      (await db.select().from(links).where(eq(links.id, id)))[0]?.enabled,
-    ).toBe(true);
+      (await db.select().from(entryTokens).where(eq(entryTokens.id, id)))[0]
+        ?.status,
+    ).toBe("pending");
     await p.reload();
     await expect(
       p.getByRole("button", { name: `Close registration link ${id}` }),
@@ -654,8 +645,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
           .getByText("Closed", { exact: true }),
       ).toBeVisible();
       expect(
-        (await db.select().from(links).where(eq(links.id, id)))[0]?.enabled,
-      ).toBe(false);
+        (await db.select().from(entryTokens).where(eq(entryTokens.id, id)))[0]
+          ?.status,
+      ).toBe("revoked");
     } finally {
       await db
         .delete(claimsTable)

@@ -14,7 +14,7 @@ import {
   participantProfilesTable as profiles,
   participantAgreementAcceptancesTable as acceptances,
   projectParticipantsTable as participants,
-  participantInvitationsTable as invitations,
+  participantEntryTokensTable as entryTokens,
   participantJourneysTable as journeys,
   duplicateReviewTasksTable as reviewTasks,
 } from "@greendex/database/schema";
@@ -145,7 +145,7 @@ beforeEach(() => {
 afterAll(async () => {
   await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(invitations).where(eq(invitations.projectId, project));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(acceptances).where(eq(acceptances.userId, candidate));
   await db.delete(profiles).where(eq(profiles.userId, candidate));
   await db.delete(assignments).where(eq(assignments.partnershipId, own));
@@ -784,7 +784,7 @@ describe("assignment-scoped participation coordination", () => {
       message: expect.stringMatching(/invitation/i),
     });
     const inviteId = randomUUID();
-    await db.insert(invitations).values({
+    await db.insert(entryTokens).values({
       id: inviteId,
       projectId: project,
       partnershipId: foreign,
@@ -800,8 +800,8 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.listPartnership({ partnershipId: foreign }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await db.delete(invitations).where(eq(invitations.id, inviteId));
-    await db.insert(invitations).values({
+    await db.delete(entryTokens).where(eq(entryTokens.id, inviteId));
+    await db.insert(entryTokens).values({
       id: inviteId,
       projectId: project,
       partnershipId: own,
@@ -814,7 +814,7 @@ describe("assignment-scoped participation coordination", () => {
       (await client.participations.listPartnership({ partnershipId: own }))
         .invitations,
     ).toEqual([{ invitationId: inviteId, email, status: "pending" }]);
-    await db.delete(invitations).where(eq(invitations.id, inviteId));
+    await db.delete(entryTokens).where(eq(entryTokens.id, inviteId));
     const created = await client.participations.create({
       partnershipId: own,
       userId: candidate,

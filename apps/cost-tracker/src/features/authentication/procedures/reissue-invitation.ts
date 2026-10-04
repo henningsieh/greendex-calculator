@@ -1,9 +1,7 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
-
 import { db } from "@greendex/database";
 import {
-  participantInvitationsTable as invitations,
+  participantEntryTokensTable as tokens,
   projectParticipantsTable as participants,
   projectsTable as projects,
   user,
@@ -11,13 +9,17 @@ import {
 import { and, eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  invitationTokenExpiry,
+  issueEntryToken,
+  revokeEntryTokenInTransaction,
+} from "@/features/authentication/procedures/entry-tokens";
 import { deliverParticipantInvitation } from "@/features/authentication/procedures/invitation-delivery";
 import {
   id,
   invitationResult,
   INVITATION_TTL_MS,
   normalizedEmail,
-  secretHash,
 } from "@/features/authentication/procedures/shared";
 import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -51,7 +53,6 @@ export function buildReissueInvitation() {
         .limit(1);
       if (existingParticipation)
         throw createSituationErrors(errors).participantAlreadyParticipates();
-      const secret = randomBytes(32).toString("base64url");
       const issued = await db.transaction(async (tx) => {
         // Serialize rotations across every Partnership in this Project.
         await tx
@@ -61,15 +62,15 @@ export function buildReissueInvitation() {
           .for("update");
         const [previous] = await tx
           .select({
-            id: invitations.id,
-            partnershipId: invitations.partnershipId,
+            id: tokens.id,
+            partnershipId: tokens.partnershipId,
           })
-          .from(invitations)
+          .from(tokens)
           .where(
             and(
-              eq(invitations.projectId, target.projectId),
-              eq(invitations.email, input.email),
-              eq(invitations.status, "pending"),
+              eq(tokens.projectId, target.projectId),
+              eq(tokens.email, input.email),
+              eq(tokens.status, "pending"),
             ),
           )
           .limit(1);
@@ -84,30 +85,20 @@ export function buildReissueInvitation() {
             errors,
           );
         // Newest wins: the previous identity can no longer be redeemed.
-        await tx
-          .update(invitations)
-          .set({ status: "revoked" })
-          .where(
-            and(
-              eq(invitations.id, previous.id),
-              eq(invitations.status, "pending"),
-            ),
-          );
-        const [created] = await tx
-          .insert(invitations)
-          .values({
+        await revokeEntryTokenInTransaction(tx, previous.id);
+        return issueEntryToken(
+          errors,
+          {
             partnershipId: target.id,
             projectId: target.projectId,
             email: input.email,
-            secretHash: secretHash(secret),
-            expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
+            expiresAt: invitationTokenExpiry(INVITATION_TTL_MS),
             issuedByUserId: context.user.id,
-          })
-          .returning({ id: invitations.id });
-        if (!created) throw createSituationErrors(errors).internalFailure();
-        return created;
+          },
+          tx,
+        );
       });
       // Only explicit reissue creates a new identity and triggers another delivery.
-      return deliverParticipantInvitation(input.email, issued.id, secret);
+      return deliverParticipantInvitation(input.email, issued.id, issued.secret);
     });
 }

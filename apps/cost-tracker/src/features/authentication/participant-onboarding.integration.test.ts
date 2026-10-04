@@ -9,9 +9,8 @@ import {
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationsTable as invitations,
   participantProfilesTable as profiles,
-  participantRegistrationLinksTable as links,
+  participantEntryTokensTable as entryTokens,
   partnerCoordinatorAssignmentsTable as assignments,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
@@ -174,9 +173,7 @@ beforeEach(async () => {
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(invitations).where(eq(invitations.projectId, project));
-  await db.delete(links).where(eq(links.partnershipId, partnership));
-  await db.delete(links).where(eq(links.partnershipId, otherPartnership));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(claimsTable).where(eq(claimsTable.partnershipId, partnership));
   await db.delete(member).where(eq(member.userId, recipient));
   actor = owner;
@@ -281,9 +278,7 @@ afterAll(async () => {
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(invitations).where(eq(invitations.projectId, project));
-  await db.delete(links).where(eq(links.partnershipId, partnership));
-  await db.delete(links).where(eq(links.partnershipId, otherPartnership));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(claimsTable).where(eq(claimsTable.partnershipId, partnership));
   await db.delete(partnerships).where(eq(partnerships.projectId, project));
   await db.delete(projects).where(eq(projects.id, project));
@@ -336,9 +331,9 @@ describe("Participant onboarding procedures", () => {
       data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
     });
     await db
-      .update(invitations)
+      .update(entryTokens)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(invitations.id, issued.invitationId));
+      .where(eq(entryTokens.id, issued.invitationId));
     await expect(
       client.participantOnboarding.join(
         input(issued.invitationId, issued.secret!),
@@ -568,16 +563,19 @@ describe("Participant onboarding procedures", () => {
       agreement: { accepted: true },
     });
     // A second partner's link is never authority to replace a previous Participation.
-    await db.insert(links).values({
+    await db.insert(entryTokens).values({
       partnershipId: otherPartnership,
+      projectId: project,
+      email: null,
       secretHash: createHash("sha256").update("other-secret").digest("hex"),
-      createdByUserId: owner,
+      expiresAt: null,
+      issuedByUserId: owner,
     });
     const second = (
       await db
         .select()
-        .from(links)
-        .where(eq(links.partnershipId, otherPartnership))
+        .from(entryTokens)
+        .where(eq(entryTokens.partnershipId, otherPartnership))
     )[0]!;
     actor = recipient;
     await expect(
@@ -602,7 +600,10 @@ describe("Participant onboarding procedures", () => {
     });
     expect(first.id).not.toBe(second.id);
     expect(
-      await db.select().from(links).where(eq(links.partnershipId, partnership)),
+      await db
+        .select()
+        .from(entryTokens)
+        .where(eq(entryTokens.partnershipId, partnership)),
     ).toHaveLength(2);
     await client.participantOnboarding.setRegistrationLinkOpen({
       id: first.id,
@@ -624,10 +625,10 @@ describe("Participant onboarding procedures", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     const rows = await db
       .select()
-      .from(links)
-      .where(eq(links.partnershipId, partnership));
-    expect(rows.find((row) => row.id === first.id)?.enabled).toBe(false);
-    expect(rows.find((row) => row.id === second.id)?.enabled).toBe(true);
+      .from(entryTokens)
+      .where(eq(entryTokens.partnershipId, partnership));
+    expect(rows.find((row) => row.id === first.id)?.status).toBe("revoked");
+    expect(rows.find((row) => row.id === second.id)?.status).toBe("pending");
     actor = recipient;
     await expect(
       client.participantOnboarding.join({
@@ -663,8 +664,9 @@ describe("Participant onboarding procedures", () => {
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(
-      (await db.select().from(links).where(eq(links.id, link.id)))[0]?.enabled,
-    ).toBe(false);
+      (await db.select().from(entryTokens).where(eq(entryTokens.id, link.id)))[0]
+        ?.status,
+    ).toBe("revoked");
   });
 
   it("keeps existing owner/admin/participant roles, and grants participant to coordinators without removing roles", async () => {
@@ -816,9 +818,9 @@ describe("Participant onboarding procedures", () => {
       open: false,
     });
     const [revoked] = await db
-      .select({ status: invitations.status })
-      .from(invitations)
-      .where(eq(invitations.id, issued.invitationId));
+      .select({ status: entryTokens.status })
+      .from(entryTokens)
+      .where(eq(entryTokens.id, issued.invitationId));
     expect(revoked?.status).toBe("revoked");
     actor = recipient;
     await expect(
@@ -889,8 +891,8 @@ describe("Participant onboarding procedures", () => {
     expect(
       await db
         .select()
-        .from(invitations)
-        .where(eq(invitations.projectId, project)),
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
     ).toHaveLength(1);
     const second = await client.participantOnboarding.reissueInvitation({
       partnershipId: partnership,
@@ -930,8 +932,8 @@ describe("Participant onboarding procedures", () => {
     ]);
     const rows = await db
       .select()
-      .from(invitations)
-      .where(eq(invitations.projectId, project));
+      .from(entryTokens)
+      .where(eq(entryTokens.projectId, project));
     expect(
       rows.filter((row) => row.status === "pending").map((row) => row.id),
     ).toEqual([third.invitationId]);
@@ -985,8 +987,8 @@ describe("Participant onboarding procedures", () => {
       (
         await db
           .select()
-          .from(invitations)
-          .where(eq(invitations.id, first.invitationId))
+          .from(entryTokens)
+          .where(eq(entryTokens.id, first.invitationId))
       )[0]?.status,
     ).toBe("pending");
     const otherMembershipId = randomUUID();
@@ -1009,8 +1011,8 @@ describe("Participant onboarding procedures", () => {
         (
           await db
             .select()
-            .from(invitations)
-            .where(eq(invitations.id, first.invitationId))
+            .from(entryTokens)
+            .where(eq(entryTokens.id, first.invitationId))
         )[0]?.status,
       ).toBe("pending");
     } finally {
@@ -1038,8 +1040,8 @@ describe("Participant onboarding procedures", () => {
       });
       const rows = await db
         .select()
-        .from(invitations)
-        .where(eq(invitations.projectId, project));
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project));
       expect(rows.filter((row) => row.status === "pending")).toMatchObject([
         { id: first.invitationId, partnershipId: partnership },
       ]);
@@ -1056,18 +1058,18 @@ describe("Participant onboarding procedures", () => {
       email: recipientEmail,
     });
     await db
-      .update(invitations)
+      .update(entryTokens)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(invitations.id, issued.invitationId));
+      .where(eq(entryTokens.id, issued.invitationId));
     const fresh = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
     });
     expect(fresh.invitationId).not.toBe(issued.invitationId);
     const [retired] = await db
-      .select({ status: invitations.status })
-      .from(invitations)
-      .where(eq(invitations.id, issued.invitationId));
+      .select({ status: entryTokens.status })
+      .from(entryTokens)
+      .where(eq(entryTokens.id, issued.invitationId));
     expect(retired?.status).toBe("revoked");
     actor = recipient;
     await expect(
@@ -1221,8 +1223,8 @@ describe("Participant onboarding procedures", () => {
     expect(
       await db
         .select()
-        .from(invitations)
-        .where(eq(invitations.projectId, project)),
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
     ).toHaveLength(0);
   });
 
@@ -1240,8 +1242,8 @@ describe("Participant onboarding procedures", () => {
       (
         await db
           .select()
-          .from(invitations)
-          .where(eq(invitations.id, first.invitationId))
+          .from(entryTokens)
+          .where(eq(entryTokens.id, first.invitationId))
       )[0]?.status,
     ).toBe("pending");
     expect(
@@ -1295,9 +1297,9 @@ describe("Participant onboarding procedures", () => {
     expect(issued.delivery).toBe("sent");
     delivery.sendParticipantInvitation.mockClear();
     await db
-      .update(invitations)
+      .update(entryTokens)
       .set({ status: "revoked" })
-      .where(eq(invitations.id, issued.invitationId));
+      .where(eq(entryTokens.id, issued.invitationId));
     expect(
       await deliverParticipantInvitation(
         recipientEmail,
@@ -1357,11 +1359,14 @@ describe("Participant onboarding procedures", () => {
       expect(
         await db
           .select()
-          .from(invitations)
-          .where(eq(invitations.projectId, project)),
+          .from(entryTokens)
+          .where(eq(entryTokens.projectId, project)),
       ).toHaveLength(0);
       expect(
-        await db.select().from(links).where(eq(links.partnershipId, partnership)),
+        await db
+          .select()
+          .from(entryTokens)
+          .where(eq(entryTokens.partnershipId, partnership)),
       ).toHaveLength(0);
     } finally {
       await db
@@ -1393,8 +1398,8 @@ describe("Participant onboarding procedures", () => {
       expect(
         await db
           .select()
-          .from(invitations)
-          .where(eq(invitations.projectId, project)),
+          .from(entryTokens)
+          .where(eq(entryTokens.projectId, project)),
       ).toHaveLength(0);
     } finally {
       await db
@@ -1452,8 +1457,8 @@ describe("Participant onboarding procedures", () => {
     expect(
       await db
         .select()
-        .from(invitations)
-        .where(eq(invitations.projectId, project)),
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
     ).toHaveLength(0);
   });
 
@@ -1479,9 +1484,9 @@ describe("Participant onboarding procedures", () => {
       expect(
         (
           await db
-            .select({ partnershipId: invitations.partnershipId })
-            .from(invitations)
-            .where(eq(invitations.id, issued.invitationId))
+            .select({ partnershipId: entryTokens.partnershipId })
+            .from(entryTokens)
+            .where(eq(entryTokens.id, issued.invitationId))
         )[0]?.partnershipId,
       ).toBe(partnership);
       expect(
@@ -1499,7 +1504,7 @@ describe("Participant onboarding procedures", () => {
         }),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
     } finally {
-      await db.delete(invitations).where(eq(invitations.projectId, project));
+      await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
       await db
         .delete(assignments)
         .where(eq(assignments.partnershipId, partnership));
@@ -1528,8 +1533,8 @@ describe("Participant onboarding procedures", () => {
     expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
     const [stored] = await db
       .select()
-      .from(invitations)
-      .where(eq(invitations.id, issued.invitationId));
+      .from(entryTokens)
+      .where(eq(entryTokens.id, issued.invitationId));
     expect(stored).toMatchObject({
       partnershipId: partnership,
       projectId: project,
@@ -1555,8 +1560,8 @@ describe("Participant onboarding procedures", () => {
       (
         await db
           .select()
-          .from(invitations)
-          .where(eq(invitations.id, issued.invitationId))
+          .from(entryTokens)
+          .where(eq(entryTokens.id, issued.invitationId))
       )[0]?.status,
     ).toBe("accepted");
     expect(await memberships()).toEqual([{ role: "participant" }]);
@@ -1643,8 +1648,10 @@ describe("Participant onboarding procedures", () => {
       });
       // One redemption never consumes the link globally.
       expect(
-        (await db.select().from(links).where(eq(links.id, link.id)))[0]?.enabled,
-      ).toBe(true);
+        (
+          await db.select().from(entryTokens).where(eq(entryTokens.id, link.id))
+        )[0]?.status,
+      ).toBe("pending");
       // Same-User repeat redemption is idempotent.
       expect(
         await client.participantOnboarding.join({

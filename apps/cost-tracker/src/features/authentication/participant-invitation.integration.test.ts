@@ -18,7 +18,7 @@ import {
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationsTable as invitations,
+  participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
@@ -26,7 +26,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -71,7 +71,6 @@ const recipientEmail = `recipient-${suffix}@example.org`;
 const strangerEmail = `stranger-${suffix}@example.org`;
 let actor = owner;
 let activeOrganizationId: string | null = partner;
-let linkExpiresAt: boolean | undefined;
 
 const agreement = { id: "fixture-agreement-v1", contentHash: "fixture-hash-v1" };
 const client = createRouterClient(
@@ -112,29 +111,20 @@ function sessionEmail() {
   return `owner-${suffix}@example.org`;
 }
 
-/** Drift-proof registration-link fixture: the shared dev database carries an
- * out-of-branch NOT NULL `expires_at` on this table, while the branch schema
- * (ADR-0005: link expiry does NOT live here) has none. */
+/** Shareable-flavour fixture on the unified token table: no bound email and no
+ * expiry, exactly as the issuance procedure stores it. */
 async function insertLinkFixture(id: string) {
-  if (linkExpiresAt === undefined) {
-    const columns = await db.execute(
-      sql`select column_name from information_schema.columns where table_name = 'participant_registration_link'`,
-    );
-    linkExpiresAt = JSON.stringify(
-      (columns as unknown as { rows: { column_name: string }[] }).rows,
-    ).includes("expires_at");
-  }
-  const hash = createHash("sha256").update(`link-${id}`).digest("hex");
-  if (linkExpiresAt) {
-    await db.execute(
-      sql`insert into "participant_registration_link" ("id", "partnership_id", "secret_hash", "created_by_user_id", "expires_at") values (${id}, ${partnership}, ${hash}, ${owner}, ${new Date("2030-01-01T00:00:00.000Z")})`,
-    );
-  } else {
-    await db.execute(
-      sql`insert into "participant_registration_link" ("id", "partnership_id", "secret_hash", "created_by_user_id") values (${id}, ${partnership}, ${hash}, ${owner})`,
-    );
-  }
-  return `link-${id}`;
+  const secret = `link-${id}`;
+  await db.insert(entryTokens).values({
+    id,
+    partnershipId: partnership,
+    projectId: project,
+    email: null,
+    secretHash: createHash("sha256").update(secret).digest("hex"),
+    expiresAt: null,
+    issuedByUserId: owner,
+  });
+  return secret;
 }
 
 beforeAll(async () => {
@@ -181,13 +171,10 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(invitations).where(eq(invitations.projectId, project));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db
     .delete(staffInvitation)
     .where(eq(staffInvitation.organizationId, partner));
-  await db.execute(
-    sql`delete from "participant_registration_link" where "partnership_id" = ${partnership}`,
-  );
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(acceptances).where(eq(acceptances.userId, stranger));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
@@ -248,13 +235,10 @@ beforeEach(async () => {
 
 afterAll(async () => {
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(invitations).where(eq(invitations.projectId, project));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db
     .delete(staffInvitation)
     .where(eq(staffInvitation.organizationId, partner));
-  await db.execute(
-    sql`delete from "participant_registration_link" where "partnership_id" = ${partnership}`,
-  );
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(acceptances).where(eq(acceptances.userId, stranger));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
@@ -398,8 +382,8 @@ describe("email-bound Participant Invitations", () => {
     expect(
       await db
         .select()
-        .from(invitations)
-        .where(eq(invitations.projectId, project)),
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
     ).toHaveLength(1);
   });
 
@@ -495,9 +479,9 @@ describe("email-bound Participant Invitations", () => {
       email: recipientEmail,
     });
     await db
-      .update(invitations)
+      .update(entryTokens)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(invitations.id, issued.invitationId));
+      .where(eq(entryTokens.id, issued.invitationId));
     actor = recipient;
     await expect(
       client.participantOnboarding.join({
@@ -534,8 +518,8 @@ describe("email-bound Participant Invitations", () => {
       (
         await db
           .select()
-          .from(invitations)
-          .where(eq(invitations.id, failed.invitationId))
+          .from(entryTokens)
+          .where(eq(entryTokens.id, failed.invitationId))
       )[0]?.status,
     ).toBe("pending");
     const retried = await client.participantOnboarding.reissueInvitation({

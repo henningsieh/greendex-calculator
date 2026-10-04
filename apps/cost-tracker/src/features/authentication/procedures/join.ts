@@ -4,9 +4,7 @@ import { db } from "@greendex/database";
 import {
   member,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationsTable as invitations,
   participantProfilesTable as profiles,
-  participantRegistrationLinksTable as links,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
   projectsTable as projects,
@@ -15,8 +13,13 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
+  consumeEntryToken,
+  recheckEntryToken,
+  requireTokenRedeemable,
+  resolveEntryToken,
+} from "@/features/authentication/procedures/entry-tokens";
+import {
   shouldGrantParticipantRole,
-  secretHash,
   joinInput,
   type RequirePublishedAgreement,
 } from "@/features/authentication/procedures/shared";
@@ -51,42 +54,23 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
       const version = requirePublishedAgreement(errors);
       if (!context.user.emailVerified)
         throw createSituationErrors(errors).verifyEmail();
-      let partnershipId: string;
-      let invitationId: string | undefined;
-      if (input.source.kind === "link") {
-        const [link] = await db
-          .select()
-          .from(links)
-          .where(eq(links.id, input.source.id))
-          .limit(1);
-        if (!link || link.secretHash !== secretHash(input.source.secret))
-          throw createSituationErrors(errors).registrationLinkNotFound();
-        if (!link.enabled)
-          throw createSituationErrors(errors).registrationLinkClosed();
-        partnershipId = link.partnershipId;
-      } else {
-        // Email-bound flavour of the same app-owned entry mechanism: the bound
-        // secret resolves the invitation and the verified account email must
-        // match the bound address. A forwarded link grants nothing.
-        const [invitation] = await db
-          .select()
-          .from(invitations)
-          .where(eq(invitations.id, input.source.invitationId))
-          .limit(1);
-        if (
-          !invitation ||
-          invitation.secretHash !== secretHash(input.source.secret)
-        )
-          throw createSituationErrors(errors).participantInvitationNotFound();
-        if (invitation.email !== context.user.email.trim().toLowerCase())
-          throw createSituationErrors(errors).participantInvitationWrongAccount();
-        if (invitation.status !== "pending" && invitation.status !== "accepted")
-          throw createSituationErrors(errors).participantInvitationClosed();
-        if (invitation.status === "pending" && invitation.expiresAt <= new Date())
-          throw createSituationErrors(errors).participantInvitationExpired();
-        partnershipId = invitation.partnershipId;
-        invitationId = invitation.id;
-      }
+      // One shared resolution for both flavours of the same app-owned entry
+      // mechanism: the bound secret resolves the token, and an email-bound
+      // token additionally requires the verified account to match. A forwarded
+      // link grants nothing to other accounts.
+      const token =
+        input.source.kind === "link"
+          ? await resolveEntryToken(errors, "link", {
+              id: input.source.id,
+              secret: input.source.secret,
+            })
+          : await resolveEntryToken(errors, "invitation", {
+              id: input.source.invitationId,
+              secret: input.source.secret,
+            });
+      requireTokenRedeemable(errors, token, context.user.email);
+      const partnershipId = token.partnershipId;
+      const invitationId = token.email !== null ? token.id : undefined;
       const [partnership] = await db
         .select({
           projectId: partnerships.projectId,
@@ -201,34 +185,9 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         });
       }
       return db.transaction(async (tx) => {
-        if (input.source.kind === "link") {
-          const [link] = await tx
-            .select({ enabled: links.enabled })
-            .from(links)
-            .where(
-              and(
-                eq(links.id, input.source.id),
-                eq(links.partnershipId, partnershipId),
-              ),
-            )
-            .for("update")
-            .limit(1);
-          if (!link)
-            throw createSituationErrors(errors).registrationLinkNotFound();
-          if (!link.enabled)
-            throw createSituationErrors(errors).registrationLinkClosed();
-        } else {
-          const [invitation] = await tx
-            .select({ status: invitations.status })
-            .from(invitations)
-            .where(eq(invitations.id, invitationId!))
-            .for("update")
-            .limit(1);
-          if (!invitation)
-            throw createSituationErrors(errors).participantInvitationNotFound();
-          if (invitation.status !== "pending" && invitation.status !== "accepted")
-            throw createSituationErrors(errors).participantInvitationClosed();
-        }
+        // One shared row-locked recheck for both flavours: a link revoked
+        // mid-join refuses, an invitation consumed mid-join stays redeemable.
+        await recheckEntryToken(tx, errors, token);
         const [existing] = await tx
           .select({
             id: participants.id,
@@ -291,10 +250,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         if (invitationId) {
           // Repeat successful redemption is safe: an accepted invitation with
           // an existing Participation resolves to the same identity.
-          await tx
-            .update(invitations)
-            .set({ status: "accepted", acceptedAt: new Date() })
-            .where(eq(invitations.id, invitationId));
+          await consumeEntryToken(tx, invitationId);
         }
         return { participationId };
       });

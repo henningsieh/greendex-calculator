@@ -7,7 +7,7 @@ import {
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationsTable as invitations,
+  participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
   partnerCoordinatorAssignmentsTable as assignments,
   projectPartnerOrganizationsTable as partnerships,
@@ -198,7 +198,7 @@ beforeAll(async () => {
       issuedAt: now,
     },
   ];
-  await db.insert(invitations).values(
+  await db.insert(entryTokens).values(
     invites.map(({ id, email, status, partnershipId, issuedAt }) => ({
       id,
       email,
@@ -218,7 +218,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(invitations).where(eq(invitations.projectId, project));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(participants).where(eq(participants.projectId, project));
   for (const id of [joined, pending, outsider]) {
     await db.delete(acceptances).where(eq(acceptances.userId, id));
@@ -294,9 +294,9 @@ describe("Partner invitee onboarding progress", () => {
       .set({ contentHash: "superseded-hash" })
       .where(eq(acceptances.userId, joined));
     await db
-      .update(invitations)
+      .update(entryTokens)
       .set({ expiresAt: new Date(0) })
-      .where(eq(invitations.id, `new-${suffix}`));
+      .where(eq(entryTokens.id, `new-${suffix}`));
     try {
       const rows = await client.progress({ partnershipId: own });
       expect(rows.find((row) => row.email === mail(joined))?.agreement).toBe(
@@ -311,9 +311,9 @@ describe("Partner invitee onboarding progress", () => {
         .set({ contentHash: version.contentHash })
         .where(eq(acceptances.userId, joined));
       await db
-        .update(invitations)
+        .update(entryTokens)
         .set({ expiresAt: new Date(Date.now() + 600000) })
-        .where(eq(invitations.id, `new-${suffix}`));
+        .where(eq(entryTokens.id, `new-${suffix}`));
     }
   });
 

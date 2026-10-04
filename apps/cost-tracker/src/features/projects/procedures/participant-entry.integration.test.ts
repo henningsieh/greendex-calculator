@@ -13,8 +13,7 @@ import {
   member,
   organization,
   partnerCoordinatorAssignmentsTable as assignments,
-  participantInvitationsTable as invitations,
-  participantRegistrationLinksTable as links,
+  participantEntryTokensTable as entryTokens,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
   user,
@@ -219,8 +218,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await db.delete(invitations).where(eq(invitations.projectId, project));
-  await db.delete(links).where(eq(links.partnershipId, partnership));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(assignments).where(eq(assignments.partnershipId, partnership));
   actor = owner;
   activeOrganizationId = partner;
@@ -243,8 +241,7 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(invitations).where(eq(invitations.projectId, project));
-  await db.delete(links).where(eq(links.partnershipId, partnership));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(assignments).where(eq(assignments.partnershipId, partnership));
   await db.delete(hostAssignments).where(eq(hostAssignments.projectId, project));
   await db.delete(partnerships).where(eq(partnerships.id, partnership));
@@ -309,7 +306,7 @@ describe("Project-scope participant entry authorization", () => {
       await db
         .delete(assignments)
         .where(eq(assignments.partnershipId, partnership));
-      await db.delete(invitations).where(eq(invitations.projectId, project));
+      await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
     }
     await expect(
       client.participantOnboarding.issueInvitation({
@@ -327,8 +324,8 @@ describe("Project-scope participant entry authorization", () => {
     expect(
       await db
         .select()
-        .from(invitations)
-        .where(eq(invitations.projectId, project)),
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
     ).toHaveLength(0);
   });
 
@@ -380,8 +377,8 @@ describe("Project-scope participant entry authorization", () => {
     expect(
       await db
         .select()
-        .from(invitations)
-        .where(eq(invitations.projectId, project)),
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
     ).toHaveLength(0);
     expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
   });

@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { db } from "@greendex/database";
-import { participantInvitationsTable as invitations } from "@greendex/database/schema";
+import { participantEntryTokensTable as tokens } from "@greendex/database/schema";
 import { and, eq, sql } from "drizzle-orm";
 
 import { secretHash } from "@/features/authentication/procedures/shared";
@@ -20,15 +20,15 @@ export async function deliverParticipantInvitation(
 ) {
   try {
     const [live] = await db
-      .select({ id: invitations.id })
-      .from(invitations)
+      .select({ id: tokens.id })
+      .from(tokens)
       .where(
         and(
-          eq(invitations.id, invitationId),
-          eq(invitations.status, "pending"),
-          sql`${invitations.expiresAt} > now()`,
-          sql`lower(${invitations.email}) = ${email}`,
-          eq(invitations.secretHash, secretHash(secret)),
+          eq(tokens.id, invitationId),
+          eq(tokens.status, "pending"),
+          sql`${tokens.expiresAt} > now()`,
+          sql`lower(${tokens.email}) = ${email}`,
+          eq(tokens.secretHash, secretHash(secret)),
         ),
       )
       .limit(1);

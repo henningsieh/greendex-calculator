@@ -3,12 +3,12 @@ import { db } from "@greendex/database";
 import {
   member,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationsTable as invitations,
+  participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
   projectParticipantsTable as participants,
   user,
 } from "@greendex/database/schema";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -45,7 +45,7 @@ const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 type InvitationRow = {
   status: string;
-  expiresAt: Date;
+  expiresAt: Date | null;
 };
 
 function invitationState(
@@ -56,7 +56,7 @@ function invitationState(
   if (row.status === "accepted") return "accepted";
   if (row.status === "revoked") return "revoked";
   if (row.status !== "pending") return "canceled";
-  return row.expiresAt <= now ? "expired" : "pending";
+  return row.expiresAt !== null && row.expiresAt <= now ? "expired" : "pending";
 }
 
 export function createOnboardingProgressProcedure(
@@ -95,20 +95,21 @@ export function createOnboardingProgressProcedure(
           ),
         db
           .select({
-            invitationId: invitations.id,
-            email: invitations.email,
-            status: invitations.status,
-            expiresAt: invitations.expiresAt,
-            issuedAt: invitations.issuedAt,
+            invitationId: entryTokens.id,
+            email: entryTokens.email,
+            status: entryTokens.status,
+            expiresAt: entryTokens.expiresAt,
+            issuedAt: entryTokens.issuedAt,
           })
-          .from(invitations)
+          .from(entryTokens)
           .where(
             and(
-              eq(invitations.partnershipId, input.partnershipId),
-              eq(invitations.projectId, scope.projectId),
+              eq(entryTokens.partnershipId, input.partnershipId),
+              eq(entryTokens.projectId, scope.projectId),
+              isNotNull(entryTokens.email),
             ),
           )
-          .orderBy(desc(invitations.issuedAt), desc(invitations.id)),
+          .orderBy(desc(entryTokens.issuedAt), desc(entryTokens.id)),
       ]);
 
       // Historical reissues stay in persistence; only the latest invitation
@@ -116,6 +117,8 @@ export function createOnboardingProgressProcedure(
       // precedence.
       const latestByEmail = new Map<string, (typeof issued)[number]>();
       for (const row of issued) {
+        // Shareable links carry no email and describe no invitee state.
+        if (row.email === null) continue;
         const email = normalizeEmail(row.email);
         if (!latestByEmail.has(email)) latestByEmail.set(email, row);
       }

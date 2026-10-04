@@ -9,8 +9,8 @@ import {
   member,
   organization,
   partnerOrganizationSetupLinksTable as setupLinks,
-  participantInvitationsTable as participantInvitations,
-  participantRegistrationLinksTable as registrationLinks,
+  participantEntryTokensTable as participantInvitations,
+  participantEntryTokensTable as entryTokens,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participations,
   projectsTable,
@@ -127,8 +127,8 @@ async function counts() {
       .where(eq(setupLinks.projectId, projectId ?? "no-project")),
     db
       .select({ value: count() })
-      .from(registrationLinks)
-      .where(eq(registrationLinks.partnershipId, ids.partnership)),
+      .from(entryTokens)
+      .where(eq(entryTokens.partnershipId, ids.partnership)),
     db
       .select({ value: count() })
       .from(claimsTable)
@@ -274,8 +274,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await db.delete(claimsTable).where(eq(claimsTable.id, claim.id));
     }
     await db
-      .delete(registrationLinks)
-      .where(eq(registrationLinks.partnershipId, ids.partnership));
+      .delete(entryTokens)
+      .where(eq(entryTokens.partnershipId, ids.partnership));
     if (projectId)
       await db.delete(setupLinks).where(eq(setupLinks.projectId, projectId));
     await db

@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@greendex/database";
-import { participantInvitationsTable as invitations } from "@greendex/database/schema";
+import { participantEntryTokensTable as tokens } from "@greendex/database/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -14,37 +14,38 @@ export function buildSetInvitationOpen() {
     .input(z.object({ invitationId: id, open: z.boolean() }))
     .output(z.object({ open: z.boolean() }))
     .handler(async ({ input, context, errors }) => {
-      const [invitation] = await db
+      const [token] = await db
         .select({
-          partnershipId: invitations.partnershipId,
-          status: invitations.status,
-          expiresAt: invitations.expiresAt,
+          partnershipId: tokens.partnershipId,
+          email: tokens.email,
+          status: tokens.status,
+          expiresAt: tokens.expiresAt,
         })
-        .from(invitations)
-        .where(eq(invitations.id, input.invitationId))
+        .from(tokens)
+        .where(eq(tokens.id, input.invitationId))
         .limit(1);
-      if (!invitation)
+      if (!token || token.email === null)
         throw createSituationErrors(errors).participantInvitationNotFound();
       await requireParticipantEntryAuthority(
         context.headers,
-        invitation.partnershipId,
+        token.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,
         errors,
       );
-      if (invitation.status === "accepted")
+      if (token.status === "accepted")
         throw createSituationErrors(errors).participantInvitationAccepted();
-      if (invitation.status !== "pending")
+      if (token.status !== "pending")
         throw createSituationErrors(errors).participantInvitationClosed();
-      if (invitation.expiresAt <= new Date())
+      if (token.expiresAt !== null && token.expiresAt <= new Date())
         throw createSituationErrors(errors).participantInvitationExpired();
       // Revocation is terminal: reopening never resurrects a revoked identity
       // — reissue after revoke instead, mirroring newest-wins rotation.
       if (input.open) return { open: true };
       await db
-        .update(invitations)
+        .update(tokens)
         .set({ status: "revoked" })
-        .where(eq(invitations.id, input.invitationId));
+        .where(eq(tokens.id, input.invitationId));
       return { open: input.open };
     });
 }
