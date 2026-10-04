@@ -16,12 +16,14 @@ export const emailSender = createEmailSender({
 export function sendParticipantInvitation({
   email,
   invitationId,
+  secret,
 }: {
   email: string;
   invitationId: string;
+  secret: string;
 }) {
   return emailSender.sendParticipantInvitation({
     email,
-    inviteLink: `${env.NEXT_PUBLIC_BASE_URL}/participant-invitations/${invitationId}`,
+    inviteLink: `${env.NEXT_PUBLIC_BASE_URL}/participant-invitations/${invitationId}?secret=${encodeURIComponent(secret)}`,
   });
 }

@@ -10,11 +10,10 @@ import { evaluateProjectScopeAccess } from "@greendex/auth/project-authorization
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
-  invitation,
   member,
   organization,
   partnerCoordinatorAssignmentsTable as assignments,
-  participantInvitationBridgesTable as bridges,
+  participantInvitationsTable as invitations,
   participantRegistrationLinksTable as links,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
@@ -220,9 +219,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await db.delete(bridges).where(eq(bridges.projectId, project));
+  await db.delete(invitations).where(eq(invitations.projectId, project));
   await db.delete(links).where(eq(links.partnershipId, partnership));
-  await db.delete(invitation).where(eq(invitation.organizationId, host));
   await db.delete(assignments).where(eq(assignments.partnershipId, partnership));
   actor = owner;
   activeOrganizationId = partner;
@@ -245,9 +243,8 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(bridges).where(eq(bridges.projectId, project));
+  await db.delete(invitations).where(eq(invitations.projectId, project));
   await db.delete(links).where(eq(links.partnershipId, partnership));
-  await db.delete(invitation).where(eq(invitation.organizationId, host));
   await db.delete(assignments).where(eq(assignments.partnershipId, partnership));
   await db.delete(hostAssignments).where(eq(hostAssignments.projectId, project));
   await db.delete(partnerships).where(eq(partnerships.id, partnership));
@@ -312,8 +309,7 @@ describe("Project-scope participant entry authorization", () => {
       await db
         .delete(assignments)
         .where(eq(assignments.partnershipId, partnership));
-      await db.delete(bridges).where(eq(bridges.projectId, project));
-      await db.delete(invitation).where(eq(invitation.organizationId, host));
+      await db.delete(invitations).where(eq(invitations.projectId, project));
     }
     await expect(
       client.participantOnboarding.issueInvitation({
@@ -329,7 +325,10 @@ describe("Project-scope participant entry authorization", () => {
       reason: "ASSIGNMENT_MISSING",
     });
     expect(
-      await db.select().from(bridges).where(eq(bridges.projectId, project)),
+      await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.projectId, project)),
     ).toHaveLength(0);
   });
 
@@ -379,7 +378,10 @@ describe("Project-scope participant entry authorization", () => {
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(
-      await db.select().from(bridges).where(eq(bridges.projectId, project)),
+      await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.projectId, project)),
     ).toHaveLength(0);
     expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
   });

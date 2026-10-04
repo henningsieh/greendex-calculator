@@ -59,7 +59,14 @@ beforeEach(() => {
 describe("ParticipantJoin", () => {
   it.each([
     ["link", { kind: "link" as const, id: "link-1", secret: "secret-1" }],
-    ["invitation", { kind: "invitation" as const, invitationId: "invite-1" }],
+    [
+      "invitation",
+      {
+        kind: "invitation" as const,
+        invitationId: "invite-1",
+        secret: "secret-1",
+      },
+    ],
   ])("joins by %s and reaches the same dashboard", async (_name, source) => {
     const user = userEvent.setup();
     render(<ParticipantJoin agreement={published} source={source} />);
@@ -106,7 +113,7 @@ describe("ParticipantJoin", () => {
     render(
       <ParticipantJoin
         agreement={pending}
-        source={{ kind: "invitation", invitationId: "i" }}
+        source={{ kind: "invitation", invitationId: "i", secret: "s" }}
       />,
     );
     expect(

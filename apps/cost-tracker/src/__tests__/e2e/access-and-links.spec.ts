@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
@@ -9,7 +9,7 @@ import {
   member,
   organization,
   partnerOrganizationSetupLinksTable as setupLinks,
-  participantInvitationBridgesTable as bridges,
+  participantInvitationsTable as participantInvitations,
   participantRegistrationLinksTable as registrationLinks,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participations,
@@ -284,22 +284,14 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     if (projectId)
       await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
     await db
-      .delete(bridges)
+      .delete(participantInvitations)
       .where(
-        inArray(bridges.invitationId, [
+        inArray(participantInvitations.id, [
           ids.oldParticipantInvitation,
           ids.newParticipantInvitation,
         ]),
       );
-    await db
-      .delete(invitation)
-      .where(
-        inArray(invitation.id, [
-          ids.invitation,
-          ids.oldParticipantInvitation,
-          ids.newParticipantInvitation,
-        ]),
-      );
+    await db.delete(invitation).where(eq(invitation.id, ids.invitation));
     await db
       .delete(member)
       .where(
@@ -578,20 +570,19 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
   }) => {
     // Issuing/reissuing through UI sends real SMTP. DB preconditions here are NOT
     // browser evidence for delivery or the reissue affordance.
-    await db.insert(invitation).values({
+    const oldSecret = `old-secret-${suffix}`;
+    const newSecret = `new-secret-${suffix}`;
+    registerPrivateValues(oldSecret, newSecret);
+    const secretHash = (secret: string) =>
+      createHash("sha256").update(secret).digest("hex");
+    await db.insert(participantInvitations).values({
       id: ids.oldParticipantInvitation,
-      organizationId: ids.host,
-      email: actors.T.email,
-      role: "participant",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 3_600_000),
-      inviterId: actors.P.id,
-    });
-    await db.insert(bridges).values({
-      invitationId: ids.oldParticipantInvitation,
       partnershipId: ids.partnership,
       projectId,
       email: actors.T.email,
+      secretHash: secretHash(oldSecret),
+      status: "pending",
+      expiresAt: new Date(Date.now() + 3_600_000),
       issuedByUserId: actors.P.id,
     });
     const p = await pageFor(browser, "P", baseURL!);
@@ -600,31 +591,23 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       p.getByRole("button", { name: `Reissue invitation for ${actors.T.email}` }),
     ).toBeVisible();
     await db
-      .update(bridges)
+      .update(participantInvitations)
       .set({ status: "revoked" })
-      .where(eq(bridges.invitationId, ids.oldParticipantInvitation));
-    await db
-      .update(invitation)
-      .set({ status: "canceled" })
-      .where(eq(invitation.id, ids.oldParticipantInvitation));
-    await db.insert(invitation).values({
+      .where(eq(participantInvitations.id, ids.oldParticipantInvitation));
+    await db.insert(participantInvitations).values({
       id: ids.newParticipantInvitation,
-      organizationId: ids.host,
-      email: actors.T.email,
-      role: "participant",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 3_600_000),
-      inviterId: actors.P.id,
-    });
-    await db.insert(bridges).values({
-      invitationId: ids.newParticipantInvitation,
       partnershipId: ids.partnership,
       projectId,
       email: actors.T.email,
+      secretHash: secretHash(newSecret),
+      status: "pending",
+      expiresAt: new Date(Date.now() + 3_600_000),
       issuedByUserId: actors.P.id,
     });
     const t = await pageFor(browser, "T", baseURL!);
-    await t.goto(`/participant-invitations/${ids.oldParticipantInvitation}`);
+    await t.goto(
+      `/participant-invitations/${ids.oldParticipantInvitation}?secret=${encodeURIComponent(oldSecret)}`,
+    );
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
@@ -638,7 +621,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
         .from(participations)
         .where(eq(participations.projectId, projectId)),
     ).toHaveLength(0);
-    await t.goto(`/participant-invitations/${ids.newParticipantInvitation}`);
+    await t.goto(
+      `/participant-invitations/${ids.newParticipantInvitation}?secret=${encodeURIComponent(newSecret)}`,
+    );
     await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
     // Spare replacement is not redeemed; no Participation or Membership created.
   });

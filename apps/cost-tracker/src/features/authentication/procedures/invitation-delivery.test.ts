@@ -21,8 +21,16 @@ describe("deliverParticipantInvitation", () => {
     });
     try {
       await expect(
-        deliverParticipantInvitation("participant@example.com", invitationId),
-      ).resolves.toEqual({ invitationId, delivery: "failed" });
+        deliverParticipantInvitation(
+          "participant@example.com",
+          invitationId,
+          "secret",
+        ),
+      ).resolves.toEqual({
+        invitationId,
+        secret: "secret",
+        delivery: "failed",
+      });
       expect(errorLog).toHaveBeenCalledWith(
         "Participant Invitation email delivery failed.",
         { invitationIdHashPrefix: "782cd23d" },
@@ -48,14 +56,24 @@ describe("deliverParticipantInvitation", () => {
     });
     try {
       await expect(
-        deliverParticipantInvitation("participant@example.com", invitationId),
-      ).resolves.toEqual({ invitationId, delivery: "failed" });
+        deliverParticipantInvitation(
+          "participant@example.com",
+          invitationId,
+          "secret",
+        ),
+      ).resolves.toEqual({
+        invitationId,
+        secret: "secret",
+        delivery: "failed",
+      });
       expect(errorLog).toHaveBeenCalledWith(
         "Participant Invitation email delivery failed.",
         { invitationIdHashPrefix: "6ca13d52" },
       );
       const loggedOutput = JSON.stringify(errorLog.mock.calls);
       expect(loggedOutput).not.toContain(invitationId);
+      expect(loggedOutput).not.toContain("secret");
+      expect(loggedOutput).not.toContain("participant@example.com");
       expect(loggedOutput).not.toContain("private SMTP details");
     } finally {
       errorLog.mockRestore();

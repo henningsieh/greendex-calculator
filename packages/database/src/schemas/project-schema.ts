@@ -29,7 +29,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { invitation, organization, user } from "./auth-schema";
+import { organization, user } from "./auth-schema";
 
 /**
  * Custom Drizzle type for distance values.
@@ -299,13 +299,20 @@ export const participantRegistrationLinksTable = pgTable(
   ],
 );
 
-/** Connects a Better Auth invitation to its Project Partnership without creating Participation early. */
-export const participantInvitationBridgesTable = pgTable(
-  "participant_invitation_bridge",
+/**
+ * App-owned, email-bound participant entry point for one Project Partnership
+ * (ADR-0013/0015). The Partner Organization issues it; only the verified
+ * account matching `email` may redeem it with the bound secret. The shareable
+ * registration-link flavour is the same mechanism without a bound email and
+ * without expiry; both redeem through the same join procedure with the
+ * identical result. Better Auth's invitation table is never written here.
+ */
+export const participantInvitationsTable = pgTable(
+  "participant_invitation",
   {
-    invitationId: text("invitation_id")
+    id: text("id")
       .primaryKey()
-      .references(() => invitation.id),
+      .$defaultFn(() => createId()),
     partnershipId: text("partnership_id")
       .notNull()
       .references(() => projectPartnerOrganizationsTable.id, {
@@ -315,7 +322,9 @@ export const participantInvitationBridgesTable = pgTable(
       .notNull()
       .references(() => projectsTable.id, { onDelete: "cascade" }),
     email: text("email").notNull(),
+    secretHash: text("secret_hash").notNull(),
     status: text("status").default("pending").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
     issuedByUserId: text("issued_by_user_id")
       .notNull()
       .references(() => user.id),
@@ -323,7 +332,8 @@ export const participantInvitationBridgesTable = pgTable(
     acceptedAt: timestamp("accepted_at"),
   },
   (table) => [
-    uniqueIndex("participant_invitation_live_email_unique")
+    index("participant_invitation_partnership_idx").on(table.partnershipId),
+    uniqueIndex("participant_invitation_pending_email_unique")
       .on(table.projectId, table.email)
       .where(sql`${table.status} = 'pending'`),
   ],

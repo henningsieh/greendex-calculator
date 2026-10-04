@@ -1,10 +1,9 @@
 import "server-only";
 import { db } from "@greendex/database";
 import {
-  invitation,
   member,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
+  participantInvitationsTable as invitations,
   participantProfilesTable as profiles,
   projectParticipantsTable as participants,
   user,
@@ -44,21 +43,19 @@ const progress = z.object({
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-type BridgeRow = {
-  bridgeStatus: string;
-  nativeStatus: string;
+type InvitationRow = {
+  status: string;
   expiresAt: Date;
 };
 
-function bridgeState(
-  row: BridgeRow | undefined,
+function invitationState(
+  row: InvitationRow | undefined,
   now: Date,
 ): z.infer<typeof progress>["bridge"] {
   if (!row) return "none";
-  if (row.bridgeStatus === "accepted") return "accepted";
-  if (row.bridgeStatus === "revoked") return "revoked";
-  if (row.bridgeStatus !== "pending" || row.nativeStatus !== "pending")
-    return "canceled";
+  if (row.status === "accepted") return "accepted";
+  if (row.status === "revoked") return "revoked";
+  if (row.status !== "pending") return "canceled";
   return row.expiresAt <= now ? "expired" : "pending";
 }
 
@@ -98,27 +95,25 @@ export function createOnboardingProgressProcedure(
           ),
         db
           .select({
-            invitationId: bridges.invitationId,
-            email: bridges.email,
-            bridgeStatus: bridges.status,
-            nativeStatus: invitation.status,
-            expiresAt: invitation.expiresAt,
-            issuedAt: bridges.issuedAt,
+            invitationId: invitations.id,
+            email: invitations.email,
+            status: invitations.status,
+            expiresAt: invitations.expiresAt,
+            issuedAt: invitations.issuedAt,
           })
-          .from(bridges)
-          .innerJoin(invitation, eq(invitation.id, bridges.invitationId))
+          .from(invitations)
           .where(
             and(
-              eq(bridges.partnershipId, input.partnershipId),
-              eq(bridges.projectId, scope.projectId),
-              eq(invitation.organizationId, scope.hostId),
+              eq(invitations.partnershipId, input.partnershipId),
+              eq(invitations.projectId, scope.projectId),
             ),
           )
-          .orderBy(desc(bridges.issuedAt), desc(bridges.invitationId)),
+          .orderBy(desc(invitations.issuedAt), desc(invitations.id)),
       ]);
 
-      // Historical reissues stay in persistence; only the latest bridge describes
-      // the invitee's present state. A joined Participation takes precedence.
+      // Historical reissues stay in persistence; only the latest invitation
+      // describes the invitee's present state. A joined Participation takes
+      // precedence.
       const latestByEmail = new Map<string, (typeof issued)[number]>();
       for (const row of issued) {
         const email = normalizeEmail(row.email);
@@ -200,7 +195,7 @@ export function createOnboardingProgressProcedure(
       const now = new Date();
       return emails.sort().map((email) => {
         const participation = joinedByEmail.get(email);
-        const bridge = latestByEmail.get(email);
+        const issued = latestByEmail.get(email);
         const userId = participation?.userId ?? byEmail.get(email);
         const accepted = userId ? latestAcceptance.get(userId) : undefined;
         const role = userId ? roles.get(userId) : undefined;
@@ -209,14 +204,14 @@ export function createOnboardingProgressProcedure(
             ? normalizeEmail(participation.email)
             : participation?.accountEmail
               ? normalizeEmail(participation.accountEmail)
-              : bridge
+              : issued
                 ? email
                 : null,
           participationId: participation?.id ?? null,
           participation: participation
             ? ("joined" as const)
             : ("not-joined" as const),
-          invitationId: bridge?.invitationId ?? null,
+          invitationId: issued?.invitationId ?? null,
           profile:
             userId && profiled.has(userId)
               ? ("complete" as const)
@@ -236,7 +231,7 @@ export function createOnboardingProgressProcedure(
             )
             ? ("participant" as const)
             : ("missing" as const),
-          bridge: bridgeState(bridge, now),
+          bridge: invitationState(issued, now),
         };
       });
     });

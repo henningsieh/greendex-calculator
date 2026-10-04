@@ -204,6 +204,20 @@
       "when": 1790529533917,
       "tag": "0028_tiny_natasha_romanoff",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791121145377,
+      "tag": "0029_participant-invitation-entry",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791121159442,
+      "tag": "0030_drop-participant-invitation-bridge",
+      "breakpoints": true
     }
   ]
 }

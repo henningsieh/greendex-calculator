@@ -24,8 +24,10 @@ export const auth = createServerAuth({
   emailSender,
   organization: {
     async sendInvitationEmail(data) {
-      // Participant Invitations are delivered by the onboarding procedure after
-      // its Project Partnership bridge commits, just like native partner issuance.
+      // Participant entry never flows through Better Auth invitations
+      // (ADR-0013): the app-owned email-bound invitation delivers its own
+      // secret-bound link after durable issuance, so Better Auth sends no
+      // mail for the participant role.
       if (data.role === "participant") return;
       await emailSender.sendOrganizationInvitation({
         email: data.email,

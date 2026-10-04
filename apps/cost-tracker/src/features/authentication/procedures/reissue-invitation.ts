@@ -1,10 +1,9 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
-  invitation,
-  participantInvitationBridgesTable as bridges,
+  participantInvitationsTable as invitations,
   projectParticipantsTable as participants,
   projectsTable as projects,
   user,
@@ -16,8 +15,9 @@ import { deliverParticipantInvitation } from "@/features/authentication/procedur
 import {
   id,
   invitationResult,
-  newNativeParticipantInvitation,
+  INVITATION_TTL_MS,
   normalizedEmail,
+  secretHash,
 } from "@/features/authentication/procedures/shared";
 import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -51,7 +51,8 @@ export function buildReissueInvitation() {
         .limit(1);
       if (existingParticipation)
         throw createSituationErrors(errors).participantAlreadyParticipates();
-      const { invitationId } = await db.transaction(async (tx) => {
+      const secret = randomBytes(32).toString("base64url");
+      const issued = await db.transaction(async (tx) => {
         // Serialize rotations across every Partnership in this Project.
         await tx
           .select({ id: projects.id })
@@ -60,15 +61,15 @@ export function buildReissueInvitation() {
           .for("update");
         const [previous] = await tx
           .select({
-            invitationId: bridges.invitationId,
-            partnershipId: bridges.partnershipId,
+            id: invitations.id,
+            partnershipId: invitations.partnershipId,
           })
-          .from(bridges)
+          .from(invitations)
           .where(
             and(
-              eq(bridges.projectId, target.projectId),
-              eq(bridges.email, input.email),
-              eq(bridges.status, "pending"),
+              eq(invitations.projectId, target.projectId),
+              eq(invitations.email, input.email),
+              eq(invitations.status, "pending"),
             ),
           )
           .limit(1);
@@ -82,40 +83,31 @@ export function buildReissueInvitation() {
             context.session.activeOrganizationId,
             errors,
           );
+        // Newest wins: the previous identity can no longer be redeemed.
         await tx
-          .update(invitation)
-          .set({ status: "canceled" })
+          .update(invitations)
+          .set({ status: "revoked" })
           .where(
             and(
-              eq(invitation.id, previous.invitationId),
-              eq(invitation.status, "pending"),
+              eq(invitations.id, previous.id),
+              eq(invitations.status, "pending"),
             ),
           );
-        await tx
-          .update(bridges)
-          .set({ status: "revoked" })
-          .where(eq(bridges.invitationId, previous.invitationId));
-        const invitationId = randomUUID();
-        await tx
-          .insert(invitation)
-          .values(
-            newNativeParticipantInvitation(
-              invitationId,
-              target.hostOrganizationId,
-              input.email,
-              context.user.id,
-            ),
-          );
-        await tx.insert(bridges).values({
-          invitationId,
-          partnershipId: target.id,
-          projectId: target.projectId,
-          email: input.email,
-          issuedByUserId: context.user.id,
-        });
-        return { invitationId };
+        const [created] = await tx
+          .insert(invitations)
+          .values({
+            partnershipId: target.id,
+            projectId: target.projectId,
+            email: input.email,
+            secretHash: secretHash(secret),
+            expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
+            issuedByUserId: context.user.id,
+          })
+          .returning({ id: invitations.id });
+        if (!created) throw createSituationErrors(errors).internalFailure();
+        return created;
       });
       // Only explicit reissue creates a new identity and triggers another delivery.
-      return deliverParticipantInvitation(input.email, invitationId);
+      return deliverParticipantInvitation(input.email, issued.id, secret);
     });
 }

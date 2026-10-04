@@ -4,12 +4,8 @@ import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
-  invitation,
   member,
   organization,
-  participantInvitationBridgesTable,
-  projectPartnerOrganizationsTable,
-  projectsTable,
   user,
   verification,
 } from "@greendex/database/schema";
@@ -166,103 +162,10 @@ describe("Cost Tracker Better Auth", () => {
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
-  it("accepts a partner-issued native invitation row through Better Auth's own endpoint", async () => {
-    const email = uniqueEmail();
-    const password = "correct-horse-battery-staple";
-    const invited = await auth.api.signUpEmail({
-      body: { email, name: "Invited User", password },
-    });
-    await db
-      .update(user)
-      .set({ emailVerified: true })
-      .where(eq(user.id, invited.user.id));
-    const hostId = randomUUID();
-    const partnerId = randomUUID();
-    const inviterId = randomUUID();
-    const projectId = randomUUID();
-    const partnershipId = randomUUID();
-    const invitationId = randomUUID();
-    const now = new Date();
-    await db.insert(user).values({
-      id: inviterId,
-      name: "Partner Owner",
-      email: uniqueEmail(),
-      emailVerified: true,
-    });
-    await db.insert(organization).values([
-      { id: hostId, name: "Invite Host", slug: hostId, createdAt: now },
-      { id: partnerId, name: "Invite Partner", slug: partnerId, createdAt: now },
-    ]);
-    await db.insert(projectsTable).values({
-      id: projectId,
-      name: "Invite Project",
-      startDate: now,
-      endDate: now,
-      location: "Riga",
-      country: "LV",
-      organizationId: hostId,
-    });
-    await db
-      .insert(projectPartnerOrganizationsTable)
-      .values({ id: partnershipId, projectId, organizationId: partnerId });
-    try {
-      // Structural equivalence: BA 1.7's organization adapter creates a pending
-      // invitation with these eight native fields and a 48-hour expiry. This test
-      // additionally proves its own accept endpoint consumes that shape.
-      await db.insert(invitation).values({
-        id: invitationId,
-        organizationId: hostId,
-        email,
-        role: "participant",
-        status: "pending",
-        expiresAt: new Date(now.getTime() + 48 * 60 * 60 * 1000),
-        createdAt: now,
-        inviterId,
-      });
-      await db.insert(participantInvitationBridgesTable).values({
-        invitationId,
-        partnershipId,
-        projectId,
-        email,
-        issuedByUserId: inviterId,
-      });
-      const response = await auth.api.signInEmail({
-        body: { email, password },
-        asResponse: true,
-      });
-      const cookie = response.headers.get("set-cookie")?.split(";")[0];
-      if (!cookie) throw new Error("Sign-in did not create a session cookie");
-      const accepted = await auth.api.acceptInvitation({
-        body: { invitationId },
-        headers: new Headers({ cookie }),
-      });
-      expect(accepted.member).toMatchObject({
-        userId: invited.user.id,
-        organizationId: hostId,
-        role: "participant",
-      });
-      expect(
-        (
-          await db
-            .select()
-            .from(invitation)
-            .where(eq(invitation.id, invitationId))
-        )[0]?.status,
-      ).toBe("accepted");
-    } finally {
-      await db
-        .delete(participantInvitationBridgesTable)
-        .where(eq(participantInvitationBridgesTable.invitationId, invitationId));
-      await db.delete(invitation).where(eq(invitation.id, invitationId));
-      await db.delete(member).where(eq(member.userId, invited.user.id));
-      await db
-        .delete(projectPartnerOrganizationsTable)
-        .where(eq(projectPartnerOrganizationsTable.id, partnershipId));
-      await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
-      await db.delete(organization).where(eq(organization.id, partnerId));
-      await db.delete(organization).where(eq(organization.id, hostId));
-    }
-  });
+  // Participant entry no longer flows through Better Auth invitations
+  // (ADR-0013): no hand-written invitation row, no bridge, no accept call.
+  // Email-bound invitations are app-owned; see the participant-onboarding
+  // procedure tests for issue/redeem coverage.
 
   it("starts Google sign-in with the deployed Cost Tracker callback contract", async () => {
     const result = await auth.api.signInSocial({

@@ -811,6 +811,11 @@ export function ParticipantCoordination({
       <Card>
         <CardHeader>
           <CardTitle>Participant Invitations and Registration Links</CardTitle>
+          <CardDescription>
+            Email-bound invitations reach one address and only that verified
+            account can redeem them. Shareable registration links work for anyone
+            holding them and stay reusable.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {entryDenial ? (
@@ -879,7 +884,11 @@ export function ParticipantCoordination({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Invitations</CardTitle>
+          <CardTitle>Email-bound Participant Invitations</CardTitle>
+          <CardDescription>
+            Only the invited email address can redeem each invitation. Forwarded
+            links grant nothing to other accounts.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {data.invitations.length === 0 ? (
@@ -937,7 +946,11 @@ export function ParticipantCoordination({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Registration links</CardTitle>
+          <CardTitle>Shareable Participant Registration Links</CardTitle>
+          <CardDescription>
+            Anyone holding a link may redeem it with their own account. Close a
+            link once everyone has registered.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {data.registrationLinks.length === 0 ? (

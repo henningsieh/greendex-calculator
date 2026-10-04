@@ -6,7 +6,7 @@ import {
   duplicateReviewTasksTable as reviewTasks,
   member,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
+  participantInvitationsTable as participantInvitations,
   participantRegistrationLinksTable as links,
   participantJourneysTable as journeys,
   participantProfilesTable as profiles,
@@ -110,12 +110,12 @@ export function createParticipationProcedures(
           ),
         db
           .select({
-            invitationId: bridges.invitationId,
-            email: bridges.email,
-            status: bridges.status,
+            invitationId: participantInvitations.id,
+            email: participantInvitations.email,
+            status: participantInvitations.status,
           })
-          .from(bridges)
-          .where(eq(bridges.partnershipId, input.partnershipId)),
+          .from(participantInvitations)
+          .where(eq(participantInvitations.partnershipId, input.partnershipId)),
         db
           .select({ id: links.id, enabled: links.enabled })
           .from(links)

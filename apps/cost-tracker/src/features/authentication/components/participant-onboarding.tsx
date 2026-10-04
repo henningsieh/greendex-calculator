@@ -20,7 +20,7 @@ import { orpc } from "@/lib/orpc/orpc";
 type Agreement = ParticipantAgreementVersion & { content?: string };
 type JoinSource =
   | { kind: "link"; id: string; secret: string }
-  | { kind: "invitation"; invitationId: string };
+  | { kind: "invitation"; invitationId: string; secret: string };
 type Projects = Awaited<
   ReturnType<typeof orpc.participantOnboarding.listMyProjects>
 >;

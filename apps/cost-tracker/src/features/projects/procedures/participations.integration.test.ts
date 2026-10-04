@@ -14,8 +14,7 @@ import {
   participantProfilesTable as profiles,
   participantAgreementAcceptancesTable as acceptances,
   projectParticipantsTable as participants,
-  participantInvitationBridgesTable as bridges,
-  invitation,
+  participantInvitationsTable as invitations,
   participantJourneysTable as journeys,
   duplicateReviewTasksTable as reviewTasks,
 } from "@greendex/database/schema";
@@ -146,8 +145,7 @@ beforeEach(() => {
 afterAll(async () => {
   await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(bridges).where(eq(bridges.projectId, project));
-  await db.delete(invitation).where(eq(invitation.organizationId, host));
+  await db.delete(invitations).where(eq(invitations.projectId, project));
   await db.delete(acceptances).where(eq(acceptances.userId, candidate));
   await db.delete(profiles).where(eq(profiles.userId, candidate));
   await db.delete(assignments).where(eq(assignments.partnershipId, own));
@@ -778,7 +776,7 @@ describe("assignment-scoped participation coordination", () => {
     }
   });
 
-  it("rejects missing onboarding, exposes own bridge only, and blocks referenced removal", async () => {
+  it("rejects missing onboarding, exposes own invitations only, and blocks referenced removal", async () => {
     await expect(
       client.participations.create({ partnershipId: own, userId: "unknown" }),
     ).rejects.toMatchObject({
@@ -786,20 +784,13 @@ describe("assignment-scoped participation coordination", () => {
       message: expect.stringMatching(/invitation/i),
     });
     const inviteId = randomUUID();
-    await db.insert(invitation).values({
+    await db.insert(invitations).values({
       id: inviteId,
-      organizationId: host,
-      email,
-      role: "participant",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 86400000),
-      inviterId: coordinator,
-    });
-    await db.insert(bridges).values({
-      invitationId: inviteId,
       projectId: project,
       partnershipId: foreign,
       email,
+      secretHash: "fixture-secret-hash",
+      expiresAt: new Date(Date.now() + 86400000),
       issuedByUserId: coordinator,
     });
     expect(
@@ -809,20 +800,21 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.listPartnership({ partnershipId: foreign }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await db.delete(bridges).where(eq(bridges.invitationId, inviteId));
-    await db.insert(bridges).values({
-      invitationId: inviteId,
+    await db.delete(invitations).where(eq(invitations.id, inviteId));
+    await db.insert(invitations).values({
+      id: inviteId,
       projectId: project,
       partnershipId: own,
       email,
+      secretHash: "fixture-secret-hash",
+      expiresAt: new Date(Date.now() + 86400000),
       issuedByUserId: coordinator,
     });
     expect(
       (await client.participations.listPartnership({ partnershipId: own }))
         .invitations,
     ).toEqual([{ invitationId: inviteId, email, status: "pending" }]);
-    await db.delete(bridges).where(eq(bridges.invitationId, inviteId));
-    await db.delete(invitation).where(eq(invitation.id, inviteId));
+    await db.delete(invitations).where(eq(invitations.id, inviteId));
     const created = await client.participations.create({
       partnershipId: own,
       userId: candidate,

@@ -34,11 +34,19 @@ export const joinInput = z.object({
   agreement: agreementInput,
   source: z.discriminatedUnion("kind", [
     z.object({ kind: z.literal("link"), id, secret: z.string().min(1) }),
-    z.object({ kind: z.literal("invitation"), invitationId: id }),
+    z.object({
+      kind: z.literal("invitation"),
+      invitationId: id,
+      secret: z.string().min(1),
+    }),
   ]),
 });
 export const invitationResult = z.object({
   invitationId: z.string(),
+  // Returned once at issuance, like registration-link secrets: the emailed
+  // link carries it, and the server only stores its hash. Duplicate issuance
+  // reports the live identity with a null secret instead of resending.
+  secret: z.string().nullable(),
   delivery: z.enum(["sent", "failed", "already-issued"]),
 });
 
@@ -52,23 +60,6 @@ export function shouldGrantParticipantRole(role: string): boolean {
       role.split(",").some((value) => value.trim() === existing),
     )
   );
-}
-
-export function newNativeParticipantInvitation(
-  invitationId: string,
-  hostId: string,
-  email: string,
-  issuerId: string,
-) {
-  return {
-    id: invitationId,
-    organizationId: hostId,
-    email,
-    role: "participant",
-    status: "pending",
-    expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
-    inviterId: issuerId,
-  };
 }
 
 export function makeRequirePublishedAgreement(

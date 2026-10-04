@@ -7,7 +7,11 @@ const mocks = vi.hoisted(() => ({
   sendOrganizationInvitation: vi.fn().mockResolvedValue(undefined),
   createServerAuth: vi.fn((config: unknown) => config),
 }));
-vi.mock("@greendex/auth", () => ({ createServerAuth: mocks.createServerAuth }));
+vi.mock("server-only", () => ({}));
+vi.mock("@greendex/auth", async (importOriginal) => ({
+  ...((await importOriginal()) as object),
+  createServerAuth: mocks.createServerAuth,
+}));
 vi.mock("@greendex/email", () => ({
   createTransporter: vi.fn(() => ({})),
   createEmailSender: vi.fn(() => ({
@@ -36,20 +40,21 @@ const sendInvitationEmail = (
 beforeEach(() => vi.clearAllMocks());
 
 describe("Cost Tracker invitation email routing", () => {
-  it("builds the Participant Invitation accept URL with the issued identity", async () => {
+  it("builds the Participant Invitation accept URL with the issued identity and secret", async () => {
     await sendParticipantInvitation({
       email: "recipient@example.com",
       invitationId: "invitation-182",
+      secret: "secret-182",
     });
     expect(mocks.sendParticipantInvitation).toHaveBeenCalledWith({
       email: "recipient@example.com",
       inviteLink: expect.stringMatching(
-        /\/participant-invitations\/invitation-182$/,
+        /\/participant-invitations\/invitation-182\?secret=secret-182$/,
       ),
     });
   });
 
-  it("defers host Participant Invitations to the same post-bridge sender and preserves Organization Invitations", async () => {
+  it("sends no Better Auth mail for the participant role and preserves Organization Invitations", async () => {
     const data = {
       id: "invitation-182",
       role: "participant",

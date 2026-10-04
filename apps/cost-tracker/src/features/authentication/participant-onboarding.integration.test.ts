@@ -6,11 +6,10 @@ import { db } from "@greendex/database";
 import {
   claimsTable,
   hostProjectAssignmentsTable as hostAssignments,
-  invitation,
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
+  participantInvitationsTable as invitations,
   participantProfilesTable as profiles,
   participantRegistrationLinksTable as links,
   partnerCoordinatorAssignmentsTable as assignments,
@@ -20,7 +19,6 @@ import {
   user,
 } from "@greendex/database/schema";
 import { ORPCError, createRouterClient } from "@orpc/server";
-import { APIError } from "better-auth/api";
 import { and, eq } from "drizzle-orm";
 import {
   afterAll,
@@ -42,7 +40,6 @@ vi.mock("@/lib/email", () => ({
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   addMember: vi.fn(),
-  acceptInvitation: vi.fn(),
   hasPermission: vi.fn(),
   grantParticipantMembership: vi.fn(),
 }));
@@ -177,10 +174,9 @@ beforeEach(async () => {
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(bridges).where(eq(bridges.projectId, project));
+  await db.delete(invitations).where(eq(invitations.projectId, project));
   await db.delete(links).where(eq(links.partnershipId, partnership));
   await db.delete(links).where(eq(links.partnershipId, otherPartnership));
-  await db.delete(invitation).where(eq(invitation.organizationId, host));
   await db.delete(claimsTable).where(eq(claimsTable.partnershipId, partnership));
   await db.delete(member).where(eq(member.userId, recipient));
   actor = owner;
@@ -279,32 +275,15 @@ beforeEach(async () => {
       success: await authorizedActiveRole(body.permissions),
     }),
   );
-  authMocks.acceptInvitation.mockImplementation(
-    async ({ body }: { body: { invitationId: string } }) => {
-      await db
-        .update(invitation)
-        .set({ status: "accepted" })
-        .where(eq(invitation.id, body.invitationId));
-      await db.insert(member).values({
-        id: randomUUID(),
-        organizationId: host,
-        userId: recipient,
-        role: "participant",
-        createdAt: new Date(),
-      });
-      return new Response(null, { status: 200 });
-    },
-  );
 });
 
 afterAll(async () => {
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(bridges).where(eq(bridges.projectId, project));
+  await db.delete(invitations).where(eq(invitations.projectId, project));
   await db.delete(links).where(eq(links.partnershipId, partnership));
   await db.delete(links).where(eq(links.partnershipId, otherPartnership));
-  await db.delete(invitation).where(eq(invitation.organizationId, host));
   await db.delete(claimsTable).where(eq(claimsTable.partnershipId, partnership));
   await db.delete(partnerships).where(eq(partnerships.projectId, project));
   await db.delete(projects).where(eq(projects.id, project));
@@ -319,14 +298,14 @@ afterAll(async () => {
 
 describe("Participant onboarding procedures", () => {
   it("distinguishes missing invitation, wrong account and expired state without writes", async () => {
-    const input = (invitationId: string) => ({
-      source: { kind: "invitation" as const, invitationId },
+    const input = (invitationId: string, secret: string) => ({
+      source: { kind: "invitation" as const, invitationId, secret },
       profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     });
     actor = recipient;
     await expect(
-      client.participantOnboarding.join(input("missing")),
+      client.participantOnboarding.join(input("missing", "forged")),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
       status: 404,
@@ -337,26 +316,39 @@ describe("Participant onboarding procedures", () => {
       partnershipId: partnership,
       email: recipientEmail,
     });
+    // A forwarded link grants nothing to another account, even with the secret.
     await expect(
-      client.participantOnboarding.join(input(issued.invitationId)),
+      client.participantOnboarding.join(
+        input(issued.invitationId, issued.secret!),
+      ),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
       status: 403,
       data: { reason: "PARTICIPANT_INVITATION_WRONG_ACCOUNT" },
     });
-    await db
-      .update(invitation)
-      .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(invitation.id, issued.invitationId));
+    // A forged secret resolves to nothing, without leaking the bound email.
     actor = recipient;
     await expect(
-      client.participantOnboarding.join(input(issued.invitationId)),
+      client.participantOnboarding.join(input(issued.invitationId, "forged")),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      status: 404,
+      data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
+    });
+    await db
+      .update(invitations)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(invitations.id, issued.invitationId));
+    await expect(
+      client.participantOnboarding.join(
+        input(issued.invitationId, issued.secret!),
+      ),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       status: 400,
       data: { reason: "PARTICIPANT_INVITATION_EXPIRED" },
     });
-    expect(authMocks.acceptInvitation).not.toHaveBeenCalled();
+    expect(authMocks.addMember).not.toHaveBeenCalled();
     expect(await memberships()).toHaveLength(0);
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
@@ -395,28 +387,37 @@ describe("Participant onboarding procedures", () => {
   });
 
   it.each([
-    [401, "SESSION_REQUIRED"],
-    [429, "RATE_LIMITED"],
-    [503, "SERVICE_UNAVAILABLE"],
-    [500, "INTERNAL_FAILURE"],
+    // Privileged grant failures describe server configuration, never the
+    // already authenticated Invitee, so session/permission refusals there
+    // become internal failures while rate and availability pass through.
+    [401, 500, "INTERNAL_FAILURE"],
+    [403, 500, "INTERNAL_FAILURE"],
+    [429, 429, "RATE_LIMITED"],
+    [503, 503, "SERVICE_UNAVAILABLE"],
+    [500, 500, "INTERNAL_FAILURE"],
   ] as const)(
-    "preserves BA acceptance status %s without app writes",
-    async (status, reason) => {
+    "preserves membership-grant status %s without app writes",
+    async (status, expectedStatus, expectedReason) => {
       const issued = await client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
         email: recipientEmail,
       });
       actor = recipient;
-      authMocks.acceptInvitation.mockResolvedValueOnce(
-        new Response(null, { status }),
-      );
+      authMocks.addMember.mockResolvedValueOnce(new Response(null, { status }));
       await expect(
         client.participantOnboarding.join({
-          source: { kind: "invitation", invitationId: issued.invitationId },
+          source: {
+            kind: "invitation",
+            invitationId: issued.invitationId,
+            secret: issued.secret!,
+          },
           profile: { fullName: "Recipient", country: "LV" as const },
           agreement: { accepted: true },
         }),
-      ).rejects.toMatchObject({ status, data: { reason } });
+      ).rejects.toMatchObject({
+        status: expectedStatus,
+        data: { reason: expectedReason },
+      });
       expect(await memberships()).toHaveLength(0);
       expect(
         await db
@@ -433,18 +434,30 @@ describe("Participant onboarding procedures", () => {
     },
   );
 
-  it("normalizes thrown BA verification and privileged addMember permission failures", async () => {
+  it("refuses unverified sessions before any grant call or app write", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
     });
     actor = recipient;
-    authMocks.acceptInvitation.mockRejectedValueOnce(
-      new APIError("FORBIDDEN", { code: "EMAIL_NOT_VERIFIED" }),
-    );
+    // Membership completion never starts for an unverified account: the
+    // procedure refuses before any grant call or app write.
+    authMocks.getSession.mockImplementationOnce(async () => ({
+      user: {
+        id: recipient,
+        name: "Recipient",
+        email: recipientEmail,
+        emailVerified: false,
+      },
+      session: { id: randomUUID(), activeOrganizationId },
+    }));
     await expect(
       client.participantOnboarding.join({
-        source: { kind: "invitation", invitationId: issued.invitationId },
+        source: {
+          kind: "invitation",
+          invitationId: issued.invitationId,
+          secret: issued.secret!,
+        },
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
@@ -452,21 +465,7 @@ describe("Participant onboarding procedures", () => {
       code: "FORBIDDEN",
       data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
     });
-    actor = owner;
-    const link = await client.participantOnboarding.createRegistrationLink({
-      partnershipId: partnership,
-    });
-    actor = recipient;
-    authMocks.addMember.mockResolvedValueOnce(
-      new Response(null, { status: 403 }),
-    );
-    await expect(
-      client.participantOnboarding.join({
-        source: { kind: "link", id: link.id, secret: link.secret },
-        profile: { fullName: "Recipient", country: "LV" as const },
-        agreement: { accepted: true },
-      }),
-    ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR", status: 500 });
+    expect(authMocks.addMember).not.toHaveBeenCalled();
     expect(await memberships()).toHaveLength(0);
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
@@ -807,7 +806,7 @@ describe("Participant onboarding procedures", () => {
     ]);
   });
 
-  it("cancels the native invitation on revoke and requires re-issue to recover", async () => {
+  it("revokes the invitation on close and requires re-issue to recover", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -816,20 +815,24 @@ describe("Participant onboarding procedures", () => {
       invitationId: issued.invitationId,
       open: false,
     });
-    const [native] = await db
-      .select({ status: invitation.status })
-      .from(invitation)
-      .where(eq(invitation.id, issued.invitationId));
-    expect(native?.status).toBe("canceled");
+    const [revoked] = await db
+      .select({ status: invitations.status })
+      .from(invitations)
+      .where(eq(invitations.id, issued.invitationId));
+    expect(revoked?.status).toBe("revoked");
     actor = recipient;
     await expect(
       client.participantOnboarding.join({
-        source: { kind: "invitation", invitationId: issued.invitationId },
+        source: {
+          kind: "invitation",
+          invitationId: issued.invitationId,
+          secret: issued.secret!,
+        },
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(authMocks.acceptInvitation).not.toHaveBeenCalled();
+    expect(authMocks.addMember).not.toHaveBeenCalled();
     expect(await memberships()).toHaveLength(0);
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
@@ -850,14 +853,18 @@ describe("Participant onboarding procedures", () => {
     actor = recipient;
     await expect(
       client.participantOnboarding.join({
-        source: { kind: "invitation", invitationId: reissued.invitationId },
+        source: {
+          kind: "invitation",
+          invitationId: reissued.invitationId,
+          secret: reissued.secret!,
+        },
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
   });
 
-  it("explicitly rotates invitations twice, leaving one live native and bridge per Project email", async () => {
+  it("explicitly rotates invitations twice, leaving one live invitation per Project email", async () => {
     const first = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -866,16 +873,24 @@ describe("Participant onboarding procedures", () => {
     expect(delivery.sendParticipantInvitation).toHaveBeenCalledWith({
       email: recipientEmail,
       invitationId: first.invitationId,
+      secret: first.secret,
     });
     expect(
       await client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).toEqual({ ...first, delivery: "already-issued" });
+    ).toEqual({
+      invitationId: first.invitationId,
+      secret: null,
+      delivery: "already-issued",
+    });
     expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
     expect(
-      await db.select().from(bridges).where(eq(bridges.projectId, project)),
+      await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.projectId, project)),
     ).toHaveLength(1);
     const second = await client.participantOnboarding.reissueInvitation({
       partnershipId: partnership,
@@ -891,52 +906,68 @@ describe("Participant onboarding procedures", () => {
     expect(second.delivery).toBe("sent");
     expect(third.delivery).toBe("sent");
     expect(delivery.sendParticipantInvitation.mock.calls).toEqual([
-      [{ email: recipientEmail, invitationId: first.invitationId }],
-      [{ email: recipientEmail, invitationId: second.invitationId }],
-      [{ email: recipientEmail, invitationId: third.invitationId }],
+      [
+        {
+          email: recipientEmail,
+          invitationId: first.invitationId,
+          secret: first.secret,
+        },
+      ],
+      [
+        {
+          email: recipientEmail,
+          invitationId: second.invitationId,
+          secret: second.secret,
+        },
+      ],
+      [
+        {
+          email: recipientEmail,
+          invitationId: third.invitationId,
+          secret: third.secret,
+        },
+      ],
     ]);
     const rows = await db
       .select()
-      .from(bridges)
-      .where(eq(bridges.projectId, project));
+      .from(invitations)
+      .where(eq(invitations.projectId, project));
     expect(
-      rows
-        .filter((row) => row.status === "pending")
-        .map((row) => row.invitationId),
+      rows.filter((row) => row.status === "pending").map((row) => row.id),
     ).toEqual([third.invitationId]);
-    const native = await db
-      .select()
-      .from(invitation)
-      .where(eq(invitation.organizationId, host));
-    expect(
-      native.filter((row) => row.status === "pending").map((row) => row.id),
-    ).toEqual([third.invitationId]);
-    expect(native.filter((row) => row.status === "canceled")).toHaveLength(2);
-    expect(native.find((row) => row.id === third.invitationId)).toMatchObject({
-      organizationId: host,
+    expect(rows.filter((row) => row.status === "revoked")).toHaveLength(2);
+    expect(rows.find((row) => row.id === third.invitationId)).toMatchObject({
+      partnershipId: partnership,
+      projectId: project,
       email: recipientEmail,
-      role: "participant",
-      inviterId: owner,
+      issuedByUserId: owner,
       status: "pending",
     });
     actor = recipient;
+    // A superseded identity cannot be redeemed, even with its own secret.
     await expect(
       client.participantOnboarding.join({
-        source: { kind: "invitation", invitationId: first.invitationId },
+        source: {
+          kind: "invitation",
+          invitationId: first.invitationId,
+          secret: first.secret!,
+        },
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       client.participantOnboarding.join({
-        source: { kind: "invitation", invitationId: third.invitationId },
+        source: {
+          kind: "invitation",
+          invitationId: third.invitationId,
+          secret: third.secret!,
+        },
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
-    expect(authMocks.acceptInvitation).toHaveBeenCalledWith(
-      expect.objectContaining({ body: { invitationId: third.invitationId } }),
-    );
+    expect(await memberships()).toEqual([{ role: "participant" }]);
   });
 
   it("keeps a Partner Organization's invitation with its issuer, including against Hosting staff", async () => {
@@ -954,8 +985,8 @@ describe("Participant onboarding procedures", () => {
       (
         await db
           .select()
-          .from(bridges)
-          .where(eq(bridges.invitationId, first.invitationId))
+          .from(invitations)
+          .where(eq(invitations.id, first.invitationId))
       )[0]?.status,
     ).toBe("pending");
     const otherMembershipId = randomUUID();
@@ -978,16 +1009,8 @@ describe("Participant onboarding procedures", () => {
         (
           await db
             .select()
-            .from(bridges)
-            .where(eq(bridges.invitationId, first.invitationId))
-        )[0]?.status,
-      ).toBe("pending");
-      expect(
-        (
-          await db
-            .select()
-            .from(invitation)
-            .where(eq(invitation.id, first.invitationId))
+            .from(invitations)
+            .where(eq(invitations.id, first.invitationId))
         )[0]?.status,
       ).toBe("pending");
     } finally {
@@ -1015,19 +1038,11 @@ describe("Participant onboarding procedures", () => {
       });
       const rows = await db
         .select()
-        .from(bridges)
-        .where(eq(bridges.projectId, project));
+        .from(invitations)
+        .where(eq(invitations.projectId, project));
       expect(rows.filter((row) => row.status === "pending")).toMatchObject([
-        { invitationId: first.invitationId, partnershipId: partnership },
+        { id: first.invitationId, partnershipId: partnership },
       ]);
-      expect(
-        (
-          await db
-            .select()
-            .from(invitation)
-            .where(eq(invitation.id, first.invitationId))
-        )[0]?.status,
-      ).toBe("pending");
     } finally {
       await db
         .delete(member)
@@ -1035,37 +1050,33 @@ describe("Participant onboarding procedures", () => {
     }
   });
 
-  it("retires a stale bridge and issues fresh when the native invitation expired", async () => {
+  it("retires an expired invitation and issues fresh on the next request", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
     });
     await db
-      .update(invitation)
+      .update(invitations)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(invitation.id, issued.invitationId));
+      .where(eq(invitations.id, issued.invitationId));
     const fresh = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
     });
     expect(fresh.invitationId).not.toBe(issued.invitationId);
-    expect(
-      (
-        await db
-          .select()
-          .from(invitation)
-          .where(eq(invitation.id, issued.invitationId))
-      )[0]?.status,
-    ).toBe("canceled");
     const [retired] = await db
-      .select({ status: bridges.status })
-      .from(bridges)
-      .where(eq(bridges.invitationId, issued.invitationId));
+      .select({ status: invitations.status })
+      .from(invitations)
+      .where(eq(invitations.id, issued.invitationId));
     expect(retired?.status).toBe("revoked");
     actor = recipient;
     await expect(
       client.participantOnboarding.join({
-        source: { kind: "invitation", invitationId: fresh.invitationId },
+        source: {
+          kind: "invitation",
+          invitationId: fresh.invitationId,
+          secret: fresh.secret!,
+        },
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
@@ -1099,24 +1110,27 @@ describe("Participant onboarding procedures", () => {
     ).toHaveLength(0);
   });
 
-  it("does not write profile, acceptance or Participation if BA acceptance fails, and retry succeeds", async () => {
+  it("does not write profile, acceptance or Participation if the membership grant fails, and retry succeeds", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
     });
     actor = recipient;
-    authMocks.acceptInvitation.mockResolvedValueOnce(
-      new Response(null, { status: 403 }),
+    authMocks.addMember.mockResolvedValueOnce(
+      new Response(null, { status: 500 }),
     );
     const input = {
-      source: { kind: "invitation" as const, invitationId: issued.invitationId },
+      source: {
+        kind: "invitation" as const,
+        invitationId: issued.invitationId,
+        secret: issued.secret!,
+      },
       profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
-      code: "FORBIDDEN",
-      status: 403,
-      data: { reason: "ACCESS_DENIED" },
+      code: "INTERNAL_SERVER_ERROR",
+      status: 500,
     });
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
@@ -1138,18 +1152,22 @@ describe("Participant onboarding procedures", () => {
     );
   });
 
-  it("retries app writes after BA accepted but the app transaction failed", async () => {
+  it("retries app writes after the membership grant but the app transaction failed", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
     });
     actor = recipient;
     const input = {
-      source: { kind: "invitation" as const, invitationId: issued.invitationId },
+      source: {
+        kind: "invitation" as const,
+        invitationId: issued.invitationId,
+        secret: issued.secret!,
+      },
       profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
-    // Concurrent legacy email-only row forces the participation insert to fail after BA accepts.
+    // Concurrent legacy email-only row forces the participation insert to fail after the grant.
     const [conflict] = await db
       .insert(participants)
       .values({
@@ -1176,7 +1194,8 @@ describe("Participant onboarding procedures", () => {
     expect(await client.participantOnboarding.join(input)).toHaveProperty(
       "participationId",
     );
-    expect(authMocks.acceptInvitation).toHaveBeenCalledTimes(1);
+    // The grant ran once; the retry reused the existing Membership.
+    expect(authMocks.addMember).toHaveBeenCalledTimes(1);
     expect(
       await db
         .select()
@@ -1200,7 +1219,10 @@ describe("Participant onboarding procedures", () => {
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(
-      await db.select().from(bridges).where(eq(bridges.projectId, project)),
+      await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.projectId, project)),
     ).toHaveLength(0);
   });
 
@@ -1213,19 +1235,27 @@ describe("Participant onboarding procedures", () => {
       email: recipientEmail,
     });
     expect(first.delivery).toBe("failed");
+    // The invitation is durably issued despite the delivery failure.
     expect(
-      await db
-        .select()
-        .from(bridges)
-        .where(eq(bridges.invitationId, first.invitationId)),
-    ).toHaveLength(1);
+      (
+        await db
+          .select()
+          .from(invitations)
+          .where(eq(invitations.id, first.invitationId))
+      )[0]?.status,
+    ).toBe("pending");
     expect(
       await client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).toEqual({ ...first, delivery: "already-issued" });
+    ).toEqual({
+      invitationId: first.invitationId,
+      secret: null,
+      delivery: "already-issued",
+    });
     expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
+    // Retry through reissue rotates the identity without duplicate grants.
     const second = await client.participantOnboarding.reissueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -1235,7 +1265,26 @@ describe("Participant onboarding procedures", () => {
     expect(delivery.sendParticipantInvitation).toHaveBeenNthCalledWith(2, {
       email: recipientEmail,
       invitationId: second.invitationId,
+      secret: second.secret,
     });
+    actor = recipient;
+    await expect(
+      client.participantOnboarding.join({
+        source: {
+          kind: "invitation",
+          invitationId: second.invitationId,
+          secret: second.secret!,
+        },
+        profile: { fullName: "Recipient", country: "LV" as const },
+        agreement: { accepted: true },
+      }),
+    ).resolves.toHaveProperty("participationId");
+    expect(
+      await db
+        .select()
+        .from(participants)
+        .where(eq(participants.projectId, project)),
+    ).toHaveLength(1);
   });
 
   it("skips delivery when a previously issued invitation is retired before send", async () => {
@@ -1246,17 +1295,18 @@ describe("Participant onboarding procedures", () => {
     expect(issued.delivery).toBe("sent");
     delivery.sendParticipantInvitation.mockClear();
     await db
-      .update(bridges)
+      .update(invitations)
       .set({ status: "revoked" })
-      .where(eq(bridges.invitationId, issued.invitationId));
-    await db
-      .update(invitation)
-      .set({ status: "canceled" })
-      .where(eq(invitation.id, issued.invitationId));
+      .where(eq(invitations.id, issued.invitationId));
     expect(
-      await deliverParticipantInvitation(recipientEmail, issued.invitationId),
+      await deliverParticipantInvitation(
+        recipientEmail,
+        issued.invitationId,
+        issued.secret!,
+      ),
     ).toEqual({
       invitationId: issued.invitationId,
+      secret: issued.secret,
       delivery: "failed",
     });
     expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
@@ -1305,7 +1355,10 @@ describe("Participant onboarding procedures", () => {
         });
       expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
       expect(
-        await db.select().from(bridges).where(eq(bridges.projectId, project)),
+        await db
+          .select()
+          .from(invitations)
+          .where(eq(invitations.projectId, project)),
       ).toHaveLength(0);
       expect(
         await db.select().from(links).where(eq(links.partnershipId, partnership)),
@@ -1338,7 +1391,10 @@ describe("Participant onboarding procedures", () => {
       });
       expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
       expect(
-        await db.select().from(bridges).where(eq(bridges.projectId, project)),
+        await db
+          .select()
+          .from(invitations)
+          .where(eq(invitations.projectId, project)),
       ).toHaveLength(0);
     } finally {
       await db
@@ -1394,7 +1450,10 @@ describe("Participant onboarding procedures", () => {
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(
-      await db.select().from(bridges).where(eq(bridges.projectId, project)),
+      await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.projectId, project)),
     ).toHaveLength(0);
   });
 
@@ -1420,9 +1479,9 @@ describe("Participant onboarding procedures", () => {
       expect(
         (
           await db
-            .select({ partnershipId: bridges.partnershipId })
-            .from(bridges)
-            .where(eq(bridges.invitationId, issued.invitationId))
+            .select({ partnershipId: invitations.partnershipId })
+            .from(invitations)
+            .where(eq(invitations.id, issued.invitationId))
         )[0]?.partnershipId,
       ).toBe(partnership);
       expect(
@@ -1440,8 +1499,7 @@ describe("Participant onboarding procedures", () => {
         }),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
     } finally {
-      await db.delete(bridges).where(eq(bridges.projectId, project));
-      await db.delete(invitation).where(eq(invitation.organizationId, host));
+      await db.delete(invitations).where(eq(invitations.projectId, project));
       await db
         .delete(assignments)
         .where(eq(assignments.partnershipId, partnership));
@@ -1449,45 +1507,56 @@ describe("Participant onboarding procedures", () => {
     }
   });
 
-  it("issues and consumes a native BA invitation via its app bridge, then retries without duplicate Participation", async () => {
+  it("issues an email-bound invitation under normalization, then repeats redemption safely", async () => {
     actor = owner;
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: `  ${recipientEmail.toUpperCase()}  `,
     });
+    // Duplicate issuance reports the live identity without resending and
+    // without recovering the secret.
     expect(
       await client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).toEqual({ ...issued, delivery: "already-issued" });
-    expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
-    const [native] = await db
-      .select()
-      .from(invitation)
-      .where(eq(invitation.id, issued.invitationId));
-    expect(native).toMatchObject({
-      organizationId: host,
-      email: recipientEmail,
-      role: "participant",
-      status: "pending",
-      inviterId: owner,
+    ).toEqual({
+      invitationId: issued.invitationId,
+      secret: null,
+      delivery: "already-issued",
     });
+    expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
+    const [stored] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.id, issued.invitationId));
+    expect(stored).toMatchObject({
+      partnershipId: partnership,
+      projectId: project,
+      email: recipientEmail,
+      issuedByUserId: owner,
+      status: "pending",
+    });
+    expect(stored?.secretHash).not.toContain(issued.secret!);
     actor = recipient;
     const input = {
-      source: { kind: "invitation" as const, invitationId: issued.invitationId },
+      source: {
+        kind: "invitation" as const,
+        invitationId: issued.invitationId,
+        secret: issued.secret!,
+      },
       profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
     const first = await client.participantOnboarding.join(input);
+    // Repeat successful redemption resolves to the same identity.
     expect(await client.participantOnboarding.join(input)).toEqual(first);
-    expect(authMocks.acceptInvitation).toHaveBeenCalledTimes(1);
     expect(
       (
         await db
           .select()
-          .from(bridges)
-          .where(eq(bridges.invitationId, issued.invitationId))
+          .from(invitations)
+          .where(eq(invitations.id, issued.invitationId))
       )[0]?.status,
     ).toBe("accepted");
     expect(await memberships()).toEqual([{ role: "participant" }]);
