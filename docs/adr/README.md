@@ -27,13 +27,18 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0011](0011-complete-claim-submission-and-payment-workflow.md)                           | Complete Claim Submission and Payment Workflow                                      | accepted       |               |
 | [0012](0012-ban-fallback-member-role-in-cost-tracker.md)                                 | Ban Better Auth's fallback role in Cost Tracker                                     | accepted       |               |
 | [0013](0013-grant-participant-membership-through-a-server-authorized-add-member-call.md) | Grant Participant Membership Through a Server-Authorized Add Member Call            | accepted       |               |
-| [0014](0014-declare-permissions-once-and-evaluate-them-on-the-server.md)                 | Declare Permissions Once and Evaluate Them on the Server                            | accepted       |               |
+| [0014](0014-declare-permissions-once-and-evaluate-them-on-the-server.md)                 | Share Permission and Business Rules Between Client and Server                       | accepted       |               |
 | [0015](0015-model-membership-and-participation-as-separate-relations.md)                 | Model Membership and Participation as Two Separate Relations                        | accepted       |               |
 | [0016](0016-split-participant-surfaces-by-scope-and-edit-only-on-a-details-page.md)      | Split the Participant Surfaces by Scope, and Edit Only on a Details Page            | accepted       |               |
-| [0017](0017-own-the-claim-lifecycle-once.md)                                             | Own the Claim Lifecycle Once: One Lock Order, Server-Decided Capabilities           | accepted       |               |
+| [0017](0017-own-the-claim-lifecycle-once.md)                                             | Own the Claim Lifecycle Once: One Lock Order, Shared Capabilities                    | accepted       |               |
 | [0018](0018-derive-refusal-construction-from-the-error-catalog.md)                       | Derive Refusal Construction From the Error Catalog                                  | accepted       |               |
 
 ADR-0003 is superseded by ADR-0006, ADR-0007, and ADR-0011 together. ADR-0002 is superseded in part by ADR-0005.
+
+With explicit user approval, ADR-0014 and the related wording in ADR-0015–0017 received a
+recording correction: the server-only evaluation restriction was an authoring error, not
+an agreed decision. The requirement remains shared client/server permission and business
+rules with authoritative server enforcement. This is not a reversal or supersession.
 
 ## Related
 

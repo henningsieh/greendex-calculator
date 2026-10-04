@@ -51,5 +51,5 @@ can no longer vouch for.
 
 ## Related
 
-ADR-0014 (permissions declared once and evaluated on the server — the same principle applied
+ADR-0014 (shared client/server permission and business rules — the same principle applied
 to refusals: declared once, consumed everywhere).

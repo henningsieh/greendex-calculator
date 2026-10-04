@@ -106,4 +106,4 @@ invitation is created through a Better Auth API.
 
 ADR-0002 (Participants integrate with Better Auth), ADR-0004 (coordination scoped through
 assignments), ADR-0012 (ban the fallback `member` role),
-ADR-0014 (declare permissions once, evaluate them on the server).
+ADR-0014 (shared client/server permission and business rules with authoritative server enforcement).

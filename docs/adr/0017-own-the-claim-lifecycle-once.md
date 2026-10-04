@@ -2,7 +2,10 @@
 status: accepted
 ---
 
-# Own the Claim lifecycle once: one lock order, server-decided capabilities
+# Own the Claim Lifecycle Once: One Lock Order, Shared Capabilities
+
+> Recording correction: capability wording now reflects the original shared client/server
+> requirement, as corrected in ADR-0014; the lifecycle and locking decisions are unchanged.
 
 ## Decision
 
@@ -12,10 +15,11 @@ and every Hosting decision — take their row locks in one shared order, Project
 Claim. `procedures/claim-locks.ts` already expresses that order and exists to prevent
 concurrent writes from racing; it becomes the only way those rows are locked.
 
-**2. The server decides which actions are legal, and tells the screen.** No screen derives an
-allowed transition from a Claim's status. It receives what it may do. This is the same rule
-ADR-0014 sets for the participants page, and it is the codebase's core principle — permissions
-are declared once and evaluated once, never restated by a caller.
+**2. Client and server use the same permission and lifecycle rules.** No screen maintains
+an independent status-to-action rule. It uses supported Better Auth client checks and shared
+business rules with the required context. The server independently enforces those rules
+against authoritative state. Server-computed capabilities may supplement client checks,
+but do not replace them. This is the same rule ADR-0014 sets for Participant surfaces.
 
 **3. Partner editing rights follow one rule, matching the clickdummy.** While a Claim is **not
 yet submitted**, a Partner may **add and correct** journeys, Travel Cost Entries and Proof
@@ -51,8 +55,8 @@ them.
 
 - 24 hand-rolled lock sites become calls to the shared helper. Each gains the shared order, and
   the deadlock the order prevents becomes structurally impossible rather than merely unlikely.
-- The Claim screen stops branching on status and starts rendering what the server reports. Its
-  separate `correcting` flag goes away.
+- The Claim screen stops maintaining its own status-to-action policy and uses shared rules.
+  Its separate `correcting` flag goes away.
 - `isPartnerEditLocked` and `lockClaimScope` both survive. Neither is disposable: the first
   holds the two-status rule, the second holds the lock order. Only the hand-written
   _application_ of them disappears.
@@ -64,5 +68,5 @@ them.
 ## Related
 
 ADR-0008 (return Claims for correction), ADR-0009 (approve before payment), ADR-0010 (reject and
-reopen), ADR-0011 (complete Claim workflow), ADR-0014 (permissions declared once, evaluated on
-the server, server-computed render capabilities).
+reopen), ADR-0011 (complete Claim workflow), ADR-0014 (shared client/server permission and
+business rules with authoritative server enforcement).

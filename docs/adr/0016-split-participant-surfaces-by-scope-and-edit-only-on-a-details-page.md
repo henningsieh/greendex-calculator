@@ -4,6 +4,9 @@ status: accepted
 
 # Split the Participant surfaces by scope, and edit only on a details page
 
+> Recording correction: capability wording now reflects the original shared client/server
+> requirement, as corrected in ADR-0014; the surface and editing decisions are unchanged.
+
 ## Decision
 
 Three distinct surfaces replace the single page that today serves every actor at every scope.
@@ -16,7 +19,8 @@ agreement completed or pending. **It has no controls at all.** It answers "is on
 moving?" and nothing else.
 
 **2. The Partner Organization's Partnership Participants page keeps every control** it has
-today, gated by server-computed capability. Hosting staff may open it and read it; they are
+today, gated by shared client/server permission and business rules, with authoritative
+server enforcement. Hosting staff may open it and read it; they are
 shown no controls. No Partner-side capability is removed.
 
 **3. A Participant details page is new.** It is where editing happens. An actor edits the
@@ -75,5 +79,5 @@ place for it, sitting between the Participant's own details and the control that
 ## Related
 
 ADR-0013 (the Partner Organization issues every participant entry point), ADR-0014
-(server-computed capabilities, fail-closed), ADR-0015 (a Project Participation belongs to a
+(shared client/server rules, fail-closed), ADR-0015 (a Project Participation belongs to a
 Project, so it is never scoped by the active Organization).

@@ -4,6 +4,9 @@ status: accepted
 
 # Model Organization Membership and Participant Entry as Two Separate Relations
 
+> Recording correction: the permission-evaluation wording below now reflects the original
+> shared client/server requirement, as corrected in ADR-0014; no decision was reversed.
+
 ## Decision
 
 Cost Tracker holds two relations that must not be collapsed into one, and the data model must
@@ -87,10 +90,11 @@ through `partnershipForIssuer`, a scope helper that accepts **either** side of t
 Partnership. Replacing it with `projectParticipation: ["create"]` **plus** the existing
 Partner-side condition is what removes the Hosting Organization's capability.
 
-Because the permission is role-only, it is expressible client-side via
-`authClient.organization.checkRolePermission`. The **Partner-side condition is not** role-only
-— it depends on which side of the Project Partnership the active Organization is — so that
-half stays server-side, exactly as ADR-0014 requires.
+Check the role permission client-side through `authClient.organization.checkRolePermission`
+and through supported Better Auth checks on the server. The Partner-side and assignment
+conditions belong to shared business rules, usable on both sides with the required context.
+The server loads authoritative context and enforces the complete policy; client evaluation
+only guides presentation and fails closed when context is unavailable, as ADR-0014 requires.
 
 ## Active Organization must gate the shell, not just the procedures
 
@@ -106,5 +110,5 @@ a page whose every action fails.
 ## Related
 
 ADR-0001 (Organizations and participation), ADR-0004 (coordination through assignments),
-ADR-0013 (server-authorized membership grant), ADR-0014 (permissions declared once,
-evaluated on the server).
+ADR-0013 (server-authorized membership grant), ADR-0014 (shared client/server permission
+and business rules with authoritative server enforcement).
