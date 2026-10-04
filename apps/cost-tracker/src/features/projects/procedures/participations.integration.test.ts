@@ -149,12 +149,10 @@ beforeAll(async () => {
       organizationId: host,
     },
   ]);
-  await db
-    .insert(hostAssignments)
-    .values([
-      { projectId: project, userId: coordinator },
-      { projectId: emptyProject, userId: coordinator },
-    ]);
+  await db.insert(hostAssignments).values([
+    { projectId: project, userId: coordinator },
+    { projectId: emptyProject, userId: coordinator },
+  ]);
   await db.insert(partnerships).values([
     { id: own, projectId: project, organizationId: partner },
     { id: foreign, projectId: project, organizationId: other },
@@ -224,9 +222,11 @@ afterAll(async () => {
   await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
-  await db.delete(acceptances).where(
-    inArray(acceptances.userId, [candidate, currentAcceptor, oldAcceptor]),
-  );
+  await db
+    .delete(acceptances)
+    .where(
+      inArray(acceptances.userId, [candidate, currentAcceptor, oldAcceptor]),
+    );
   await db.delete(profiles).where(eq(profiles.userId, candidate));
   await db.delete(assignments).where(eq(assignments.partnershipId, own));
   await db.delete(partnerships).where(eq(partnerships.projectId, project));
@@ -240,9 +240,11 @@ afterAll(async () => {
   await db.delete(organization).where(eq(organization.id, other));
   await db.delete(organization).where(eq(organization.id, partner));
   await db.delete(organization).where(eq(organization.id, host));
-  await db.delete(user).where(
-    inArray(user.id, [candidate, unassigned, currentAcceptor, oldAcceptor]),
-  );
+  await db
+    .delete(user)
+    .where(
+      inArray(user.id, [candidate, unassigned, currentAcceptor, oldAcceptor]),
+    );
   await db.delete(user).where(eq(user.id, coordinator));
 });
 
@@ -1023,15 +1025,22 @@ describe("read-only Hosting Participant report", () => {
       partner,
     ]);
     expect(
-      report.organizations.map(({ name, participantCount, completedCount, pendingCount }) => ({
-        name,
-        participantCount,
-        completedCount,
-        pendingCount,
-      })),
+      report.organizations.map(
+        ({ name, participantCount, completedCount, pendingCount }) => ({
+          name,
+          participantCount,
+          completedCount,
+          pendingCount,
+        }),
+      ),
     ).toEqual([
       { name: "Other", participantCount: 1, completedCount: 0, pendingCount: 1 },
-      { name: "Partner", participantCount: 2, completedCount: 1, pendingCount: 1 },
+      {
+        name: "Partner",
+        participantCount: 2,
+        completedCount: 1,
+        pendingCount: 1,
+      },
     ]);
     // Each Participation appears once, in its represented Organization only.
     expect(
@@ -1046,9 +1055,10 @@ describe("read-only Hosting Participant report", () => {
       ["Amy Unlinked", "pending"],
       ["Zoe Current", "completed"],
     ]);
-    expect(
-      report.organizations[1].participants[1],
-    ).toMatchObject({ country: "PT", email: `current-${s}@x.org` });
+    expect(report.organizations[1].participants[1]).toMatchObject({
+      country: "PT",
+      email: `current-${s}@x.org`,
+    });
   });
 
   it("reports no Organization group for a Project without Participations", async () => {

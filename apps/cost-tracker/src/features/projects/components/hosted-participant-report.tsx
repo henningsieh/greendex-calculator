@@ -36,8 +36,8 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
       <p className="text-sm text-muted-foreground">
         Totals count the Project Participations that exist, each in the Partner
         Organization it represents. Invitees who have not joined and unknown
-        holders of a Participant Registration Link are not counted, so this is
-        not a pre-join funnel.
+        holders of a Participant Registration Link are not counted, so this is not
+        a pre-join funnel.
       </p>
       {!data.agreement.published && (
         <p className="text-sm text-muted-foreground">
@@ -49,10 +49,7 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
         <p>No Project Participations have joined this Project yet.</p>
       ) : (
         data.organizations.map((group) => (
-          <PartnerOrganizationParticipants
-            group={group}
-            key={group.id}
-          />
+          <PartnerOrganizationParticipants group={group} key={group.id} />
         ))
       )}
     </section>
@@ -70,21 +67,21 @@ function PartnerOrganizationParticipants({
   return (
     <Card>
       <CardHeader className="flex flex-wrap items-center justify-between gap-3">
-        <CardTitle className="flex items-center gap-2">
-          <Building2Icon
-            aria-hidden="true"
-            className="size-5 text-muted-foreground"
-          />
-          {group.name}
+        <CardTitle>
+          <span className="flex items-center gap-2">
+            <Building2Icon
+              aria-hidden="true"
+              className="size-5 text-muted-foreground"
+            />
+            {group.name}
+          </span>
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">
             {`Country: ${group.country ?? "Not recorded"}`}
           </Badge>
           <Badge>{pluralize(group.participantCount, "Participant")}</Badge>
-          <Badge variant="secondary">
-            {`${group.completedCount} completed`}
-          </Badge>
+          <Badge variant="secondary">{`${group.completedCount} completed`}</Badge>
           <Badge variant="secondary">{`${group.pendingCount} pending`}</Badge>
         </div>
       </CardHeader>

@@ -56,7 +56,10 @@ beforeEach(() => {
         participantCount: 2,
         completedCount: 1,
         pendingCount: 1,
-        participants: [participant("Zoe", "completed"), participant("Amy", "pending")],
+        participants: [
+          participant("Zoe", "completed"),
+          participant("Amy", "pending"),
+        ],
       },
     ],
   };

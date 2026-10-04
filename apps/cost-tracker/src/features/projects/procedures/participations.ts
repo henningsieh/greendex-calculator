@@ -695,15 +695,12 @@ export function createParticipationProcedures(
                 ),
               )
           : [];
-      const acceptsCurrentVersion = new Set(
-        accepted.map((row) => row.userId),
-      );
+      const acceptsCurrentVersion = new Set(accepted.map((row) => row.userId));
       return {
         projectId: input.projectId,
         agreement: { versionId: agreement.id, published },
-        organizations: groupHostedParticipants(
-          rows,
-          (userId) => acceptsCurrentVersion.has(userId),
+        organizations: groupHostedParticipants(rows, (userId) =>
+          acceptsCurrentVersion.has(userId),
         ),
       };
     });

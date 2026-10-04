@@ -136,10 +136,10 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   swallowPrefetchError: mocks.swallowPrefetchError,
 }));
 
-import HostedParticipantsPage from "@/app/(protected)/projects/[id]/participants/page";
 import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
 import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[id]/participants/page";
 import ProjectPage from "@/app/(protected)/projects/[id]/page";
+import HostedParticipantsPage from "@/app/(protected)/projects/[id]/participants/page";
 import ProjectsPage from "@/app/(protected)/projects/page";
 
 const { ProjectListSection: RealProjectListSection } = await vi.importActual<
