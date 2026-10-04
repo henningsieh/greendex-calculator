@@ -14,6 +14,7 @@ import {
   organization,
   partnerCoordinatorAssignmentsTable as assignments,
   participantEntryTokensTable as entryTokens,
+  projectParticipantsTable as participants,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
   user,
@@ -220,6 +221,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(assignments).where(eq(assignments.partnershipId, partnership));
+  await db.delete(participants).where(eq(participants.projectId, project));
   actor = owner;
   activeOrganizationId = partner;
   vi.clearAllMocks();
@@ -243,6 +245,7 @@ beforeEach(async () => {
 afterAll(async () => {
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(assignments).where(eq(assignments.partnershipId, partnership));
+  await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(hostAssignments).where(eq(hostAssignments.projectId, project));
   await db.delete(partnerships).where(eq(partnerships.id, partnership));
   await db.delete(projects).where(eq(projects.id, project));
@@ -448,5 +451,203 @@ describe("Project-scope participant entry authorization", () => {
         })
       ).entryContext.assignedCoordinator,
     ).toBe(true);
+  });
+});
+
+describe("Participant details authorization", () => {
+  /** One Partner-represented Project Participation to read and correct. */
+  async function seedParticipation() {
+    const [row] = await db
+      .insert(participants)
+      .values({
+        projectId: project,
+        representedOrganizationId: partner,
+        displayName: "Joining Participant",
+        email: `joining-${suffix}@example.org`,
+      })
+      .returning({ id: participants.id });
+    if (!row) throw new Error("PARTICIPATION_FIXTURE_MISSING");
+    return row.id;
+  }
+
+  it.each(["owner", "admin"])(
+    "serves a Partner Organization %s the details and lets them correct country",
+    async (role) => {
+      const id = await seedParticipation();
+      await setActorRole(partner, role);
+      try {
+        expect(
+          await client.participations.get({
+            partnershipId: partnership,
+            id,
+          }),
+        ).toMatchObject({
+          projectId: project,
+          projectName: "Entry Project",
+          participation: { id, displayName: "Joining Participant" },
+          correctionContext: {
+            partnerOrganizationId: partner,
+            hostOrganizationId: host,
+            assignedCoordinator: false,
+          },
+        });
+        expect(await clientDecision()).toEqual({ permitted: true });
+        await expect(
+          client.participations.update({
+            partnershipId: partnership,
+            id,
+            country: "DE",
+          }),
+        ).resolves.toMatchObject({ country: "DE" });
+      } finally {
+        await setActorRole(partner, "owner");
+      }
+    },
+  );
+
+  it("reads to Hosting staff but refuses their correction of country", async () => {
+    const id = await seedParticipation();
+    activeOrganizationId = host;
+    expect(
+      await client.participations.get({ partnershipId: partnership, id }),
+    ).toMatchObject({
+      correctionContext: {
+        partnerOrganizationId: partner,
+        hostOrganizationId: host,
+        // Hosting staff carry no Group Organizer assignment on the Partner side.
+        assignedCoordinator: false,
+      },
+    });
+    expect(await clientDecision()).toEqual({
+      permitted: false,
+      reason: "HOSTING_SIDE",
+    });
+    await expect(
+      client.participations.update({
+        partnershipId: partnership,
+        id,
+        country: "DE",
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "PARTNER_PARTICIPATION_UPDATE_REQUIRED" },
+    });
+    await expect(
+      client.participations.remove({ partnershipId: partnership, id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const [unchanged] = await db
+      .select({ country: participants.country })
+      .from(participants)
+      .where(eq(participants.id, id));
+    expect(unchanged).toEqual({ country: null });
+  });
+
+  it("corrects country for an assigned Partner Group Organizer and refuses the unassigned one", async () => {
+    const id = await seedParticipation();
+    actor = organizer;
+    await expect(
+      client.participations.update({
+        partnershipId: partnership,
+        id,
+        country: "DE",
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "PARTNER_COORDINATION_REQUIRED" },
+    });
+    expect(await clientDecision()).toEqual({
+      permitted: false,
+      reason: "ASSIGNMENT_MISSING",
+    });
+    await db
+      .insert(assignments)
+      .values({ partnershipId: partnership, userId: organizer });
+    try {
+      expect(
+        await client.participations.get({ partnershipId: partnership, id }),
+      ).toMatchObject({
+        correctionContext: { assignedCoordinator: true },
+      });
+      expect(await clientDecision()).toEqual({ permitted: true });
+      await expect(
+        client.participations.update({
+          partnershipId: partnership,
+          id,
+          country: "DE",
+        }),
+      ).resolves.toMatchObject({ country: "DE" });
+    } finally {
+      await db
+        .delete(assignments)
+        .where(eq(assignments.partnershipId, partnership));
+    }
+  });
+
+  it("hides the details from an unrelated Organization", async () => {
+    const id = await seedParticipation();
+    activeOrganizationId = otherPartner;
+    for (const attempt of [
+      () => client.participations.get({ partnershipId: partnership, id }),
+      () =>
+        client.participations.update({
+          partnershipId: partnership,
+          id,
+          country: "DE",
+        }),
+      () => client.participations.remove({ partnershipId: partnership, id }),
+    ])
+      await expect(attempt()).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("rejects a country outside the EU set without changing the stored value", async () => {
+    const id = await seedParticipation();
+    await expect(
+      client.participations.update({
+        partnershipId: partnership,
+        id,
+        // @ts-expect-error -- proves the declared EU set, not a free-text country.
+        country: "CH",
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(
+      (await client.participations.get({ partnershipId: partnership, id }))
+        .participation.country,
+    ).toBeNull();
+  });
+
+  it("fails closed on the details read and correction without an active Organization", async () => {
+    const id = await seedParticipation();
+    activeOrganizationId = null;
+    expect(await clientDecision()).toEqual({
+      permitted: false,
+      reason: "MISSING_ACTIVE_ORGANIZATION",
+    });
+    for (const attempt of [
+      () => client.participations.get({ partnershipId: partnership, id }),
+      () =>
+        client.participations.update({
+          partnershipId: partnership,
+          id,
+          country: "DE",
+        }),
+    ])
+      await expect(attempt()).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+      });
+  });
+
+  it("removes a confirmed Project Participation from the Partner side only", async () => {
+    const id = await seedParticipation();
+    await client.participations.remove({ partnershipId: partnership, id });
+    expect(
+      await db
+        .select({ id: participants.id })
+        .from(participants)
+        .where(eq(participants.id, id)),
+    ).toEqual([]);
+    await expect(
+      client.participations.get({ partnershipId: partnership, id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });

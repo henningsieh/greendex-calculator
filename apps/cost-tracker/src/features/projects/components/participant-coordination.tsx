@@ -7,11 +7,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -30,44 +31,8 @@ import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
-type Participation =
-  Outputs["participations"]["listPartnership"]["participations"][number];
-const countries = [
-  "AT",
-  "BE",
-  "BG",
-  "HR",
-  "CY",
-  "CZ",
-  "DK",
-  "EE",
-  "FI",
-  "FR",
-  "DE",
-  "GR",
-  "HU",
-  "IE",
-  "IT",
-  "LV",
-  "LT",
-  "LU",
-  "MT",
-  "NL",
-  "PL",
-  "PT",
-  "RO",
-  "SK",
-  "SI",
-  "ES",
-  "SE",
-] as const;
-type Country = (typeof countries)[number];
-
-function isCountry(value: string): value is Country {
-  return countries.some((country) => country === value);
-}
-
-function mutationFeedback(error: unknown) {
+/** Copy for a refused Participation creation; the decision itself stays server-side. */
+function createFeedback(error: unknown) {
   if (
     error instanceof ORPCError &&
     getSafeErrorSituation(error)?.reason === "PARTICIPATION_DUPLICATE"
@@ -78,76 +43,15 @@ function mutationFeedback(error: unknown) {
         "This Registered User may already participate in this Project. Open Review Tasks to review the duplicate identity, then contact the Hosting Organization to request a merge review if needed. No new Project Participation was added.",
     };
   }
-  if (error instanceof ORPCError && error.code === "FORBIDDEN") {
+  if (error instanceof ORPCError && error.code === "FORBIDDEN")
     return {
       title: "Access denied",
       description: getORPCRequestErrorMessage(error).text,
     };
-  }
   return {
-    title: "Unable to save Participation",
+    title: "Unable to add Participation",
     description: getORPCRequestErrorMessage(error).text,
   };
-}
-
-function CountryEditor({
-  participant,
-  partnershipId,
-  onSaved,
-  onError,
-}: {
-  participant: Participation;
-  partnershipId: string;
-  onSaved: () => Promise<void>;
-  onError: (error: unknown) => void;
-}) {
-  const [country, setCountry] = useState<Country | "">(
-    participant.country && isCountry(participant.country)
-      ? participant.country
-      : "",
-  );
-  const update = useMutation({
-    mutationFn: () =>
-      orpc.participations.update({
-        partnershipId,
-        id: participant.id,
-        country: country || null,
-      }),
-    onSuccess: onSaved,
-    onError,
-  });
-  return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="space-y-2">
-        <Label htmlFor={`country-${participant.id}`}>
-          Country for {participant.displayName}
-        </Label>
-        <select
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-          id={`country-${participant.id}`}
-          onChange={(event) =>
-            setCountry(isCountry(event.target.value) ? event.target.value : "")
-          }
-          value={country}
-        >
-          <option value="">Not set</option>
-          {countries.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-      </div>
-      <Button
-        disabled={update.isPending}
-        onClick={() => update.mutate()}
-        type="button"
-        variant="outline"
-      >
-        Save country for {participant.displayName}
-      </Button>
-    </div>
-  );
 }
 
 type ReviewTask = Outputs["duplicateReviews"]["list"][number];
@@ -663,7 +567,7 @@ export function ParticipantCoordination({
       await refresh();
     },
     onError: async (error) => {
-      setFeedback(mutationFeedback(error));
+      setFeedback(createFeedback(error));
       if (reviewsOpen) await refresh();
     },
   });
@@ -739,12 +643,19 @@ export function ParticipantCoordination({
                       {participant.email}
                     </p>
                   )}
-                  <CountryEditor
-                    participant={participant}
-                    partnershipId={partnershipId}
-                    onSaved={refresh}
-                    onError={(error) => setFeedback(mutationFeedback(error))}
-                  />
+                  <p className="flex flex-wrap items-center gap-3 text-sm">
+                    <span>Country</span>
+                    <Badge variant="secondary">
+                      {participant.country ?? "Not set"}
+                    </Badge>
+                  </p>
+                  {/* Editing belongs on the details page, never in a list row (ADR-0016). */}
+                  <Link
+                    className={buttonVariants({ variant: "outline" })}
+                    href={`/partnerships/${encodeURIComponent(partnershipId)}/participants/${encodeURIComponent(participant.id)}`}
+                  >
+                    Participant details for {participant.displayName}
+                  </Link>
                   <Button
                     type="button"
                     variant="destructive"

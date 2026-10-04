@@ -19,7 +19,7 @@ import {
   duplicateReviewTasksTable as reviewTasks,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -30,9 +30,17 @@ import {
   vi,
 } from "vitest";
 
-const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
+const authMocks = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  hasPermission: vi.fn(),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
+
+import {
+  costTrackerOrganizationRoles,
+  parseOrganizationRoles,
+} from "@greendex/auth";
 
 import {
   assignPartnerCoordinator,
@@ -140,6 +148,30 @@ beforeAll(async () => {
 beforeEach(() => {
   actor = coordinator;
   activeOrg = partner;
+  // Stands in for Better Auth's supported server check against the active Membership.
+  authMocks.hasPermission.mockImplementation(
+    async ({ body }: { body: { permissions: Record<string, string[]> } }) => {
+      if (!activeOrg) throw new Error("NO_ACTIVE_ORGANIZATION");
+      const [membership] = await db
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(eq(member.userId, actor), eq(member.organizationId, activeOrg)),
+        )
+        .limit(1);
+      const role = membership?.role;
+      if (!role) throw new Error("USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION");
+      return {
+        success: parseOrganizationRoles(role).some(
+          (name) =>
+            name in costTrackerOrganizationRoles &&
+            costTrackerOrganizationRoles[
+              name as keyof typeof costTrackerOrganizationRoles
+            ].authorize(body.permissions as never).success,
+        ),
+      };
+    },
+  );
 });
 
 afterAll(async () => {

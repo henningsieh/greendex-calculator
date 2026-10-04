@@ -1,4 +1,5 @@
 import "server-only";
+import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import {
   claimsTable as claims,
@@ -29,7 +30,10 @@ import {
   requireHostCoordination,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
-import { isPartnerCoordinatorAssigned } from "@/features/projects/procedures/participant-entry";
+import {
+  isPartnerCoordinatorAssigned,
+  requirePartnerScopeAuthority,
+} from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -51,6 +55,15 @@ const selected = {
   userId: participants.userId,
   country: participants.country,
 };
+/**
+ * Non-secret Project Partnership scope a procedure reports to the browser, which
+ * evaluates the shared policy with it and authorizes nothing on its own (ADR-0014).
+ */
+const scopeContext = z.object({
+  partnerOrganizationId: z.string(),
+  hostOrganizationId: z.string(),
+  assignedCoordinator: z.boolean(),
+});
 const scopeInput = z.object({ partnershipId: coordinationId });
 const rowInput = scopeInput.extend({ id: coordinationId });
 
@@ -80,13 +93,7 @@ export function createParticipationProcedures(
         registrationLinks: z.array(
           z.object({ id: z.string(), enabled: z.boolean() }),
         ),
-        // Non-secret authorization context: the browser evaluates the shared
-        // Project-scope policy with it and still authorizes nothing.
-        entryContext: z.object({
-          partnerOrganizationId: z.string(),
-          hostOrganizationId: z.string(),
-          assignedCoordinator: z.boolean(),
-        }),
+        entryContext: scopeContext,
       }),
     )
     .handler(async ({ input, context, errors }) => {
@@ -146,6 +153,58 @@ export function createParticipationProcedures(
         invitations,
         registrationLinks,
         entryContext: {
+          partnerOrganizationId: scope.partnerId,
+          hostOrganizationId: scope.hostId,
+          assignedCoordinator: await isPartnerCoordinatorAssigned(
+            context.user.id,
+            input.partnershipId,
+          ),
+        },
+      };
+    });
+
+  /**
+   * The one Participant details read (ADR-0016). Both coordination sides may read
+   * it; the correction decision travels beside the data so the browser renders
+   * edit controls only when the shared policy permits it for the active scope.
+   */
+  const get = authorized
+    .input(rowInput)
+    .output(
+      z.object({
+        projectId: z.string(),
+        projectName: z.string(),
+        participation: participation,
+        correctionContext: scopeContext,
+      }),
+    )
+    .handler(async ({ input, context, errors }) => {
+      const scope = await requirePartnerCoordination(
+        input.partnershipId,
+        context.user.id,
+        context.session.activeOrganizationId,
+        errors,
+      );
+      const [row] = await db
+        .select({ ...selected, projectName: projects.name })
+        .from(participants)
+        .innerJoin(projects, eq(projects.id, participants.projectId))
+        .where(
+          and(
+            eq(participants.id, input.id),
+            eq(participants.projectId, scope.projectId),
+            eq(participants.representedOrganizationId, scope.partnerId),
+            isNull(participants.mergedIntoParticipantId),
+          ),
+        )
+        .limit(1);
+      if (!row) throw createSituationErrors(errors).participationNotFound();
+      const { projectName, ...details } = row;
+      return {
+        projectId: details.projectId,
+        projectName,
+        participation: details,
+        correctionContext: {
           partnerOrganizationId: scope.partnerId,
           hostOrganizationId: scope.hostId,
           assignedCoordinator: await isPartnerCoordinatorAssigned(
@@ -378,51 +437,22 @@ export function createParticipationProcedures(
     });
 
   const update = authorized
-    .input(
-      rowInput.extend({
-        country: z
-          .enum([
-            "AT",
-            "BE",
-            "BG",
-            "HR",
-            "CY",
-            "CZ",
-            "DK",
-            "EE",
-            "FI",
-            "FR",
-            "DE",
-            "GR",
-            "HU",
-            "IE",
-            "IT",
-            "LV",
-            "LT",
-            "LU",
-            "MT",
-            "NL",
-            "PL",
-            "PT",
-            "RO",
-            "SK",
-            "SI",
-            "ES",
-            "SE",
-          ])
-          .nullable(),
-      }),
-    )
+    .input(rowInput.extend({ country: z.enum(EU_COUNTRY_CODES).nullable() }))
     .output(participation)
     .handler(async ({ input, context, errors }) => {
-      const scope = await requirePartnerCoordination(
+      // The Partner Organization alone corrects `country`, through the shared
+      // policy the browser also evaluates; the server never trusts that decision.
+      const scope = await requirePartnerScopeAuthority(
+        context.headers,
         input.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,
         errors,
+        {
+          hostingSide: () =>
+            createSituationErrors(errors).partnerParticipationUpdateRequired(),
+        },
       );
-      if (scope.partnerId !== context.session.activeOrganizationId)
-        throw createSituationErrors(errors).partnerParticipationUpdateRequired();
       return db.transaction(async (tx) => {
         const [partnership] = await tx
           .select({ id: partnerships.id })
@@ -430,7 +460,7 @@ export function createParticipationProcedures(
           .where(
             and(
               eq(partnerships.id, input.partnershipId),
-              eq(partnerships.organizationId, scope.partnerId),
+              eq(partnerships.organizationId, scope.partnerOrganizationId),
             ),
           )
           .for("update")
@@ -451,7 +481,10 @@ export function createParticipationProcedures(
             and(
               eq(participants.id, input.id),
               eq(participants.projectId, scope.projectId),
-              eq(participants.representedOrganizationId, scope.partnerId),
+              eq(
+                participants.representedOrganizationId,
+                scope.partnerOrganizationId,
+              ),
               isNull(participants.mergedIntoParticipantId),
             ),
           )
@@ -618,6 +651,7 @@ export function createParticipationProcedures(
   return {
     create,
     searchOnboarded,
+    get,
     listPartnership,
     listHosted,
     listMine,

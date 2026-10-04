@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { issueEntryToken } from "@/features/authentication/procedures/entry-tokens";
 import { id } from "@/features/authentication/procedures/shared";
-import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
+import { requirePartnerScopeAuthority } from "@/features/projects/procedures/participant-entry";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildCreateRegistrationLink() {
@@ -11,7 +11,7 @@ export function buildCreateRegistrationLink() {
     .input(z.object({ partnershipId: id }))
     .output(z.object({ id: z.string(), secret: z.string() }))
     .handler(async ({ input, context, errors }) => {
-      const partnership = await requireParticipantEntryAuthority(
+      const partnership = await requirePartnerScopeAuthority(
         context.headers,
         input.partnershipId,
         context.user.id,
