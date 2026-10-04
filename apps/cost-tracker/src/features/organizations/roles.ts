@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth";
 import type { BetterAuthPlugin } from "better-auth";
 import {
   APIError,
@@ -5,10 +6,24 @@ import {
   getSessionFromCtx,
 } from "better-auth/api";
 import type { OrganizationOptions } from "better-auth/plugins/organization";
+import { sql, type SQLWrapper } from "drizzle-orm";
 import { z } from "zod";
 
 export const BANNED_ROLE_MESSAGE =
   'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.';
+
+// Host-organization Memberships carrying one of these roles read as
+// Participants: owners and admins inherit Participant access, while a bare
+// project-coordinator Membership alone does not.
+const participantReaderRoles = [
+  ORGANIZATION_ROLES.Participant,
+  ORGANIZATION_ROLES.OrganizationAdministrator,
+  ORGANIZATION_ROLES.OrganizationAdmin,
+];
+
+export function memberHasParticipantAccess(roleColumn: SQLWrapper) {
+  return sql`(',' || ${roleColumn} || ',') ~ ${`,(${participantReaderRoles.join("|")}),`}`;
+}
 
 export function hasBannedOrganizationRole(
   role: string | null | undefined,

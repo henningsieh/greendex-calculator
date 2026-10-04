@@ -8,11 +8,12 @@ import {
   projectParticipantsTable as participants,
   projectsTable as projects,
 } from "@greendex/database/schema";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { type RequirePublishedAgreement } from "@/features/authentication/procedures/shared";
+import { memberHasParticipantAccess } from "@/features/organizations/roles";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -84,7 +85,7 @@ export function buildListMyProjects(
           and(
             eq(participants.userId, context.user.id),
             isNull(participants.mergedIntoParticipantId),
-            sql`(',' || ${member.role} || ',') ~ ',(participant|owner|admin),'`,
+            memberHasParticipantAccess(member.role),
           ),
         );
     });

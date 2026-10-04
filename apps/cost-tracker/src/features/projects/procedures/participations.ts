@@ -23,6 +23,7 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
+import { memberHasParticipantAccess } from "@/features/organizations/roles";
 import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -181,7 +182,7 @@ export function createParticipationProcedures(
         .where(
           and(
             eq(user.emailVerified, true),
-            sql`(',' || ${member.role} || ',') ~ ',(participant|owner|admin),'`,
+            memberHasParticipantAccess(member.role),
             or(
               sql`lower(${user.id}) like lower(${pattern}) escape '\\'`,
               sql`lower(${user.email}) like lower(${pattern}) escape '\\'`,
@@ -258,7 +259,7 @@ export function createParticipationProcedures(
               and(
                 eq(user.id, input.userId),
                 eq(user.emailVerified, true),
-                sql`(',' || ${member.role} || ',') ~ ',(participant|owner|admin),'`,
+                memberHasParticipantAccess(member.role),
               ),
             )
             .limit(1);
@@ -596,7 +597,7 @@ export function createParticipationProcedures(
             eq(participants.projectId, input.projectId),
             eq(participants.userId, context.user.id),
             isNull(participants.mergedIntoParticipantId),
-            sql`(',' || ${member.role} || ',') ~ ',(participant|owner|admin),'`,
+            memberHasParticipantAccess(member.role),
           ),
         );
     });
