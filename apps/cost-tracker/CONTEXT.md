@@ -16,6 +16,10 @@ _Avoid_: Host Organization, Host
 An Organization assigned to one Project through a Project Partnership. The same Organization may own another Project and therefore be its Hosting Organization.
 _Avoid_: Partner (when referring to the Organization)
 
+**Project Participation**:
+The record that one User takes part in one Project. It belongs to the **Project**, not to a Partner Organization: the Project's owning Organization occupies the hosting side, and the Participant's Membership lives there. Exactly one per User per Project. Its `country` is set by the Participant when joining and may be corrected by an administrator; it is not a User profile attribute.
+_Avoid_: Partner's participants, Membership, Invitee
+
 **Participant Agreement**:
 The app-wide versioned EU–Erasmus agreement in Cost Tracker. Acceptance belongs to the User, not to the Project Participation, and is stored with version and content hash as historical evidence. The current version gates Participant access: `join` and `listMyProjects` require acceptance of the current version; a new version requires renewed acceptance. The current `eu-erasmus-dev-v1` copy is a development-only draft; production use requires counsel-approved replacement copy and a new version.
 _Avoid_: Rules, Project-specific agreement
@@ -25,12 +29,12 @@ A person targeted by a Participant Invitation or a Participant Registration Link
 _Avoid_: Participant, Project Participation
 
 **Participant Invitation**:
-An email-bound invitation that grants the Invitee the `participant` role in the Hosting Organization, linked by a bridge record to exactly one Project Partnership. It never creates Membership in the Partner Organization.
-_Avoid_: Participant Registration Link, Organization Invitation
+An app-owned token **bound to one email address**, redeemable only by that address. It is issued by the Partner Organization administering the Project Partnership and grants the Invitee the `participant` role in the Hosting Organization plus one Project Participation. It never creates Membership in the Partner Organization. The Partner Organization is the only actor that issues participant entry points; the Hosting Organization issues none.
+_Avoid_: Participant Registration Link, Organization Invitation, Better Auth invitation
 
 **Participant Registration Link**:
-A shareable app-owned registration entry point for exactly one Project Partnership. Anyone holding the link may start onboarding with their own account; no email and no Better Auth invitation are involved.
-_Avoid_: Participant Invitation, Organization Invitation
+An app-owned token that is **not** bound to an email address; anyone holding it may redeem it with their own account. It is the shareable flavour of the same mechanism as a Participant Invitation and produces the identical result. It is issued by the Partner Organization administering the Project Partnership.
+_Avoid_: Participant Invitation, Organization Invitation, bearer token
 
 **Organization Invitation**:
 A Better Auth invitation into an Organization role (`owner`, `admin`) for colleagues. Better Auth's fallback role value `member` is forbidden (ADR-0012); it must never be invited, assigned, or seeded. It carries no Project Partnership bridge and grants no Participant access.
