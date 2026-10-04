@@ -395,6 +395,28 @@ function ResolvedProjectList({
             .filter(Boolean)
             .join(", "),
       },
+      // The Participants report is a Hosting read (ADR-0016), so Partner rows
+      // never link to it; their Partnership workspace keeps its own entry.
+      ...(scope === "hosted"
+        ? [
+            {
+              id: "participants",
+              enableSorting: false,
+              header: "Participants",
+              cell: ({ row }: { row: { original: ProjectListRow } }) => (
+                <Link
+                  className="underline-offset-4 hover:underline"
+                  href={`/projects/${encodeURIComponent(row.original.id)}/participants`}
+                >
+                  View Participants
+                </Link>
+              ),
+            } satisfies ColumnDef<
+              typeof projectListTableFeatures,
+              ProjectListRow
+            >,
+          ]
+        : []),
       {
         accessorKey: "costSubmissionWindowOpen",
         enableSorting: false,
@@ -410,7 +432,7 @@ function ResolvedProjectList({
         ),
       },
     ],
-    [returnTo],
+    [returnTo, scope],
   );
   const table = useTable({
     columns,

@@ -39,6 +39,12 @@ vi.mock(
     PartnershipParticipantsSection: () => <p>Partnership participants section</p>,
   }),
 );
+vi.mock("@/features/projects/components/hosted-participants-section", () => ({
+  HostedParticipantsSection: () => <p>Hosted participants section</p>,
+}));
+vi.mock("@/features/projects/components/hosted-participant-report", () => ({
+  HostedParticipantReport: () => <p>Hosted participant report</p>,
+}));
 vi.mock("@/features/projects/components/project-workspace-section", () => ({
   ProjectWorkspaceSection: () => <p>Project workspace section</p>,
 }));
@@ -102,6 +108,11 @@ vi.mock("@/lib/orpc/orpc", () => ({
           queryKey: ["participations", input.partnershipId],
         }),
       },
+      listHostedReport: {
+        queryOptions: ({ input }: { input: { projectId: string } }) => ({
+          queryKey: ["participants-report", input.projectId],
+        }),
+      },
     },
   },
 }));
@@ -125,6 +136,7 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   swallowPrefetchError: mocks.swallowPrefetchError,
 }));
 
+import HostedParticipantsPage from "@/app/(protected)/projects/[id]/participants/page";
 import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
 import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[id]/participants/page";
 import ProjectPage from "@/app/(protected)/projects/[id]/page";
@@ -145,6 +157,10 @@ const { ProjectWorkspaceSection: RealProjectWorkspaceSection } =
   await vi.importActual<
     typeof import("@/features/projects/components/project-workspace-section")
   >("@/features/projects/components/project-workspace-section");
+const { HostedParticipantsSection: RealHostedParticipantsSection } =
+  await vi.importActual<
+    typeof import("@/features/projects/components/hosted-participants-section")
+  >("@/features/projects/components/hosted-participants-section");
 
 describe("Cost Tracker Project data routes", () => {
   it("shows the manager without assignment tools when readable but not assignable", async () => {
@@ -201,9 +217,15 @@ describe("Cost Tracker Project data routes", () => {
         params: Promise.resolve({ id: "project-1" }),
       }),
     );
+    render(
+      await HostedParticipantsPage({
+        params: Promise.resolve({ id: "project-1" }),
+      }),
+    );
 
     expect(screen.getByText("Partnership participants section")).toBeTruthy();
     expect(screen.getByText("Project workspace section")).toBeTruthy();
+    expect(screen.getByText("Hosted participants section")).toBeTruthy();
     expect(mocks.query).not.toHaveBeenCalled();
   });
 
@@ -309,6 +331,19 @@ describe("Cost Tracker Project data routes", () => {
       queryKey: ["participations", "own-partnership"],
     });
     expect(screen.getByText("Coordination for own-partnership")).toBeTruthy();
+  });
+
+  it("prefetches only the requested Hosting report", async () => {
+    render(
+      await RealHostedParticipantsSection({
+        params: Promise.resolve({ id: "project-9" }),
+      }),
+    );
+
+    expect(mocks.query).toHaveBeenCalledWith({
+      queryKey: ["participants-report", "project-9"],
+    });
+    expect(screen.getByText("Hosted participant report")).toBeTruthy();
   });
 
   it("keeps Project authorization independent from the return destination", async () => {

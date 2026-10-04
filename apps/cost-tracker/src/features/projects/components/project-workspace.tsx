@@ -198,6 +198,12 @@ export function ProjectWorkspace({
             <div className="flex flex-wrap gap-3">
               <Link
                 className={buttonVariants({ variant: "outline" })}
+                href={`/projects/${encodeURIComponent(project.id)}/participants`}
+              >
+                View Participants report
+              </Link>
+              <Link
+                className={buttonVariants({ variant: "outline" })}
                 href="/claims/review"
               >
                 Review submitted Claims
