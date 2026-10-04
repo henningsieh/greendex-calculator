@@ -17,16 +17,9 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
+import { slugifyOrganizationName as slugify } from "@/features/organizations/slug";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
-
-function slugify(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
   const router = useRouter();

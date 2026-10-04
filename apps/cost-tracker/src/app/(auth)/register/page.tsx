@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/components/auth-form";
-import { getSession, invitationReturnTo } from "@/lib/session";
+import { getSession, safeSignInReturnTo } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Create account",
@@ -14,7 +14,7 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
-  const next = invitationReturnTo((await searchParams).next);
+  const next = safeSignInReturnTo((await searchParams).next);
   if (await getSession()) redirect(next ?? "/projects");
 
   return <AuthForm mode="sign-up" returnTo={next} />;
