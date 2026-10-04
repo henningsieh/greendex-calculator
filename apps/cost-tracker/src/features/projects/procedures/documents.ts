@@ -9,7 +9,8 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
+import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -144,14 +145,20 @@ export async function uploadProofDocument(input: {
   );
   // Never materialize an empty Claim from a file upload. First save is explicit.
   return db.transaction(async (tx) => {
-    const [claim] = await tx
-      .select({ id: claims.id, status: claims.status })
-      .from(claims)
-      .where(eq(claims.partnershipId, parsed.data.partnershipId))
-      .for("update")
-      .limit(1);
+    // Shared lock order: the Claim lock keeps editable status across the upload.
+    const { claim } = await lockClaimScope(
+      tx,
+      {
+        projectId: scope.projectId,
+        partnershipId: parsed.data.partnershipId,
+        partnerOrganizationId: scope.partnerId,
+      },
+      {},
+      "claim",
+    );
     if (!claim) throw proofErrors.claimRequiredForProof();
-    if (isPartnerEditLocked(claim.status)) throw proofErrors.claimNotEditable();
+    if (!canPartnerEditClaim(claim.status))
+      throw proofErrors.claimNotEditable();
     const bytes = Buffer.from(await input.file.arrayBuffer());
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
     await putProofFile(reference, bytes, input.file.type);

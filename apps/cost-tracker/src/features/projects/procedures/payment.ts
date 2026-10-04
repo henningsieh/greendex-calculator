@@ -49,6 +49,7 @@ export const markPaid = authorized
         tx,
         { projectId: scope.projectId, partnershipId: input.partnershipId },
         errors,
+        "project",
       );
       if (!claim) throw createSituationErrors(errors).claimNotFound();
       if (!["approved", "paid"].includes(claim.status))
@@ -105,6 +106,7 @@ export const correctPayment = authorized
         tx,
         { projectId: scope.projectId, partnershipId: input.partnershipId },
         errors,
+        "project",
       );
       if (claim?.status === "approved" && claim.approvedAmountEur !== null) {
         const [latest] = await tx

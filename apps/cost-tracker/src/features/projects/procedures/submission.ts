@@ -9,9 +9,7 @@ import {
   payoutAccountsTable as accounts,
   projectFundingBandsTable as bands,
   projectFundingSnapshotsTable as snapshots,
-  projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
-  projectsTable as projects,
   proofDocumentsTable as documents,
   travelCostEntriesTable as entries,
   travelCostEntryDocumentsTable as links,
@@ -19,7 +17,8 @@ import {
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
+import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -387,7 +386,7 @@ export const previewSubmission = authorized
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
-      if (claim && isPartnerEditLocked(claim.status)) return null;
+      if (claim && !canPartnerEditClaim(claim.status)) return null;
       const { issues, approvedAmountEur } = await evaluateSubmission(
         tx,
         claim?.id ?? null,
@@ -401,7 +400,7 @@ export const previewSubmission = authorized
     });
   });
 
-/** Project first, then Partnership, then Claim: journey creation and payout selection share this ordering. */
+/** Project → Partnership → Claim: journey creation and payout selection share this ordering. */
 export const submit = authorized
   .input(z.object({ partnershipId: coordinationId }))
   .output(
@@ -421,34 +420,16 @@ export const submit = authorized
     if (scope.partnerId !== context.session.activeOrganizationId)
       throw createSituationErrors(errors).partnerClaimSubmitRequired();
     return db.transaction(async (tx) => {
-      const [project] = await tx
-        .select({ id: projects.id })
-        .from(projects)
-        .where(
-          and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
-        )
-        .for("update")
-        .limit(1);
-      const [partnership] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(
-          and(
-            eq(partnerships.id, input.partnershipId),
-            eq(partnerships.organizationId, scope.partnerId),
-            eq(partnerships.projectId, scope.projectId),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!project || !partnership)
-        throw createSituationErrors(errors).partnershipNotFound();
-      const [claim] = await tx
-        .select({ id: claims.id, status: claims.status })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .for("update")
-        .limit(1);
+      const { claim } = await lockClaimScope(
+        tx,
+        {
+          projectId: scope.projectId,
+          partnershipId: input.partnershipId,
+          partnerOrganizationId: scope.partnerId,
+        },
+        errors,
+        "project",
+      );
       if (claim?.status === "submitted") {
         const [latest] = await tx
           .select({ eventType: history.eventType })
@@ -475,7 +456,7 @@ export const submit = authorized
       }
       if (!claim)
         throw createSituationErrors(errors).claimRequiredForSubmission();
-      if (isPartnerEditLocked(claim.status))
+      if (!canPartnerEditClaim(claim.status))
         throw createSituationErrors(errors).claimNotEditable();
 
       const { issues, approvedAmountEur } = await evaluateSubmission(
