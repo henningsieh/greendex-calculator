@@ -9,7 +9,7 @@ import {
 import { base } from "@/lib/orpc/context";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
-import { invitationReturnTo } from "@/lib/session";
+import { safeSignInReturnTo } from "@/lib/session";
 
 const SignInInputSchema = z.object({
   email: z.email(),
@@ -111,7 +111,7 @@ export const startGoogleSignIn = base
   .handler(async ({ context, errors, input }) => {
     // Only the validated invitation route survives OAuth; anything else
     // falls back to the Project list so callbackURL can never be abused.
-    const callbackURL = invitationReturnTo(input?.returnTo) ?? "/projects";
+    const callbackURL = safeSignInReturnTo(input?.returnTo) ?? "/projects";
     const response = await callBetterAuth(context, errors, () =>
       auth.api.signInSocial({
         asResponse: true,

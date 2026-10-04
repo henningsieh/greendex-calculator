@@ -18,7 +18,12 @@ vi.mock("@/lib/auth", () => ({
   auth: { api: { getSession: mocks.getSession } },
 }));
 
-import { invitationReturnTo, requireSession } from "@/lib/session";
+import {
+  invitationReturnTo,
+  safeSignInReturnTo,
+  setupLinkReturnTo,
+  requireSession,
+} from "@/lib/session";
 
 describe("Cost Tracker protected session", () => {
   beforeEach(() => {
@@ -43,6 +48,31 @@ describe("Cost Tracker protected session", () => {
     expect(invitationReturnTo("https://elsewhere.example/")).toBeUndefined();
     expect(invitationReturnTo("//elsewhere.example")).toBeUndefined();
     expect(invitationReturnTo(["/accept-invitation/one"])).toBeUndefined();
+  });
+
+  it("preserves a Partner setup-link destination across sign-in", async () => {
+    mocks.getSession.mockResolvedValue(null);
+    await expect(
+      requireSession("/setup-links/link-1?secret=private-secret"),
+    ).rejects.toThrow("NEXT_REDIRECT:/login");
+    expect(mocks.redirect).toHaveBeenCalledWith(
+      "/login?next=%2Fsetup-links%2Flink-1%3Fsecret%3Dprivate-secret",
+    );
+    expect(setupLinkReturnTo("/setup-links/link-1?secret=private-secret")).toBe(
+      "/setup-links/link-1?secret=private-secret",
+    );
+    expect(setupLinkReturnTo("/setup-links/link-1")).toBe("/setup-links/link-1");
+    expect(safeSignInReturnTo("/accept-invitation/invite-1")).toBe(
+      "/accept-invitation/invite-1",
+    );
+    expect(safeSignInReturnTo("/setup-links/link-1?secret=private-secret")).toBe(
+      "/setup-links/link-1?secret=private-secret",
+    );
+    expect(setupLinkReturnTo("https://elsewhere.example/")).toBeUndefined();
+    expect(setupLinkReturnTo("//elsewhere.example")).toBeUndefined();
+    expect(setupLinkReturnTo(["/setup-links/one"])).toBeUndefined();
+    expect(setupLinkReturnTo("/setup-links/one?secret=a&b")).toBeUndefined();
+    expect(safeSignInReturnTo("https://elsewhere.example/")).toBeUndefined();
   });
 
   it("returns the authenticated session for the protected shell", async () => {
