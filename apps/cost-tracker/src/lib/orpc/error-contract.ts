@@ -77,6 +77,13 @@ export const situationCatalog = {
     message:
       "You need Partner Organization staff access or an assignment to this Project Partnership.",
   },
+  partnerEntryRequired: {
+    code: "FORBIDDEN",
+    status: 403,
+    reason: "PARTNER_ENTRY_REQUIRED",
+    message:
+      "Only the Partner Organization of this Project Partnership may issue participant entry points.",
+  },
   coordinatorSelectionRequired: {
     code: "BAD_REQUEST",
     status: 400,

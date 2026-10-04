@@ -20,6 +20,49 @@ const mocks = vi.hoisted(() => ({
   setRegistrationLinkOpen: vi.fn(),
 }));
 
+const browserSession = vi.hoisted(() => ({
+  userId: "user-1",
+  activeOrganizationId: "partner-1" as string | null,
+  role: "owner" as string | null,
+}));
+
+vi.mock("@/lib/auth-client", async () => {
+  const { costTrackerOrganizationRoles, parseOrganizationRoles } =
+    await import("@greendex/auth/permissions");
+  return {
+    authClient: {
+      useSession: () => ({ data: { user: { id: browserSession.userId } } }),
+      useActiveOrganization: () => ({
+        data: browserSession.activeOrganizationId
+          ? {
+              id: browserSession.activeOrganizationId,
+              members: [
+                { userId: browserSession.userId, role: browserSession.role },
+              ],
+            }
+          : null,
+      }),
+      // Resolves the identical single-sourced role definitions Better Auth uses.
+      organization: {
+        checkRolePermission: ({
+          role,
+          permissions,
+        }: {
+          role: string;
+          permissions: Record<string, string[]>;
+        }) =>
+          parseOrganizationRoles(role).some(
+            (name) =>
+              name in costTrackerOrganizationRoles &&
+              costTrackerOrganizationRoles[
+                name as keyof typeof costTrackerOrganizationRoles
+              ].authorize(permissions as never).success,
+          ),
+      },
+    },
+  };
+});
+
 vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/orpc/orpc")>();
   return {
@@ -144,6 +187,9 @@ describe("ParticipantCoordination", () => {
       },
     );
     Element.prototype.scrollIntoView = vi.fn();
+    browserSession.userId = "user-1";
+    browserSession.activeOrganizationId = "partner-1";
+    browserSession.role = "owner";
     mocks.list.mockReset().mockResolvedValue({
       projectName: "Own Project",
       participations: [
@@ -165,6 +211,11 @@ describe("ParticipantCoordination", () => {
         },
       ],
       registrationLinks: [{ id: "link-1", enabled: true }],
+      entryContext: {
+        partnerOrganizationId: "partner-1",
+        hostOrganizationId: "host-1",
+        assignedCoordinator: false,
+      },
     });
     mocks.create.mockReset();
     mocks.searchOnboarded.mockReset().mockResolvedValue([
@@ -292,6 +343,11 @@ describe("ParticipantCoordination", () => {
       participations: [],
       invitations: [],
       registrationLinks: [{ id: "link-1", enabled: false }],
+      entryContext: {
+        partnerOrganizationId: "partner-1",
+        hostOrganizationId: "host-1",
+        assignedCoordinator: false,
+      },
     });
     mocks.setRegistrationLinkOpen.mockResolvedValueOnce({ open: false });
     await user.click(closeButton);
@@ -476,5 +532,82 @@ describe("ParticipantCoordination", () => {
         country: "DE",
       }),
     );
+  });
+
+  it("hides every participant entry control from Hosting Organization staff", async () => {
+    browserSession.activeOrganizationId = "host-1";
+    await renderCoordination();
+    expect(
+      screen.getAllByText(
+        "Only the Partner Organization of this Project Partnership issues participant entry points.",
+      ).length,
+    ).toBeGreaterThan(0);
+    for (const name of [
+      "Send Participant Invitation",
+      "Create Participant Registration Link",
+      "Reissue invitation for pending@example.org",
+      "Close invitation for pending@example.org",
+      "Close registration link link-1",
+      "Reopen registration link link-1",
+    ])
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    // Oversight of the existing entries stays available.
+    expect(screen.getByText("pending@example.org")).toBeTruthy();
+    expect(screen.getByText("Link link-1")).toBeTruthy();
+  });
+
+  it("keeps entry controls for a Partner Group Organizer only with an assignment", async () => {
+    browserSession.role = "project-coordinator";
+    await renderCoordination();
+    expect(
+      screen.getAllByText(
+        "Ask an Organization Owner or Admin to assign you as Group Organizer for this Project Partnership.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole("button", { name: "Send Participant Invitation" }),
+    ).toBeNull();
+  });
+
+  it("fails closed when the scope report or the active Organization is missing", async () => {
+    mocks.list.mockResolvedValue({
+      projectName: "Own Project",
+      participations: [],
+      invitations: [
+        { invitationId: "invite-1", email: "p@example.org", status: "pending" },
+      ],
+      registrationLinks: [],
+    });
+    await renderCoordination();
+    expect(
+      screen.queryByRole("button", {
+        name: "Reissue invitation for p@example.org",
+      }),
+    ).toBeNull();
+    mocks.list.mockResolvedValue({
+      projectName: "Own Project",
+      participations: [],
+      invitations: [
+        { invitationId: "invite-2", email: "q@example.org", status: "pending" },
+      ],
+      registrationLinks: [],
+      entryContext: {
+        partnerOrganizationId: "partner-1",
+        hostOrganizationId: "host-1",
+        assignedCoordinator: false,
+      },
+    });
+    browserSession.activeOrganizationId = null;
+    await renderCoordination();
+    expect(
+      screen.getAllByText(
+        "Select an active Partner Organization before issuing participant entry points.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole("button", {
+        name: "Reissue invitation for q@example.org",
+      }),
+    ).toBeNull();
   });
 });

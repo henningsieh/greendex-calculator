@@ -29,6 +29,7 @@ import {
   requireHostCoordination,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { isPartnerCoordinatorAssigned } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -79,6 +80,13 @@ export function createParticipationProcedures(
         registrationLinks: z.array(
           z.object({ id: z.string(), enabled: z.boolean() }),
         ),
+        // Non-secret authorization context: the browser evaluates the shared
+        // Project-scope policy with it and still authorizes nothing.
+        entryContext: z.object({
+          partnerOrganizationId: z.string(),
+          hostOrganizationId: z.string(),
+          assignedCoordinator: z.boolean(),
+        }),
       }),
     )
     .handler(async ({ input, context, errors }) => {
@@ -123,6 +131,14 @@ export function createParticipationProcedures(
         participations: rows,
         invitations,
         registrationLinks,
+        entryContext: {
+          partnerOrganizationId: scope.partnerId,
+          hostOrganizationId: scope.hostId,
+          assignedCoordinator: await isPartnerCoordinatorAssigned(
+            context.user.id,
+            input.partnershipId,
+          ),
+        },
       };
     });
 

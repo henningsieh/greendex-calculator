@@ -43,7 +43,7 @@ const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   addMember: vi.fn(),
   acceptInvitation: vi.fn(),
-  createInvitation: vi.fn(),
+  hasPermission: vi.fn(),
   update: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
@@ -55,6 +55,11 @@ vi.mock("@/lib/auth", () => ({
     },
   },
 }));
+
+import {
+  costTrackerOrganizationRoles,
+  parseOrganizationRoles,
+} from "@greendex/auth";
 
 import {
   createParticipantOnboardingProcedures,
@@ -91,6 +96,33 @@ async function memberships() {
     .select({ role: member.role })
     .from(member)
     .where(and(eq(member.userId, recipient), eq(member.organizationId, host)));
+}
+
+/**
+ * Stands in for Better Auth's supported server check: the active Membership's
+ * stored role resolved against the single-sourced role definitions.
+ */
+async function authorizedActiveRole(permissions: Record<string, string[]>) {
+  const [membership] = activeOrganizationId
+    ? await db
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, actor),
+            eq(member.organizationId, activeOrganizationId),
+          ),
+        )
+        .limit(1)
+    : [];
+  const role = membership?.role ?? "";
+  return parseOrganizationRoles(role).some(
+    (name) =>
+      name in costTrackerOrganizationRoles &&
+      costTrackerOrganizationRoles[
+        name as keyof typeof costTrackerOrganizationRoles
+      ].authorize(permissions as never).success,
+  );
 }
 
 beforeAll(async () => {
@@ -194,6 +226,11 @@ beforeEach(async () => {
     });
     return new Response(null, { status: 200 });
   });
+  authMocks.hasPermission.mockImplementation(
+    async ({ body }: { body: { permissions: Record<string, string[]> } }) => ({
+      success: await authorizedActiveRole(body.permissions),
+    }),
+  );
   authMocks.acceptInvitation.mockImplementation(
     async ({ body }: { body: { invitationId: string } }) => {
       await db
@@ -601,7 +638,6 @@ describe("Participant onboarding procedures", () => {
       "project-coordinator",
       "project-coordinator,participant",
     ]) {
-
       await db.delete(participants).where(eq(participants.projectId, project));
       await db.delete(member).where(eq(member.userId, recipient));
       await db.insert(member).values({
@@ -770,7 +806,7 @@ describe("Participant onboarding procedures", () => {
     );
   });
 
-  it("moves an invitation across Partnerships only with authority on both sides", async () => {
+  it("keeps a Partner Organization's invitation with its issuer, including against Hosting staff", async () => {
     const first = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -833,21 +869,32 @@ describe("Participant onboarding procedures", () => {
       createdAt: new Date(),
     });
     try {
-      const second = await client.participantOnboarding.reissueInvitation({
-        partnershipId: otherPartnership,
-        email: recipientEmail,
+      // ADR-0015: the Hosting Organization issues no participant entry points,
+      // so it can no longer take an invitation over from the Partner side.
+      await expect(
+        client.participantOnboarding.reissueInvitation({
+          partnershipId: otherPartnership,
+          email: recipientEmail,
+        }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        data: { reason: "PARTNER_ENTRY_REQUIRED" },
       });
-      expect(second.invitationId).not.toBe(first.invitationId);
       const rows = await db
         .select()
         .from(bridges)
         .where(eq(bridges.projectId, project));
       expect(rows.filter((row) => row.status === "pending")).toMatchObject([
-        { invitationId: second.invitationId, partnershipId: otherPartnership },
+        { invitationId: first.invitationId, partnershipId: partnership },
       ]);
       expect(
-        rows.find((row) => row.invitationId === first.invitationId)?.status,
-      ).toBe("revoked");
+        (
+          await db
+            .select()
+            .from(invitation)
+            .where(eq(invitation.id, first.invitationId))
+        )[0]?.status,
+      ).toBe("pending");
     } finally {
       await db
         .delete(member)
@@ -1097,61 +1144,7 @@ describe("Participant onboarding procedures", () => {
     ).rejects.toMatchObject({ cause: { code: "23514" } });
   });
 
-  it("allows Hosting staff to issue through Better Auth, not a direct invitation insert", async () => {
-    activeOrganizationId = host;
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: host,
-      userId: owner,
-      role: "owner",
-      createdAt: new Date(),
-    });
-    const invitationId = randomUUID();
-    authMocks.createInvitation.mockImplementationOnce(async () => {
-      await db.insert(invitation).values({
-        id: invitationId,
-        organizationId: host,
-        email: recipientEmail,
-        role: "participant",
-        inviterId: owner,
-        expiresAt: new Date(Date.now() + 3600000),
-      });
-      return Response.json({ id: invitationId });
-    });
-    const result = await client.participantOnboarding.issueInvitation({
-      partnershipId: partnership,
-      email: recipientEmail,
-    });
-    expect(authMocks.createInvitation).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: {
-          email: recipientEmail,
-          role: "participant",
-          organizationId: host,
-        },
-      }),
-    );
-    expect(result.delivery).toBe("sent");
-    expect(delivery.sendParticipantInvitation).toHaveBeenCalledWith({
-      email: recipientEmail,
-      invitationId: result.invitationId,
-    });
-    expect(
-      (
-        await db
-          .select()
-          .from(bridges)
-          .where(eq(bridges.invitationId, result.invitationId))
-      )[0]?.partnershipId,
-    ).toBe(partnership);
-    await db.delete(bridges).where(eq(bridges.invitationId, result.invitationId));
-    await db.delete(invitation).where(eq(invitation.id, result.invitationId));
-    await db
-      .delete(member)
-      .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
-  });
-
-  it("never sends when Better Auth host issuance fails", async () => {
+  it("refuses Hosting Organization owners, so no invitation, link or email is issued", async () => {
     activeOrganizationId = host;
     await db.insert(member).values({
       id: randomUUID(),
@@ -1161,9 +1154,46 @@ describe("Participant onboarding procedures", () => {
       createdAt: new Date(),
     });
     try {
-      authMocks.createInvitation.mockResolvedValueOnce(
-        new Response(null, { status: 403 }),
-      );
+      for (const attempt of [
+        () =>
+          client.participantOnboarding.issueInvitation({
+            partnershipId: partnership,
+            email: recipientEmail,
+          }),
+        () =>
+          client.participantOnboarding.createRegistrationLink({
+            partnershipId: partnership,
+          }),
+      ])
+        await expect(attempt()).rejects.toMatchObject({
+          code: "FORBIDDEN",
+          status: 403,
+          data: { reason: "PARTNER_ENTRY_REQUIRED" },
+        });
+      expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
+      expect(
+        await db.select().from(bridges).where(eq(bridges.projectId, project)),
+      ).toHaveLength(0);
+      expect(
+        await db.select().from(links).where(eq(links.partnershipId, partnership)),
+      ).toHaveLength(0);
+    } finally {
+      await db
+        .delete(member)
+        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
+    }
+  });
+
+  it("refuses a Hosting Project coordinator even when assigned to the Project", async () => {
+    activeOrganizationId = host;
+    await db.insert(member).values({
+      id: randomUUID(),
+      organizationId: host,
+      userId: owner,
+      role: "project-coordinator",
+      createdAt: new Date(),
+    });
+    try {
       await expect(
         client.participantOnboarding.issueInvitation({
           partnershipId: partnership,
@@ -1171,8 +1201,7 @@ describe("Participant onboarding procedures", () => {
         }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
-        status: 403,
-        data: { reason: "ACCESS_DENIED" },
+        data: { reason: "PARTNER_ENTRY_REQUIRED" },
       });
       expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
       expect(
@@ -1186,11 +1215,12 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("denies a responsible User without the coordinator role", async () => {
-    activeOrganizationId = host;
+    actor = recipient;
+    activeOrganizationId = partner;
     await db.insert(member).values({
       id: randomUUID(),
-      organizationId: host,
-      userId: owner,
+      organizationId: partner,
+      userId: recipient,
       role: "participant",
       createdAt: new Date(),
     });
@@ -1199,34 +1229,12 @@ describe("Participant onboarding procedures", () => {
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await db
-      .delete(member)
-      .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
-  });
-
-  it("allows a coordinator assigned to the Hosting Project to issue", async () => {
-    activeOrganizationId = host;
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: host,
-      userId: owner,
-      role: "project-coordinator",
-      createdAt: new Date(),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      status: 403,
+      data: { reason: "PARTNER_COORDINATION_REQUIRED" },
     });
-    try {
-      const issued = await client.participantOnboarding.issueInvitation({
-        partnershipId: partnership,
-        email: recipientEmail,
-      });
-      expect(issued.invitationId).toBeTruthy();
-    } finally {
-      await db.delete(bridges).where(eq(bridges.projectId, project));
-      await db.delete(invitation).where(eq(invitation.organizationId, host));
-      await db
-        .delete(member)
-        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
-    }
+    await db.delete(member).where(eq(member.userId, recipient));
   });
 
   it("denies unassigned issuers and cross-Partnership owners with no invitation side effects", async () => {

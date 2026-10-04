@@ -20,6 +20,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import {
+  participantEntryDenialMessage,
+  useParticipantEntryAccess,
+} from "@/features/authentication/participant-entry-access";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -477,6 +481,10 @@ export function ParticipantCoordination({
   );
   const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
+  // One shared Project-scope policy decides entry controls; the server enforces
+  // it again per request, so a stale or forged decision confers no authority.
+  const entryAccess = useParticipantEntryAccess(data.entryContext);
+  const entryDenial = participantEntryDenialMessage(entryAccess);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [coordinatorsOpen, setCoordinatorsOpen] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
@@ -805,53 +813,61 @@ export function ParticipantCoordination({
           <CardTitle>Participant Invitations and Registration Links</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form
-            className="flex flex-wrap items-end gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setEntryFeedback(undefined);
-              issueInvitation.mutate();
-            }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="participant-invitation-email">Invitee email</Label>
-              <input
-                id="participant-invitation-email"
-                className="h-9 rounded-md border bg-background px-3 text-sm"
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            <Button disabled={issueInvitation.isPending} type="submit">
-              Send Participant Invitation
-            </Button>
-          </form>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={createLink.isPending}
-            onClick={() => {
-              setEntryFeedback(undefined);
-              createLink.mutate();
-            }}
-          >
-            Create Participant Registration Link
-          </Button>
-          {createdLink?.partnershipId === partnershipId && (
-            <div className="space-y-2">
-              <Label htmlFor="new-participant-link">
-                New registration link (copy now)
-              </Label>
-              <input
-                id="new-participant-link"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                readOnly
-                value={createdLink.url}
-                onFocus={(event) => event.currentTarget.select()}
-              />
-            </div>
+          {entryDenial ? (
+            <p className="text-sm text-muted-foreground">{entryDenial}</p>
+          ) : (
+            <>
+              <form
+                className="flex flex-wrap items-end gap-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setEntryFeedback(undefined);
+                  issueInvitation.mutate();
+                }}
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="participant-invitation-email">
+                    Invitee email
+                  </Label>
+                  <input
+                    id="participant-invitation-email"
+                    className="h-9 rounded-md border bg-background px-3 text-sm"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </div>
+                <Button disabled={issueInvitation.isPending} type="submit">
+                  Send Participant Invitation
+                </Button>
+              </form>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={createLink.isPending}
+                onClick={() => {
+                  setEntryFeedback(undefined);
+                  createLink.mutate();
+                }}
+              >
+                Create Participant Registration Link
+              </Button>
+              {createdLink?.partnershipId === partnershipId && (
+                <div className="space-y-2">
+                  <Label htmlFor="new-participant-link">
+                    New registration link (copy now)
+                  </Label>
+                  <input
+                    id="new-participant-link"
+                    className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                    readOnly
+                    value={createdLink.url}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </div>
+              )}
+            </>
           )}
           {entryFeedback && (
             <Alert>
@@ -881,7 +897,7 @@ export function ParticipantCoordination({
                       ? "Invitation pending"
                       : `Invitation ${invitation.status}`}
                   </Badge>
-                  {invitation.status === "pending" && (
+                  {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
                       type="button"
                       variant="outline"
@@ -893,7 +909,7 @@ export function ParticipantCoordination({
                       Reissue invitation for {invitation.email}
                     </Button>
                   )}
-                  {invitation.status === "pending" && (
+                  {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
                       type="button"
                       variant="outline"
@@ -914,6 +930,9 @@ export function ParticipantCoordination({
           <p className="mt-4 text-sm text-muted-foreground">
             Invitation status does not show profile or agreement progress.
           </p>
+          {entryDenial && (
+            <p className="mt-2 text-sm text-muted-foreground">{entryDenial}</p>
+          )}
         </CardContent>
       </Card>
       <Card>
@@ -934,7 +953,7 @@ export function ParticipantCoordination({
                   <Badge variant="secondary">
                     {link.enabled ? "Open" : "Closed"}
                   </Badge>
-                  {link.enabled && (
+                  {entryAccess.permitted && link.enabled && (
                     <Button
                       type="button"
                       variant="outline"
@@ -944,7 +963,7 @@ export function ParticipantCoordination({
                       Close registration link {link.id}
                     </Button>
                   )}
-                  {!link.enabled && (
+                  {entryAccess.permitted && !link.enabled && (
                     <Button
                       type="button"
                       variant="outline"
@@ -960,6 +979,9 @@ export function ParticipantCoordination({
                 </li>
               ))}
             </ul>
+          )}
+          {entryDenial && (
+            <p className="mt-4 text-sm text-muted-foreground">{entryDenial}</p>
           )}
         </CardContent>
       </Card>
