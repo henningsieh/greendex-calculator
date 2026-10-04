@@ -833,6 +833,21 @@ export function hasComposedCopy(situation: Situation): boolean {
   return "composedCopy" in situation;
 }
 
+/** Catalog-derived Response body: never interpolate vendor or raw prose. */
+export function safeErrorResponseBody(situation: Situation) {
+  return {
+    error: situation.message,
+    code: situation.code,
+    reason: situation.reason,
+  };
+}
+
+export function toSafeErrorResponse(situation: Situation) {
+  return Response.json(safeErrorResponseBody(situation), {
+    status: situation.status,
+  });
+}
+
 const situationsByMetadata = new Map(
   Object.values(situationCatalog).map((situation) => [
     `${situation.reason}:${situation.code}:${situation.status}`,

@@ -5,7 +5,10 @@ import {
   uploadProofDocument,
 } from "@/features/projects/procedures/documents";
 import { auth } from "@/lib/auth";
-import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
+import {
+  getSafeErrorSituation,
+  toSafeErrorResponse,
+} from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
 const proofErrors = createSituationErrors();
@@ -13,15 +16,7 @@ const proofErrors = createSituationErrors();
 function proofErrorResponse(error: unknown, fallback: "upload" | "download") {
   const situation =
     error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
-  if (situation)
-    return Response.json(
-      {
-        error: situation.message,
-        code: situation.code,
-        reason: situation.reason,
-      },
-      { status: situation.status },
-    );
+  if (situation) return toSafeErrorResponse(situation);
   console.error(`[Proof ${fallback}]`, error);
   return proofErrorResponse(
     fallback === "upload"
