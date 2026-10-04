@@ -4,12 +4,12 @@ import {
   claimsTable as claims,
   partnershipPayoutAccountsTable as selections,
   payoutAccountsTable as accounts,
-  projectPartnerOrganizationsTable as partnerships,
 } from "@greendex/database/schema";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
+import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -65,12 +65,6 @@ const draftSchema = z.object({
   partnershipId: z.string(),
   status: z.enum(["editable", "correction_requested"]),
 });
-const selectedDraft = {
-  id: claims.id,
-  partnershipId: claims.partnershipId,
-  status: claims.status,
-  approvedAmountEur: claims.approvedAmountEur,
-};
 
 async function requirePartnerSide(
   partnershipId: string,
@@ -118,7 +112,12 @@ export const getDraft = authorized
       errors,
     );
     const [claim] = await db
-      .select(selectedDraft)
+      .select({
+        id: claims.id,
+        partnershipId: claims.partnershipId,
+        status: claims.status,
+        approvedAmountEur: claims.approvedAmountEur,
+      })
       .from(claims)
       .where(eq(claims.partnershipId, input.partnershipId))
       .limit(1);
@@ -223,25 +222,18 @@ export const selectPayoutAccount = authorized
       errors,
     );
     return db.transaction(async (tx) => {
-      // Serialize selection and first save (and other selection changes) per Partnership.
-      const [partnership] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(
-          and(
-            eq(partnerships.id, input.partnershipId),
-            eq(partnerships.organizationId, scope.partnerId),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!partnership) throw createSituationErrors(errors).partnershipNotFound();
-      const [claim] = await tx
-        .select({ status: claims.status })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .limit(1);
-      if (claim && isPartnerEditLocked(claim.status)) {
+      // Shared lock order: selection and first save serialize on the Partnership.
+      const { claim } = await lockClaimScope(
+        tx,
+        {
+          projectId: scope.projectId,
+          partnershipId: input.partnershipId,
+          partnerOrganizationId: scope.partnerId,
+        },
+        errors,
+        "partnership",
+      );
+      if (claim && !canPartnerEditClaim(claim.status)) {
         throw createSituationErrors(errors).payoutSelectionLocked();
       }
       const [account] = await tx
@@ -279,18 +271,17 @@ export const saveDraft = authorized
       errors,
     );
     return db.transaction(async (tx) => {
-      const [partnership] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(
-          and(
-            eq(partnerships.id, input.partnershipId),
-            eq(partnerships.organizationId, scope.partnerId),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!partnership) throw createSituationErrors(errors).partnershipNotFound();
+      // Shared lock order: first save and payout selection serialize on the Partnership.
+      const { claim } = await lockClaimScope(
+        tx,
+        {
+          projectId: scope.projectId,
+          partnershipId: input.partnershipId,
+          partnerOrganizationId: scope.partnerId,
+        },
+        errors,
+        "partnership",
+      );
       const [selected] = await tx
         .select({ id: selections.payoutAccountId })
         .from(selections)
@@ -304,24 +295,27 @@ export const saveDraft = authorized
         .where(eq(selections.partnershipId, input.partnershipId))
         .limit(1);
       if (!selected) throw createSituationErrors(errors).payoutAccountRequired();
-      const [existing] = await tx
-        .select(selectedDraft)
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .limit(1);
-      if (existing) {
-        if (isPartnerEditLocked(existing.status))
+      if (claim) {
+        if (!canPartnerEditClaim(claim.status))
           throw createSituationErrors(errors).claimNotEditable();
-        return draftSchema.parse(existing);
+        return draftSchema.parse(claim);
       }
       const [created] = await tx
         .insert(claims)
         .values(input)
         .onConflictDoNothing({ target: claims.partnershipId })
-        .returning(selectedDraft);
+        .returning({
+          id: claims.id,
+          partnershipId: claims.partnershipId,
+          status: claims.status,
+        });
       if (created) return { ...created, status: "editable" as const };
       const [raced] = await tx
-        .select(selectedDraft)
+        .select({
+          id: claims.id,
+          partnershipId: claims.partnershipId,
+          status: claims.status,
+        })
         .from(claims)
         .where(eq(claims.partnershipId, input.partnershipId))
         .limit(1);
@@ -329,7 +323,7 @@ export const saveDraft = authorized
         console.error("Claim insert conflict returned no scoped Claim");
         throw createSituationErrors(errors).internalFailure();
       }
-      if (!isPartnerEditLocked(raced.status)) return draftSchema.parse(raced);
+      if (canPartnerEditClaim(raced.status)) return draftSchema.parse(raced);
       throw createSituationErrors(errors).claimNotEditable();
     });
   });

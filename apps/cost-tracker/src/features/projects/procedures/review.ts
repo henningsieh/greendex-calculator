@@ -58,6 +58,7 @@ function decision(action: Decision) {
           tx,
           { projectId: scope.projectId, partnershipId: input.partnershipId },
           errors,
+          "project",
         );
         if (
           action === "approve" &&

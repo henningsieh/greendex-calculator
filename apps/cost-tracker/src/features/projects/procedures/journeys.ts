@@ -3,18 +3,16 @@ import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
   claimHistoryTable as history,
-  claimsTable as claims,
   participantJourneysTable as journeys,
   projectFundingBandsTable as bands,
   projectFundingSnapshotsTable as snapshots,
-  projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
-  projectsTable as projects,
 } from "@greendex/database/schema";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { z } from "zod";
 
-import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
+import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -92,7 +90,7 @@ export const list = authorized
       );
   });
 
-/** Serialize first snapshot and journey creation by locking the Project in one transaction. */
+/** Journeys may be prepared before a Claim exists; frozen Project rules start with the first one. */
 export const save = authorized
   .input(journeyInput)
   .output(journeyOutput)
@@ -104,38 +102,18 @@ export const save = authorized
       errors,
     );
     return db.transaction(async (tx) => {
-      const [lockedProject] = await tx
-        .select({ id: projects.id })
-        .from(projects)
-        .innerJoin(
-          partnerships,
-          and(
-            eq(partnerships.projectId, projects.id),
-            eq(partnerships.id, input.partnershipId),
-            eq(partnerships.organizationId, scope.partnerId),
-          ),
-        )
-        .where(
-          and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
-        )
-        .for("update")
-        .limit(1);
-      if (!lockedProject)
-        throw createSituationErrors(errors).partnershipNotFound();
-      const [lockedPartnership] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(eq(partnerships.id, input.partnershipId))
-        .for("update")
-        .limit(1);
-      if (!lockedPartnership)
-        throw createSituationErrors(errors).partnershipNotFound();
-      const [claim] = await tx
-        .select({ status: claims.status })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .limit(1);
-      if (claim && isPartnerEditLocked(claim.status))
+      // Shared Project → Partnership → Claim order: the same locks as submission.
+      const { claim } = await lockClaimScope(
+        tx,
+        {
+          projectId: scope.projectId,
+          partnershipId: input.partnershipId,
+          partnerOrganizationId: scope.partnerId,
+        },
+        errors,
+        "project",
+      );
+      if (claim && !canPartnerEditClaim(claim.status))
         throw createSituationErrors(errors).journeysLocked();
       const [participation] = await tx
         .select({ id: participants.id })
@@ -206,37 +184,19 @@ export const update = authorized
       errors,
     );
     return db.transaction(async (tx) => {
-      // Share the Project → Partnership → Claim lock order with save and submit.
-      const [project] = await tx
-        .select({ id: projects.id })
-        .from(projects)
-        .where(
-          and(eq(projects.id, scope.projectId), eq(projects.archived, false)),
-        )
-        .for("update")
-        .limit(1);
-      const [partnership] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(
-          and(
-            eq(partnerships.id, input.partnershipId),
-            eq(partnerships.projectId, scope.projectId),
-            eq(partnerships.organizationId, scope.partnerId),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!project || !partnership)
-        throw createSituationErrors(errors).partnershipNotFound();
-      const [claim] = await tx
-        .select({ id: claims.id, status: claims.status })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .for("update")
-        .limit(1);
+      // Shared Project → Partnership → Claim order: the same locks as save and submit.
+      const { claim } = await lockClaimScope(
+        tx,
+        {
+          projectId: scope.projectId,
+          partnershipId: input.partnershipId,
+          partnerOrganizationId: scope.partnerId,
+        },
+        errors,
+        "project",
+      );
       if (!claim) throw createSituationErrors(errors).claimRequiredForJourney();
-      if (isPartnerEditLocked(claim.status))
+      if (!canPartnerEditClaim(claim.status))
         throw createSituationErrors(errors).journeysLocked();
       const [existing] = await tx
         .select({ id: journeys.id })
@@ -282,7 +242,7 @@ export const update = authorized
         })
         .where(eq(journeys.id, existing.id))
         .returning(selected);
-      if (claim?.status === "correction_requested")
+      if (claim.status === "correction_requested")
         await tx.insert(history).values({
           claimId: claim.id,
           actorUserId: context.user.id,

@@ -2,7 +2,6 @@ import "server-only";
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import {
-  claimsTable as claims,
   costAllocationsTable as allocations,
   duplicateReviewTasksTable as reviewTasks,
   member,
@@ -12,7 +11,6 @@ import {
   participantJourneysTable as journeys,
   participantProfilesTable as profiles,
   projectParticipantsTable as participants,
-  projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
@@ -25,11 +23,12 @@ import {
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
 import { memberHasParticipantAccess } from "@/features/organizations/roles";
+import { isPartnerEditLocked } from "@/features/projects/claim-lifecycle";
 import {
   groupHostedParticipants,
   type HostedParticipantRow,
 } from "@/features/projects/hosted-participant-report";
-import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requireHostCoordination,
@@ -319,24 +318,17 @@ export function createParticipationProcedures(
         throw createSituationErrors(errors).agreementUnavailable();
       try {
         const outcome = await db.transaction(async (tx) => {
-          const [partnership] = await tx
-            .select({ id: partnerships.id })
-            .from(partnerships)
-            .where(
-              and(
-                eq(partnerships.id, input.partnershipId),
-                eq(partnerships.organizationId, scope.partnerId),
-              ),
-            )
-            .for("update")
-            .limit(1);
-          if (!partnership)
-            throw createSituationErrors(errors).partnershipNotFound();
-          const [claim] = await tx
-            .select({ status: claims.status })
-            .from(claims)
-            .where(eq(claims.partnershipId, input.partnershipId))
-            .limit(1);
+          // Shared lock order: the Partnership's Claim state guards this write.
+          const { claim } = await lockClaimScope(
+            tx,
+            {
+              projectId: scope.projectId,
+              partnershipId: input.partnershipId,
+              partnerOrganizationId: scope.partnerId,
+            },
+            errors,
+            "partnership",
+          );
           if (claim && isPartnerEditLocked(claim.status))
             throw createSituationErrors(errors).participationCreateLocked();
           const [candidate] = await tx
@@ -490,25 +482,18 @@ export function createParticipationProcedures(
         },
       );
       return db.transaction(async (tx) => {
-        const [partnership] = await tx
-          .select({ id: partnerships.id })
-          .from(partnerships)
-          .where(
-            and(
-              eq(partnerships.id, input.partnershipId),
-              eq(partnerships.organizationId, scope.partnerOrganizationId),
-            ),
-          )
-          .for("update")
-          .limit(1);
-        if (!partnership)
-          throw createSituationErrors(errors).partnershipNotFound();
-        const [submitted] = await tx
-          .select({ status: claims.status })
-          .from(claims)
-          .where(eq(claims.partnershipId, input.partnershipId))
-          .limit(1);
-        if (submitted && isPartnerEditLocked(submitted.status))
+        // Shared lock order: the Partnership's Claim state guards this write.
+        const { claim } = await lockClaimScope(
+          tx,
+          {
+            projectId: scope.projectId,
+            partnershipId: input.partnershipId,
+            partnerOrganizationId: scope.partnerOrganizationId,
+          },
+          errors,
+          "partnership",
+        );
+        if (claim && isPartnerEditLocked(claim.status))
           throw createSituationErrors(errors).participationUpdateLocked();
         const [changed] = await tx
           .update(participants)
@@ -544,19 +529,17 @@ export function createParticipationProcedures(
         throw createSituationErrors(errors).partnerParticipationRemoveRequired();
       try {
         return await db.transaction(async (tx) => {
-          const [partnership] = await tx
-            .select({ id: partnerships.id })
-            .from(partnerships)
-            .where(
-              and(
-                eq(partnerships.id, input.partnershipId),
-                eq(partnerships.organizationId, scope.partnerId),
-              ),
-            )
-            .for("update")
-            .limit(1);
-          if (!partnership)
-            throw createSituationErrors(errors).partnershipNotFound();
+          // Shared lock order: the Partnership's Claim state guards this write.
+          const { claim } = await lockClaimScope(
+            tx,
+            {
+              projectId: scope.projectId,
+              partnershipId: input.partnershipId,
+              partnerOrganizationId: scope.partnerId,
+            },
+            errors,
+            "partnership",
+          );
           const [row] = await tx
             .select({ id: participants.id })
             .from(participants)
@@ -571,11 +554,6 @@ export function createParticipationProcedures(
             .for("update")
             .limit(1);
           if (!row) throw createSituationErrors(errors).participationNotFound();
-          const [claim] = await tx
-            .select({ status: claims.status })
-            .from(claims)
-            .where(eq(claims.partnershipId, input.partnershipId))
-            .limit(1);
           if (claim && isPartnerEditLocked(claim.status))
             throw createSituationErrors(errors).participationRemoveLocked();
           const [reference] = await tx
