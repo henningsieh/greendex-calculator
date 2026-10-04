@@ -315,30 +315,9 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             })
             .onConflictDoNothing()
             .returning({ id: participants.id });
-          if (created) {
-            participationId = created.id;
-          } else {
-            // A competing completion won the insert race: resume on its row
-            // instead of failing when it represents this same Partnership.
-            const [winner] = await tx
-              .select({
-                id: participants.id,
-                partnerId: participants.representedOrganizationId,
-              })
-              .from(participants)
-              .where(
-                and(
-                  eq(participants.projectId, partnership.projectId),
-                  eq(participants.userId, context.user.id),
-                ),
-              )
-              .limit(1);
-            if (!winner)
-              throw createSituationErrors(errors).participationIdentityConflict();
-            if (winner.partnerId !== partnership.partnerId)
-              throw createSituationErrors(errors).joinedOtherPartner();
-            participationId = winner.id;
-          }
+          if (!created)
+            throw createSituationErrors(errors).participationIdentityConflict();
+          participationId = created.id;
         }
         if (bridgeId) {
           await tx

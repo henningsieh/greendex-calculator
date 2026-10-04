@@ -86,6 +86,12 @@ const grantParticipantMembership = createAuthEndpoint(
       typeof hookResponse.data?.role === "string"
         ? hookResponse.data.role
         : newRole;
+    // Why not native updateMemberRole: Better Auth 1.7.7 offers no privileged
+    // variant. The native endpoint requires the caller session to already hold
+    // member:update in the target Organization, which a joining Group Organizer
+    // never has; granting it would broaden the client-reachable endpoint to any
+    // member-role write (ADR-0015 minimal grant). This pathless server-only
+    // endpoint performs the same write after the calling procedure authorized it.
     const updated = await adapter.updateMember(membership.id, roleToWrite);
     if (!updated) throw staleMembership();
     return ctx.json({ member: updated });

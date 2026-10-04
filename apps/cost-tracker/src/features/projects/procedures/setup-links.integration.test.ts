@@ -156,7 +156,6 @@ describe("Partner Organization setup links", () => {
     ).rejects.toThrow("already assigned");
   });
 
-
   it("separates an unverified recipient from a wrong recipient without consuming the link", async () => {
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
