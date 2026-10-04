@@ -15,13 +15,13 @@
       },
       "scout": {
         "defaultContext": "fresh",
-        "thinking": "medium",
+        "thinking": "high",
         "allowNestedSubagents": false,
         "acceptanceRole": "read-only"
       },
       "researcher": {
         "defaultContext": "fresh",
-        "thinking": "medium",
+        "thinking": "high",
         "allowNestedSubagents": false,
         "acceptanceRole": "read-only"
       },
