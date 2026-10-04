@@ -494,6 +494,13 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "PROJECT_ALREADY_COMPLETED",
     "status": 400,
   },
+  "projectCompletionBlocked": {
+    "code": "BAD_REQUEST",
+    "composedCopy": true,
+    "message": "Cannot complete Project:",
+    "reason": "PROJECT_COMPLETION_BLOCKED",
+    "status": 400,
+  },
   "projectNotFound": {
     "code": "NOT_FOUND",
     "message": "Project not found in scope.",

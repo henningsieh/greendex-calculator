@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { APIError, isAPIError } from "better-auth/api";
 import { z } from "zod";
 
+import { situationCatalog } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
 type Situations = ReturnType<typeof createSituationErrors>;
@@ -100,19 +101,26 @@ export async function normalizeBetterAuthResponse(
 
 // addMember is a privileged server command. Permission/session/selection failures
 // there describe server configuration, not the already authenticated Invitee.
+const membershipMisconfigurationCodes: string[] = [
+  situationCatalog.unauthenticated.code,
+  situationCatalog.accessDenied.code,
+  situationCatalog.notFound.code,
+];
+
 function normalizeParticipantMembershipFailure(
   error: ORPCError<string, unknown>,
   errors: Situations,
 ) {
   if (
-    ["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code) &&
+    membershipMisconfigurationCodes.includes(error.code) &&
     error.data &&
     typeof error.data === "object" &&
     "reason" in error.data &&
-    error.data.reason !== "EMAIL_VERIFICATION_REQUIRED"
+    error.data.reason !== situationCatalog.verifyEmail.reason
   )
     return errors.internalFailure();
-  if (error.code === "BAD_REQUEST") return errors.internalFailure();
+  if (error.code === situationCatalog.badInput.code)
+    return errors.internalFailure();
   return error;
 }
 

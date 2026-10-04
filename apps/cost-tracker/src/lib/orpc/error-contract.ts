@@ -147,6 +147,15 @@ export const situationCatalog = {
     reason: "PROJECT_ALREADY_COMPLETED",
     message: "Project is already completed.",
   },
+  projectCompletionBlocked: {
+    code: "BAD_REQUEST",
+    status: 400,
+    reason: "PROJECT_COMPLETION_BLOCKED",
+    // Composed per request from the blocking Claims, so the declared copy is
+    // only the prefix and clients never present it as a finished sentence.
+    message: "Cannot complete Project:",
+    composedCopy: true,
+  },
   setupLinkNotFound: {
     code: "NOT_FOUND",
     status: 404,
@@ -759,132 +768,14 @@ export const situationCatalog = {
   },
 } as const;
 
-export const ErrorReasonSchema = z.enum([
-  "SESSION_REQUIRED",
-  "INVALID_CREDENTIALS",
-  "ACTIVE_ORGANIZATION_REQUIRED",
-  "ORGANIZATION_MEMBERSHIP_REQUIRED",
-  "PARTICIPANT_PROFILE_REQUIRED",
-  "PARTICIPANT_AGREEMENT_REQUIRED",
-  "EMAIL_VERIFICATION_REQUIRED",
-  "HOST_COORDINATION_REQUIRED",
-  "PROJECT_NOT_FOUND",
-  "PROJECT_PARTNERSHIP_NOT_FOUND",
-  "ORGANIZATION_MANAGEMENT_REQUIRED",
-  "PARTNER_COORDINATION_REQUIRED",
-  "ELIGIBLE_COORDINATOR_REQUIRED",
-  "INVALID_PROJECT_CURSOR",
-  "PROJECT_READ_REQUIRED",
-  "HOSTING_STAFF_REQUIRED",
-  "HOSTING_SIDE_REQUIRED",
-  "SELF_PARTNERSHIP",
-  "PARTNER_ORGANIZATION_NOT_FOUND",
-  "PARTNERSHIP_ALREADY_ASSIGNED",
-  "PARTNERSHIP_INVARIANT",
-  "PARTNERSHIP_REFERENCED",
-  "PROJECT_ALREADY_COMPLETED",
-  "SETUP_LINK_NOT_FOUND",
-  "SETUP_LINK_WRONG_EMAIL",
-  "SETUP_LINK_DISABLED",
-  "SETUP_LINK_EXPIRED",
-  "ORGANIZATION_OWNER_REQUIRED",
-  "SETUP_LINK_USED",
-  "STAFF_INVITATION_ROLE_TOO_HIGH",
-  "STAFF_INVITATION_NOT_FOUND",
-  "STAFF_INVITATION_WRONG_KIND",
-  "STAFF_INVITATION_CLOSED",
-  "STAFF_INVITATION_EXPIRED",
-  "STAFF_INVITATION_WRONG_EMAIL",
-  "INVALID_ORGANIZATION_ROLE",
-  "PROJECT_COMPLETION_BLOCKED",
-  "REGISTRATION_LINK_NOT_FOUND",
-  "REGISTRATION_LINK_CLOSED",
-  "PARTICIPANT_INVITATION_NOT_FOUND",
-  "PARTICIPANT_INVITATION_WRONG_ACCOUNT",
-  "PARTICIPANT_INVITATION_CLOSED",
-  "PARTICIPANT_INVITATION_EXPIRED",
-  "PARTICIPANT_ALREADY_PARTICIPATES",
-  "PARTICIPANT_ALREADY_INVITED",
-  "JOINED_OTHER_PARTNER",
-  "MEMBERSHIP_CHANGED",
-  "PARTICIPATION_IDENTITY_CONFLICT",
-  "PARTICIPANT_INVITATION_ACCEPTED",
-  "REGISTRATION_CLAIM_LOCKED",
-  "PARTICIPANT_AGREEMENT_UNAVAILABLE",
-  "PARTNER_CLAIM_EDIT_REQUIRED",
-  "PAYOUT_SELECTION_LOCKED",
-  "PARTNER_PAYOUT_SELECTION_REQUIRED",
-  "PAYOUT_ACCOUNT_REQUIRED",
-  "CLAIM_NOT_EDITABLE",
-  "CLAIM_REQUIRED_FOR_COSTS",
-  "PARTNER_COSTS_REQUIRED",
-  "ALLOCATION_PARTICIPATION_REQUIRED",
-  "COST_ENTRY_REQUIRED",
-  "CLAIM_DOCUMENT_REFERENCES_REQUIRED",
-  "PARTNER_JOURNEYS_REQUIRED",
-  "JOURNEYS_LOCKED",
-  "PARTICIPATION_SELECTION_REQUIRED",
-  "JOURNEY_ALREADY_EXISTS",
-  "CLAIM_REQUIRED_FOR_JOURNEY",
-  "JOURNEY_SELECTION_REQUIRED",
-  "PARTNER_ONBOARDING_PROGRESS_REQUIRED",
-  "PARTNER_PARTICIPANT_SEARCH_REQUIRED",
-  "PARTNER_PARTICIPATION_CREATE_REQUIRED",
-  "PARTICIPATION_CREATE_LOCKED",
-  "ELIGIBLE_PARTICIPANT_REQUIRED",
-  "PARTICIPATION_DUPLICATE",
-  "PARTICIPATION_REPRESENTATION_CONFLICT",
-  "PARTNER_PARTICIPATION_UPDATE_REQUIRED",
-  "PARTICIPATION_UPDATE_LOCKED",
-  "PARTICIPATION_NOT_FOUND",
-  "PARTNER_PARTICIPATION_REMOVE_REQUIRED",
-  "PARTICIPATION_REMOVE_LOCKED",
-  "PARTICIPATION_JOURNEY_OR_COST_REFERENCED",
-  "PARTICIPATION_REFERENCED",
-  "PARTNER_DUPLICATE_REVIEW_REQUIRED",
-  "REVIEW_TASK_NOT_FOUND",
-  "REVIEW_TASK_NOT_OPEN",
-  "REVIEW_TASK_NOT_ASSIGNED",
-  "REVIEW_TASK_ASSIGNEE_REQUIRED",
-  "REVIEW_TASK_SURVIVOR_REQUIRED",
-  "PARTNER_CLAIM_PREVIEW_REQUIRED",
-  "PARTNER_CLAIM_SUBMIT_REQUIRED",
-  "CLAIM_REQUIRED_FOR_SUBMISSION",
-  "REVIEW_REASON_REQUIRED",
-  "HOSTING_CLAIM_REVIEW_REQUIRED",
-  "CLAIM_NOT_FOUND",
-  "CLAIM_SUBMITTED_REQUIRED",
-  "CLAIM_REJECTED_REQUIRED",
-  "CLAIM_REVIEW_UNAVAILABLE",
-  "HOSTING_PAYMENT_REQUIRED",
-  "HOSTING_PAYMENT_CORRECTION_REQUIRED",
-  "CLAIM_APPROVAL_REQUIRED",
-  "FULL_TRANSFER_REQUIRED",
-  "CLAIM_PAID_REQUIRED",
-  "JOURNEY_DISTANCE_OUTSIDE_BANDS",
-  "CLAIM_SUBMISSION_INCOMPLETE",
-  "PARTNER_DOCUMENTS_REQUIRED",
-  "PROOF_DOCUMENT_NOT_FOUND",
-  "PROOF_SELECTION_REQUIRED",
-  "PROOF_MEDIA_UNSUPPORTED",
-  "PROOF_FILE_TOO_LARGE",
-  "PROOF_FILE_EMPTY",
-  "PROOF_FILE_NAME_REQUIRED",
-  "CLAIM_REQUIRED_FOR_PROOF",
-  "PROOF_ORIGIN_DENIED",
-  "PROOF_TRANSPORT_TOO_LARGE",
-  "PROOF_MULTIPART_INVALID",
-  "PROOF_UPLOAD_FAILED",
-  "PROOF_DOWNLOAD_FAILED",
-  "INVALID_INPUT",
-  "ACCESS_DENIED",
-  "RESOURCE_NOT_FOUND",
-  "STATE_CONFLICT",
-  "UNPROCESSABLE_REQUEST",
-  "RATE_LIMITED",
-  "SERVICE_UNAVAILABLE",
-  "INTERNAL_FAILURE",
-]);
+// Declared reasons are the only reasons a client may send back. A duplicated
+// reason would make a refusal's code/status ambiguous, so they are collapsed.
+export const situationReasons = [
+  ...new Set(
+    Object.values(situationCatalog).map((situation) => situation.reason),
+  ),
+];
+export const ErrorReasonSchema = z.enum(situationReasons);
 export const SafeErrorDataSchema = z
   .object({
     reason: ErrorReasonSchema,
@@ -909,6 +800,20 @@ export const errorDefinitions = {
   SERVICE_UNAVAILABLE: { message: "Service unavailable" },
 };
 
+export type Situation = (typeof situationCatalog)[keyof typeof situationCatalog];
+
+/** Situations whose declared copy is only the prefix of a composed message. */
+export function hasComposedCopy(situation: Situation): boolean {
+  return "composedCopy" in situation;
+}
+
+const situationsByMetadata = new Map(
+  Object.values(situationCatalog).map((situation) => [
+    `${situation.reason}:${situation.code}:${situation.status}`,
+    situation,
+  ]),
+);
+
 export function getSafeErrorSituation(error: {
   code: string;
   status: number;
@@ -916,10 +821,7 @@ export function getSafeErrorSituation(error: {
 }) {
   const parsed = SafeErrorDataSchema.safeParse(error.data);
   if (!parsed.success) return undefined;
-  return Object.values(situationCatalog).find(
-    (s) =>
-      s.reason === parsed.data.reason &&
-      s.code === error.code &&
-      s.status === error.status,
+  return situationsByMetadata.get(
+    `${parsed.data.reason}:${error.code}:${error.status}`,
   );
 }
