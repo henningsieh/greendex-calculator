@@ -2,10 +2,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ErrorReasonSchema,
   SafeErrorDataSchema,
   getSafeErrorSituation,
   situationCatalog,
+  situationReasons,
 } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
@@ -13,14 +13,17 @@ const errors = createSituationErrors();
 
 describe("safe error contract validation", () => {
   it.each(Object.entries(situationCatalog))(
-    "accepts the declared %s metadata",
+    "accepts the declared %s metadata at the boundary",
     (_name, situation) => {
-      expect(ErrorReasonSchema.parse(situation.reason)).toBe(situation.reason);
       expect(
         SafeErrorDataSchema.safeParse({ reason: situation.reason }).success,
       ).toBe(true);
     },
   );
+
+  it("declares each reason exactly once", () => {
+    expect(situationReasons.length).toBe(Object.keys(situationCatalog).length);
+  });
 
   it.each([
     { reason: "UNKNOWN" },

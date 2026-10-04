@@ -768,6 +768,32 @@ export const situationCatalog = {
   },
 } as const;
 
+/**
+ * Refusals the client seam may render as generic transport copy. The grouping
+ * lives here so consumers derive codes from the catalog instead of restating
+ * them; presentation overrides stay at the seam that renders them.
+ */
+export const genericClientRefusalNames = [
+  "badInput",
+  "unauthenticated",
+  "accessDenied",
+  "notFound",
+  "conflict",
+  "proofTransportTooLarge",
+  "proofMediaUnsupported",
+  "unprocessable",
+  "rateLimited",
+  "internalFailure",
+  "unavailable",
+] as const;
+
+/** Catalog members whose Better Auth failure means server misconfiguration. */
+export const membershipMisconfigurationNames = [
+  "unauthenticated",
+  "accessDenied",
+  "notFound",
+] as const;
+
 // Declared reasons are the only reasons a client may send back. A duplicated
 // reason would make a refusal's code/status ambiguous, so they are collapsed.
 export const situationReasons = [

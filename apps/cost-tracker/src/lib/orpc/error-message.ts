@@ -1,6 +1,7 @@
 import { ORPCError } from "@orpc/client";
 
 import {
+  genericClientRefusalNames,
   getSafeErrorSituation,
   hasComposedCopy,
   situationCatalog,
@@ -8,19 +9,11 @@ import {
 
 const GENERIC_FAILURE_TEXT = "The request could not be completed. Try again.";
 
-const genericSituations = [
-  situationCatalog.badInput,
-  situationCatalog.unauthenticated,
-  situationCatalog.accessDenied,
-  situationCatalog.notFound,
-  situationCatalog.conflict,
-  situationCatalog.proofTransportTooLarge,
-  situationCatalog.proofMediaUnsupported,
-  situationCatalog.unprocessable,
-  situationCatalog.rateLimited,
-  { ...situationCatalog.internalFailure, message: GENERIC_FAILURE_TEXT },
-  situationCatalog.unavailable,
-];
+const genericSituations = genericClientRefusalNames.map((name) =>
+  name === "internalFailure"
+    ? { ...situationCatalog.internalFailure, message: GENERIC_FAILURE_TEXT }
+    : situationCatalog[name],
+);
 
 export type ORPCRequestErrorMessage = {
   sessionExpired: boolean;

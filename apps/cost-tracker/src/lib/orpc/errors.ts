@@ -2,11 +2,11 @@ import { ORPCError } from "@orpc/server";
 
 import {
   SafeErrorDataSchema,
+  Situation,
   hasComposedCopy,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
 
-type Situation = (typeof situationCatalog)[keyof typeof situationCatalog];
 type SituationName = keyof typeof situationCatalog;
 type SafeIssue = { path: string[]; message: string };
 
@@ -44,8 +44,10 @@ type RefusalInput = {
 };
 
 /** Refusals that take their own input instead of being a single call. */
-type RefusalWithInput = "projectCompletionBlocked" | "submissionIncomplete";
-type RefusalName = Exclude<SituationName, RefusalWithInput>;
+type RefusalName = Exclude<
+  SituationName,
+  "projectCompletionBlocked" | "submissionIncomplete"
+>;
 
 type SituationErrors = {
   [Name in RefusalName]: () => ORPCError<string, unknown>;
@@ -71,12 +73,12 @@ function defaultSituationErrorConstructors(): SituationErrorConstructors {
       Object.values(situationCatalog).map((situation) => situation.code),
     ),
   ];
-  return Object.fromEntries(
-    codes.map((code) => [
-      code,
-      (options: SituationErrorOptions) => new ORPCError(code, options),
-    ]),
-  ) as SituationErrorConstructors;
+  const constructors: Partial<SituationErrorConstructors> = {};
+  for (const code of codes)
+    constructors[code] = (options: SituationErrorOptions) =>
+      new ORPCError(code, options);
+  assertComplete(constructors, codes, "default error constructors");
+  return constructors;
 }
 
 /** Builds one refusal from its catalog declaration; the copy is never retyped. */
@@ -109,7 +111,26 @@ const refusalWithInput = {
     blockers,
   }),
   submissionIncomplete: (issues: SafeIssue[]) => ({ issues }),
-} satisfies Record<RefusalWithInput, (input: never) => RefusalInput>;
+};
+
+/** Narrows a partially built map once every declared key has been written. */
+function assertComplete<T extends object>(
+  value: Partial<T>,
+  keys: readonly (keyof T)[],
+  label: string,
+): asserts value is T {
+  const missing = keys.filter((key) => value[key] === undefined);
+  if (missing.length > 0)
+    throw new Error(`${label} missing: ${missing.join(", ")}`);
+}
+
+function setRefusal<K extends SituationName>(
+  refusals: { [P in SituationName]?: SituationErrors[P] },
+  name: K,
+  refusal: SituationErrors[K],
+): void {
+  refusals[name] = refusal;
+}
 
 export function createSituationErrors(
   overrides: Partial<SituationErrorConstructors> = {},
@@ -118,16 +139,26 @@ export function createSituationErrors(
     ...defaultSituationErrorConstructors(),
     ...overrides,
   };
-  return Object.fromEntries(
-    (Object.keys(situationCatalog) as SituationName[]).map((name) => {
-      const build = createRefusal(name, constructors);
-      if (!(name in refusalWithInput)) return [name, build];
-      const withInput = refusalWithInput[name as RefusalWithInput] as (
-        input: RefusalInput[keyof RefusalInput],
-      ) => RefusalInput;
-      return [name, (input: never) => build(withInput(input))];
-    }),
-  ) as SituationErrors;
+  const names = Object.keys(situationCatalog) as SituationName[];
+  const refusals: { [P in SituationName]?: SituationErrors[P] } = {};
+  for (const name of names) {
+    const build = createRefusal(name, constructors);
+    if (name === "projectCompletionBlocked") {
+      setRefusal(refusals, name, (blockers) =>
+        build(refusalWithInput.projectCompletionBlocked(blockers)),
+      );
+      continue;
+    }
+    if (name === "submissionIncomplete") {
+      setRefusal(refusals, name, (issues) =>
+        build(refusalWithInput.submissionIncomplete(issues)),
+      );
+      continue;
+    }
+    setRefusal(refusals, name, build);
+  }
+  assertComplete(refusals, names, "situation refusals");
+  return refusals;
 }
 
 export type ScopeErrorConstructors = Partial<

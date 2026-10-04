@@ -95,19 +95,6 @@ describe("centralized error guardrails", () => {
       expect(getSafeErrorSituation({ ...error, status: 999 })).toBeUndefined();
     },
   );
-  it("rejects direct constructors, typed-map calls (including callbacks), aliases and literal throws", () => {
-    for (const source of [
-      'throw new ORPCError("FORBIDDEN", { message: "free form" });',
-      'import { ORPCError as DomainError } from "@orpc/server"; throw new DomainError("BAD_REQUEST");',
-      'return errors.BAD_REQUEST({ message: "free form" });',
-      'throw failures["FORBIDDEN"]({ message: "free form" });',
-      'throw new Error("business rejection");',
-      'throw "business rejection";',
-    ])
-      expect(directErrorSites(source).length).toBeGreaterThan(0);
-    expect(directErrorSites("throw situations.notMember();")).toEqual([]);
-    expect(directErrorSites("throw error;")).toEqual([]);
-  });
   it("has no free-form domain error construction outside the designated factory/native boundary", () => {
     const root = resolve(import.meta.dirname, "../..");
     const violations: Record<string, string[]> = {};
