@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
+import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { cn } from "@/lib/utils";
 
 const baseNavigationItems = [
@@ -46,6 +47,9 @@ type AppNavigationProps = {
   name: string;
   showOrganization?: boolean;
   showPartnerOrganizations?: boolean;
+  showOrganizationSwitcher?: boolean;
+  staffOrganizations?: { id: string; name: string }[];
+  activeOrganizationId?: string;
 };
 
 export function AppNavigation({
@@ -53,6 +57,9 @@ export function AppNavigation({
   name,
   showOrganization = false,
   showPartnerOrganizations = true,
+  showOrganizationSwitcher = false,
+  staffOrganizations = [],
+  activeOrganizationId,
 }: AppNavigationProps) {
   const pathname = usePathname();
   // Presentation-only: each page and its procedures gate access. The Partner
@@ -67,8 +74,16 @@ export function AppNavigation({
     <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
       <div className="flex h-18 items-center justify-between">
         <SiteBrand href="/projects" />
-        <div className="flex items-center gap-2 lg:hidden">
-          <AccountMenu compact email={email} name={name} pathname={pathname} />
+        <div className="flex items-center gap-2">
+          {showOrganizationSwitcher && activeOrganizationId ? (
+            <OrganizationSwitcher
+              activeOrganizationId={activeOrganizationId}
+              organizations={staffOrganizations}
+            />
+          ) : null}
+          <div className="lg:hidden">
+            <AccountMenu compact email={email} name={name} pathname={pathname} />
+          </div>
         </div>
       </div>
 
