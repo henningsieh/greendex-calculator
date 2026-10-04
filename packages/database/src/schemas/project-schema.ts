@@ -29,7 +29,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { invitation, organization, user } from "./auth-schema";
+import { organization, user } from "./auth-schema";
 
 /**
  * Custom Drizzle type for distance values.
@@ -271,9 +271,17 @@ export const partnerOrganizationSetupLinksTable = pgTable(
   (table) => [index("partner_setup_link_project_idx").on(table.projectId)],
 );
 
-/** Reusable, app-owned entry point bound to one Project Partnership. */
-export const participantRegistrationLinksTable = pgTable(
-  "participant_registration_link",
+/**
+ * App-owned participant entry token for one Project Partnership (ADR-0013/0015):
+ * one mechanism, two flavours. A bound `email` makes it a Participant Invitation,
+ * redeemable only by that verified account with the bound secret before `expiresAt`.
+ * A null email makes it a shareable Participant Registration Link, redeemable by
+ * anyone holding the secret, reusable and never expiring (`expiresAt` stays null).
+ * Both redeem through the same join procedure with the identical result.
+ * Better Auth's invitation table is never written here.
+ */
+export const participantEntryTokensTable = pgTable(
+  "participant_entry_token",
   {
     id: text("id")
       .primaryKey()
@@ -283,49 +291,26 @@ export const participantRegistrationLinksTable = pgTable(
       .references(() => projectPartnerOrganizationsTable.id, {
         onDelete: "cascade",
       }),
-    secretHash: text("secret_hash").notNull(),
-    enabled: boolean("enabled").default(true).notNull(),
-    createdByUserId: text("created_by_user_id")
-      .notNull()
-      .references(() => user.id),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    closedByUserId: text("closed_by_user_id").references(() => user.id),
-    closedAt: timestamp("closed_at"),
-  },
-  (table) => [
-    index("participant_registration_link_partnership_idx").on(
-      table.partnershipId,
-    ),
-  ],
-);
-
-/** Connects a Better Auth invitation to its Project Partnership without creating Participation early. */
-export const participantInvitationBridgesTable = pgTable(
-  "participant_invitation_bridge",
-  {
-    invitationId: text("invitation_id")
-      .primaryKey()
-      .references(() => invitation.id),
-    partnershipId: text("partnership_id")
-      .notNull()
-      .references(() => projectPartnerOrganizationsTable.id, {
-        onDelete: "cascade",
-      }),
     projectId: text("project_id")
       .notNull()
       .references(() => projectsTable.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
+    email: text("email"),
+    secretHash: text("secret_hash").notNull(),
     status: text("status").default("pending").notNull(),
+    expiresAt: timestamp("expires_at"),
     issuedByUserId: text("issued_by_user_id")
       .notNull()
       .references(() => user.id),
     issuedAt: timestamp("issued_at").defaultNow().notNull(),
     acceptedAt: timestamp("accepted_at"),
+    closedAt: timestamp("closed_at"),
+    closedByUserId: text("closed_by_user_id").references(() => user.id),
   },
   (table) => [
-    uniqueIndex("participant_invitation_live_email_unique")
+    index("participant_entry_token_partnership_idx").on(table.partnershipId),
+    uniqueIndex("participant_entry_token_pending_email_unique")
       .on(table.projectId, table.email)
-      .where(sql`${table.status} = 'pending'`),
+      .where(sql`${table.status} = 'pending' and ${table.email} is not null`),
   ],
 );
 

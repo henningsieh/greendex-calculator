@@ -1,12 +1,7 @@
 import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
-import {
-  invitation,
-  member,
-  participantInvitationBridgesTable as bridges,
-  user,
-} from "@greendex/database/schema";
+import { invitation, member, user } from "@greendex/database/schema";
 import { ORPCError } from "@orpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -255,17 +250,12 @@ export const acceptInvitation = authorized
     requireCostTrackerRole(pending.role, () =>
       createSituationErrors(errors).invalidOrganizationRole(),
     );
-    // Participant Invitations share this table with role "participant" plus a
-    // bridge row; accepting one here would bypass agreement and Project
-    // Participation checks, so only staff invitations may proceed.
+    // Participant entry never flows through Better Auth invitations
+    // (ADR-0013): any row carrying the participant role — including stale
+    // development rows — would bypass agreement and Project Participation
+    // checks here, so only staff invitations may proceed.
     if (pending.role === "participant")
       throw createSituationErrors(errors).staffInvitationWrongKind();
-    const [bridge] = await db
-      .select({ invitationId: bridges.invitationId })
-      .from(bridges)
-      .where(eq(bridges.invitationId, input.invitationId))
-      .limit(1);
-    if (bridge) throw createSituationErrors(errors).staffInvitationWrongKind();
     if (pending.status !== "pending")
       throw createSituationErrors(errors).staffInvitationClosed();
     if (pending.expiresAt < new Date())

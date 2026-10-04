@@ -1,17 +1,15 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
   account,
   claimsTable,
-  invitation,
   member,
   organization,
   partnerCoordinatorAssignmentsTable as coordinatorAssignments,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
+  participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
-  participantRegistrationLinksTable as links,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
   projectsTable as projects,
@@ -34,8 +32,8 @@ import {
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
 // deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
 // API-setup exceptions: verified disposable Users, credential accounts, Organizations,
-// Projects, Partnerships, a role-only Group Organizer C, and native Participant/Organization Invitations with their
-// bridge records are inserted in beforeAll. The initial Participant Invitation and
+// Projects, Partnerships, a role-only Group Organizer C, and app-owned Participant
+// Invitations are inserted in beforeAll. The initial Participant Invitation and
 // its replacement are never submitted through the UI: both issue and reissue send
 // real SMTP mail. Browser redemption, profile, draft acceptance, join and link
 // creation/closure/reopening do not send mail. Mail delivery remains manual/Vitest evidence.
@@ -82,6 +80,18 @@ const actors = Object.fromEntries(
   }
 >;
 registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
+
+// App-owned invitation secrets live only in setup and the emailed links.
+// The join procedure stores hashes; these fixtures carry the bound secrets.
+const invitationSecrets: Record<string, string> = {
+  [ids.oldInvitation]: `old-secret-${suffix}`,
+  [ids.invitation]: `invitation-secret-${suffix}`,
+};
+registerPrivateValues(...Object.values(invitationSecrets));
+const invitationSecretHash = (invitationId: string) =>
+  createHash("sha256").update(invitationSecrets[invitationId]!).digest("hex");
+const invitationUrl = (invitationId: string) =>
+  `/participant-invitations/${invitationId}?secret=${encodeURIComponent(invitationSecrets[invitationId]!)}`;
 type Actor = keyof typeof actors;
 const contexts: BrowserContext[] = [];
 let sharedLink: string;
@@ -109,8 +119,7 @@ async function counts() {
     [participantRows],
     [profileRows],
     [acceptanceRows],
-    [invitations],
-    [bridgeRows],
+    [invitationRows],
     [linkRows],
   ] = await Promise.all([
     db.select({ value: count() }).from(user).where(inArray(user.id, actorIds)),
@@ -152,16 +161,12 @@ async function counts() {
       .where(inArray(acceptances.userId, actorIds)),
     db
       .select({ value: count() })
-      .from(invitation)
-      .where(inArray(invitation.id, [ids.oldInvitation, ids.invitation])),
+      .from(entryTokens)
+      .where(inArray(entryTokens.id, [ids.oldInvitation, ids.invitation])),
     db
       .select({ value: count() })
-      .from(bridges)
-      .where(inArray(bridges.projectId, projectIds)),
-    db
-      .select({ value: count() })
-      .from(links)
-      .where(inArray(links.partnershipId, partnershipIds)),
+      .from(entryTokens)
+      .where(inArray(entryTokens.partnershipId, partnershipIds)),
   ]);
   return {
     users: users!.value,
@@ -174,8 +179,7 @@ async function counts() {
     participants: participantRows!.value,
     profiles: profileRows!.value,
     acceptances: acceptanceRows!.value,
-    invitations: invitations!.value,
-    bridges: bridgeRows!.value,
+    invitations: invitationRows!.value,
     links: linkRows!.value,
   };
 }
@@ -367,15 +371,16 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         organizationId: ids.partner,
       },
     ]);
-    await db.insert(invitation).values([
+    await db.insert(entryTokens).values([
       {
         id: ids.oldInvitation,
-        organizationId: ids.host,
+        partnershipId: ids.partnership,
+        projectId: ids.main,
         email: actors.T.email,
-        role: "participant",
+        secretHash: invitationSecretHash(ids.oldInvitation),
         status: "pending",
         expiresAt: new Date(Date.now() + 3_600_000),
-        inviterId: actors.P.id,
+        issuedByUserId: actors.P.id,
       },
     ]);
     // Hosting coordinator provisioning has no product UI yet (ADR-0012).
@@ -386,13 +391,6 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       userId: actors.Q.id,
       role: "project-coordinator",
       createdAt: now,
-    });
-    await db.insert(bridges).values({
-      invitationId: ids.oldInvitation,
-      partnershipId: ids.partnership,
-      projectId: ids.main,
-      email: actors.T.email,
-      issuedByUserId: actors.P.id,
     });
   });
 
@@ -420,20 +418,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .delete(participants)
       .where(inArray(participants.projectId, [ids.main, ids.other]));
     await db
-      .delete(bridges)
-      .where(inArray(bridges.projectId, [ids.main, ids.other]));
-    await db
-      .delete(links)
-      .where(
-        inArray(links.partnershipId, [
-          ids.partnership,
-          ids.foreignPartnership,
-          ids.otherPartnership,
-        ]),
-      );
-    await db
-      .delete(invitation)
-      .where(inArray(invitation.id, [ids.oldInvitation, ids.invitation]));
+      .delete(entryTokens)
+      .where(inArray(entryTokens.projectId, [ids.main, ids.other]));
     await db
       .delete(partnerships)
       .where(
@@ -522,29 +508,19 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(
       p.getByRole("button", { name: `Reissue invitation for ${actors.T.email}` }),
     ).toBeVisible();
-    // Reissue UI sends mail. Rotate native and bridge records in setup instead.
+    // Reissue UI sends mail. Rotate app-owned invitation records in setup instead.
     await db
-      .update(bridges)
+      .update(entryTokens)
       .set({ status: "revoked" })
-      .where(eq(bridges.invitationId, ids.oldInvitation));
-    await db
-      .update(invitation)
-      .set({ status: "canceled" })
-      .where(eq(invitation.id, ids.oldInvitation));
-    await db.insert(invitation).values({
+      .where(eq(entryTokens.id, ids.oldInvitation));
+    await db.insert(entryTokens).values({
       id: ids.invitation,
-      organizationId: ids.host,
-      email: actors.T.email,
-      role: "participant",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 3_600_000),
-      inviterId: actors.P.id,
-    });
-    await db.insert(bridges).values({
-      invitationId: ids.invitation,
       partnershipId: ids.partnership,
       projectId: ids.main,
       email: actors.T.email,
+      secretHash: invitationSecretHash(ids.invitation),
+      status: "pending",
+      expiresAt: new Date(Date.now() + 3_600_000),
       issuedByUserId: actors.P.id,
     });
     await p.reload();
@@ -553,7 +529,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       p.getByRole("button", { name: `Reissue invitation for ${actors.T.email}` }),
     ).toBeVisible();
     const t = await pageFor(browser, "T", baseURL!);
-    await t.goto(`/participant-invitations/${ids.oldInvitation}`);
+    await t.goto(invitationUrl(ids.oldInvitation));
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
@@ -567,7 +543,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .from(participants)
         .where(eq(participants.userId, actors.T.id)),
     ).toHaveLength(0);
-    await t.goto(`/participant-invitations/${ids.invitation}`);
+    await t.goto(invitationUrl(ids.invitation));
     await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
   });
 
@@ -613,8 +589,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const row = p.getByRole("listitem").filter({ hasText: `Link ${id}` });
     await expect(row.getByText("Open", { exact: true })).toBeVisible();
     expect(
-      (await db.select().from(links).where(eq(links.id, id)))[0]?.enabled,
-    ).toBe(true);
+      (await db.select().from(entryTokens).where(eq(entryTokens.id, id)))[0]
+        ?.status,
+    ).toBe("pending");
     await p.reload();
     await expect(
       p.getByRole("button", { name: `Close registration link ${id}` }),
@@ -668,8 +645,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
           .getByText("Closed", { exact: true }),
       ).toBeVisible();
       expect(
-        (await db.select().from(links).where(eq(links.id, id)))[0]?.enabled,
-      ).toBe(false);
+        (await db.select().from(entryTokens).where(eq(entryTokens.id, id)))[0]
+          ?.status,
+      ).toBe("revoked");
     } finally {
       await db
         .delete(claimsTable)
@@ -682,7 +660,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     baseURL,
   }) => {
     const t = await pageFor(browser, "T", baseURL!);
-    await join(t, `/participant-invitations/${ids.invitation}`, "T");
+    await join(t, invitationUrl(ids.invitation), "T");
     await assertJoined("T");
   });
 

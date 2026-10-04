@@ -1,21 +1,23 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
-
 import { db } from "@greendex/database";
 import {
-  invitation,
-  participantInvitationBridgesTable as bridges,
   projectParticipantsTable as participants,
   user,
 } from "@greendex/database/schema";
 import { and, eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  findPendingInvitationToken,
+  invitationTokenExpiry,
+  issueEntryToken,
+  revokeEntryToken,
+} from "@/features/authentication/procedures/entry-tokens";
 import { deliverParticipantInvitation } from "@/features/authentication/procedures/invitation-delivery";
 import {
   id,
   invitationResult,
-  newNativeParticipantInvitation,
+  INVITATION_TTL_MS,
   normalizedEmail,
 } from "@/features/authentication/procedures/shared";
 import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
@@ -50,81 +52,33 @@ export function buildIssueInvitation() {
         .limit(1);
       if (existingParticipation)
         throw createSituationErrors(errors).participantAlreadyParticipates();
-      const [existingBridge] = await db
-        .select({
-          invitationId: bridges.invitationId,
-          partnershipId: bridges.partnershipId,
-        })
-        .from(bridges)
-        .where(
-          and(
-            eq(bridges.projectId, partnership.projectId),
-            eq(bridges.email, input.email),
-            eq(bridges.status, "pending"),
-          ),
-        )
-        .limit(1);
-      if (existingBridge) {
-        if (existingBridge.partnershipId !== partnership.id)
+      const existing = await findPendingInvitationToken(
+        partnership.projectId,
+        input.email,
+      );
+      if (existing) {
+        if (existing.partnershipId !== partnership.id)
           throw createSituationErrors(errors).participantAlreadyInvited();
-        const [native] = await db
-          .select({
-            status: invitation.status,
-            expiresAt: invitation.expiresAt,
-          })
-          .from(invitation)
-          .where(eq(invitation.id, existingBridge.invitationId))
-          .limit(1);
-        if (
-          native &&
-          native.status === "pending" &&
-          native.expiresAt > new Date()
-        )
-          // Idempotent issuance never resends: only explicit reissue delivers again.
+        if (existing.expiresAt !== null && existing.expiresAt > new Date())
+          // Idempotent issuance never resends and never recovers the secret:
+          // only explicit reissue delivers again.
           return {
-            invitationId: existingBridge.invitationId,
+            invitationId: existing.id,
+            secret: null,
             delivery: "already-issued" as const,
           };
-        // Stale bridge: the native invitation is missing, expired, or closed.
-        // Retire it and fall through to fresh issuance below.
-        await db.transaction(async (tx) => {
-          await tx
-            .update(invitation)
-            .set({ status: "canceled" })
-            .where(
-              and(
-                eq(invitation.id, existingBridge.invitationId),
-                eq(invitation.status, "pending"),
-              ),
-            );
-          await tx
-            .update(bridges)
-            .set({ status: "revoked" })
-            .where(eq(bridges.invitationId, existingBridge.invitationId));
-        });
+        // Stale invitation: retire it and fall through to fresh issuance below.
+        await revokeEntryToken(existing.id);
       }
-      // Only the Partner Organization issues entry points, and it may not call Better
-      // Auth's host-only invite endpoint. Write the native invitation shape plus
-      // the bridge atomically, under the verified issuer guard.
-      const invitationId = randomUUID();
-      await db.transaction(async (tx) => {
-        await tx
-          .insert(invitation)
-          .values(
-            newNativeParticipantInvitation(
-              invitationId,
-              partnership.hostOrganizationId,
-              input.email,
-              context.user.id,
-            ),
-          );
-        await tx.insert(bridges).values({
-          invitationId,
-          partnershipId: partnership.id,
-          projectId: partnership.projectId,
-          email: input.email,
-          issuedByUserId: context.user.id,
-        });
+      // Only the Partner Organization issues entry points. The invitation is
+      // app-owned: durable issuance first, delivery afterwards, never a
+      // Better Auth write (ADR-0013).
+      const issued = await issueEntryToken(errors, {
+        partnershipId: partnership.id,
+        projectId: partnership.projectId,
+        email: input.email,
+        expiresAt: invitationTokenExpiry(INVITATION_TTL_MS),
+        issuedByUserId: context.user.id,
       });
       console.info("Participant invitation issued", {
         issuer: context.user.id,
@@ -132,6 +86,6 @@ export function buildIssueInvitation() {
         partnershipId: partnership.id,
         at: new Date().toISOString(),
       });
-      return deliverParticipantInvitation(input.email, invitationId);
+      return deliverParticipantInvitation(input.email, issued.id, issued.secret);
     });
 }

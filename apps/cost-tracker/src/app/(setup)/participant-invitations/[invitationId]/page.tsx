@@ -11,11 +11,16 @@ export const metadata: Metadata = { title: "Accept Project invitation" };
 
 export default async function ParticipantInvitationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ invitationId: string }>;
+  searchParams: Promise<{ secret?: string | string[] }>;
 }) {
   await requireSession();
-  const { invitationId } = await params;
+  const [{ invitationId }, { secret }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-10">
       <ParticipantJoin
@@ -23,7 +28,11 @@ export default async function ParticipantInvitationPage({
           ...CURRENT_PARTICIPANT_AGREEMENT_VERSION,
           content: AGREEMENT_COPY,
         }}
-        source={invitationId ? { kind: "invitation", invitationId } : null}
+        source={
+          invitationId && typeof secret === "string" && secret
+            ? { kind: "invitation", invitationId, secret }
+            : null
+        }
       />
     </main>
   );

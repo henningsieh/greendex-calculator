@@ -6,8 +6,7 @@ import {
   duplicateReviewTasksTable as reviewTasks,
   member,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
-  participantRegistrationLinksTable as links,
+  participantEntryTokensTable as entryTokens,
   participantJourneysTable as journeys,
   participantProfilesTable as profiles,
   projectParticipantsTable as participants,
@@ -97,7 +96,7 @@ export function createParticipationProcedures(
         context.session.activeOrganizationId,
         errors,
       );
-      const [rows, invitations, registrationLinks, project] = await Promise.all([
+      const [rows, issued, project] = await Promise.all([
         db
           .select(selected)
           .from(participants)
@@ -110,16 +109,12 @@ export function createParticipationProcedures(
           ),
         db
           .select({
-            invitationId: bridges.invitationId,
-            email: bridges.email,
-            status: bridges.status,
+            id: entryTokens.id,
+            email: entryTokens.email,
+            status: entryTokens.status,
           })
-          .from(bridges)
-          .where(eq(bridges.partnershipId, input.partnershipId)),
-        db
-          .select({ id: links.id, enabled: links.enabled })
-          .from(links)
-          .where(eq(links.partnershipId, input.partnershipId)),
+          .from(entryTokens)
+          .where(eq(entryTokens.partnershipId, input.partnershipId)),
         db
           .select({ name: projects.name })
           .from(projects)
@@ -127,6 +122,24 @@ export function createParticipationProcedures(
           .limit(1)
           .then((found) => found[0]),
       ]);
+      // One token table, two flavours: a bound email is an invitation,
+      // a null email is a shareable link (pending means open).
+      const invitations = issued.flatMap((token) =>
+        token.email === null
+          ? []
+          : [
+              {
+                invitationId: token.id,
+                email: token.email,
+                status: token.status,
+              },
+            ],
+      );
+      const registrationLinks = issued.flatMap((token) =>
+        token.email === null
+          ? [{ id: token.id, enabled: token.status === "pending" }]
+          : [],
+      );
       return {
         projectName: project?.name ?? "",
         participations: rows,
