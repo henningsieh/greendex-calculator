@@ -1822,10 +1822,7 @@ describe("Claim competing writes", () => {
         allocations: [{ projectParticipantId: robin }],
       }),
     ]);
-    const [claim] = await db
-      .select()
-      .from(claims)
-      .where(eq(claims.id, claimId));
+    const [claim] = await db.select().from(claims).where(eq(claims.id, claimId));
     const submittedEvents = (await events()).filter((event) =>
       ["submitted", "resubmitted"].includes(event.eventType),
     );
@@ -1839,7 +1836,9 @@ describe("Claim competing writes", () => {
         reason: { code: "BAD_REQUEST" },
       });
       expect(submittedEvents).toHaveLength(1);
-      expect((await client.costs.list({ partnershipId: own })).entries).toHaveLength(2);
+      expect(
+        (await client.costs.list({ partnershipId: own })).entries,
+      ).toHaveLength(2);
     } else {
       // The edit won: the new entry lacks Proof Documents, so submission is
       // refused as incomplete and the Claim stays editable with no event.
@@ -1850,7 +1849,9 @@ describe("Claim competing writes", () => {
       expect(saved.status).toBe("fulfilled");
       expect(claim.status).toBe("editable");
       expect(submittedEvents).toHaveLength(0);
-      expect((await client.costs.list({ partnershipId: own })).entries).toHaveLength(3);
+      expect(
+        (await client.costs.list({ partnershipId: own })).entries,
+      ).toHaveLength(3);
     }
     // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
   }, 15_000);
@@ -1909,8 +1910,7 @@ describe("Claim competing writes", () => {
         data: { reason: "CLAIM_SUBMITTED_REQUIRED" },
       },
     };
-    const winner =
-      first.status === "fulfilled" ? first.value.status : "rejected";
+    const winner = first.status === "fulfilled" ? first.value.status : "rejected";
     expect(first.status === "fulfilled" ? second : first).toMatchObject(
       loserRefusal,
     );
@@ -1948,10 +1948,7 @@ describe("Claim competing writes", () => {
       status: "fulfilled",
       value: { status: "approved", approvedAmountEur: payable },
     });
-    const [claim] = await db
-      .select()
-      .from(claims)
-      .where(eq(claims.id, claimId));
+    const [claim] = await db.select().from(claims).where(eq(claims.id, claimId));
     const types = (await events()).map((event) => event.eventType);
     if (payment.status === "fulfilled") {
       expect(payment.value).toMatchObject({

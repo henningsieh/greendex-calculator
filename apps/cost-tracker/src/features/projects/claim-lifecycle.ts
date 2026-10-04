@@ -90,7 +90,10 @@ export function canCorrectPaidFlag(status: ClaimStatus): boolean {
 }
 
 /** Every decision the review panel may offer, derived from the shared rules. */
-export type ClaimPanelAction = ClaimReviewDecision | "markPaid" | "correctPayment";
+export type ClaimPanelAction =
+  | ClaimReviewDecision
+  | "markPaid"
+  | "correctPayment";
 
 export function claimPanelActions(
   status: ClaimStatus | null | undefined,

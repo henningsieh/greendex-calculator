@@ -65,9 +65,7 @@ describe("Hosting review transitions", () => {
     });
     // Reopening returns the Claim to review locked; only a correction
     // request reopens Partner editing.
-    expect(
-      canPartnerEditClaim(claimReviewTransition("reopen").to),
-    ).toBe(false);
+    expect(canPartnerEditClaim(claimReviewTransition("reopen").to)).toBe(false);
   });
 
   it("permits review decisions only from their source status", () => {
