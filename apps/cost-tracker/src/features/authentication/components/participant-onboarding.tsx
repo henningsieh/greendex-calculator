@@ -1,4 +1,5 @@
 "use client";
+import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { ORPCError } from "@orpc/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
@@ -88,6 +89,7 @@ export function ParticipantJoin({
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [country, setCountry] = useState<EUCountryCode | "">("");
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
@@ -95,13 +97,13 @@ export function ParticipantJoin({
 
   async function join(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!source || !available || !accepted || pending) return;
+    if (!source || !available || !accepted || !country || pending) return;
     setPending(true);
     setError(undefined);
     try {
       await orpc.participantOnboarding.join({
         source,
-        profile: { fullName: name },
+        profile: { fullName: name, country },
         agreement: { accepted: true },
       });
       router.replace("/participant");
@@ -147,12 +149,36 @@ export function ParticipantJoin({
                 onChange={(event) => setName(event.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="participant-country">Country</Label>
+              <select
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                id="participant-country"
+                required
+                value={country}
+                onChange={(event) =>
+                  setCountry(event.target.value as EUCountryCode)
+                }
+              >
+                <option disabled value="">
+                  Select your EU country
+                </option>
+                {EU_COUNTRIES.map(({ code }) => (
+                  <option key={code} value={code}>
+                    {new Intl.DisplayNames(["en"], { type: "region" }).of(code)}
+                  </option>
+                ))}
+              </select>
+            </div>
             <AgreementAcceptance
               agreement={agreement}
               checked={accepted}
               onCheckedChange={setAccepted}
             />
-            <Button disabled={!available || !accepted || pending} type="submit">
+            <Button
+              disabled={!available || !accepted || !country || pending}
+              type="submit"
+            >
               {pending ? "Joining…" : "Join Project"}
             </Button>
             {error && <p role="alert">{error}</p>}

@@ -117,6 +117,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         .select({
           id: participants.id,
           partnerId: participants.representedOrganizationId,
+          country: participants.country,
         })
         .from(participants)
         .where(
@@ -275,6 +276,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           .select({
             id: participants.id,
             partnerId: participants.representedOrganizationId,
+            country: participants.country,
           })
           .from(participants)
           .where(
@@ -303,6 +305,15 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           })
           .onConflictDoNothing();
         let participationId = existing?.id;
+        if (existing && !existing.country) {
+          // Legacy rows predate the required country: a repeat join fills the
+          // missing value instead of failing idempotency. Set values stay —
+          // corrections belong to the administrator update path.
+          await tx
+            .update(participants)
+            .set({ country: input.profile.country })
+            .where(eq(participants.id, existing.id));
+        }
         if (!participationId) {
           const [created] = await tx
             .insert(participants)
@@ -312,6 +323,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
               userId: context.user.id,
               displayName: input.profile.fullName,
               email: context.user.email.trim().toLowerCase(),
+              country: input.profile.country,
             })
             .onConflictDoNothing()
             .returning({ id: participants.id });

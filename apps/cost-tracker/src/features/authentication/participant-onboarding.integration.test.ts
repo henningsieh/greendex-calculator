@@ -163,7 +163,7 @@ beforeAll(async () => {
     startDate: now,
     endDate: now,
     location: "Riga",
-    country: "LV",
+    country: "LV" as const,
     organizationId: host,
   });
   await db.insert(hostAssignments).values({ projectId: project, userId: owner });
@@ -321,7 +321,7 @@ describe("Participant onboarding procedures", () => {
   it("distinguishes missing invitation, wrong account and expired state without writes", async () => {
     const input = (invitationId: string) => ({
       source: { kind: "invitation" as const, invitationId },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     });
     actor = recipient;
@@ -413,7 +413,7 @@ describe("Participant onboarding procedures", () => {
       await expect(
         client.participantOnboarding.join({
           source: { kind: "invitation", invitationId: issued.invitationId },
-          profile: { fullName: "Recipient" },
+          profile: { fullName: "Recipient", country: "LV" as const },
           agreement: { accepted: true },
         }),
       ).rejects.toMatchObject({ status, data: { reason } });
@@ -445,7 +445,7 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "invitation", invitationId: issued.invitationId },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({
@@ -463,7 +463,7 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "link", id: link.id, secret: link.secret },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR", status: 500 });
@@ -505,7 +505,7 @@ describe("Participant onboarding procedures", () => {
     activeOrganizationId = undefined as unknown as string;
     const joined = await client.participantOnboarding.join({
       source: { kind: "link", id: link.id, secret: link.secret },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true },
     });
     expect(joined.participationId).toBeTruthy();
@@ -553,7 +553,7 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "link", id: created.id, secret: created.secret },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
@@ -565,7 +565,7 @@ describe("Participant onboarding procedures", () => {
     actor = recipient;
     await client.participantOnboarding.join({
       source: { kind: "link", id: created.id, secret: created.secret },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true },
     });
     // A second partner's link is never authority to replace a previous Participation.
@@ -584,7 +584,7 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "link", id: second.id, secret: "other-secret" },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({
@@ -633,14 +633,14 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "link", id: first.id, secret: first.secret },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       client.participantOnboarding.join({
         source: { kind: "link", id: second.id, secret: second.secret },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
@@ -676,7 +676,7 @@ describe("Participant onboarding procedures", () => {
     const join = () =>
       client.participantOnboarding.join({
         source: { kind: "link" as const, id: link.id, secret: link.secret },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true as const },
       });
     for (const role of [
@@ -736,7 +736,7 @@ describe("Participant onboarding procedures", () => {
     actor = recipient;
     const input = {
       source: { kind: "link" as const, id: link.id, secret: link.secret },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
     const outcomes = await Promise.allSettled([
@@ -778,7 +778,7 @@ describe("Participant onboarding procedures", () => {
     actor = recipient;
     const input = {
       source: { kind: "link" as const, id: link.id, secret: link.secret },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
     authMocks.grantParticipantMembership.mockResolvedValueOnce(
@@ -825,7 +825,7 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "invitation", invitationId: issued.invitationId },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
@@ -851,7 +851,7 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "invitation", invitationId: reissued.invitationId },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
@@ -923,14 +923,14 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "invitation", invitationId: first.invitationId },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       client.participantOnboarding.join({
         source: { kind: "invitation", invitationId: third.invitationId },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
@@ -1066,7 +1066,7 @@ describe("Participant onboarding procedures", () => {
     await expect(
       client.participantOnboarding.join({
         source: { kind: "invitation", invitationId: fresh.invitationId },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
@@ -1080,7 +1080,7 @@ describe("Participant onboarding procedures", () => {
     const join = (secret: string) =>
       client.participantOnboarding.join({
         source: { kind: "link" as const, id: link.id, secret },
-        profile: { fullName: "Recipient" },
+        profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true as const },
       });
     await expect(join("forged")).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -1110,7 +1110,7 @@ describe("Participant onboarding procedures", () => {
     );
     const input = {
       source: { kind: "invitation" as const, invitationId: issued.invitationId },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
@@ -1146,7 +1146,7 @@ describe("Participant onboarding procedures", () => {
     actor = recipient;
     const input = {
       source: { kind: "invitation" as const, invitationId: issued.invitationId },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
     // Concurrent legacy email-only row forces the participation insert to fail after BA accepts.
@@ -1476,7 +1476,7 @@ describe("Participant onboarding procedures", () => {
     actor = recipient;
     const input = {
       source: { kind: "invitation" as const, invitationId: issued.invitationId },
-      profile: { fullName: "Recipient" },
+      profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
     const first = await client.participantOnboarding.join(input);
@@ -1491,5 +1491,150 @@ describe("Participant onboarding procedures", () => {
       )[0]?.status,
     ).toBe("accepted");
     expect(await memberships()).toEqual([{ role: "participant" }]);
+  });
+
+  it("persists the EU country on the Project Participation when joining through a reusable link", async () => {
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    actor = recipient;
+    const joined = await client.participantOnboarding.join({
+      source: { kind: "link", id: link.id, secret: link.secret },
+      profile: { fullName: "Recipient", country: "DE" },
+      agreement: { accepted: true },
+    });
+    const [row] = await db
+      .select()
+      .from(participants)
+      .where(eq(participants.id, joined.participationId));
+    expect(row?.country).toBe("DE");
+    expect(row?.userId).toBe(recipient);
+    // The country lives on the Participation, never on the User profile.
+    expect(
+      await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+    ).toHaveLength(1);
+  });
+
+  it("rejects link joins without a valid EU country before any writes", async () => {
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    actor = recipient;
+    const join = (profile: unknown) =>
+      client.participantOnboarding.join({
+        source: { kind: "link" as const, id: link.id, secret: link.secret },
+        profile,
+        agreement: { accepted: true as const },
+      } as never);
+    await expect(
+      join({ fullName: "Recipient", country: "XX" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(join({ fullName: "Recipient" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(await memberships()).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(participants)
+        .where(eq(participants.projectId, project)),
+    ).toHaveLength(0);
+    expect(
+      await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+    ).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(acceptances)
+        .where(eq(acceptances.userId, recipient)),
+    ).toHaveLength(0);
+  });
+
+  it("lets different Users redeem the same link without consuming it, and repeats idempotently", async () => {
+    const second = `onboarding-second-${suffix}`;
+    const secondEmail = `second-${suffix}@example.org`;
+    await db.insert(user).values({
+      id: second,
+      name: "Second",
+      email: secondEmail,
+      emailVerified: true,
+    });
+    try {
+      const link = await client.participantOnboarding.createRegistrationLink({
+        partnershipId: partnership,
+      });
+      const linkInput = {
+        source: { kind: "link" as const, id: link.id, secret: link.secret },
+        agreement: { accepted: true as const },
+      };
+      actor = recipient;
+      const first = await client.participantOnboarding.join({
+        ...linkInput,
+        profile: { fullName: "Recipient", country: "LV" as const },
+      });
+      // One redemption never consumes the link globally.
+      expect(
+        (await db.select().from(links).where(eq(links.id, link.id)))[0]?.enabled,
+      ).toBe(true);
+      // Same-User repeat redemption is idempotent.
+      expect(
+        await client.participantOnboarding.join({
+          ...linkInput,
+          profile: { fullName: "Recipient", country: "LV" as const },
+        }),
+      ).toEqual(first);
+      // A second eligible User redeems the same link independently.
+      authMocks.getSession.mockImplementation(async () => ({
+        user: {
+          id: second,
+          name: "Second",
+          email: secondEmail,
+          emailVerified: true,
+        },
+        session: { id: randomUUID(), activeOrganizationId },
+      }));
+      authMocks.addMember.mockImplementationOnce(
+        async ({
+          body,
+        }: {
+          body: { userId: string; organizationId: string };
+        }) => {
+          await db.insert(member).values({
+            id: randomUUID(),
+            organizationId: body.organizationId,
+            userId: body.userId,
+            role: "participant",
+            createdAt: new Date(),
+          });
+          return new Response(null, { status: 200 });
+        },
+      );
+      actor = second;
+      const other = await client.participantOnboarding.join({
+        ...linkInput,
+        profile: { fullName: "Second", country: "FR" },
+      });
+      expect(other.participationId).not.toBe(first.participationId);
+      const rows = await db
+        .select()
+        .from(participants)
+        .where(eq(participants.projectId, project));
+      expect(rows).toHaveLength(2);
+      expect(rows.find((row) => row.userId === second)?.country).toBe("FR");
+      const [acceptance] = await db
+        .select()
+        .from(acceptances)
+        .where(eq(acceptances.userId, second));
+      expect(acceptance).toMatchObject({
+        version: version.id,
+        contentHash: version.contentHash,
+      });
+    } finally {
+      await db.delete(acceptances).where(eq(acceptances.userId, second));
+      await db.delete(profiles).where(eq(profiles.userId, second));
+      await db.delete(participants).where(eq(participants.projectId, project));
+      await db.delete(member).where(eq(member.userId, second));
+      await db.delete(user).where(eq(user.id, second));
+    }
   });
 });

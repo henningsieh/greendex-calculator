@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
+import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { z } from "zod";
 
 import {
@@ -22,9 +23,14 @@ export const success = z.object({ success: z.literal(true) });
 export const profileInput = z.object({
   fullName: z.string().trim().min(1).max(200),
 });
+export const joinProfileInput = profileInput.extend({
+  // EU country from the participation questionnaire. Stored on the Project
+  // Participation, never on the User profile (CONTEXT.md).
+  country: z.enum(EU_COUNTRY_CODES),
+});
 export const agreementInput = z.object({ accepted: z.literal(true) });
 export const joinInput = z.object({
-  profile: profileInput,
+  profile: joinProfileInput,
   agreement: agreementInput,
   source: z.discriminatedUnion("kind", [
     z.object({ kind: z.literal("link"), id, secret: z.string().min(1) }),

@@ -81,7 +81,7 @@ describe("participant onboarding agreement procedures", () => {
     });
     await expect(
       unpublished.participantOnboarding.join({
-        profile: { fullName: "Alice" },
+        profile: { fullName: "Alice", country: "LV" },
         agreement: { accepted: true },
         source: { kind: "link", id: "link-1", secret: "secret" },
       }),
