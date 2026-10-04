@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   list: vi.fn(),
   searchOnboarded: vi.fn(),
-  update: vi.fn(),
   remove: vi.fn(),
   issueInvitation: vi.fn(),
   reissueInvitation: vi.fn(),
@@ -78,7 +77,6 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       participations: {
         create: mocks.create,
         searchOnboarded: mocks.searchOnboarded,
-        update: mocks.update,
         remove: mocks.remove,
       },
     },
@@ -222,7 +220,6 @@ describe("ParticipantCoordination", () => {
       { id: "user-existing", name: "Existing Candidate" },
       { id: "host-user", name: "Host Candidate" },
     ]);
-    mocks.update.mockReset();
     mocks.remove.mockReset();
     mocks.issueInvitation
       .mockReset()
@@ -514,24 +511,23 @@ describe("ParticipantCoordination", () => {
     ).toContain("/participant-links/new-link?secret=one-time-secret");
   });
 
-  it("edits only the scoped Participation using the server mutation", async () => {
-    mocks.update.mockResolvedValue({});
-    const user = userEvent.setup();
+  it("links each Participant to its details page instead of editing inline", async () => {
     await renderCoordination();
-    await user.selectOptions(
-      screen.getByLabelText("Country for Own Person"),
-      "DE",
-    );
-    await user.click(
-      screen.getByRole("button", { name: "Save country for Own Person" }),
-    );
-    await waitFor(() =>
-      expect(mocks.update).toHaveBeenCalledWith({
-        partnershipId: "own-partnership",
-        id: "person-1",
-        country: "DE",
+    expect(
+      screen
+        .getByRole("link", { name: "Participant details for Own Person" })
+        .getAttribute("href"),
+    ).toBe("/partnerships/own-partnership/participants/person-1");
+    // ADR-0016: editing lives on the details page, never in a list row.
+    expect(screen.queryByLabelText("Country for Own Person")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Save country for Own Person" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: "Remove Project Participation for Own Person",
       }),
-    );
+    ).toBeTruthy();
   });
 
   it("hides every participant entry control from Hosting Organization staff", async () => {

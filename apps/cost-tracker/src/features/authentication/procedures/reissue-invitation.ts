@@ -21,7 +21,7 @@ import {
   INVITATION_TTL_MS,
   normalizedEmail,
 } from "@/features/authentication/procedures/shared";
-import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
+import { requirePartnerScopeAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -30,7 +30,7 @@ export function buildReissueInvitation() {
     .input(z.object({ partnershipId: id, email: normalizedEmail }))
     .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
-      const target = await requireParticipantEntryAuthority(
+      const target = await requirePartnerScopeAuthority(
         context.headers,
         input.partnershipId,
         context.user.id,
@@ -77,7 +77,7 @@ export function buildReissueInvitation() {
         if (!previous)
           throw createSituationErrors(errors).participantInvitationNotFound();
         if (previous.partnershipId !== target.id)
-          await requireParticipantEntryAuthority(
+          await requirePartnerScopeAuthority(
             context.headers,
             previous.partnershipId,
             context.user.id,

@@ -12,6 +12,7 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
 } from "@greendex/database/schema";
+import type { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 
 import {
@@ -104,13 +105,26 @@ export async function loadParticipantEntryContext(
   };
 }
 
-function refuse(situation: SituationErrors, reason: ProjectScopeDenial): never {
+export type PartnerScopeRefusals = {
+  /**
+   * The calling procedure's own refusal for the Hosting Organization, whose staff
+   * read a Project Partnership's Partner-side records but never change them.
+   */
+  hostingSide: () => ORPCError<string, unknown>;
+};
+
+function refuse(
+  situation: SituationErrors,
+  reason: ProjectScopeDenial,
+  refusals?: PartnerScopeRefusals,
+): never {
   switch (reason) {
     case "MISSING_ACTIVE_ORGANIZATION":
       throw situation.selectOrganization();
     case "MISSING_MEMBERSHIP":
       throw situation.notMember();
     case "HOSTING_SIDE":
+      throw (refusals?.hostingSide ?? situation.partnerEntryRequired)();
     case "UNRELATED_ORGANIZATION":
       throw situation.partnerEntryRequired();
     default:
@@ -122,13 +136,18 @@ function refuse(situation: SituationErrors, reason: ProjectScopeDenial): never {
  * Enforces the complete Partner-side policy for one Project Partnership (ADR-0014).
  * The role permission comes from Better Auth's supported server check; the
  * relational rules are the shared policy, evaluated against state loaded here.
+ *
+ * This is the single server-side Partner-side gate: participant entry issuance and
+ * the Partner-only correction of a Participation's `country` are both decided here,
+ * so no procedure keeps its own role or scope matrix.
  */
-export async function requireParticipantEntryAuthority(
+export async function requirePartnerScopeAuthority(
   headers: Headers,
   partnershipId: string,
   actorId: string,
   activeOrganizationId: string | null | undefined,
   errors: ScopeErrorConstructors,
+  refusals?: PartnerScopeRefusals,
 ): Promise<ParticipantEntryScope> {
   const situation = createSituationErrors(errors);
   if (!activeOrganizationId) throw situation.selectOrganization();
@@ -146,6 +165,6 @@ export async function requireParticipantEntryAuthority(
       PROJECT_PARTICIPATION_CREATE,
     ).catch(() => false),
   });
-  if (!decision.permitted) refuse(situation, decision.reason);
+  if (!decision.permitted) refuse(situation, decision.reason, refusals);
   return loaded.scope;
 }

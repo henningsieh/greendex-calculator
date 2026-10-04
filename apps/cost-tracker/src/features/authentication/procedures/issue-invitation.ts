@@ -20,7 +20,7 @@ import {
   INVITATION_TTL_MS,
   normalizedEmail,
 } from "@/features/authentication/procedures/shared";
-import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
+import { requirePartnerScopeAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -29,7 +29,7 @@ export function buildIssueInvitation() {
     .input(z.object({ partnershipId: id, email: normalizedEmail }))
     .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
-      const partnership = await requireParticipantEntryAuthority(
+      const partnership = await requirePartnerScopeAuthority(
         context.headers,
         input.partnershipId,
         context.user.id,
