@@ -1,6 +1,7 @@
 import { createServerAuth } from "@greendex/auth";
 
 import { env } from "@/env";
+import { participantMembershipGrantPlugin } from "@/features/organizations/participant-membership-grant";
 import {
   costTrackerOrganizationHooks,
   costTrackerInvitationRoleGate,
@@ -11,7 +12,7 @@ export const auth = createServerAuth({
   appName: "Cost Tracker",
   costTrackerRoles: true,
   organizationHooks: costTrackerOrganizationHooks,
-  plugins: [costTrackerInvitationRoleGate],
+  plugins: [costTrackerInvitationRoleGate, participantMembershipGrantPlugin],
   baseURL: env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
   socialProviders: {

@@ -44,15 +44,14 @@ const authMocks = vi.hoisted(() => ({
   addMember: vi.fn(),
   acceptInvitation: vi.fn(),
   hasPermission: vi.fn(),
-  update: vi.fn(),
+  grantParticipantMembership: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({
+  // No $context: procedures must reach Membership writes only through the
+  // supported auth.api surface, never through the internal adapter.
   auth: {
     api: authMocks,
-    get $context() {
-      return Promise.resolve({ adapter: { update: authMocks.update } });
-    },
   },
 }));
 
@@ -198,34 +197,83 @@ beforeEach(async () => {
     },
     session: { id: randomUUID(), activeOrganizationId },
   }));
-  authMocks.update.mockImplementation(
+  // Faithful stand-in for the server-only participant-membership endpoint:
+  // fresh read, idempotent resume, compare-and-swap on the expected role.
+  authMocks.grantParticipantMembership.mockImplementation(
     async ({
-      where,
-      update,
+      body,
     }: {
-      where: { value: string }[];
-      update: { role: string };
+      body: { userId: string; organizationId: string; expectedRole: string };
     }) => {
       const [row] = await db
-        .update(member)
-        .set(update)
+        .select()
+        .from(member)
         .where(
-          and(eq(member.id, where[0]!.value), eq(member.role, where[1]!.value)),
+          and(
+            eq(member.userId, body.userId),
+            eq(member.organizationId, body.organizationId),
+          ),
         )
+        .limit(1);
+      if (!row)
+        return new Response(JSON.stringify({ code: "MEMBER_NOT_FOUND" }), {
+          status: 400,
+        });
+      if (
+        row.role
+          .split(",")
+          .map((value) => value.trim())
+          .includes("participant")
+      )
+        return new Response(JSON.stringify({ member: row }), { status: 200 });
+      if (row.role !== body.expectedRole)
+        return new Response(JSON.stringify({ code: "MEMBERSHIP_CHANGED" }), {
+          status: 400,
+        });
+      const [updated] = await db
+        .update(member)
+        .set({ role: `${row.role},participant` })
+        .where(and(eq(member.id, row.id), eq(member.role, row.role)))
         .returning();
-      return row ?? null;
+      if (!updated)
+        return new Response(JSON.stringify({ code: "MEMBERSHIP_CHANGED" }), {
+          status: 400,
+        });
+      return new Response(JSON.stringify({ member: updated }), {
+        status: 200,
+      });
     },
   );
-  authMocks.addMember.mockImplementation(async () => {
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: host,
-      userId: recipient,
-      role: "participant",
-      createdAt: new Date(),
-    });
-    return new Response(null, { status: 200 });
-  });
+  authMocks.addMember.mockImplementation(
+    async ({ body }: { body: { userId: string; organizationId: string } }) => {
+      // Mirrors Better Auth's already-a-member refusal for competing joins.
+      const [existing] = await db
+        .select({ id: member.id })
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, body.userId),
+            eq(member.organizationId, body.organizationId),
+          ),
+        )
+        .limit(1);
+      if (existing)
+        return new Response(
+          JSON.stringify({
+            code: "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION",
+          }),
+          { status: 400 },
+        );
+      await db.insert(member).values({
+        id: randomUUID(),
+        organizationId: host,
+        userId: recipient,
+        role: "participant",
+        createdAt: new Date(),
+      });
+      return new Response(null, { status: 200 });
+    },
+  );
   authMocks.hasPermission.mockImplementation(
     async ({ body }: { body: { permissions: Record<string, string[]> } }) => ({
       success: await authorizedActiveRole(body.permissions),
@@ -653,7 +701,7 @@ describe("Participant onboarding procedures", () => {
       ]);
     }
     expect(authMocks.addMember).not.toHaveBeenCalled();
-    expect(authMocks.update).toHaveBeenCalledTimes(1);
+    expect(authMocks.grantParticipantMembership).toHaveBeenCalledTimes(1);
     // ADR-0012: fallback roles are refused in memory, never seeded or upgraded.
     for (const bannedRole of ["member", "member,project-coordinator"]) {
       let refusal: unknown;
@@ -672,6 +720,91 @@ describe("Participant onboarding procedures", () => {
           'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
       });
     }
+  });
+
+  it("completes competing joins with one Participation, one Membership, and safe retry", async () => {
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    await db.insert(member).values({
+      id: randomUUID(),
+      userId: recipient,
+      organizationId: host,
+      role: "project-coordinator",
+      createdAt: new Date(),
+    });
+    actor = recipient;
+    const input = {
+      source: { kind: "link" as const, id: link.id, secret: link.secret },
+      profile: { fullName: "Recipient" },
+      agreement: { accepted: true as const },
+    };
+    const outcomes = await Promise.allSettled([
+      client.participantOnboarding.join(input),
+      client.participantOnboarding.join(input),
+    ]);
+    const participationIds: string[] = [];
+    for (const outcome of outcomes) {
+      if (outcome.status === "fulfilled")
+        participationIds.push(outcome.value.participationId);
+      else
+        participationIds.push(
+          (await client.participantOnboarding.join(input)).participationId,
+        );
+    }
+    const rows = await db
+      .select()
+      .from(participants)
+      .where(eq(participants.projectId, project));
+    expect(rows).toHaveLength(1);
+    expect(new Set(participationIds)).toEqual(new Set([rows[0]!.id]));
+    expect(await memberships()).toEqual([
+      { role: "project-coordinator,participant" },
+    ]);
+    expect(authMocks.addMember).not.toHaveBeenCalled();
+  });
+
+  it("reports a changed Membership and succeeds on retry with a fresh read", async () => {
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    await db.insert(member).values({
+      id: randomUUID(),
+      userId: recipient,
+      organizationId: host,
+      role: "project-coordinator",
+      createdAt: new Date(),
+    });
+    actor = recipient;
+    const input = {
+      source: { kind: "link" as const, id: link.id, secret: link.secret },
+      profile: { fullName: "Recipient" },
+      agreement: { accepted: true as const },
+    };
+    authMocks.grantParticipantMembership.mockResolvedValueOnce(
+      new Response(JSON.stringify({ code: "MEMBERSHIP_CHANGED" }), {
+        status: 400,
+      }),
+    );
+    await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      status: 400,
+      data: { reason: "MEMBERSHIP_CHANGED" },
+    });
+    expect(
+      await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+    ).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(participants)
+        .where(eq(participants.projectId, project)),
+    ).toHaveLength(0);
+    const retried = await client.participantOnboarding.join(input);
+    expect(retried.participationId).toBeTruthy();
+    expect(await memberships()).toEqual([
+      { role: "project-coordinator,participant" },
+    ]);
   });
 
   it("cancels the native invitation on revoke and requires re-issue to recover", async () => {

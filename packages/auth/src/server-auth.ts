@@ -27,7 +27,12 @@ type SessionDatabaseHooks = NonNullable<
   NonNullable<BetterAuthOptions["databaseHooks"]>["session"]
 >;
 
-export interface ServerAuthConfig {
+// P preserves each passed plugin's endpoint types into auth.api. A wide
+// BetterAuthPlugin[] would erase custom server-only endpoints (such as the
+// participant-membership grant) from the inferred API surface.
+export interface ServerAuthConfig<
+  P extends BetterAuthPlugin[] = BetterAuthPlugin[],
+> {
   appName: string;
   baseURL: string;
   secret: string;
@@ -61,7 +66,7 @@ export interface ServerAuthConfig {
     "beforeCreateOrganization"
   >;
   costTrackerRoles?: boolean;
-  plugins?: BetterAuthPlugin[];
+  plugins?: P;
   session?: BetterAuthOptions["session"];
   sessionUpdate?: SessionDatabaseHooks["update"];
 }
@@ -70,7 +75,9 @@ export interface ServerAuthConfig {
  * Creates the Greendex Better Auth server instance with shared organization,
  * email, social-login, and active-Organization behavior.
  */
-export function createServerAuth(config: ServerAuthConfig) {
+export function createServerAuth<const P extends BetterAuthPlugin[]>(
+  config: ServerAuthConfig<P>,
+) {
   return betterAuth({
     appName: config.appName,
     baseURL: config.baseURL,

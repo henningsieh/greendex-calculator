@@ -1,4 +1,5 @@
 import "server-only";
+import { addOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -20,6 +21,7 @@ import {
   joinInput,
   type RequirePublishedAgreement,
 } from "@/features/authentication/procedures/shared";
+import { participantGrantChangedCode } from "@/features/organizations/participant-membership-grant";
 import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
 import {
@@ -30,6 +32,19 @@ import {
 } from "@/lib/orpc/better-auth-errors";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
+
+// The grant endpoint signals a stale expected role with its own fixed code, so a
+// changed Membership retries against a fresh read instead of failing opaquely.
+async function isGrantRoleStale(response: Response): Promise<boolean> {
+  try {
+    const parsed = z
+      .object({ code: z.string() })
+      .safeParse(await response.clone().json());
+    return parsed.success && parsed.data.code === participantGrantChangedCode;
+  } catch {
+    return false;
+  }
+}
 
 export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) {
   const join = authorized
@@ -192,22 +207,38 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         });
       } else if (shouldGrantParticipantRole(membership.role)) {
         // #183 appends coordinator to assigned members; joining must retain every existing role.
-        const updatedRole = `${membership.role},participant`;
-        const authContext = await auth.$context;
-        const updated = await authContext.adapter.update({
-          model: "member",
-          where: [
-            { field: "id", value: membership.id },
-            { field: "role", value: membership.role },
-          ],
-          update: { role: updatedRole },
-        });
-        if (!updated) throw createSituationErrors(errors).membershipChanged();
+        // The grant runs through the server-only participant-membership endpoint (ADR-0013):
+        // this procedure authorized the join, Better Auth owns the write and its role hooks.
+        const response = await auth.api
+          .grantParticipantMembership({
+            asResponse: true,
+            body: {
+              userId: context.user.id,
+              organizationId: partnership.hostId,
+              expectedRole: membership.role,
+            },
+          })
+          .catch((error: unknown) => {
+            throw normalizeParticipantMembershipError(
+              error,
+              createSituationErrors(errors),
+              context.resHeaders,
+            );
+          });
+        if (!response.ok) {
+          if (await isGrantRoleStale(response))
+            throw createSituationErrors(errors).membershipChanged();
+          throw await normalizeParticipantMembershipResponse(
+            response,
+            createSituationErrors(errors),
+            context.resHeaders,
+          );
+        }
         console.info("Participant membership updated", {
           actor: context.user.id,
           linkId: input.source.kind === "link" ? input.source.id : bridgeId,
           previousRole: membership.role,
-          newRole: updatedRole,
+          newRole: addOrganizationRole(membership.role, "participant"),
           at: new Date().toISOString(),
         });
       }
@@ -284,9 +315,30 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             })
             .onConflictDoNothing()
             .returning({ id: participants.id });
-          if (!created)
-            throw createSituationErrors(errors).participationIdentityConflict();
-          participationId = created.id;
+          if (created) {
+            participationId = created.id;
+          } else {
+            // A competing completion won the insert race: resume on its row
+            // instead of failing when it represents this same Partnership.
+            const [winner] = await tx
+              .select({
+                id: participants.id,
+                partnerId: participants.representedOrganizationId,
+              })
+              .from(participants)
+              .where(
+                and(
+                  eq(participants.projectId, partnership.projectId),
+                  eq(participants.userId, context.user.id),
+                ),
+              )
+              .limit(1);
+            if (!winner)
+              throw createSituationErrors(errors).participationIdentityConflict();
+            if (winner.partnerId !== partnership.partnerId)
+              throw createSituationErrors(errors).joinedOtherPartner();
+            participationId = winner.id;
+          }
         }
         if (bridgeId) {
           await tx
