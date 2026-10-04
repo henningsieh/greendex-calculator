@@ -8,6 +8,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import {
+  claimPanelActions,
+  type ClaimPanelAction,
+} from "@/features/projects/claim-lifecycle";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -15,13 +19,9 @@ import type { Outputs } from "@/lib/orpc/router";
 type Claim = NonNullable<Outputs["claims"]["getDraft"]>;
 type History = Outputs["claims"]["getHistory"];
 type ReviewDetails = Outputs["claims"]["getReviewDetails"];
-type Decision =
-  | "requestCorrection"
-  | "approve"
-  | "reject"
-  | "reopen"
-  | "markPaid"
-  | "correctPayment";
+// The offered decisions come from the shared Claim lifecycle; this surface
+// keeps presentation copy only, never its own status-to-action rule.
+type Decision = ClaimPanelAction;
 type DecisionInput = {
   partnershipId: string;
   reason?: string;
@@ -88,20 +88,18 @@ export function ClaimDecisionPanel({
   const [reason, setReason] = useState("");
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const controls: { action: Decision; label: string }[] =
-    status === "submitted"
-      ? [
-          { action: "requestCorrection", label: "Request correction" },
-          { action: "approve", label: "Approve Claim" },
-          { action: "reject", label: "Reject Claim" },
-        ]
-      : status === "rejected"
-        ? [{ action: "reopen", label: "Reopen Claim" }]
-        : status === "approved"
-          ? [{ action: "markPaid", label: "Mark paid" }]
-          : status === "paid"
-            ? [{ action: "correctPayment", label: "Correct paid flag" }]
-            : [];
+  const actionLabels: Record<Decision, string> = {
+    requestCorrection: "Request correction",
+    approve: "Approve Claim",
+    reject: "Reject Claim",
+    reopen: "Reopen Claim",
+    markPaid: "Mark paid",
+    correctPayment: "Correct paid flag",
+  };
+  const controls = claimPanelActions(status).map((action) => ({
+    action,
+    label: actionLabels[action],
+  }));
   function begin(action: Decision) {
     setConfirming(action);
     setReason("");

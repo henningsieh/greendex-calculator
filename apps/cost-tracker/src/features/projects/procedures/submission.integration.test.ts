@@ -1808,3 +1808,169 @@ describe("Claim payment recording", () => {
     }
   });
 });
+
+describe("Claim competing writes", () => {
+  it("a Partner cost edit racing submission cannot half-submit the Claim", async () => {
+    await prepare("100.00");
+    const [submission, saved] = await Promise.allSettled([
+      submit(),
+      client.costs.save({
+        partnershipId: own,
+        transportProfile: "train",
+        amountEur: "5.00",
+        allocationMethod: "equal",
+        allocations: [{ projectParticipantId: robin }],
+      }),
+    ]);
+    const [claim] = await db.select().from(claims).where(eq(claims.id, claimId));
+    const submittedEvents = (await events()).filter((event) =>
+      ["submitted", "resubmitted"].includes(event.eventType),
+    );
+    if (submission.status === "fulfilled") {
+      // Submission won the Claim lock: the edit is safely refused, the Claim
+      // holds exactly the prepared costs, and one submission event exists.
+      expect(submission.value).toMatchObject({ status: "submitted" });
+      expect(claim.status).toBe("submitted");
+      expect(saved).toMatchObject({
+        status: "rejected",
+        reason: { code: "BAD_REQUEST" },
+      });
+      expect(submittedEvents).toHaveLength(1);
+      expect(
+        (await client.costs.list({ partnershipId: own })).entries,
+      ).toHaveLength(2);
+    } else {
+      // The edit won: the new entry lacks Proof Documents, so submission is
+      // refused as incomplete and the Claim stays editable with no event.
+      expect(submission).toMatchObject({
+        status: "rejected",
+        reason: { code: "BAD_REQUEST" },
+      });
+      expect(saved.status).toBe("fulfilled");
+      expect(claim.status).toBe("editable");
+      expect(submittedEvents).toHaveLength(0);
+      expect(
+        (await client.costs.list({ partnershipId: own })).entries,
+      ).toHaveLength(3);
+    }
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
+
+  it("a Partner journey correction racing submission leaves one submitted Claim", async () => {
+    await prepare("100.00");
+    const [submission, corrected] = await Promise.allSettled([
+      submit(),
+      client.journeys.update({
+        partnershipId: own,
+        projectParticipantId: robin,
+        origin: "Berlin Hbf",
+        destination: "Riga",
+        tripType: "round-trip",
+        erasmusDistanceKm: "850.25",
+      }),
+    ]);
+    // The correction keeps the checklist complete, so submission always
+    // succeeds even when the correction wins the lock first.
+    expect(submission).toMatchObject({
+      status: "fulfilled",
+      value: { status: "submitted" },
+    });
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe("submitted");
+    expect(
+      (await events()).filter((event) =>
+        ["submitted", "resubmitted"].includes(event.eventType),
+      ),
+    ).toHaveLength(1);
+    if (corrected.status === "fulfilled") {
+      expect(corrected.value).toMatchObject({ origin: "Berlin Hbf" });
+    } else {
+      // Submission won the Claim lock: the correction is safely refused.
+      expect(corrected).toMatchObject({
+        status: "rejected",
+        reason: { code: "BAD_REQUEST" },
+      });
+    }
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
+
+  it("conflicting Hosting reviews leave exactly one decision", async () => {
+    await submittedClaim();
+    const [first, second] = await Promise.allSettled([
+      review("approve"),
+      review("reject"),
+    ]);
+    // Exactly one decision wins the Claim lock; the other finds the Claim
+    // outside submitted and is safely refused.
+    const loserRefusal = {
+      status: "rejected",
+      reason: {
+        code: "BAD_REQUEST",
+        data: { reason: "CLAIM_SUBMITTED_REQUIRED" },
+      },
+    };
+    const winner = first.status === "fulfilled" ? first.value.status : "rejected";
+    expect(first.status === "fulfilled" ? second : first).toMatchObject(
+      loserRefusal,
+    );
+    expect(second.status === "fulfilled" ? first : second).toMatchObject(
+      loserRefusal,
+    );
+    expect(winner).toMatch(/^(approved|rejected)$/);
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
+    ).toBe(winner);
+    expect(
+      (await events()).filter((event) =>
+        ["approved", "rejected"].includes(event.eventType),
+      ),
+    ).toHaveLength(1);
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
+
+  it("approval racing payment records at most one full transfer", async () => {
+    await prepare("100.00");
+    await submit();
+    const [saved] = await db
+      .select({ approvedAmountEur: claims.approvedAmountEur })
+      .from(claims)
+      .where(eq(claims.id, claimId));
+    const payable = saved.approvedAmountEur!;
+    await asHost();
+    const [approval, payment] = await Promise.allSettled([
+      review("approve"),
+      markPaid(payable),
+    ]);
+    // Approval only commits from submitted, which payment cannot change, so
+    // approval always succeeds while payment either waits for it or refuses.
+    expect(approval).toMatchObject({
+      status: "fulfilled",
+      value: { status: "approved", approvedAmountEur: payable },
+    });
+    const [claim] = await db.select().from(claims).where(eq(claims.id, claimId));
+    const types = (await events()).map((event) => event.eventType);
+    if (payment.status === "fulfilled") {
+      expect(payment.value).toMatchObject({
+        status: "paid",
+        approvedAmountEur: payable,
+      });
+      expect(claim.status).toBe("paid");
+      expect(types).toEqual(["submitted", "approved", "paid"]);
+    } else {
+      // Payment lost the race before approval: approval is required first.
+      expect(payment).toMatchObject({
+        status: "rejected",
+        reason: {
+          code: "BAD_REQUEST",
+          data: { reason: "CLAIM_APPROVAL_REQUIRED" },
+        },
+      });
+      expect(claim.status).toBe("approved");
+      expect(types).toEqual(["submitted", "approved"]);
+    }
+    // No partial transfer is ever recorded: the amount always equals approval.
+    expect(claim.approvedAmountEur).toBe(payable);
+    // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
+  }, 15_000);
+});
