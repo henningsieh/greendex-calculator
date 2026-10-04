@@ -4,6 +4,7 @@ import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { isClaimAwaitingReview } from "@/features/projects/claim-lifecycle";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 export function ClaimReviewQueue() {
@@ -20,8 +21,10 @@ export function ClaimReviewQueue() {
       }),
     })),
   });
-  const submitted = partnerships.filter(
-    (_, index) => claims[index].data?.status === "submitted",
+  // The queue shows the same awaiting-review status the server enforces;
+  // it keeps no status-to-action rule of its own.
+  const submitted = partnerships.filter((_, index) =>
+    isClaimAwaitingReview(claims[index].data?.status),
   );
   return (
     <Card>

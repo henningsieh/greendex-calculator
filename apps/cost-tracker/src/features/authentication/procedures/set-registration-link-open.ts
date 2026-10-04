@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { id } from "@/features/authentication/procedures/shared";
+import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
 import { requirePartnerScopeAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
@@ -32,12 +33,16 @@ export function buildSetRegistrationLinkOpen() {
         errors,
       );
       if (input.open) {
+        // Reopening registration admits further Participants, so it follows
+        // the one shared Partner Claim editing rule (ADR-0017): a submitted,
+        // approved, rejected or paid Claim keeps registration closed, while a
+        // correction request reopens it with every other Partner edit.
         const [claim] = await db
           .select({ status: claimsTable.status })
           .from(claimsTable)
           .where(eq(claimsTable.partnershipId, token.partnershipId))
           .limit(1);
-        if (claim && claim.status !== "editable")
+        if (claim && !canPartnerEditClaim(claim.status))
           throw createSituationErrors(errors).registrationClaimLocked();
       }
       await db
