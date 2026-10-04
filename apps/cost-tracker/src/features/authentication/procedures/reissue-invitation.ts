@@ -18,8 +18,8 @@ import {
   invitationResult,
   newNativeParticipantInvitation,
   normalizedEmail,
-  partnershipForIssuer,
 } from "@/features/authentication/procedures/shared";
+import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -28,7 +28,8 @@ export function buildReissueInvitation() {
     .input(z.object({ partnershipId: id, email: normalizedEmail }))
     .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
-      const target = await partnershipForIssuer(
+      const target = await requireParticipantEntryAuthority(
+        context.headers,
         input.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,
@@ -74,7 +75,8 @@ export function buildReissueInvitation() {
         if (!previous)
           throw createSituationErrors(errors).participantInvitationNotFound();
         if (previous.partnershipId !== target.id)
-          await partnershipForIssuer(
+          await requireParticipantEntryAuthority(
+            context.headers,
             previous.partnershipId,
             context.user.id,
             context.session.activeOrganizationId,
@@ -99,7 +101,7 @@ export function buildReissueInvitation() {
           .values(
             newNativeParticipantInvitation(
               invitationId,
-              target.hostId,
+              target.hostOrganizationId,
               input.email,
               context.user.id,
             ),

@@ -404,6 +404,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "PARTNER_DUPLICATE_REVIEW_REQUIRED",
     "status": 403,
   },
+  "partnerEntryRequired": {
+    "code": "FORBIDDEN",
+    "message": "Only the Partner Organization of this Project Partnership may issue participant entry points.",
+    "reason": "PARTNER_ENTRY_REQUIRED",
+    "status": 403,
+  },
   "partnerJourneysRequired": {
     "code": "FORBIDDEN",
     "message": "Only the Partner Organization may manage Participant Journeys.",

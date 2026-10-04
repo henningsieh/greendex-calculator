@@ -2,13 +2,6 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
-import { db } from "@greendex/database";
-import {
-  projectPartnerOrganizationsTable as partnerships,
-  projectsTable as projects,
-  member,
-} from "@greendex/database/schema";
-import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -16,10 +9,8 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
-import { requirePartnerCoordination } from "@/features/projects/procedures/coordination";
 import {
   createSituationErrors,
-  type ScopeErrorConstructors,
   type SituationErrorConstructors,
 } from "@/lib/orpc/errors";
 
@@ -91,70 +82,3 @@ export function makeRequirePublishedAgreement(
 export type RequirePublishedAgreement = ReturnType<
   typeof makeRequirePublishedAgreement
 >;
-
-export async function partnershipForIssuer(
-  partnershipId: string,
-  userId: string,
-  activeOrganizationId: string | null | undefined,
-  errors: ScopeErrorConstructors,
-) {
-  const situation = createSituationErrors(errors);
-  if (!activeOrganizationId) throw situation.selectOrganization();
-  const [partnership] = await db
-    .select({
-      id: partnerships.id,
-      projectId: partnerships.projectId,
-      partnerId: partnerships.organizationId,
-      hostId: projects.organizationId,
-      archived: projects.archived,
-    })
-    .from(partnerships)
-    .innerJoin(projects, eq(projects.id, partnerships.projectId))
-    .where(eq(partnerships.id, partnershipId))
-    .limit(1);
-  if (
-    !partnership ||
-    partnership.archived ||
-    (activeOrganizationId !== partnership.partnerId &&
-      activeOrganizationId !== partnership.hostId)
-  )
-    throw situation.partnershipNotFound();
-  const roles = await db
-    .select({ organizationId: member.organizationId, role: member.role })
-    .from(member)
-    .where(
-      and(
-        eq(member.userId, userId),
-        or(
-          eq(member.organizationId, partnership.partnerId),
-          eq(member.organizationId, partnership.hostId),
-        ),
-      ),
-    );
-  const permitted = roles.some(
-    ({ organizationId, role }) =>
-      organizationId === activeOrganizationId &&
-      (hasOrganizationRole(role, "owner") || hasOrganizationRole(role, "admin")),
-  );
-  if (!permitted) {
-    await requirePartnerCoordination(
-      partnershipId,
-      userId,
-      activeOrganizationId,
-      errors,
-    );
-  }
-  return {
-    ...partnership,
-    hostCanInvite:
-      activeOrganizationId === partnership.hostId &&
-      roles.some(
-        ({ organizationId, role }) =>
-          organizationId === partnership.hostId &&
-          (hasOrganizationRole(role, "owner") ||
-            hasOrganizationRole(role, "admin")),
-      ),
-  };
-}
-
-export type PartnershipForIssuer = typeof partnershipForIssuer;

@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./permissions": "./src/permissions.ts",
+    "./project-authorization": "./src/project-authorization.ts",
     "./oauth-icons": "./src/oauth-icons.tsx",
     "./seed-user": "./src/seed-user.ts"
   },

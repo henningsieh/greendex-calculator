@@ -50,9 +50,12 @@ export const organizationAdmin = accessControl.newRole({
   ...legacyCalculatorAdminRole.statements,
 });
 
-// Assignment-bound Cost Tracker procedures grant coordination. The role alone grants no broad access.
+// Assignment-bound Cost Tracker procedures grant coordination. The role alone
+// grants no broad access: it may bring participants into one assigned Project
+// Partnership (ADR-0015), and nothing else without an assignment.
 export const projectCoordinatorRole = accessControl.newRole({
   ...memberAc.statements,
+  projectParticipation: ["create"],
 });
 
 export const legacyCalculatorMemberRole = accessControl.newRole({

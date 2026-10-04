@@ -7,10 +7,8 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import {
-  id,
-  partnershipForIssuer,
-} from "@/features/authentication/procedures/shared";
+import { id } from "@/features/authentication/procedures/shared";
+import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -26,7 +24,8 @@ export function buildSetInvitationOpen() {
         .limit(1);
       if (!bridge)
         throw createSituationErrors(errors).participantInvitationNotFound();
-      await partnershipForIssuer(
+      await requireParticipantEntryAuthority(
+        context.headers,
         bridge.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,

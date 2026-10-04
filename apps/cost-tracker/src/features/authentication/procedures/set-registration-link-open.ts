@@ -7,10 +7,8 @@ import {
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import {
-  id,
-  partnershipForIssuer,
-} from "@/features/authentication/procedures/shared";
+import { id } from "@/features/authentication/procedures/shared";
+import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -25,7 +23,8 @@ export function buildSetRegistrationLinkOpen() {
         .where(eq(links.id, input.id))
         .limit(1);
       if (!link) throw createSituationErrors(errors).registrationLinkNotFound();
-      await partnershipForIssuer(
+      await requireParticipantEntryAuthority(
+        context.headers,
         link.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,

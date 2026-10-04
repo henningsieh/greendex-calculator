@@ -49,7 +49,7 @@ type RefusalName = Exclude<
   "projectCompletionBlocked" | "submissionIncomplete"
 >;
 
-type SituationErrors = {
+export type SituationErrors = {
   [Name in RefusalName]: () => ORPCError<string, unknown>;
 } & {
   projectCompletionBlocked: (

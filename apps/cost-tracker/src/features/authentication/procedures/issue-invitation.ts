@@ -17,13 +17,8 @@ import {
   invitationResult,
   newNativeParticipantInvitation,
   normalizedEmail,
-  partnershipForIssuer,
 } from "@/features/authentication/procedures/shared";
-import { auth } from "@/lib/auth";
-import {
-  normalizeBetterAuthError,
-  normalizeBetterAuthResponse,
-} from "@/lib/orpc/better-auth-errors";
+import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -32,7 +27,8 @@ export function buildIssueInvitation() {
     .input(z.object({ partnershipId: id, email: normalizedEmail }))
     .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
-      const partnership = await partnershipForIssuer(
+      const partnership = await requireParticipantEntryAuthority(
+        context.headers,
         input.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,
@@ -107,65 +103,29 @@ export function buildIssueInvitation() {
             .where(eq(bridges.invitationId, existingBridge.invitationId));
         });
       }
-      let invitationId: string;
-      if (partnership.hostCanInvite) {
-        const response = await auth.api
-          .createInvitation({
-            asResponse: true,
-            headers: context.headers,
-            body: {
-              email: input.email,
-              role: "participant",
-              organizationId: partnership.hostId,
-            },
-          })
-          .catch((error: unknown) => {
-            throw normalizeBetterAuthError(
-              error,
-              createSituationErrors(errors),
-              context.resHeaders,
-            );
-          });
-        if (!response.ok)
-          throw await normalizeBetterAuthResponse(
-            response,
-            createSituationErrors(errors),
-            context.resHeaders,
+      // Only the Partner Organization issues entry points, and it may not call Better
+      // Auth's host-only invite endpoint. Write the native invitation shape plus
+      // the bridge atomically, under the verified issuer guard.
+      const invitationId = randomUUID();
+      await db.transaction(async (tx) => {
+        await tx
+          .insert(invitation)
+          .values(
+            newNativeParticipantInvitation(
+              invitationId,
+              partnership.hostOrganizationId,
+              input.email,
+              context.user.id,
+            ),
           );
-        invitationId = z
-          .object({ id: z.string() })
-          .parse(await response.json()).id;
-        await db.insert(bridges).values({
+        await tx.insert(bridges).values({
           invitationId,
           partnershipId: partnership.id,
           projectId: partnership.projectId,
           email: input.email,
           issuedByUserId: context.user.id,
         });
-      } else {
-        // Partner issuers cannot call BA's host-only invite endpoint. Write the native
-        // invitation shape plus bridge atomically, under the verified issuer guard.
-        invitationId = randomUUID();
-        await db.transaction(async (tx) => {
-          await tx
-            .insert(invitation)
-            .values(
-              newNativeParticipantInvitation(
-                invitationId,
-                partnership.hostId,
-                input.email,
-                context.user.id,
-              ),
-            );
-          await tx.insert(bridges).values({
-            invitationId,
-            partnershipId: partnership.id,
-            projectId: partnership.projectId,
-            email: input.email,
-            issuedByUserId: context.user.id,
-          });
-        });
-      }
+      });
       console.info("Participant invitation issued", {
         issuer: context.user.id,
         recipient: input.email,

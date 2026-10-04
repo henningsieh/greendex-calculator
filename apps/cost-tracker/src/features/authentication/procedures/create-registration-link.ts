@@ -5,11 +5,8 @@ import { db } from "@greendex/database";
 import { participantRegistrationLinksTable as links } from "@greendex/database/schema";
 import { z } from "zod";
 
-import {
-  id,
-  partnershipForIssuer,
-  secretHash,
-} from "@/features/authentication/procedures/shared";
+import { id, secretHash } from "@/features/authentication/procedures/shared";
+import { requireParticipantEntryAuthority } from "@/features/projects/procedures/participant-entry";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildCreateRegistrationLink() {
@@ -17,7 +14,8 @@ export function buildCreateRegistrationLink() {
     .input(z.object({ partnershipId: id }))
     .output(z.object({ id: z.string(), secret: z.string() }))
     .handler(async ({ input, context, errors }) => {
-      await partnershipForIssuer(
+      await requireParticipantEntryAuthority(
+        context.headers,
         input.partnershipId,
         context.user.id,
         context.session.activeOrganizationId,
