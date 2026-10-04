@@ -157,8 +157,7 @@ export async function uploadProofDocument(input: {
       "claim",
     );
     if (!claim) throw proofErrors.claimRequiredForProof();
-    if (!canPartnerEditClaim(claim.status))
-      throw proofErrors.claimNotEditable();
+    if (!canPartnerEditClaim(claim.status)) throw proofErrors.claimNotEditable();
     const bytes = Buffer.from(await input.file.arrayBuffer());
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
     await putProofFile(reference, bytes, input.file.type);

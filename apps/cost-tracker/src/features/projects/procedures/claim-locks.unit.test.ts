@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
+import type { ClaimLockCoverage } from "@/features/projects/procedures/claim-locks";
 
 const tableNames = new Map<unknown, string>([
   [projects, "projects"],
@@ -36,7 +37,7 @@ function recorder(rows: Record<string, unknown[]>) {
     }),
   };
   return { tx: tx as never, held };
-};
+}
 
 const scope = {
   projectId: "project",
@@ -94,7 +95,7 @@ describe("shared Claim lock order", () => {
   it.each([
     ["project", { projects: [] }],
     ["partnership", { partnerships: [] }],
-  ] as const)(
+  ] as [ClaimLockCoverage, Record<string, unknown[]>][])(
     "refuses a missing covered row for %s coverage",
     async (coverage, missing) => {
       const { tx, held } = recorder({ ...allRows, ...missing });

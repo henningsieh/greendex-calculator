@@ -234,7 +234,45 @@ beforeEach(() => {
 });
 
 describe("Claim workspace", () => {
-  it("corrects a saved journey only during correction, retains field errors, and relocks on resubmission", async () => {
+  it("corrects a saved journey in editable and correction_requested, never once locked", async () => {
+    mocks.journeys = [
+      {
+        id: "journey",
+        projectParticipantId: "person",
+        origin: "Berlin",
+        destination: "Riga",
+        tripType: "one-way",
+        erasmusDistanceKm: "800.00",
+      },
+    ];
+    for (const status of ["editable", "correction_requested"] as const) {
+      mocks.draft = { id: "claim", partnershipId: "own", status };
+      const { unmount } = render(
+        <QueryClientProvider client={createQueryClient()}>
+          <ClaimWorkspace partnershipId="own" />
+        </QueryClientProvider>,
+      );
+      expect(
+        await screen.findByRole("button", { name: "Correct Robin's journey" }),
+      ).toBeInTheDocument();
+      unmount();
+    }
+    for (const status of ["submitted", "approved", "rejected", "paid"] as const) {
+      mocks.draft = { id: "claim", partnershipId: "own", status };
+      const { unmount } = render(
+        <QueryClientProvider client={createQueryClient()}>
+          <ClaimWorkspace partnershipId="own" />
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByText(/Berlin → Riga/)).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Correct Robin's journey" }),
+      ).toBeNull();
+      unmount();
+    }
+  }, 30_000);
+
+  it("retains correction field errors and relocks on resubmission", async () => {
     mocks.journeys = [
       {
         id: "journey",

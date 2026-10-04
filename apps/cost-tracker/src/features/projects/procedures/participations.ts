@@ -23,11 +23,11 @@ import {
   type ParticipantAgreementVersion,
 } from "@/features/authentication/participant-agreement";
 import { memberHasParticipantAccess } from "@/features/organizations/roles";
+import { isPartnerEditLocked } from "@/features/projects/claim-lifecycle";
 import {
   groupHostedParticipants,
   type HostedParticipantRow,
 } from "@/features/projects/hosted-participant-report";
-import { isPartnerEditLocked } from "@/features/projects/claim-lifecycle";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
