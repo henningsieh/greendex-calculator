@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "dotenv-cli": "catalog:",
-    "turbo": "^2.11.6"
+    "turbo": "^2.11.7"
   },
   "devDependencies": {
     "@shadcn/lint": "^0.2.0",
