@@ -7,10 +7,10 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
+    "clean": "rm -rf node_modules .turbo",
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules .turbo"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "catalog:"

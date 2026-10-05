@@ -9,15 +9,15 @@
     "./schema": "./src/schema.ts"
   },
   "scripts": {
-    "format": "oxfmt",
-    "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
-    "type-check": "tsc --noEmit",
-    "db:pull": "pnpm exec drizzle-kit pull",
-    "db:push": "pnpm exec drizzle-kit push",
+    "clean": "rm -rf node_modules .turbo",
     "db:generate": "pnpm exec drizzle-kit generate",
     "db:migrate": "TERM=dumb NO_COLOR=1 FORCE_COLOR=0 pnpm exec drizzle-kit migrate",
+    "db:pull": "pnpm exec drizzle-kit pull",
+    "db:push": "pnpm exec drizzle-kit push",
     "db:studio": "pnpm exec drizzle-kit studio",
-    "clean": "rm -rf node_modules .turbo"
+    "format": "oxfmt",
+    "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@greendex/config": "workspace:*",
