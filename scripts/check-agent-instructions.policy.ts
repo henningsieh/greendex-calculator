@@ -214,6 +214,10 @@ export const agentPointerPattern: AgentGuidancePattern = {
 };
 
 export const stalePatterns: AgentGuidancePattern[] = [
+  {
+    pattern: /\b(?:CONTEXT|CONTEXT-MAP|DOMAIN-GLOSSARY)\.md\b/u,
+    message: "use GLOSSARY.md and GLOSSARY-MAP.md for live domain guidance",
+  },
   { pattern: /\bbunx\b/iu, message: "replace stale bunx guidance with pnpm" },
   { pattern: /\bpnpmx\b/iu, message: "replace the invalid pnpmx command" },
   { pattern: /pnpm\.lockb/iu, message: "use pnpm-lock.yaml" },
@@ -291,6 +295,12 @@ export const nextConfigsToCheck: { configPath: string; label: string }[] = [
 ];
 
 export const retiredAgentGuidancePaths = [
+  "DOMAIN-GLOSSARY.md",
+  "CONTEXT.md",
+  "CONTEXT-MAP.md",
+  "apps/calculator/CONTEXT.md",
+  "apps/cost-tracker/CONTEXT.md",
+  "apps/documentation/CONTEXT.md",
   ".github/copilot-instructions.md",
   ".github/instructions",
   ".github/prompts",
