@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ORGANIZATION_ROLES } from "./permissions";
 import { costTrackerOrganizationRoles } from "./permissions";
 import {
   PROJECT_PARTICIPATION_CREATE,
@@ -30,7 +31,7 @@ function mayCreateParticipation(role: string | null | undefined): boolean {
 
 function decide(overrides: Partial<ProjectScopeFacts> = {}) {
   const facts: ProjectScopeFacts = {
-    role: "owner",
+    role: ORGANIZATION_ROLES.OrganizationOwner,
     activeOrganizationId: partnerOrganizationId,
     partnerOrganizationId,
     hostOrganizationId,
@@ -46,38 +47,59 @@ function decide(overrides: Partial<ProjectScopeFacts> = {}) {
 
 describe("project scope authorization", () => {
   it("permits Partner Organization owners and admins without an assignment", () => {
-    expect(decide({ role: "owner" })).toEqual({ permitted: true });
-    expect(decide({ role: "admin" })).toEqual({ permitted: true });
+    expect(decide({ role: ORGANIZATION_ROLES.OrganizationOwner })).toEqual({
+      permitted: true,
+    });
+    expect(decide({ role: ORGANIZATION_ROLES.OrganizationAdmin })).toEqual({
+      permitted: true,
+    });
   });
 
   it("permits only assigned Partner Group Organizers", () => {
     expect(
-      decide({ role: "project-coordinator", assignedCoordinator: true }),
+      decide({
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
+        assignedCoordinator: true,
+      }),
     ).toEqual({ permitted: true });
     expect(
-      decide({ role: "project-coordinator", assignedCoordinator: false }),
+      decide({
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
+        assignedCoordinator: false,
+      }),
     ).toEqual({ permitted: false, reason: "ASSIGNMENT_MISSING" });
   });
 
   it("keeps coexisting roles so a combined role is permitted", () => {
-    expect(decide({ role: "owner,participant" })).toEqual({ permitted: true });
     expect(
-      decide({ role: "admin,project-coordinator", assignedCoordinator: true }),
+      decide({
+        role: `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+      }),
     ).toEqual({ permitted: true });
-    expect(decide({ role: "participant,project-coordinator" })).toEqual({
+    expect(
+      decide({
+        role: `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.ProjectCoordinator}`,
+        assignedCoordinator: true,
+      }),
+    ).toEqual({ permitted: true });
+    expect(
+      decide({
+        role: `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
+      }),
+    ).toEqual({
       permitted: false,
       reason: "ASSIGNMENT_MISSING",
     });
     expect(
       decide({
-        role: "participant,project-coordinator",
+        role: `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
         assignedCoordinator: true,
       }),
     ).toEqual({ permitted: true });
   });
 
   it("denies Participants and roles without the participation permission", () => {
-    expect(decide({ role: "participant" })).toEqual({
+    expect(decide({ role: ORGANIZATION_ROLES.Participant })).toEqual({
       permitted: false,
       reason: "PERMISSION_MISSING",
     });
@@ -91,7 +113,7 @@ describe("project scope authorization", () => {
     expect(
       decide({
         activeOrganizationId: hostOrganizationId,
-        role: "project-coordinator",
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
         assignedCoordinator: true,
       }),
     ).toEqual({ permitted: false, reason: "HOSTING_SIDE" });

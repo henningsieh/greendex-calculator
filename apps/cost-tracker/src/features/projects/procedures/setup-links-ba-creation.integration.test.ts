@@ -1,6 +1,7 @@
-// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -74,7 +75,7 @@ beforeAll(async () => {
   recipientHeaders = await signInHeaders(recipientEmail);
 
   const hostOrganization = await auth.api.createOrganization({
-    body: { name: `Host ${lane}`, slug: `host-${lane}` },
+    body: { country: "DE" as const, name: `Host ${lane}`, slug: `host-${lane}` },
     headers: hostHeaders,
   });
   // Refresh the host session so issuance sees the Hosting Organization.
@@ -126,7 +127,11 @@ describe("Partner setup links through supported Organization creation", () => {
     // The recipient arrives with no Organization and creates one through the
     // normal supported flow; Better Auth grants creator Ownership itself.
     const created = await auth.api.createOrganization({
-      body: { name: `Partner ${lane}`, slug: `partner-${lane}` },
+      body: {
+        country: "DE" as const,
+        name: `Partner ${lane}`,
+        slug: `partner-${lane}`,
+      },
       headers: recipientHeaders,
     });
     recipientOrganizationId = created.id;
@@ -135,7 +140,7 @@ describe("Partner setup links through supported Organization creation", () => {
       .from(member)
       .where(eq(member.organizationId, created.id));
     expect(createdMembers).toMatchObject([
-      { userId: recipientUserId, role: "owner" },
+      { userId: recipientUserId, role: ORGANIZATION_ROLES.OrganizationOwner },
     ]);
 
     const link = await client(hostHeaders).projectPartnerships.createSetupLink({
@@ -170,7 +175,11 @@ describe("Partner setup links through supported Organization creation", () => {
     // Membership, so a recipient that already owns one cannot mint another.
     await expect(
       auth.api.createOrganization({
-        body: { name: `Second ${lane}`, slug: `second-${lane}` },
+        body: {
+          country: "DE" as const,
+          name: `Second ${lane}`,
+          slug: `second-${lane}`,
+        },
         headers: recipientHeaders,
       }),
     ).rejects.toMatchObject({ statusCode: 403 });

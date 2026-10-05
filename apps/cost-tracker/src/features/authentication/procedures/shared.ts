@@ -1,7 +1,8 @@
-import "server-only";
 import { createHash } from "node:crypto";
 
+import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { z } from "zod";
 
@@ -55,8 +56,12 @@ export const INVITATION_TTL_MS = 48 * 60 * 60 * 1000;
 
 export function shouldGrantParticipantRole(role: string): boolean {
   return (
-    hasOrganizationRole(role, "project-coordinator") &&
-    !["participant", "owner", "admin"].some((existing) =>
+    hasOrganizationRole(role, ORGANIZATION_ROLES.ProjectCoordinator) &&
+    ![
+      ORGANIZATION_ROLES.Participant,
+      ORGANIZATION_ROLES.OrganizationOwner,
+      ORGANIZATION_ROLES.OrganizationAdmin,
+    ].some((existing) =>
       role.split(",").some((value) => value.trim() === existing),
     )
   );

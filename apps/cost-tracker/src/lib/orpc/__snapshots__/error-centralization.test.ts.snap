@@ -190,7 +190,7 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
   },
   "invalidOrganizationRole": {
     "code": "BAD_REQUEST",
-    "message": "The "member" role is forbidden in Cost Tracker. Use a defined Organization role.",
+    "message": "Use a defined Organization role.",
     "reason": "INVALID_ORGANIZATION_ROLE",
     "status": 400,
   },

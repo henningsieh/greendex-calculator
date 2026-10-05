@@ -112,7 +112,7 @@ export const createProject = authorized
  * List projects based on user's organization membership
  *
  * Behavior:
- * - Members (role: "member"): See all projects in their organization (read-only)
+ * - Participants (role: participant): See all projects in their organization (read-only)
  * - Project Coordinators/Organization Administrators: See all projects in their organization (full access)
  *
  * This respects Better Auth's organization-based permissions:
@@ -371,15 +371,15 @@ export const deleteProject = authorized
     });
 
     // Organization Administrators can delete any project; Project Coordinators can delete only assigned projects.
-    const isOrganizationAdministrator = hasOrganizationRole(
+    const isOrganizationOwner = hasOrganizationRole(
       role,
-      MEMBER_ROLES.OrganizationAdministrator,
+      MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
-      hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
+      hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
       (await hasHostAssignment(existingProject.id, context.user.id));
 
-    if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
+    if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
       throw errors.FORBIDDEN({
         message:
           "You don't have permission to delete this project. Only an Organization Administrator or the responsible Project Coordinator can delete it.",
@@ -452,15 +452,15 @@ export const archiveProject = authorized
     }
 
     // Organization Administrators can archive any project; Project Coordinators can archive only assigned projects.
-    const isOrganizationAdministrator = hasOrganizationRole(
+    const isOrganizationOwner = hasOrganizationRole(
       role,
-      MEMBER_ROLES.OrganizationAdministrator,
+      MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
-      hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
+      hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
       (await hasHostAssignment(existingProject.id, context.user.id));
 
-    if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
+    if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
       throw errors.FORBIDDEN({
         message:
           "You don't have permission to archive this project. Only an Organization Administrator or the responsible Project Coordinator can archive it.",
@@ -528,8 +528,8 @@ export const setActiveProject = authorized
       });
 
       if (
-        !hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
-        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdministrator)
+        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
+        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationOwner)
       ) {
         throw errors.FORBIDDEN({
           message: "You don't have permission to set an active project",
@@ -715,16 +715,16 @@ export const batchDeleteProjects = authorized
     }
 
     // Organization Administrators can delete any project; Project Coordinators only assigned projects.
-    const isOrganizationAdministrator = hasOrganizationRole(
+    const isOrganizationOwner = hasOrganizationRole(
       role,
-      MEMBER_ROLES.OrganizationAdministrator,
+      MEMBER_ROLES.OrganizationOwner,
     );
     for (const project of projectsToDelete) {
       const isResponsibleProjectCoordinator =
-        hasOrganizationRole(role, MEMBER_ROLES.ProjectCoordinator) &&
+        hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
         (await hasHostAssignment(project.id, context.user.id));
 
-      if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
+      if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
         throw errors.FORBIDDEN({
           message:
             "You don't have permission to delete one or more of these projects. Only an Organization Administrator or the responsible Project Coordinator can delete projects.",

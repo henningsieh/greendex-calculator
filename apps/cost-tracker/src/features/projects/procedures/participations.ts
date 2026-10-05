@@ -72,7 +72,7 @@ const scopeInput = z.object({ partnershipId: coordinationId });
 const rowInput = scopeInput.extend({ id: coordinationId });
 
 /**
- * The Hosting Project report of Participants (ADR-0016): one group per
+ * The Hosting Participant view (ADR-0016): one group per
  * represented Partner Organization, carrying only counts and read-only
  * Participant data. It carries no edit, invitation or removal capability.
  */
@@ -617,7 +617,7 @@ export function createParticipationProcedures(
     });
 
   /**
-   * The read-only Hosting report for one hosted Project. Hosting-side
+   * The read-only Hosting Participant view for one hosted Project. Hosting-side
    * coordination is the same authority the Projects list and Claims review
    * use, so an unrelated Organization and an unassigned coordinator are
    * refused here too.
@@ -638,6 +638,7 @@ export function createParticipationProcedures(
           participationId: participants.id,
           organizationId: participants.representedOrganizationId,
           organizationName: organization.name,
+          organizationCountry: organization.country,
           displayName: participants.displayName,
           email: participants.email,
           accountEmail: user.email,

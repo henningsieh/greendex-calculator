@@ -1,8 +1,9 @@
-/** One Project Participation as the Hosting report reads it. */
+/** One Project Participation as the Hosting Participant view reads it. */
 export type HostedParticipantRow = {
   participationId: string;
   organizationId: string;
   organizationName: string;
+  organizationCountry: string;
   displayName: string;
   email: string | null;
   accountEmail: string | null;
@@ -15,9 +16,7 @@ export type HostedParticipantAgreementStatus = "completed" | "pending";
 export type HostedParticipantGroup = {
   id: string;
   name: string;
-  // Organizations carry no country attribute yet; the report renders the value
-  // as not recorded rather than borrowing another Organization's data.
-  country: null;
+  country: string | null;
   participantCount: number;
   completedCount: number;
   pendingCount: number;
@@ -48,7 +47,7 @@ export function groupHostedParticipants(
     const group = groups.get(row.organizationId) ?? {
       id: row.organizationId,
       name: row.organizationName,
-      country: null,
+      country: row.organizationCountry,
       participantCount: 0,
       completedCount: 0,
       pendingCount: 0,

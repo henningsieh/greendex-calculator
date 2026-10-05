@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
@@ -103,12 +104,14 @@ describe("Cost Tracker Better Auth", () => {
       .where(eq(user.id, signUp.user.id));
     await db.insert(organization).values([
       {
+        country: "DE",
         id: olderOrganizationId,
         name: "Earlier Organization",
         slug: `earlier-${olderOrganizationId}`,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
       },
       {
+        country: "DE",
         id: newestOrganizationId,
         name: "Latest Organization",
         slug: `latest-${newestOrganizationId}`,
@@ -120,14 +123,14 @@ describe("Cost Tracker Better Auth", () => {
         id: randomUUID(),
         organizationId: olderOrganizationId,
         userId: signUp.user.id,
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
       },
       {
         id: randomUUID(),
         organizationId: newestOrganizationId,
         userId: signUp.user.id,
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
         createdAt: new Date("2026-01-02T00:00:00.000Z"),
       },
     ]);
@@ -154,6 +157,7 @@ describe("Cost Tracker Better Auth", () => {
     await expect(
       auth.api.createOrganization({
         body: {
+          country: "DE" as const,
           name: "A second Organization",
           slug: `second-${randomUUID()}`,
         },

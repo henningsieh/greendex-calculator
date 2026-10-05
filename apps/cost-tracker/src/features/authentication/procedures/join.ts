@@ -1,5 +1,6 @@
-import "server-only";
 import { addOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
@@ -124,7 +125,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             body: {
               userId: context.user.id,
               organizationId: partnership.hostId,
-              role: "participant",
+              role: ORGANIZATION_ROLES.Participant,
             },
           })
           .catch((error: unknown) => {
@@ -144,7 +145,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           actor: context.user.id,
           linkId: input.source.kind === "link" ? input.source.id : invitationId,
           previousRole: null,
-          newRole: "participant",
+          newRole: ORGANIZATION_ROLES.Participant,
           at: new Date().toISOString(),
         });
       } else if (shouldGrantParticipantRole(membership.role)) {
@@ -180,7 +181,10 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           actor: context.user.id,
           linkId: input.source.kind === "link" ? input.source.id : invitationId,
           previousRole: membership.role,
-          newRole: addOrganizationRole(membership.role, "participant"),
+          newRole: addOrganizationRole(
+            membership.role,
+            ORGANIZATION_ROLES.Participant,
+          ),
           at: new Date().toISOString(),
         });
       }

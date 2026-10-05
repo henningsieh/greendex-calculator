@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,17 +8,28 @@ import {
   resolveStaffOrganizationContext,
 } from "@/features/organizations/staff-eligibility";
 
-const owner = { id: "org-a", name: "Alpha", role: "owner" };
-const participant = { id: "org-b", name: "Beta", role: "participant" };
+const owner = {
+  id: "org-a",
+  name: "Alpha",
+  role: ORGANIZATION_ROLES.OrganizationOwner,
+};
+const participant = {
+  id: "org-b",
+  name: "Beta",
+  role: ORGANIZATION_ROLES.Participant,
+};
 
 describe("isStaffOrganizationRole", () => {
   it.each([
-    ["owner", true],
-    ["admin", true],
-    ["project-coordinator", true],
-    ["owner,participant", true],
-    ["participant", false],
-    ["member", false],
+    [ORGANIZATION_ROLES.OrganizationOwner, true],
+    [ORGANIZATION_ROLES.OrganizationAdmin, true],
+    [ORGANIZATION_ROLES.ProjectCoordinator, true],
+    [
+      `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+      true,
+    ],
+    [ORGANIZATION_ROLES.Participant, false],
+    ["invalid-role", false],
     ["unknown-role", false],
     ["", false],
   ])("classifies %s as staff=%s", (role, staff) => {

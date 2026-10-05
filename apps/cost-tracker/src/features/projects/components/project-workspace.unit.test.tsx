@@ -114,7 +114,7 @@ describe("Project workspace", () => {
     ).toBeNull();
     expect(
       screen
-        .getByRole("link", { name: "View Participants report" })
+        .getByRole("link", { name: "Hosting Participant view" })
         .getAttribute("href"),
     ).toBe("/projects/project-1/participants");
     expect(screen.queryByText(/Cost Submission$/)).toBeNull();
@@ -262,9 +262,9 @@ describe("Project workspace", () => {
         .getAttribute("href"),
     ).toBe("/partnerships/partnership-1/claim");
     // A Partner Project row keeps its Partnership workspace and is never sent
-    // to the Hosting-only Participants report it cannot read.
+    // to the Hosting-only Hosting Participant view it cannot read.
     expect(
-      screen.queryByRole("link", { name: "View Participants report" }),
+      screen.queryByRole("link", { name: "Hosting Participant view" }),
     ).toBeNull();
     expect(screen.queryByText(/EUR|Proof Document/i)).toBeNull();
     expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();

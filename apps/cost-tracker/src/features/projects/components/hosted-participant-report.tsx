@@ -18,7 +18,7 @@ function pluralize(count: number, singular: string) {
 }
 
 /**
- * Read-only Hosting report of this Project's Participants, grouped by the
+ * Read-only Hosting Participant view of this Project's Participants, grouped by the
  * Partner Organization each represents (ADR-0016). It offers expanding and
  * navigating only: no editing, invitation or removal control exists here, and
  * the Partner workspace keeps its own controls unchanged.
@@ -32,7 +32,7 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
   );
 
   return (
-    <section aria-label="Participants report" className="space-y-6">
+    <section aria-label="Hosting Participant view" className="space-y-6">
       <p className="text-sm text-muted-foreground">
         Totals count the Project Participations that exist, each in the Partner
         Organization it represents. Invitees who have not joined and unknown
@@ -77,9 +77,7 @@ function PartnerOrganizationParticipants({
           </span>
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">
-            {`Country: ${group.country ?? "Not recorded"}`}
-          </Badge>
+          <Badge variant="secondary">{`Country: ${group.country}`}</Badge>
           <Badge>{pluralize(group.participantCount, "Participant")}</Badge>
           <Badge variant="secondary">{`${group.completedCount} completed`}</Badge>
           <Badge variant="secondary">{`${group.pendingCount} pending`}</Badge>

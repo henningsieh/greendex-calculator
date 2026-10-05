@@ -395,7 +395,7 @@ function ResolvedProjectList({
             .filter(Boolean)
             .join(", "),
       },
-      // The Participants report is a Hosting read (ADR-0016), so Partner rows
+      // The Hosting Participant view is a Hosting read (ADR-0016), so Partner rows
       // never link to it; their Partnership workspace keeps its own entry.
       ...(scope === "hosted"
         ? [

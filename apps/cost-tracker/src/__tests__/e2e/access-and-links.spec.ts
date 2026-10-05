@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
@@ -218,30 +219,48 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     }
     const now = new Date();
     await db.insert(organization).values([
-      { id: ids.host, name: names.host, slug: ids.host, createdAt: now },
-      { id: ids.partner, name: names.partner, slug: ids.partner, createdAt: now },
-      { id: ids.foreign, name: names.foreign, slug: ids.foreign, createdAt: now },
+      {
+        country: "DE",
+        id: ids.host,
+        name: names.host,
+        slug: ids.host,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.partner,
+        name: names.partner,
+        slug: ids.partner,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.foreign,
+        name: names.foreign,
+        slug: ids.foreign,
+        createdAt: now,
+      },
     ]);
     await db.insert(member).values([
       {
         id: randomUUID(),
         userId: actors.H.id,
         organizationId: ids.host,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.P.id,
         organizationId: ids.partner,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.F.id,
         organizationId: ids.foreign,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
     ]);
@@ -249,7 +268,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       id: ids.invitation,
       organizationId: ids.host,
       email: actors.A.email,
-      role: "admin",
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
       status: "pending",
       expiresAt: new Date(Date.now() + 3_600_000),
       inviterId: actors.H.id,
@@ -368,7 +387,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await h.goto("/organization");
     await expect(
       h.getByRole("row").filter({ hasText: actors.A.email }),
-    ).toContainText("admin");
+    ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
     // A creator and Organization Admin are observable; assignment to another
     // Project-/Partnership-scoped coordinator is UI GAP, not inferred from DB roles.
   });
@@ -433,7 +452,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
         id: ids.participantMembership,
         userId: actors.T.id,
         organizationId: ids.host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
         createdAt: new Date(),
       });
       await db.insert(participations).values({
@@ -448,7 +467,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
           .select({ role: member.role, organizationId: member.organizationId })
           .from(member)
           .where(eq(member.userId, actors.T.id)),
-      ).toEqual([{ role: "participant", organizationId: ids.host }]);
+      ).toEqual([
+        { role: ORGANIZATION_ROLES.Participant, organizationId: ids.host },
+      ]);
       expect(
         await db
           .select({
@@ -521,6 +542,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       x.getByText("Partner Organization setup", { exact: true }),
     ).toBeVisible();
     await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
+    await x.getByLabel("Organization country").selectOption("DE");
     await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     await creator
@@ -533,6 +555,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
     await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
+    await x.getByLabel("Organization country").selectOption("DE");
     await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     const fresh = await browser.newContext({

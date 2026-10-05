@@ -18,6 +18,7 @@ import { getAllCountries, getEUCountries } from "@/lib/i18n/countries";
 import { cn } from "@/lib/utils";
 
 interface CountrySelectProps {
+  id?: string;
   value?: string;
   onValueChange: (value: string) => void;
   euOnly?: boolean;
@@ -40,6 +41,7 @@ interface CountrySelectProps {
  * ```
  */
 export function CountrySelect({
+  id,
   value,
   onValueChange,
   euOnly = false,
@@ -64,6 +66,7 @@ export function CountrySelect({
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
           disabled={disabled}
+          id={id}
           role="combobox"
           variant="outline"
         >

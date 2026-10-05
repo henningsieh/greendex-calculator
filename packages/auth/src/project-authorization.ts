@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "./permissions";
 import {
   hasOrganizationRole,
   type ProjectParticipationPermission,
@@ -77,7 +78,10 @@ export function evaluateProjectScopeAccess(
   if (!role) return { permitted: false, reason: "MISSING_MEMBERSHIP" };
   if (!mayCreateParticipation)
     return { permitted: false, reason: "PERMISSION_MISSING" };
-  if (hasOrganizationRole(role, "owner") || hasOrganizationRole(role, "admin"))
+  if (
+    hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) ||
+    hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
+  )
     return { permitted: true };
   return assignedCoordinator
     ? { permitted: true }

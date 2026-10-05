@@ -1,6 +1,7 @@
-// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { db } from "@greendex/database";
 import {
@@ -49,7 +50,7 @@ const id = (part: string) => `cost-${part}-${suffix}`;
 const host = id("host"),
   partner = id("partner"),
   other = id("other");
-const coordinator = id("coordinator"),
+const coordinator = id(ORGANIZATION_ROLES.ProjectCoordinator),
   participantUser = id("user");
 const project = id("project"),
   secondProject = id("second-project");
@@ -97,23 +98,29 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(organization).values([
-    { id: host, name: "Host", slug: host, createdAt: now },
-    { id: partner, name: "Partner", slug: partner, createdAt: now },
-    { id: other, name: "Other", slug: other, createdAt: now },
+    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
+    {
+      country: "DE",
+      id: partner,
+      name: "Partner",
+      slug: partner,
+      createdAt: now,
+    },
+    { country: "DE", id: other, name: "Other", slug: other, createdAt: now },
   ]);
   await db.insert(member).values([
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: participantUser,
       organizationId: partner,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
   ]);

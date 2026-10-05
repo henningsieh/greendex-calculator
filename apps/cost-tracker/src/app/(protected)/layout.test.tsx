@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -46,8 +47,16 @@ vi.mock("@/features/organizations/components/select-organization", () => ({
 
 import ProtectedLayout from "@/app/(protected)/layout";
 
-const ownerMembership = { id: "org-a", name: "Alpha", role: "owner" };
-const participantMembership = { id: "org-b", name: "Beta", role: "participant" };
+const ownerMembership = {
+  id: "org-a",
+  name: "Alpha",
+  role: ORGANIZATION_ROLES.OrganizationOwner,
+};
+const participantMembership = {
+  id: "org-b",
+  name: "Beta",
+  role: ORGANIZATION_ROLES.Participant,
+};
 
 function session(activeOrganizationId: string | null) {
   return {

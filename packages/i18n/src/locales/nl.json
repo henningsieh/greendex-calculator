@@ -671,9 +671,10 @@
       "description": "Dit zijn de gegevens en instellingen van de organisatie."
     },
     "roles": {
-      "owner": "Organisatiebeheerder",
-      "admin": "Projectcoördinator",
-      "member": "Deelnemer"
+      "owner": "Organisatie-eigenaar",
+      "admin": "Organisatiebeheerder",
+      "participant": "Deelnemer",
+      "coordinator": "Projectcoördinator"
     },
     "invitation": {
       "title": "Uitnodiging accepteren",
@@ -687,6 +688,10 @@
         "confirm-button": "Uitnodiging annuleren",
         "cancel-button": "Uitnodiging bewaren"
       }
+    },
+    "country": {
+      "label": "Land van de organisatie",
+      "placeholder": "Selecteer een EU-land"
     }
   },
   "participation": {

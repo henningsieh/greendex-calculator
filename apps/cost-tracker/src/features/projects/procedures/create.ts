@@ -1,4 +1,5 @@
 import { addOrganizationRole, hasOrganizationRole } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
@@ -52,10 +53,19 @@ export const create = authorized
         userId: context.user.id,
       });
       if (
-        !hasOrganizationRole(membership.role, "owner") &&
-        !hasOrganizationRole(membership.role, "admin")
+        !hasOrganizationRole(
+          membership.role,
+          ORGANIZATION_ROLES.OrganizationOwner,
+        ) &&
+        !hasOrganizationRole(
+          membership.role,
+          ORGANIZATION_ROLES.OrganizationAdmin,
+        )
       ) {
-        const role = addOrganizationRole(membership.role, "project-coordinator");
+        const role = addOrganizationRole(
+          membership.role,
+          ORGANIZATION_ROLES.ProjectCoordinator,
+        );
         if (role !== membership.role) {
           await tx
             .update(member)

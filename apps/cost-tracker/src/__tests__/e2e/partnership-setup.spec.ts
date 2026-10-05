@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
@@ -276,6 +277,7 @@ async function completeNew(page: Page, url: string, name: string) {
     page.getByText("Partner Organization setup", { exact: true }),
   ).toBeVisible();
   await page.getByLabel("New Organization name").fill(name);
+  await page.getByLabel("Organization country").selectOption("DE");
   await page.getByRole("button", { name: "Complete setup" }).click();
   await expect(page.getByText("Project Partnership created")).toBeVisible();
 }
@@ -359,6 +361,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(page.getByText("No Organization access yet")).toBeVisible();
     const dialog = await openOrganizationDialog(page);
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
+    await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
     if (await page.getByText("No Organization access yet").isVisible())
@@ -397,6 +400,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.goto(setupURL);
     await expect(page.getByLabel("New Organization name")).toBeVisible();
     await page.getByLabel("New Organization name").fill(names.P);
+    await page.getByLabel("Organization country").selectOption("DE");
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(page.getByText("Project Partnership created")).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[0]!, names.P)).toBe(1);
@@ -433,6 +437,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       ).toBeVisible();
       const attemptedName = `CT ${suffix} Wrong Email`;
       await page.getByLabel("New Organization name").fill(attemptedName);
+      await page.getByLabel("Organization country").selectOption("DE");
       await page.getByRole("button", { name: "Complete setup" }).click();
       await expect(page.getByText("Wrong email address")).toBeVisible();
       expect(
@@ -478,6 +483,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(page.getByText("No Organization access yet")).toBeVisible();
     const dialog = await openOrganizationDialog(page);
     await dialog.getByLabel("Organization name").fill(names.E);
+    await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
     if (await page.getByText("No Organization access yet").isVisible())
@@ -510,7 +516,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         id: invitationId,
         organizationId: org!.id,
         email: actors.M.email,
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
         status: "pending",
         expiresAt: new Date(Date.now() + 3_600_000),
         inviterId: actors.E.id,
@@ -525,7 +531,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await ownerPage.goto("/organization");
       await expect(
         ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
       const context = await actorContext(browser, "M", baseURL!);
       const page = await context.newPage();
       await page.goto(`/accept-invitation/${invitationId}`);
@@ -542,11 +548,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await expect(page.getByText("Invite staff", { exact: true })).toBeVisible();
       await expect(
         page.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
       await ownerPage.reload();
       await expect(
         ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
       const [participation] = await db
         .select({ id: projectParticipantsTable.id })
         .from(projectParticipantsTable)
@@ -564,7 +570,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .select({ role: member.role, organizationId: member.organizationId })
       .from(member)
       .where(eq(member.userId, actors.M.id));
-    expect(membership?.role).toBe("admin");
+    expect(membership?.role).toBe(ORGANIZATION_ROLES.OrganizationAdmin);
     const context = await actorContext(browser, "M", baseURL!);
     const page = await context.newPage();
     // Admin authority is Organization-wide, unlike assignment-only coordination.

@@ -200,7 +200,7 @@ export function ProjectWorkspace({
                 className={buttonVariants({ variant: "outline" })}
                 href={`/projects/${encodeURIComponent(project.id)}/participants`}
               >
-                View Participants report
+                Hosting Participant view
               </Link>
               <Link
                 className={buttonVariants({ variant: "outline" })}

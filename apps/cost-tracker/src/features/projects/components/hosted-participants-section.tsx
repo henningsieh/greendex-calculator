@@ -25,7 +25,7 @@ export async function HostedParticipantsSection({
 
   return (
     <HydrateClient client={queryClient}>
-      <ProjectDataErrorBoundary resource="the Participants report">
+      <ProjectDataErrorBoundary resource="the Hosting Participant view">
         <HostedParticipantReport projectId={id} />
       </ProjectDataErrorBoundary>
     </HydrateClient>

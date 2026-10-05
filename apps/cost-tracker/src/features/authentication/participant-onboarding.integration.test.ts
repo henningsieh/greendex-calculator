@@ -2,6 +2,7 @@
 
 import { createHash, randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   claimsTable,
@@ -137,9 +138,16 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(organization).values([
-    { id: host, name: "Host", slug: host, createdAt: now },
-    { id: partner, name: "Partner", slug: partner, createdAt: now },
+    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
     {
+      country: "DE",
+      id: partner,
+      name: "Partner",
+      slug: partner,
+      createdAt: now,
+    },
+    {
+      country: "DE",
       id: otherPartner,
       name: "Other partner",
       slug: otherPartner,
@@ -150,7 +158,7 @@ beforeAll(async () => {
     id: randomUUID(),
     organizationId: partner,
     userId: owner,
-    role: "owner",
+    role: ORGANIZATION_ROLES.OrganizationOwner,
     createdAt: now,
   });
   await db.insert(projects).values({
@@ -216,7 +224,7 @@ beforeEach(async () => {
         row.role
           .split(",")
           .map((value) => value.trim())
-          .includes("participant")
+          .includes(ORGANIZATION_ROLES.Participant)
       )
         return new Response(JSON.stringify({ member: row }), { status: 200 });
       if (row.role !== body.expectedRole)
@@ -261,7 +269,7 @@ beforeEach(async () => {
         id: randomUUID(),
         organizationId: host,
         userId: recipient,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
         createdAt: new Date(),
       });
       return new Response(null, { status: 200 });
@@ -503,7 +511,9 @@ describe("Participant onboarding procedures", () => {
       agreement: { accepted: true },
     });
     expect(joined.participationId).toBeTruthy();
-    expect(await memberships()).toEqual([{ role: "participant" }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
     expect(await client.participantOnboarding.listMyProjects()).toEqual([
       {
         participationId: joined.participationId,
@@ -681,11 +691,11 @@ describe("Participant onboarding procedures", () => {
         agreement: { accepted: true as const },
       });
     for (const role of [
-      "owner",
-      "admin",
-      "participant",
-      "project-coordinator",
-      "project-coordinator,participant",
+      ORGANIZATION_ROLES.OrganizationOwner,
+      ORGANIZATION_ROLES.OrganizationAdmin,
+      ORGANIZATION_ROLES.Participant,
+      ORGANIZATION_ROLES.ProjectCoordinator,
+      `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
     ]) {
       await db.delete(participants).where(eq(participants.projectId, project));
       await db.delete(member).where(eq(member.userId, recipient));
@@ -698,17 +708,25 @@ describe("Participant onboarding procedures", () => {
       });
       await join();
       expect(await memberships()).toEqual([
-        { role: role === "project-coordinator" ? `${role},participant` : role },
+        {
+          role:
+            role === ORGANIZATION_ROLES.ProjectCoordinator
+              ? `${role},participant`
+              : role,
+        },
       ]);
     }
     expect(authMocks.addMember).not.toHaveBeenCalled();
     expect(authMocks.grantParticipantMembership).toHaveBeenCalledTimes(1);
     // ADR-0012: fallback roles are refused in memory, never seeded or upgraded.
-    for (const bannedRole of ["member", "member,project-coordinator"]) {
+    for (const invalidRole of [
+      "invalid-role",
+      `invalid-role,${ORGANIZATION_ROLES.ProjectCoordinator}`,
+    ]) {
       let refusal: unknown;
       try {
         requireCostTrackerRole(
-          bannedRole,
+          invalidRole,
           (options) => new ORPCError("BAD_REQUEST", options),
         );
       } catch (error) {
@@ -717,8 +735,7 @@ describe("Participant onboarding procedures", () => {
       expect(refusal).toMatchObject({
         code: "BAD_REQUEST",
         status: 400,
-        message:
-          'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
+        message: "Use a defined Organization role.",
       });
     }
   });
@@ -731,7 +748,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       userId: recipient,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     actor = recipient;
@@ -760,7 +777,9 @@ describe("Participant onboarding procedures", () => {
     expect(rows).toHaveLength(1);
     expect(new Set(participationIds)).toEqual(new Set([rows[0]!.id]));
     expect(await memberships()).toEqual([
-      { role: "project-coordinator,participant" },
+      {
+        role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+      },
     ]);
     expect(authMocks.addMember).not.toHaveBeenCalled();
   });
@@ -773,7 +792,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       userId: recipient,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     actor = recipient;
@@ -804,7 +823,9 @@ describe("Participant onboarding procedures", () => {
     const retried = await client.participantOnboarding.join(input);
     expect(retried.participationId).toBeTruthy();
     expect(await memberships()).toEqual([
-      { role: "project-coordinator,participant" },
+      {
+        role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+      },
     ]);
   });
 
@@ -969,7 +990,9 @@ describe("Participant onboarding procedures", () => {
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
-    expect(await memberships()).toEqual([{ role: "participant" }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
   });
 
   it("keeps a Partner Organization's invitation with its issuer, including against Hosting staff", async () => {
@@ -996,7 +1019,7 @@ describe("Participant onboarding procedures", () => {
       id: otherMembershipId,
       organizationId: otherPartner,
       userId: owner,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: new Date(),
     });
     activeOrganizationId = otherPartner;
@@ -1023,7 +1046,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       organizationId: host,
       userId: owner,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: new Date(),
     });
     try {
@@ -1182,7 +1205,9 @@ describe("Participant onboarding procedures", () => {
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
-    expect(await memberships()).toEqual([{ role: "participant" }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
     ).toHaveLength(0);
@@ -1335,7 +1360,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       organizationId: host,
       userId: owner,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: new Date(),
     });
     try {
@@ -1381,7 +1406,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       organizationId: host,
       userId: owner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     try {
@@ -1415,7 +1440,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       organizationId: partner,
       userId: recipient,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: new Date(),
     });
     await expect(
@@ -1445,7 +1470,7 @@ describe("Participant onboarding procedures", () => {
       id: randomUUID(),
       organizationId: partner,
       userId: recipient,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: new Date(),
     });
     await expect(
@@ -1470,7 +1495,7 @@ describe("Participant onboarding procedures", () => {
       id: membershipId,
       organizationId: partner,
       userId: recipient,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     await db
@@ -1496,7 +1521,7 @@ describe("Participant onboarding procedures", () => {
             .from(member)
             .where(eq(member.id, membershipId))
         )[0]?.role,
-      ).toBe("project-coordinator");
+      ).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
       await expect(
         client.participantOnboarding.issueInvitation({
           partnershipId: otherPartnership,
@@ -1564,7 +1589,9 @@ describe("Participant onboarding procedures", () => {
           .where(eq(entryTokens.id, issued.invitationId))
       )[0]?.status,
     ).toBe("accepted");
-    expect(await memberships()).toEqual([{ role: "participant" }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
   });
 
   it("persists the EU country on the Project Participation when joining through a reusable link", async () => {
@@ -1679,7 +1706,7 @@ describe("Participant onboarding procedures", () => {
             id: randomUUID(),
             organizationId: body.organizationId,
             userId: body.userId,
-            role: "participant",
+            role: ORGANIZATION_ROLES.Participant,
             createdAt: new Date(),
           });
           return new Response(null, { status: 200 });

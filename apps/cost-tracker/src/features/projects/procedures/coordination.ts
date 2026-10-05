@@ -1,4 +1,5 @@
 import { hasOrganizationRole } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
@@ -57,11 +58,13 @@ export async function requireHostCoordination(
   if (!membership) throw situation.notMember();
   if (!project) throw situation.projectNotFound();
   if (
-    hasOrganizationRole(membership.role, "owner") ||
-    hasOrganizationRole(membership.role, "admin")
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)
   )
     return project;
-  if (hasOrganizationRole(membership.role, "project-coordinator")) {
+  if (
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
+  ) {
     const [assignment] = await executor
       .select({ userId: hostAssignments.userId })
       .from(hostAssignments)
@@ -114,11 +117,13 @@ export async function requirePartnerCoordination(
     .limit(1);
   if (!membership) throw situation.notMember();
   if (
-    hasOrganizationRole(membership.role, "owner") ||
-    hasOrganizationRole(membership.role, "admin")
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)
   )
     return scope;
-  if (!hasOrganizationRole(membership.role, "project-coordinator"))
+  if (
+    !hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
+  )
     throw situation.partnerCoordinationRequired();
   if (activeOrganizationId === scope.partnerId) {
     const [assignment] = await db
@@ -176,8 +181,8 @@ export const assignPartnerCoordinator = authorized
     if (!actor) throw situation.notMember();
     if (
       !(
-        hasOrganizationRole(actor.role, "owner") ||
-        hasOrganizationRole(actor.role, "admin")
+        hasOrganizationRole(actor.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+        hasOrganizationRole(actor.role, ORGANIZATION_ROLES.OrganizationAdmin)
       )
     )
       throw situation.organizationManagementRequired();
@@ -197,7 +202,11 @@ export const assignPartnerCoordinator = authorized
       !target.role
         .split(",")
         .some((role) =>
-          ["owner", "admin", "project-coordinator"].includes(role.trim()),
+          [
+            ORGANIZATION_ROLES.OrganizationOwner,
+            ORGANIZATION_ROLES.OrganizationAdmin,
+            ORGANIZATION_ROLES.ProjectCoordinator,
+          ].some((knownRole) => knownRole === role.trim()),
         )
     )
       throw situation.coordinatorSelectionRequired();
@@ -236,8 +245,8 @@ export const removePartnerCoordinator = authorized
     if (!actor) throw situation.notMember();
     if (
       !(
-        hasOrganizationRole(actor.role, "owner") ||
-        hasOrganizationRole(actor.role, "admin")
+        hasOrganizationRole(actor.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+        hasOrganizationRole(actor.role, ORGANIZATION_ROLES.OrganizationAdmin)
       )
     )
       throw situation.organizationManagementRequired();

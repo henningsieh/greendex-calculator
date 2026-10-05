@@ -52,7 +52,7 @@ beforeEach(() => {
       {
         id: "org-alpha",
         name: "Alpha Mobility",
-        country: null,
+        country: "FR",
         participantCount: 2,
         completedCount: 1,
         pendingCount: 1,
@@ -65,17 +65,17 @@ beforeEach(() => {
   };
 });
 
-describe("Hosting Participant report", { timeout: 20_000 }, () => {
+describe("Hosting Participant view", { timeout: 20_000 }, () => {
   it("groups totals by Partner Organization and hides Participants until expanded", async () => {
     renderReport();
 
     const report = await screen.findByRole(
       "region",
-      { name: "Participants report" },
+      { name: "Hosting Participant view" },
       { timeout: 10_000 },
     );
     expect(within(report).getByText("Alpha Mobility")).toBeTruthy();
-    expect(within(report).getByText("Country: Not recorded")).toBeTruthy();
+    expect(within(report).getByText("Country: FR")).toBeTruthy();
     expect(within(report).getByText("2 Participants")).toBeTruthy();
     expect(within(report).getByText("1 completed")).toBeTruthy();
     expect(within(report).getByText("1 pending")).toBeTruthy();
@@ -101,7 +101,7 @@ describe("Hosting Participant report", { timeout: 20_000 }, () => {
 
     const report = await screen.findByRole(
       "region",
-      { name: "Participants report" },
+      { name: "Hosting Participant view" },
       { timeout: 10_000 },
     );
     await userEvent.click(

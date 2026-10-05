@@ -1,180 +1,126 @@
-import {
-  adminAc,
-  memberAc,
-  ownerAc,
-} from "better-auth/plugins/organization/access";
 import { describe, expect, it } from "vitest";
 
 import {
   addOrganizationRole,
-  hasOrganizationRole,
-  legacyCalculatorMemberRole,
-  organizationRoles,
-  organisationOwner,
-  organizationAdmin,
-  parseOrganizationRoles,
-  projectParticipant,
   calculatorOrganizationRoles,
-  projectCoordinatorRole,
   costTrackerOrganizationRoles,
+  hasOrganizationRole,
+  ORGANIZATION_ROLES,
+  parseOrganizationRoles,
+  projectCoordinatorRole,
 } from "./permissions";
 
-describe("organization permissions", () => {
-  it("gives Organization Owners full project and partnership access", () => {
-    expect(
-      organisationOwner.authorize({
-        project: ["delete"],
-        projectPartnership: ["delete"],
-        projectParticipation: ["merge"],
-      }).success,
-    ).toBe(true);
+const roles = ORGANIZATION_ROLES;
+
+describe("Organization permissions", () => {
+  it("uses the same final role values in both apps", () => {
+    expect(Object.keys(calculatorOrganizationRoles).sort()).toEqual(
+      Object.values(roles).sort(),
+    );
+    expect(Object.keys(costTrackerOrganizationRoles).sort()).toEqual(
+      Object.values(roles).sort(),
+    );
   });
 
-  it("gates assignment-scoped coordinator role to Cost Tracker without granting broad project or organization access", () => {
-    expect(costTrackerOrganizationRoles["project-coordinator"]).toBe(
-      projectCoordinatorRole,
+  it("gives Organization Owners full Project and Partnership authority", () => {
+    for (const map of [
+      calculatorOrganizationRoles,
+      costTrackerOrganizationRoles,
+    ]) {
+      expect(
+        map[roles.OrganizationOwner].authorize({
+          project: ["delete"],
+          projectPartnership: ["delete"],
+          projectParticipation: ["merge"],
+        }).success,
+      ).toBe(true);
+    }
+  });
+
+  it("keeps Calculator admin Project management unchanged", () => {
+    expect(
+      calculatorOrganizationRoles[roles.OrganizationAdmin].authorize({
+        project: ["create", "read", "update", "archive"],
+      }).success,
+    ).toBe(true);
+    expect(
+      calculatorOrganizationRoles[roles.OrganizationAdmin].authorize({
+        project: ["delete"],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("grants Calculator coordinators nothing", () => {
+    const coordinator = calculatorOrganizationRoles[roles.ProjectCoordinator];
+    expect(coordinator.statements).toEqual({});
+    expect(coordinator.authorize({ project: ["read"] }).success).toBe(false);
+    expect(
+      coordinator.authorize({ projectParticipation: ["create"] }).success,
+    ).toBe(false);
+    expect(coordinator.authorize({ organization: ["update"] }).success).toBe(
+      false,
     );
-    expect(projectCoordinatorRole.authorize({ project: ["read"] }).success).toBe(
+  });
+
+  it("keeps Cost Tracker coordination minimal and assignment-scoped", () => {
+    const coordinator = costTrackerOrganizationRoles[roles.ProjectCoordinator];
+    expect(coordinator).toBe(projectCoordinatorRole);
+    expect(
+      coordinator.authorize({ projectParticipation: ["create"] }).success,
+    ).toBe(true);
+    expect(coordinator.authorize({ project: ["read", "update"] }).success).toBe(
       false,
     );
     expect(
-      projectCoordinatorRole.authorize({ projectPartnership: ["create"] })
-        .success,
+      coordinator.authorize({ projectPartnership: ["create"] }).success,
     ).toBe(false);
-    expect(
-      projectCoordinatorRole.authorize({ organization: ["update"] }).success,
-    ).toBe(false);
-    expect(
-      costTrackerOrganizationRoles.admin.authorize({ project: ["update"] })
-        .success,
-    ).toBe(true);
-    expect(Object.keys(organizationRoles)).not.toContain("project-coordinator");
-    expect(Object.keys(costTrackerOrganizationRoles)).not.toContain("member");
-    expect(costTrackerOrganizationRoles.admin).toBe(organizationAdmin);
+    expect(coordinator.authorize({ organization: ["update"] }).success).toBe(
+      false,
+    );
   });
 
-  it("keeps project coordinators from deleting projects", () => {
-    expect(
-      projectCoordinatorRole.authorize({ project: ["delete"] }).success,
-    ).toBe(false);
-    expect(
-      projectCoordinatorRole.authorize({ project: ["update"] }).success,
-    ).toBe(false);
-  });
-
-  it("gives participants personal read and update access without partnership access", () => {
-    expect(
-      projectParticipant.authorize({
-        project: ["read"],
-        projectParticipation: ["read", "update"],
-      }).success,
-    ).toBe(true);
-    expect(
-      projectParticipant.authorize({ projectPartnership: ["read"] }).success,
-    ).toBe(false);
-  });
-
-  it("does not treat a generic organization member as a participant", () => {
-    expect(
-      legacyCalculatorMemberRole.authorize({ project: ["read"] }).success,
-    ).toBe(false);
-    expect(organizationRoles.member).toBe(legacyCalculatorMemberRole);
-    expect(calculatorOrganizationRoles.member).toBe(legacyCalculatorMemberRole);
-  });
-});
-
-describe("definition-map rename preserves stored-role authority", () => {
-  it("uses exactly the requested definition names, not new persisted role values", () => {
-    expect(Object.keys(organizationRoles)).toEqual([
-      "admin",
-      "member",
-      "organisationOwner",
-      "organizationAdmin",
-      "projectParticipant",
-    ]);
-    expect(Object.keys(calculatorOrganizationRoles)).toEqual([
-      "owner",
-      "admin",
-      "member",
-      "participant",
-    ]);
-    expect(Object.keys(costTrackerOrganizationRoles)).toEqual([
-      "owner",
-      "admin",
-      "participant",
-      "project-coordinator",
-    ]);
-  });
-
-  it.each([
-    "owner",
-    "admin",
-    "member",
-    "participant",
-    "owner,participant",
-    "admin,participant",
-  ])(
-    "keeps the same stored user %s and every permission before/after",
-    (storedRole) => {
-      const sameUser = { id: "existing-calculator-user", role: storedRole };
-      // The pre-rename runtime map, explicitly frozen from the original definitions.
-      const before = {
-        owner: {
-          ...ownerAc.statements,
-          project: ["create", "read", "update", "delete", "archive"],
-          projectPartnership: ["create", "read", "update", "delete"],
-          projectParticipation: ["create", "read", "update", "merge"],
-        },
-        admin: {
-          ...adminAc.statements,
-          project: ["create", "read", "update", "archive"],
-          projectPartnership: ["create", "read", "update", "delete"],
-          projectParticipation: ["create", "read", "update", "merge"],
-        },
-        member: { ...memberAc.statements },
-        participant: {
-          ...memberAc.statements,
+  it("grants Participants personal read/update access, not Partnership access", () => {
+    for (const map of [
+      calculatorOrganizationRoles,
+      costTrackerOrganizationRoles,
+    ]) {
+      expect(
+        map[roles.Participant].authorize({
           project: ["read"],
           projectParticipation: ["read", "update"],
-        },
-      };
-      for (const role of sameUser.role.split(",") as (keyof typeof before)[]) {
-        expect(calculatorOrganizationRoles[role].statements).toEqual(
-          before[role],
-        );
-        if (role !== "member") {
-          expect(costTrackerOrganizationRoles[role].statements).toEqual(
-            before[role],
-          );
-        }
-      }
-      expect(sameUser.role).toBe(storedRole);
-    },
-  );
+        }).success,
+      ).toBe(true);
+      expect(
+        map[roles.Participant].authorize({ projectPartnership: ["read"] })
+          .success,
+      ).toBe(false);
+    }
+  });
 });
 
-describe("membership roles", () => {
-  it("parses comma-separated roles without losing coexisting authority", () => {
-    expect(parseOrganizationRoles("owner, participant")).toEqual([
-      "owner",
-      "participant",
+describe("Membership roles", () => {
+  it("preserves coexisting authority", () => {
+    const combined = `${roles.OrganizationOwner}, ${roles.Participant}`;
+    expect(parseOrganizationRoles(combined)).toEqual([
+      roles.OrganizationOwner,
+      roles.Participant,
     ]);
-    expect(hasOrganizationRole("owner,participant", "owner")).toBe(true);
-    expect(hasOrganizationRole("owner,participant", "participant")).toBe(true);
+    expect(hasOrganizationRole(combined, roles.OrganizationOwner)).toBe(true);
   });
-
-  it("ignores empty and unknown role values", () => {
-    expect(parseOrganizationRoles("unknown, ,participant")).toEqual([
-      "participant",
+  it("ignores empty and unknown values", () => {
+    expect(parseOrganizationRoles(`unknown, ,${roles.Participant}`)).toEqual([
+      roles.Participant,
     ]);
   });
-
-  it("adds a role without replacing or duplicating existing roles", () => {
-    expect(addOrganizationRole("owner,custom", "participant")).toBe(
-      "owner,custom,participant",
+  it("adds without replacing or duplicating roles", () => {
+    expect(addOrganizationRole(roles.ProjectCoordinator, roles.Participant)).toBe(
+      `${roles.ProjectCoordinator},${roles.Participant}`,
     );
-    expect(addOrganizationRole("owner,participant", "participant")).toBe(
-      "owner,participant",
-    );
+    expect(
+      addOrganizationRole(
+        `${roles.ProjectCoordinator},${roles.Participant}`,
+        roles.Participant,
+      ),
+    ).toBe(`${roles.ProjectCoordinator},${roles.Participant}`);
   });
 });

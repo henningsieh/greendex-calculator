@@ -8,7 +8,7 @@ import { ORGANIZATION_ROLES, parseOrganizationRoles } from "@greendex/auth";
  * staff flows. No role strings of its own.
  */
 const STAFF_ORGANIZATION_ROLES = [
-  ORGANIZATION_ROLES.OrganizationAdministrator,
+  ORGANIZATION_ROLES.OrganizationOwner,
   ORGANIZATION_ROLES.OrganizationAdmin,
   ORGANIZATION_ROLES.ProjectCoordinator,
 ] as const;

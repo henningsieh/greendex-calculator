@@ -1,5 +1,6 @@
 "use client";
 
+import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
@@ -271,7 +272,7 @@ export function SetupLinkCreator() {
                         ? "Closed"
                         : existing.consumedAt
                           ? "Used"
-                          : existing.expiresAt <= new Date()
+                          : existing.expired
                             ? "Expired"
                             : "Open"}
                     </TableCell>
@@ -337,6 +338,7 @@ export function SetupLinkRecipient({
 }) {
   const [kind, setKind] = useState<"new" | "existing">("new");
   const [name, setName] = useState("");
+  const [country, setCountry] = useState<EUCountryCode | "">("");
   const [organizationId, setOrganizationId] = useState("");
   const [error, setError] = useState<SetupError>();
   const [completed, setCompleted] = useState(false);
@@ -347,8 +349,10 @@ export function SetupLinkRecipient({
   // form), so Better Auth grants creator Ownership itself. Organization
   // names are unique, so the created Organization resolves unambiguously.
   async function createOwnedOrganization(displayName: string) {
+    if (!country) return undefined;
     const trimmed = displayName.trim();
     await orpc.authentication.createOrganization({
+      country,
       name: trimmed,
       slug: slugifyOrganizationName(trimmed),
     });
@@ -356,8 +360,7 @@ export function SetupLinkRecipient({
     const created = matches.find(
       (organization) => organization.name.toLowerCase() === trimmed.toLowerCase(),
     );
-    if (!created) throw new Error("Created Organization not found");
-    return created.id;
+    return created?.id;
   }
 
   async function consume(event: SyntheticEvent<HTMLFormElement>) {
@@ -369,7 +372,12 @@ export function SetupLinkRecipient({
       let targetId = organizationId;
       if (kind === "new") {
         try {
-          targetId = await createOwnedOrganization(name);
+          const createdId = await createOwnedOrganization(name);
+          if (!createdId) {
+            setError("create");
+            return;
+          }
+          targetId = createdId;
         } catch {
           setError("create");
           return;
@@ -450,6 +458,28 @@ export function SetupLinkRecipient({
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                   />
+                  <Label htmlFor="setup-country">Organization country</Label>
+                  <select
+                    id="setup-country"
+                    value={country}
+                    required
+                    disabled={pending}
+                    onChange={(event) =>
+                      setCountry(event.target.value as EUCountryCode)
+                    }
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="" disabled>
+                      Select an EU country
+                    </option>
+                    {EU_COUNTRIES.map(({ code }) => (
+                      <option key={code} value={code}>
+                        {new Intl.DisplayNames(["en"], { type: "region" }).of(
+                          code,
+                        )}
+                      </option>
+                    ))}
+                  </select>
                   <p>
                     This creates your Organization through the normal setup flow
                     and makes you its Owner, then connects it to the Project.

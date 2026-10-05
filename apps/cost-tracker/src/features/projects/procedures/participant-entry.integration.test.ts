@@ -6,6 +6,7 @@ import {
   costTrackerOrganizationRoles,
   parseOrganizationRoles,
 } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { evaluateProjectScopeAccess } from "@greendex/auth/project-authorization";
 import { db } from "@greendex/database";
 import {
@@ -171,9 +172,21 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(organization).values([
-    { id: host, name: "Entry Host", slug: host, createdAt: now },
-    { id: partner, name: "Entry Partner", slug: partner, createdAt: now },
-    { id: otherPartner, name: "Entry Other", slug: otherPartner, createdAt: now },
+    { country: "DE", id: host, name: "Entry Host", slug: host, createdAt: now },
+    {
+      country: "DE",
+      id: partner,
+      name: "Entry Partner",
+      slug: partner,
+      createdAt: now,
+    },
+    {
+      country: "DE",
+      id: otherPartner,
+      name: "Entry Other",
+      slug: otherPartner,
+      createdAt: now,
+    },
   ]);
   await db.insert(projects).values({
     id: project,
@@ -194,21 +207,21 @@ beforeAll(async () => {
       id: randomUUID(),
       organizationId: partner,
       userId: owner,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: now,
     },
     {
       id: randomUUID(),
       organizationId: host,
       userId: owner,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: now,
     },
     {
       id: randomUUID(),
       organizationId: partner,
       userId: organizer,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
   ]);
@@ -260,11 +273,14 @@ afterAll(async () => {
 
 describe("Project-scope participant entry authorization", () => {
   it.each([
-    { role: "owner", permitted: true },
-    { role: "admin", permitted: true },
-    { role: "owner,participant", permitted: true },
-    { role: "participant", permitted: false },
-    { role: "project-coordinator", permitted: false },
+    { role: ORGANIZATION_ROLES.OrganizationOwner, permitted: true },
+    { role: ORGANIZATION_ROLES.OrganizationAdmin, permitted: true },
+    {
+      role: `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+      permitted: true,
+    },
+    { role: ORGANIZATION_ROLES.Participant, permitted: false },
+    { role: ORGANIZATION_ROLES.ProjectCoordinator, permitted: false },
   ])(
     "enforces the shared policy for a Partner Organization $role",
     async ({ role, permitted }) => {
@@ -287,7 +303,7 @@ describe("Project-scope participant entry authorization", () => {
           ).rejects.toMatchObject({ code: "FORBIDDEN" });
         expect((await clientDecision()).permitted).toBe(permitted);
       } finally {
-        await setActorRole(partner, "owner");
+        await setActorRole(partner, ORGANIZATION_ROLES.OrganizationOwner);
       }
     },
   );
@@ -470,7 +486,10 @@ describe("Participant details authorization", () => {
     return row.id;
   }
 
-  it.each(["owner", "admin"])(
+  it.each([
+    ORGANIZATION_ROLES.OrganizationOwner,
+    ORGANIZATION_ROLES.OrganizationAdmin,
+  ])(
     "serves a Partner Organization %s the details and lets them correct country",
     async (role) => {
       const id = await seedParticipation();
@@ -500,7 +519,7 @@ describe("Participant details authorization", () => {
           }),
         ).resolves.toMatchObject({ country: "DE" });
       } finally {
-        await setActorRole(partner, "owner");
+        await setActorRole(partner, ORGANIZATION_ROLES.OrganizationOwner);
       }
     },
   );

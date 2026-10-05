@@ -671,9 +671,10 @@
       "description": "Voici les détails et paramètres de l'organisation."
     },
     "roles": {
-      "owner": "Administrateur de l’organisation",
-      "admin": "Coordinateur de projet",
-      "member": "Participant"
+      "owner": "Propriétaire de l’organisation",
+      "admin": "Administrateur de l’organisation",
+      "participant": "Participant",
+      "coordinator": "Coordinateur du projet"
     },
     "invitation": {
       "title": "Accepter l'invitation",
@@ -687,6 +688,10 @@
         "confirm-button": "Annuler l'invitation",
         "cancel-button": "Conserver l'invitation"
       }
+    },
+    "country": {
+      "label": "Pays de l’organisation",
+      "placeholder": "Sélectionnez un pays de l’UE"
     }
   },
   "participation": {

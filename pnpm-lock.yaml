@@ -895,6 +895,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@greendex/config':
+        specifier: workspace:*
+        version: link:../config
       '@greendex/database':
         specifier: workspace:*
         version: link:../database

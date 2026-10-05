@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
+import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { Building2Icon, LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
@@ -25,11 +26,13 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(autoOpen);
   const [name, setName] = useState("");
+  const [country, setCountry] = useState<EUCountryCode | "">("");
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
 
   async function createOrganization(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!country) return;
     setError(undefined);
     setPending(true);
 
@@ -37,6 +40,7 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
       await orpc.authentication.createOrganization({
         name,
         slug: slugify(name),
+        country: country,
       });
       setOpen(false);
       router.replace("/projects");
@@ -97,13 +101,42 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
                     />
                     {error && <FieldError>{error}</FieldError>}
                   </Field>
+                  <Field>
+                    <FieldLabel htmlFor="organization-country">
+                      Organization country
+                    </FieldLabel>
+                    <select
+                      id="organization-country"
+                      required
+                      disabled={pending}
+                      value={country}
+                      onChange={(event) =>
+                        setCountry(event.target.value as EUCountryCode)
+                      }
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="" disabled>
+                        Select an EU country
+                      </option>
+                      {EU_COUNTRIES.map(({ code }) => (
+                        <option key={code} value={code}>
+                          {new Intl.DisplayNames(["en"], { type: "region" }).of(
+                            code,
+                          )}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
                   <div className="flex justify-end gap-3">
                     <Dialog.Close
                       render={<Button type="button" variant="outline" />}
                     >
                       Cancel
                     </Dialog.Close>
-                    <Button disabled={pending || !slugify(name)} type="submit">
+                    <Button
+                      disabled={pending || !slugify(name) || !country}
+                      type="submit"
+                    >
                       {pending && (
                         <LoaderCircleIcon
                           className="animate-spin"

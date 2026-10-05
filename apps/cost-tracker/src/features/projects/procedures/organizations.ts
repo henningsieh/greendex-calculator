@@ -1,5 +1,6 @@
-import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import { member, organization } from "@greendex/database/schema";
 import { and, asc, eq, gt, or, sql } from "drizzle-orm";
@@ -69,7 +70,8 @@ export const listMyOrganizations = authorized
         .orderBy(asc(organization.name), asc(organization.id))
         .limit(OWNED_SEARCH_PAGE_SIZE);
       for (const { id, name, role } of memberships) {
-        if (hasOrganizationRole(role, "owner")) matches.push({ id, name });
+        if (hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner))
+          matches.push({ id, name });
         if (matches.length === 20) return matches;
       }
       if (memberships.length < OWNED_SEARCH_PAGE_SIZE) break;

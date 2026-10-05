@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import {
@@ -24,6 +25,7 @@ const TEST_USER = {
 };
 
 const TEST_ORG = {
+  country: "DE" as const,
   id: randomUUID(),
   name: "Test Organization",
   slug: `test-org-${Date.now()}`,
@@ -115,6 +117,7 @@ describe("Project Shared Travel Legs integration", () => {
     it("should create test organization in database", async () => {
       // Insert test organization
       await db.insert(organization).values({
+        country: "DE",
         id: TEST_ORG.id,
         name: TEST_ORG.name,
         slug: TEST_ORG.slug,
@@ -140,7 +143,7 @@ describe("Project Shared Travel Legs integration", () => {
         id: randomUUID(),
         organizationId: orgId,
         userId,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: new Date(),
       });
 
@@ -153,7 +156,7 @@ describe("Project Shared Travel Legs integration", () => {
         );
 
       expect(result).toHaveLength(1);
-      expect(result[0].role).toBe("owner");
+      expect(result[0].role).toBe(ORGANIZATION_ROLES.OrganizationOwner);
     });
   });
 

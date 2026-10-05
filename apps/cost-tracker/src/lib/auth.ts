@@ -1,4 +1,5 @@
 import { createServerAuth } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 
 import { env } from "@/env";
 import { participantMembershipGrantPlugin } from "@/features/organizations/participant-membership-grant";
@@ -28,7 +29,7 @@ export const auth = createServerAuth({
       // (ADR-0013): the app-owned email-bound invitation delivers its own
       // secret-bound link after durable issuance, so Better Auth sends no
       // mail for the participant role.
-      if (data.role === "participant") return;
+      if (data.role === ORGANIZATION_ROLES.Participant) return;
       await emailSender.sendOrganizationInvitation({
         email: data.email,
         inviterName: data.inviter.user.name,

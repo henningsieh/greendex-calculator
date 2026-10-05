@@ -1,6 +1,7 @@
-// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -60,22 +61,28 @@ beforeAll(async () => {
     updatedAt: now,
   });
   await db.insert(organization).values([
-    { id: hostId, slug: hostId, name: "Host", createdAt: now },
-    { id: partnerId, slug: partnerId, name: "Partner", createdAt: now },
+    { country: "DE", id: hostId, slug: hostId, name: "Host", createdAt: now },
+    {
+      country: "DE",
+      id: partnerId,
+      slug: partnerId,
+      name: "Partner",
+      createdAt: now,
+    },
   ]);
   await db.insert(member).values([
     {
       id: `setup-member-${id}`,
       userId,
       organizationId: partnerId,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: now,
     },
     {
       id: `setup-host-member-${id}`,
       userId,
       organizationId: hostId,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: now,
     },
   ]);
@@ -97,7 +104,7 @@ beforeEach(async () => {
   asUser();
   await db
     .update(member)
-    .set({ role: "owner" })
+    .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
     .where(eq(member.organizationId, hostId));
 });
 
@@ -189,11 +196,15 @@ describe("Partner Organization setup links", () => {
     expect(unchanged?.partnershipId).toBeNull();
   });
 
-  it.each(["project-coordinator,owner", "owner,participant"])(
+  it.each([
+    `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`,
+    `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+  ])(
     "offers and consumes an existing Organization with %s membership",
     async (role) => {
       const combinedOrgId = `setup-combined-${role}-${id}`;
       await db.insert(organization).values({
+        country: "DE",
         id: combinedOrgId,
         slug: combinedOrgId,
         name: `Combined ${role}`,
@@ -279,6 +290,7 @@ describe("Partner Organization setup links", () => {
     // so consuming the link must not add Organization or Membership rows.
     const freshOrgId = `setup-bind-${randomUUID()}`;
     await db.insert(organization).values({
+      country: "DE",
       id: freshOrgId,
       slug: freshOrgId,
       name: "Bind Target",
@@ -288,7 +300,7 @@ describe("Partner Organization setup links", () => {
       id: randomUUID(),
       userId,
       organizationId: freshOrgId,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: new Date(),
     });
     const link = await client.projectPartnerships.createSetupLink({
@@ -327,6 +339,7 @@ describe("Partner Organization setup links", () => {
     const rivalOrgId = `setup-rival-${randomUUID()}`;
     for (const organizationId of [raceOrgId, rivalOrgId]) {
       await db.insert(organization).values({
+        country: "DE",
         id: organizationId,
         slug: organizationId,
         name: `Race ${organizationId}`,
@@ -336,7 +349,7 @@ describe("Partner Organization setup links", () => {
         id: randomUUID(),
         userId,
         organizationId,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: new Date(),
       });
     }
@@ -381,11 +394,11 @@ describe("Partner Organization setup links", () => {
   });
 
   it.each([
-    { role: "project-coordinator", allowed: true },
-    { role: "participant", allowed: false },
-    { role: "participant", allowed: false },
-    { role: "admin", allowed: true },
-    { role: "owner", allowed: true },
+    { role: ORGANIZATION_ROLES.ProjectCoordinator, allowed: true },
+    { role: ORGANIZATION_ROLES.Participant, allowed: false },
+    { role: ORGANIZATION_ROLES.Participant, allowed: false },
+    { role: ORGANIZATION_ROLES.OrganizationAdmin, allowed: true },
+    { role: ORGANIZATION_ROLES.OrganizationOwner, allowed: true },
   ])("scopes setup-link issuance for $role", async ({ role, allowed }) => {
     await db
       .update(member)
@@ -420,7 +433,7 @@ describe("Partner Organization setup links", () => {
     try {
       await db
         .update(member)
-        .set({ role: "project-coordinator" })
+        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
         .where(eq(member.organizationId, hostId));
       await expect(
         client.projectPartnerships.createSetupLink({
@@ -460,7 +473,7 @@ describe("Partner Organization setup links", () => {
     });
     await db
       .update(member)
-      .set({ role: "participant" })
+      .set({ role: ORGANIZATION_ROLES.Participant })
       .where(eq(member.organizationId, partnerId));
     await expect(
       client.projectPartnerships.consumeSetupLink({
@@ -471,7 +484,7 @@ describe("Partner Organization setup links", () => {
     ).rejects.toThrow("Owner");
     await db
       .update(member)
-      .set({ role: "owner" })
+      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
       .where(eq(member.organizationId, partnerId));
     await db
       .update(links)

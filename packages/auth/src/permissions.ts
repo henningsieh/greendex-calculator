@@ -7,15 +7,10 @@ import {
 } from "better-auth/plugins/organization/access";
 
 export const ORGANIZATION_ROLES = {
-  OrganizationAdministrator: "owner",
-  ProjectCoordinator: "project-coordinator",
+  OrganizationOwner: "owner",
+  ProjectCoordinator: "coordinator",
   OrganizationAdmin: "admin",
   Participant: "participant",
-  // Legacy Better Auth default retained ONLY for Calculator (which still
-  // stores this value). Forbidden in Cost Tracker: ban hooks refuse it and
-  // costTrackerOrganizationRoles drops it. Any future Calculator role
-  // adaptation must confront this legacy entry.
-  Member: "member",
 } as const;
 
 export type OrganizationRole =
@@ -58,9 +53,7 @@ export const projectCoordinatorRole = accessControl.newRole({
   projectParticipation: ["create"],
 });
 
-export const legacyCalculatorMemberRole = accessControl.newRole({
-  ...memberAc.statements,
-});
+export const calculatorCoordinatorRole = accessControl.newRole({});
 
 export const projectParticipant = accessControl.newRole({
   ...memberAc.statements,
@@ -69,34 +62,33 @@ export const projectParticipant = accessControl.newRole({
 });
 
 export const organizationRoles = {
-  // Legacy roles retained for Calculator. The bare member role is forbidden in
-  // Cost Tracker, which drops it via its runtime role map and ban hooks.
-  // Any future Calculator role adaptation must confront these legacy entries.
-  admin: legacyCalculatorAdminRole,
-  member: legacyCalculatorMemberRole,
-
-  // Domain-named role definitions; these keys are not persisted role values.
   organisationOwner,
   organizationAdmin,
   projectParticipant,
 };
 
-// Better Auth's creatorRole and existing rows use owner/participant. Resolve the
-// domain-named definitions to those unchanged runtime keys: no authority or data
-// migration is implied by renaming the definition map.
 export const calculatorOrganizationRoles = {
-  owner: organizationRoles.organisationOwner,
-  admin: organizationRoles.admin,
-  member: organizationRoles.member,
-  participant: organizationRoles.projectParticipant,
+  [ORGANIZATION_ROLES.OrganizationOwner]: organisationOwner,
+  [ORGANIZATION_ROLES.OrganizationAdmin]: legacyCalculatorAdminRole,
+  [ORGANIZATION_ROLES.Participant]: projectParticipant,
+  [ORGANIZATION_ROLES.ProjectCoordinator]: calculatorCoordinatorRole,
 };
 
 export const costTrackerOrganizationRoles = {
-  owner: organisationOwner,
-  admin: organizationAdmin,
-  participant: projectParticipant,
-  "project-coordinator": projectCoordinatorRole,
+  [ORGANIZATION_ROLES.OrganizationOwner]: organisationOwner,
+  [ORGANIZATION_ROLES.OrganizationAdmin]: organizationAdmin,
+  [ORGANIZATION_ROLES.Participant]: projectParticipant,
+  [ORGANIZATION_ROLES.ProjectCoordinator]: projectCoordinatorRole,
 };
+
+/** Reject omitted defaults and unknown roles, including in combined Memberships. */
+export function isValidOrganizationRole(
+  role: string | null | undefined,
+): boolean {
+  if (!role) return false;
+  const knownRoles = new Set<string>(Object.values(ORGANIZATION_ROLES));
+  return role.split(",").every((value) => knownRoles.has(value.trim()));
+}
 
 export type ProjectPermission = (typeof statement)["project"][number];
 export type ProjectPartnershipPermission =

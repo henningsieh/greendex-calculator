@@ -239,8 +239,7 @@ export const situationCatalog = {
     code: "BAD_REQUEST",
     status: 400,
     reason: "INVALID_ORGANIZATION_ROLE",
-    message:
-      'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
+    message: "Use a defined Organization role.",
   },
   registrationLinkNotFound: {
     code: "NOT_FOUND",

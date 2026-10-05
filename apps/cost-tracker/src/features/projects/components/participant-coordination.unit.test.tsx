@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -22,7 +23,7 @@ const mocks = vi.hoisted(() => ({
 const browserSession = vi.hoisted(() => ({
   userId: "user-1",
   activeOrganizationId: "partner-1" as string | null,
-  role: "owner" as string | null,
+  role: null as string | null,
 }));
 
 vi.mock("@/lib/auth-client", async () => {
@@ -187,7 +188,7 @@ describe("ParticipantCoordination", () => {
     Element.prototype.scrollIntoView = vi.fn();
     browserSession.userId = "user-1";
     browserSession.activeOrganizationId = "partner-1";
-    browserSession.role = "owner";
+    browserSession.role = ORGANIZATION_ROLES.OrganizationOwner;
     mocks.list.mockReset().mockResolvedValue({
       projectName: "Own Project",
       participations: [
@@ -553,7 +554,7 @@ describe("ParticipantCoordination", () => {
   });
 
   it("keeps entry controls for a Partner Group Organizer only with an assignment", async () => {
-    browserSession.role = "project-coordinator";
+    browserSession.role = ORGANIZATION_ROLES.ProjectCoordinator;
     await renderCoordination();
     expect(
       screen.getAllByText(

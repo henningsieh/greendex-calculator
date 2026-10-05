@@ -1,3 +1,4 @@
+import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import {
   invitation,
   member as memberTable,
@@ -37,6 +38,7 @@ export const MemberWithUserSchema = createSelectSchema(memberTable).extend({
 
 export const OrganizationFormSchema = createInsertSchema(organization, {
   name: (schema) => schema.min(1, { error: "Organization name is required" }),
+  country: z.enum(EU_COUNTRY_CODES),
 }).omit({
   id: true,
   slug: true,
@@ -60,6 +62,4 @@ export const InviteFormSchema = createInsertSchema(invitation)
     role: z.enum(Object.values(MEMBER_ROLES)),
   });
 
-export const EditOrganizationFormSchema = z.object({
-  name: z.string().min(1, { error: "Organization name is required" }),
-});
+export const EditOrganizationFormSchema = OrganizationFormSchema;

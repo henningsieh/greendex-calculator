@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createRouterClient } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -32,8 +33,8 @@ const client = createRouterClient(
 );
 
 const rows = [
-  { id: "org-b", name: "Beta", role: "participant" },
-  { id: "org-a", name: "Alpha", role: "owner" },
+  { id: "org-b", name: "Beta", role: ORGANIZATION_ROLES.Participant },
+  { id: "org-a", name: "Alpha", role: ORGANIZATION_ROLES.OrganizationOwner },
 ];
 
 beforeEach(() => {

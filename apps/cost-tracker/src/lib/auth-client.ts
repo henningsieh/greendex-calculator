@@ -4,6 +4,7 @@ import {
   accessControl,
   costTrackerOrganizationRoles,
 } from "@greendex/auth/permissions";
+import { organizationCountryFields } from "@greendex/config/organization-country";
 import { organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
@@ -18,6 +19,7 @@ export const authClient = createAuthClient({
     organizationClient({
       ac: accessControl,
       roles: costTrackerOrganizationRoles,
+      schema: { organization: { additionalFields: organizationCountryFields } },
     }),
   ],
 });

@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { db } from "@greendex/database";
 import {
@@ -30,7 +31,7 @@ const progress = z.object({
   invitationId: z.string().nullable(),
   profile: z.enum(["complete", "missing"]),
   agreement: z.enum(["current", "outdated", "missing", "unavailable"]),
-  membership: z.enum(["participant", "missing"]),
+  membership: z.enum([ORGANIZATION_ROLES.Participant, "missing"]),
   bridge: z.enum([
     "none",
     "pending",
@@ -230,9 +231,13 @@ export function createOnboardingProgressProcedure(
           membership: role
             ?.split(",")
             .some((value) =>
-              ["participant", "owner", "admin"].includes(value.trim()),
+              [
+                ORGANIZATION_ROLES.Participant,
+                ORGANIZATION_ROLES.OrganizationOwner,
+                ORGANIZATION_ROLES.OrganizationAdmin,
+              ].some((knownRole) => knownRole === value.trim()),
             )
-            ? ("participant" as const)
+            ? ORGANIZATION_ROLES.Participant
             : ("missing" as const),
           bridge: invitationState(issued, now),
         };

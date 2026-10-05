@@ -671,9 +671,10 @@
       "description": "These are the organization's details and settings."
     },
     "roles": {
-      "owner": "Organization Administrator",
-      "admin": "Project Coordinator",
-      "member": "Participant"
+      "owner": "Organization Owner",
+      "admin": "Organization Admin",
+      "participant": "Participant",
+      "coordinator": "Project Coordinator"
     },
     "invitation": {
       "title": "Accept Invitation",
@@ -687,6 +688,10 @@
         "confirm-button": "Cancel Invitation",
         "cancel-button": "Keep Invitation"
       }
+    },
+    "country": {
+      "label": "Organization country",
+      "placeholder": "Select an EU country"
     }
   },
   "participation": {
