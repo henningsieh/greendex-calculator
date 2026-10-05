@@ -277,6 +277,7 @@ async function completeNew(page: Page, url: string, name: string) {
     page.getByText("Partner Organization setup", { exact: true }),
   ).toBeVisible();
   await page.getByLabel("New Organization name").fill(name);
+  await page.getByLabel("Organization country").selectOption("DE");
   await page.getByRole("button", { name: "Complete setup" }).click();
   await expect(page.getByText("Project Partnership created")).toBeVisible();
 }
@@ -360,6 +361,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(page.getByText("No Organization access yet")).toBeVisible();
     const dialog = await openOrganizationDialog(page);
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
+    await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
     if (await page.getByText("No Organization access yet").isVisible())
@@ -398,6 +400,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.goto(setupURL);
     await expect(page.getByLabel("New Organization name")).toBeVisible();
     await page.getByLabel("New Organization name").fill(names.P);
+    await page.getByLabel("Organization country").selectOption("DE");
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(page.getByText("Project Partnership created")).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[0]!, names.P)).toBe(1);
@@ -434,6 +437,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       ).toBeVisible();
       const attemptedName = `CT ${suffix} Wrong Email`;
       await page.getByLabel("New Organization name").fill(attemptedName);
+      await page.getByLabel("Organization country").selectOption("DE");
       await page.getByRole("button", { name: "Complete setup" }).click();
       await expect(page.getByText("Wrong email address")).toBeVisible();
       expect(
@@ -479,6 +483,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(page.getByText("No Organization access yet")).toBeVisible();
     const dialog = await openOrganizationDialog(page);
     await dialog.getByLabel("Organization name").fill(names.E);
+    await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
     if (await page.getByText("No Organization access yet").isVisible())

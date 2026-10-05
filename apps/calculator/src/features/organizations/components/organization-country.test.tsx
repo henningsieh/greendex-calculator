@@ -6,6 +6,12 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   invalidateQueries: vi.fn(),
+  organization: {
+    id: "org-id",
+    name: "Country Org",
+    slug: "country-org",
+    country: "DE",
+  },
 }));
 vi.mock("@/app/routes", () => ({ DASHBOARD_PATH: "/org" }));
 vi.mock("@/lib/i18n/routing", () => ({
@@ -23,14 +29,7 @@ vi.mock("@/lib/better-auth/auth-client", () => ({
 }));
 vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries }),
-  useSuspenseQuery: () => ({
-    data: {
-      id: "org-id",
-      name: "Country Org",
-      slug: "country-org",
-      country: "DE",
-    },
-  }),
+  useSuspenseQuery: () => ({ data: mocks.organization }),
 }));
 vi.mock("@/lib/orpc/orpc", () => ({
   orpcQuery: {
@@ -69,6 +68,12 @@ let root: Root;
 let container: HTMLDivElement;
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.organization = {
+    id: "org-id",
+    name: "Country Org",
+    slug: "country-org",
+    country: "DE",
+  };
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -104,6 +109,28 @@ async function submit() {
 }
 
 describe("Calculator Organization country forms", () => {
+  it("reinitializes country and name when switching the active Organization", async () => {
+    await render(<EditOrganizationForm />);
+    expect(container.querySelector("select")?.value).toBe("DE");
+    await changeName("Unsaved German name");
+    mocks.organization = {
+      id: "fr-org",
+      name: "French Org",
+      slug: "french-org",
+      country: "FR",
+    };
+    await render(<EditOrganizationForm />);
+    expect(container.querySelector("select")?.value).toBe("FR");
+    await submit();
+    expect(mocks.update).toHaveBeenCalledWith(
+      {
+        organizationId: "fr-org",
+        data: { name: "French Org", slug: "french-org", country: "FR" },
+      },
+      expect.any(Object),
+    );
+  });
+
   it("requires a country selection and sends it through Better Auth creation", async () => {
     await render(<CreateOrganizationForm />);
     await changeName("Country Org");

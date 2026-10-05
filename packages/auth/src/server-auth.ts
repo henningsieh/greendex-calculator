@@ -117,6 +117,8 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
                 type: "string",
                 required: true,
                 defaultValue: ORGANIZATION_ROLES.Participant,
+                // Preserve Better Auth's native string-or-array endpoint role schema.
+                input: false,
               },
             },
           },

@@ -542,6 +542,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       x.getByText("Partner Organization setup", { exact: true }),
     ).toBeVisible();
     await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
+    await x.getByLabel("Organization country").selectOption("DE");
     await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     await creator
@@ -554,6 +555,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
     await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
+    await x.getByLabel("Organization country").selectOption("DE");
     await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     const fresh = await browser.newContext({

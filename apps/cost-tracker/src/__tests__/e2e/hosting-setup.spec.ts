@@ -75,6 +75,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     }
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
+    await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
     // Ordinary reload after observed stale no-access screen (UI GAP).

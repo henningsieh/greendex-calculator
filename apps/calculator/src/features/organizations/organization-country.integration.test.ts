@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
-import { organization, user } from "@greendex/database/schema";
+import { member, organization, user } from "@greendex/database/schema";
 import { eq, inArray } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -78,6 +78,28 @@ afterEach(async () => {
 });
 
 describe("Organization country through Better Auth", () => {
+  it("accepts native array role grants without replacing combined authority", async () => {
+    const owner = await account();
+    const organization = await createOwnOrganization(owner.headers);
+    const target = await account();
+    const roles = [
+      ORGANIZATION_ROLES.OrganizationOwner,
+      ORGANIZATION_ROLES.Participant,
+    ];
+    const granted = await auth.api.addMember({
+      body: {
+        userId: target.userId,
+        organizationId: organization.id,
+        role: roles,
+      },
+    });
+    expect(granted?.role).toBe(roles.join(","));
+    expect(
+      (await db.query.member.findFirst({ where: eq(member.id, granted!.id) }))
+        ?.role,
+    ).toBe(roles.join(","));
+  });
+
   it("refuses missing, lowercase and non-EU country, then persists the selected EU country", async () => {
     const owner = await account();
     for (const country of [undefined, null, "", "de", "US"]) {
