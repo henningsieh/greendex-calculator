@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -57,7 +58,7 @@ describe("Cost Tracker invitation email routing", () => {
   it("sends no Better Auth mail for the participant role and preserves Organization Invitations", async () => {
     const data = {
       id: "invitation-182",
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       email: "recipient@example.com",
       inviter: { user: { name: "Host" } },
       organization: { name: "Host Organization" },
@@ -65,7 +66,7 @@ describe("Cost Tracker invitation email routing", () => {
     await sendInvitationEmail(data);
     expect(mocks.sendParticipantInvitation).not.toHaveBeenCalled();
     expect(mocks.sendOrganizationInvitation).not.toHaveBeenCalled();
-    await sendInvitationEmail({ ...data, role: "admin" });
+    await sendInvitationEmail({ ...data, role: ORGANIZATION_ROLES.OrganizationAdmin });
     expect(mocks.sendOrganizationInvitation).toHaveBeenCalledWith(
       expect.objectContaining({
         email: data.email,

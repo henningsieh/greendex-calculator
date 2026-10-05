@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomBytes } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
@@ -166,7 +167,7 @@ export const consumeSetupLink = authorized
           ),
         )
         .limit(1);
-      if (!ownership || !hasOrganizationRole(ownership.role, "owner"))
+      if (!ownership || !hasOrganizationRole(ownership.role, ORGANIZATION_ROLES.OrganizationOwner))
         throw createSituationErrors(errors).organizationOwnerRequired();
       if (link.partnershipId) {
         const [previous] = await tx

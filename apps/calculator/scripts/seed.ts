@@ -1,5 +1,7 @@
 #!/usr/bin/env tsx
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+
 /**
  * Development DB seeder
  *
@@ -50,6 +52,7 @@ const db = drizzle(seedPool, { schema });
 const SEED_ORGANIZATION = {
   name: "Seed Organization",
   slug: "seed-org",
+  country: "DE",
 } as const;
 
 const PROJECT_NAMES = [
@@ -194,6 +197,7 @@ async function seed() {
         id: orgId,
         name: SEED_ORGANIZATION.name,
         slug: SEED_ORGANIZATION.slug,
+        country: SEED_ORGANIZATION.country,
         createdAt: new Date(),
       });
       console.log(
@@ -216,7 +220,7 @@ async function seed() {
         id: memberId,
         organizationId: orgId,
         userId,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: new Date(),
       });
       console.log("✅ User set as organization owner");

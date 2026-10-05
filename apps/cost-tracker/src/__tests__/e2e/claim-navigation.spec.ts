@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
@@ -178,13 +179,13 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       });
     }
     await db.insert(organization).values([
-      {
+      { country: "DE",
         id: ids.host,
         name: `CT ${suffix} Hosting`,
         slug: ids.host,
         createdAt: now,
       },
-      {
+      { country: "DE",
         id: ids.partner,
         name: `CT ${suffix} Partner`,
         slug: ids.partner,
@@ -196,14 +197,14 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
         id: randomUUID(),
         userId: actors.H.id,
         organizationId: ids.host,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.P.id,
         organizationId: ids.partner,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
     ]);

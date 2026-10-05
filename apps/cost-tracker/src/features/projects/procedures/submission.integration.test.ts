@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
@@ -85,7 +86,7 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(organization).values(
-    [host, partner, other].map((org) => ({
+    [host, partner, other].map((org) => ({ country: "DE" as const,
       id: org,
       name: org,
       slug: org,
@@ -97,35 +98,35 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: actor,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: participantUser,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: actor,
       organizationId: other,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: actor,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: participantUser,
       organizationId: partner,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
   ]);
@@ -344,53 +345,53 @@ const roles = [
   {
     name: "Partner assigned coordinator",
     side: "partner",
-    role: "project-coordinator",
+    role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
   },
-  { name: "Partner owner", side: "partner", role: "owner", assigned: false },
-  { name: "Partner admin", side: "partner", role: "admin", assigned: false },
+  { name: "Partner owner", side: "partner", role: ORGANIZATION_ROLES.OrganizationOwner, assigned: false },
+  { name: "Partner admin", side: "partner", role: ORGANIZATION_ROLES.OrganizationAdmin, assigned: false },
   {
     name: "Partner unassigned coordinator",
     side: "partner",
-    role: "project-coordinator",
+    role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: false,
   },
   {
     name: "Partner unassigned participant",
     side: "partner",
-    role: "participant",
+    role: ORGANIZATION_ROLES.Participant,
     assigned: false,
   },
   {
     name: "Partner participant",
     side: "partner",
-    role: "participant",
+    role: ORGANIZATION_ROLES.Participant,
     assigned: true,
   },
   {
     name: "Hosting assigned coordinator",
     side: "host",
-    role: "project-coordinator",
+    role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
   },
-  { name: "Hosting owner", side: "host", role: "owner", assigned: false },
-  { name: "Hosting admin", side: "host", role: "admin", assigned: false },
+  { name: "Hosting owner", side: "host", role: ORGANIZATION_ROLES.OrganizationOwner, assigned: false },
+  { name: "Hosting admin", side: "host", role: ORGANIZATION_ROLES.OrganizationAdmin, assigned: false },
   {
     name: "Hosting unassigned coordinator",
     side: "host",
-    role: "project-coordinator",
+    role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: false,
   },
   {
     name: "Hosting unassigned participant",
     side: "host",
-    role: "participant",
+    role: ORGANIZATION_ROLES.Participant,
     assigned: false,
   },
   {
     name: "Hosting participant",
     side: "host",
-    role: "participant",
+    role: ORGANIZATION_ROLES.Participant,
     assigned: true,
   },
 ] as const;
@@ -467,9 +468,9 @@ async function invokeMatrixProcedure(procedure: ClaimProcedure, entryId: string)
 
 function isMatrixRoleAllowed(role: (typeof roles)[number]) {
   return (
-    (role.role === "project-coordinator" && role.assigned) ||
-    role.role === "owner" ||
-    role.role === "admin"
+    (role.role === ORGANIZATION_ROLES.ProjectCoordinator && role.assigned) ||
+    role.role === ORGANIZATION_ROLES.OrganizationOwner ||
+    role.role === ORGANIZATION_ROLES.OrganizationAdmin
   );
 }
 
@@ -541,14 +542,14 @@ describe("Claim authorization matrix", () => {
         .set({ status: statuses[procedure], approvedAmountEur: "100.00" })
         .where(eq(claims.id, claimId));
     const orgId = role.side === "host" ? host : partner;
-    const person = role.role === "participant" ? participantUser : actor;
+    const person = role.role === ORGANIZATION_ROLES.Participant ? participantUser : actor;
     if (role.side === "partner" && !role.assigned)
       await db
         .delete(assignments)
         .where(
           and(eq(assignments.partnershipId, own), eq(assignments.userId, actor)),
         );
-    if (role.side === "host" && (!role.assigned || role.role === "participant"))
+    if (role.side === "host" && (!role.assigned || role.role === ORGANIZATION_ROLES.Participant))
       await db
         .delete(hostAssignments)
         .where(
@@ -578,8 +579,8 @@ describe("Claim authorization matrix", () => {
         .set({
           role:
             person === participantUser && orgId === partner
-              ? "participant"
-              : "project-coordinator",
+              ? ORGANIZATION_ROLES.Participant
+              : ORGANIZATION_ROLES.ProjectCoordinator,
         })
         .where(and(eq(member.organizationId, orgId), eq(member.userId, person)));
       if (role.side === "partner" && !role.assigned)
@@ -587,7 +588,7 @@ describe("Claim authorization matrix", () => {
           .insert(assignments)
           .values({ partnershipId: own, userId: actor })
           .onConflictDoNothing();
-      if (role.side === "host" && (!role.assigned || role.role === "participant"))
+      if (role.side === "host" && (!role.assigned || role.role === ORGANIZATION_ROLES.Participant))
         await db
           .insert(hostAssignments)
           .values({ projectId: project, userId: actor })
@@ -1029,7 +1030,7 @@ const review = (
     ? client.claims[action]({ partnershipId: own, reason: reason ?? "Reason" })
     : client.claims[action]({ partnershipId: own });
 
-async function asHost(role = "project-coordinator", userId = actor) {
+async function asHost(role: string = ORGANIZATION_ROLES.ProjectCoordinator, userId = actor) {
   activeOrg = host;
   activeActor = userId;
   await db
@@ -1439,7 +1440,7 @@ describe("Host Claim review", () => {
   it("enforces the Hosting role matrix on every review action and every Partnership", async () => {
     await submittedClaim();
     const actions = ["requestCorrection", "approve", "reject", "reopen"] as const;
-    for (const role of ["owner", "admin", "project-coordinator"]) {
+    for (const role of [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin, ORGANIZATION_ROLES.ProjectCoordinator]) {
       await asHost(role);
       for (const action of actions) {
         await db
@@ -1461,7 +1462,7 @@ describe("Host Claim review", () => {
         });
       }
     }
-    await asHost("participant");
+    await asHost(ORGANIZATION_ROLES.Participant);
     for (const action of actions) {
       await db
         .update(claims)
@@ -1469,7 +1470,7 @@ describe("Host Claim review", () => {
         .where(eq(claims.id, claimId));
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
-    for (const role of ["participant", "project-coordinator"]) {
+    for (const role of [ORGANIZATION_ROLES.Participant, ORGANIZATION_ROLES.ProjectCoordinator]) {
       await asHost(role, participantUser);
       for (const action of actions) {
         await db
@@ -1479,7 +1480,7 @@ describe("Host Claim review", () => {
         await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
       }
     }
-    await asHost("participant", participantUser);
+    await asHost(ORGANIZATION_ROLES.Participant, participantUser);
     for (const action of actions) {
       await db
         .update(claims)
@@ -1531,7 +1532,7 @@ describe("Host Claim review", () => {
     await expect(
       client.claims.getHistory({ partnershipId: own }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await asHost("project-coordinator");
+    await asHost(ORGANIZATION_ROLES.ProjectCoordinator);
     for (const action of actions)
       await expect(
         client.claims[action]({ partnershipId: foreign, reason: "Reason" }),
@@ -1763,12 +1764,12 @@ describe("Claim payment recording", () => {
 
   it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
     const payable = await approvedClaim();
-    for (const role of ["owner", "admin", "project-coordinator"]) {
+    for (const role of [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin, ORGANIZATION_ROLES.ProjectCoordinator]) {
       await asHost(role);
       await markPaid(payable);
       await correctPayment("Incorrect flag");
     }
-    await asHost("participant", participantUser);
+    await asHost(ORGANIZATION_ROLES.Participant, participantUser);
     await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await db.update(claims).set({ status: "paid" }).where(eq(claims.id, claimId));
     await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({

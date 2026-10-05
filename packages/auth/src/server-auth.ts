@@ -1,3 +1,5 @@
+import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
+import { organizationCountryFields } from "@greendex/config/organization-country";
 import { db } from "@greendex/database";
 import {
   member,
@@ -7,7 +9,7 @@ import * as schema from "@greendex/database/schema";
 import type { EmailSender } from "@greendex/email";
 import type { BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { betterAuth, type BetterAuthOptions } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
@@ -18,6 +20,8 @@ import {
   accessControl,
   costTrackerOrganizationRoles,
   calculatorOrganizationRoles,
+  ORGANIZATION_ROLES,
+  isValidOrganizationRole,
 } from "./permissions";
 
 type EmailVerificationOptions = NonNullable<
@@ -104,6 +108,11 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
           ? costTrackerOrganizationRoles
           : calculatorOrganizationRoles,
         ...config.organization,
+        creatorRole: ORGANIZATION_ROLES.OrganizationOwner,
+        schema: {
+          organization: { additionalFields: organizationCountryFields },
+          member: { additionalFields: { role: { type: "string", required: true, defaultValue: ORGANIZATION_ROLES.Participant } } },
+        },
         allowUserToCreateOrganization: async (user) => {
           const membership = await db.query.member.findFirst({
             where: eq(member.userId, user.id),
@@ -114,7 +123,29 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
         },
         organizationHooks: {
           ...config.organizationHooks,
+          beforeCreateInvitation: async (data) => {
+            requireOrganizationRole(data.invitation.role);
+            return config.organizationHooks?.beforeCreateInvitation?.(data);
+          },
+          beforeAcceptInvitation: async (data) => {
+            requireOrganizationRole(data.invitation.role);
+            return config.organizationHooks?.beforeAcceptInvitation?.(data);
+          },
+          beforeAddMember: async (data) => {
+            requireOrganizationRole(data.member.role);
+            return config.organizationHooks?.beforeAddMember?.(data);
+          },
+          beforeUpdateMemberRole: async (data) => {
+            requireOrganizationRole(data.newRole);
+            return config.organizationHooks?.beforeUpdateMemberRole?.(data);
+          },
+          beforeUpdateOrganization: async (data) => {
+            if ("country" in data.organization)
+              requireOrganizationCountry(data.organization.country);
+            return config.organizationHooks?.beforeUpdateOrganization?.(data);
+          },
           beforeCreateOrganization: async ({ organization }) => {
+            requireOrganizationCountry(organization.country);
             const organizationName = organization.name;
             if (!organizationName) {
               throw new APIError("BAD_REQUEST", {
@@ -137,6 +168,18 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
           },
         },
       }),
+      {
+        id: "organization-role-validation",
+        hooks: {
+          before: [{
+            matcher: (context) => context.path === "/organization/invite-member",
+            handler: createAuthMiddleware(async (context) => {
+              const role: unknown = context.body?.role;
+              requireOrganizationRole(Array.isArray(role) ? role.join(",") : typeof role === "string" ? role : undefined);
+            }),
+          }],
+        },
+      },
       ...(config.plugins ?? []),
       // Cookie integration must stay last so hooks.after cookies from
       // preceding plugins are forwarded to the framework cookie store.
@@ -170,4 +213,17 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
       },
     },
   });
+}
+
+/** Better Auth 1.7 maps enum additionalFields to z.any(), so validate before writes. */
+function requireOrganizationCountry(country: unknown): void {
+  if (typeof country !== "string" || !EU_COUNTRY_CODES.some((code) => code === country)) {
+    throw new APIError("BAD_REQUEST", { message: "An EU Organization country is required." });
+  }
+}
+
+function requireOrganizationRole(role: string | null | undefined): void {
+  if (!isValidOrganizationRole(role)) {
+    throw new APIError("BAD_REQUEST", { message: "Use a defined Organization role." });
+  }
 }

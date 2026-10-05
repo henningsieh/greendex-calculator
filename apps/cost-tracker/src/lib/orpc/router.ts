@@ -9,6 +9,7 @@ import {
   startGoogleSignIn,
   updateUser,
 } from "@/features/authentication/procedures";
+import { getSettings, updateCountry } from "@/features/organizations/procedures/settings";
 import { listMemberships as listOrganizationMemberships } from "@/features/organizations/procedures/memberships";
 import {
   acceptInvitation as acceptOrganizationInvitation,
@@ -115,6 +116,8 @@ export const router = {
   documents: { list: listDocuments },
   journeys: { list: listJourneys, save: saveJourney, update: updateJourney },
   organizations: {
+    getSettings,
+    updateCountry,
     search: searchOrganizations,
     listMine: listMyOrganizations,
     listMemberships: listOrganizationMemberships,

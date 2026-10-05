@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
@@ -474,8 +475,8 @@ export const listHosted = authorized
     if (!membership) throw createSituationErrors(errors).notMember();
     if (
       !(
-        hasOrganizationRole(membership.role, "owner") ||
-        hasOrganizationRole(membership.role, "admin")
+        hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+        hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)
       )
     ) {
       throw createSituationErrors(errors).organizationManagementRequired();
@@ -668,8 +669,8 @@ export const availableScopes = authorized
     const canReadHosted =
       canReadHostedPermission &&
       !!membership &&
-      (hasOrganizationRole(membership.role, "owner") ||
-        hasOrganizationRole(membership.role, "admin"));
+      (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+        hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin));
     // Assigned coordinators discover exactly their Partnerships; the role
     // alone still grants no Organization-wide overview.
     const assignedIds = canReadPartnerPermission
@@ -741,9 +742,9 @@ export const getProject = authorized
     if (!membership) throw createSituationErrors(errors).notMember();
     const canCoordinateHosted =
       membership &&
-      (hasOrganizationRole(membership.role, "owner") ||
-        hasOrganizationRole(membership.role, "admin") ||
-        hasOrganizationRole(membership.role, "project-coordinator"));
+      (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+        hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin) ||
+        hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator));
     if (!(canReadHosted || canReadPartner || canCoordinateHosted)) {
       throw createSituationErrors(errors).projectReadRequired();
     }

@@ -52,7 +52,7 @@ beforeEach(() => {
       {
         id: "org-alpha",
         name: "Alpha Mobility",
-        country: null,
+        country: "FR",
         participantCount: 2,
         completedCount: 1,
         pendingCount: 1,
@@ -75,7 +75,7 @@ describe("Hosting Participant report", { timeout: 20_000 }, () => {
       { timeout: 10_000 },
     );
     expect(within(report).getByText("Alpha Mobility")).toBeTruthy();
-    expect(within(report).getByText("Country: Not recorded")).toBeTruthy();
+    expect(within(report).getByText("Country: FR")).toBeTruthy();
     expect(within(report).getByText("2 Participants")).toBeTruthy();
     expect(within(report).getByText("1 completed")).toBeTruthy();
     expect(within(report).getByText("1 pending")).toBeTruthy();

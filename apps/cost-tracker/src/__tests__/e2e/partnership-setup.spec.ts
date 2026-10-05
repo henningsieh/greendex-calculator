@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -510,7 +511,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         id: invitationId,
         organizationId: org!.id,
         email: actors.M.email,
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
         status: "pending",
         expiresAt: new Date(Date.now() + 3_600_000),
         inviterId: actors.E.id,
@@ -525,7 +526,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await ownerPage.goto("/organization");
       await expect(
         ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
       const context = await actorContext(browser, "M", baseURL!);
       const page = await context.newPage();
       await page.goto(`/accept-invitation/${invitationId}`);
@@ -542,11 +543,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await expect(page.getByText("Invite staff", { exact: true })).toBeVisible();
       await expect(
         page.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
       await ownerPage.reload();
       await expect(
         ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
       const [participation] = await db
         .select({ id: projectParticipantsTable.id })
         .from(projectParticipantsTable)
@@ -564,7 +565,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .select({ role: member.role, organizationId: member.organizationId })
       .from(member)
       .where(eq(member.userId, actors.M.id));
-    expect(membership?.role).toBe("admin");
+    expect(membership?.role).toBe(ORGANIZATION_ROLES.OrganizationAdmin);
     const context = await actorContext(browser, "M", baseURL!);
     const page = await context.newPage();
     // Admin authority is Organization-wide, unlike assignment-only coordination.

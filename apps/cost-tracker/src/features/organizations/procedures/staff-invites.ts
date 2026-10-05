@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
@@ -20,7 +21,7 @@ import {
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const STAFF_ROLES = ["owner", "admin"] as const;
+const STAFF_ROLES = [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin] as const;
 type StaffRole = (typeof STAFF_ROLES)[number];
 
 const StaffRoleSchema = z
@@ -30,8 +31,8 @@ const StaffRoleSchema = z
 
 /** Lower rank outranks: an inviter can only grant their own rank or below. */
 const ROLE_RANK: Record<StaffRole, number> = {
-  owner: 0,
-  admin: 1,
+  [ORGANIZATION_ROLES.OrganizationOwner]: 0,
+  [ORGANIZATION_ROLES.OrganizationAdmin]: 1,
 };
 
 const MemberSchema = z.object({
@@ -100,8 +101,8 @@ async function requireOrganizationManager(
     throw createSituationErrors(errors).notMember();
   }
 
-  if (hasOrganizationRole(membership.role, "owner")) return "owner";
-  if (hasOrganizationRole(membership.role, "admin")) return "admin";
+  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner)) return ORGANIZATION_ROLES.OrganizationOwner;
+  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)) return ORGANIZATION_ROLES.OrganizationAdmin;
 
   throw createSituationErrors(errors).organizationManagementRequired();
 }
@@ -254,7 +255,7 @@ export const acceptInvitation = authorized
     // (ADR-0013): any row carrying the participant role — including stale
     // development rows — would bypass agreement and Project Participation
     // checks here, so only staff invitations may proceed.
-    if (pending.role === "participant")
+    if (pending.role === ORGANIZATION_ROLES.Participant)
       throw createSituationErrors(errors).staffInvitationWrongKind();
     if (pending.status !== "pending")
       throw createSituationErrors(errors).staffInvitationClosed();

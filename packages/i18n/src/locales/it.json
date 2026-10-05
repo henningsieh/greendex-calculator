@@ -671,9 +671,10 @@
       "description": "Questi sono i dettagli e le impostazioni dell'organizzazione."
     },
     "roles": {
-      "owner": "Amministratore dell’organizzazione",
-      "admin": "Coordinatore del progetto",
-      "member": "Partecipante"
+      "owner": "Proprietario dell’organizzazione",
+      "admin": "Amministratore dell’organizzazione",
+      "participant": "Partecipante",
+      "coordinator": "Coordinatore del progetto"
     },
     "invitation": {
       "title": "Accetta invito",
@@ -687,6 +688,10 @@
         "confirm-button": "Annulla invito",
         "cancel-button": "Mantieni invito"
       }
+    },
+    "country": {
+      "label": "Paese dell’organizzazione",
+      "placeholder": "Seleziona un paese UE"
     }
   },
   "participation": {

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
@@ -61,30 +62,30 @@ beforeAll(async () => {
     updatedAt: now,
   });
   await db.insert(organization).values([
-    { id: host, name: `Host ${suffix}`, slug: host, createdAt: now },
-    { id: partner, name: `Partner ${suffix}`, slug: partner, createdAt: now },
-    { id: foreign, name: `Foreign ${suffix}`, slug: foreign, createdAt: now },
+    { country: "DE", id: host, name: `Host ${suffix}`, slug: host, createdAt: now },
+    { country: "DE", id: partner, name: `Partner ${suffix}`, slug: partner, createdAt: now },
+    { country: "DE", id: foreign, name: `Foreign ${suffix}`, slug: foreign, createdAt: now },
   ]);
   await db.insert(member).values([
     {
       id: randomUUID(),
       organizationId: host,
       userId: actor,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: now,
     },
     {
       id: randomUUID(),
       organizationId: partner,
       userId: actor,
-      role: "project-coordinator,owner",
+      role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`,
       createdAt: now,
     },
     {
       id: randomUUID(),
       organizationId: foreign,
       userId: actor,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
   ]);
@@ -150,7 +151,7 @@ describe("entity picker procedures", () => {
   });
 
   it("caps Organization search at 20 id/name matches", async () => {
-    const matches = Array.from({ length: 22 }, (_, index) => ({
+    const matches = Array.from({ length: 22 }, (_, index) => ({ country: "DE" as const,
       id: `picker-result-${index}-${suffix}`,
       name: `Searchable ${suffix} ${index}`,
       slug: `picker-result-${index}-${suffix}`,
@@ -194,8 +195,8 @@ describe("entity picker procedures", () => {
   });
 
   it("uses hasOrganizationRole for the owned search predicate", async () => {
-    const combinedRole = "project-coordinator,\uFEFFowner";
-    expect(hasOrganizationRole(combinedRole, "owner")).toBe(true);
+    const combinedRole = `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`;
+    expect(hasOrganizationRole(combinedRole, ORGANIZATION_ROLES.OrganizationOwner)).toBe(true);
     await db
       .update(member)
       .set({ role: combinedRole })
@@ -207,13 +208,13 @@ describe("entity picker procedures", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "project-coordinator,owner" })
+        .set({ role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}` })
         .where(inArray(member.organizationId, [partner]));
     }
   });
 
   it("finds owned Organizations beyond the first 50 while capping each result at 20", async () => {
-    const owned = Array.from({ length: 55 }, (_, index) => ({
+    const owned = Array.from({ length: 55 }, (_, index) => ({ country: "DE" as const,
       id: `owned-result-${index}-${suffix}`,
       name: `Owned Search ${suffix} ${index.toString().padStart(2, "0")}`,
       slug: `owned-result-${index}-${suffix}`,
@@ -225,7 +226,7 @@ describe("entity picker procedures", () => {
         id: randomUUID(),
         userId: actor,
         organizationId: id,
-        role: index < 30 ? "project-coordinator" : "owner",
+        role: index < 30 ? ORGANIZATION_ROLES.ProjectCoordinator : ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: new Date(),
       })),
     );
@@ -253,7 +254,7 @@ describe("entity picker procedures", () => {
   });
 
   it("finds an owner after more than 1000 preceding non-owner matches", async () => {
-    const candidates = Array.from({ length: 1002 }, (_, index) => ({
+    const candidates = Array.from({ length: 1002 }, (_, index) => ({ country: "DE" as const,
       id: `picker-many-${index.toString().padStart(4, "0")}-${suffix}`,
       name: `Many Matches ${suffix}`,
       slug: `picker-many-${index.toString().padStart(4, "0")}-${suffix}`,
@@ -268,7 +269,7 @@ describe("entity picker procedures", () => {
           userId: actor,
           organizationId: id,
           role:
-            index === 1001 ? "project-coordinator,owner" : "project-coordinator",
+            index === 1001 ? `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}` : ORGANIZATION_ROLES.ProjectCoordinator,
           createdAt: new Date(),
         })),
       );
@@ -314,7 +315,7 @@ describe("entity picker procedures", () => {
     session(host);
     await db
       .update(member)
-      .set({ role: "participant" })
+      .set({ role: ORGANIZATION_ROLES.Participant })
       .where(eq(member.organizationId, host));
     try {
       await expect(
@@ -329,7 +330,7 @@ describe("entity picker procedures", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "owner" })
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
         .where(eq(member.organizationId, host));
     }
   });
@@ -345,7 +346,7 @@ describe("entity picker procedures", () => {
     ]);
     await db
       .update(member)
-      .set({ role: "project-coordinator" })
+      .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
       .where(inArray(member.organizationId, [host]));
     try {
       expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
@@ -369,7 +370,7 @@ describe("entity picker procedures", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "owner" })
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
         .where(inArray(member.organizationId, [host]));
     }
   });

@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -97,7 +98,7 @@ describe("projects procedures", () => {
         })),
       );
       await db.insert(organization).values(
-        [host, ...partnerIds].map((org) => ({
+        [host, ...partnerIds].map((org) => ({ country: "DE" as const,
           id: org,
           name: org,
           slug: org,
@@ -109,7 +110,7 @@ describe("projects procedures", () => {
           id: randomUUID(),
           organizationId: org,
           userId: actor,
-          role: "owner",
+          role: ORGANIZATION_ROLES.OrganizationOwner,
           createdAt: now,
         })),
       );
@@ -157,7 +158,7 @@ describe("projects procedures", () => {
         );
       await db
         .update(member)
-        .set({ role: "owner" })
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
         .where(eq(member.organizationId, host));
       await db
         .update(projectsTable)
@@ -312,7 +313,7 @@ describe("projects procedures", () => {
       expect(unchanged).toEqual(record);
     });
 
-    it.each(["owner", "admin", "project-coordinator"])(
+    it.each([ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin, ORGANIZATION_ROLES.ProjectCoordinator])(
       "allows Hosting %s with organization-wide or explicit assignment authority",
       async (role) => {
         await db
@@ -322,7 +323,7 @@ describe("projects procedures", () => {
         await setClaim(0, "paid");
         await setClaim(1, "rejected");
         await setClaim(2, "paid");
-        if (role === "owner" || role === "admin") {
+        if (role === ORGANIZATION_ROLES.OrganizationOwner || role === ORGANIZATION_ROLES.OrganizationAdmin) {
           await db
             .delete(hostAssignments)
             .where(eq(hostAssignments.projectId, projectId));
@@ -346,7 +347,7 @@ describe("projects procedures", () => {
     it("denies assigned participants without the coordinator role", async () => {
       await db
         .update(member)
-        .set({ role: "participant" })
+        .set({ role: ORGANIZATION_ROLES.Participant })
         .where(eq(member.organizationId, host));
       await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
       const [record] = await db
@@ -356,7 +357,7 @@ describe("projects procedures", () => {
       expect(record?.completedAt).toBeNull();
     });
 
-    it.each(["participant", "participant", "project-coordinator"])(
+    it.each([ORGANIZATION_ROLES.Participant, ORGANIZATION_ROLES.Participant, ORGANIZATION_ROLES.ProjectCoordinator])(
       "denies Hosting %s without assignment",
       async (role) => {
         await db
@@ -421,14 +422,14 @@ describe("projects procedures", () => {
         updatedAt: now,
       });
       await db.insert(organization).values([
-        { id: hostId, name: "Detail Host", slug: hostId, createdAt: now },
-        {
+        { country: "DE", id: hostId, name: "Detail Host", slug: hostId, createdAt: now },
+        { country: "DE",
           id: partnerId,
           name: "Detail Partner",
           slug: partnerId,
           createdAt: now,
         },
-        {
+        { country: "DE",
           id: unrelatedId,
           name: "Detail Unrelated",
           slug: unrelatedId,
@@ -439,7 +440,7 @@ describe("projects procedures", () => {
         id: randomUUID(),
         userId,
         organizationId: hostId,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       });
       await db.insert(member).values(
@@ -447,7 +448,7 @@ describe("projects procedures", () => {
           id: randomUUID(),
           userId,
           organizationId,
-          role: "owner",
+          role: ORGANIZATION_ROLES.OrganizationOwner,
           createdAt: now,
         })),
       );
@@ -619,21 +620,21 @@ describe("projects procedures", () => {
         updatedAt: now,
       });
       await db.insert(organization).values([
-        { id: hostId, name: "List Host", slug: hostId, createdAt: now },
-        {
+        { country: "DE", id: hostId, name: "List Host", slug: hostId, createdAt: now },
+        { country: "DE",
           id: foreignHostId,
           name: "List Foreign Host",
           slug: foreignHostId,
           createdAt: now,
         },
-        { id: partnerId, name: "List Partner", slug: partnerId, createdAt: now },
-        {
+        { country: "DE", id: partnerId, name: "List Partner", slug: partnerId, createdAt: now },
+        { country: "DE",
           id: secondPartnerId,
           name: "List Second Partner",
           slug: secondPartnerId,
           createdAt: now,
         },
-        {
+        { country: "DE",
           id: unrelatedId,
           name: "List Unrelated",
           slug: unrelatedId,
@@ -644,7 +645,7 @@ describe("projects procedures", () => {
         id: randomUUID(),
         userId,
         organizationId: hostId,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       });
       await db.insert(projectsTable).values([
@@ -734,7 +735,7 @@ describe("projects procedures", () => {
       useActiveOrganization(hostId);
       await db
         .update(member)
-        .set({ role: "owner" })
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
         .where(and(eq(member.userId, userId), eq(member.organizationId, hostId)));
     });
 
@@ -968,10 +969,10 @@ describe("projects procedures", () => {
     });
 
     it.each([
-      "participant",
-      "participant",
-      "project-coordinator",
-      "participant,project-coordinator",
+      ORGANIZATION_ROLES.Participant,
+      ORGANIZATION_ROLES.Participant,
+      ORGANIZATION_ROLES.ProjectCoordinator,
+      `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
     ])(
       "denies org-wide hosted overview to %s even with project.read",
       async (role) => {
@@ -1036,19 +1037,19 @@ describe("projects procedures", () => {
         updatedAt: now,
       });
       await db.insert(organization).values([
-        {
+        { country: "DE",
           id: hostingOrganizationId,
           name: "Relationship Hosting Organization",
           slug: hostingOrganizationId,
           createdAt: now,
         },
-        {
+        { country: "DE",
           id: partnerOrganizationId,
           name: "Relationship Partner Organization",
           slug: partnerOrganizationId,
           createdAt: now,
         },
-        {
+        { country: "DE",
           id: unrelatedOrganizationId,
           name: "Relationship Unrelated Organization",
           slug: unrelatedOrganizationId,
@@ -1193,7 +1194,7 @@ describe("projects procedures", () => {
         })),
       );
       await db.insert(organization).values(
-        [host, partner].map((id) => ({
+        [host, partner].map((id) => ({ country: "DE" as const,
           id,
           name: id,
           slug: id,
@@ -1205,14 +1206,14 @@ describe("projects procedures", () => {
           id: randomUUID(),
           organizationId: partner,
           userId: coord,
-          role: "project-coordinator",
+          role: ORGANIZATION_ROLES.ProjectCoordinator,
           createdAt: now,
         },
         {
           id: randomUUID(),
           organizationId: partner,
           userId: stranger,
-          role: "project-coordinator",
+          role: ORGANIZATION_ROLES.ProjectCoordinator,
           createdAt: now,
         },
       ]);

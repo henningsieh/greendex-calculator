@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
 import { headers } from "next/headers";
@@ -26,7 +27,7 @@ export async function canManageOrganization(): Promise<boolean> {
     );
     const role = membership?.role ?? "";
     return (
-      hasOrganizationRole(role, "owner") || hasOrganizationRole(role, "admin")
+      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) || hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
     );
   } catch {
     return false;

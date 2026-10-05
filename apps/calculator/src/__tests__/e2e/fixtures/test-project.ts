@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -33,7 +34,7 @@ export class TestProjectFixture {
     });
 
     // Create test organization
-    await db.insert(organization).values({
+    await db.insert(organization).values({ country: "DE",
       id: this.orgId,
       name: "E2E Test Organization",
       slug: `e2e-test-org-${Date.now()}-${randomUUID().slice(0, 8)}`,
@@ -45,7 +46,7 @@ export class TestProjectFixture {
       id: randomUUID(),
       organizationId: this.orgId,
       userId: this.userId,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: new Date(),
     });
 

@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
@@ -167,13 +168,13 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       password: await hashPassword(password),
     });
     await db.insert(organization).values([
-      {
+      { country: "DE",
         id: hostId,
         name: `CT ${suffix} Hosting`,
         slug: `ct-${suffix}-host`,
         createdAt: now,
       },
-      {
+      { country: "DE",
         id: partnerId,
         name: `CT ${suffix} Partner`,
         slug: `ct-${suffix}-partner`,
@@ -185,14 +186,14 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         id: randomUUID(),
         userId: coordinatorId,
         organizationId: partnerId,
-        role: "project-coordinator",
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
         createdAt: now,
       },
       ...people.map((person) => ({
         id: randomUUID(),
         userId: person.id,
         organizationId: hostId,
-        role: "participant" as const,
+        role: ORGANIZATION_ROLES.Participant,
         createdAt: now,
       })),
     ]);
@@ -263,7 +264,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       id: people[2]!.id,
       fullName: people[2]!.name,
       version: CURRENT_PARTICIPANT_AGREEMENT_VERSION.id,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
     });
     expect(
       await db

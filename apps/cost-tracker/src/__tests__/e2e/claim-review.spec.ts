@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
 import {
@@ -280,13 +281,13 @@ test.describe.serial("Claim review journey 25–26", () => {
       })),
     );
     await db.insert(organization).values([
-      {
+      { country: "DE",
         id: ids.host,
         name: `CT ${suffix} Hosting`,
         slug: ids.host,
         createdAt: now,
       },
-      ...ids.partners.map((id, index) => ({
+      ...ids.partners.map((id, index) => ({ country: "DE" as const,
         id,
         name: partnerNames[index]!,
         slug: id,
@@ -298,21 +299,21 @@ test.describe.serial("Claim review journey 25–26", () => {
         id: randomUUID(),
         userId: actors.H.id,
         organizationId: ids.host,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       ...ids.partners.map((id, index) => ({
         id: randomUUID(),
         userId: actors[index === 0 ? "P" : "F"].id,
         organizationId: id,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       })),
       ...ids.participantUsers.map((id) => ({
         id: randomUUID(),
         userId: id,
         organizationId: ids.host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
         createdAt: now,
       })),
     ]);
@@ -698,11 +699,11 @@ test.describe.serial("Claim review journey 25–26", () => {
       eq(member.organizationId, ids.host),
     );
     try {
-      await db.update(member).set({ role: "participant" }).where(membership);
+      await db.update(member).set({ role: ORGANIZATION_ROLES.Participant }).where(membership);
       expect((await host.request.get(url)).status()).toBe(403);
       await db
         .update(member)
-        .set({ role: "project-coordinator" })
+        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
         .where(membership);
       expect((await host.request.get(url)).status()).toBe(403);
       await db
@@ -720,7 +721,7 @@ test.describe.serial("Claim review journey 25–26", () => {
             eq(hostAssignments.userId, actors.H.id),
           ),
         );
-      await db.update(member).set({ role: "owner" }).where(membership);
+      await db.update(member).set({ role: ORGANIZATION_ROLES.OrganizationOwner }).where(membership);
     }
   });
 

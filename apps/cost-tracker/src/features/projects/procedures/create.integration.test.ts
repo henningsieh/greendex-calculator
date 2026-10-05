@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -83,7 +84,7 @@ describe("projects.create", () => {
       emailVerified: true,
     });
     await db.insert(organization).values(
-      [host, otherHost].map((id) => ({
+      [host, otherHost].map((id) => ({ country: "DE" as const,
         id,
         name: id,
         slug: id,
@@ -94,7 +95,7 @@ describe("projects.create", () => {
       id: randomUUID(),
       userId: actor,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     });
     await db.insert(projectsTable).values([
@@ -118,7 +119,7 @@ describe("projects.create", () => {
     authMocks.hasPermission.mockResolvedValue({ success: false });
     await db
       .update(member)
-      .set({ role: "participant" })
+      .set({ role: ORGANIZATION_ROLES.Participant })
       .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
     await db
       .delete(projectsTable)
@@ -142,7 +143,7 @@ describe("projects.create", () => {
 
   it("adds coordination to a Participant without removing roles and assigns only created Projects", async () => {
     // ADR-0012: fallback roles are refused in memory, never seeded or upgraded.
-    for (const bannedRole of ["member", "member,participant"]) {
+    for (const bannedRole of ["invalid-role", "invalid-role,participant"]) {
       let refusal: unknown;
       try {
         requireCostTrackerRole(
@@ -156,12 +157,12 @@ describe("projects.create", () => {
         code: "BAD_REQUEST",
         status: 400,
         message:
-          'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
+          "Use a defined Organization role.",
       });
     }
     const first = await client.projects.create(input);
     expect(first).toEqual({ id: expect.any(String) });
-    expect(await role()).toBe("participant,project-coordinator");
+    expect(await role()).toBe(`${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`);
     expect(await assignments()).toEqual([{ projectId: first.id }]);
     await expect(
       requireHostCoordination(first.id, actor, host, {
@@ -202,7 +203,7 @@ describe("projects.create", () => {
       data: { reason: "HOST_COORDINATION_REQUIRED" },
     });
     const second = await client.projects.create(input);
-    expect(await role()).toBe("participant,project-coordinator");
+    expect(await role()).toBe(`${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`);
     expect(
       (await assignments()).map(({ projectId }) => projectId).sort(),
     ).toEqual([first.id, second.id].sort());
@@ -247,7 +248,7 @@ describe("projects.create", () => {
     expect(await assignments()).toEqual([]);
   });
 
-  it.each(["owner", "admin"])(
+  it.each([ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin])(
     "keeps %s role while assigning the creator",
     async (membershipRole) => {
       await db
@@ -280,7 +281,7 @@ describe("projects.create", () => {
       code: "UNAUTHORIZED",
     });
     expect(await assignments()).toEqual([]);
-    expect(await role()).toBe("participant");
+    expect(await role()).toBe(ORGANIZATION_ROLES.Participant);
   });
 
   it("rejects invalid details and server-owned fields", async () => {

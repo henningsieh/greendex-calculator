@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -114,7 +115,7 @@ export class HostingJourneyFixture {
       id: this.invitationId,
       organizationId: host!.id,
       email: this.actors.A.email,
-      role: "admin",
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
       status: "pending",
       expiresAt: new Date(Date.now() + 3_600_000),
       inviterId: this.actors.H.id,

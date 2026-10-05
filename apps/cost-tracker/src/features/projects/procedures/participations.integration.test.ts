@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -95,37 +96,37 @@ beforeAll(async () => {
     { id: oldAcceptor, name: "Old", email: `old-${s}@x.org` },
   ]);
   await db.insert(organization).values([
-    { id: host, name: "Host", slug: host, createdAt: now },
-    { id: partner, name: "Partner", slug: partner, createdAt: now },
-    { id: other, name: "Other", slug: other, createdAt: now },
+    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
+    { country: "FR", id: partner, name: "Partner", slug: partner, createdAt: now },
+    { country: "IT", id: other, name: "Other", slug: other, createdAt: now },
   ]);
   await db.insert(member).values([
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: candidate,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: unassigned,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
   ]);
@@ -283,7 +284,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: true,
         org: host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
       {
         key: "no-profile",
@@ -291,7 +292,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: false,
         accepted: true,
         org: host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
       {
         key: "stale",
@@ -299,7 +300,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: false,
         org: host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
       {
         key: "wrong-role",
@@ -307,7 +308,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: true,
         org: host,
-        role: "project-coordinator",
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
       },
       {
         key: "wrong-org",
@@ -315,7 +316,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: true,
         org: other,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
     ];
     const ids = cases.map(({ key }) => `directory-${key}-${s}`);
@@ -406,7 +407,7 @@ describe("assignment-scoped participation coordination", () => {
           id: randomUUID(),
           userId: id,
           organizationId: host,
-          role: "participant",
+          role: ORGANIZATION_ROLES.Participant,
           createdAt: new Date(),
         })),
       );
@@ -610,7 +611,7 @@ describe("assignment-scoped participation coordination", () => {
       id: randomUUID(),
       userId: mixedUser,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: new Date(),
     });
     await db.insert(profiles).values({ userId: mixedUser, fullName: "Mixed" });
@@ -711,7 +712,7 @@ describe("assignment-scoped participation coordination", () => {
       id: secondMembershipId,
       userId: candidate,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     await db
@@ -820,12 +821,12 @@ describe("assignment-scoped participation coordination", () => {
       id,
       userId: candidate,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     await db
       .update(member)
-      .set({ role: "owner" })
+      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
       .where(eq(member.userId, coordinator));
     try {
       await client.assignments.assign({ partnershipId: own, userId: candidate });
@@ -851,7 +852,7 @@ describe("assignment-scoped participation coordination", () => {
             .from(member)
             .where(eq(member.id, id))
         )[0]?.role,
-      ).toBe("project-coordinator");
+      ).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
     } finally {
       actor = coordinator;
       activeOrg = partner;
@@ -859,7 +860,7 @@ describe("assignment-scoped participation coordination", () => {
       await db.delete(member).where(eq(member.id, id));
       await db
         .update(member)
-        .set({ role: "project-coordinator" })
+        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
         .where(eq(member.userId, coordinator));
     }
   });
@@ -1016,6 +1017,7 @@ describe("read-only Hosting Participant report", () => {
       projectId: project,
     });
 
+    expect(report.organizations.map(({ country }) => country)).toEqual(["IT", "FR"]);
     expect(report.agreement).toEqual({
       versionId: version.id,
       published: true,

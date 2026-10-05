@@ -232,6 +232,13 @@
       "when": 1791124579525,
       "tag": "0032_drop-split-entry-tables",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791187986671,
+      "tag": "0033_awesome_the_enforcers",
+      "breakpoints": true
     }
   ]
 }

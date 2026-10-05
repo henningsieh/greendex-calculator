@@ -208,12 +208,13 @@ describe("Setup Link UI", () => {
     mocks.listMine.mockResolvedValue([{ id: "partner-2", name: "New Partner" }]);
     recipient();
     const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.type(
       screen.getByLabelText("New Organization name"),
       "New Partner",
     );
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    expect(mocks.createOrganization).toHaveBeenCalledWith({
+    expect(mocks.createOrganization).toHaveBeenCalledWith({ country: "DE" as const,
       name: "New Partner",
       slug: "new-partner",
     });
@@ -233,6 +234,7 @@ describe("Setup Link UI", () => {
     mocks.createOrganization.mockRejectedValue(new Error("BA refused"));
     recipient();
     const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.type(
       screen.getByLabelText("New Organization name"),
       "New Partner",

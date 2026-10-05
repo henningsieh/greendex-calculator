@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -253,7 +254,7 @@ async function assertJoined(
   projectId = ids.main,
 ) {
   expect(await membershipRole(actor, ids.host)).toEqual([
-    { role: actor === "Q" ? "project-coordinator,participant" : "participant" },
+    { role: actor === "Q" ? `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}` : ORGANIZATION_ROLES.Participant },
   ]);
   expect(await membershipRole(actor, partnerId)).toHaveLength(0);
   expect(
@@ -304,37 +305,37 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     }
     const now = new Date();
     await db.insert(organization).values([
-      { id: ids.host, name: names.host, slug: ids.host, createdAt: now },
-      { id: ids.partner, name: names.partner, slug: ids.partner, createdAt: now },
-      { id: ids.foreign, name: names.foreign, slug: ids.foreign, createdAt: now },
+      { country: "DE", id: ids.host, name: names.host, slug: ids.host, createdAt: now },
+      { country: "DE", id: ids.partner, name: names.partner, slug: ids.partner, createdAt: now },
+      { country: "DE", id: ids.foreign, name: names.foreign, slug: ids.foreign, createdAt: now },
     ]);
     await db.insert(member).values([
       {
         id: randomUUID(),
         userId: actors.H.id,
         organizationId: ids.host,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.P.id,
         organizationId: ids.partner,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.F.id,
         organizationId: ids.foreign,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.C.id,
         organizationId: ids.partner,
-        role: "project-coordinator",
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
         createdAt: now,
       },
     ]);
@@ -389,7 +390,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       id: randomUUID(),
       organizationId: ids.host,
       userId: actors.Q.id,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     });
   });
@@ -776,7 +777,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
 
     const q = await pageFor(browser, "Q", baseURL!);
     expect(await membershipRole("Q", ids.host)).toEqual([
-      { role: "project-coordinator" },
+      { role: ORGANIZATION_ROLES.ProjectCoordinator },
     ]);
     await join(q, sharedLink, "Q");
     await assertJoined("Q");
@@ -821,7 +822,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         ),
     ).toHaveLength(1);
     expect(await membershipRole("C", ids.partner)).toEqual([
-      { role: "project-coordinator" },
+      { role: ORGANIZATION_ROLES.ProjectCoordinator },
     ]);
     await c.goto("/projects");
     await expect(
@@ -877,7 +878,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         ),
     ).toHaveLength(0);
     expect(await membershipRole("C", ids.partner)).toEqual([
-      { role: "project-coordinator" },
+      { role: ORGANIZATION_ROLES.ProjectCoordinator },
     ]);
     await c.goto("/projects");
     await expect(

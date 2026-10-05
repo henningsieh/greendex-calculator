@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
+import { useTranslations } from "@greendex/i18n/client";
+import { CountrySelect } from "@/components/country-select";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -42,10 +44,13 @@ export function EditOrganizationForm() {
     orpcQuery.organizations.getActive.queryOptions(),
   );
 
+  const t = useTranslations("organization.country");
+
   const form = useForm<z.infer<typeof EditOrganizationFormSchema>>({
     resolver: zodResolver(EditOrganizationFormSchema),
     defaultValues: {
       name: organization?.name || "",
+      country: organization?.country,
     },
   });
 
@@ -68,6 +73,7 @@ export function EditOrganizationForm() {
           organizationId: organization.id,
           data: {
             name: data.name,
+            country: data.country,
             slug: slugToUse,
           },
         },
@@ -123,6 +129,20 @@ export function EditOrganizationForm() {
                       {...field}
                       disabled={form.formState.isSubmitting}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("label")}</FormLabel>
+                  <FormControl>
+                    <CountrySelect euOnly value={field.value} onValueChange={field.onChange} placeholder={t("placeholder")} disabled={form.formState.isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

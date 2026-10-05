@@ -1,5 +1,6 @@
 "use client";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/client";
 import {
   useMutation,
@@ -301,7 +302,7 @@ function PartnerCoordinatorControls({
     entry.role
       .split(",")
       .some((role) =>
-        ["owner", "admin", "project-coordinator"].includes(role.trim()),
+        [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin, ORGANIZATION_ROLES.ProjectCoordinator].some((knownRole) => knownRole === role.trim()),
       ),
   );
   return (
@@ -309,7 +310,7 @@ function PartnerCoordinatorControls({
       <p className="text-sm text-muted-foreground">
         Organization Owners and Organization Admins may assign or revoke a Group
         Organizer for this Project Partnership. Assignment does not change
-        Organization Membership roles; the project-coordinator role is required
+        Organization Membership roles; the coordinator role is required
         for assignment-scoped access.
       </p>
       <div className="space-y-2">

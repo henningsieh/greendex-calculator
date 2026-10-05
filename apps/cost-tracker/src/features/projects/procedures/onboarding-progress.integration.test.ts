@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
@@ -58,7 +59,7 @@ beforeAll(async () => {
     })),
   );
   await db.insert(organization).values(
-    [host, partner, other].map((id) => ({
+    [host, partner, other].map((id) => ({ country: "DE" as const,
       id,
       name: id,
       slug: id,
@@ -70,28 +71,28 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: joined,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: joined,
       organizationId: partner,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: outsider,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
   ]);
@@ -252,7 +253,7 @@ describe("Partner invitee onboarding progress", () => {
       participation: "joined",
       profile: "complete",
       agreement: "current",
-      membership: "participant",
+      membership: ORGANIZATION_ROLES.Participant,
       bridge: "pending",
     });
     expect(rows.find((row) => row.email === mail(pending))).toMatchObject({

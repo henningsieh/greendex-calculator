@@ -6,6 +6,7 @@
 // issuance procedure with drift-proof raw SQL because the shared development
 // database carries an out-of-branch `expires_at` column on that table.
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
 import {
@@ -145,8 +146,8 @@ beforeAll(async () => {
     { id: stranger, name: "Stranger", email: strangerEmail, emailVerified: true },
   ]);
   await db.insert(organization).values([
-    { id: host, name: "Invite Host", slug: host, createdAt: now },
-    { id: partner, name: "Invite Partner", slug: partner, createdAt: now },
+    { country: "DE", id: host, name: "Invite Host", slug: host, createdAt: now },
+    { country: "DE", id: partner, name: "Invite Partner", slug: partner, createdAt: now },
   ]);
   await db.insert(projects).values({
     id: project,
@@ -164,7 +165,7 @@ beforeAll(async () => {
     id: randomUUID(),
     organizationId: partner,
     userId: owner,
-    role: "owner",
+    role: ORGANIZATION_ROLES.OrganizationOwner,
     createdAt: now,
   });
 });
@@ -217,7 +218,7 @@ beforeEach(async () => {
         id: randomUUID(),
         organizationId: body.organizationId,
         userId: body.userId,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
         createdAt: new Date(),
       });
       return new Response(null, { status: 200 });
@@ -544,7 +545,7 @@ describe("email-bound Participant Invitations", () => {
         .from(participants)
         .where(eq(participants.projectId, project)),
     ).toHaveLength(1);
-    expect(await recipientMemberships()).toEqual([{ role: "participant" }]);
+    expect(await recipientMemberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
   });
 
   it("repeats successful redemption idempotently", async () => {
@@ -578,7 +579,7 @@ describe("email-bound Participant Invitations", () => {
       id: randomUUID(),
       userId: recipient,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     const issued = await client.participantOnboarding.issueInvitation({
@@ -667,7 +668,7 @@ describe("email-bound Participant Invitations", () => {
       email: recipientEmail,
       country: "LV",
     });
-    expect(await recipientMemberships()).toEqual([{ role: "participant" }]);
+    expect(await recipientMemberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
   });
 
   it("keeps staff invitations in their organization and app invitations out of that list", async () => {
@@ -675,7 +676,7 @@ describe("email-bound Participant Invitations", () => {
       id: randomUUID(),
       organizationId: partner,
       email: `colleague-${suffix}@example.org`,
-      role: "admin",
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
       status: "pending",
       expiresAt: new Date(Date.now() + 3_600_000),
       inviterId: owner,
@@ -688,7 +689,7 @@ describe("email-bound Participant Invitations", () => {
     expect(pending.invitations).toHaveLength(1);
     expect(pending.invitations[0]).toMatchObject({
       email: `colleague-${suffix}@example.org`,
-      role: "admin",
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
     });
     const scoped = await client.participations.listPartnership({
       partnershipId: partnership,

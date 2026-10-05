@@ -1,4 +1,4 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth";
+import { ORGANIZATION_ROLES, isValidOrganizationRole } from "@greendex/auth";
 import type { BetterAuthPlugin } from "better-auth";
 import {
   APIError,
@@ -10,14 +10,14 @@ import { sql, type SQLWrapper } from "drizzle-orm";
 import { z } from "zod";
 
 export const BANNED_ROLE_MESSAGE =
-  'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.';
+  "Use a defined Organization role.";
 
 // Host-organization Memberships carrying one of these roles read as
 // Participants: owners and admins inherit Participant access, while a bare
-// project-coordinator Membership alone does not.
+// coordinator Membership alone does not.
 const participantReaderRoles = [
   ORGANIZATION_ROLES.Participant,
-  ORGANIZATION_ROLES.OrganizationAdministrator,
+  ORGANIZATION_ROLES.OrganizationOwner,
   ORGANIZATION_ROLES.OrganizationAdmin,
 ];
 
@@ -28,9 +28,7 @@ export function memberHasParticipantAccess(roleColumn: SQLWrapper) {
 export function hasBannedOrganizationRole(
   role: string | null | undefined,
 ): boolean {
-  return (
-    role == null || role.split(",").some((value) => value.trim() === "member")
-  );
+  return !isValidOrganizationRole(role);
 }
 
 // ADR-0012 bans Better Auth's fallback role, including combined roles and omitted defaults.
@@ -82,7 +80,7 @@ export const costTrackerInvitationRoleGate: BetterAuthPlugin = {
           if (
             !actor?.role
               .split(",")
-              .some((role) => ["owner", "admin"].includes(role.trim()))
+              .some((role) => [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin].some((knownRole) => knownRole === role.trim()))
           )
             return;
           const pending = await context.context.adapter.findMany<{

@@ -11,11 +11,11 @@ import {
 
 describe("Cost Tracker role ban (ADR-0012)", () => {
   it.each([
-    "member",
-    " member ",
-    "owner,member",
-    "member,project-coordinator",
-    "participant,member",
+    "invalid-role",
+    " invalid-role ",
+    "owner,invalid-role",
+    "invalid-role,coordinator",
+    "participant,invalid-role",
     null,
     undefined,
   ])("refuses the fallback role or an omitted default: %s", (role) => {
@@ -23,12 +23,12 @@ describe("Cost Tracker role ban (ADR-0012)", () => {
   });
 
   it.each([
-    "owner",
-    "admin",
-    "project-coordinator",
-    "participant",
-    "admin,participant",
-    "project-coordinator,participant",
+    ORGANIZATION_ROLES.OrganizationOwner,
+    ORGANIZATION_ROLES.OrganizationAdmin,
+    ORGANIZATION_ROLES.ProjectCoordinator,
+    ORGANIZATION_ROLES.Participant,
+    `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+    `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
   ])("preserves the real domain role %s", (role) => {
     expect(() => requireCostTrackerRole(role)).not.toThrow();
   });
@@ -38,22 +38,22 @@ describe("Cost Tracker role ban (ADR-0012)", () => {
     type Hooks = typeof costTrackerOrganizationHooks;
     await expect(
       costTrackerOrganizationHooks.beforeCreateInvitation!({
-        invitation: { role: "member" },
+        invitation: { role: "invalid-role" },
       } as Parameters<NonNullable<Hooks["beforeCreateInvitation"]>>[0]),
     ).rejects.toThrow(BANNED_ROLE_MESSAGE);
     await expect(
       costTrackerOrganizationHooks.beforeAcceptInvitation!({
-        invitation: { role: "member" },
+        invitation: { role: "invalid-role" },
       } as Parameters<NonNullable<Hooks["beforeAcceptInvitation"]>>[0]),
     ).rejects.toThrow(BANNED_ROLE_MESSAGE);
     await expect(
       costTrackerOrganizationHooks.beforeAddMember!({
-        member: { role: "member" },
+        member: { role: "invalid-role" },
       } as Parameters<NonNullable<Hooks["beforeAddMember"]>>[0]),
     ).rejects.toThrow(BANNED_ROLE_MESSAGE);
     await expect(
       costTrackerOrganizationHooks.beforeUpdateMemberRole!({
-        newRole: "owner,member",
+        newRole: "owner,invalid-role",
       } as Parameters<NonNullable<Hooks["beforeUpdateMemberRole"]>>[0]),
     ).rejects.toThrow(BANNED_ROLE_MESSAGE);
   });
@@ -81,21 +81,21 @@ describe("memberHasParticipantAccess", () => {
 
   it("derives the participant-reader alternation from the auth role constants", () => {
     expect(accessPattern()).toBe(
-      `,(${[ORGANIZATION_ROLES.Participant, ORGANIZATION_ROLES.OrganizationAdministrator, ORGANIZATION_ROLES.OrganizationAdmin].join("|")}),`,
+      `,(${[ORGANIZATION_ROLES.Participant, ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin].join("|")}),`,
     );
   });
 
   it.each([
-    "participant",
-    "owner",
-    "admin",
-    "owner,participant",
-    "project-coordinator,participant",
+    ORGANIZATION_ROLES.Participant,
+    ORGANIZATION_ROLES.OrganizationOwner,
+    ORGANIZATION_ROLES.OrganizationAdmin,
+    `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+    `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
   ])("matches %s", (role) => {
     expect(matches(accessPattern(), role)).toBe(true);
   });
 
-  it.each(["project-coordinator", "member", "ownerx", ""])(
+  it.each([ORGANIZATION_ROLES.ProjectCoordinator, "invalid-role", "ownerx", ""])(
     "rejects %s",
     (role) => {
       expect(matches(accessPattern(), role)).toBe(false);

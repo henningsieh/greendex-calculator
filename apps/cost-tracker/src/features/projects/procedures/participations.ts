@@ -638,6 +638,7 @@ export function createParticipationProcedures(
           participationId: participants.id,
           organizationId: participants.representedOrganizationId,
           organizationName: organization.name,
+          organizationCountry: organization.country,
           displayName: participants.displayName,
           email: participants.email,
           accountEmail: user.email,

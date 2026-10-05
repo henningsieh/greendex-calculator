@@ -37,8 +37,10 @@ describe("NoOrganizationAccess", () => {
     render(<NoOrganizationAccess autoOpen />);
 
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Create Organization" }));
 
+    expect(mocks.createOrganization).toHaveBeenCalledExactlyOnceWith({ name: "Northwind", slug: "northwind", country: "DE" });
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
@@ -49,6 +51,7 @@ describe("NoOrganizationAccess", () => {
     render(<NoOrganizationAccess autoOpen />);
 
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Create Organization" }));
 
     expect(

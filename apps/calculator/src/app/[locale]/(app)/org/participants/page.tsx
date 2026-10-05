@@ -36,7 +36,7 @@ export default async function ParticipantsPage() {
   const activeOrganizationId =
     session?.session?.activeOrganizationId || organizations[0]?.id || "";
 
-  // Prefetch participants data (members with "member" role)
+  // Prefetch participants data (Memberships with the Participant role)
   // Using await ensures data is in cache BEFORE dehydration
   const queryClient = getQueryClient();
   await queryClient

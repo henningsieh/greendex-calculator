@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
 import { db } from "@greendex/database";
@@ -69,7 +70,7 @@ export const listMyOrganizations = authorized
         .orderBy(asc(organization.name), asc(organization.id))
         .limit(OWNED_SEARCH_PAGE_SIZE);
       for (const { id, name, role } of memberships) {
-        if (hasOrganizationRole(role, "owner")) matches.push({ id, name });
+        if (hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner)) matches.push({ id, name });
         if (matches.length === 20) return matches;
       }
       if (memberships.length < OWNED_SEARCH_PAGE_SIZE) break;

@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -27,7 +28,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
                 userId: "owner-1",
                 name: "Staff Owner",
                 email: "owner@example.org",
-                role: "owner",
+                role: ORGANIZATION_ROLES.OrganizationOwner,
                 createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
               },
               {
@@ -35,7 +36,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
                 userId: "hybrid-1",
                 name: "Hybrid Admin",
                 email: "hybrid@example.org",
-                role: "admin,participant",
+                role: `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
                 createdAt: new Date("2026-01-02T00:00:00.000Z").toISOString(),
               },
             ],
@@ -51,7 +52,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
               {
                 id: "invitation-1",
                 email: "pending@example.org",
-                role: "admin",
+                role: ORGANIZATION_ROLES.OrganizationAdmin,
                 expiresAt: new Date("2026-02-01T00:00:00.000Z").toISOString(),
                 createdAt: new Date("2026-01-03T00:00:00.000Z").toISOString(),
               },
@@ -83,7 +84,7 @@ beforeEach(() => {
   mocks.inviteMember.mockResolvedValue({
     invitationId: "invitation-2",
     email: "new@example.org",
-    role: "admin",
+    role: ORGANIZATION_ROLES.OrganizationAdmin,
   });
   mocks.cancelInvitation.mockResolvedValue({ success: true });
 });
@@ -95,7 +96,7 @@ describe("Organization team", () => {
     expect(await screen.findByText("Staff Owner")).toBeTruthy();
     expect(screen.getByText("hybrid@example.org")).toBeTruthy();
     expect(screen.getByText("pending@example.org")).toBeTruthy();
-    expect(screen.getAllByText("participant").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(ORGANIZATION_ROLES.Participant).length).toBeGreaterThan(0);
   });
 
   it("sends an invitation and refreshes the lists", async () => {
@@ -109,7 +110,7 @@ describe("Organization team", () => {
     await waitFor(() =>
       expect(mocks.inviteMember).toHaveBeenCalledWith({
         email: "new@example.org",
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
       }),
     );
     expect(
