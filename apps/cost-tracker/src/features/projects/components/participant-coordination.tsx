@@ -65,10 +65,12 @@ const reviewDecisions: { value: ReviewDecision; label: string }[] = [
 
 function ReviewTaskControls({
   task,
+  canMutate,
   refresh,
   onFeedback,
 }: {
   task: ReviewTask;
+  canMutate: boolean;
   refresh: () => Promise<void>;
   onFeedback: (message: string) => void;
 }) {
@@ -119,7 +121,7 @@ function ReviewTaskControls({
           Assigned Registered User: {task.assignedToUserId}
         </p>
       )}
-      {task.status === "open" && (
+      {canMutate && task.status === "open" && (
         <Button
           type="button"
           variant="outline"
@@ -129,7 +131,7 @@ function ReviewTaskControls({
           Assign Review Task to me
         </Button>
       )}
-      {task.status === "assigned" && (
+      {canMutate && task.status === "assigned" && (
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-2">
             <Label htmlFor={`review-decision-${task.id}`}>
@@ -172,7 +174,13 @@ function ReviewTaskControls({
   );
 }
 
-function ReviewTasks({ partnershipId }: { partnershipId: string }) {
+function ReviewTasks({
+  partnershipId,
+  canMutate,
+}: {
+  partnershipId: string;
+  canMutate: boolean;
+}) {
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState("");
   const options = orpcQuery.duplicateReviews.list.queryOptions({
@@ -210,6 +218,7 @@ function ReviewTasks({ partnershipId }: { partnershipId: string }) {
             <ReviewTaskControls
               key={task.id}
               task={task}
+              canMutate={canMutate}
               refresh={refresh}
               onFeedback={setFeedback}
             />
@@ -559,8 +568,7 @@ export function ParticipantCoordination({
       });
     },
   });
-  // Hosts may read server-authorized oversight data, but cannot manage Partner
-  // Participations here; denied writes show the access-denied surface below.
+  // Hosts retain read-only oversight; the shared scope gate hides Partner writes.
   const create = useMutation({
     mutationFn: () => orpc.participations.create({ partnershipId, userId }),
     onSuccess: async () => {
@@ -580,47 +588,49 @@ export function ParticipantCoordination({
   return (
     <section className="space-y-6" aria-label="Project Participations">
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
-      <Card>
-        <CardHeader>
-          <CardTitle>Add a registered user to this project</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Only add a registered User who has completed profile and agreement
-            acceptance. For someone not yet onboarded, send a Participant
-            Invitation or create a Participant Registration Link below.
-          </p>
-          <form
-            className="flex flex-wrap items-end gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setFeedback(undefined);
-              create.mutate();
-            }}
-          >
-            <div className="space-y-2">
-              <span className="text-sm font-medium">Registered User</span>
-              <EntityCombobox
-                label="Registered User"
-                value={userId}
-                onChange={setUserId}
-                search={searchOnboarded}
-                searchBy="name, email or ID"
-                disabled={create.isPending}
-              />
-            </div>
-            <Button disabled={create.isPending || !userId} type="submit">
-              {create.isPending ? "Adding…" : "Add Participation"}
-            </Button>
-          </form>
-          {feedback && (
-            <Alert>
-              <AlertTitle>{feedback.title}</AlertTitle>
-              <AlertDescription>{feedback.description}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+      {entryAccess.permitted && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add a registered user to this project</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Only add a registered User who has completed profile and agreement
+              acceptance. For someone not yet onboarded, send a Participant
+              Invitation or create a Participant Registration Link below.
+            </p>
+            <form
+              className="flex flex-wrap items-end gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setFeedback(undefined);
+                create.mutate();
+              }}
+            >
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Registered User</span>
+                <EntityCombobox
+                  label="Registered User"
+                  value={userId}
+                  onChange={setUserId}
+                  search={searchOnboarded}
+                  searchBy="name, email or ID"
+                  disabled={create.isPending}
+                />
+              </div>
+              <Button disabled={create.isPending || !userId} type="submit">
+                {create.isPending ? "Adding…" : "Add Participation"}
+              </Button>
+            </form>
+            {feedback && (
+              <Alert>
+                <AlertTitle>{feedback.title}</AlertTitle>
+                <AlertDescription>{feedback.description}</AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Joined Participants</CardTitle>
@@ -661,49 +671,53 @@ export function ParticipantCoordination({
                   >
                     Participant details for {participant.displayName}
                   </Link>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={removeParticipation.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Remove the Project Participation for ${participant.displayName}?`,
-                        )
-                      ) {
-                        setFeedback(undefined);
-                        removeParticipation.mutate(participant.id);
-                      }
-                    }}
-                  >
-                    Remove Project Participation for {participant.displayName}
-                  </Button>
+                  {entryAccess.permitted && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={removeParticipation.isPending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Remove the Project Participation for ${participant.displayName}?`,
+                          )
+                        ) {
+                          setFeedback(undefined);
+                          removeParticipation.mutate(participant.id);
+                        }
+                      }}
+                    >
+                      Remove Project Participation for {participant.displayName}
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Group Organizers</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
-            type="button"
-            variant="outline"
-            aria-expanded={coordinatorsOpen}
-            onClick={() => setCoordinatorsOpen((open) => !open)}
-          >
-            {coordinatorsOpen
-              ? "Hide Group Organizer management"
-              : "Manage Group Organizers"}
-          </Button>
-          {coordinatorsOpen && (
-            <PartnerCoordinatorControls partnershipId={partnershipId} />
-          )}
-        </CardContent>
-      </Card>
+      {entryAccess.permitted && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Group Organizers</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={coordinatorsOpen}
+              onClick={() => setCoordinatorsOpen((open) => !open)}
+            >
+              {coordinatorsOpen
+                ? "Hide Group Organizer management"
+                : "Manage Group Organizers"}
+            </Button>
+            {coordinatorsOpen && (
+              <PartnerCoordinatorControls partnershipId={partnershipId} />
+            )}
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Review Tasks</CardTitle>
@@ -721,7 +735,12 @@ export function ParticipantCoordination({
           >
             {reviewsOpen ? "Hide Review Tasks" : "Show Review Tasks"}
           </Button>
-          {reviewsOpen && <ReviewTasks partnershipId={partnershipId} />}
+          {reviewsOpen && (
+            <ReviewTasks
+              partnershipId={partnershipId}
+              canMutate={entryAccess.permitted}
+            />
+          )}
         </CardContent>
       </Card>
       <Card>

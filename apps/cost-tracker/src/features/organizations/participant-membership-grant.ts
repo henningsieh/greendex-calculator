@@ -96,7 +96,16 @@ const grantParticipantMembership = createAuthEndpoint(
     // never has; granting it would broaden the client-reachable endpoint to any
     // member-role write (ADR-0015 minimal grant). This pathless server-only
     // endpoint performs the same write after the calling procedure authorized it.
-    const updated = await adapter.updateMember(membership.id, roleToWrite);
+    // Compare-and-swap at the write, not only at the earlier read: another
+    // Organization role grant must never be overwritten by this append.
+    const updated = await ctx.context.adapter.update<Member>({
+      model: "member",
+      where: [
+        { field: "id", value: membership.id },
+        { field: "role", value: ctx.body.expectedRole },
+      ],
+      update: { role: roleToWrite },
+    });
     if (!updated) throw staleMembership();
     return ctx.json({ member: updated });
   },
