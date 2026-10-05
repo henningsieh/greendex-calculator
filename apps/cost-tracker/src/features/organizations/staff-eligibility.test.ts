@@ -8,15 +8,26 @@ import {
   resolveStaffOrganizationContext,
 } from "@/features/organizations/staff-eligibility";
 
-const owner = { id: "org-a", name: "Alpha", role: ORGANIZATION_ROLES.OrganizationOwner };
-const participant = { id: "org-b", name: "Beta", role: ORGANIZATION_ROLES.Participant };
+const owner = {
+  id: "org-a",
+  name: "Alpha",
+  role: ORGANIZATION_ROLES.OrganizationOwner,
+};
+const participant = {
+  id: "org-b",
+  name: "Beta",
+  role: ORGANIZATION_ROLES.Participant,
+};
 
 describe("isStaffOrganizationRole", () => {
   it.each([
     [ORGANIZATION_ROLES.OrganizationOwner, true],
     [ORGANIZATION_ROLES.OrganizationAdmin, true],
     [ORGANIZATION_ROLES.ProjectCoordinator, true],
-    [`${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`, true],
+    [
+      `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+      true,
+    ],
     [ORGANIZATION_ROLES.Participant, false],
     ["invalid-role", false],
     ["unknown-role", false],

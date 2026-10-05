@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import { invitation, member, user } from "@greendex/database/schema";
 import { ORPCError } from "@orpc/server";
@@ -9,8 +9,8 @@ import { z } from "zod";
 
 import { normalizedEmail } from "@/features/authentication/procedures/shared";
 import {
-  BANNED_ROLE_MESSAGE,
-  hasBannedOrganizationRole,
+  INVALID_ROLE_MESSAGE,
+  hasInvalidOrganizationRole,
   requireCostTrackerRole,
 } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
@@ -21,12 +21,15 @@ import {
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const STAFF_ROLES = [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin] as const;
+const STAFF_ROLES = [
+  ORGANIZATION_ROLES.OrganizationOwner,
+  ORGANIZATION_ROLES.OrganizationAdmin,
+] as const;
 type StaffRole = (typeof STAFF_ROLES)[number];
 
 const StaffRoleSchema = z
   .string()
-  .refine((role) => !hasBannedOrganizationRole(role), BANNED_ROLE_MESSAGE)
+  .refine((role) => !hasInvalidOrganizationRole(role), INVALID_ROLE_MESSAGE)
   .pipe(z.enum(STAFF_ROLES));
 
 /** Lower rank outranks: an inviter can only grant their own rank or below. */
@@ -101,8 +104,10 @@ async function requireOrganizationManager(
     throw createSituationErrors(errors).notMember();
   }
 
-  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner)) return ORGANIZATION_ROLES.OrganizationOwner;
-  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)) return ORGANIZATION_ROLES.OrganizationAdmin;
+  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner))
+    return ORGANIZATION_ROLES.OrganizationOwner;
+  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin))
+    return ORGANIZATION_ROLES.OrganizationAdmin;
 
   throw createSituationErrors(errors).organizationManagementRequired();
 }

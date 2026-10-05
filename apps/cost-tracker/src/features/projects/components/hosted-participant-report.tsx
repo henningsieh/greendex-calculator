@@ -77,9 +77,7 @@ function PartnerOrganizationParticipants({
           </span>
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">
-            {`Country: ${group.country}`}
-          </Badge>
+          <Badge variant="secondary">{`Country: ${group.country}`}</Badge>
           <Badge>{pluralize(group.participantCount, "Participant")}</Badge>
           <Badge variant="secondary">{`${group.completedCount} completed`}</Badge>
           <Badge variant="secondary">{`${group.pendingCount} pending`}</Badge>

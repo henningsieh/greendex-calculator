@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "./permissions";
 import { describe, expect, it } from "vitest";
 
+import { ORGANIZATION_ROLES } from "./permissions";
 import { costTrackerOrganizationRoles } from "./permissions";
 import {
   PROJECT_PARTICIPATION_CREATE,
@@ -47,25 +47,46 @@ function decide(overrides: Partial<ProjectScopeFacts> = {}) {
 
 describe("project scope authorization", () => {
   it("permits Partner Organization owners and admins without an assignment", () => {
-    expect(decide({ role: ORGANIZATION_ROLES.OrganizationOwner })).toEqual({ permitted: true });
-    expect(decide({ role: ORGANIZATION_ROLES.OrganizationAdmin })).toEqual({ permitted: true });
+    expect(decide({ role: ORGANIZATION_ROLES.OrganizationOwner })).toEqual({
+      permitted: true,
+    });
+    expect(decide({ role: ORGANIZATION_ROLES.OrganizationAdmin })).toEqual({
+      permitted: true,
+    });
   });
 
   it("permits only assigned Partner Group Organizers", () => {
     expect(
-      decide({ role: ORGANIZATION_ROLES.ProjectCoordinator, assignedCoordinator: true }),
+      decide({
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
+        assignedCoordinator: true,
+      }),
     ).toEqual({ permitted: true });
     expect(
-      decide({ role: ORGANIZATION_ROLES.ProjectCoordinator, assignedCoordinator: false }),
+      decide({
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
+        assignedCoordinator: false,
+      }),
     ).toEqual({ permitted: false, reason: "ASSIGNMENT_MISSING" });
   });
 
   it("keeps coexisting roles so a combined role is permitted", () => {
-    expect(decide({ role: `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}` })).toEqual({ permitted: true });
     expect(
-      decide({ role: `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.ProjectCoordinator}`, assignedCoordinator: true }),
+      decide({
+        role: `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+      }),
     ).toEqual({ permitted: true });
-    expect(decide({ role: `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}` })).toEqual({
+    expect(
+      decide({
+        role: `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.ProjectCoordinator}`,
+        assignedCoordinator: true,
+      }),
+    ).toEqual({ permitted: true });
+    expect(
+      decide({
+        role: `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
+      }),
+    ).toEqual({
       permitted: false,
       reason: "ASSIGNMENT_MISSING",
     });

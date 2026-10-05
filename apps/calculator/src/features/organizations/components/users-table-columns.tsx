@@ -98,7 +98,11 @@ export function UserTableColumns(
       ),
       cell: (info) => (
         <Badge
-          variant={String(info.getValue()) === ORGANIZATION_ROLES.OrganizationOwner ? "default" : "secondary"}
+          variant={
+            String(info.getValue()) === ORGANIZATION_ROLES.OrganizationOwner
+              ? "default"
+              : "secondary"
+          }
         >
           {tRoles(String(info.getValue()))}
         </Badge>

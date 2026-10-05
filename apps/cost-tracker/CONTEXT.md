@@ -37,7 +37,7 @@ An app-owned token that is **not** bound to an email address; anyone holding it 
 _Avoid_: Participant Invitation, Organization Invitation, bearer token
 
 **Organization Invitation**:
-A Better Auth invitation into an Organization role (`owner`, `admin`) for colleagues. Better Auth's fallback role value `member` is forbidden (ADR-0012); it must never be invited, assigned, or seeded. It carries no Project Partnership bridge and grants no Participant access.
+A Better Auth invitation into an Organization role (`owner`, `admin`) for colleagues. Only defined shared role values may be invited, assigned, or seeded (ADR-0019); staff invitations remain limited to `owner` and `admin`. It carries no Project Partnership bridge and grants no Participant access.
 _Avoid_: Participant Invitation, Participant Registration Link
 
 **Review Task**:

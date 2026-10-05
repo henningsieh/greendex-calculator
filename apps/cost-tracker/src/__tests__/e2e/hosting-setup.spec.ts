@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import { member, organization, projectsTable } from "@greendex/database/schema";
 import { type Page } from "@playwright/test";
@@ -187,7 +187,9 @@ test.describe.serial("Hosting Organization journey section 1", () => {
         .select({ role: member.role })
         .from(member)
         .where(eq(member.id, membershipId));
-      expect(createdMembership?.role).toBe(`${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`);
+      expect(createdMembership?.role).toBe(
+        `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
+      );
       await page.goto("/projects");
       await expect(page.getByRole("link", { name: projectName })).toBeVisible();
       await page.goto(projectURL);

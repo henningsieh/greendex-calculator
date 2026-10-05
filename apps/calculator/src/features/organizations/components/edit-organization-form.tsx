@@ -1,12 +1,12 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
-import { useTranslations } from "@greendex/i18n/client";
 import { CountrySelect } from "@/components/country-select";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,7 +142,13 @@ export function EditOrganizationForm() {
                 <FormItem>
                   <FormLabel>{t("label")}</FormLabel>
                   <FormControl>
-                    <CountrySelect euOnly value={field.value} onValueChange={field.onChange} placeholder={t("placeholder")} disabled={form.formState.isSubmitting} />
+                    <CountrySelect
+                      euOnly
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder={t("placeholder")}
+                      disabled={form.formState.isSubmitting}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

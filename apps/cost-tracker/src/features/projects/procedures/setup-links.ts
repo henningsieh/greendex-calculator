@@ -1,7 +1,7 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomBytes } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
@@ -9,7 +9,7 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable,
 } from "@greendex/database/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
@@ -82,6 +82,7 @@ export const listSetupLinks = authorized
         projectName: z.string(),
         recipientEmail: z.string(),
         enabled: z.boolean(),
+        expired: z.boolean(),
         expiresAt: z.date(),
         consumedAt: z.date().nullable(),
       }),
@@ -94,6 +95,7 @@ export const listSetupLinks = authorized
         projectName: projectsTable.name,
         recipientEmail: links.recipientEmail,
         enabled: links.enabled,
+        expired: sql<boolean>`${links.expiresAt} <= current_timestamp`,
         expiresAt: links.expiresAt,
         consumedAt: links.consumedAt,
       })
@@ -167,7 +169,10 @@ export const consumeSetupLink = authorized
           ),
         )
         .limit(1);
-      if (!ownership || !hasOrganizationRole(ownership.role, ORGANIZATION_ROLES.OrganizationOwner))
+      if (
+        !ownership ||
+        !hasOrganizationRole(ownership.role, ORGANIZATION_ROLES.OrganizationOwner)
+      )
         throw createSituationErrors(errors).organizationOwnerRequired();
       if (link.partnershipId) {
         const [previous] = await tx

@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
@@ -152,7 +152,8 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       password: await hashPassword(password),
     });
     await db.insert(organization).values(
-      organizationIds.map((id) => ({ country: "DE" as const,
+      organizationIds.map((id) => ({
+        country: "DE" as const,
         id,
         name:
           id === ids.host

@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-import "server-only";
 import { addOrganizationRole, hasOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, createAuthEndpoint } from "better-auth/api";
 import { getOrgAdapter, type Member } from "better-auth/plugins/organization";
@@ -59,7 +59,10 @@ const grantParticipantMembership = createAuthEndpoint(
     if (membership.role !== ctx.body.expectedRole) throw staleMembership();
     // ADR-0012: the fallback role is forbidden everywhere in Cost Tracker, so
     // the combined role runs through the same gate as every native role write.
-    const newRole = addOrganizationRole(membership.role, ORGANIZATION_ROLES.Participant);
+    const newRole = addOrganizationRole(
+      membership.role,
+      ORGANIZATION_ROLES.Participant,
+    );
     const organization = await adapter.findOrganizationById(
       ctx.body.organizationId,
     );

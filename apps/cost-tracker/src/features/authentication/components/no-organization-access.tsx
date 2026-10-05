@@ -1,7 +1,7 @@
 "use client";
 
-import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { Dialog } from "@base-ui/react/dialog";
+import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { Building2Icon, LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
@@ -102,10 +102,29 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
                     {error && <FieldError>{error}</FieldError>}
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="organization-country">Organization country</FieldLabel>
-                    <select id="organization-country" required disabled={pending} value={country} onChange={(event) => setCountry(event.target.value as EUCountryCode)} className="w-full rounded-md border bg-background px-3 py-2 text-sm">
-                      <option value="" disabled>Select an EU country</option>
-                      {EU_COUNTRIES.map(({ code }) => <option key={code} value={code}>{new Intl.DisplayNames(["en"], { type: "region" }).of(code)}</option>)}
+                    <FieldLabel htmlFor="organization-country">
+                      Organization country
+                    </FieldLabel>
+                    <select
+                      id="organization-country"
+                      required
+                      disabled={pending}
+                      value={country}
+                      onChange={(event) =>
+                        setCountry(event.target.value as EUCountryCode)
+                      }
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="" disabled>
+                        Select an EU country
+                      </option>
+                      {EU_COUNTRIES.map(({ code }) => (
+                        <option key={code} value={code}>
+                          {new Intl.DisplayNames(["en"], { type: "region" }).of(
+                            code,
+                          )}
+                        </option>
+                      ))}
                     </select>
                   </Field>
                   <div className="flex justify-end gap-3">
@@ -114,7 +133,10 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
                     >
                       Cancel
                     </Dialog.Close>
-                    <Button disabled={pending || !slugify(name) || !country} type="submit">
+                    <Button
+                      disabled={pending || !slugify(name) || !country}
+                      type="submit"
+                    >
                       {pending && (
                         <LoaderCircleIcon
                           className="animate-spin"

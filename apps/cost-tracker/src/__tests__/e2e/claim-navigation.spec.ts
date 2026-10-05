@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
@@ -179,13 +179,15 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       });
     }
     await db.insert(organization).values([
-      { country: "DE",
+      {
+        country: "DE",
         id: ids.host,
         name: `CT ${suffix} Hosting`,
         slug: ids.host,
         createdAt: now,
       },
-      { country: "DE",
+      {
+        country: "DE",
         id: ids.partner,
         name: `CT ${suffix} Partner`,
         slug: ids.partner,

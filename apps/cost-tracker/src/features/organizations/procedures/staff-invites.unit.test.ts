@@ -1,8 +1,8 @@
 // @vitest-environment node
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -59,7 +59,8 @@ async function invitationStatus(id: string) {
 describe("organizations staff invites", () => {
   beforeAll(async () => {
     const now = new Date();
-    await db.insert(organization).values({ country: "DE",
+    await db.insert(organization).values({
+      country: "DE",
       id: orgId,
       name: orgId,
       slug: orgId,
@@ -87,8 +88,14 @@ describe("organizations staff invites", () => {
       [adminId, ORGANIZATION_ROLES.OrganizationAdmin],
       [memberId, ORGANIZATION_ROLES.ProjectCoordinator],
       [participantId, ORGANIZATION_ROLES.Participant],
-      [hybridAdminId, `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`],
-      [hybridMemberId, `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`],
+      [
+        hybridAdminId,
+        `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+      ],
+      [
+        hybridMemberId,
+        `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+      ],
     ];
     for (const [userId, role] of memberships) {
       await db.insert(member).values({
@@ -206,14 +213,18 @@ describe("organizations staff invites", () => {
       await expect(
         client.organizations.inviteMember({
           email: "staff-target@example.org",
-          role: role as "admin",
+          role: role as typeof ORGANIZATION_ROLES.OrganizationAdmin,
         }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     }
     expect(authMocks.createInvitation).not.toHaveBeenCalled();
   });
 
-  it.each(["invalid-role", "owner,invalid-role", "invalid-role,participant"])(
+  it.each([
+    "invalid-role",
+    `${ORGANIZATION_ROLES.OrganizationOwner},invalid-role`,
+    `invalid-role,${ORGANIZATION_ROLES.Participant}`,
+  ])(
     "rejects banned invitation role %s before calling Better Auth",
     async (role) => {
       session(ownerId);
@@ -227,8 +238,7 @@ describe("organizations staff invites", () => {
         data: {
           issues: expect.arrayContaining([
             expect.objectContaining({
-              message:
-                "Use a defined Organization role.",
+              message: "Use a defined Organization role.",
             }),
           ]),
         },
@@ -250,7 +260,10 @@ describe("organizations staff invites", () => {
         email: "New-Admin@Example.org",
         role: ORGANIZATION_ROLES.OrganizationAdmin,
       }),
-    ).resolves.toMatchObject({ invitationId, role: ORGANIZATION_ROLES.OrganizationAdmin });
+    ).resolves.toMatchObject({
+      invitationId,
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
+    });
     expect(authMocks.createInvitation).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
@@ -400,7 +413,8 @@ describe("organizations staff invites", () => {
     const otherOrgId = `staff-other-org-${suffix}`;
     const otherInvitationId = randomUUID();
     const now = new Date();
-    await db.insert(organization).values({ country: "DE",
+    await db.insert(organization).values({
+      country: "DE",
       id: otherOrgId,
       name: otherOrgId,
       slug: otherOrgId,

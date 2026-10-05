@@ -1,4 +1,3 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
 import {
@@ -7,6 +6,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
@@ -281,13 +281,15 @@ test.describe.serial("Claim review journey 25–26", () => {
       })),
     );
     await db.insert(organization).values([
-      { country: "DE",
+      {
+        country: "DE",
         id: ids.host,
         name: `CT ${suffix} Hosting`,
         slug: ids.host,
         createdAt: now,
       },
-      ...ids.partners.map((id, index) => ({ country: "DE" as const,
+      ...ids.partners.map((id, index) => ({
+        country: "DE" as const,
         id,
         name: partnerNames[index]!,
         slug: id,
@@ -699,7 +701,10 @@ test.describe.serial("Claim review journey 25–26", () => {
       eq(member.organizationId, ids.host),
     );
     try {
-      await db.update(member).set({ role: ORGANIZATION_ROLES.Participant }).where(membership);
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.Participant })
+        .where(membership);
       expect((await host.request.get(url)).status()).toBe(403);
       await db
         .update(member)
@@ -721,7 +726,10 @@ test.describe.serial("Claim review journey 25–26", () => {
             eq(hostAssignments.userId, actors.H.id),
           ),
         );
-      await db.update(member).set({ role: ORGANIZATION_ROLES.OrganizationOwner }).where(membership);
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
+        .where(membership);
     }
   });
 

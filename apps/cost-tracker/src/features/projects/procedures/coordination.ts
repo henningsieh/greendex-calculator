@@ -1,5 +1,5 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { hasOrganizationRole } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
@@ -62,7 +62,9 @@ export async function requireHostCoordination(
     hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)
   )
     return project;
-  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)) {
+  if (
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
+  ) {
     const [assignment] = await executor
       .select({ userId: hostAssignments.userId })
       .from(hostAssignments)
@@ -119,7 +121,9 @@ export async function requirePartnerCoordination(
     hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)
   )
     return scope;
-  if (!hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator))
+  if (
+    !hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
+  )
     throw situation.partnerCoordinationRequired();
   if (activeOrganizationId === scope.partnerId) {
     const [assignment] = await db
@@ -198,7 +202,11 @@ export const assignPartnerCoordinator = authorized
       !target.role
         .split(",")
         .some((role) =>
-          [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin, ORGANIZATION_ROLES.ProjectCoordinator].some((knownRole) => knownRole === role.trim()),
+          [
+            ORGANIZATION_ROLES.OrganizationOwner,
+            ORGANIZATION_ROLES.OrganizationAdmin,
+            ORGANIZATION_ROLES.ProjectCoordinator,
+          ].some((knownRole) => knownRole === role.trim()),
         )
     )
       throw situation.coordinatorSelectionRequired();

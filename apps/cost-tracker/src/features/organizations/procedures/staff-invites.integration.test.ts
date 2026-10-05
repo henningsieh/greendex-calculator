@@ -1,8 +1,8 @@
 // @vitest-environment node
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -24,7 +24,7 @@ const emailMocks = vi.hoisted(() => ({
 vi.mock("@/lib/email", () => ({ emailSender: emailMocks }));
 vi.mock("server-only", () => ({}));
 
-import { BANNED_ROLE_MESSAGE } from "@/features/organizations/roles";
+import { INVALID_ROLE_MESSAGE } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
 import { router } from "@/lib/orpc/router";
 
@@ -89,7 +89,11 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       uniqueEmail("ban-owner"),
     );
     const created = await auth.api.createOrganization({
-      body: { country: "DE" as const, name: `Ban Org ${randomUUID()}`, slug: `ban-${randomUUID()}` },
+      body: {
+        country: "DE" as const,
+        name: `Ban Org ${randomUUID()}`,
+        slug: `ban-${randomUUID()}`,
+      },
       headers: ownerHeaders,
     });
     createdOrganizationIds.push(created.id);
@@ -114,7 +118,10 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       context: async () => ({ headers: ownerHeaders }),
     });
     // Deliberately send invalid runtime values past the compile-time role union.
-    for (const role of ["invalid-role", "owner,invalid-role"] as const) {
+    for (const role of [
+      "invalid-role",
+      `${ORGANIZATION_ROLES.OrganizationOwner},invalid-role`,
+    ] as const) {
       await expect(
         auth.api.createInvitation({
           body: {
@@ -126,7 +133,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
         }),
       ).rejects.toMatchObject({
         statusCode: 400,
-        body: { message: BANNED_ROLE_MESSAGE },
+        body: { message: INVALID_ROLE_MESSAGE },
       });
       await expect(
         auth.api.addMember({
@@ -138,7 +145,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
         }),
       ).rejects.toMatchObject({
         statusCode: 400,
-        body: { message: BANNED_ROLE_MESSAGE },
+        body: { message: INVALID_ROLE_MESSAGE },
       });
       await expect(
         auth.api.updateMemberRole({
@@ -168,7 +175,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       }),
     ).rejects.toMatchObject({
       statusCode: 400,
-      body: { message: "[body.role] Invalid input" },
+      body: { message: expect.stringContaining("[body.role] Invalid input") },
     });
     expect(
       await db
@@ -202,7 +209,8 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       uniqueEmail("resend-owner"),
     );
     const created = await auth.api.createOrganization({
-      body: { country: "DE" as const,
+      body: {
+        country: "DE" as const,
         name: `Resend Org ${randomUUID()}`,
         slug: `resend-${randomUUID()}`,
       },
@@ -211,7 +219,11 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     createdOrganizationIds.push(created.id);
     const email = uniqueEmail("resend-target");
     const pending = await auth.api.createInvitation({
-      body: { organizationId: created.id, email, role: ORGANIZATION_ROLES.OrganizationAdmin },
+      body: {
+        organizationId: created.id,
+        email,
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
+      },
       headers,
     });
     const expiresAt = new Date(Date.now() + 60_000);
@@ -220,7 +232,10 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       .set({ expiresAt })
       .where(eq(invitation.id, pending.id));
     emailMocks.sendOrganizationInvitation.mockClear();
-    for (const role of ["invalid-role", [ORGANIZATION_ROLES.OrganizationAdmin, "invalid-role"]]) {
+    for (const role of [
+      "invalid-role",
+      [ORGANIZATION_ROLES.OrganizationAdmin, "invalid-role"],
+    ]) {
       await expect(
         auth.api.createInvitation({
           body: {
@@ -233,7 +248,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
         }),
       ).rejects.toMatchObject({
         statusCode: 400,
-        body: { message: BANNED_ROLE_MESSAGE },
+        body: { message: INVALID_ROLE_MESSAGE },
       });
     }
     // Model a legacy pending row in-memory only: never seed a forbidden value.
@@ -254,7 +269,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
         }),
       ).rejects.toMatchObject({
         statusCode: 400,
-        body: { message: BANNED_ROLE_MESSAGE },
+        body: { message: INVALID_ROLE_MESSAGE },
       });
       expect(pendingRead).toHaveBeenCalledWith(
         expect.objectContaining({ model: "invitation" }),
@@ -272,7 +287,12 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     ).toEqual({ role: ORGANIZATION_ROLES.OrganizationAdmin, expiresAt });
     expect(emailMocks.sendOrganizationInvitation).not.toHaveBeenCalled();
     await auth.api.createInvitation({
-      body: { organizationId: created.id, email, role: ORGANIZATION_ROLES.OrganizationAdmin, resend: true },
+      body: {
+        organizationId: created.id,
+        email,
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
+        resend: true,
+      },
       headers,
     });
     expect(emailMocks.sendOrganizationInvitation).toHaveBeenCalledTimes(1);
@@ -290,7 +310,11 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     const ownerEmail = uniqueEmail(ORGANIZATION_ROLES.OrganizationOwner);
     const ownerHeaders = await signUpVerified("Staff Owner", ownerEmail);
     const created = await auth.api.createOrganization({
-      body: { country: "DE" as const, name: `Staff Org ${randomUUID()}`, slug: `staff-${randomUUID()}` },
+      body: {
+        country: "DE" as const,
+        name: `Staff Org ${randomUUID()}`,
+        slug: `staff-${randomUUID()}`,
+      },
       headers: ownerHeaders,
     });
     createdOrganizationIds.push(created.id);
@@ -307,7 +331,10 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       email: memberEmail,
       role: ORGANIZATION_ROLES.OrganizationAdmin,
     });
-    expect(invited).toMatchObject({ email: memberEmail, role: ORGANIZATION_ROLES.OrganizationAdmin });
+    expect(invited).toMatchObject({
+      email: memberEmail,
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
+    });
     expect(emailMocks.sendOrganizationInvitation).toHaveBeenCalledWith(
       expect.objectContaining({ email: memberEmail }),
     );
@@ -432,7 +459,8 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     const ownerEmail = uniqueEmail("bypass-owner");
     const ownerHeaders = await signUpVerified("Bypass Owner", ownerEmail);
     const created = await auth.api.createOrganization({
-      body: { country: "DE" as const,
+      body: {
+        country: "DE" as const,
         name: `Bypass Org ${randomUUID()}`,
         slug: `bypass-${randomUUID()}`,
       },
@@ -471,7 +499,8 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     const ownerEmail = uniqueEmail("admin-owner");
     const ownerHeaders = await signUpVerified("Admin Owner", ownerEmail);
     const created = await auth.api.createOrganization({
-      body: { country: "DE" as const,
+      body: {
+        country: "DE" as const,
         name: `Admin Org ${randomUUID()}`,
         slug: `admin-${randomUUID()}`,
       },

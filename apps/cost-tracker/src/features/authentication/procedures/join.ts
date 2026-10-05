@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-import "server-only";
 import { addOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
@@ -181,7 +181,10 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           actor: context.user.id,
           linkId: input.source.kind === "link" ? input.source.id : invitationId,
           previousRole: membership.role,
-          newRole: addOrganizationRole(membership.role, ORGANIZATION_ROLES.Participant),
+          newRole: addOrganizationRole(
+            membership.role,
+            ORGANIZATION_ROLES.Participant,
+          ),
           at: new Date().toISOString(),
         });
       }

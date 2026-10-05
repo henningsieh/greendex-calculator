@@ -96,7 +96,9 @@ describe("Organization team", () => {
     expect(await screen.findByText("Staff Owner")).toBeTruthy();
     expect(screen.getByText("hybrid@example.org")).toBeTruthy();
     expect(screen.getByText("pending@example.org")).toBeTruthy();
-    expect(screen.getAllByText(ORGANIZATION_ROLES.Participant).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(ORGANIZATION_ROLES.Participant).length,
+    ).toBeGreaterThan(0);
   });
 
   it("sends an invitation and refreshes the lists", async () => {

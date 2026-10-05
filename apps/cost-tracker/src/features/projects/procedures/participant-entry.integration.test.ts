@@ -1,12 +1,12 @@
 // @vitest-environment node
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
 import {
   costTrackerOrganizationRoles,
   parseOrganizationRoles,
 } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { evaluateProjectScopeAccess } from "@greendex/auth/project-authorization";
 import { db } from "@greendex/database";
 import {
@@ -173,8 +173,20 @@ beforeAll(async () => {
   ]);
   await db.insert(organization).values([
     { country: "DE", id: host, name: "Entry Host", slug: host, createdAt: now },
-    { country: "DE", id: partner, name: "Entry Partner", slug: partner, createdAt: now },
-    { country: "DE", id: otherPartner, name: "Entry Other", slug: otherPartner, createdAt: now },
+    {
+      country: "DE",
+      id: partner,
+      name: "Entry Partner",
+      slug: partner,
+      createdAt: now,
+    },
+    {
+      country: "DE",
+      id: otherPartner,
+      name: "Entry Other",
+      slug: otherPartner,
+      createdAt: now,
+    },
   ]);
   await db.insert(projects).values({
     id: project,
@@ -263,7 +275,10 @@ describe("Project-scope participant entry authorization", () => {
   it.each([
     { role: ORGANIZATION_ROLES.OrganizationOwner, permitted: true },
     { role: ORGANIZATION_ROLES.OrganizationAdmin, permitted: true },
-    { role: `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`, permitted: true },
+    {
+      role: `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+      permitted: true,
+    },
     { role: ORGANIZATION_ROLES.Participant, permitted: false },
     { role: ORGANIZATION_ROLES.ProjectCoordinator, permitted: false },
   ])(
@@ -471,7 +486,10 @@ describe("Participant details authorization", () => {
     return row.id;
   }
 
-  it.each([ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin])(
+  it.each([
+    ORGANIZATION_ROLES.OrganizationOwner,
+    ORGANIZATION_ROLES.OrganizationAdmin,
+  ])(
     "serves a Partner Organization %s the details and lets them correct country",
     async (role) => {
       const id = await seedParticipation();

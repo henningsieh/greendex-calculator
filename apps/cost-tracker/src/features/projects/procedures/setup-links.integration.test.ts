@@ -1,7 +1,7 @@
-// @vitest-environment node
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -62,7 +62,13 @@ beforeAll(async () => {
   });
   await db.insert(organization).values([
     { country: "DE", id: hostId, slug: hostId, name: "Host", createdAt: now },
-    { country: "DE", id: partnerId, slug: partnerId, name: "Partner", createdAt: now },
+    {
+      country: "DE",
+      id: partnerId,
+      slug: partnerId,
+      name: "Partner",
+      createdAt: now,
+    },
   ]);
   await db.insert(member).values([
     {
@@ -190,11 +196,15 @@ describe("Partner Organization setup links", () => {
     expect(unchanged?.partnershipId).toBeNull();
   });
 
-  it.each([`${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`, `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`])(
+  it.each([
+    `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`,
+    `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+  ])(
     "offers and consumes an existing Organization with %s membership",
     async (role) => {
       const combinedOrgId = `setup-combined-${role}-${id}`;
-      await db.insert(organization).values({ country: "DE",
+      await db.insert(organization).values({
+        country: "DE",
         id: combinedOrgId,
         slug: combinedOrgId,
         name: `Combined ${role}`,
@@ -279,7 +289,8 @@ describe("Partner Organization setup links", () => {
     // created beforehand through the supported Better Auth flow (ADR-0013),
     // so consuming the link must not add Organization or Membership rows.
     const freshOrgId = `setup-bind-${randomUUID()}`;
-    await db.insert(organization).values({ country: "DE",
+    await db.insert(organization).values({
+      country: "DE",
       id: freshOrgId,
       slug: freshOrgId,
       name: "Bind Target",
@@ -327,7 +338,8 @@ describe("Partner Organization setup links", () => {
     const raceOrgId = `setup-race-${randomUUID()}`;
     const rivalOrgId = `setup-rival-${randomUUID()}`;
     for (const organizationId of [raceOrgId, rivalOrgId]) {
-      await db.insert(organization).values({ country: "DE",
+      await db.insert(organization).values({
+        country: "DE",
         id: organizationId,
         slug: organizationId,
         name: `Race ${organizationId}`,

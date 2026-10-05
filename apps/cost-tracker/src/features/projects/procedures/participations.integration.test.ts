@@ -1,7 +1,7 @@
-// @vitest-environment node
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -97,7 +97,13 @@ beforeAll(async () => {
   ]);
   await db.insert(organization).values([
     { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    { country: "FR", id: partner, name: "Partner", slug: partner, createdAt: now },
+    {
+      country: "FR",
+      id: partner,
+      name: "Partner",
+      slug: partner,
+      createdAt: now,
+    },
     { country: "IT", id: other, name: "Other", slug: other, createdAt: now },
   ]);
   await db.insert(member).values([
@@ -1017,7 +1023,10 @@ describe("read-only Hosting Participant report", () => {
       projectId: project,
     });
 
-    expect(report.organizations.map(({ country }) => country)).toEqual(["IT", "FR"]);
+    expect(report.organizations.map(({ country }) => country)).toEqual([
+      "IT",
+      "FR",
+    ]);
     expect(report.agreement).toEqual({
       versionId: version.id,
       published: true,

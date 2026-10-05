@@ -1,8 +1,8 @@
 // @vitest-environment node
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   claimsTable,
@@ -139,8 +139,15 @@ beforeAll(async () => {
   ]);
   await db.insert(organization).values([
     { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    { country: "DE", id: partner, name: "Partner", slug: partner, createdAt: now },
-    { country: "DE",
+    {
+      country: "DE",
+      id: partner,
+      name: "Partner",
+      slug: partner,
+      createdAt: now,
+    },
+    {
+      country: "DE",
       id: otherPartner,
       name: "Other partner",
       slug: otherPartner,
@@ -504,7 +511,9 @@ describe("Participant onboarding procedures", () => {
       agreement: { accepted: true },
     });
     expect(joined.participationId).toBeTruthy();
-    expect(await memberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
     expect(await client.participantOnboarding.listMyProjects()).toEqual([
       {
         participationId: joined.participationId,
@@ -699,17 +708,25 @@ describe("Participant onboarding procedures", () => {
       });
       await join();
       expect(await memberships()).toEqual([
-        { role: role === ORGANIZATION_ROLES.ProjectCoordinator ? `${role},participant` : role },
+        {
+          role:
+            role === ORGANIZATION_ROLES.ProjectCoordinator
+              ? `${role},participant`
+              : role,
+        },
       ]);
     }
     expect(authMocks.addMember).not.toHaveBeenCalled();
     expect(authMocks.grantParticipantMembership).toHaveBeenCalledTimes(1);
     // ADR-0012: fallback roles are refused in memory, never seeded or upgraded.
-    for (const bannedRole of ["invalid-role", "invalid-role,coordinator"]) {
+    for (const invalidRole of [
+      "invalid-role",
+      `invalid-role,${ORGANIZATION_ROLES.ProjectCoordinator}`,
+    ]) {
       let refusal: unknown;
       try {
         requireCostTrackerRole(
-          bannedRole,
+          invalidRole,
           (options) => new ORPCError("BAD_REQUEST", options),
         );
       } catch (error) {
@@ -718,8 +735,7 @@ describe("Participant onboarding procedures", () => {
       expect(refusal).toMatchObject({
         code: "BAD_REQUEST",
         status: 400,
-        message:
-          "Use a defined Organization role.",
+        message: "Use a defined Organization role.",
       });
     }
   });
@@ -761,7 +777,9 @@ describe("Participant onboarding procedures", () => {
     expect(rows).toHaveLength(1);
     expect(new Set(participationIds)).toEqual(new Set([rows[0]!.id]));
     expect(await memberships()).toEqual([
-      { role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}` },
+      {
+        role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+      },
     ]);
     expect(authMocks.addMember).not.toHaveBeenCalled();
   });
@@ -805,7 +823,9 @@ describe("Participant onboarding procedures", () => {
     const retried = await client.participantOnboarding.join(input);
     expect(retried.participationId).toBeTruthy();
     expect(await memberships()).toEqual([
-      { role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}` },
+      {
+        role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+      },
     ]);
   });
 
@@ -970,7 +990,9 @@ describe("Participant onboarding procedures", () => {
         agreement: { accepted: true },
       }),
     ).resolves.toHaveProperty("participationId");
-    expect(await memberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
   });
 
   it("keeps a Partner Organization's invitation with its issuer, including against Hosting staff", async () => {
@@ -1183,7 +1205,9 @@ describe("Participant onboarding procedures", () => {
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
-    expect(await memberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
     ).toHaveLength(0);
@@ -1565,7 +1589,9 @@ describe("Participant onboarding procedures", () => {
           .where(eq(entryTokens.id, issued.invitationId))
       )[0]?.status,
     ).toBe("accepted");
-    expect(await memberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
   });
 
   it("persists the EU country on the Project Participation when joining through a reusable link", async () => {

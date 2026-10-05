@@ -54,7 +54,8 @@ beforeAll(async () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-  await db.insert(organization).values({ country: "DE",
+  await db.insert(organization).values({
+    country: "DE",
     id: organizationId,
     name: "Shared Travel Contract Organization",
     slug: `shared-travel-${organizationId}`,
@@ -69,7 +70,8 @@ beforeAll(async () => {
     country: "DE" as EUCountryCode,
     organizationId,
   });
-  await db.insert(organization).values({ country: "DE",
+  await db.insert(organization).values({
+    country: "DE",
     id: foreignOrganizationId,
     name: "Foreign Shared Travel Organization",
     slug: `foreign-shared-travel-${foreignOrganizationId}`,

@@ -19,7 +19,13 @@ export const metadata: Metadata = { title: "Organization" };
 async function OrganizationTeamSection({ email }: { email: string }) {
   const queryClient = getQueryClient();
   await Promise.all([
-    queryClient.query(orpcQuery.organizations.getSettings.queryOptions({ meta: { costTrackerORPC: true } })).catch(swallowPrefetchError),
+    queryClient
+      .query(
+        orpcQuery.organizations.getSettings.queryOptions({
+          meta: { costTrackerORPC: true },
+        }),
+      )
+      .catch(swallowPrefetchError),
     queryClient
       .query(
         orpcQuery.organizations.listMembers.queryOptions({

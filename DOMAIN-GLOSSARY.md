@@ -7,7 +7,7 @@ Greendex shares Organization, Project, and participation identities across appli
 ## Language
 
 **Organization**:
-A group that manages its own Users and Projects. An Organization may also be assigned to a Project as a Partner Organization through a Project Partnership.
+A group based in exactly one EU country (`country`, a required EU code) that manages its own Users and Projects. An Organization may also be assigned to a Project as a Partner Organization through a Project Partnership.
 
 **User**:
 A person with a Greendex login. A User may hold several roles in several Organizations and may be linked to several Project Participations.
@@ -15,7 +15,7 @@ _Avoid_: Participant (when referring only to login identity)
 
 **Organization Membership**:
 A User's membership in one Organization. A Membership may assign several distinct Organization-level roles to the User.
-In Cost Tracker, Better Auth's fallback role value `member` is forbidden: never invite, assign, or seed it, including in combined roles. Use the defined `owner`, `admin`, `project-coordinator`, or `participant` role with its proper scope. Library table/field names and ordinary Membership wording are unaffected. See [ADR-0012](docs/adr/0012-ban-fallback-member-role-in-cost-tracker.md).
+Both apps use only the defined `owner`, `admin`, `coordinator`, and `participant` values. Role lists derive from the shared auth constants; unknown or omitted role grants are refused. Library table/field names and ordinary Membership wording are unaffected. See [ADR-0019](docs/adr/0019-require-organization-country-and-synchronize-role-values.md).
 _Avoid_: Project Participation
 
 **Organization Owner**:
@@ -27,7 +27,7 @@ A User with Better Auth role `admin` and Organization-wide administrative author
 _Avoid_: Project Coordinator, Owner
 
 **Project Coordinator**:
-A User with Better Auth role `project-coordinator` and one explicit assignment. The assignment sets the scope: a Project assignment scopes work to that Project's Hosting Organization; a Project Partnership assignment scopes work to that Partnership's Partner Organization. The role alone grants neither Organization-wide authority nor access to an unassigned Project. UI wording differs by scope: `Project Coordinator` for Hosting Organization scope, `Group Organizer` for Partner Organization scope.
+A User with Better Auth role `coordinator` and one explicit assignment. The assignment sets the scope: a Project assignment scopes work to that Project's Hosting Organization; a Project Partnership assignment scopes work to that Partnership's Partner Organization. In Cost Tracker, the role alone grants neither Organization-wide authority nor access to an unassigned Project. Calculator recognizes the stored value but grants it no permissions yet. UI wording differs by scope: `Project Coordinator` for Hosting Organization scope, `Group Organizer` for Partner Organization scope.
 _Avoid_: Organization Admin, Employee, Project Manager, Coordinator
 
 **Participant Role**:

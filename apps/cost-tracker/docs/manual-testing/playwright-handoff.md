@@ -8,7 +8,7 @@ spec updates below.
 
 ## What was actually broken (and fixed)
 
-1. **Assigned coordinators were invisible.** A pure `project-coordinator`
+1. **Assigned coordinators were invisible.** A pure `coordinator`
    saw an empty `/projects` with no click path (list/detail procedures only
    understood owner/admin roles), while assignment-scoped workspace
    procedures worked via direct URL. Front door and back door disagreed.

@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
@@ -254,7 +254,12 @@ async function assertJoined(
   projectId = ids.main,
 ) {
   expect(await membershipRole(actor, ids.host)).toEqual([
-    { role: actor === "Q" ? `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}` : ORGANIZATION_ROLES.Participant },
+    {
+      role:
+        actor === "Q"
+          ? `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`
+          : ORGANIZATION_ROLES.Participant,
+    },
   ]);
   expect(await membershipRole(actor, partnerId)).toHaveLength(0);
   expect(
@@ -305,9 +310,27 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     }
     const now = new Date();
     await db.insert(organization).values([
-      { country: "DE", id: ids.host, name: names.host, slug: ids.host, createdAt: now },
-      { country: "DE", id: ids.partner, name: names.partner, slug: ids.partner, createdAt: now },
-      { country: "DE", id: ids.foreign, name: names.foreign, slug: ids.foreign, createdAt: now },
+      {
+        country: "DE",
+        id: ids.host,
+        name: names.host,
+        slug: ids.host,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.partner,
+        name: names.partner,
+        slug: ids.partner,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.foreign,
+        name: names.foreign,
+        slug: ids.foreign,
+        createdAt: now,
+      },
     ]);
     await db.insert(member).values([
       {

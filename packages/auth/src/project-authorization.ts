@@ -78,7 +78,10 @@ export function evaluateProjectScopeAccess(
   if (!role) return { permitted: false, reason: "MISSING_MEMBERSHIP" };
   if (!mayCreateParticipation)
     return { permitted: false, reason: "PERMISSION_MISSING" };
-  if (hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) || hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin))
+  if (
+    hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) ||
+    hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
+  )
     return { permitted: true };
   return assignedCoordinator
     ? { permitted: true }

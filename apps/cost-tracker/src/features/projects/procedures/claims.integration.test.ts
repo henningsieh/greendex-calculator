@@ -1,7 +1,7 @@
-// @vitest-environment node
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -69,7 +69,13 @@ beforeAll(async () => {
   ]);
   await db.insert(organization).values([
     { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    { country: "DE", id: partner, name: "Partner", slug: partner, createdAt: now },
+    {
+      country: "DE",
+      id: partner,
+      name: "Partner",
+      slug: partner,
+      createdAt: now,
+    },
     { country: "DE", id: other, name: "Other", slug: other, createdAt: now },
   ]);
   await db.insert(member).values([

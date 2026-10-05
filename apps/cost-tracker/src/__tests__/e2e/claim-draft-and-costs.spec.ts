@@ -1,7 +1,7 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import {
   getTravelFundingRate,
   TRAVEL_FUNDING_RULES,
@@ -168,13 +168,15 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       password: await hashPassword(password),
     });
     await db.insert(organization).values([
-      { country: "DE",
+      {
+        country: "DE",
         id: hostId,
         name: `CT ${suffix} Hosting`,
         slug: `ct-${suffix}-host`,
         createdAt: now,
       },
-      { country: "DE",
+      {
+        country: "DE",
         id: partnerId,
         name: `CT ${suffix} Partner`,
         slug: `ct-${suffix}-partner`,

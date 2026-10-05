@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { headers } from "next/headers";
 
 import { assignedPartnershipIds } from "@/features/projects/procedures/assigned-partnerships";
@@ -27,7 +27,8 @@ export async function canManageOrganization(): Promise<boolean> {
     );
     const role = membership?.role ?? "";
     return (
-      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) || hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
+      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) ||
+      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
     );
   } catch {
     return false;

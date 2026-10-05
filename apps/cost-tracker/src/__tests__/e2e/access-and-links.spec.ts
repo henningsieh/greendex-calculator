@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
@@ -219,9 +219,27 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     }
     const now = new Date();
     await db.insert(organization).values([
-      { country: "DE", id: ids.host, name: names.host, slug: ids.host, createdAt: now },
-      { country: "DE", id: ids.partner, name: names.partner, slug: ids.partner, createdAt: now },
-      { country: "DE", id: ids.foreign, name: names.foreign, slug: ids.foreign, createdAt: now },
+      {
+        country: "DE",
+        id: ids.host,
+        name: names.host,
+        slug: ids.host,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.partner,
+        name: names.partner,
+        slug: ids.partner,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.foreign,
+        name: names.foreign,
+        slug: ids.foreign,
+        createdAt: now,
+      },
     ]);
     await db.insert(member).values([
       {
@@ -449,7 +467,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
           .select({ role: member.role, organizationId: member.organizationId })
           .from(member)
           .where(eq(member.userId, actors.T.id)),
-      ).toEqual([{ role: ORGANIZATION_ROLES.Participant, organizationId: ids.host }]);
+      ).toEqual([
+        { role: ORGANIZATION_ROLES.Participant, organizationId: ids.host },
+      ]);
       expect(
         await db
           .select({

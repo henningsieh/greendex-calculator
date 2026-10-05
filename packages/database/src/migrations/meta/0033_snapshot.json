@@ -110,12 +110,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -218,12 +214,8 @@
           "name": "invitation_organization_id_organization_id_fk",
           "tableFrom": "invitation",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -231,12 +223,8 @@
           "name": "invitation_inviter_id_user_id_fk",
           "tableFrom": "invitation",
           "tableTo": "user",
-          "columnsFrom": [
-            "inviter_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["inviter_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -320,12 +308,8 @@
           "name": "member_organization_id_organization_id_fk",
           "tableFrom": "member",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -333,12 +317,8 @@
           "name": "member_user_id_user_id_fk",
           "tableFrom": "member",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -403,9 +383,7 @@
         "organization_slug_unique": {
           "name": "organization_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -500,12 +478,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -515,9 +489,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -581,9 +553,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -728,12 +698,8 @@
           "name": "claim_history_claim_id_claim_id_fk",
           "tableFrom": "claim_history",
           "tableTo": "claim",
-          "columnsFrom": [
-            "claim_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["claim_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -741,12 +707,8 @@
           "name": "claim_history_actor_user_id_user_id_fk",
           "tableFrom": "claim_history",
           "tableTo": "user",
-          "columnsFrom": [
-            "actor_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -813,12 +775,8 @@
           "name": "claim_partnership_id_project_partner_organization_id_fk",
           "tableFrom": "claim",
           "tableTo": "project_partner_organization",
-          "columnsFrom": [
-            "partnership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["partnership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -828,9 +786,7 @@
         "claim_partnership_id_unique": {
           "name": "claim_partnership_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "partnership_id"
-          ]
+          "columns": ["partnership_id"]
         }
       },
       "policies": {},
@@ -893,12 +849,8 @@
           "name": "cost_allocation_travel_cost_entry_id_travel_cost_entry_id_fk",
           "tableFrom": "cost_allocation",
           "tableTo": "travel_cost_entry",
-          "columnsFrom": [
-            "travel_cost_entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["travel_cost_entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -906,12 +858,8 @@
           "name": "cost_allocation_project_participant_id_project_participant_id_fk",
           "tableFrom": "cost_allocation",
           "tableTo": "project_participant",
-          "columnsFrom": [
-            "project_participant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_participant_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -919,10 +867,7 @@
       "compositePrimaryKeys": {
         "cost_allocation_travel_cost_entry_id_project_participant_id_pk": {
           "name": "cost_allocation_travel_cost_entry_id_project_participant_id_pk",
-          "columns": [
-            "travel_cost_entry_id",
-            "project_participant_id"
-          ]
+          "columns": ["travel_cost_entry_id", "project_participant_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1044,12 +989,8 @@
           "name": "duplicate_review_task_partnership_id_project_partner_organization_id_fk",
           "tableFrom": "duplicate_review_task",
           "tableTo": "project_partner_organization",
-          "columnsFrom": [
-            "partnership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["partnership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1057,12 +998,8 @@
           "name": "duplicate_review_task_existing_participation_id_project_participant_id_fk",
           "tableFrom": "duplicate_review_task",
           "tableTo": "project_participant",
-          "columnsFrom": [
-            "existing_participation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["existing_participation_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1070,12 +1007,8 @@
           "name": "duplicate_review_task_candidate_user_id_user_id_fk",
           "tableFrom": "duplicate_review_task",
           "tableTo": "user",
-          "columnsFrom": [
-            "candidate_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["candidate_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1083,12 +1016,8 @@
           "name": "duplicate_review_task_assigned_to_user_id_user_id_fk",
           "tableFrom": "duplicate_review_task",
           "tableTo": "user",
-          "columnsFrom": [
-            "assigned_to_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assigned_to_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1096,12 +1025,8 @@
           "name": "duplicate_review_task_survivor_participation_id_project_participant_id_fk",
           "tableFrom": "duplicate_review_task",
           "tableTo": "project_participant",
-          "columnsFrom": [
-            "survivor_participation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["survivor_participation_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1147,12 +1072,8 @@
           "name": "host_project_assignment_project_id_project_id_fk",
           "tableFrom": "host_project_assignment",
           "tableTo": "project",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1160,12 +1081,8 @@
           "name": "host_project_assignment_user_id_user_id_fk",
           "tableFrom": "host_project_assignment",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1173,10 +1090,7 @@
       "compositePrimaryKeys": {
         "host_project_assignment_project_id_user_id_pk": {
           "name": "host_project_assignment_project_id_user_id_pk",
-          "columns": [
-            "project_id",
-            "user_id"
-          ]
+          "columns": ["project_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1254,12 +1168,8 @@
           "name": "participant_agreement_acceptance_user_id_user_id_fk",
           "tableFrom": "participant_agreement_acceptance",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1393,12 +1303,8 @@
           "name": "participant_entry_token_partnership_id_project_partner_organization_id_fk",
           "tableFrom": "participant_entry_token",
           "tableTo": "project_partner_organization",
-          "columnsFrom": [
-            "partnership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["partnership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1406,12 +1312,8 @@
           "name": "participant_entry_token_project_id_project_id_fk",
           "tableFrom": "participant_entry_token",
           "tableTo": "project",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1419,12 +1321,8 @@
           "name": "participant_entry_token_issued_by_user_id_user_id_fk",
           "tableFrom": "participant_entry_token",
           "tableTo": "user",
-          "columnsFrom": [
-            "issued_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["issued_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1432,12 +1330,8 @@
           "name": "participant_entry_token_closed_by_user_id_user_id_fk",
           "tableFrom": "participant_entry_token",
           "tableTo": "user",
-          "columnsFrom": [
-            "closed_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["closed_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1510,12 +1404,8 @@
           "name": "participant_journey_project_participant_id_project_participant_id_fk",
           "tableFrom": "participant_journey",
           "tableTo": "project_participant",
-          "columnsFrom": [
-            "project_participant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_participant_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1525,9 +1415,7 @@
         "participant_journey_project_participant_id_unique": {
           "name": "participant_journey_project_participant_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_participant_id"
-          ]
+          "columns": ["project_participant_id"]
         }
       },
       "policies": {},
@@ -1569,12 +1457,8 @@
           "name": "participant_profile_user_id_user_id_fk",
           "tableFrom": "participant_profile",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1615,12 +1499,8 @@
           "name": "partner_coordinator_assignment_partnership_id_project_partner_organization_id_fk",
           "tableFrom": "partner_coordinator_assignment",
           "tableTo": "project_partner_organization",
-          "columnsFrom": [
-            "partnership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["partnership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1628,12 +1508,8 @@
           "name": "partner_coordinator_assignment_user_id_user_id_fk",
           "tableFrom": "partner_coordinator_assignment",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1641,10 +1517,7 @@
       "compositePrimaryKeys": {
         "partner_coordinator_assignment_partnership_id_user_id_pk": {
           "name": "partner_coordinator_assignment_partnership_id_user_id_pk",
-          "columns": [
-            "partnership_id",
-            "user_id"
-          ]
+          "columns": ["partnership_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1747,12 +1620,8 @@
           "name": "partner_organization_setup_link_project_id_project_id_fk",
           "tableFrom": "partner_organization_setup_link",
           "tableTo": "project",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1760,12 +1629,8 @@
           "name": "partner_organization_setup_link_created_by_user_id_user_id_fk",
           "tableFrom": "partner_organization_setup_link",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1773,12 +1638,8 @@
           "name": "partner_organization_setup_link_consumed_by_user_id_user_id_fk",
           "tableFrom": "partner_organization_setup_link",
           "tableTo": "user",
-          "columnsFrom": [
-            "consumed_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["consumed_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1786,12 +1647,8 @@
           "name": "partner_organization_setup_link_partnership_id_project_partner_organization_id_fk",
           "tableFrom": "partner_organization_setup_link",
           "tableTo": "project_partner_organization",
-          "columnsFrom": [
-            "partnership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["partnership_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1825,12 +1682,8 @@
           "name": "partnership_payout_account_partnership_id_project_partner_organization_id_fk",
           "tableFrom": "partnership_payout_account",
           "tableTo": "project_partner_organization",
-          "columnsFrom": [
-            "partnership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["partnership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1838,12 +1691,8 @@
           "name": "partnership_payout_account_payout_account_id_payout_account_id_fk",
           "tableFrom": "partnership_payout_account",
           "tableTo": "payout_account",
-          "columnsFrom": [
-            "payout_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["payout_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1925,12 +1774,8 @@
           "name": "payout_account_organization_id_organization_id_fk",
           "tableFrom": "payout_account",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2010,12 +1855,8 @@
           "name": "project_funding_band_project_id_project_funding_snapshot_project_id_fk",
           "tableFrom": "project_funding_band",
           "tableTo": "project_funding_snapshot",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "project_id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["project_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2071,12 +1912,8 @@
           "name": "project_funding_snapshot_project_id_project_id_fk",
           "tableFrom": "project_funding_snapshot",
           "tableTo": "project",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2247,12 +2084,8 @@
           "name": "project_participant_project_id_project_id_fk",
           "tableFrom": "project_participant",
           "tableTo": "project",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2260,12 +2093,8 @@
           "name": "project_participant_represented_organization_id_organization_id_fk",
           "tableFrom": "project_participant",
           "tableTo": "organization",
-          "columnsFrom": [
-            "represented_organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["represented_organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2273,12 +2102,8 @@
           "name": "project_participant_user_id_user_id_fk",
           "tableFrom": "project_participant",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2286,12 +2111,8 @@
           "name": "project_participant_merged_into_participant_id_project_participant_id_fk",
           "tableFrom": "project_participant",
           "tableTo": "project_participant",
-          "columnsFrom": [
-            "merged_into_participant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["merged_into_participant_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2299,12 +2120,8 @@
           "name": "project_participant_merged_by_user_id_user_id_fk",
           "tableFrom": "project_participant",
           "tableTo": "user",
-          "columnsFrom": [
-            "merged_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["merged_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2423,12 +2240,8 @@
           "name": "project_partner_organization_project_id_project_id_fk",
           "tableFrom": "project_partner_organization",
           "tableTo": "project",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2436,12 +2249,8 @@
           "name": "project_partner_organization_organization_id_organization_id_fk",
           "tableFrom": "project_partner_organization",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2514,12 +2323,8 @@
           "name": "project_shared_travel_leg_project_id_project_id_fk",
           "tableFrom": "project_shared_travel_leg",
           "tableTo": "project",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2724,12 +2529,8 @@
           "name": "project_organization_id_organization_id_fk",
           "tableFrom": "project",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2737,12 +2538,8 @@
           "name": "project_completed_by_user_id_user_id_fk",
           "tableFrom": "project",
           "tableTo": "user",
-          "columnsFrom": [
-            "completed_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["completed_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2829,12 +2626,8 @@
           "name": "proof_document_claim_id_claim_id_fk",
           "tableFrom": "proof_document",
           "tableTo": "claim",
-          "columnsFrom": [
-            "claim_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["claim_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2923,12 +2716,8 @@
           "name": "travel_cost_entry_claim_id_claim_id_fk",
           "tableFrom": "travel_cost_entry",
           "tableTo": "claim",
-          "columnsFrom": [
-            "claim_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["claim_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2983,12 +2772,8 @@
           "name": "travel_cost_entry_document_travel_cost_entry_id_travel_cost_entry_id_fk",
           "tableFrom": "travel_cost_entry_document",
           "tableTo": "travel_cost_entry",
-          "columnsFrom": [
-            "travel_cost_entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["travel_cost_entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2996,12 +2781,8 @@
           "name": "travel_cost_entry_document_proof_document_id_proof_document_id_fk",
           "tableFrom": "travel_cost_entry_document",
           "tableTo": "proof_document",
-          "columnsFrom": [
-            "proof_document_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["proof_document_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3009,10 +2790,7 @@
       "compositePrimaryKeys": {
         "travel_cost_entry_document_travel_cost_entry_id_proof_document_id_pk": {
           "name": "travel_cost_entry_document_travel_cost_entry_id_proof_document_id_pk",
-          "columns": [
-            "travel_cost_entry_id",
-            "proof_document_id"
-          ]
+          "columns": ["travel_cost_entry_id", "proof_document_id"]
         }
       },
       "uniqueConstraints": {},
@@ -3052,60 +2830,32 @@
     "public.cost_allocation_method": {
       "name": "cost_allocation_method",
       "schema": "public",
-      "values": [
-        "equal",
-        "percentage",
-        "amount"
-      ]
+      "values": ["equal", "percentage", "amount"]
     },
     "public.duplicate_review_decision": {
       "name": "duplicate_review_decision",
       "schema": "public",
-      "values": [
-        "same_person",
-        "distinct_persons",
-        "dismiss"
-      ]
+      "values": ["same_person", "distinct_persons", "dismiss"]
     },
     "public.duplicate_review_status": {
       "name": "duplicate_review_status",
       "schema": "public",
-      "values": [
-        "open",
-        "assigned",
-        "resolved"
-      ]
+      "values": ["open", "assigned", "resolved"]
     },
     "public.journey_trip_type": {
       "name": "journey_trip_type",
       "schema": "public",
-      "values": [
-        "one-way",
-        "round-trip"
-      ]
+      "values": ["one-way", "round-trip"]
     },
     "public.participant_transport_profile": {
       "name": "participant_transport_profile",
       "schema": "public",
-      "values": [
-        "boat",
-        "bus",
-        "train",
-        "car",
-        "electricCar",
-        "plane"
-      ]
+      "values": ["boat", "bus", "train", "car", "electricCar", "plane"]
     },
     "public.project_shared_transport_emission_profile": {
       "name": "project_shared_transport_emission_profile",
       "schema": "public",
-      "values": [
-        "boat",
-        "bus",
-        "train",
-        "car",
-        "electricCar"
-      ]
+      "values": ["boat", "bus", "train", "car", "electricCar"]
     }
   },
   "schemas": {},

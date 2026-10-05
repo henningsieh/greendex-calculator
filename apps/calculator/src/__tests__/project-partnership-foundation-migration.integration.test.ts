@@ -1,4 +1,3 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -134,7 +133,7 @@ describe("Project Partnership foundation migration", () => {
         represented_organization_id: "hosting-organization",
         display_name: "Legacy Participant",
         email: "participant@example.com",
-        user_id: ORGANIZATION_ROLES.Participant,
+        user_id: "participant",
         country: "DE",
       },
     ]);

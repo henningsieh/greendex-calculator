@@ -151,6 +151,22 @@ async function submitExisting() {
 }
 
 describe("Setup Link UI", () => {
+  it("renders the server-provided expiry status without reading the clock during render", async () => {
+    mocks.listSetupLinks.mockResolvedValue([
+      {
+        id: "expired-link",
+        projectName: "Hosted Example",
+        recipientEmail: "partner@example.org",
+        enabled: true,
+        consumedAt: null,
+        expired: true,
+        expiresAt: new Date("2099-01-01"),
+      },
+    ]);
+    creator();
+    expect(await screen.findByText("Expired")).toBeTruthy();
+  });
+
   it("creates a recipient-bound link, displays it and copies the URL", async () => {
     const user = userEvent.setup();
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
@@ -214,7 +230,8 @@ describe("Setup Link UI", () => {
       "New Partner",
     );
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    expect(mocks.createOrganization).toHaveBeenCalledWith({ country: "DE" as const,
+    expect(mocks.createOrganization).toHaveBeenCalledWith({
+      country: "DE" as const,
       name: "New Partner",
       slug: "new-partner",
     });

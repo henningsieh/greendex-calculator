@@ -1,7 +1,7 @@
-// @vitest-environment node
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -92,32 +92,43 @@ beforeAll(async () => {
     updatedAt: now,
   });
   await db.insert(organization).values([
-    { country: "DE", id: hostId, name: "Partnership Host", slug: hostId, createdAt: now },
-    { country: "DE",
+    {
+      country: "DE",
+      id: hostId,
+      name: "Partnership Host",
+      slug: hostId,
+      createdAt: now,
+    },
+    {
+      country: "DE",
       id: foreignHostId,
       name: "Partnership Foreign Host",
       slug: foreignHostId,
       createdAt: now,
     },
-    { country: "DE",
+    {
+      country: "DE",
       id: assignedOrganizationId,
       name: "Assigned Organization",
       slug: assignedOrganizationId,
       createdAt: now,
     },
-    { country: "DE",
+    {
+      country: "DE",
       id: removableOrganizationId,
       name: "Removable Organization",
       slug: removableOrganizationId,
       createdAt: now,
     },
-    { country: "DE",
+    {
+      country: "DE",
       id: candidateOrganizationId,
       name: "Candidate Organization",
       slug: candidateOrganizationId,
       createdAt: now,
     },
-    { country: "DE",
+    {
+      country: "DE",
       id: raceOrganizationId,
       name: "Race Organization",
       slug: raceOrganizationId,
@@ -384,7 +395,8 @@ describe("Project Partnership procedures", () => {
         })),
       );
       await db.insert(organization).values(
-        [host, partner].map((id) => ({ country: "DE" as const,
+        [host, partner].map((id) => ({
+          country: "DE" as const,
           id,
           name: id,
           slug: id,

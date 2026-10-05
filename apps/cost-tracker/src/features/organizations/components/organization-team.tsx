@@ -39,7 +39,10 @@ import {
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
-const STAFF_ROLES = [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin] as const;
+const STAFF_ROLES = [
+  ORGANIZATION_ROLES.OrganizationOwner,
+  ORGANIZATION_ROLES.OrganizationAdmin,
+] as const;
 type StaffRole = (typeof STAFF_ROLES)[number];
 
 const membersOptions = {
@@ -74,7 +77,9 @@ export function OrganizationTeam({
     queries: [membersOptions, pendingOptions],
   });
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<StaffRole>(ORGANIZATION_ROLES.OrganizationAdmin);
+  const [role, setRole] = useState<StaffRole>(
+    ORGANIZATION_ROLES.OrganizationAdmin,
+  );
   const [notice, setNotice] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -84,11 +89,15 @@ export function OrganizationTeam({
     memberRows.find(
       (entry) => entry.email.toLowerCase() === currentUserEmail.toLowerCase(),
     )?.role ?? "";
-  const ownIsOwner = parseOrganizationRoles(ownRole).includes(ORGANIZATION_ROLES.OrganizationOwner);
+  const ownIsOwner = parseOrganizationRoles(ownRole).includes(
+    ORGANIZATION_ROLES.OrganizationOwner,
+  );
   // Presentation-only: the invite procedure denies above-role grants.
   const availableRoles = ownIsOwner
     ? STAFF_ROLES
-    : STAFF_ROLES.filter((entry) => entry !== ORGANIZATION_ROLES.OrganizationOwner);
+    : STAFF_ROLES.filter(
+        (entry) => entry !== ORGANIZATION_ROLES.OrganizationOwner,
+      );
 
   async function refresh() {
     await Promise.all([

@@ -33,6 +33,8 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0017](0017-own-the-claim-lifecycle-once.md)                                             | Own the Claim Lifecycle Once: One Lock Order, Shared Capabilities                    | accepted       |               |
 | [0018](0018-derive-refusal-construction-from-the-error-catalog.md)                       | Derive Refusal Construction From the Error Catalog                                  | accepted       |               |
 
+[ADR-0019](0019-require-organization-country-and-synchronize-role-values.md) requires Organization country and synchronizes the shared role values. It supersedes ADR-0012's Calculator compatibility allowance and ADR-0004's stored coordinator spelling, not their authorization scopes.
+
 ADR-0003 is superseded by ADR-0006, ADR-0007, and ADR-0011 together. ADR-0002 is superseded in part by ADR-0005.
 
 With explicit user approval, ADR-0014 and the related wording in ADR-0015–0017 received a

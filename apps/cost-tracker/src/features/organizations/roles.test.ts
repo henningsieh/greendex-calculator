@@ -3,23 +3,23 @@ import { is, Param, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import {
-  BANNED_ROLE_MESSAGE,
+  INVALID_ROLE_MESSAGE,
   costTrackerOrganizationHooks,
   memberHasParticipantAccess,
   requireCostTrackerRole,
 } from "@/features/organizations/roles";
 
-describe("Cost Tracker role ban (ADR-0012)", () => {
+describe("Cost Tracker role validation", () => {
   it.each([
     "invalid-role",
     " invalid-role ",
-    "owner,invalid-role",
-    "invalid-role,coordinator",
-    "participant,invalid-role",
+    `${ORGANIZATION_ROLES.OrganizationOwner},invalid-role`,
+    `invalid-role,${ORGANIZATION_ROLES.ProjectCoordinator}`,
+    `${ORGANIZATION_ROLES.Participant},invalid-role`,
     null,
     undefined,
   ])("refuses the fallback role or an omitted default: %s", (role) => {
-    expect(() => requireCostTrackerRole(role)).toThrow(BANNED_ROLE_MESSAGE);
+    expect(() => requireCostTrackerRole(role)).toThrow(INVALID_ROLE_MESSAGE);
   });
 
   it.each([
@@ -40,22 +40,22 @@ describe("Cost Tracker role ban (ADR-0012)", () => {
       costTrackerOrganizationHooks.beforeCreateInvitation!({
         invitation: { role: "invalid-role" },
       } as Parameters<NonNullable<Hooks["beforeCreateInvitation"]>>[0]),
-    ).rejects.toThrow(BANNED_ROLE_MESSAGE);
+    ).rejects.toThrow(INVALID_ROLE_MESSAGE);
     await expect(
       costTrackerOrganizationHooks.beforeAcceptInvitation!({
         invitation: { role: "invalid-role" },
       } as Parameters<NonNullable<Hooks["beforeAcceptInvitation"]>>[0]),
-    ).rejects.toThrow(BANNED_ROLE_MESSAGE);
+    ).rejects.toThrow(INVALID_ROLE_MESSAGE);
     await expect(
       costTrackerOrganizationHooks.beforeAddMember!({
         member: { role: "invalid-role" },
       } as Parameters<NonNullable<Hooks["beforeAddMember"]>>[0]),
-    ).rejects.toThrow(BANNED_ROLE_MESSAGE);
+    ).rejects.toThrow(INVALID_ROLE_MESSAGE);
     await expect(
       costTrackerOrganizationHooks.beforeUpdateMemberRole!({
-        newRole: "owner,invalid-role",
+        newRole: `${ORGANIZATION_ROLES.OrganizationOwner},invalid-role`,
       } as Parameters<NonNullable<Hooks["beforeUpdateMemberRole"]>>[0]),
-    ).rejects.toThrow(BANNED_ROLE_MESSAGE);
+    ).rejects.toThrow(INVALID_ROLE_MESSAGE);
   });
 });
 

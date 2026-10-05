@@ -231,9 +231,13 @@ export function createOnboardingProgressProcedure(
           membership: role
             ?.split(",")
             .some((value) =>
-              [ORGANIZATION_ROLES.Participant, ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin].some((knownRole) => knownRole === value.trim()),
+              [
+                ORGANIZATION_ROLES.Participant,
+                ORGANIZATION_ROLES.OrganizationOwner,
+                ORGANIZATION_ROLES.OrganizationAdmin,
+              ].some((knownRole) => knownRole === value.trim()),
             )
-            ? (ORGANIZATION_ROLES.Participant)
+            ? ORGANIZATION_ROLES.Participant
             : ("missing" as const),
           bridge: invitationState(issued, now),
         };

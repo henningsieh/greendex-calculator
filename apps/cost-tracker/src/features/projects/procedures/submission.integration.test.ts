@@ -1,7 +1,7 @@
-// @vitest-environment node
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
@@ -86,7 +86,8 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(organization).values(
-    [host, partner, other].map((org) => ({ country: "DE" as const,
+    [host, partner, other].map((org) => ({
+      country: "DE" as const,
       id: org,
       name: org,
       slug: org,
@@ -348,8 +349,18 @@ const roles = [
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
   },
-  { name: "Partner owner", side: "partner", role: ORGANIZATION_ROLES.OrganizationOwner, assigned: false },
-  { name: "Partner admin", side: "partner", role: ORGANIZATION_ROLES.OrganizationAdmin, assigned: false },
+  {
+    name: "Partner owner",
+    side: "partner",
+    role: ORGANIZATION_ROLES.OrganizationOwner,
+    assigned: false,
+  },
+  {
+    name: "Partner admin",
+    side: "partner",
+    role: ORGANIZATION_ROLES.OrganizationAdmin,
+    assigned: false,
+  },
   {
     name: "Partner unassigned coordinator",
     side: "partner",
@@ -374,8 +385,18 @@ const roles = [
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
   },
-  { name: "Hosting owner", side: "host", role: ORGANIZATION_ROLES.OrganizationOwner, assigned: false },
-  { name: "Hosting admin", side: "host", role: ORGANIZATION_ROLES.OrganizationAdmin, assigned: false },
+  {
+    name: "Hosting owner",
+    side: "host",
+    role: ORGANIZATION_ROLES.OrganizationOwner,
+    assigned: false,
+  },
+  {
+    name: "Hosting admin",
+    side: "host",
+    role: ORGANIZATION_ROLES.OrganizationAdmin,
+    assigned: false,
+  },
   {
     name: "Hosting unassigned coordinator",
     side: "host",
@@ -542,14 +563,18 @@ describe("Claim authorization matrix", () => {
         .set({ status: statuses[procedure], approvedAmountEur: "100.00" })
         .where(eq(claims.id, claimId));
     const orgId = role.side === "host" ? host : partner;
-    const person = role.role === ORGANIZATION_ROLES.Participant ? participantUser : actor;
+    const person =
+      role.role === ORGANIZATION_ROLES.Participant ? participantUser : actor;
     if (role.side === "partner" && !role.assigned)
       await db
         .delete(assignments)
         .where(
           and(eq(assignments.partnershipId, own), eq(assignments.userId, actor)),
         );
-    if (role.side === "host" && (!role.assigned || role.role === ORGANIZATION_ROLES.Participant))
+    if (
+      role.side === "host" &&
+      (!role.assigned || role.role === ORGANIZATION_ROLES.Participant)
+    )
       await db
         .delete(hostAssignments)
         .where(
@@ -588,7 +613,10 @@ describe("Claim authorization matrix", () => {
           .insert(assignments)
           .values({ partnershipId: own, userId: actor })
           .onConflictDoNothing();
-      if (role.side === "host" && (!role.assigned || role.role === ORGANIZATION_ROLES.Participant))
+      if (
+        role.side === "host" &&
+        (!role.assigned || role.role === ORGANIZATION_ROLES.Participant)
+      )
         await db
           .insert(hostAssignments)
           .values({ projectId: project, userId: actor })
@@ -1030,7 +1058,10 @@ const review = (
     ? client.claims[action]({ partnershipId: own, reason: reason ?? "Reason" })
     : client.claims[action]({ partnershipId: own });
 
-async function asHost(role: string = ORGANIZATION_ROLES.ProjectCoordinator, userId = actor) {
+async function asHost(
+  role: string = ORGANIZATION_ROLES.ProjectCoordinator,
+  userId = actor,
+) {
   activeOrg = host;
   activeActor = userId;
   await db
@@ -1440,7 +1471,11 @@ describe("Host Claim review", () => {
   it("enforces the Hosting role matrix on every review action and every Partnership", async () => {
     await submittedClaim();
     const actions = ["requestCorrection", "approve", "reject", "reopen"] as const;
-    for (const role of [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin, ORGANIZATION_ROLES.ProjectCoordinator]) {
+    for (const role of [
+      ORGANIZATION_ROLES.OrganizationOwner,
+      ORGANIZATION_ROLES.OrganizationAdmin,
+      ORGANIZATION_ROLES.ProjectCoordinator,
+    ]) {
       await asHost(role);
       for (const action of actions) {
         await db
@@ -1470,7 +1505,10 @@ describe("Host Claim review", () => {
         .where(eq(claims.id, claimId));
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
-    for (const role of [ORGANIZATION_ROLES.Participant, ORGANIZATION_ROLES.ProjectCoordinator]) {
+    for (const role of [
+      ORGANIZATION_ROLES.Participant,
+      ORGANIZATION_ROLES.ProjectCoordinator,
+    ]) {
       await asHost(role, participantUser);
       for (const action of actions) {
         await db
@@ -1764,7 +1802,11 @@ describe("Claim payment recording", () => {
 
   it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
     const payable = await approvedClaim();
-    for (const role of [ORGANIZATION_ROLES.OrganizationOwner, ORGANIZATION_ROLES.OrganizationAdmin, ORGANIZATION_ROLES.ProjectCoordinator]) {
+    for (const role of [
+      ORGANIZATION_ROLES.OrganizationOwner,
+      ORGANIZATION_ROLES.OrganizationAdmin,
+      ORGANIZATION_ROLES.ProjectCoordinator,
+    ]) {
       await asHost(role);
       await markPaid(payable);
       await correctPayment("Incorrect flag");

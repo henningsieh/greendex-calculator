@@ -82,7 +82,9 @@ export const costTrackerOrganizationRoles = {
 };
 
 /** Reject omitted defaults and unknown roles, including in combined Memberships. */
-export function isValidOrganizationRole(role: string | null | undefined): boolean {
+export function isValidOrganizationRole(
+  role: string | null | undefined,
+): boolean {
   if (!role) return false;
   const knownRoles = new Set<string>(Object.values(ORGANIZATION_ROLES));
   return role.split(",").every((value) => knownRoles.has(value.trim()));

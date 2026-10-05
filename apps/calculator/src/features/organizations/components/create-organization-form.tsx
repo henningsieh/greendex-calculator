@@ -1,12 +1,12 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 
 import { DASHBOARD_PATH } from "@/app/routes";
-import { useTranslations } from "@greendex/i18n/client";
 import { CountrySelect } from "@/components/country-select";
 import { Button } from "@/components/ui/button";
 import {
@@ -116,18 +116,24 @@ export function CreateOrganizationForm({
           />
 
           <FormField
-              control={form.control}
-              name="country"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("label")}</FormLabel>
-                  <FormControl>
-                    <CountrySelect euOnly value={field.value} onValueChange={field.onChange} placeholder={t("placeholder")} disabled={form.formState.isSubmitting} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            control={form.control}
+            name="country"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("label")}</FormLabel>
+                <FormControl>
+                  <CountrySelect
+                    euOnly
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder={t("placeholder")}
+                    disabled={form.formState.isSubmitting}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <Button
             className="w-full"

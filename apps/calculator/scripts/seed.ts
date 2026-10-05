@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-
+import { Buffer } from "node:buffer";
 /**
  * Development DB seeder
  *
@@ -11,11 +10,10 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
  *
  * Uses its own DB pool and will exit the process when finished. For local/dev use only — do not run in production.
  */
-
-import { Buffer } from "node:buffer";
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { SEED_USER } from "@greendex/auth/seed-user";
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
 import {

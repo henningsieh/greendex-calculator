@@ -36,7 +36,8 @@ export class CostTrackerProjectFixture {
       );
     }
 
-    await db.insert(organization).values({ country: "DE",
+    await db.insert(organization).values({
+      country: "DE",
       id: this.partnerOrganizationId,
       name: this.partnerOrganizationName,
       slug: `cost-tracker-e2e-${randomUUID()}`,

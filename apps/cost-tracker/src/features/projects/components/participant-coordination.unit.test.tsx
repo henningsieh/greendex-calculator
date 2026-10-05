@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
 const browserSession = vi.hoisted(() => ({
   userId: "user-1",
   activeOrganizationId: "partner-1" as string | null,
-  role: "owner" as string | null,
+  role: null as string | null,
 }));
 
 vi.mock("@/lib/auth-client", async () => {

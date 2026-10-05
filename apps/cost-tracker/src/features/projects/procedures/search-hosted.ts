@@ -1,6 +1,6 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as assignments,
@@ -40,7 +40,10 @@ export const searchHosted = authorized
       .limit(1);
     if (!membership) throw createSituationErrors(errors).notMember();
     const isManager =
-      hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+      hasOrganizationRole(
+        membership.role,
+        ORGANIZATION_ROLES.OrganizationOwner,
+      ) ||
       hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin);
     if (
       !isManager &&

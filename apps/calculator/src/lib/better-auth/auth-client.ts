@@ -1,4 +1,9 @@
 import {
+  accessControl,
+  calculatorOrganizationRoles,
+} from "@greendex/auth/permissions";
+import { organizationCountryFields } from "@greendex/config/organization-country";
+import {
   inferAdditionalFields,
   lastLoginMethodClient,
   magicLinkClient,
@@ -7,8 +12,6 @@ import {
 import { createAuthClient } from "better-auth/react";
 
 import { env } from "@/env";
-import { accessControl, calculatorOrganizationRoles } from "@greendex/auth/permissions";
-import { organizationCountryFields } from "@greendex/config/organization-country";
 import type { auth } from "@/lib/better-auth";
 
 const clientBaseURL = env.NEXT_PUBLIC_BASE_URL;

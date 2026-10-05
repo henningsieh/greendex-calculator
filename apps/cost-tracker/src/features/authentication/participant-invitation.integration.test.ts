@@ -6,13 +6,13 @@
 // issuance procedure with drift-proof raw SQL because the shared development
 // database carries an out-of-branch `expires_at` column on that table.
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { createHash, randomUUID } from "node:crypto";
 
 import {
   costTrackerOrganizationRoles,
   parseOrganizationRoles,
 } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   invitation as staffInvitation,
@@ -147,7 +147,13 @@ beforeAll(async () => {
   ]);
   await db.insert(organization).values([
     { country: "DE", id: host, name: "Invite Host", slug: host, createdAt: now },
-    { country: "DE", id: partner, name: "Invite Partner", slug: partner, createdAt: now },
+    {
+      country: "DE",
+      id: partner,
+      name: "Invite Partner",
+      slug: partner,
+      createdAt: now,
+    },
   ]);
   await db.insert(projects).values({
     id: project,
@@ -545,7 +551,9 @@ describe("email-bound Participant Invitations", () => {
         .from(participants)
         .where(eq(participants.projectId, project)),
     ).toHaveLength(1);
-    expect(await recipientMemberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
+    expect(await recipientMemberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
   });
 
   it("repeats successful redemption idempotently", async () => {
@@ -668,7 +676,9 @@ describe("email-bound Participant Invitations", () => {
       email: recipientEmail,
       country: "LV",
     });
-    expect(await recipientMemberships()).toEqual([{ role: ORGANIZATION_ROLES.Participant }]);
+    expect(await recipientMemberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
   });
 
   it("keeps staff invitations in their organization and app invitations out of that list", async () => {
