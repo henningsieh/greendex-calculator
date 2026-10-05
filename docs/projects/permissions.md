@@ -24,6 +24,8 @@ Neither answer replaces the other. A role never grants access to every Project, 
 
 Both apps use only the four shared role values above; unknown and omitted grants are refused. [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) replaces the former Calculator compatibility values. Calculator retains its `admin` Project-management behavior; its `coordinator` role grants nothing yet.
 
+Calculator `admin` intentionally converges to the shared Project `archive` grant; Project deletion remains reserved to Organization Owners.
+
 Library table/field names and ordinary Membership wording are unaffected.
 
 Role lists derive from the shared auth constants rather than separate app-owned lists. Only defined shared role values may be invited, assigned, or seeded; staff invitations remain limited to `owner` and `admin`.

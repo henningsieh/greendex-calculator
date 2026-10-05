@@ -18,6 +18,7 @@ No official Drizzle project skill is adopted. These official pages and installed
 ## Greendex workflow
 
 - Schemas, the client, and migrations are owned by `packages/database/`.
+- ADR-0019's required Organization country and final Membership roles assume an explicitly authorized wipe of existing mock data before applying the required-country migration, followed by reseeding with real EU countries and shared role constants. This is not a lossless upgrade: there is no country or legacy-role backfill. Stop if existing data must be preserved or wipe authorization is absent; never reset a shared development database without separate operator approval.
 - Edit the owning schema, run `pnpm run db:generate`, inspect the generated SQL and snapshot, then apply only to the intended database with `pnpm run db:migrate`.
 - Never hand-edit generated Drizzle snapshots or applied migrations. Never hand-apply migration SQL to a shared database either: an unrecorded apply poisons the journal for every later run (the migrator retries the file, `CREATE` fails, and `drizzle-kit migrate` exits 1 printing nothing — it swallows the real error).
 - Use the built-in `drizzle-kit migrate` command, not a custom migration runner. The installed ORM selects pending migrations by the last recorded timestamp; it stores content hashes but does not validate them. If Kit exits silently, diagnose with the ORM migrator without replacing the normal command or modifying history automatically.
