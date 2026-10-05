@@ -1,6 +1,7 @@
-// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -60,22 +61,28 @@ beforeAll(async () => {
     updatedAt: now,
   });
   await db.insert(organization).values([
-    { id: hostId, slug: hostId, name: "Host", createdAt: now },
-    { id: partnerId, slug: partnerId, name: "Partner", createdAt: now },
+    { country: "DE", id: hostId, slug: hostId, name: "Host", createdAt: now },
+    {
+      country: "DE",
+      id: partnerId,
+      slug: partnerId,
+      name: "Partner",
+      createdAt: now,
+    },
   ]);
   await db.insert(member).values([
     {
       id: `setup-member-${id}`,
       userId,
       organizationId: partnerId,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: now,
     },
     {
       id: `setup-host-member-${id}`,
       userId,
       organizationId: hostId,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: now,
     },
   ]);
@@ -97,7 +104,7 @@ beforeEach(async () => {
   asUser();
   await db
     .update(member)
-    .set({ role: "owner" })
+    .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
     .where(eq(member.organizationId, hostId));
 });
 
@@ -129,7 +136,7 @@ describe("Partner Organization setup links", () => {
     const input = {
       id: link.id,
       secret: link.secret,
-      organization: { kind: "existing" as const, organizationId: partnerId },
+      organizationId: partnerId,
     };
     const first = await client.projectPartnerships.consumeSetupLink(input);
     expect(await client.projectPartnerships.consumeSetupLink(input)).toEqual(
@@ -156,7 +163,6 @@ describe("Partner Organization setup links", () => {
     ).rejects.toThrow("already assigned");
   });
 
-
   it("separates an unverified recipient from a wrong recipient without consuming the link", async () => {
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
@@ -175,7 +181,7 @@ describe("Partner Organization setup links", () => {
       client.projectPartnerships.consumeSetupLink({
         id: link.id,
         secret: link.secret,
-        organization: { kind: "existing", organizationId: partnerId },
+        organizationId: partnerId,
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -190,11 +196,15 @@ describe("Partner Organization setup links", () => {
     expect(unchanged?.partnershipId).toBeNull();
   });
 
-  it.each(["project-coordinator,owner", "owner,participant"])(
+  it.each([
+    `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`,
+    `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
+  ])(
     "offers and consumes an existing Organization with %s membership",
     async (role) => {
       const combinedOrgId = `setup-combined-${role}-${id}`;
       await db.insert(organization).values({
+        country: "DE",
         id: combinedOrgId,
         slug: combinedOrgId,
         name: `Combined ${role}`,
@@ -223,7 +233,7 @@ describe("Partner Organization setup links", () => {
         const result = await client.projectPartnerships.consumeSetupLink({
           id: link.id,
           secret: link.secret,
-          organization: { kind: "existing", organizationId: matches[0]!.id },
+          organizationId: matches[0]!.id,
         });
         expect(result.organizationId).toBe(combinedOrgId);
         expect(
@@ -255,7 +265,7 @@ describe("Partner Organization setup links", () => {
     const input = {
       id: link.id,
       secret: link.secret,
-      organization: { kind: "existing" as const, organizationId: partnerId },
+      organizationId: partnerId,
     };
     asUser("wrong@example.com");
     await expect(
@@ -274,37 +284,121 @@ describe("Partner Organization setup links", () => {
     ).toEqual(before);
   });
 
-  it("creates a new Organization with Owner membership, without changing Host membership", async () => {
+  it("binds an eligible Organization without writing Organization or Membership rows", async () => {
+    // Redemption only binds: the Organization (and creator Ownership) is
+    // created beforehand through the supported Better Auth flow (ADR-0013),
+    // so consuming the link must not add Organization or Membership rows.
+    const freshOrgId = `setup-bind-${randomUUID()}`;
+    await db.insert(organization).values({
+      country: "DE",
+      id: freshOrgId,
+      slug: freshOrgId,
+      name: "Bind Target",
+      createdAt: new Date(),
+    });
+    await db.insert(member).values({
+      id: randomUUID(),
+      userId,
+      organizationId: freshOrgId,
+      role: ORGANIZATION_ROLES.OrganizationOwner,
+      createdAt: new Date(),
+    });
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
       recipientEmail,
     });
-    const input = {
-      id: link.id,
-      secret: link.secret,
-      organization: { kind: "new" as const, name: "New Partner" },
-    };
-    const result = await client.projectPartnerships.consumeSetupLink(input);
-    expect(await client.projectPartnerships.consumeSetupLink(input)).toEqual(
-      result,
-    );
-    expect(
+    try {
+      const organizationsBefore = await db
+        .select({ id: organization.id })
+        .from(organization);
+      const membershipsBefore = await db.select({ id: member.id }).from(member);
+      const result = await client.projectPartnerships.consumeSetupLink({
+        id: link.id,
+        secret: link.secret,
+        organizationId: freshOrgId,
+      });
+      expect(result.organizationId).toBe(freshOrgId);
+      expect(await db.select({ id: organization.id }).from(organization)).toEqual(
+        organizationsBefore,
+      );
+      expect(await db.select({ id: member.id }).from(member)).toEqual(
+        membershipsBefore,
+      );
+    } finally {
+      await db.delete(links).where(eq(links.id, link.id));
       await db
-        .select()
-        .from(member)
-        .where(eq(member.organizationId, result.organizationId)),
-    ).toMatchObject([{ role: "owner", userId }]);
-    expect(
-      await db.select().from(member).where(eq(member.organizationId, hostId)),
-    ).toMatchObject([{ role: "owner", userId }]);
+        .delete(partnerships)
+        .where(eq(partnerships.organizationId, freshOrgId));
+      await db.delete(member).where(eq(member.organizationId, freshOrgId));
+      await db.delete(organization).where(eq(organization.id, freshOrgId));
+    }
+  });
+
+  it("resolves competing redemption to one Partnership with a clear refusal", async () => {
+    const raceOrgId = `setup-race-${randomUUID()}`;
+    const rivalOrgId = `setup-rival-${randomUUID()}`;
+    for (const organizationId of [raceOrgId, rivalOrgId]) {
+      await db.insert(organization).values({
+        country: "DE",
+        id: organizationId,
+        slug: organizationId,
+        name: `Race ${organizationId}`,
+        createdAt: new Date(),
+      });
+      await db.insert(member).values({
+        id: randomUUID(),
+        userId,
+        organizationId,
+        role: ORGANIZATION_ROLES.OrganizationOwner,
+        createdAt: new Date(),
+      });
+    }
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    try {
+      const attempt = () =>
+        client.projectPartnerships.consumeSetupLink({
+          id: link.id,
+          secret: link.secret,
+          organizationId: raceOrgId,
+        });
+      const outcomes = await Promise.all(
+        Array.from({ length: 5 }, () => attempt()),
+      );
+      for (const outcome of outcomes) expect(outcome).toEqual(outcomes[0]);
+      expect(
+        await db
+          .select({ id: partnerships.id })
+          .from(partnerships)
+          .where(eq(partnerships.organizationId, raceOrgId)),
+      ).toHaveLength(1);
+      await expect(
+        client.projectPartnerships.consumeSetupLink({
+          id: link.id,
+          secret: link.secret,
+          organizationId: rivalOrgId,
+        }),
+      ).rejects.toThrow("already been used");
+    } finally {
+      await db.delete(links).where(eq(links.id, link.id));
+      for (const organizationId of [raceOrgId, rivalOrgId]) {
+        await db
+          .delete(partnerships)
+          .where(eq(partnerships.organizationId, organizationId));
+        await db.delete(member).where(eq(member.organizationId, organizationId));
+        await db.delete(organization).where(eq(organization.id, organizationId));
+      }
+    }
   });
 
   it.each([
-    { role: "project-coordinator", allowed: true },
-    { role: "participant", allowed: false },
-    { role: "participant", allowed: false },
-    { role: "admin", allowed: true },
-    { role: "owner", allowed: true },
+    { role: ORGANIZATION_ROLES.ProjectCoordinator, allowed: true },
+    { role: ORGANIZATION_ROLES.Participant, allowed: false },
+    { role: ORGANIZATION_ROLES.Participant, allowed: false },
+    { role: ORGANIZATION_ROLES.OrganizationAdmin, allowed: true },
+    { role: ORGANIZATION_ROLES.OrganizationOwner, allowed: true },
   ])("scopes setup-link issuance for $role", async ({ role, allowed }) => {
     await db
       .update(member)
@@ -339,7 +433,7 @@ describe("Partner Organization setup links", () => {
     try {
       await db
         .update(member)
-        .set({ role: "project-coordinator" })
+        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
         .where(eq(member.organizationId, hostId));
       await expect(
         client.projectPartnerships.createSetupLink({
@@ -379,18 +473,18 @@ describe("Partner Organization setup links", () => {
     });
     await db
       .update(member)
-      .set({ role: "participant" })
+      .set({ role: ORGANIZATION_ROLES.Participant })
       .where(eq(member.organizationId, partnerId));
     await expect(
       client.projectPartnerships.consumeSetupLink({
         id: link.id,
         secret: link.secret,
-        organization: { kind: "existing", organizationId: partnerId },
+        organizationId: partnerId,
       }),
     ).rejects.toThrow("Owner");
     await db
       .update(member)
-      .set({ role: "owner" })
+      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
       .where(eq(member.organizationId, partnerId));
     await db
       .update(links)
@@ -400,7 +494,7 @@ describe("Partner Organization setup links", () => {
       client.projectPartnerships.consumeSetupLink({
         id: link.id,
         secret: link.secret,
-        organization: { kind: "existing", organizationId: partnerId },
+        organizationId: partnerId,
       }),
     ).rejects.toThrow("expired");
   });

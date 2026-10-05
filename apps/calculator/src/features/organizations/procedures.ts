@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   projectSharedTravelLegsTable,
@@ -30,8 +31,11 @@ function getSortKey(
     return Number.isNaN(time) ? 0 : time;
   }
   if (sortBy === "role") {
-    // Sort order: owner < admin < member
-    const roleOrder = { owner: 0, admin: 1, member: 2 };
+    const roleOrder = {
+      [ORGANIZATION_ROLES.OrganizationOwner]: 0,
+      [ORGANIZATION_ROLES.OrganizationAdmin]: 1,
+      [ORGANIZATION_ROLES.Participant]: 2,
+    };
     const role = canonicalCalculatorRole(member.role);
     return role && role in roleOrder
       ? roleOrder[role as keyof typeof roleOrder]

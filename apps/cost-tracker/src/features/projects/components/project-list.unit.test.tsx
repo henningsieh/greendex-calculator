@@ -150,6 +150,20 @@ describe("Project list", { timeout: 20_000 }, () => {
     ).toBeNull();
   });
 
+  it("offers the Hosting Participant view beside the details destination", async () => {
+    renderList();
+
+    expect(
+      (
+        await screen.findByRole(
+          "link",
+          { name: "View Participants" },
+          { timeout: 10_000 },
+        )
+      ).getAttribute("href"),
+    ).toBe("/projects/project-1/participants");
+  });
+
   it("preserves the complete list state when opening a Project", async () => {
     renderList();
 

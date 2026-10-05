@@ -1,15 +1,15 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
-  organization,
   partnerOrganizationSetupLinksTable as links,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable,
 } from "@greendex/database/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
@@ -82,6 +82,7 @@ export const listSetupLinks = authorized
         projectName: z.string(),
         recipientEmail: z.string(),
         enabled: z.boolean(),
+        expired: z.boolean(),
         expiresAt: z.date(),
         consumedAt: z.date().nullable(),
       }),
@@ -94,6 +95,7 @@ export const listSetupLinks = authorized
         projectName: projectsTable.name,
         recipientEmail: links.recipientEmail,
         enabled: links.enabled,
+        expired: sql<boolean>`${links.expiresAt} <= current_timestamp`,
         expiresAt: links.expiresAt,
         consumedAt: links.consumedAt,
       })
@@ -131,13 +133,11 @@ export const consumeSetupLink = authorized
     z.object({
       id: identifier,
       secret: z.string().min(1),
-      organization: z.discriminatedUnion("kind", [
-        z.object({ kind: z.literal("existing"), organizationId: identifier }),
-        z.object({
-          kind: z.literal("new"),
-          name: z.string().trim().min(1).max(255),
-        }),
-      ]),
+      // Redemption binds an Organization the recipient already owns through
+      // the supported Better Auth creation flow. It never creates
+      // Organizations or Memberships: Better Auth's tables are not a writable
+      // extension point for Cost Tracker (ADR-0013).
+      organizationId: identifier,
     }),
   )
   .output(z.object({ partnershipId: z.string(), organizationId: z.string() }))
@@ -159,20 +159,21 @@ export const consumeSetupLink = authorized
       if (link.expiresAt <= new Date())
         throw createSituationErrors(errors).setupLinkExpired();
 
-      if (input.organization.kind === "existing") {
-        const [ownership] = await tx
-          .select({ role: member.role })
-          .from(member)
-          .where(
-            and(
-              eq(member.userId, context.user.id),
-              eq(member.organizationId, input.organization.organizationId),
-            ),
-          )
-          .limit(1);
-        if (!ownership || !hasOrganizationRole(ownership.role, "owner"))
-          throw createSituationErrors(errors).organizationOwnerRequired();
-      }
+      const [ownership] = await tx
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, context.user.id),
+            eq(member.organizationId, input.organizationId),
+          ),
+        )
+        .limit(1);
+      if (
+        !ownership ||
+        !hasOrganizationRole(ownership.role, ORGANIZATION_ROLES.OrganizationOwner)
+      )
+        throw createSituationErrors(errors).organizationOwnerRequired();
       if (link.partnershipId) {
         const [previous] = await tx
           .select({
@@ -185,8 +186,7 @@ export const consumeSetupLink = authorized
         if (
           previous &&
           link.consumedByUserId === context.user.id &&
-          (input.organization.kind === "new" ||
-            previous.organizationId === input.organization.organizationId)
+          previous.organizationId === input.organizationId
         ) {
           return {
             partnershipId: previous.id,
@@ -209,25 +209,7 @@ export const consumeSetupLink = authorized
         .limit(1);
       if (!project) throw createSituationErrors(errors).projectNotFound();
 
-      let organizationId: string;
-      if (input.organization.kind === "new") {
-        organizationId = randomUUID();
-        await tx.insert(organization).values({
-          id: organizationId,
-          name: input.organization.name,
-          slug: organizationId,
-          createdAt: new Date(),
-        });
-        await tx.insert(member).values({
-          id: randomUUID(),
-          organizationId,
-          userId: context.user.id,
-          role: "owner",
-          createdAt: new Date(),
-        });
-      } else {
-        organizationId = input.organization.organizationId;
-      }
+      const organizationId = input.organizationId;
       if (organizationId === project.hostId)
         throw createSituationErrors(errors).selfPartnership();
       const [existing] = await tx

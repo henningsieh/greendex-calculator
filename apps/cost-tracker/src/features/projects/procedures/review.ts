@@ -15,6 +15,10 @@ import {
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  claimReviewTransition,
+  type ClaimReviewDecision,
+} from "@/features/projects/claim-lifecycle";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -32,9 +36,7 @@ const result = z.object({
   status: z.enum(["correction_requested", "approved", "rejected", "submitted"]),
   approvedAmountEur: z.string().nullable(),
 });
-type Decision = "requestCorrection" | "approve" | "reject" | "reopen";
-
-function decision(action: Decision) {
+function decision(action: ClaimReviewDecision) {
   return authorized
     .input(reviewInput)
     .output(result)
@@ -58,6 +60,7 @@ function decision(action: Decision) {
           tx,
           { projectId: scope.projectId, partnershipId: input.partnershipId },
           errors,
+          "project",
         );
         if (
           action === "approve" &&
@@ -68,16 +71,12 @@ function decision(action: Decision) {
           console.error("Submitted/approved Claim lacks an approved amount");
           throw createSituationErrors(errors).internalFailure();
         }
-        const expectedStatus = action === "reopen" ? "rejected" : "submitted";
-        const nextStatus =
-          action === "requestCorrection"
-            ? "correction_requested"
-            : action === "reopen"
-              ? "submitted"
-              : action === "approve"
-                ? "approved"
-                : "rejected";
-        const eventType = action === "reopen" ? "reopened" : nextStatus;
+        // The one shared review transition table owns source, target and
+        // history event; this procedure adds no status-to-action rule.
+        const transition = claimReviewTransition(action);
+        const expectedStatus = transition.from;
+        const nextStatus = transition.to;
+        const eventType = transition.event;
         if (claim?.status === nextStatus) {
           const [latest] = await tx
             .select({ eventType: history.eventType, reason: history.reason })
@@ -98,7 +97,7 @@ function decision(action: Decision) {
         }
         if (!claim) throw createSituationErrors(errors).claimNotFound();
         if (claim.status !== expectedStatus)
-          throw action === "reopen"
+          throw expectedStatus === "rejected"
             ? createSituationErrors(errors).claimRejectedRequired()
             : createSituationErrors(errors).claimSubmittedRequired();
         const status = nextStatus;
@@ -110,12 +109,7 @@ function decision(action: Decision) {
         await tx.insert(history).values({
           claimId: claim.id,
           actorUserId: context.user.id,
-          eventType:
-            action === "requestCorrection"
-              ? "correction_requested"
-              : action === "reopen"
-                ? "reopened"
-                : status,
+          eventType,
           reason,
         });
         return {

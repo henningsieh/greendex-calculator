@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useParticipantEntryAccess } from "@/features/authentication/participant-entry-access";
+import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
 import { ClaimHistory } from "@/features/projects/components/claim-review";
 import { ClaimSubmission } from "@/features/projects/components/claim-submission";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
@@ -21,17 +23,6 @@ type Participation =
   Outputs["participations"]["listPartnership"]["participations"][number];
 type Cost = Outputs["costs"]["list"]["entries"][number];
 type FieldErrors = Record<string, string>;
-// The router registration is supplied separately; keep this call typed until it is installed.
-const createPayoutAccount = (
-  orpc.claims as typeof orpc.claims & {
-    createPayoutAccount: (input: {
-      partnershipId: string;
-      accountHolder: string;
-      iban: string;
-      bic?: string;
-    }) => Promise<{ id: string }>;
-  }
-).createPayoutAccount;
 
 function errorsFor(error: unknown, root: string): FieldErrors {
   const errors: FieldErrors = {};
@@ -217,14 +208,14 @@ function JourneyEditor({
   participants,
   saved,
   editable,
-  correcting,
+  corrections,
   refresh,
 }: {
   partnershipId: string;
   participants: Participation[];
   saved: Outputs["journeys"]["list"];
   editable: boolean;
-  correcting: boolean;
+  corrections: boolean;
   refresh: () => Promise<void>;
 }) {
   const [person, setPerson] = useState("");
@@ -271,7 +262,7 @@ function JourneyEditor({
           <ul>
             {saved.map((journey) => (
               <li key={journey.id} id={`journey-${journey.projectParticipantId}`}>
-                {correcting ? (
+                {corrections ? (
                   <JourneyCorrection
                     key={`${journey.id}-${journey.origin}-${journey.destination}-${journey.tripType}-${journey.erasmusDistanceKm}`}
                     partnershipId={partnershipId}
@@ -896,10 +887,14 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const [iban, setIban] = useState("");
   const [bic, setBic] = useState("");
   const [accountErrors, setAccountErrors] = useState<FieldErrors>({});
-  const editable =
-    !draft ||
-    draft.status === "editable" ||
-    draft.status === "correction_requested";
+  // The one Partner editing rule (ADR-0017), evaluated with the status the
+  // server authorized: add and correct while the Claim is unsubmitted or
+  // returned for correction. The screen keeps no status-to-action copy.
+  const access = useParticipantEntryAccess(people.entryContext);
+  const editable = access.permitted && canPartnerEditClaim(draft?.status);
+  // Adding a journey needs no Claim; correcting a saved one needs the Claim that
+  // records the correction, so the rule applies once a Claim exists.
+  const corrections = Boolean(draft) && editable;
   const refresh = useCallback(async () => {
     const input = { partnershipId };
     await Promise.all(
@@ -938,7 +933,12 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
     setFeedback("");
     setAccountErrors({});
     try {
-      await createPayoutAccount({ partnershipId, accountHolder, iban, bic });
+      await orpc.claims.createPayoutAccount({
+        partnershipId,
+        accountHolder,
+        iban,
+        bic,
+      });
       await client.invalidateQueries({
         queryKey: orpcQuery.claims.listPayoutAccounts.queryKey({ input }),
       });
@@ -1094,7 +1094,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
         participants={people.participations}
         saved={journeys}
         editable={editable}
-        correcting={draft?.status === "correction_requested"}
+        corrections={corrections}
         refresh={refresh}
       />
       {draft && (

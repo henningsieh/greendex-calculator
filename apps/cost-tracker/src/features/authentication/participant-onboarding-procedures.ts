@@ -20,8 +20,9 @@ import { makeRequirePublishedAgreement } from "@/features/authentication/procedu
 export async function deliverParticipantInvitation(
   email: string,
   invitationId: string,
+  secret: string,
 ) {
-  return deliverInvitation(email, invitationId);
+  return deliverInvitation(email, invitationId, secret);
 }
 
 // Tests can supply fixtures; the deployed development draft is published

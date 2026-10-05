@@ -1,4 +1,9 @@
 import {
+  accessControl,
+  calculatorOrganizationRoles,
+} from "@greendex/auth/permissions";
+import { organizationCountryFields } from "@greendex/config/organization-country";
+import {
   inferAdditionalFields,
   lastLoginMethodClient,
   magicLinkClient,
@@ -7,13 +12,6 @@ import {
 import { createAuthClient } from "better-auth/react";
 
 import { env } from "@/env";
-import {
-  ac,
-  admin,
-  member,
-  owner,
-  participant,
-} from "@/features/projects/permissions";
 import type { auth } from "@/lib/better-auth";
 
 const clientBaseURL = env.NEXT_PUBLIC_BASE_URL;
@@ -23,13 +21,9 @@ export const authClient = createAuthClient({
   baseURL: clientBaseURL,
   plugins: [
     organizationClient({
-      ac,
-      roles: {
-        owner,
-        admin,
-        member,
-        participant,
-      },
+      ac: accessControl,
+      roles: calculatorOrganizationRoles,
+      schema: { organization: { additionalFields: organizationCountryFields } },
     }),
     magicLinkClient(),
     lastLoginMethodClient(),

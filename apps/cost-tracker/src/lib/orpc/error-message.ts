@@ -1,26 +1,19 @@
 import { ORPCError } from "@orpc/client";
 
 import {
+  genericClientRefusalNames,
   getSafeErrorSituation,
+  hasComposedCopy,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
 
-const genericSituations = [
-  situationCatalog.badInput,
-  situationCatalog.unauthenticated,
-  situationCatalog.accessDenied,
-  situationCatalog.notFound,
-  situationCatalog.conflict,
-  situationCatalog.proofTransportTooLarge,
-  situationCatalog.proofMediaUnsupported,
-  situationCatalog.unprocessable,
-  situationCatalog.rateLimited,
-  {
-    ...situationCatalog.internalFailure,
-    message: "The request could not be completed. Try again.",
-  },
-  situationCatalog.unavailable,
-];
+const GENERIC_FAILURE_TEXT = "The request could not be completed. Try again.";
+
+const genericSituations = genericClientRefusalNames.map((name) =>
+  name === "internalFailure"
+    ? { ...situationCatalog.internalFailure, message: GENERIC_FAILURE_TEXT }
+    : situationCatalog[name],
+);
 
 export type ORPCRequestErrorMessage = {
   sessionExpired: boolean;
@@ -36,12 +29,15 @@ export function getORPCRequestErrorMessage(
 ): ORPCRequestErrorMessage {
   if (error instanceof ORPCError) {
     const situation = getSafeErrorSituation(error);
-    if (situation)
+    // A composed copy is a prefix the client cannot complete, so it falls
+    // through to the generic transport copy instead of leaking half a sentence.
+    if (situation && !hasComposedCopy(situation))
       return {
-        sessionExpired: situation.reason === "SESSION_REQUIRED",
+        sessionExpired:
+          situation.reason === situationCatalog.unauthenticated.reason,
         text:
-          situation.reason === "INTERNAL_FAILURE"
-            ? "The request could not be completed. Try again."
+          situation.reason === situationCatalog.internalFailure.reason
+            ? GENERIC_FAILURE_TEXT
             : situation.message,
       };
     // Unknown metadata never activates reason-specific recovery. Require the
@@ -50,8 +46,9 @@ export function getORPCRequestErrorMessage(
       (entry) => entry.code === error.code && entry.status === error.status,
     );
     return {
-      sessionExpired: fallback?.reason === "SESSION_REQUIRED",
-      text: fallback?.message ?? "The request could not be completed. Try again.",
+      sessionExpired:
+        fallback?.reason === situationCatalog.unauthenticated.reason,
+      text: fallback?.message ?? GENERIC_FAILURE_TEXT,
     };
   }
 

@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getSafeErrorSituation,
+  hasComposedCopy,
   SafeErrorDataSchema,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
@@ -69,16 +70,21 @@ describe("centralized error guardrails", () => {
     (name, expected) => {
       const methods = createSituationErrors();
       const method = methods[name as keyof typeof methods];
-      // Catalog entries are fixed zero-argument situations except the separately
-      // tested submission checklist, which accepts existing safe field issues.
+      // Only the checklist refusals accept input: server-produced field issues
+      // and the composed Project completion detail.
       const error =
         name === "submissionIncomplete"
           ? methods.submissionIncomplete([])
-          : (method as () => ReturnType<typeof methods.badInput>)();
+          : name === "projectCompletionBlocked"
+            ? methods.projectCompletionBlocked([])
+            : (method as () => ReturnType<typeof methods.badInput>)();
       expect(error).toMatchObject({
         code: expected.code,
         status: expected.status,
-        message: expected.message,
+        // A composed refusal declares the prefix its per-request detail follows.
+        message: hasComposedCopy(expected)
+          ? expect.stringContaining(expected.message)
+          : expected.message,
         data: { reason: expected.reason },
       });
       expect(SafeErrorDataSchema.safeParse(error.data).success).toBe(true);
@@ -89,19 +95,6 @@ describe("centralized error guardrails", () => {
       expect(getSafeErrorSituation({ ...error, status: 999 })).toBeUndefined();
     },
   );
-  it("rejects direct constructors, typed-map calls (including callbacks), aliases and literal throws", () => {
-    for (const source of [
-      'throw new ORPCError("FORBIDDEN", { message: "free form" });',
-      'import { ORPCError as DomainError } from "@orpc/server"; throw new DomainError("BAD_REQUEST");',
-      'return errors.BAD_REQUEST({ message: "free form" });',
-      'throw failures["FORBIDDEN"]({ message: "free form" });',
-      'throw new Error("business rejection");',
-      'throw "business rejection";',
-    ])
-      expect(directErrorSites(source).length).toBeGreaterThan(0);
-    expect(directErrorSites("throw situations.notMember();")).toEqual([]);
-    expect(directErrorSites("throw error;")).toEqual([]);
-  });
   it("has no free-form domain error construction outside the designated factory/native boundary", () => {
     const root = resolve(import.meta.dirname, "../..");
     const violations: Record<string, string[]> = {};

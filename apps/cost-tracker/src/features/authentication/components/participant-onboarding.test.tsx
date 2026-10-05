@@ -59,11 +59,19 @@ beforeEach(() => {
 describe("ParticipantJoin", () => {
   it.each([
     ["link", { kind: "link" as const, id: "link-1", secret: "secret-1" }],
-    ["invitation", { kind: "invitation" as const, invitationId: "invite-1" }],
+    [
+      "invitation",
+      {
+        kind: "invitation" as const,
+        invitationId: "invite-1",
+        secret: "secret-1",
+      },
+    ],
   ])("joins by %s and reaches the same dashboard", async (_name, source) => {
     const user = userEvent.setup();
     render(<ParticipantJoin agreement={published} source={source} />);
     await user.type(screen.getByLabelText("Full name"), "Alex Example");
+    await user.selectOptions(screen.getByLabelText("Country"), "DE");
     expect(screen.getByRole("button", { name: "Join Project" })).toBeDisabled();
     expect(screen.getByText(published.content)).toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
@@ -71,7 +79,7 @@ describe("ParticipantJoin", () => {
     await waitFor(() =>
       expect(mocks.join).toHaveBeenCalledWith({
         source,
-        profile: { fullName: "Alex Example" },
+        profile: { fullName: "Alex Example", country: "DE" },
         agreement: { accepted: true },
       }),
     );
@@ -79,11 +87,33 @@ describe("ParticipantJoin", () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
+  it("requires an EU country before joining", async () => {
+    const user = userEvent.setup();
+    render(
+      <ParticipantJoin
+        agreement={published}
+        source={{ kind: "link", id: "link-1", secret: "secret-1" }}
+      />,
+    );
+    await user.type(screen.getByLabelText("Full name"), "Alex Example");
+    await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
+    expect(screen.getByRole("button", { name: "Join Project" })).toBeDisabled();
+    await user.selectOptions(screen.getByLabelText("Country"), "FR");
+    await user.click(screen.getByRole("button", { name: "Join Project" }));
+    await waitFor(() =>
+      expect(mocks.join).toHaveBeenCalledWith({
+        source: { kind: "link", id: "link-1", secret: "secret-1" },
+        profile: { fullName: "Alex Example", country: "FR" },
+        agreement: { accepted: true },
+      }),
+    );
+  });
+
   it("never offers pending legal text as accept-worthy and does not call join", async () => {
     render(
       <ParticipantJoin
         agreement={pending}
-        source={{ kind: "invitation", invitationId: "i" }}
+        source={{ kind: "invitation", invitationId: "i", secret: "s" }}
       />,
     );
     expect(
@@ -104,6 +134,7 @@ describe("ParticipantJoin", () => {
       />,
     );
     await user.type(screen.getByLabelText("Full name"), "Alex Example");
+    await user.selectOptions(screen.getByLabelText("Country"), "DE");
     await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
     await user.click(screen.getByRole("button", { name: "Join Project" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(

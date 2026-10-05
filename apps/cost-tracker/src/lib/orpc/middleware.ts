@@ -1,4 +1,5 @@
 import type {
+  ProjectParticipationPermission,
   ProjectPartnershipPermission,
   ProjectPermission,
 } from "@greendex/auth";
@@ -26,6 +27,7 @@ export const authorized = base.use(async ({ context, errors, next }) => {
 type CostTrackerPermissions = {
   project?: ProjectPermission[];
   projectPartnership?: ProjectPartnershipPermission[];
+  projectParticipation?: ProjectParticipationPermission[];
 };
 
 export async function hasCostTrackerPermissions(

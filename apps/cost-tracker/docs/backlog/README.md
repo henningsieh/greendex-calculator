@@ -26,12 +26,6 @@ Items still tracked only in this folder:
 
 ## 2. `mjs` -> `ts` refactoring for scripts
 
-## 3. Rename Calculator `ProjectCoordinator` role key
-
-- Context: `apps/calculator/src/features/organizations/types.ts` maps `ProjectCoordinator: "admin"` (legacy: Calculator coordinators were stored as Organization admins). Cost Tracker separately defines an assignment-scoped `project-coordinator` role (one explicit Project/Partnership assignment, no Organization-wide authority). Same word, two meanings across apps sharing one membership table — already misled a tester into reading a coordinator as an admin.
-- Todo: pick an unambiguous Calculator key (e.g. `ProjectLead` or scope-explicit naming), migrate stored `"admin"` rows that actually mean coordinator (see `docs/projects/permissions.md` migration notes), update Calculator UI copy, and keep Cost Tracker's `project-coordinator` untouched.
-- Comment marker placed at the mapping; do not "fix" by aliasing the Cost Tracker role.
-
 ## 4. Refine submission validation and Oxlint safety defaults
 
 - Context: `evaluateSubmission` in `apps/cost-tracker/src/features/projects/procedures/submission.ts:118` reports cyclomatic complexity 38 against `.oxlintrc.json`'s warning threshold of 25. It combines database loading, Participation/Journey checks, frozen funding-rule checks, Travel Cost Entry/allocation/proof validation, and payable calculation. The diagnostic concerns production code, not `submission.integration.test.ts`.

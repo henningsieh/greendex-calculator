@@ -671,9 +671,10 @@
       "description": "Podrobnosti in nastavitve organizacije."
     },
     "roles": {
-      "owner": "Skrbnik organizacije",
-      "admin": "Koordinator projekta",
-      "member": "Udeleženec"
+      "owner": "Lastnik organizacije",
+      "admin": "Skrbnik organizacije",
+      "participant": "Udeleženec",
+      "coordinator": "Koordinator projekta"
     },
     "invitation": {
       "title": "Sprejmi povabilo",
@@ -687,6 +688,10 @@
         "confirm-button": "Prekliči povabilo",
         "cancel-button": "Obdrži povabilo"
       }
+    },
+    "country": {
+      "label": "Država organizacije",
+      "placeholder": "Izberite državo EU"
     }
   },
   "participation": {

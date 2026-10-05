@@ -1,6 +1,8 @@
 import { createServerAuth } from "@greendex/auth";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 
 import { env } from "@/env";
+import { participantMembershipGrantPlugin } from "@/features/organizations/participant-membership-grant";
 import {
   costTrackerOrganizationHooks,
   costTrackerInvitationRoleGate,
@@ -11,7 +13,7 @@ export const auth = createServerAuth({
   appName: "Cost Tracker",
   costTrackerRoles: true,
   organizationHooks: costTrackerOrganizationHooks,
-  plugins: [costTrackerInvitationRoleGate],
+  plugins: [costTrackerInvitationRoleGate, participantMembershipGrantPlugin],
   baseURL: env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
   socialProviders: {
@@ -23,9 +25,11 @@ export const auth = createServerAuth({
   emailSender,
   organization: {
     async sendInvitationEmail(data) {
-      // Participant Invitations are delivered by the onboarding procedure after
-      // its Project Partnership bridge commits, just like native partner issuance.
-      if (data.role === "participant") return;
+      // Participant entry never flows through Better Auth invitations
+      // (ADR-0013): the app-owned email-bound invitation delivers its own
+      // secret-bound link after durable issuance, so Better Auth sends no
+      // mail for the participant role.
+      if (data.role === ORGANIZATION_ROLES.Participant) return;
       await emailSender.sendOrganizationInvitation({
         email: data.email,
         inviterName: data.inviter.user.name,

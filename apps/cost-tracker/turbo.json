@@ -1,9 +1,12 @@
 {
-  "$schema": "https://v2-11-6.turborepo.dev/schema.json",
+  "$schema": "https://v2-11-7.turborepo.dev/schema.json",
   "extends": ["//"],
   "tasks": {
+    "build": {
+      "cache": false
+    },
     "dev": {
-      "env": ["COST_TRACKER_PORT", "NODE_ENV"]
+      "env": ["COST_TRACKER_PORT", "DATABASE_URL", "NODE_ENV"]
     }
   }
 }

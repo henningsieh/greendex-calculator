@@ -1,15 +1,15 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
 import { db } from "@greendex/database";
 import {
-  invitation,
   member,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
+  participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
   projectParticipantsTable as participants,
   user,
 } from "@greendex/database/schema";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -31,7 +31,7 @@ const progress = z.object({
   invitationId: z.string().nullable(),
   profile: z.enum(["complete", "missing"]),
   agreement: z.enum(["current", "outdated", "missing", "unavailable"]),
-  membership: z.enum(["participant", "missing"]),
+  membership: z.enum([ORGANIZATION_ROLES.Participant, "missing"]),
   bridge: z.enum([
     "none",
     "pending",
@@ -44,22 +44,20 @@ const progress = z.object({
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-type BridgeRow = {
-  bridgeStatus: string;
-  nativeStatus: string;
-  expiresAt: Date;
+type InvitationRow = {
+  status: string;
+  expiresAt: Date | null;
 };
 
-function bridgeState(
-  row: BridgeRow | undefined,
+function invitationState(
+  row: InvitationRow | undefined,
   now: Date,
 ): z.infer<typeof progress>["bridge"] {
   if (!row) return "none";
-  if (row.bridgeStatus === "accepted") return "accepted";
-  if (row.bridgeStatus === "revoked") return "revoked";
-  if (row.bridgeStatus !== "pending" || row.nativeStatus !== "pending")
-    return "canceled";
-  return row.expiresAt <= now ? "expired" : "pending";
+  if (row.status === "accepted") return "accepted";
+  if (row.status === "revoked") return "revoked";
+  if (row.status !== "pending") return "canceled";
+  return row.expiresAt !== null && row.expiresAt <= now ? "expired" : "pending";
 }
 
 export function createOnboardingProgressProcedure(
@@ -98,29 +96,30 @@ export function createOnboardingProgressProcedure(
           ),
         db
           .select({
-            invitationId: bridges.invitationId,
-            email: bridges.email,
-            bridgeStatus: bridges.status,
-            nativeStatus: invitation.status,
-            expiresAt: invitation.expiresAt,
-            issuedAt: bridges.issuedAt,
+            invitationId: entryTokens.id,
+            email: entryTokens.email,
+            status: entryTokens.status,
+            expiresAt: entryTokens.expiresAt,
+            issuedAt: entryTokens.issuedAt,
           })
-          .from(bridges)
-          .innerJoin(invitation, eq(invitation.id, bridges.invitationId))
+          .from(entryTokens)
           .where(
             and(
-              eq(bridges.partnershipId, input.partnershipId),
-              eq(bridges.projectId, scope.projectId),
-              eq(invitation.organizationId, scope.hostId),
+              eq(entryTokens.partnershipId, input.partnershipId),
+              eq(entryTokens.projectId, scope.projectId),
+              isNotNull(entryTokens.email),
             ),
           )
-          .orderBy(desc(bridges.issuedAt), desc(bridges.invitationId)),
+          .orderBy(desc(entryTokens.issuedAt), desc(entryTokens.id)),
       ]);
 
-      // Historical reissues stay in persistence; only the latest bridge describes
-      // the invitee's present state. A joined Participation takes precedence.
+      // Historical reissues stay in persistence; only the latest invitation
+      // describes the invitee's present state. A joined Participation takes
+      // precedence.
       const latestByEmail = new Map<string, (typeof issued)[number]>();
       for (const row of issued) {
+        // Shareable links carry no email and describe no invitee state.
+        if (row.email === null) continue;
         const email = normalizeEmail(row.email);
         if (!latestByEmail.has(email)) latestByEmail.set(email, row);
       }
@@ -200,7 +199,7 @@ export function createOnboardingProgressProcedure(
       const now = new Date();
       return emails.sort().map((email) => {
         const participation = joinedByEmail.get(email);
-        const bridge = latestByEmail.get(email);
+        const issued = latestByEmail.get(email);
         const userId = participation?.userId ?? byEmail.get(email);
         const accepted = userId ? latestAcceptance.get(userId) : undefined;
         const role = userId ? roles.get(userId) : undefined;
@@ -209,14 +208,14 @@ export function createOnboardingProgressProcedure(
             ? normalizeEmail(participation.email)
             : participation?.accountEmail
               ? normalizeEmail(participation.accountEmail)
-              : bridge
+              : issued
                 ? email
                 : null,
           participationId: participation?.id ?? null,
           participation: participation
             ? ("joined" as const)
             : ("not-joined" as const),
-          invitationId: bridge?.invitationId ?? null,
+          invitationId: issued?.invitationId ?? null,
           profile:
             userId && profiled.has(userId)
               ? ("complete" as const)
@@ -232,11 +231,15 @@ export function createOnboardingProgressProcedure(
           membership: role
             ?.split(",")
             .some((value) =>
-              ["participant", "owner", "admin"].includes(value.trim()),
+              [
+                ORGANIZATION_ROLES.Participant,
+                ORGANIZATION_ROLES.OrganizationOwner,
+                ORGANIZATION_ROLES.OrganizationAdmin,
+              ].some((knownRole) => knownRole === value.trim()),
             )
-            ? ("participant" as const)
+            ? ORGANIZATION_ROLES.Participant
             : ("missing" as const),
-          bridge: bridgeState(bridge, now),
+          bridge: invitationState(issued, now),
         };
       });
     });

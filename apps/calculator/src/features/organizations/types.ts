@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { member, user } from "@greendex/database/schema";
 
 /**
@@ -27,22 +28,7 @@ export const USERS_SORT_FIELDS = [
   "user.email", // user.email (via userId relation)
 ] as const satisfies readonly UsersSortField[];
 
-/**
- * Organization member role definitions
- * Maps display names to database role values
- *
- * NOTE: `ProjectCoordinator: "admin"` is a legacy Calculator mapping and does
- * NOT mean the same as Cost Tracker's assignment-scoped `project-coordinator`
- * role (one explicit Project/Partnership assignment, no Organization-wide
- * authority). Same word, different role per app — see the backlog todo to
- * rename the Calculator key and stop the confusion.
- */
-export const MEMBER_ROLES = {
-  OrganizationAdministrator: "owner",
-  ProjectCoordinator: "admin",
-  Participant: "participant",
-  Member: "member",
-} as const;
+export const MEMBER_ROLES = ORGANIZATION_ROLES;
 
 /**
  * Type for member role values
@@ -50,10 +36,9 @@ export const MEMBER_ROLES = {
 export type MemberRole = (typeof MEMBER_ROLES)[keyof typeof MEMBER_ROLES];
 
 const calculatorRolePriority: MemberRole[] = [
-  "owner",
-  "admin",
-  "member",
-  "participant",
+  MEMBER_ROLES.OrganizationOwner,
+  MEMBER_ROLES.OrganizationAdmin,
+  MEMBER_ROLES.Participant,
 ];
 
 /** Ignore Cost Tracker's appended coordinator role at Calculator's display/API boundary. */

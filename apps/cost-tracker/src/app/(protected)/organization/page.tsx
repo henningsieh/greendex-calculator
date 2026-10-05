@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { canManageOrganization } from "@/features/organizations/access";
+import { OrganizationSettings } from "@/features/organizations/components/organization-settings";
 import { OrganizationTeam } from "@/features/organizations/components/organization-team";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
@@ -18,6 +19,13 @@ export const metadata: Metadata = { title: "Organization" };
 async function OrganizationTeamSection({ email }: { email: string }) {
   const queryClient = getQueryClient();
   await Promise.all([
+    queryClient
+      .query(
+        orpcQuery.organizations.getSettings.queryOptions({
+          meta: { costTrackerORPC: true },
+        }),
+      )
+      .catch(swallowPrefetchError),
     queryClient
       .query(
         orpcQuery.organizations.listMembers.queryOptions({
@@ -39,7 +47,10 @@ async function OrganizationTeamSection({ email }: { email: string }) {
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Organization staff">
-        <OrganizationTeam currentUserEmail={email} />
+        <div className="space-y-10">
+          <OrganizationSettings />
+          <OrganizationTeam currentUserEmail={email} />
+        </div>
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );

@@ -19,21 +19,33 @@ Neither answer replaces the other. A role never grants access to every Project, 
 | --- | --- | --- |
 | Organization Owner | `owner` | Full authority over one Organization, including Organization-level users and settings. |
 | Organization Admin | `admin` | Organization-wide administrative authority below the Owner. |
-| Project Coordinator | `project-coordinator` | Coordination capability narrowed by an explicit hosted-Project or Project-Partnership assignment. |
+| Project Coordinator | `coordinator` | Coordination capability narrowed by an explicit hosted-Project or Project-Partnership assignment. |
 | Participant | `participant` | Participant-facing capability narrowed by the User's own Project Participation. |
 
-Better Auth's default role value `member` is forbidden in Cost Tracker: never invite, assign, or seed it, alone or in combined roles. It is not a named Greendex actor. [ADR-0012](../adr/0012-ban-fallback-member-role-in-cost-tracker.md) supersedes the prior technical-fallback allowance; Calculator compatibility is unchanged.
+Both apps use only the four shared role values above; unknown and omitted grants are refused. [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) replaces the former Calculator compatibility values. Calculator retains its `admin` Project-management behavior; its `coordinator` role grants nothing yet.
 
-One Membership may hold several roles. Assigning `participant` or `project-coordinator` never removes an existing role.
+Calculator `admin` intentionally converges to the shared Project `archive` grant; Project deletion remains reserved to Organization Owners.
+
+Library table/field names and ordinary Membership wording are unaffected.
+
+Role lists derive from the shared auth constants rather than separate app-owned lists. Only defined shared role values may be invited, assigned, or seeded; staff invitations remain limited to `owner` and `admin`.
+
+One Membership may hold several roles. Assigning `participant` or `coordinator` never removes an existing role.
 
 ## Project Coordinator scope
 
-ADR-0004 defines one `project-coordinator` role with two possible scopes:
+### Runtime role identifiers
+
+Cost Tracker maps Better Auth `owner` to `organisationOwner` (exact spelling), `admin` to `organizationAdmin`, and `participant` to `projectParticipant`. Calculator retains `legacyCalculatorAdminRole` for its existing `admin` behavior. A Participant Role may coexist with other roles on the same Organization Membership and does not identify which Projects the User participates in.
+
+ADR-0004 defines one `coordinator` role with two possible scopes:
 
 - A Project Coordinator assigned to a Project hosted by their Organization performs Host-side coordination for that Project only.
 - A Project Coordinator assigned to their Organization's Project Partnership performs Partner-side coordination for that Partnership only.
 
 Organization Owners and Organization Admins retain Organization-wide authority. Project Coordinator assignments never grant Organization management authority.
+
+UI wording is `Project Coordinator` for Hosting Organization scope and `Group Organizer` for Partner Organization scope. The role alone grants neither Organization-wide authority nor access to an unassigned Project.
 
 ## Participant onboarding
 
@@ -70,13 +82,6 @@ A recipient completes their profile and accepts the current agreement version be
 - Participant personal access requires both the `participant` role in the Hosting Organization and the User's own Project Participation.
 - Client-side checks control presentation only; server-side authorization is authoritative.
 
-## Current-to-target migration
+## Application boundaries
 
-The target implementation must:
-
-- introduce distinct custom Better Auth roles for `project-coordinator` and `participant`;
-- migrate the current meaning of stored `admin` roles deliberately: `admin` becomes Organization Admin, while existing Project Coordinators move to `project-coordinator` as appropriate;
-- create hosted-Project and Project-Partnership responsibility assignments and enforce them in every server-side write and read;
-- replace unauthenticated participant persistence and secret personal links with account-based onboarding;
-- centralize participant profile and app-wide agreement acceptance without exposing profiles outside their authorized Project relationships;
-- preserve existing roles when adding `participant` or `project-coordinator`.
+Cost Tracker applies assignment-scoped coordination and authenticated Participant entry. Calculator retains its existing administrative Project checks: the `admin` value still manages Projects, while `coordinator` confers no grants. No stored-role compatibility map or data backfill is retained; development mock data is wiped and reseeded with final roles before applying the required country column.

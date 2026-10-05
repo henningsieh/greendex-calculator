@@ -9,6 +9,7 @@ import { createQueryClient } from "@/lib/tanstack-react-query/client";
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   consume: vi.fn(),
+  createOrganization: vi.fn(),
   writeText: vi.fn(),
   searchHosted: vi.fn(),
   listMine: vi.fn(),
@@ -49,6 +50,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   return {
     ...original,
     orpc: {
+      authentication: { createOrganization: mocks.createOrganization },
       projectPartnerships: {
         createSetupLink: mocks.create,
         consumeSetupLink: mocks.consume,
@@ -95,6 +97,7 @@ beforeEach(() => {
   vi.stubGlobal("navigator", { clipboard: { writeText: mocks.writeText } });
   mocks.writeText.mockResolvedValue(undefined);
   mocks.listSetupLinks.mockResolvedValue([]);
+  mocks.createOrganization.mockResolvedValue({ success: true });
   mocks.create.mockResolvedValue({
     id: "link-1",
     secret: "private-secret",
@@ -148,6 +151,22 @@ async function submitExisting() {
 }
 
 describe("Setup Link UI", () => {
+  it("renders the server-provided expiry status without reading the clock during render", async () => {
+    mocks.listSetupLinks.mockResolvedValue([
+      {
+        id: "expired-link",
+        projectName: "Hosted Example",
+        recipientEmail: "partner@example.org",
+        enabled: true,
+        consumedAt: null,
+        expired: true,
+        expiresAt: new Date("2099-01-01"),
+      },
+    ]);
+    creator();
+    expect(await screen.findByText("Expired")).toBeTruthy();
+  });
+
   it("creates a recipient-bound link, displays it and copies the URL", async () => {
     const user = userEvent.setup();
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
@@ -201,23 +220,45 @@ describe("Setup Link UI", () => {
     expect(screen.queryByRole("button", { name: "Complete setup" })).toBeNull();
   });
 
-  it("renders new Organization setup and never claims Hosting membership", async () => {
+  it("creates the Organization through the supported flow, then binds it", async () => {
+    mocks.listMine.mockResolvedValue([{ id: "partner-2", name: "New Partner" }]);
     recipient();
     const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.type(
       screen.getByLabelText("New Organization name"),
       "New Partner",
     );
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
+    expect(mocks.createOrganization).toHaveBeenCalledWith({
+      country: "DE" as const,
+      name: "New Partner",
+      slug: "new-partner",
+    });
+    expect(mocks.listMine).toHaveBeenCalledWith({ search: "New Partner" });
     expect(mocks.consume).toHaveBeenCalledWith({
       id: "link-1",
       secret: "private-secret",
-      organization: { kind: "new", name: "New Partner" },
+      organizationId: "partner-2",
     });
     expect(await screen.findByText("Project Partnership created")).toBeTruthy();
     expect(
       screen.getByText(/does not grant Hosting Organization membership/i),
     ).toBeTruthy();
+  });
+
+  it("refuses clearly when Organization creation fails", async () => {
+    mocks.createOrganization.mockRejectedValue(new Error("BA refused"));
+    recipient();
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
+    await user.type(
+      screen.getByLabelText("New Organization name"),
+      "New Partner",
+    );
+    await user.click(screen.getByRole("button", { name: "Complete setup" }));
+    expect(await screen.findByText("Could not create Organization")).toBeTruthy();
+    expect(mocks.consume).not.toHaveBeenCalled();
   });
 
   it("shows Owner verification on the existing path and sends the ID for server verification", async () => {
@@ -233,7 +274,7 @@ describe("Setup Link UI", () => {
     expect(mocks.consume).toHaveBeenCalledWith({
       id: "link-1",
       secret: "private-secret",
-      organization: { kind: "existing", organizationId: "partner-1" },
+      organizationId: "partner-1",
     });
   });
 

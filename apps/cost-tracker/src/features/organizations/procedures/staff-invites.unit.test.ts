@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -59,6 +60,7 @@ describe("organizations staff invites", () => {
   beforeAll(async () => {
     const now = new Date();
     await db.insert(organization).values({
+      country: "DE",
       id: orgId,
       name: orgId,
       slug: orgId,
@@ -82,12 +84,18 @@ describe("organizations staff invites", () => {
       });
     }
     const memberships: [string, string][] = [
-      [ownerId, "owner"],
-      [adminId, "admin"],
-      [memberId, "project-coordinator"],
-      [participantId, "participant"],
-      [hybridAdminId, "admin,participant"],
-      [hybridMemberId, "project-coordinator,participant"],
+      [ownerId, ORGANIZATION_ROLES.OrganizationOwner],
+      [adminId, ORGANIZATION_ROLES.OrganizationAdmin],
+      [memberId, ORGANIZATION_ROLES.ProjectCoordinator],
+      [participantId, ORGANIZATION_ROLES.Participant],
+      [
+        hybridAdminId,
+        `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+      ],
+      [
+        hybridMemberId,
+        `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+      ],
     ];
     for (const [userId, role] of memberships) {
       await db.insert(member).values({
@@ -140,12 +148,12 @@ describe("organizations staff invites", () => {
     const asOwner = await client.organizations.listMembers({});
     expect(asOwner.members.map((entry) => entry.role).sort()).toEqual(
       [
-        "admin",
-        "admin,participant",
-        "project-coordinator",
-        "project-coordinator,participant",
-        "owner",
-        "participant",
+        ORGANIZATION_ROLES.OrganizationAdmin,
+        `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+        ORGANIZATION_ROLES.ProjectCoordinator,
+        `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+        ORGANIZATION_ROLES.OrganizationOwner,
+        ORGANIZATION_ROLES.Participant,
       ].sort(),
     );
     expect(asOwner.members[0]).toMatchObject({
@@ -181,7 +189,7 @@ describe("organizations staff invites", () => {
     await expect(
       client.organizations.inviteMember({
         email: "new-member@example.org",
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
@@ -189,7 +197,7 @@ describe("organizations staff invites", () => {
     await expect(
       client.organizations.inviteMember({
         email: "new-owner@example.org",
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
       }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(authMocks.createInvitation).not.toHaveBeenCalled();
@@ -198,21 +206,25 @@ describe("organizations staff invites", () => {
   it("rejects coordinator and participant roles even for owners", async () => {
     session(ownerId);
     for (const role of [
-      "project-coordinator",
-      "participant",
-      "owner,participant",
+      ORGANIZATION_ROLES.ProjectCoordinator,
+      ORGANIZATION_ROLES.Participant,
+      `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
     ]) {
       await expect(
         client.organizations.inviteMember({
           email: "staff-target@example.org",
-          role: role as "admin",
+          role: role as typeof ORGANIZATION_ROLES.OrganizationAdmin,
         }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     }
     expect(authMocks.createInvitation).not.toHaveBeenCalled();
   });
 
-  it.each(["member", "owner,member", "member,participant"])(
+  it.each([
+    "invalid-role",
+    `${ORGANIZATION_ROLES.OrganizationOwner},invalid-role`,
+    `invalid-role,${ORGANIZATION_ROLES.Participant}`,
+  ])(
     "rejects banned invitation role %s before calling Better Auth",
     async (role) => {
       session(ownerId);
@@ -226,8 +238,7 @@ describe("organizations staff invites", () => {
         data: {
           issues: expect.arrayContaining([
             expect.objectContaining({
-              message:
-                'The "member" role is forbidden in Cost Tracker. Use a defined Organization role.',
+              message: "Use a defined Organization role.",
             }),
           ]),
         },
@@ -247,14 +258,17 @@ describe("organizations staff invites", () => {
     await expect(
       client.organizations.inviteMember({
         email: "New-Admin@Example.org",
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
       }),
-    ).resolves.toMatchObject({ invitationId, role: "admin" });
+    ).resolves.toMatchObject({
+      invitationId,
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
+    });
     expect(authMocks.createInvitation).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
           email: "new-admin@example.org",
-          role: "admin",
+          role: ORGANIZATION_ROLES.OrganizationAdmin,
           organizationId: orgId,
         }),
       }),
@@ -268,9 +282,9 @@ describe("organizations staff invites", () => {
     await expect(
       client.organizations.inviteMember({
         email: "new-owner@example.org",
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
       }),
-    ).resolves.toMatchObject({ role: "owner" });
+    ).resolves.toMatchObject({ role: ORGANIZATION_ROLES.OrganizationOwner });
   });
 
   it.each([
@@ -312,7 +326,7 @@ describe("organizations staff invites", () => {
       await expect(
         client.organizations.inviteMember({
           email: "target@example.org",
-          role: "admin",
+          role: ORGANIZATION_ROLES.OrganizationAdmin,
         }),
       ).rejects.toMatchObject({
         code,
@@ -334,7 +348,7 @@ describe("organizations staff invites", () => {
     await expect(
       client.organizations.inviteMember({
         email: "target@example.org",
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -346,7 +360,7 @@ describe("organizations staff invites", () => {
     await expect(
       client.organizations.inviteMember({
         email: "target@example.org",
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
       }),
     ).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
@@ -359,7 +373,7 @@ describe("organizations staff invites", () => {
       id,
       organizationId: orgId,
       email: `${ownerId}@example.org`,
-      role: "admin",
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
       status: "pending",
       expiresAt: new Date(Date.now() + 3600_000),
       inviterId: ownerId,
@@ -400,6 +414,7 @@ describe("organizations staff invites", () => {
     const otherInvitationId = randomUUID();
     const now = new Date();
     await db.insert(organization).values({
+      country: "DE",
       id: otherOrgId,
       name: otherOrgId,
       slug: otherOrgId,
@@ -410,7 +425,7 @@ describe("organizations staff invites", () => {
         id: pendingId,
         organizationId: orgId,
         email: "leaving@example.org",
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
         status: "pending",
         expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
         createdAt: now,
@@ -420,7 +435,7 @@ describe("organizations staff invites", () => {
         id: otherInvitationId,
         organizationId: otherOrgId,
         email: "elsewhere@example.org",
-        role: "admin",
+        role: ORGANIZATION_ROLES.OrganizationAdmin,
         status: "pending",
         expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
         createdAt: now,

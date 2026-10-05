@@ -1,5 +1,6 @@
-import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { headers } from "next/headers";
 
 import { assignedPartnershipIds } from "@/features/projects/procedures/assigned-partnerships";
@@ -26,9 +27,11 @@ export async function canManageOrganization(): Promise<boolean> {
     );
     const role = membership?.role ?? "";
     return (
-      hasOrganizationRole(role, "owner") || hasOrganizationRole(role, "admin")
+      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) ||
+      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
     );
-  } catch {
+  } catch (error) {
+    console.error("Organization management access lookup failed", { error });
     return false;
   }
 }
@@ -55,7 +58,8 @@ export async function canViewPartnerNetwork(): Promise<boolean> {
       return true;
     const assigned = await assignedPartnershipIds(userId, activeOrganizationId);
     return assigned.length > 0;
-  } catch {
+  } catch (error) {
+    console.error("Partner network access lookup failed", { error });
     return false;
   }
 }

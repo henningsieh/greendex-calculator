@@ -1,5 +1,6 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   account,
@@ -9,8 +10,8 @@ import {
   member,
   organization,
   partnerOrganizationSetupLinksTable as setupLinks,
-  participantInvitationBridgesTable as bridges,
-  participantRegistrationLinksTable as registrationLinks,
+  participantEntryTokensTable as participantInvitations,
+  participantEntryTokensTable as entryTokens,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participations,
   projectsTable,
@@ -127,8 +128,8 @@ async function counts() {
       .where(eq(setupLinks.projectId, projectId ?? "no-project")),
     db
       .select({ value: count() })
-      .from(registrationLinks)
-      .where(eq(registrationLinks.partnershipId, ids.partnership)),
+      .from(entryTokens)
+      .where(eq(entryTokens.partnershipId, ids.partnership)),
     db
       .select({ value: count() })
       .from(claimsTable)
@@ -218,30 +219,48 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     }
     const now = new Date();
     await db.insert(organization).values([
-      { id: ids.host, name: names.host, slug: ids.host, createdAt: now },
-      { id: ids.partner, name: names.partner, slug: ids.partner, createdAt: now },
-      { id: ids.foreign, name: names.foreign, slug: ids.foreign, createdAt: now },
+      {
+        country: "DE",
+        id: ids.host,
+        name: names.host,
+        slug: ids.host,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.partner,
+        name: names.partner,
+        slug: ids.partner,
+        createdAt: now,
+      },
+      {
+        country: "DE",
+        id: ids.foreign,
+        name: names.foreign,
+        slug: ids.foreign,
+        createdAt: now,
+      },
     ]);
     await db.insert(member).values([
       {
         id: randomUUID(),
         userId: actors.H.id,
         organizationId: ids.host,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.P.id,
         organizationId: ids.partner,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: randomUUID(),
         userId: actors.F.id,
         organizationId: ids.foreign,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
     ]);
@@ -249,7 +268,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       id: ids.invitation,
       organizationId: ids.host,
       email: actors.A.email,
-      role: "admin",
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
       status: "pending",
       expiresAt: new Date(Date.now() + 3_600_000),
       inviterId: actors.H.id,
@@ -274,8 +293,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await db.delete(claimsTable).where(eq(claimsTable.id, claim.id));
     }
     await db
-      .delete(registrationLinks)
-      .where(eq(registrationLinks.partnershipId, ids.partnership));
+      .delete(entryTokens)
+      .where(eq(entryTokens.partnershipId, ids.partnership));
     if (projectId)
       await db.delete(setupLinks).where(eq(setupLinks.projectId, projectId));
     await db
@@ -284,22 +303,14 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     if (projectId)
       await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
     await db
-      .delete(bridges)
+      .delete(participantInvitations)
       .where(
-        inArray(bridges.invitationId, [
+        inArray(participantInvitations.id, [
           ids.oldParticipantInvitation,
           ids.newParticipantInvitation,
         ]),
       );
-    await db
-      .delete(invitation)
-      .where(
-        inArray(invitation.id, [
-          ids.invitation,
-          ids.oldParticipantInvitation,
-          ids.newParticipantInvitation,
-        ]),
-      );
+    await db.delete(invitation).where(eq(invitation.id, ids.invitation));
     await db
       .delete(member)
       .where(
@@ -376,7 +387,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await h.goto("/organization");
     await expect(
       h.getByRole("row").filter({ hasText: actors.A.email }),
-    ).toContainText("admin");
+    ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
     // A creator and Organization Admin are observable; assignment to another
     // Project-/Partnership-scoped coordinator is UI GAP, not inferred from DB roles.
   });
@@ -441,7 +452,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
         id: ids.participantMembership,
         userId: actors.T.id,
         organizationId: ids.host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
         createdAt: new Date(),
       });
       await db.insert(participations).values({
@@ -456,7 +467,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
           .select({ role: member.role, organizationId: member.organizationId })
           .from(member)
           .where(eq(member.userId, actors.T.id)),
-      ).toEqual([{ role: "participant", organizationId: ids.host }]);
+      ).toEqual([
+        { role: ORGANIZATION_ROLES.Participant, organizationId: ids.host },
+      ]);
       expect(
         await db
           .select({
@@ -529,6 +542,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       x.getByText("Partner Organization setup", { exact: true }),
     ).toBeVisible();
     await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
+    await x.getByLabel("Organization country").selectOption("DE");
     await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     await creator
@@ -541,6 +555,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
     await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
+    await x.getByLabel("Organization country").selectOption("DE");
     await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     const fresh = await browser.newContext({
@@ -578,20 +593,19 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
   }) => {
     // Issuing/reissuing through UI sends real SMTP. DB preconditions here are NOT
     // browser evidence for delivery or the reissue affordance.
-    await db.insert(invitation).values({
+    const oldSecret = `old-secret-${suffix}`;
+    const newSecret = `new-secret-${suffix}`;
+    registerPrivateValues(oldSecret, newSecret);
+    const secretHash = (secret: string) =>
+      createHash("sha256").update(secret).digest("hex");
+    await db.insert(participantInvitations).values({
       id: ids.oldParticipantInvitation,
-      organizationId: ids.host,
-      email: actors.T.email,
-      role: "participant",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 3_600_000),
-      inviterId: actors.P.id,
-    });
-    await db.insert(bridges).values({
-      invitationId: ids.oldParticipantInvitation,
       partnershipId: ids.partnership,
       projectId,
       email: actors.T.email,
+      secretHash: secretHash(oldSecret),
+      status: "pending",
+      expiresAt: new Date(Date.now() + 3_600_000),
       issuedByUserId: actors.P.id,
     });
     const p = await pageFor(browser, "P", baseURL!);
@@ -600,31 +614,23 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       p.getByRole("button", { name: `Reissue invitation for ${actors.T.email}` }),
     ).toBeVisible();
     await db
-      .update(bridges)
+      .update(participantInvitations)
       .set({ status: "revoked" })
-      .where(eq(bridges.invitationId, ids.oldParticipantInvitation));
-    await db
-      .update(invitation)
-      .set({ status: "canceled" })
-      .where(eq(invitation.id, ids.oldParticipantInvitation));
-    await db.insert(invitation).values({
+      .where(eq(participantInvitations.id, ids.oldParticipantInvitation));
+    await db.insert(participantInvitations).values({
       id: ids.newParticipantInvitation,
-      organizationId: ids.host,
-      email: actors.T.email,
-      role: "participant",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 3_600_000),
-      inviterId: actors.P.id,
-    });
-    await db.insert(bridges).values({
-      invitationId: ids.newParticipantInvitation,
       partnershipId: ids.partnership,
       projectId,
       email: actors.T.email,
+      secretHash: secretHash(newSecret),
+      status: "pending",
+      expiresAt: new Date(Date.now() + 3_600_000),
       issuedByUserId: actors.P.id,
     });
     const t = await pageFor(browser, "T", baseURL!);
-    await t.goto(`/participant-invitations/${ids.oldParticipantInvitation}`);
+    await t.goto(
+      `/participant-invitations/${ids.oldParticipantInvitation}?secret=${encodeURIComponent(oldSecret)}`,
+    );
     await t.getByLabel("Full name").fill(actors.T.name);
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
@@ -638,7 +644,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
         .from(participations)
         .where(eq(participations.projectId, projectId)),
     ).toHaveLength(0);
-    await t.goto(`/participant-invitations/${ids.newParticipantInvitation}`);
+    await t.goto(
+      `/participant-invitations/${ids.newParticipantInvitation}?secret=${encodeURIComponent(newSecret)}`,
+    );
     await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
     // Spare replacement is not redeemed; no Participation or Membership created.
   });

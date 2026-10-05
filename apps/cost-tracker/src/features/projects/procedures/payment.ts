@@ -7,6 +7,10 @@ import {
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  canCorrectPaidFlag,
+  canRecordPayment,
+} from "@/features/projects/claim-lifecycle";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -49,9 +53,12 @@ export const markPaid = authorized
         tx,
         { projectId: scope.projectId, partnershipId: input.partnershipId },
         errors,
+        "project",
       );
       if (!claim) throw createSituationErrors(errors).claimNotFound();
-      if (!["approved", "paid"].includes(claim.status))
+      // The shared payment rule owns the permitted statuses; the amount check
+      // below keeps the one-full-transfer invariant (ADR-0009).
+      if (!canRecordPayment(claim.status))
         throw createSituationErrors(errors).claimApprovalRequired();
       if (claim.approvedAmountEur === null) {
         console.error("Approved/paid Claim lacks an approved amount");
@@ -105,6 +112,7 @@ export const correctPayment = authorized
         tx,
         { projectId: scope.projectId, partnershipId: input.partnershipId },
         errors,
+        "project",
       );
       if (claim?.status === "approved" && claim.approvedAmountEur !== null) {
         const [latest] = await tx
@@ -124,7 +132,7 @@ export const correctPayment = authorized
           };
       }
       if (!claim) throw createSituationErrors(errors).claimNotFound();
-      if (claim.status !== "paid")
+      if (!canCorrectPaidFlag(claim.status))
         throw createSituationErrors(errors).claimPaidRequired();
       if (claim.approvedAmountEur === null) {
         console.error("Paid Claim lacks an approved amount");

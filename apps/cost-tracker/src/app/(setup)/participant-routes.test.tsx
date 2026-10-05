@@ -42,11 +42,23 @@ describe("Participant routes", () => {
     render(
       await ParticipantInvitationPage({
         params: Promise.resolve({ invitationId: "invite-1" }),
+        searchParams: Promise.resolve({ secret: "secret-1" }),
       }),
     );
     expect(
-      screen.getByText('Join: {"kind":"invitation","invitationId":"invite-1"}'),
+      screen.getByText(
+        'Join: {"kind":"invitation","invitationId":"invite-1","secret":"secret-1"}',
+      ),
     ).toBeInTheDocument();
+  });
+  it("rejects ambiguous invitation secrets", async () => {
+    render(
+      await ParticipantInvitationPage({
+        params: Promise.resolve({ invitationId: "invite-1" }),
+        searchParams: Promise.resolve({ secret: ["one", "two"] }),
+      }),
+    );
+    expect(screen.getByText("Join: null")).toBeInTheDocument();
   });
   it("offers the same dashboard regardless of the join path", async () => {
     render(await ParticipantPage());

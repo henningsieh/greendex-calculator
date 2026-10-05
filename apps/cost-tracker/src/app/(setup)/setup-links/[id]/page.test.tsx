@@ -23,7 +23,9 @@ describe("Setup Link route", () => {
         searchParams: Promise.resolve({ secret: "secret-1" }),
       }),
     );
-    expect(mocks.requireSession).toHaveBeenCalledOnce();
+    expect(mocks.requireSession).toHaveBeenCalledWith(
+      "/setup-links/link-1?secret=secret-1",
+    );
     expect(screen.getByText("Setup link-1: secret-1")).toBeTruthy();
   });
 

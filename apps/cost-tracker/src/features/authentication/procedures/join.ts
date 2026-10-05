@@ -1,12 +1,11 @@
+import { addOrganizationRole } from "@greendex/auth";
 import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
-  invitation,
   member,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
   participantProfilesTable as profiles,
-  participantRegistrationLinksTable as links,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
   projectsTable as projects,
@@ -15,21 +14,38 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
+  consumeEntryToken,
+  recheckEntryToken,
+  requireTokenRedeemable,
+  resolveEntryToken,
+} from "@/features/authentication/procedures/entry-tokens";
+import {
   shouldGrantParticipantRole,
-  secretHash,
   joinInput,
   type RequirePublishedAgreement,
 } from "@/features/authentication/procedures/shared";
+import { participantGrantChangedCode } from "@/features/organizations/participant-membership-grant";
 import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
 import {
-  normalizeBetterAuthError,
-  normalizeBetterAuthResponse,
   normalizeParticipantMembershipError,
   normalizeParticipantMembershipResponse,
 } from "@/lib/orpc/better-auth-errors";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
+
+// The grant endpoint signals a stale expected role with its own fixed code, so a
+// changed Membership retries against a fresh read instead of failing opaquely.
+async function isGrantRoleStale(response: Response): Promise<boolean> {
+  try {
+    const parsed = z
+      .object({ code: z.string() })
+      .safeParse(await response.clone().json());
+    return parsed.success && parsed.data.code === participantGrantChangedCode;
+  } catch {
+    return false;
+  }
+}
 
 export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) {
   const join = authorized
@@ -39,52 +55,23 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
       const version = requirePublishedAgreement(errors);
       if (!context.user.emailVerified)
         throw createSituationErrors(errors).verifyEmail();
-      let partnershipId: string;
-      let bridgeId: string | undefined;
-      if (input.source.kind === "link") {
-        const [link] = await db
-          .select()
-          .from(links)
-          .where(eq(links.id, input.source.id))
-          .limit(1);
-        if (!link || link.secretHash !== secretHash(input.source.secret))
-          throw createSituationErrors(errors).registrationLinkNotFound();
-        if (!link.enabled)
-          throw createSituationErrors(errors).registrationLinkClosed();
-        partnershipId = link.partnershipId;
-      } else {
-        const [bridge] = await db
-          .select()
-          .from(bridges)
-          .where(eq(bridges.invitationId, input.source.invitationId))
-          .limit(1);
-        if (!bridge)
-          throw createSituationErrors(errors).participantInvitationNotFound();
-        if (bridge.email !== context.user.email.trim().toLowerCase())
-          throw createSituationErrors(errors).participantInvitationWrongAccount();
-        if (bridge.status !== "pending" && bridge.status !== "accepted")
-          throw createSituationErrors(errors).participantInvitationClosed();
-        const [nativeInvitation] = await db
-          .select({ expiresAt: invitation.expiresAt, status: invitation.status })
-          .from(invitation)
-          .where(eq(invitation.id, bridge.invitationId))
-          .limit(1);
-        if (!nativeInvitation)
-          throw createSituationErrors(errors).participantInvitationNotFound();
-        if (
-          bridge.status === "pending" &&
-          nativeInvitation.expiresAt <= new Date()
-        )
-          throw createSituationErrors(errors).participantInvitationExpired();
-        if (
-          bridge.status === "pending" &&
-          nativeInvitation.status !== "pending" &&
-          nativeInvitation.status !== "accepted"
-        )
-          throw createSituationErrors(errors).participantInvitationClosed();
-        partnershipId = bridge.partnershipId;
-        bridgeId = bridge.invitationId;
-      }
+      // One shared resolution for both flavours of the same app-owned entry
+      // mechanism: the bound secret resolves the token, and an email-bound
+      // token additionally requires the verified account to match. A forwarded
+      // link grants nothing to other accounts.
+      const token =
+        input.source.kind === "link"
+          ? await resolveEntryToken(errors, "link", {
+              id: input.source.id,
+              secret: input.source.secret,
+            })
+          : await resolveEntryToken(errors, "invitation", {
+              id: input.source.invitationId,
+              secret: input.source.secret,
+            });
+      requireTokenRedeemable(errors, token, context.user.email);
+      const partnershipId = token.partnershipId;
+      const invitationId = token.email !== null ? token.id : undefined;
       const [partnership] = await db
         .select({
           projectId: partnerships.projectId,
@@ -102,6 +89,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         .select({
           id: participants.id,
           partnerId: participants.representedOrganizationId,
+          country: participants.country,
         })
         .from(participants)
         .where(
@@ -113,39 +101,9 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         .limit(1);
       if (previous && previous.partnerId !== partnership.partnerId)
         throw createSituationErrors(errors).joinedOtherPartner();
-      if (bridgeId && !previous) {
-        const [existingMembership] = await db
-          .select({ id: member.id })
-          .from(member)
-          .where(
-            and(
-              eq(member.organizationId, partnership.hostId),
-              eq(member.userId, context.user.id),
-            ),
-          )
-          .limit(1);
-        if (!existingMembership) {
-          const response = await auth.api
-            .acceptInvitation({
-              asResponse: true,
-              headers: context.headers,
-              body: { invitationId: bridgeId },
-            })
-            .catch((error: unknown) => {
-              throw normalizeBetterAuthError(
-                error,
-                createSituationErrors(errors),
-                context.resHeaders,
-              );
-            });
-          if (!response.ok)
-            throw await normalizeBetterAuthResponse(
-              response,
-              createSituationErrors(errors),
-              context.resHeaders,
-            );
-        }
-      }
+      // Both entry flavours complete Membership through the same supported
+      // server calls (ADR-0013): no Better Auth invitation is ever accepted
+      // for participant entry, so there is no branch-specific write here.
       const [membership] = await db
         .select({ id: member.id, role: member.role })
         .from(member)
@@ -167,7 +125,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             body: {
               userId: context.user.id,
               organizationId: partnership.hostId,
-              role: "participant",
+              role: ORGANIZATION_ROLES.Participant,
             },
           })
           .catch((error: unknown) => {
@@ -185,65 +143,60 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           );
         console.info("Participant membership created", {
           actor: context.user.id,
-          linkId: input.source.kind === "link" ? input.source.id : bridgeId,
+          linkId: input.source.kind === "link" ? input.source.id : invitationId,
           previousRole: null,
-          newRole: "participant",
+          newRole: ORGANIZATION_ROLES.Participant,
           at: new Date().toISOString(),
         });
       } else if (shouldGrantParticipantRole(membership.role)) {
         // #183 appends coordinator to assigned members; joining must retain every existing role.
-        const updatedRole = `${membership.role},participant`;
-        const authContext = await auth.$context;
-        const updated = await authContext.adapter.update({
-          model: "member",
-          where: [
-            { field: "id", value: membership.id },
-            { field: "role", value: membership.role },
-          ],
-          update: { role: updatedRole },
-        });
-        if (!updated) throw createSituationErrors(errors).membershipChanged();
+        // The grant runs through the server-only participant-membership endpoint (ADR-0013):
+        // this procedure authorized the join, Better Auth owns the write and its role hooks.
+        const response = await auth.api
+          .grantParticipantMembership({
+            asResponse: true,
+            body: {
+              userId: context.user.id,
+              organizationId: partnership.hostId,
+              expectedRole: membership.role,
+            },
+          })
+          .catch((error: unknown) => {
+            throw normalizeParticipantMembershipError(
+              error,
+              createSituationErrors(errors),
+              context.resHeaders,
+            );
+          });
+        if (!response.ok) {
+          if (await isGrantRoleStale(response))
+            throw createSituationErrors(errors).membershipChanged();
+          throw await normalizeParticipantMembershipResponse(
+            response,
+            createSituationErrors(errors),
+            context.resHeaders,
+          );
+        }
         console.info("Participant membership updated", {
           actor: context.user.id,
-          linkId: input.source.kind === "link" ? input.source.id : bridgeId,
+          linkId: input.source.kind === "link" ? input.source.id : invitationId,
           previousRole: membership.role,
-          newRole: updatedRole,
+          newRole: addOrganizationRole(
+            membership.role,
+            ORGANIZATION_ROLES.Participant,
+          ),
           at: new Date().toISOString(),
         });
       }
       return db.transaction(async (tx) => {
-        if (input.source.kind === "link") {
-          const [link] = await tx
-            .select({ enabled: links.enabled })
-            .from(links)
-            .where(
-              and(
-                eq(links.id, input.source.id),
-                eq(links.partnershipId, partnershipId),
-              ),
-            )
-            .for("update")
-            .limit(1);
-          if (!link)
-            throw createSituationErrors(errors).registrationLinkNotFound();
-          if (!link.enabled)
-            throw createSituationErrors(errors).registrationLinkClosed();
-        } else {
-          const [bridge] = await tx
-            .select({ status: bridges.status })
-            .from(bridges)
-            .where(eq(bridges.invitationId, bridgeId!))
-            .for("update")
-            .limit(1);
-          if (!bridge)
-            throw createSituationErrors(errors).participantInvitationNotFound();
-          if (bridge.status !== "pending" && bridge.status !== "accepted")
-            throw createSituationErrors(errors).participantInvitationClosed();
-        }
+        // One shared row-locked recheck for both flavours: a link revoked
+        // mid-join refuses, an invitation consumed mid-join stays redeemable.
+        await recheckEntryToken(tx, errors, token);
         const [existing] = await tx
           .select({
             id: participants.id,
             partnerId: participants.representedOrganizationId,
+            country: participants.country,
           })
           .from(participants)
           .where(
@@ -272,6 +225,15 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
           })
           .onConflictDoNothing();
         let participationId = existing?.id;
+        if (existing && !existing.country) {
+          // Legacy rows predate the required country: a repeat join fills the
+          // missing value instead of failing idempotency. Set values stay —
+          // corrections belong to the administrator update path.
+          await tx
+            .update(participants)
+            .set({ country: input.profile.country })
+            .where(eq(participants.id, existing.id));
+        }
         if (!participationId) {
           const [created] = await tx
             .insert(participants)
@@ -281,6 +243,7 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
               userId: context.user.id,
               displayName: input.profile.fullName,
               email: context.user.email.trim().toLowerCase(),
+              country: input.profile.country,
             })
             .onConflictDoNothing()
             .returning({ id: participants.id });
@@ -288,19 +251,10 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
             throw createSituationErrors(errors).participationIdentityConflict();
           participationId = created.id;
         }
-        if (bridgeId) {
-          await tx
-            .update(bridges)
-            .set({ status: "accepted", acceptedAt: new Date() })
-            .where(eq(bridges.invitationId, bridgeId));
-          // Existing host members do not call BA accept; disable the unused native
-          // invitation so its public endpoint cannot create a duplicate membership.
-          await tx
-            .update(invitation)
-            .set({ status: "canceled" })
-            .where(
-              and(eq(invitation.id, bridgeId), eq(invitation.status, "pending")),
-            );
+        if (invitationId) {
+          // Repeat successful redemption is safe: an accepted invitation with
+          // an existing Participation resolves to the same identity.
+          await consumeEntryToken(tx, invitationId);
         }
         return { participationId };
       });

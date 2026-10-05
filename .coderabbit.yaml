@@ -1,2 +1,7 @@
 reviews:
   request_changes_workflow: true
+  path_filters:
+    - "!packages/database/src/migrations/meta/*_snapshot.json"
+    - "!pnpm-lock.yaml"
+    - "!packages/i18n/src/locales/**"
+    - "!**/*.snap"

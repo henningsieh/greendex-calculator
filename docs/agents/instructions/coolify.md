@@ -44,6 +44,14 @@ The Cost Tracker consumes the existing Garage S3 service from the separate `ambi
 
 Both applications use repository root `/`, Railpack, GitHub App source `henningsieh/greendex-calculator`, branch `main`, and preview template `{{pr_id}}.{{domain}}`. Wildcard DNS must cover the resulting preview hosts.
 
+### Release migration gate
+
+Database-consuming apps use a **pre-build migration gate**, with the existing repeat check before boot. Calculator and Cost Tracker load app-local `.env` and call root `db:migrate` first in their existing `prebuild` hooks. Root `db:migrate` runs the database package's original `drizzle-kit migrate` command, with no new app-level migration scripts. Their Turbo app builds are non-cacheable so pnpm always executes that hook; there is no duplicate Turbo migration dependency. This trades app-build caching for a migration check on every deployment without a custom runner. Injected `DATABASE_URL` values take precedence over local files. Supply database connectivity at build time as well as runtime for Railpack and previews. A migration failure aborts the build before release; never suppress its exit status.
+
+Calculator's existing filtered Coolify build/start commands use these gates. Cost Tracker has the same repository wiring ready for its future Coolify resource; no resource is provisioned by this change. Documentation is database-free and has no migration or database credentials. No live Coolify settings are changed merely by updating repository scripts; verify build-time connectivity when deploying.
+
+Manual recovery remains root `pnpm run db:migrate`, with an explicit `DATABASE_URL` override when needed. Root builds run sequentially using `--concurrency=1`; root migration has one database-package task. The deployment mutex continues to serialize separate Coolify releases. There is no custom migration runner, migration lock, or automatic database repair. Coordinate separate invocations against the same database. Pre-build migration means changes must remain compatible with the previously running release until traffic switches.
+
 Preserve `"env": ["*"]` on Turbo `build` and `start`. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Authentication and mail settings may mirror development unless the task says otherwise.
 
 ## Sequential preview deployment runbook

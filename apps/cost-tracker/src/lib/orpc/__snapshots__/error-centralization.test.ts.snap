@@ -190,7 +190,7 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
   },
   "invalidOrganizationRole": {
     "code": "BAD_REQUEST",
-    "message": "The "member" role is forbidden in Cost Tracker. Use a defined Organization role.",
+    "message": "Use a defined Organization role.",
     "reason": "INVALID_ORGANIZATION_ROLE",
     "status": 400,
   },
@@ -404,6 +404,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "PARTNER_DUPLICATE_REVIEW_REQUIRED",
     "status": 403,
   },
+  "partnerEntryRequired": {
+    "code": "FORBIDDEN",
+    "message": "Only the Partner Organization of this Project Partnership may issue participant entry points.",
+    "reason": "PARTNER_ENTRY_REQUIRED",
+    "status": 403,
+  },
   "partnerJourneysRequired": {
     "code": "FORBIDDEN",
     "message": "Only the Partner Organization may manage Participant Journeys.",
@@ -492,6 +498,13 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "code": "BAD_REQUEST",
     "message": "Project is already completed.",
     "reason": "PROJECT_ALREADY_COMPLETED",
+    "status": 400,
+  },
+  "projectCompletionBlocked": {
+    "code": "BAD_REQUEST",
+    "composedCopy": true,
+    "message": "Cannot complete Project:",
+    "reason": "PROJECT_COMPLETION_BLOCKED",
     "status": 400,
   },
   "projectNotFound": {

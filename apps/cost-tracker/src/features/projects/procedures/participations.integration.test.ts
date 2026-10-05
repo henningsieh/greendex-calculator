@@ -1,6 +1,7 @@
-// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -14,15 +15,15 @@ import {
   participantProfilesTable as profiles,
   participantAgreementAcceptancesTable as acceptances,
   projectParticipantsTable as participants,
-  participantInvitationBridgesTable as bridges,
-  invitation,
+  participantEntryTokensTable as entryTokens,
   participantJourneysTable as journeys,
   duplicateReviewTasksTable as reviewTasks,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -31,9 +32,17 @@ import {
   vi,
 } from "vitest";
 
-const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
+const authMocks = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  hasPermission: vi.fn(),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
+
+import {
+  costTrackerOrganizationRoles,
+  parseOrganizationRoles,
+} from "@greendex/auth";
 
 import {
   assignPartnerCoordinator,
@@ -51,6 +60,11 @@ const own = `coord-own-${s}`;
 const foreign = `coord-foreign-${s}`;
 const coordinator = `coord-actor-${s}`;
 const candidate = `coord-candidate-${s}`;
+const emptyProject = `coord-empty-project-${s}`;
+const unassigned = `coord-unassigned-${s}`;
+const currentAcceptor = `coord-current-${s}`;
+const oldAcceptor = `coord-old-${s}`;
+const unjoined = `coord-unjoined-${s}`;
 const email = `candidate-${s}@example.org`;
 let actor = coordinator;
 let activeOrg = partner;
@@ -77,47 +91,75 @@ beforeAll(async () => {
       emailVerified: true,
     },
     { id: candidate, name: "Candidate", email, emailVerified: true },
+    { id: unassigned, name: "Unassigned", email: `unassigned-${s}@x.org` },
+    { id: currentAcceptor, name: "Current", email: `current-${s}@x.org` },
+    { id: oldAcceptor, name: "Old", email: `old-${s}@x.org` },
   ]);
   await db.insert(organization).values([
-    { id: host, name: "Host", slug: host, createdAt: now },
-    { id: partner, name: "Partner", slug: partner, createdAt: now },
-    { id: other, name: "Other", slug: other, createdAt: now },
+    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
+    {
+      country: "FR",
+      id: partner,
+      name: "Partner",
+      slug: partner,
+      createdAt: now,
+    },
+    { country: "IT", id: other, name: "Other", slug: other, createdAt: now },
   ]);
   await db.insert(member).values([
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: candidate,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
+      createdAt: now,
+    },
+    {
+      id: randomUUID(),
+      userId: unassigned,
+      organizationId: host,
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
   ]);
-  await db.insert(projects).values({
-    id: project,
-    name: "Project",
-    startDate: now,
-    endDate: now,
-    location: "Riga",
-    country: "LV",
-    organizationId: host,
-  });
-  await db
-    .insert(hostAssignments)
-    .values({ projectId: project, userId: coordinator });
+  await db.insert(projects).values([
+    {
+      id: project,
+      name: "Project",
+      startDate: now,
+      endDate: now,
+      location: "Riga",
+      country: "LV",
+      organizationId: host,
+    },
+    {
+      id: emptyProject,
+      name: "Empty Project",
+      startDate: now,
+      endDate: now,
+      location: "Vilnius",
+      country: "LT",
+      organizationId: host,
+    },
+  ]);
+  await db.insert(hostAssignments).values([
+    { projectId: project, userId: coordinator },
+    { projectId: emptyProject, userId: coordinator },
+  ]);
   await db.insert(partnerships).values([
     { id: own, projectId: project, organizationId: partner },
     { id: foreign, projectId: project, organizationId: other },
@@ -126,12 +168,28 @@ beforeAll(async () => {
     .insert(assignments)
     .values({ partnershipId: own, userId: coordinator });
   await db.insert(profiles).values({ userId: candidate, fullName: "Candidate" });
-  await db.insert(acceptances).values({
-    userId: candidate,
-    version: version.id,
-    contentHash: version.contentHash,
-    answers: '{"accepted":true}',
-  });
+  await db.insert(acceptances).values([
+    {
+      userId: candidate,
+      version: version.id,
+      contentHash: version.contentHash,
+      answers: '{"accepted":true}',
+    },
+    // Only the current required version completes the agreement; an older
+    // acceptance is historical evidence, not completion.
+    {
+      userId: currentAcceptor,
+      version: version.id,
+      contentHash: version.contentHash,
+      answers: '{"accepted":true}',
+    },
+    {
+      userId: oldAcceptor,
+      version: "fixture-v0",
+      contentHash: "fixture-old-hash",
+      answers: '{"accepted":true}',
+    },
+  ]);
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
@@ -141,24 +199,59 @@ beforeAll(async () => {
 beforeEach(() => {
   actor = coordinator;
   activeOrg = partner;
+  // Stands in for Better Auth's supported server check against the active Membership.
+  authMocks.hasPermission.mockImplementation(
+    async ({ body }: { body: { permissions: Record<string, string[]> } }) => {
+      if (!activeOrg) throw new Error("NO_ACTIVE_ORGANIZATION");
+      const [membership] = await db
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(eq(member.userId, actor), eq(member.organizationId, activeOrg)),
+        )
+        .limit(1);
+      const role = membership?.role;
+      if (!role) throw new Error("USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION");
+      return {
+        success: parseOrganizationRoles(role).some(
+          (name) =>
+            name in costTrackerOrganizationRoles &&
+            costTrackerOrganizationRoles[
+              name as keyof typeof costTrackerOrganizationRoles
+            ].authorize(body.permissions as never).success,
+        ),
+      };
+    },
+  );
 });
 
 afterAll(async () => {
   await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
   await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(bridges).where(eq(bridges.projectId, project));
-  await db.delete(invitation).where(eq(invitation.organizationId, host));
-  await db.delete(acceptances).where(eq(acceptances.userId, candidate));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
+  await db
+    .delete(acceptances)
+    .where(
+      inArray(acceptances.userId, [candidate, currentAcceptor, oldAcceptor]),
+    );
   await db.delete(profiles).where(eq(profiles.userId, candidate));
   await db.delete(assignments).where(eq(assignments.partnershipId, own));
   await db.delete(partnerships).where(eq(partnerships.projectId, project));
+  await db
+    .delete(hostAssignments)
+    .where(eq(hostAssignments.projectId, emptyProject));
+  await db.delete(projects).where(eq(projects.id, emptyProject));
   await db.delete(projects).where(eq(projects.id, project));
   await db.delete(member).where(eq(member.organizationId, partner));
   await db.delete(member).where(eq(member.organizationId, host));
   await db.delete(organization).where(eq(organization.id, other));
   await db.delete(organization).where(eq(organization.id, partner));
   await db.delete(organization).where(eq(organization.id, host));
-  await db.delete(user).where(eq(user.id, candidate));
+  await db
+    .delete(user)
+    .where(
+      inArray(user.id, [candidate, unassigned, currentAcceptor, oldAcceptor]),
+    );
   await db.delete(user).where(eq(user.id, coordinator));
 });
 
@@ -197,7 +290,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: true,
         org: host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
       {
         key: "no-profile",
@@ -205,7 +298,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: false,
         accepted: true,
         org: host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
       {
         key: "stale",
@@ -213,7 +306,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: false,
         org: host,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
       {
         key: "wrong-role",
@@ -221,7 +314,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: true,
         org: host,
-        role: "project-coordinator",
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
       },
       {
         key: "wrong-org",
@@ -229,7 +322,7 @@ describe("assignment-scoped participation coordination", () => {
         profile: true,
         accepted: true,
         org: other,
-        role: "participant",
+        role: ORGANIZATION_ROLES.Participant,
       },
     ];
     const ids = cases.map(({ key }) => `directory-${key}-${s}`);
@@ -320,7 +413,7 @@ describe("assignment-scoped participation coordination", () => {
           id: randomUUID(),
           userId: id,
           organizationId: host,
-          role: "participant",
+          role: ORGANIZATION_ROLES.Participant,
           createdAt: new Date(),
         })),
       );
@@ -524,7 +617,7 @@ describe("assignment-scoped participation coordination", () => {
       id: randomUUID(),
       userId: mixedUser,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: new Date(),
     });
     await db.insert(profiles).values({ userId: mixedUser, fullName: "Mixed" });
@@ -625,7 +718,7 @@ describe("assignment-scoped participation coordination", () => {
       id: secondMembershipId,
       userId: candidate,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     await db
@@ -734,12 +827,12 @@ describe("assignment-scoped participation coordination", () => {
       id,
       userId: candidate,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: new Date(),
     });
     await db
       .update(member)
-      .set({ role: "owner" })
+      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
       .where(eq(member.userId, coordinator));
     try {
       await client.assignments.assign({ partnershipId: own, userId: candidate });
@@ -765,7 +858,7 @@ describe("assignment-scoped participation coordination", () => {
             .from(member)
             .where(eq(member.id, id))
         )[0]?.role,
-      ).toBe("project-coordinator");
+      ).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
     } finally {
       actor = coordinator;
       activeOrg = partner;
@@ -773,12 +866,12 @@ describe("assignment-scoped participation coordination", () => {
       await db.delete(member).where(eq(member.id, id));
       await db
         .update(member)
-        .set({ role: "project-coordinator" })
+        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
         .where(eq(member.userId, coordinator));
     }
   });
 
-  it("rejects missing onboarding, exposes own bridge only, and blocks referenced removal", async () => {
+  it("rejects missing onboarding, exposes own invitations only, and blocks referenced removal", async () => {
     await expect(
       client.participations.create({ partnershipId: own, userId: "unknown" }),
     ).rejects.toMatchObject({
@@ -786,20 +879,13 @@ describe("assignment-scoped participation coordination", () => {
       message: expect.stringMatching(/invitation/i),
     });
     const inviteId = randomUUID();
-    await db.insert(invitation).values({
+    await db.insert(entryTokens).values({
       id: inviteId,
-      organizationId: host,
-      email,
-      role: "participant",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 86400000),
-      inviterId: coordinator,
-    });
-    await db.insert(bridges).values({
-      invitationId: inviteId,
       projectId: project,
       partnershipId: foreign,
       email,
+      secretHash: "fixture-secret-hash",
+      expiresAt: new Date(Date.now() + 86400000),
       issuedByUserId: coordinator,
     });
     expect(
@@ -809,20 +895,21 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.listPartnership({ partnershipId: foreign }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await db.delete(bridges).where(eq(bridges.invitationId, inviteId));
-    await db.insert(bridges).values({
-      invitationId: inviteId,
+    await db.delete(entryTokens).where(eq(entryTokens.id, inviteId));
+    await db.insert(entryTokens).values({
+      id: inviteId,
       projectId: project,
       partnershipId: own,
       email,
+      secretHash: "fixture-secret-hash",
+      expiresAt: new Date(Date.now() + 86400000),
       issuedByUserId: coordinator,
     });
     expect(
       (await client.participations.listPartnership({ partnershipId: own }))
         .invitations,
     ).toEqual([{ invitationId: inviteId, email, status: "pending" }]);
-    await db.delete(bridges).where(eq(bridges.invitationId, inviteId));
-    await db.delete(invitation).where(eq(invitation.id, inviteId));
+    await db.delete(entryTokens).where(eq(entryTokens.id, inviteId));
     const created = await client.participations.create({
       partnershipId: own,
       userId: candidate,
@@ -887,5 +974,129 @@ describe("assignment-scoped participation coordination", () => {
       client.participations.remove({ partnershipId: own, id: reopened.id }),
     ).resolves.toEqual({ removed: true });
     await db.delete(claims).where(eq(claims.id, claim!.id));
+  });
+});
+
+describe("read-only Hosting Participant view", () => {
+  const reportRows = async () =>
+    db
+      .insert(participants)
+      .values([
+        {
+          id: unjoined,
+          projectId: project,
+          representedOrganizationId: partner,
+          displayName: "Amy Unlinked",
+          email: `amy-${s}@example.org`,
+        },
+        {
+          id: `coord-current-row-${s}`,
+          projectId: project,
+          representedOrganizationId: partner,
+          displayName: "Zoe Current",
+          userId: currentAcceptor,
+          email: `current-${s}@x.org`,
+          country: "PT",
+        },
+        {
+          id: `coord-old-row-${s}`,
+          projectId: project,
+          representedOrganizationId: other,
+          displayName: "Yan Outdated",
+          userId: oldAcceptor,
+          email: `old-${s}@x.org`,
+        },
+      ])
+      .returning({ id: participants.id });
+
+  beforeEach(async () => {
+    activeOrg = host;
+    await reportRows();
+  });
+
+  afterEach(async () => {
+    await db.delete(participants).where(eq(participants.projectId, project));
+  });
+
+  it("groups Participations alphabetically by represented Organization with agreement counts", async () => {
+    const report = await client.participations.listHostedReport({
+      projectId: project,
+    });
+
+    expect(report.organizations.map(({ country }) => country)).toEqual([
+      "IT",
+      "FR",
+    ]);
+    expect(report.agreement).toEqual({
+      versionId: version.id,
+      published: true,
+    });
+    expect(report.organizations.map((group) => group.id)).toEqual([
+      other,
+      partner,
+    ]);
+    expect(
+      report.organizations.map(
+        ({ name, participantCount, completedCount, pendingCount }) => ({
+          name,
+          participantCount,
+          completedCount,
+          pendingCount,
+        }),
+      ),
+    ).toEqual([
+      { name: "Other", participantCount: 1, completedCount: 0, pendingCount: 1 },
+      {
+        name: "Partner",
+        participantCount: 2,
+        completedCount: 1,
+        pendingCount: 1,
+      },
+    ]);
+    // Each Participation appears once, in its represented Organization only.
+    expect(
+      report.organizations.flatMap((group) =>
+        group.participants.map((participant) => [
+          participant.displayName,
+          participant.agreement,
+        ]),
+      ),
+    ).toEqual([
+      ["Yan Outdated", "pending"],
+      ["Amy Unlinked", "pending"],
+      ["Zoe Current", "completed"],
+    ]);
+    expect(report.organizations[1].participants[1]).toMatchObject({
+      country: "PT",
+      email: `current-${s}@x.org`,
+    });
+  });
+
+  it("reports no Organization group for a Project without Participations", async () => {
+    expect(
+      await client.participations.listHostedReport({ projectId: emptyProject }),
+    ).toEqual({
+      projectId: emptyProject,
+      agreement: { versionId: version.id, published: true },
+      organizations: [],
+    });
+  });
+
+  it("refuses an unassigned coordinator, a Partner User and an unrelated Organization", async () => {
+    actor = unassigned;
+    await expect(
+      client.participations.listHostedReport({ projectId: project }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    actor = coordinator;
+    activeOrg = partner;
+    await expect(
+      client.participations.listHostedReport({ projectId: project }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    activeOrg = other;
+    await expect(
+      client.participations.listHostedReport({ projectId: project }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

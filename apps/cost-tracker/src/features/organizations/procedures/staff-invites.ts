@@ -1,20 +1,16 @@
-import "server-only";
 import { hasOrganizationRole } from "@greendex/auth";
+import "server-only";
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
-import {
-  invitation,
-  member,
-  participantInvitationBridgesTable as bridges,
-  user,
-} from "@greendex/database/schema";
+import { invitation, member, user } from "@greendex/database/schema";
 import { ORPCError } from "@orpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { normalizedEmail } from "@/features/authentication/procedures/shared";
 import {
-  BANNED_ROLE_MESSAGE,
-  hasBannedOrganizationRole,
+  INVALID_ROLE_MESSAGE,
+  hasInvalidOrganizationRole,
   requireCostTrackerRole,
 } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
@@ -25,18 +21,21 @@ import {
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const STAFF_ROLES = ["owner", "admin"] as const;
+const STAFF_ROLES = [
+  ORGANIZATION_ROLES.OrganizationOwner,
+  ORGANIZATION_ROLES.OrganizationAdmin,
+] as const;
 type StaffRole = (typeof STAFF_ROLES)[number];
 
 const StaffRoleSchema = z
   .string()
-  .refine((role) => !hasBannedOrganizationRole(role), BANNED_ROLE_MESSAGE)
+  .refine((role) => !hasInvalidOrganizationRole(role), INVALID_ROLE_MESSAGE)
   .pipe(z.enum(STAFF_ROLES));
 
 /** Lower rank outranks: an inviter can only grant their own rank or below. */
 const ROLE_RANK: Record<StaffRole, number> = {
-  owner: 0,
-  admin: 1,
+  [ORGANIZATION_ROLES.OrganizationOwner]: 0,
+  [ORGANIZATION_ROLES.OrganizationAdmin]: 1,
 };
 
 const MemberSchema = z.object({
@@ -105,8 +104,10 @@ async function requireOrganizationManager(
     throw createSituationErrors(errors).notMember();
   }
 
-  if (hasOrganizationRole(membership.role, "owner")) return "owner";
-  if (hasOrganizationRole(membership.role, "admin")) return "admin";
+  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner))
+    return ORGANIZATION_ROLES.OrganizationOwner;
+  if (hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin))
+    return ORGANIZATION_ROLES.OrganizationAdmin;
 
   throw createSituationErrors(errors).organizationManagementRequired();
 }
@@ -255,17 +256,12 @@ export const acceptInvitation = authorized
     requireCostTrackerRole(pending.role, () =>
       createSituationErrors(errors).invalidOrganizationRole(),
     );
-    // Participant Invitations share this table with role "participant" plus a
-    // bridge row; accepting one here would bypass agreement and Project
-    // Participation checks, so only staff invitations may proceed.
-    if (pending.role === "participant")
+    // Participant entry never flows through Better Auth invitations
+    // (ADR-0013): any row carrying the participant role — including stale
+    // development rows — would bypass agreement and Project Participation
+    // checks here, so only staff invitations may proceed.
+    if (pending.role === ORGANIZATION_ROLES.Participant)
       throw createSituationErrors(errors).staffInvitationWrongKind();
-    const [bridge] = await db
-      .select({ invitationId: bridges.invitationId })
-      .from(bridges)
-      .where(eq(bridges.invitationId, input.invitationId))
-      .limit(1);
-    if (bridge) throw createSituationErrors(errors).staffInvitationWrongKind();
     if (pending.status !== "pending")
       throw createSituationErrors(errors).staffInvitationClosed();
     if (pending.expiresAt < new Date())

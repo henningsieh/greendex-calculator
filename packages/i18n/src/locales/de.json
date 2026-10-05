@@ -671,9 +671,10 @@
       "description": "Dies sind die Details und Einstellungen der Organisation."
     },
     "roles": {
-      "owner": "Organisationsadministrator",
-      "admin": "Projektkoordinator",
-      "member": "Teilnehmer"
+      "owner": "Organisationsinhaber",
+      "admin": "Organisationsadmin",
+      "participant": "Teilnehmer",
+      "coordinator": "Projektkoordinator"
     },
     "invitation": {
       "title": "Einladung annehmen",
@@ -687,6 +688,10 @@
         "confirm-button": "Einladung stornieren",
         "cancel-button": "Einladung behalten"
       }
+    },
+    "country": {
+      "label": "Land der Organisation",
+      "placeholder": "EU-Land auswählen"
     }
   },
   "participation": {

@@ -10,7 +10,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  agentPointerPattern,
   appAgentFileNames,
   delegationGuidanceFiles,
   designSystemDeferredScopes,
@@ -313,7 +312,7 @@ const checkDocumentationRoutes = async (
     const content = await readUtf8(filePath);
     reportPatternHits(
       content,
-      [agentPointerPattern, ...retiredPointerPatterns],
+      [...stalePatterns, ...retiredPointerPatterns],
       path.relative(root, filePath),
       addError,
     );

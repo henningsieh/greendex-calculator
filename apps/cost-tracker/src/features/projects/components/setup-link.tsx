@@ -1,5 +1,6 @@
 "use client";
 
+import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
@@ -17,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -36,6 +38,7 @@ type SetupError =
   | "owner"
   | "unavailable"
   | "host"
+  | "create"
   | "generic";
 
 // Local presentation is selected only by validated code/status/reason metadata.
@@ -93,6 +96,11 @@ const errorCopy: Record<SetupError, { title: string; description: string }> = {
     title: "Invalid Partner Organization",
     description:
       "Choose a different Organization from the Project's Hosting Organization.",
+  },
+  create: {
+    title: "Could not create Organization",
+    description:
+      "An Organization with this name may already exist, or your account may already belong to one. Choose an existing Organization or try another name.",
   },
   generic: {
     title: "Could not complete setup",
@@ -264,7 +272,7 @@ export function SetupLinkCreator() {
                         ? "Closed"
                         : existing.consumedAt
                           ? "Used"
-                          : existing.expiresAt <= new Date()
+                          : existing.expired
                             ? "Expired"
                             : "Open"}
                     </TableCell>
@@ -330,10 +338,30 @@ export function SetupLinkRecipient({
 }) {
   const [kind, setKind] = useState<"new" | "existing">("new");
   const [name, setName] = useState("");
+  const [country, setCountry] = useState<EUCountryCode | "">("");
   const [organizationId, setOrganizationId] = useState("");
   const [error, setError] = useState<SetupError>();
   const [completed, setCompleted] = useState(false);
   const [pending, setPending] = useState(false);
+
+  // A recipient without an Organization creates one through the normal
+  // supported flow (the same procedure as the protected-layout creation
+  // form), so Better Auth grants creator Ownership itself. Organization
+  // names are unique, so the created Organization resolves unambiguously.
+  async function createOwnedOrganization(displayName: string) {
+    if (!country) return undefined;
+    const trimmed = displayName.trim();
+    await orpc.authentication.createOrganization({
+      country,
+      name: trimmed,
+      slug: slugifyOrganizationName(trimmed),
+    });
+    const matches = await orpc.organizations.listMine({ search: trimmed });
+    const created = matches.find(
+      (organization) => organization.name.toLowerCase() === trimmed.toLowerCase(),
+    );
+    return created?.id;
+  }
 
   async function consume(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -341,10 +369,24 @@ export function SetupLinkRecipient({
     setError(undefined);
     setPending(true);
     try {
+      let targetId = organizationId;
+      if (kind === "new") {
+        try {
+          const createdId = await createOwnedOrganization(name);
+          if (!createdId) {
+            setError("create");
+            return;
+          }
+          targetId = createdId;
+        } catch {
+          setError("create");
+          return;
+        }
+      }
       await orpc.projectPartnerships.consumeSetupLink({
         id,
         secret,
-        organization: kind === "new" ? { kind, name } : { kind, organizationId },
+        organizationId: targetId,
       });
       setCompleted(true);
     } catch (cause) {
@@ -410,11 +452,38 @@ export function SetupLinkRecipient({
                   <Label htmlFor="setup-name">New Organization name</Label>
                   <Input
                     id="setup-name"
-                    maxLength={255}
+                    maxLength={100}
+                    minLength={2}
                     required
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                   />
+                  <Label htmlFor="setup-country">Organization country</Label>
+                  <select
+                    id="setup-country"
+                    value={country}
+                    required
+                    disabled={pending}
+                    onChange={(event) =>
+                      setCountry(event.target.value as EUCountryCode)
+                    }
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="" disabled>
+                      Select an EU country
+                    </option>
+                    {EU_COUNTRIES.map(({ code }) => (
+                      <option key={code} value={code}>
+                        {new Intl.DisplayNames(["en"], { type: "region" }).of(
+                          code,
+                        )}
+                      </option>
+                    ))}
+                  </select>
+                  <p>
+                    This creates your Organization through the normal setup flow
+                    and makes you its Owner, then connects it to the Project.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -432,7 +501,12 @@ export function SetupLinkRecipient({
                 </div>
               )}
               <Button
-                disabled={pending || (kind === "existing" && !organizationId)}
+                disabled={
+                  pending ||
+                  (kind === "existing"
+                    ? !organizationId
+                    : !slugifyOrganizationName(name))
+                }
                 type="submit"
               >
                 {pending ? "Completing…" : "Complete setup"}

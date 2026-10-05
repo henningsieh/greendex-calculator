@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import { member, organization, projectsTable } from "@greendex/database/schema";
 import { type Page } from "@playwright/test";
@@ -74,6 +75,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     }
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
+    await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
     // Ordinary reload after observed stale no-access screen (UI GAP).
@@ -85,7 +87,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await expect(page.getByRole("button", { name: "New project" })).toBeVisible();
     await page.goto("/organization");
     const row = page.getByRole("row").filter({ hasText: fixture.actors.H.email });
-    await expect(row).toContainText("owner");
+    await expect(row).toContainText(ORGANIZATION_ROLES.OrganizationOwner);
   });
 
   test("02 H creates Main, Existing and Isolation Hosted Projects", async ({
@@ -115,7 +117,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await hostPage.goto("/organization");
       await expect(
         hostPage.getByRole("row").filter({ hasText: fixture.actors.A.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
 
       const admin = await fixture.actorContext(browser, "A", baseURL!);
       const page = await admin.newPage();
@@ -132,11 +134,11 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await page.goto("/organization");
       await expect(
         page.getByRole("row").filter({ hasText: fixture.actors.A.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
       await hostPage.reload();
       await expect(
         hostPage.getByRole("row").filter({ hasText: fixture.actors.A.email }),
-      ).toContainText("admin");
+      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
     });
   });
 
@@ -171,7 +173,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       id: membershipId,
       organizationId: hosting!.id,
       userId: fixture.actors.X.id,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: new Date(),
     });
     try {
@@ -186,7 +188,9 @@ test.describe.serial("Hosting Organization journey section 1", () => {
         .select({ role: member.role })
         .from(member)
         .where(eq(member.id, membershipId));
-      expect(createdMembership?.role).toBe("participant,project-coordinator");
+      expect(createdMembership?.role).toBe(
+        `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
+      );
       await page.goto("/projects");
       await expect(page.getByRole("link", { name: projectName })).toBeVisible();
       await page.goto(projectURL);

@@ -1,6 +1,7 @@
-// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
@@ -67,37 +68,43 @@ beforeAll(async () => {
     },
   ]);
   await db.insert(organization).values([
-    { id: host, name: "Host", slug: host, createdAt: now },
-    { id: partner, name: "Partner", slug: partner, createdAt: now },
-    { id: other, name: "Other", slug: other, createdAt: now },
+    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
+    {
+      country: "DE",
+      id: partner,
+      name: "Partner",
+      slug: partner,
+      createdAt: now,
+    },
+    { country: "DE", id: other, name: "Other", slug: other, createdAt: now },
   ]);
   await db.insert(member).values([
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: coordinator,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: participant,
       organizationId: host,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: participant,
       organizationId: partner,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
   ]);
@@ -193,7 +200,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await db
       .update(member)
-      .set({ role: "owner" })
+      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
       .where(
         and(eq(member.userId, participant), eq(member.organizationId, host)),
       );
@@ -204,7 +211,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "project-coordinator" })
+        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
         .where(
           and(eq(member.userId, participant), eq(member.organizationId, host)),
         );
@@ -434,7 +441,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     await db.delete(assignments).where(eq(assignments.partnershipId, own));
     await db
       .update(member)
-      .set({ role: "owner" })
+      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
       .where(eq(member.userId, coordinator));
     try {
       await client.claims.selectPayoutAccount({
@@ -447,7 +454,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     } finally {
       await db
         .update(member)
-        .set({ role: "project-coordinator" })
+        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
         .where(eq(member.userId, coordinator));
       await db
         .insert(assignments)

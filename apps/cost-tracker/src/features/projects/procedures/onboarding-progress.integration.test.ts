@@ -1,14 +1,14 @@
-// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
+// @vitest-environment node
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable as hostAssignments,
-  invitation,
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
-  participantInvitationBridgesTable as bridges,
+  participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
   partnerCoordinatorAssignmentsTable as assignments,
   projectPartnerOrganizationsTable as partnerships,
@@ -60,6 +60,7 @@ beforeAll(async () => {
   );
   await db.insert(organization).values(
     [host, partner, other].map((id) => ({
+      country: "DE" as const,
       id,
       name: id,
       slug: id,
@@ -71,28 +72,28 @@ beforeAll(async () => {
       id: randomUUID(),
       userId: coordinator,
       organizationId: partner,
-      role: "project-coordinator",
+      role: ORGANIZATION_ROLES.ProjectCoordinator,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: joined,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: joined,
       organizationId: partner,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
     {
       id: randomUUID(),
       userId: outsider,
       organizationId: host,
-      role: "participant",
+      role: ORGANIZATION_ROLES.Participant,
       createdAt: now,
     },
   ]);
@@ -166,8 +167,7 @@ beforeAll(async () => {
     {
       id: `old-${suffix}`,
       email: mail(pending),
-      status: "canceled",
-      bridge: "revoked",
+      status: "revoked",
       partnershipId: own,
       issuedAt: new Date(now.getTime() - 10000),
     },
@@ -175,7 +175,6 @@ beforeAll(async () => {
       id: `new-${suffix}`,
       email: mail(pending),
       status: "pending",
-      bridge: "pending",
       partnershipId: own,
       issuedAt: now,
     },
@@ -183,15 +182,13 @@ beforeAll(async () => {
       id: `joined-${suffix}`,
       email: mail(joined),
       status: "pending",
-      bridge: "pending",
       partnershipId: own,
       issuedAt: now,
     },
     {
       id: `revoked-${suffix}`,
       email: mail(revoked),
-      status: "canceled",
-      bridge: "revoked",
+      status: "revoked",
       partnershipId: own,
       issuedAt: now,
     },
@@ -199,29 +196,19 @@ beforeAll(async () => {
       id: `outside-${suffix}`,
       email: mail(outsider),
       status: "pending",
-      bridge: "pending",
       partnershipId: foreign,
       issuedAt: now,
     },
   ];
-  await db.insert(invitation).values(
-    invites.map(({ id, email, status }) => ({
+  await db.insert(entryTokens).values(
+    invites.map(({ id, email, status, partnershipId, issuedAt }) => ({
       id,
       email,
       status,
-      role: "participant",
-      organizationId: host,
-      expiresAt: new Date(now.getTime() + 600000),
-      inviterId: coordinator,
-    })),
-  );
-  await db.insert(bridges).values(
-    invites.map(({ id, email, bridge, partnershipId, issuedAt }) => ({
-      invitationId: id,
-      email,
-      status: bridge,
+      secretHash: "fixture-secret-hash",
       partnershipId,
       projectId: project,
+      expiresAt: new Date(now.getTime() + 600000),
       issuedByUserId: coordinator,
       issuedAt,
     })),
@@ -233,8 +220,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(bridges).where(eq(bridges.projectId, project));
-  await db.delete(invitation).where(eq(invitation.organizationId, host));
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(participants).where(eq(participants.projectId, project));
   for (const id of [joined, pending, outsider]) {
     await db.delete(acceptances).where(eq(acceptances.userId, id));
@@ -268,7 +254,7 @@ describe("Partner invitee onboarding progress", () => {
       participation: "joined",
       profile: "complete",
       agreement: "current",
-      membership: "participant",
+      membership: ORGANIZATION_ROLES.Participant,
       bridge: "pending",
     });
     expect(rows.find((row) => row.email === mail(pending))).toMatchObject({
@@ -304,15 +290,15 @@ describe("Partner invitee onboarding progress", () => {
     }
   });
 
-  it("requires the current content hash and reports expired native invitations", async () => {
+  it("requires the current content hash and reports expired invitations", async () => {
     await db
       .update(acceptances)
       .set({ contentHash: "superseded-hash" })
       .where(eq(acceptances.userId, joined));
     await db
-      .update(invitation)
+      .update(entryTokens)
       .set({ expiresAt: new Date(0) })
-      .where(eq(invitation.id, `new-${suffix}`));
+      .where(eq(entryTokens.id, `new-${suffix}`));
     try {
       const rows = await client.progress({ partnershipId: own });
       expect(rows.find((row) => row.email === mail(joined))?.agreement).toBe(
@@ -327,9 +313,9 @@ describe("Partner invitee onboarding progress", () => {
         .set({ contentHash: version.contentHash })
         .where(eq(acceptances.userId, joined));
       await db
-        .update(invitation)
+        .update(entryTokens)
         .set({ expiresAt: new Date(Date.now() + 600000) })
-        .where(eq(invitation.id, `new-${suffix}`));
+        .where(eq(entryTokens.id, `new-${suffix}`));
     }
   });
 

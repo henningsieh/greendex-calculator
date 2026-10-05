@@ -49,9 +49,9 @@ describe("environment entrypoints", () => {
   it("delegates root lifecycle commands directly to Turbo", () => {
     expect(rootPackage.scripts.dev).toBe("turbo run dev");
     expect(rootPackage.scripts.predev).toBe(
-      "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
+      "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     );
-    expect(rootPackage.scripts.build).toBe("turbo run build");
+    expect(rootPackage.scripts.build).toBe("turbo run build --concurrency=1");
     expect(rootPackage.scripts.start).toBe("turbo run start");
   });
 
@@ -59,7 +59,9 @@ describe("environment entrypoints", () => {
     expect(calculatorPackage.scripts.dev).toContain(
       "dotenv -v NODE_ENV=development -e .env --",
     );
-    expect(calculatorPackage.scripts.prebuild).toContain("dotenv -e .env --");
+    expect(calculatorPackage.scripts.prebuild).toBe(
+      "dotenv -e .env -- pnpm -w run db:migrate && dotenv -e .env -- pnpm run generate:sri && dotenv -e .env -- pnpm run check:sri",
+    );
     expect(calculatorPackage.scripts.build).toBe("next build");
     expect(calculatorPackage.scripts.prestart).toContain("dotenv -e .env --");
     expect(calculatorPackage.scripts.start).toContain(
@@ -120,6 +122,57 @@ describe("environment entrypoints", () => {
     );
   });
 
+  it("migrates once before root dev and through existing per-app build hooks", () => {
+    expect(rootPackage.scripts.predev).toMatch(/^pnpm run db:migrate && /);
+    expect(rootPackage.scripts["db:migrate"]).toBe("turbo run db:migrate");
+    for (const app of [calculatorPackage, costTrackerPackage]) {
+      expect(app.scripts["db:migrate"]).toBeUndefined();
+      expect(app.scripts.predev ?? "").not.toContain("db:migrate");
+      expect(app.scripts.prebuild).toMatch(
+        /^dotenv -e \.env -- pnpm -w run db:migrate(?: &&|$)/,
+      );
+      expect(app.scripts["start:prepare"]).toContain(
+        "pnpm --filter @greendex/database run db:migrate",
+      );
+      expect(app.scripts["dev:serve"]).toBeUndefined();
+    }
+    for (const app of ["calculator", "cost-tracker"]) {
+      const config = JSON.parse(
+        readFileSync(path.resolve(`../../apps/${app}/turbo.json`), "utf8"),
+      );
+      expect(config.tasks.build.cache).toBe(false);
+      expect(config.tasks.build.dependsOn ?? []).not.toContain("db:migrate");
+      expect(config.tasks.dev.dependsOn ?? []).not.toContain("db:migrate");
+    }
+    expect(turboConfig.tasks["db:migrate"]).toMatchObject({ cache: false });
+    expect(documentationPackage.scripts["db:migrate"]).toBeUndefined();
+  });
+
+  it("uses the same alphabetical script ordering in every workspace manifest", () => {
+    for (const workspace of [
+      ".",
+      "apps/calculator",
+      "apps/cost-tracker",
+      "apps/documentation",
+      "packages/auth",
+      "packages/config",
+      "packages/database",
+      "packages/email",
+      "packages/i18n",
+    ]) {
+      const manifest = JSON.parse(
+        readFileSync(path.resolve("../..", workspace, "package.json"), "utf8"),
+      );
+      expect(manifest.scripts).toBeTypeOf("object");
+      expect(Array.isArray(manifest.scripts)).toBe(false);
+      for (const command of Object.values(manifest.scripts)) {
+        expect(command).toBeTypeOf("string");
+      }
+      const names = Object.keys(manifest.scripts);
+      expect(names).toEqual([...names].sort());
+    }
+  });
+
   it("keeps runtime CLI dependencies available to the production start commands", () => {
     expect(rootPackage.dependencies).toMatchObject({
       "dotenv-cli": expect.any(String),
@@ -157,6 +210,10 @@ describe("environment entrypoints", () => {
       "SOCKET_PORT",
     ]);
     expect(turboConfig.tasks["db:migrate"].env).toEqual(["DATABASE_URL"]);
+    const costTrackerTurboConfig = JSON.parse(
+      readFileSync(path.resolve("../../apps/cost-tracker/turbo.json"), "utf8"),
+    );
+    expect(costTrackerTurboConfig.tasks.dev.env).toContain("DATABASE_URL");
   });
 
   it("does not load dotenv inside Calculator source modules", () => {

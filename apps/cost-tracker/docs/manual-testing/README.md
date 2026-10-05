@@ -6,7 +6,7 @@ Everything a new agent session needs to guide the human through the Cost Tracker
 
 - [Journey script](journey.md) — the step-by-step pair-testing contract: identities, links, expected observations, stop signs. Follow it, one case at a time.
 - [Run logs](runs/) — one `{run-key}.md` log per executed run, updated after every observed case. The [runs README](runs/README.md) holds the log template.
-- Normative truth (linked from the journey, read when a case disputes expected behavior): [Claim workflow](../claim-workflow.md), [clickdummy traceability](../clickdummy/requirements-traceability.md), [Cost Tracker context](../../CONTEXT.md), [shared glossary](../../../../DOMAIN-GLOSSARY.md), [accepted ADRs](../../../../docs/adr/).
+- Normative truth (linked from the journey, read when a case disputes expected behavior): [Claim workflow](../claim-workflow.md), [clickdummy traceability](../clickdummy/requirements-traceability.md), [Cost Tracker glossary](../../GLOSSARY.md), [domain behavior](../domain-behavior.md), [shared glossary](../../../../GLOSSARY.md), [accepted ADRs](../../../../docs/adr/).
 
 ## Starting a session
 

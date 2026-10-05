@@ -7,7 +7,7 @@ Read these sources first:
 1. [Shared Project model](../../../docs/projects/model.md)
 2. [Shared Project permissions](../../../docs/projects/permissions.md)
 3. [Cost Tracker Projects](projects/README.md)
-4. [Cost Tracking language](../CONTEXT.md)
+4. [Cost Tracking language](../GLOSSARY.md)
 
 The shared documents own Organization, Project, Project Participation, invitation, and role rules. This document owns only Cost Tracker behavior and persistence.
 

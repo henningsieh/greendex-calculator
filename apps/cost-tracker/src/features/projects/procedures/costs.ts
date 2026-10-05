@@ -12,7 +12,8 @@ import {
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
-import { isPartnerEditLocked } from "@/features/projects/procedures/claim-locks";
+import { isPartnerEditLocked } from "@/features/projects/claim-lifecycle";
+import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -271,12 +272,13 @@ export const save = authorized
       errors,
     );
     const id = await db.transaction(async (tx) => {
-      const [claim] = await tx
-        .select({ id: claims.id, status: claims.status })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .for("update")
-        .limit(1);
+      // Shared lock order: Claim-owned cost data is guarded by the Claim state.
+      const { claim } = await lockClaimScope(
+        tx,
+        { projectId: scope.projectId, partnershipId: input.partnershipId },
+        errors,
+        "claim",
+      );
       if (!claim) throw createSituationErrors(errors).claimRequiredForCosts();
       if (isPartnerEditLocked(claim.status))
         throw createSituationErrors(errors).claimNotEditable();
@@ -367,19 +369,20 @@ export const linkDocument = authorized
   )
   .output(z.object({ linked: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
-    await requirePartnerSide(
+    const scope = await requirePartnerSide(
       input.partnershipId,
       context.user.id,
       context.session.activeOrganizationId,
       errors,
     );
     return db.transaction(async (tx) => {
-      const [claim] = await tx
-        .select({ id: claims.id, status: claims.status })
-        .from(claims)
-        .where(eq(claims.partnershipId, input.partnershipId))
-        .for("update")
-        .limit(1);
+      // Shared lock order: the association belongs to the Claim it revalidates.
+      const { claim } = await lockClaimScope(
+        tx,
+        { projectId: scope.projectId, partnershipId: input.partnershipId },
+        errors,
+        "claim",
+      );
       if (!claim) throw createSituationErrors(errors).claimRequiredForCosts();
       if (isPartnerEditLocked(claim.status))
         throw createSituationErrors(errors).claimNotEditable();

@@ -40,6 +40,7 @@ describe("public participation contract", () => {
       emailVerified: true,
     });
     await db.insert(organization).values({
+      country: "DE",
       id: organizationId,
       name: "Public Participation Contract Organization",
       slug: `public-participation-${organizationId}`,

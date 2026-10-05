@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -11,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   list: vi.fn(),
   searchOnboarded: vi.fn(),
-  update: vi.fn(),
   remove: vi.fn(),
   issueInvitation: vi.fn(),
   reissueInvitation: vi.fn(),
@@ -19,6 +19,49 @@ const mocks = vi.hoisted(() => ({
   setInvitationOpen: vi.fn(),
   setRegistrationLinkOpen: vi.fn(),
 }));
+
+const browserSession = vi.hoisted(() => ({
+  userId: "user-1",
+  activeOrganizationId: "partner-1" as string | null,
+  role: null as string | null,
+}));
+
+vi.mock("@/lib/auth-client", async () => {
+  const { costTrackerOrganizationRoles, parseOrganizationRoles } =
+    await import("@greendex/auth/permissions");
+  return {
+    authClient: {
+      useSession: () => ({ data: { user: { id: browserSession.userId } } }),
+      useActiveOrganization: () => ({
+        data: browserSession.activeOrganizationId
+          ? {
+              id: browserSession.activeOrganizationId,
+              members: [
+                { userId: browserSession.userId, role: browserSession.role },
+              ],
+            }
+          : null,
+      }),
+      // Resolves the identical single-sourced role definitions Better Auth uses.
+      organization: {
+        checkRolePermission: ({
+          role,
+          permissions,
+        }: {
+          role: string;
+          permissions: Record<string, string[]>;
+        }) =>
+          parseOrganizationRoles(role).some(
+            (name) =>
+              name in costTrackerOrganizationRoles &&
+              costTrackerOrganizationRoles[
+                name as keyof typeof costTrackerOrganizationRoles
+              ].authorize(permissions as never).success,
+          ),
+      },
+    },
+  };
+});
 
 vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/orpc/orpc")>();
@@ -35,11 +78,40 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       participations: {
         create: mocks.create,
         searchOnboarded: mocks.searchOnboarded,
-        update: mocks.update,
         remove: mocks.remove,
       },
     },
     orpcQuery: {
+      duplicateReviews: {
+        list: {
+          queryOptions: (
+            ...args: Parameters<
+              typeof original.orpcQuery.duplicateReviews.list.queryOptions
+            >
+          ) => ({
+            ...original.orpcQuery.duplicateReviews.list.queryOptions(...args),
+            queryFn: async () => [
+              {
+                id: "review-open",
+                partnershipId: "own-partnership",
+                candidateEmail: "review@example.org",
+                status: "open",
+                existingParticipationId: "person-1",
+                decision: null,
+              },
+              {
+                id: "review-assigned",
+                partnershipId: "own-partnership",
+                candidateEmail: "assigned@example.org",
+                status: "assigned",
+                existingParticipationId: "person-1",
+                assignedToUserId: "user-1",
+                decision: null,
+              },
+            ],
+          }),
+        },
+      },
       participations: {
         listPartnership: {
           queryKey: (
@@ -144,6 +216,9 @@ describe("ParticipantCoordination", () => {
       },
     );
     Element.prototype.scrollIntoView = vi.fn();
+    browserSession.userId = "user-1";
+    browserSession.activeOrganizationId = "partner-1";
+    browserSession.role = ORGANIZATION_ROLES.OrganizationOwner;
     mocks.list.mockReset().mockResolvedValue({
       projectName: "Own Project",
       participations: [
@@ -165,13 +240,17 @@ describe("ParticipantCoordination", () => {
         },
       ],
       registrationLinks: [{ id: "link-1", enabled: true }],
+      entryContext: {
+        partnerOrganizationId: "partner-1",
+        hostOrganizationId: "host-1",
+        assignedCoordinator: false,
+      },
     });
     mocks.create.mockReset();
     mocks.searchOnboarded.mockReset().mockResolvedValue([
       { id: "user-existing", name: "Existing Candidate" },
       { id: "host-user", name: "Host Candidate" },
     ]);
-    mocks.update.mockReset();
     mocks.remove.mockReset();
     mocks.issueInvitation
       .mockReset()
@@ -292,6 +371,11 @@ describe("ParticipantCoordination", () => {
       participations: [],
       invitations: [],
       registrationLinks: [{ id: "link-1", enabled: false }],
+      entryContext: {
+        partnerOrganizationId: "partner-1",
+        hostOrganizationId: "host-1",
+        assignedCoordinator: false,
+      },
     });
     mocks.setRegistrationLinkOpen.mockResolvedValueOnce({ open: false });
     await user.click(closeButton);
@@ -458,23 +542,159 @@ describe("ParticipantCoordination", () => {
     ).toContain("/participant-links/new-link?secret=one-time-secret");
   });
 
-  it("edits only the scoped Participation using the server mutation", async () => {
-    mocks.update.mockResolvedValue({});
-    const user = userEvent.setup();
+  it("links each Participant to its details page instead of editing inline", async () => {
     await renderCoordination();
-    await user.selectOptions(
-      screen.getByLabelText("Country for Own Person"),
-      "DE",
-    );
-    await user.click(
-      screen.getByRole("button", { name: "Save country for Own Person" }),
-    );
-    await waitFor(() =>
-      expect(mocks.update).toHaveBeenCalledWith({
-        partnershipId: "own-partnership",
-        id: "person-1",
-        country: "DE",
+    expect(
+      screen
+        .getByRole("link", { name: "Participant details for Own Person" })
+        .getAttribute("href"),
+    ).toBe("/partnerships/own-partnership/participants/person-1");
+    // ADR-0016: editing lives on the details page, never in a list row.
+    expect(screen.queryByLabelText("Country for Own Person")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Save country for Own Person" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: "Remove Project Participation for Own Person",
       }),
+    ).toBeTruthy();
+  });
+
+  it("retains Partner mutation controls when the shared scope gate permits", async () => {
+    await renderCoordination();
+    for (const name of [
+      "Add Participation",
+      "Remove Project Participation for Own Person",
+      "Manage Group Organizers",
+    ])
+      expect(screen.getByRole("button", { name })).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show Review Tasks" }),
     );
+    expect(
+      await screen.findByRole("button", { name: "Assign Review Task to me" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Resolve Review Task" }),
+    ).toBeTruthy();
+  });
+
+  it.each([
+    ORGANIZATION_ROLES.OrganizationOwner,
+    ORGANIZATION_ROLES.OrganizationAdmin,
+    ORGANIZATION_ROLES.ProjectCoordinator,
+  ])(
+    "hides every Partner mutation from Hosting %s while retaining read-only navigation",
+    async (role) => {
+      browserSession.activeOrganizationId = "host-1";
+      browserSession.role = role;
+      await renderCoordination();
+      expect(
+        screen.getAllByText(
+          "Only the Partner Organization of this Project Partnership issues participant entry points.",
+        ).length,
+      ).toBeGreaterThan(0);
+      for (const name of [
+        "Add Participation",
+        "Remove Project Participation for Own Person",
+        "Manage Group Organizers",
+        "Send Participant Invitation",
+        "Create Participant Registration Link",
+        "Reissue invitation for pending@example.org",
+        "Close invitation for pending@example.org",
+        "Close registration link link-1",
+        "Reopen registration link link-1",
+      ])
+        expect(screen.queryByRole("button", { name })).toBeNull();
+      // Oversight of the existing entries stays available.
+      expect(screen.getByText("pending@example.org")).toBeTruthy();
+      expect(screen.getByText("Link link-1")).toBeTruthy();
+      expect(
+        screen.getByRole("link", { name: "Participant details for Own Person" }),
+      ).toBeTruthy();
+      await userEvent.click(
+        screen.getByRole("button", { name: "Show Review Tasks" }),
+      );
+      await screen.findByText("Registered User: review@example.org");
+      expect(
+        screen.getByText("Registered User: assigned@example.org"),
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: "Assign Review Task to me" }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "Resolve Review Task" }),
+      ).toBeNull();
+      expect(screen.queryByLabelText("Review Task decision")).toBeNull();
+      expect(mocks.create).not.toHaveBeenCalled();
+      expect(mocks.remove).not.toHaveBeenCalled();
+    },
+  );
+
+  it("gates all Partner controls on the same coordinator assignment", async () => {
+    browserSession.role = ORGANIZATION_ROLES.ProjectCoordinator;
+    await renderCoordination();
+    expect(
+      screen.getAllByText(
+        "Ask an Organization Owner or Admin to assign you as Group Organizer for this Project Partnership.",
+      ).length,
+    ).toBeGreaterThan(0);
+    for (const name of [
+      "Send Participant Invitation",
+      "Add Participation",
+      "Remove Project Participation for Own Person",
+      "Manage Group Organizers",
+    ])
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show Review Tasks" }),
+    );
+    await screen.findByText("Registered User: review@example.org");
+    expect(
+      screen.queryByRole("button", { name: "Assign Review Task to me" }),
+    ).toBeNull();
+  });
+
+  it("fails closed when the scope report or the active Organization is missing", async () => {
+    mocks.list.mockResolvedValue({
+      projectName: "Own Project",
+      participations: [],
+      invitations: [
+        { invitationId: "invite-1", email: "p@example.org", status: "pending" },
+      ],
+      registrationLinks: [],
+    });
+    await renderCoordination();
+    expect(
+      screen.queryByRole("button", {
+        name: "Reissue invitation for p@example.org",
+      }),
+    ).toBeNull();
+    mocks.list.mockResolvedValue({
+      projectName: "Own Project",
+      participations: [],
+      invitations: [
+        { invitationId: "invite-2", email: "q@example.org", status: "pending" },
+      ],
+      registrationLinks: [],
+      entryContext: {
+        partnerOrganizationId: "partner-1",
+        hostOrganizationId: "host-1",
+        assignedCoordinator: false,
+      },
+    });
+    browserSession.activeOrganizationId = null;
+    await renderCoordination();
+    expect(
+      screen.getAllByText(
+        "Select an active Partner Organization before issuing participant entry points.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole("button", {
+        name: "Reissue invitation for q@example.org",
+      }),
+    ).toBeNull();
   });
 });

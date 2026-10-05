@@ -1,5 +1,6 @@
 "use client";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/client";
 import {
   useMutation,
@@ -7,11 +8,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -20,50 +22,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import {
+  participantEntryDenialMessage,
+  useParticipantEntryAccess,
+} from "@/features/authentication/participant-entry-access";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
-type Participation =
-  Outputs["participations"]["listPartnership"]["participations"][number];
-const countries = [
-  "AT",
-  "BE",
-  "BG",
-  "HR",
-  "CY",
-  "CZ",
-  "DK",
-  "EE",
-  "FI",
-  "FR",
-  "DE",
-  "GR",
-  "HU",
-  "IE",
-  "IT",
-  "LV",
-  "LT",
-  "LU",
-  "MT",
-  "NL",
-  "PL",
-  "PT",
-  "RO",
-  "SK",
-  "SI",
-  "ES",
-  "SE",
-] as const;
-type Country = (typeof countries)[number];
-
-function isCountry(value: string): value is Country {
-  return countries.some((country) => country === value);
-}
-
-function mutationFeedback(error: unknown) {
+/** Copy for a refused Participation creation; the decision itself stays server-side. */
+function createFeedback(error: unknown) {
   if (
     error instanceof ORPCError &&
     getSafeErrorSituation(error)?.reason === "PARTICIPATION_DUPLICATE"
@@ -74,76 +44,15 @@ function mutationFeedback(error: unknown) {
         "This Registered User may already participate in this Project. Open Review Tasks to review the duplicate identity, then contact the Hosting Organization to request a merge review if needed. No new Project Participation was added.",
     };
   }
-  if (error instanceof ORPCError && error.code === "FORBIDDEN") {
+  if (error instanceof ORPCError && error.code === "FORBIDDEN")
     return {
       title: "Access denied",
       description: getORPCRequestErrorMessage(error).text,
     };
-  }
   return {
-    title: "Unable to save Participation",
+    title: "Unable to add Participation",
     description: getORPCRequestErrorMessage(error).text,
   };
-}
-
-function CountryEditor({
-  participant,
-  partnershipId,
-  onSaved,
-  onError,
-}: {
-  participant: Participation;
-  partnershipId: string;
-  onSaved: () => Promise<void>;
-  onError: (error: unknown) => void;
-}) {
-  const [country, setCountry] = useState<Country | "">(
-    participant.country && isCountry(participant.country)
-      ? participant.country
-      : "",
-  );
-  const update = useMutation({
-    mutationFn: () =>
-      orpc.participations.update({
-        partnershipId,
-        id: participant.id,
-        country: country || null,
-      }),
-    onSuccess: onSaved,
-    onError,
-  });
-  return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="space-y-2">
-        <Label htmlFor={`country-${participant.id}`}>
-          Country for {participant.displayName}
-        </Label>
-        <select
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-          id={`country-${participant.id}`}
-          onChange={(event) =>
-            setCountry(isCountry(event.target.value) ? event.target.value : "")
-          }
-          value={country}
-        >
-          <option value="">Not set</option>
-          {countries.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-      </div>
-      <Button
-        disabled={update.isPending}
-        onClick={() => update.mutate()}
-        type="button"
-        variant="outline"
-      >
-        Save country for {participant.displayName}
-      </Button>
-    </div>
-  );
 }
 
 type ReviewTask = Outputs["duplicateReviews"]["list"][number];
@@ -156,10 +65,12 @@ const reviewDecisions: { value: ReviewDecision; label: string }[] = [
 
 function ReviewTaskControls({
   task,
+  canMutate,
   refresh,
   onFeedback,
 }: {
   task: ReviewTask;
+  canMutate: boolean;
   refresh: () => Promise<void>;
   onFeedback: (message: string) => void;
 }) {
@@ -210,7 +121,7 @@ function ReviewTaskControls({
           Assigned Registered User: {task.assignedToUserId}
         </p>
       )}
-      {task.status === "open" && (
+      {canMutate && task.status === "open" && (
         <Button
           type="button"
           variant="outline"
@@ -220,7 +131,7 @@ function ReviewTaskControls({
           Assign Review Task to me
         </Button>
       )}
-      {task.status === "assigned" && (
+      {canMutate && task.status === "assigned" && (
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-2">
             <Label htmlFor={`review-decision-${task.id}`}>
@@ -263,7 +174,13 @@ function ReviewTaskControls({
   );
 }
 
-function ReviewTasks({ partnershipId }: { partnershipId: string }) {
+function ReviewTasks({
+  partnershipId,
+  canMutate,
+}: {
+  partnershipId: string;
+  canMutate: boolean;
+}) {
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState("");
   const options = orpcQuery.duplicateReviews.list.queryOptions({
@@ -301,6 +218,7 @@ function ReviewTasks({ partnershipId }: { partnershipId: string }) {
             <ReviewTaskControls
               key={task.id}
               task={task}
+              canMutate={canMutate}
               refresh={refresh}
               onFeedback={setFeedback}
             />
@@ -393,7 +311,11 @@ function PartnerCoordinatorControls({
     entry.role
       .split(",")
       .some((role) =>
-        ["owner", "admin", "project-coordinator"].includes(role.trim()),
+        [
+          ORGANIZATION_ROLES.OrganizationOwner,
+          ORGANIZATION_ROLES.OrganizationAdmin,
+          ORGANIZATION_ROLES.ProjectCoordinator,
+        ].some((knownRole) => knownRole === role.trim()),
       ),
   );
   return (
@@ -401,8 +323,8 @@ function PartnerCoordinatorControls({
       <p className="text-sm text-muted-foreground">
         Organization Owners and Organization Admins may assign or revoke a Group
         Organizer for this Project Partnership. Assignment does not change
-        Organization Membership roles; the project-coordinator role is required
-        for assignment-scoped access.
+        Organization Membership roles; the coordinator role is required for
+        assignment-scoped access.
       </p>
       <div className="space-y-2">
         <Label htmlFor={`group-organizer-${partnershipId}`}>
@@ -477,6 +399,10 @@ export function ParticipantCoordination({
   );
   const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
+  // One shared Project-scope policy decides entry controls; the server enforces
+  // it again per request, so a stale or forged decision confers no authority.
+  const entryAccess = useParticipantEntryAccess(data.entryContext);
+  const entryDenial = participantEntryDenialMessage(entryAccess);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [coordinatorsOpen, setCoordinatorsOpen] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
@@ -642,8 +568,7 @@ export function ParticipantCoordination({
       });
     },
   });
-  // Hosts may read server-authorized oversight data, but cannot manage Partner
-  // Participations here; denied writes show the access-denied surface below.
+  // Hosts retain read-only oversight; the shared scope gate hides Partner writes.
   const create = useMutation({
     mutationFn: () => orpc.participations.create({ partnershipId, userId }),
     onSuccess: async () => {
@@ -655,7 +580,7 @@ export function ParticipantCoordination({
       await refresh();
     },
     onError: async (error) => {
-      setFeedback(mutationFeedback(error));
+      setFeedback(createFeedback(error));
       if (reviewsOpen) await refresh();
     },
   });
@@ -663,47 +588,49 @@ export function ParticipantCoordination({
   return (
     <section className="space-y-6" aria-label="Project Participations">
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
-      <Card>
-        <CardHeader>
-          <CardTitle>Add a registered user to this project</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Only add a registered User who has completed profile and agreement
-            acceptance. For someone not yet onboarded, send a Participant
-            Invitation or create a Participant Registration Link below.
-          </p>
-          <form
-            className="flex flex-wrap items-end gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setFeedback(undefined);
-              create.mutate();
-            }}
-          >
-            <div className="space-y-2">
-              <span className="text-sm font-medium">Registered User</span>
-              <EntityCombobox
-                label="Registered User"
-                value={userId}
-                onChange={setUserId}
-                search={searchOnboarded}
-                searchBy="name, email or ID"
-                disabled={create.isPending}
-              />
-            </div>
-            <Button disabled={create.isPending || !userId} type="submit">
-              {create.isPending ? "Adding…" : "Add Participation"}
-            </Button>
-          </form>
-          {feedback && (
-            <Alert>
-              <AlertTitle>{feedback.title}</AlertTitle>
-              <AlertDescription>{feedback.description}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+      {entryAccess.permitted && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add a registered user to this project</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Only add a registered User who has completed profile and agreement
+              acceptance. For someone not yet onboarded, send a Participant
+              Invitation or create a Participant Registration Link below.
+            </p>
+            <form
+              className="flex flex-wrap items-end gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setFeedback(undefined);
+                create.mutate();
+              }}
+            >
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Registered User</span>
+                <EntityCombobox
+                  label="Registered User"
+                  value={userId}
+                  onChange={setUserId}
+                  search={searchOnboarded}
+                  searchBy="name, email or ID"
+                  disabled={create.isPending}
+                />
+              </div>
+              <Button disabled={create.isPending || !userId} type="submit">
+                {create.isPending ? "Adding…" : "Add Participation"}
+              </Button>
+            </form>
+            {feedback && (
+              <Alert>
+                <AlertTitle>{feedback.title}</AlertTitle>
+                <AlertDescription>{feedback.description}</AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Joined Participants</CardTitle>
@@ -731,55 +658,66 @@ export function ParticipantCoordination({
                       {participant.email}
                     </p>
                   )}
-                  <CountryEditor
-                    participant={participant}
-                    partnershipId={partnershipId}
-                    onSaved={refresh}
-                    onError={(error) => setFeedback(mutationFeedback(error))}
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={removeParticipation.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Remove the Project Participation for ${participant.displayName}?`,
-                        )
-                      ) {
-                        setFeedback(undefined);
-                        removeParticipation.mutate(participant.id);
-                      }
-                    }}
+                  <p className="flex flex-wrap items-center gap-3 text-sm">
+                    <span>Country</span>
+                    <Badge variant="secondary">
+                      {participant.country ?? "Not set"}
+                    </Badge>
+                  </p>
+                  {/* Editing belongs on the details page, never in a list row (ADR-0016). */}
+                  <Link
+                    className={buttonVariants({ variant: "outline" })}
+                    href={`/partnerships/${encodeURIComponent(partnershipId)}/participants/${encodeURIComponent(participant.id)}`}
                   >
-                    Remove Project Participation for {participant.displayName}
-                  </Button>
+                    Participant details for {participant.displayName}
+                  </Link>
+                  {entryAccess.permitted && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={removeParticipation.isPending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Remove the Project Participation for ${participant.displayName}?`,
+                          )
+                        ) {
+                          setFeedback(undefined);
+                          removeParticipation.mutate(participant.id);
+                        }
+                      }}
+                    >
+                      Remove Project Participation for {participant.displayName}
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Group Organizers</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
-            type="button"
-            variant="outline"
-            aria-expanded={coordinatorsOpen}
-            onClick={() => setCoordinatorsOpen((open) => !open)}
-          >
-            {coordinatorsOpen
-              ? "Hide Group Organizer management"
-              : "Manage Group Organizers"}
-          </Button>
-          {coordinatorsOpen && (
-            <PartnerCoordinatorControls partnershipId={partnershipId} />
-          )}
-        </CardContent>
-      </Card>
+      {entryAccess.permitted && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Group Organizers</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={coordinatorsOpen}
+              onClick={() => setCoordinatorsOpen((open) => !open)}
+            >
+              {coordinatorsOpen
+                ? "Hide Group Organizer management"
+                : "Manage Group Organizers"}
+            </Button>
+            {coordinatorsOpen && (
+              <PartnerCoordinatorControls partnershipId={partnershipId} />
+            )}
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Review Tasks</CardTitle>
@@ -797,61 +735,79 @@ export function ParticipantCoordination({
           >
             {reviewsOpen ? "Hide Review Tasks" : "Show Review Tasks"}
           </Button>
-          {reviewsOpen && <ReviewTasks partnershipId={partnershipId} />}
+          {reviewsOpen && (
+            <ReviewTasks
+              partnershipId={partnershipId}
+              canMutate={entryAccess.permitted}
+            />
+          )}
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
           <CardTitle>Participant Invitations and Registration Links</CardTitle>
+          <CardDescription>
+            Email-bound invitations reach one address and only that verified
+            account can redeem them. Shareable registration links work for anyone
+            holding them and stay reusable.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form
-            className="flex flex-wrap items-end gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setEntryFeedback(undefined);
-              issueInvitation.mutate();
-            }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="participant-invitation-email">Invitee email</Label>
-              <input
-                id="participant-invitation-email"
-                className="h-9 rounded-md border bg-background px-3 text-sm"
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            <Button disabled={issueInvitation.isPending} type="submit">
-              Send Participant Invitation
-            </Button>
-          </form>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={createLink.isPending}
-            onClick={() => {
-              setEntryFeedback(undefined);
-              createLink.mutate();
-            }}
-          >
-            Create Participant Registration Link
-          </Button>
-          {createdLink?.partnershipId === partnershipId && (
-            <div className="space-y-2">
-              <Label htmlFor="new-participant-link">
-                New registration link (copy now)
-              </Label>
-              <input
-                id="new-participant-link"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-                readOnly
-                value={createdLink.url}
-                onFocus={(event) => event.currentTarget.select()}
-              />
-            </div>
+          {entryDenial ? (
+            <p className="text-sm text-muted-foreground">{entryDenial}</p>
+          ) : (
+            <>
+              <form
+                className="flex flex-wrap items-end gap-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setEntryFeedback(undefined);
+                  issueInvitation.mutate();
+                }}
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="participant-invitation-email">
+                    Invitee email
+                  </Label>
+                  <input
+                    id="participant-invitation-email"
+                    className="h-9 rounded-md border bg-background px-3 text-sm"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </div>
+                <Button disabled={issueInvitation.isPending} type="submit">
+                  Send Participant Invitation
+                </Button>
+              </form>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={createLink.isPending}
+                onClick={() => {
+                  setEntryFeedback(undefined);
+                  createLink.mutate();
+                }}
+              >
+                Create Participant Registration Link
+              </Button>
+              {createdLink?.partnershipId === partnershipId && (
+                <div className="space-y-2">
+                  <Label htmlFor="new-participant-link">
+                    New registration link (copy now)
+                  </Label>
+                  <input
+                    id="new-participant-link"
+                    className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                    readOnly
+                    value={createdLink.url}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </div>
+              )}
+            </>
           )}
           {entryFeedback && (
             <Alert>
@@ -863,7 +819,11 @@ export function ParticipantCoordination({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Invitations</CardTitle>
+          <CardTitle>Email-bound Participant Invitations</CardTitle>
+          <CardDescription>
+            Only the invited email address can redeem each invitation. Forwarded
+            links grant nothing to other accounts.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {data.invitations.length === 0 ? (
@@ -881,7 +841,7 @@ export function ParticipantCoordination({
                       ? "Invitation pending"
                       : `Invitation ${invitation.status}`}
                   </Badge>
-                  {invitation.status === "pending" && (
+                  {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
                       type="button"
                       variant="outline"
@@ -893,7 +853,7 @@ export function ParticipantCoordination({
                       Reissue invitation for {invitation.email}
                     </Button>
                   )}
-                  {invitation.status === "pending" && (
+                  {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
                       type="button"
                       variant="outline"
@@ -914,11 +874,18 @@ export function ParticipantCoordination({
           <p className="mt-4 text-sm text-muted-foreground">
             Invitation status does not show profile or agreement progress.
           </p>
+          {entryDenial && (
+            <p className="mt-2 text-sm text-muted-foreground">{entryDenial}</p>
+          )}
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Registration links</CardTitle>
+          <CardTitle>Shareable Participant Registration Links</CardTitle>
+          <CardDescription>
+            Anyone holding a link may redeem it with their own account. Close a
+            link once everyone has registered.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {data.registrationLinks.length === 0 ? (
@@ -934,7 +901,7 @@ export function ParticipantCoordination({
                   <Badge variant="secondary">
                     {link.enabled ? "Open" : "Closed"}
                   </Badge>
-                  {link.enabled && (
+                  {entryAccess.permitted && link.enabled && (
                     <Button
                       type="button"
                       variant="outline"
@@ -944,7 +911,7 @@ export function ParticipantCoordination({
                       Close registration link {link.id}
                     </Button>
                   )}
-                  {!link.enabled && (
+                  {entryAccess.permitted && !link.enabled && (
                     <Button
                       type="button"
                       variant="outline"
@@ -960,6 +927,9 @@ export function ParticipantCoordination({
                 </li>
               ))}
             </ul>
+          )}
+          {entryDenial && (
+            <p className="mt-4 text-sm text-muted-foreground">{entryDenial}</p>
           )}
         </CardContent>
       </Card>

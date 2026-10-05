@@ -2,11 +2,22 @@ import { ORPCError } from "@orpc/server";
 import { APIError, isAPIError } from "better-auth/api";
 import { z } from "zod";
 
+import {
+  genericClientRefusalNames,
+  membershipMisconfigurationNames,
+  situationCatalog,
+} from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
 type Situations = ReturnType<typeof createSituationErrors>;
 const BodySchema = z.object({ code: z.string().max(128) });
 const MAX_ERROR_BODY_BYTES = 4096;
+
+/** Vendor-status fallback resolves through the generic catalog refusals. */
+const genericRefusalByStatus = new Map<
+  number,
+  (typeof genericClientRefusalNames)[number]
+>(genericClientRefusalNames.map((name) => [situationCatalog[name].status, name]));
 
 function mapFailure(status: number, body: unknown, errors: Situations) {
   const parsed = BodySchema.safeParse(body);
@@ -20,26 +31,9 @@ function mapFailure(status: number, body: unknown, errors: Situations) {
     case "EMAIL_NOT_VERIFIED":
       return errors.verifyEmail();
   }
-  switch (status) {
-    case 400:
-      return errors.badInput();
-    case 401:
-      return errors.unauthenticated();
-    case 403:
-      return errors.accessDenied();
-    case 404:
-      return errors.notFound();
-    case 409:
-      return errors.conflict();
-    case 422:
-      return errors.unprocessable();
-    case 429:
-      return errors.rateLimited();
-    case 503:
-      return errors.unavailable();
-    default:
-      return errors.internalFailure();
-  }
+  const genericName = genericRefusalByStatus.get(status);
+  if (genericName !== undefined) return errors[genericName]();
+  return errors.internalFailure();
 }
 
 export function normalizeBetterAuthError(
@@ -100,19 +94,23 @@ export async function normalizeBetterAuthResponse(
 
 // addMember is a privileged server command. Permission/session/selection failures
 // there describe server configuration, not the already authenticated Invitee.
+const membershipMisconfigurationCodes: string[] =
+  membershipMisconfigurationNames.map((name) => situationCatalog[name].code);
+
 function normalizeParticipantMembershipFailure(
   error: ORPCError<string, unknown>,
   errors: Situations,
 ) {
   if (
-    ["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code) &&
+    membershipMisconfigurationCodes.includes(error.code) &&
     error.data &&
     typeof error.data === "object" &&
     "reason" in error.data &&
-    error.data.reason !== "EMAIL_VERIFICATION_REQUIRED"
+    error.data.reason !== situationCatalog.verifyEmail.reason
   )
     return errors.internalFailure();
-  if (error.code === "BAD_REQUEST") return errors.internalFailure();
+  if (error.code === situationCatalog.badInput.code)
+    return errors.internalFailure();
   return error;
 }
 

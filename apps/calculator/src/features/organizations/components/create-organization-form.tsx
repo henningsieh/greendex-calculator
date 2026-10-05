@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 
 import { DASHBOARD_PATH } from "@/app/routes";
+import { CountrySelect } from "@/components/country-select";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -30,6 +32,8 @@ export function CreateOrganizationForm({
 }: CreateOrganizationFormProps) {
   const router = useRouter();
 
+  const t = useTranslations("organization.country");
+
   const form = useForm<z.infer<typeof OrganizationFormSchema>>({
     resolver: zodResolver(OrganizationFormSchema),
     defaultValues: {
@@ -45,6 +49,7 @@ export function CreateOrganizationForm({
       await authClient.organization.create(
         {
           name: data.name,
+          country: data.country,
           slug: availableSlug,
         },
         {
@@ -103,6 +108,26 @@ export function CreateOrganizationForm({
                         handleSubmit(e);
                       }
                     }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="country"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("label")}</FormLabel>
+                <FormControl>
+                  <CountrySelect
+                    euOnly
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder={t("placeholder")}
+                    disabled={form.formState.isSubmitting}
                   />
                 </FormControl>
                 <FormMessage />

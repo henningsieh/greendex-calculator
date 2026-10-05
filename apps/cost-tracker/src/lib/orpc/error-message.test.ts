@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/client";
 import { describe, expect, it } from "vitest";
 
-import { situationCatalog } from "@/lib/orpc/error-contract";
+import { hasComposedCopy, situationCatalog } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
@@ -40,6 +40,18 @@ describe("safe situation presentation", () => {
     ).toEqual({
       sessionExpired: false,
       text: "We could not complete that request. Check your details and try again.",
+    });
+  });
+  it("masks composed copy behind the generic transport copy", () => {
+    expect(
+      getORPCRequestErrorMessage(
+        createSituationErrors().projectCompletionBlocked([
+          { name: "Group A", status: "submitted" },
+        ]),
+      ),
+    ).toEqual({
+      sessionExpired: false,
+      text: situationCatalog.badInput.message,
     });
   });
 });
@@ -115,10 +127,12 @@ it.each(Object.entries(situationCatalog))(
       message: "private SQL token",
       data: { reason: situation.reason },
     });
+    const composed = hasComposedCopy(situation);
     expect(getORPCRequestErrorMessage(error)).toEqual({
       sessionExpired: situation.reason === "SESSION_REQUIRED",
-      text:
-        situation.reason === "INTERNAL_FAILURE"
+      text: composed
+        ? situationCatalog.badInput.message
+        : situation.reason === "INTERNAL_FAILURE"
           ? "The request could not be completed. Try again."
           : situation.message,
     });

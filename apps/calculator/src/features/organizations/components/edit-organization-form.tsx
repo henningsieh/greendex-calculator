@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
+import { CountrySelect } from "@/components/country-select";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,6 +30,7 @@ import { findAvailableSlug } from "@/features/organizations/utils";
 import { EditOrganizationFormSchema } from "@/features/organizations/validation-schemas";
 import { authClient } from "@/lib/better-auth/auth-client";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import type { Outputs } from "@/lib/orpc/router";
 
 /**
  * Renders a form to edit the active organization's name and applies updates (adjusting the slug when the name changes).
@@ -37,24 +40,37 @@ import { orpcQuery } from "@/lib/orpc/orpc";
  * @returns The React element for the edit organization form, or a skeleton placeholder while the organization data is loading.
  */
 export function EditOrganizationForm() {
-  const queryClient = useQueryClient();
   const { data: organization } = useSuspenseQuery(
     orpcQuery.organizations.getActive.queryOptions(),
   );
 
+  if (!organization) return <EditOrganizationFormSkeleton />;
+
+  return (
+    <EditOrganizationInnerForm
+      key={organization.id}
+      organization={organization}
+    />
+  );
+}
+
+function EditOrganizationInnerForm({
+  organization,
+}: {
+  organization: NonNullable<Outputs["organizations"]["getActive"]>;
+}) {
+  const queryClient = useQueryClient();
+  const t = useTranslations("organization.country");
+
   const form = useForm<z.infer<typeof EditOrganizationFormSchema>>({
     resolver: zodResolver(EditOrganizationFormSchema),
     defaultValues: {
-      name: organization?.name || "",
+      name: organization.name,
+      country: organization.country,
     },
   });
 
   async function onSubmit(data: z.infer<typeof EditOrganizationFormSchema>) {
-    if (!organization) {
-      toast.error("No organization found");
-      return;
-    }
-
     try {
       let slugToUse = organization.slug;
 
@@ -68,6 +84,7 @@ export function EditOrganizationForm() {
           organizationId: organization.id,
           data: {
             name: data.name,
+            country: data.country,
             slug: slugToUse,
           },
         },
@@ -98,10 +115,6 @@ export function EditOrganizationForm() {
     void form.handleSubmit(onSubmit)(e);
   };
 
-  if (!organization) {
-    return <EditOrganizationFormSkeleton />;
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -121,6 +134,26 @@ export function EditOrganizationForm() {
                     <Input
                       placeholder="My Organization"
                       {...field}
+                      disabled={form.formState.isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("label")}</FormLabel>
+                  <FormControl>
+                    <CountrySelect
+                      euOnly
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder={t("placeholder")}
                       disabled={form.formState.isSubmitting}
                     />
                   </FormControl>

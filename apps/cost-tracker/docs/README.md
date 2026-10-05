@@ -4,16 +4,17 @@ These documents describe behavior owned by the Cost Tracker application.
 
 ## Read first
 
-- [Cost Tracking context](../CONTEXT.md)
-- Other contexts: [Calculator](../../../apps/calculator/CONTEXT.md) · [Documentation](../../../apps/documentation/CONTEXT.md) — overview in [AGENTS.md](../../../AGENTS.md#contexts)
+- [Cost Tracking glossary](../GLOSSARY.md)
+- Other contexts: [Calculator](../../../apps/calculator/GLOSSARY.md) · [Documentation](../../../apps/documentation/GLOSSARY.md) — overview in [Glossary map](../../../GLOSSARY-MAP.md)
 - [Cost Tracker architecture](architecture.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
-- [Shared Greendex language](../../../DOMAIN-GLOSSARY.md)
+- [Shared Greendex language](../../../GLOSSARY.md)
 - [Shared Projects documentation](../../../docs/projects/README.md)
 - [Cost Tracker Projects](projects/README.md)
 - [User settings](user-settings.md)
 - [Cost model and schema blueprint](domain-model.md)
 - [Claim workflow](claim-workflow.md)
+- [Current domain behavior](domain-behavior.md) — participation, invitations, agreements, transport, and Claim invariants extracted from the former app context
 - [Clickdummy use-case traceability](clickdummy/requirements-traceability.md)
 - [Garage S3 infrastructure](infrastructure/garage.md)
 - [Manual pair-testing (journey script, run logs, session protocol)](manual-testing/)
