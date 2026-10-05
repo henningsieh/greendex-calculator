@@ -5,14 +5,14 @@ Canonical product language shared by the Greendex applications. App-specific lan
 ## Language
 
 **Organization**:
-A group based in exactly one EU country (`country`, a required EU code) that manages its own Users and Projects. An Organization may also be assigned to a Project as a Partner Organization through a Project Partnership.
+A group based in exactly one EU country that manages its own Users and Projects. An Organization may also be assigned to a Project as a Partner Organization through a Project Partnership.
 
 **User**:
 A person with a Greendex login who may hold roles in several Organizations and be linked to several Project Participations.
 _Avoid_: Participant (when referring only to login identity)
 
 **Organization Membership**:
-A User's membership in one Organization, carrying one or more Organization-level roles. Both apps use only the defined `owner`, `admin`, `coordinator`, and `participant` values. Role lists derive from the shared auth constants; unknown or omitted role grants are refused.
+A User's membership in one Organization, carrying one or more Organization-level roles.
 _Avoid_: Project Participation
 
 **Organization Owner**:
@@ -24,7 +24,7 @@ A User with Organization-wide administrative authority below the Organization Ow
 _Avoid_: Project Coordinator, Owner
 
 **Project Coordinator**:
-A User whose coordination authority is scoped by an explicit Project or Project Partnership assignment. Stored value `coordinator`. In Cost Tracker, the role alone grants neither Organization-wide authority nor access to an unassigned Project; Calculator recognizes the value but grants it no permissions yet. The Partner-side UI calls this actor a Group Organizer.
+A User whose coordination authority is scoped by an explicit Project or Project Partnership assignment. The Partner-side UI calls this actor a Group Organizer.
 _Avoid_: Organization Admin, Employee, Project Manager, Coordinator
 
 **Participant Role**:

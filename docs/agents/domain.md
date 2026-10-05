@@ -13,7 +13,7 @@ Use this route before changing domain language, relationships, business rules, o
 4. Accepted records in [`docs/adr/`](../adr/) that concern the change.
 5. The owning application's documentation index.
 
-Proceed silently when a glossary or ADR directory does not yet exist. Create these lazily through `/domain-modeling` only when a term or qualifying decision is resolved.
+Proceed silently when a glossary or ADR directory does not yet exist. Create these lazily only when a term or qualifying decision is resolved.
 
 ## Ownership
 

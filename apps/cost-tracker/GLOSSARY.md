@@ -37,7 +37,7 @@ A shareable, app-owned participant entry point issued by the Partner Organizatio
 _Avoid_: Participant Invitation, Organization Invitation, bearer token
 
 **Organization Invitation**:
-An invitation into an Organization role for colleagues, distinct from participant entry into a Project Partnership. Only defined shared role values may be invited, assigned, or seeded; staff invitations remain limited to `owner` and `admin`.
+An invitation into an Organization role for colleagues, distinct from participant entry into a Project Partnership.
 _Avoid_: Participant Invitation, Participant Registration Link
 
 **Review Task**:
