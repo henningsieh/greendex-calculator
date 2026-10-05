@@ -24,6 +24,7 @@ These documents describe behavior owned by the Cost Tracker application.
 Start here when you need to know what still needs a decision. Nothing in this list is history.
 
 - [Backlog](backlog/) — deferred questions and follow-ups. Begin with the [six open questions from the Phase 0–8 architecture review](backlog/architecture-review-open-questions.md).
+- [Erasmus re-theme tracking](design/erasmus-billing-accounting-theme.md) — Billing/Accounting redesign chain: approved prototype, palette, fonts, hover language, and lint migration.
 - [Project/Partner cardinality](backlog/project-partner-cardinality.md) — can one Project have more than one Partner Organization, or is one Partner Organization per Project the real rule?
 - [GitHub issues](https://github.com/henningsieh/greendex-calculator/issues) — canonical surface for issues and specs; see [`docs/agents/issue-tracker.md`](../../../docs/agents/issue-tracker.md).
 
