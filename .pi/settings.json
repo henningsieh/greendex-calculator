@@ -28,7 +28,7 @@
       },
       "reviewer": {
         "defaultContext": "fresh",
-        "thinking": "xhigh",
+        "thinking": "high",
         "allowNestedSubagents": false,
         "acceptanceRole": "read-only"
       }
