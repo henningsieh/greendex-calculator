@@ -34,6 +34,7 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | 2F  | Emil final (borders)   | superseded | Border-on-hover rejected by human (shrink illusion, too light) — see 2G |
 | 2G  | Yellow glow hovers     | done    | `worker [77f7a270-…]` complete; outward box-shadow glow, no layout shift; committed for hover-testing |
 | 2H  | Border-swap hover      | done    | `worker [bafda504-…]` on `astra:low` complete; 1px recolor + zero-spread halo, footprint identical; committed for hover-testing |
+| R   | Sol vs Astra research  | done    | `researcher [0a2109ae-…]` on `gpt-6-luna:low` complete; brief at `docs/design/model-ui-comparison.md`: no public docs for exact codenames, local evidence favors astra for polish but no head-to-head |
 | 3   | Flagship build       | pending | Waits for your Gate 1 rating + explicit go |
 | 4   | Emil polish          | pending | Restrained pass, feedback-only motion                                                       |
 | 5   | Rollout + gates      | pending | Remaining screens, `format && lint`, `lint:design-system`                                   |
