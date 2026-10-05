@@ -47,7 +47,11 @@
     "typescript/no-base-to-string": "off",
     "typescript/restrict-template-expressions": "off",
     "no-unsafe-optional-chaining": "off",
-    "import/no-relative-parent-imports": "error"
+    "import/no-relative-parent-imports": "error",
+    "better-tailwindcss/no-conflicting-classes": "error",
+    "better-tailwindcss/no-duplicate-classes": "error",
+    "better-tailwindcss/enforce-canonical-classes": "error",
+    "better-tailwindcss/no-deprecated-classes": "error"
   },
   "overrides": [
     {
@@ -288,5 +292,5 @@
       }
     }
   ],
-  "jsPlugins": ["@shadcn/lint"]
+  "jsPlugins": ["@shadcn/lint", "eslint-plugin-better-tailwindcss"]
 }

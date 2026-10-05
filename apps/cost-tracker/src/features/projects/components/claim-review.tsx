@@ -14,6 +14,11 @@ import {
   claimPanelActions,
   type ClaimPanelAction,
 } from "@/features/projects/claim-lifecycle";
+import {
+  ClaimBand,
+  ClaimCostTable,
+  PayoutAccountLines,
+} from "@/features/projects/components/claim-document";
 import { authClient } from "@/lib/auth-client";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
@@ -72,19 +77,30 @@ const historyLabels: Record<History[number]["eventType"], string> = {
 
 export function ClaimHistory({ events }: { events: History }) {
   return (
-    <section aria-label="Claim history" className="space-y-2">
+    <section
+      aria-label="Claim history"
+      className="min-w-0 space-y-4 px-8 py-7 max-sm:px-4"
+    >
       <h2 className="font-heading text-xl font-semibold">Claim history</h2>
       {events.length === 0 ? (
         <p>No review events yet.</p>
       ) : (
-        <ol className="space-y-2">
+        <ol className="divide-y">
           {events.map((event, index) => (
             <li
               key={`${event.actorUserId}-${event.occurredAt.toISOString()}-${index}`}
+              className="grid gap-x-5 gap-y-2 py-4 min-[961px]:grid-cols-[180px_200px_minmax(0,1fr)]"
             >
-              <strong>{historyLabels[event.eventType]}</strong> ·{" "}
-              {event.occurredAt.toLocaleString()} · {event.actorUserId}
-              {event.reason && <p>{event.reason}</p>}
+              <strong>{historyLabels[event.eventType]}</strong>
+              <time dateTime={event.occurredAt.toISOString()}>
+                {event.occurredAt.toLocaleString()}
+              </time>
+              <span className="min-w-0 wrap-anywhere">
+                Actor: <span className="font-mono">{event.actorUserId}</span>
+              </span>
+              {event.reason && (
+                <p className="col-span-full wrap-anywhere">{event.reason}</p>
+              )}
             </li>
           ))}
         </ol>
@@ -143,9 +159,9 @@ export function ClaimDecisionPanel({
     }
   }
   return (
-    <Card>
+    <Card variant="action">
       <CardHeader>
-        <CardTitle>Review decision</CardTitle>
+        <CardTitle as="h2">Review decision</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p>
@@ -163,15 +179,24 @@ export function ClaimDecisionPanel({
         </p>
         {approvedAmountEur && (
           <p>
-            Calculated payable: {approvedAmountEur} EUR (server-approved amount)
+            Calculated payable:{" "}
+            <span className="block font-mono tabular-nums">
+              {approvedAmountEur} EUR
+            </span>{" "}
+            (server-approved amount)
           </p>
         )}
         {canReview &&
           controls.map(({ action, label }) => (
             <Button
+              size="accounting"
               key={action}
               type="button"
-              variant="outline"
+              variant={
+                action === "approve" || action === "markPaid"
+                  ? "accounting"
+                  : "accounting-outline"
+              }
               disabled={pending}
               onClick={() => begin(action)}
             >
@@ -193,7 +218,7 @@ export function ClaimDecisionPanel({
                   </Label>
                   <textarea
                     id="decision-reason"
-                    className="w-full rounded-md border bg-background p-2"
+                    className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                     maxLength={2000}
                     required
                     value={reason}
@@ -202,8 +227,10 @@ export function ClaimDecisionPanel({
                 </div>
               )}
             </AlertDescription>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
+                variant="accounting"
+                size="accounting"
                 type="button"
                 disabled={
                   pending ||
@@ -215,8 +242,9 @@ export function ClaimDecisionPanel({
                 Confirm {definition?.confirmation}
               </Button>
               <Button
+                size="accounting"
                 type="button"
-                variant="outline"
+                variant="accounting-outline"
                 disabled={pending}
                 onClick={() => setConfirming(null)}
               >
@@ -239,50 +267,62 @@ export function ClaimReviewDetails({
   partnershipId: string;
 }) {
   return (
-    <Card>
+    <Card variant="document">
       <CardHeader>
-        <CardTitle>Submitted Claim details</CardTitle>
+        <CardTitle as="h2">Submitted Claim details</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {details.payoutAccount ? (
+          <PayoutAccountLines account={details.payoutAccount} />
+        ) : (
+          <p>No Payout Account</p>
+        )}
         <p>
-          Selected payout:{" "}
-          {details.payoutAccount
-            ? `${details.payoutAccount.accountHolder} · ${details.payoutAccount.iban}${details.payoutAccount.bic ? ` · ${details.payoutAccount.bic}` : ""}`
-            : "No Payout Account"}
+          Calculated payable:{" "}
+          <span className="font-mono tabular-nums">
+            {details.approvedAmountEur ?? "Unavailable"} EUR
+          </span>
         </p>
-        <p>
-          Calculated payable: {details.approvedAmountEur ?? "Unavailable"} EUR
-        </p>
-        <h3 className="font-semibold">Travel Cost Entries and Proof Documents</h3>
+        <h3 className="text-xl font-semibold">
+          Travel Cost Entries and Proof Documents
+        </h3>
         {details.entries.length === 0 ? (
           <p>No costs recorded.</p>
         ) : (
-          <ul className="space-y-3">
-            {details.entries.map((entry) => (
-              <li key={entry.id}>
-                <p>
-                  {entry.transportProfile} · {entry.amountEur} EUR ·{" "}
-                  {entry.allocationMethod}
-                </p>
-                <ul>
+          <ClaimCostTable
+            rows={details.entries.map((entry) => ({
+              id: entry.id,
+              transportProfile: entry.transportProfile,
+              amountEur: entry.amountEur,
+              allocationMethod: entry.allocationMethod,
+              allocations: (
+                <ul className="space-y-2">
                   {entry.allocations.map((share) => (
                     <li key={share.participantId}>
                       {share.participantName}:{" "}
-                      {share.amountEur
-                        ? `${share.amountEur} EUR`
-                        : share.percentage
-                          ? `${share.percentage}%`
-                          : "Equal share (computed on submission)"}
+                      <span className="font-mono tabular-nums">
+                        {share.amountEur
+                          ? `${share.amountEur} EUR`
+                          : share.percentage
+                            ? `${share.percentage}%`
+                            : "Equal share (computed on submission)"}
+                      </span>
                     </li>
                   ))}
                 </ul>
-                <ul>
+              ),
+              documents: entry.documents.length ? (
+                <ul className="space-y-3">
                   {entry.documents.map((document) => (
                     <li key={document.id}>
-                      Proof Document: {document.originalFileName} (
-                      {document.mediaType}, {document.byteSize} bytes){" "}
+                      <p>Proof Document: {document.originalFileName}</p>
+                      <p className="text-muted-foreground">
+                        {document.mediaType},{" "}
+                        <span className="font-mono">{document.byteSize}</span>{" "}
+                        bytes
+                      </p>
                       <a
-                        className="underline underline-offset-4"
+                        className="text-link underline underline-offset-4 focus-visible:decoration-brand fine-hover:text-link-hover fine-hover:decoration-brand"
                         href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
                         download
                       >
@@ -291,9 +331,11 @@ export function ClaimReviewDetails({
                     </li>
                   ))}
                 </ul>
-              </li>
-            ))}
-          </ul>
+              ) : (
+                "None"
+              ),
+            }))}
+          />
         )}
         <h3 className="font-semibold">Participant Journeys</h3>
         {details.journeys.length === 0 ? (
@@ -384,21 +426,43 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
     );
   }
   return (
-    <section aria-label="Claim review" className="space-y-6">
-      <Link href="/claims/review">Back to submitted Claims</Link>
-      {!claim ? (
-        <p>No Claim has been created for this Partnership.</p>
-      ) : (
-        <ClaimDecisionPanel
-          partnershipId={partnershipId}
-          status={claim.status}
-          approvedAmountEur={claim.approvedAmountEur}
-          canReview={mayReview && reviewer.canReview}
-          onDecision={decide}
-        />
-      )}
-      <ClaimReviewDetails details={details} partnershipId={partnershipId} />
-      <ClaimHistory events={history} />
+    <section aria-label="Claim review" className="min-w-0 space-y-5">
+      <Link
+        className="text-link underline underline-offset-4 fine-hover:text-link-hover fine-hover:decoration-brand"
+        href="/claims/review"
+      >
+        Back to submitted Claims
+      </Link>
+      <div className="min-w-0">
+        <ClaimBand title="Claim review" status={claim?.status} />
+        <div className="min-w-0 border border-t-0 bg-card">
+          <div className="grid min-w-0 min-[961px]:grid-cols-[minmax(0,1fr)_340px]">
+            <aside
+              aria-label="Review decision"
+              className="min-w-0 border-b bg-muted min-[961px]:col-start-2 min-[961px]:row-start-1 min-[961px]:border-b-0 min-[961px]:border-l"
+            >
+              {!claim ? (
+                <p>No Claim has been created for this Partnership.</p>
+              ) : (
+                <ClaimDecisionPanel
+                  partnershipId={partnershipId}
+                  status={claim.status}
+                  approvedAmountEur={claim.approvedAmountEur}
+                  canReview={mayReview && reviewer.canReview}
+                  onDecision={decide}
+                />
+              )}
+            </aside>
+            <div className="min-w-0 min-[961px]:col-start-1 min-[961px]:row-start-1">
+              <ClaimReviewDetails
+                details={details}
+                partnershipId={partnershipId}
+              />
+            </div>
+          </div>
+          <ClaimHistory events={history} />
+        </div>
+      </div>
     </section>
   );
 }

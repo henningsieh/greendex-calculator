@@ -1,17 +1,64 @@
 "use client"
 
+import { cva, type VariantProps } from "class-variance-authority"
 import * as React from "react"
 import { cn } from "cn"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+const accountingCellAppearance = "h-auto px-3 py-2.5 align-top whitespace-normal wrap-anywhere"
+
+const tableVariants = cva(
+  "w-full caption-bottom text-sm",
+  {
+    variants: {
+      variant: {
+        default: "",
+        accounting: "min-w-180 table-fixed caption-top",
+      },
+    },
+    defaultVariants: { variant: "default" },
+  }
+)
+
+const tableHeadVariants = cva(
+  "h-12 px-3 text-left align-middle text-xs font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase has-[[role=checkbox]]:pr-0",
+  {
+    variants: {
+      variant: {
+        default: "",
+        accounting: `${accountingCellAppearance} bg-muted text-sm font-semibold tracking-normal text-foreground normal-case`,
+        amount: `${accountingCellAppearance} bg-muted text-sm font-semibold tracking-normal text-foreground normal-case text-right whitespace-nowrap`,
+      },
+    },
+    defaultVariants: { variant: "default" },
+  }
+)
+
+const tableCellVariants = cva(
+  "p-3 align-middle whitespace-nowrap has-[[role=checkbox]]:pr-0",
+  {
+    variants: {
+      variant: {
+        default: "",
+        accounting: accountingCellAppearance,
+        amount: `${accountingCellAppearance} text-right whitespace-nowrap font-mono tabular-nums`,
+      },
+    },
+    defaultVariants: { variant: "default" },
+  }
+)
+
+function Table({ className, variant = "default", ...props }: React.ComponentProps<"table"> & VariantProps<typeof tableVariants>) {
   return (
     <div
       data-slot="table-container"
       className="relative w-full overflow-x-auto"
+      role={variant === "accounting" ? "region" : undefined}
+      aria-label={variant === "accounting" ? "Travel Cost Entries table, horizontally scrollable" : undefined}
+      tabIndex={variant === "accounting" ? 0 : undefined}
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn(tableVariants({ variant }), className)}
         {...props}
       />
     </div>
@@ -64,27 +111,21 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   )
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+function TableHead({ className, variant = "default", ...props }: React.ComponentProps<"th"> & VariantProps<typeof tableHeadVariants>) {
   return (
     <th
       data-slot="table-head"
-      className={cn(
-        "h-12 px-3 text-left align-middle text-xs font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
-        className
-      )}
+      className={cn(tableHeadVariants({ variant }), className)}
       {...props}
     />
   )
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+function TableCell({ className, variant = "default", ...props }: React.ComponentProps<"td"> & VariantProps<typeof tableCellVariants>) {
   return (
     <td
       data-slot="table-cell"
-      className={cn(
-        "p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
-        className
-      )}
+      className={cn(tableCellVariants({ variant }), className)}
       {...props}
     />
   )

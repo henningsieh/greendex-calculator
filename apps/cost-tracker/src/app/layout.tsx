@@ -1,6 +1,6 @@
 import "@/lib/orpc/client.server";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, JetBrains_Mono } from "next/font/google";
 
 import { NuqsProvider } from "@/components/nuqs-provider";
 import { QueryProvider } from "@/components/query-provider";
@@ -10,11 +10,10 @@ import { cn } from "@/lib/utils";
 
 import "./globals.css";
 
-const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const fontMono = Geist_Mono({
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const fontMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-mono",
+  variable: "--font-jetbrains-mono",
 });
 
 export const metadata: Metadata = {
@@ -36,12 +35,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(
-        "font-sans antialiased",
-        fontMono.variable,
-        inter.variable,
-        geistHeading.variable,
-      )}
+      className={cn("font-sans antialiased", fontMono.variable, geist.variable)}
     >
       <body>
         <Toaster>

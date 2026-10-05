@@ -21,6 +21,7 @@
       },
       "researcher": {
         "defaultContext": "fresh",
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "high",
         "allowNestedSubagents": false,
         "acceptanceRole": "read-only"
