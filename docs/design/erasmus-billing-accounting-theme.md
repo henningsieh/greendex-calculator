@@ -1,6 +1,6 @@
 # Erasmus Re-theme: Billing & Accounting (Cost Tracker)
 
-**Status:** Final prototype ready for your approval — `docs/design/prototype/`, committed below. Nothing in `src/` touched.
+**Status:** Prototype APPROVED by human 🎉 — 3px focus outline retained (human checked, looks good). Awaiting go for Session 3 real build.
 **Branch:** `design/erasmus-billing-accounting-theme` (based off `origin/chore/add-cost-tracker-app` @ `469a0a23`).
 > Earlier the branch was cut from the wrong base (`refactor/cost-tracker-participant-and-claim-model` @ `5d9244ef`); re-created on the correct base 2026-10-05. No commits were made on the wrong base, only the untracked track file, which carried over.
 **Scope:** Cost Tracker Billing/Accounting surfaces — `Claim`, `Travel Cost Entry`, `Cost Allocation`, `Payout Account`, `Proof Document` ([cost-tracker glossary](../../apps/cost-tracker/GLOSSARY.md), [shared language](../../GLOSSARY.md)).
