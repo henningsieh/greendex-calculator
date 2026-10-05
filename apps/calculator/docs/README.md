@@ -4,11 +4,13 @@ These documents describe behavior owned only by the Calculator application. Repo
 
 ## Domain context
 
-- [Calculator context](../CONTEXT.md)
-- [Shared Greendex language](../../../DOMAIN-GLOSSARY.md)
-- Other contexts: [Cost Tracker](../../../apps/cost-tracker/CONTEXT.md) · [Documentation](../../../apps/documentation/CONTEXT.md) — overview in [AGENTS.md](../../../AGENTS.md#contexts)
+- [Calculator glossary](../GLOSSARY.md)
+- [Shared Greendex language](../../../GLOSSARY.md)
+- Other contexts: [Cost Tracker](../../../apps/cost-tracker/GLOSSARY.md) · [Documentation](../../../apps/documentation/GLOSSARY.md) — overview in [Glossary map](../../../GLOSSARY-MAP.md)
 
 ## Features
+
+- Transport profiles: Cost Tracker reuses Calculator's Participant profile set (`PARTICIPANT_TRANSPORT_EMISSION_PROFILES`); Calculator's Project Shared Travel profile set remains narrower.
 
 - [Participant questionnaire](participate/README.md)
 - [Project behavior and permissions](projects/README.md)

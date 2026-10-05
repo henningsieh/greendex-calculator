@@ -24,9 +24,15 @@ Neither answer replaces the other. A role never grants access to every Project, 
 
 Better Auth's default role value `member` is forbidden in Cost Tracker: never invite, assign, or seed it, alone or in combined roles. It is not a named Greendex actor. [ADR-0012](../adr/0012-ban-fallback-member-role-in-cost-tracker.md) supersedes the prior technical-fallback allowance; Calculator compatibility is unchanged.
 
+Library table/field names and ordinary Membership wording are unaffected by the fallback-role ban.
+
 One Membership may hold several roles. Assigning `participant` or `project-coordinator` never removes an existing role.
 
 ## Project Coordinator scope
+
+### Runtime role identifiers
+
+Cost Tracker maps Better Auth `owner` to `organisationOwner` (exact spelling), `admin` to `organizationAdmin`, and `participant` to `projectParticipant`. Calculator retains `legacyCalculatorAdminRole` for its existing `admin` behavior. A Participant Role may coexist with other roles on the same Organization Membership and does not identify which Projects the User participates in.
 
 ADR-0004 defines one `project-coordinator` role with two possible scopes:
 
@@ -34,6 +40,8 @@ ADR-0004 defines one `project-coordinator` role with two possible scopes:
 - A Project Coordinator assigned to their Organization's Project Partnership performs Partner-side coordination for that Partnership only.
 
 Organization Owners and Organization Admins retain Organization-wide authority. Project Coordinator assignments never grant Organization management authority.
+
+UI wording is `Project Coordinator` for Hosting Organization scope and `Group Organizer` for Partner Organization scope. The role alone grants neither Organization-wide authority nor access to an unassigned Project.
 
 ## Participant onboarding
 
