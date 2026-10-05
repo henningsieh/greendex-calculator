@@ -1,6 +1,6 @@
 # Erasmus Re-theme: Billing & Accounting (Cost Tracker)
 
-**Status:** Gate 1 visual review (v2) open — revised prototype + 6 fresh screenshots in `docs/design/`, awaiting your rating. Nothing in `src/` touched.
+**Status:** Final prototype ready for your approval — `docs/design/prototype/`, committed below. Nothing in `src/` touched.
 **Branch:** `design/erasmus-billing-accounting-theme` (based off `origin/chore/add-cost-tracker-app` @ `469a0a23`).
 > Earlier the branch was cut from the wrong base (`refactor/cost-tracker-participant-and-claim-model` @ `5d9244ef`); re-created on the correct base 2026-10-05. No commits were made on the wrong base, only the untracked track file, which carried over.
 **Scope:** Cost Tracker Billing/Accounting surfaces — `Claim`, `Travel Cost Entry`, `Cost Allocation`, `Payout Account`, `Proof Document` ([cost-tracker glossary](../../apps/cost-tracker/GLOSSARY.md), [shared language](../../GLOSSARY.md)).
@@ -28,7 +28,8 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | 1   | Scout audit          | done    | Handoff logged below; start-here: `claim-workspace.tsx`; risks: pink primary token, no-restyle, table density, IBAN narrow, states |
 | 2   | Theme plan (no code) | done    | Plan at subagent artifact `…/ff1fda3c-…/artifacts/erasmus-theme-plan.md` (161 lines); digest logged below; awaiting human approval |
 | 2B  | Static prototype     | done    | `worker [460499b1-…]` complete; `docs/design/prototype/` (2 pages + css); 6 verified screenshots in `docs/design/screenshots/`; critique logged below |
-| 2C  | Prototype revision   | done    | `worker [3becd11a-…]` on `gpt-6-astra:medium` complete; theme switch (?theme= + toolbar), charcoal dark, 3 font candidates (?font=); 6 fresh screenshots; notes in v2 review below |
+| 2C  | Prototype revision   | done    | `worker [3becd11a-…]` on `gpt-6-astra:medium` complete; theme switch, charcoal dark, 3 font candidates; human picked Geist + JetBrains Mono figures, font switcher to go |
+| 2D  | Final prototype      | done    | `worker [df7bb46d-…]` on `gpt-6-astra:high` complete; font switcher removed, Geist + JetBrains Mono figures locked, theme switcher kept; verified no dangling font refs |
 | 3   | Flagship build       | pending | Waits for your Gate 1 rating + explicit go |
 | 4   | Emil polish          | pending | Restrained pass, feedback-only motion                                                       |
 | 5   | Rollout + gates      | pending | Remaining screens, `format && lint`, `lint:design-system`                                   |
@@ -52,6 +53,12 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 - **Motion:** feedback-only (`scale(0.97)` 80–120ms, toasts, real progress); reduced-motion disables transforms.
 - **Residual risks:** contrast unmeasured (needs rendered screenshots), shared primitive variants vs no-restyle, large-list perf unaddressed, font migration out of scope.
 - **Full plan:** `/home/henning/.pi/agent/sessions/--home-henning-_dev-greendex-cost-tracker--/subagent-artifacts/outputs/ff1fda3c-ef5b-4b89-80b5-dbdaf093c695/artifacts/erasmus-theme-plan.md`
+
+## Locked decisions (human, 2026-10-05)
+
+- **Fonts:** Geist Sans everywhere (text, headings, controls) + JetBrains Mono for numbers, calculation payload, bank accounts/refs. Font switcher removed. Native payout select stays Geist (IBAN shown separately in Mono); timestamps stay Geist prose.
+- **Themes:** both light + dark required; dark = charcoal (`#09090B` page…), blue primary/accent, yellow restrained brand token. Theme switcher (Light/Dark/System + `?theme=`) kept.
+- **Next:** Session 3 real build (shadcn/Tailwind) only on explicit go.
 
 ## Prototype review v2 (astra revision, my fresh-eyes pass)
 

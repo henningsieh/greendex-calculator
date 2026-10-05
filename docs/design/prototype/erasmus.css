@@ -15,7 +15,7 @@
   --link: var(--eu-blue);
   --body-font: 'Geist', system-ui, sans-serif;
   --heading-font: var(--body-font);
-  --data-font: 'Geist Mono', ui-monospace, monospace;
+  --data-font: 'JetBrains Mono', ui-monospace, monospace;
   --soft: var(--quiet-blue);
   --primary: var(--eu-blue);
   --on-primary: var(--paper);
@@ -24,10 +24,8 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--page); color: var(--ink); font: 400 16px/24px var(--body-font); }
-:root[data-font="mono"] { --data-font: 'JetBrains Mono', ui-monospace, monospace; }
-:root[data-font="slab"] { --body-font: 'Source Sans 3', system-ui, sans-serif; --heading-font: 'Roboto Slab', Georgia, serif; --data-font: var(--body-font); }
 h1, h2, h3 { font-family: var(--heading-font); }
-.amount, .iban, .reference, .actor, #account-iban, #account-bic, #cost-amount { font-family: var(--data-font); font-variant-numeric: tabular-nums; }
+.amount, .iban, .reference, .data-figure, #account-iban, #account-bic, #cost-amount { font-family: var(--data-font); font-variant-numeric: tabular-nums; }
 .actor { font-size: 14px; }
 a { color: var(--link); text-underline-offset: 3px; }
 a:hover { text-decoration-thickness: 2px; }
