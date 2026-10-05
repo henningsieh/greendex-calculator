@@ -1,6 +1,6 @@
 # Erasmus Re-theme: Billing & Accounting (Cost Tracker)
 
-**Status:** Gate 1 visual review open — prototype + 6 screenshots in `docs/design/`, awaiting your rating. Nothing in `src/` touched.
+**Status:** Gate 1 visual review (v2) open — revised prototype + 6 fresh screenshots in `docs/design/`, awaiting your rating. Nothing in `src/` touched.
 **Branch:** `design/erasmus-billing-accounting-theme` (based off `origin/chore/add-cost-tracker-app` @ `469a0a23`).
 > Earlier the branch was cut from the wrong base (`refactor/cost-tracker-participant-and-claim-model` @ `5d9244ef`); re-created on the correct base 2026-10-05. No commits were made on the wrong base, only the untracked track file, which carried over.
 **Scope:** Cost Tracker Billing/Accounting surfaces — `Claim`, `Travel Cost Entry`, `Cost Allocation`, `Payout Account`, `Proof Document` ([cost-tracker glossary](../../apps/cost-tracker/GLOSSARY.md), [shared language](../../GLOSSARY.md)).
@@ -27,7 +27,8 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | P   | Preflight            | done    | 13 agents executable; quota 5h 88% (reset 21:00 CEST), weekly 24% — above 15% gate          |
 | 1   | Scout audit          | done    | Handoff logged below; start-here: `claim-workspace.tsx`; risks: pink primary token, no-restyle, table density, IBAN narrow, states |
 | 2   | Theme plan (no code) | done    | Plan at subagent artifact `…/ff1fda3c-…/artifacts/erasmus-theme-plan.md` (161 lines); digest logged below; awaiting human approval |
-| 2B  | Static prototype     | done    | `worker [460499b1-…]` complete; `docs/design/prototype/` (2 pages + css); 6 verified screenshots in `docs/design/screenshots/`; my critique logged below |
+| 2B  | Static prototype     | done    | `worker [460499b1-…]` complete; `docs/design/prototype/` (2 pages + css); 6 verified screenshots in `docs/design/screenshots/`; critique logged below |
+| 2C  | Prototype revision   | done    | `worker [3becd11a-…]` on `gpt-6-astra:medium` complete; theme switch (?theme= + toolbar), charcoal dark, 3 font candidates (?font=); 6 fresh screenshots; notes in v2 review below |
 | 3   | Flagship build       | pending | Waits for your Gate 1 rating + explicit go |
 | 4   | Emil polish          | pending | Restrained pass, feedback-only motion                                                       |
 | 5   | Rollout + gates      | pending | Remaining screens, `format && lint`, `lint:design-system`                                   |
@@ -51,6 +52,14 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 - **Motion:** feedback-only (`scale(0.97)` 80–120ms, toasts, real progress); reduced-motion disables transforms.
 - **Residual risks:** contrast unmeasured (needs rendered screenshots), shared primitive variants vs no-restyle, large-list perf unaddressed, font migration out of scope.
 - **Full plan:** `/home/henning/.pi/agent/sessions/--home-henning-_dev-greendex-cost-tracker--/subagent-artifacts/outputs/ff1fda3c-ef5b-4b89-80b5-dbdaf093c695/artifacts/erasmus-theme-plan.md`
+
+## Prototype review v2 (astra revision, my fresh-eyes pass)
+
+- **Toolbar works:** `?theme=light|dark|system` + `?font=geist|mono|slab` honored; light viewable regardless of OS setting. Screenshots captured via explicit `?theme=` URLs.
+- **Dark v2:** charcoal page `#09090B`, surface `#18181B`, inset `#27272A`, border `#3F3F46`, text `#E4E4E7`, muted `#A1A1AA`, primary `#2563EB`, links `#93B4FF` — familiar shadcn/zinc universe, blue as action color, navy band + yellow edge kept as identity. Much calmer than full-navy v1.
+- **Fonts live to compare:** Geist (Sans + Mono figures), Mono (JetBrains Mono figures), Slab (Roboto Slab headings + Source Sans 3 body). Screenshots show Geist default; try `?font=mono` / `?font=slab` in the browser yourself.
+- **Still open (unchanged):** raw `correction_requested` string in Claim-draft line; `Pass: …` checklist copy tone; muted-text WCAG measurement in real build.
+- **Files:** `docs/design/prototype/{claim-partner.html,claim-review.html,erasmus.css}`; 6 screenshots refreshed in `docs/design/screenshots/`.
 
 ## Prototype review (my fresh-eyes pass)
 
