@@ -30,7 +30,8 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | 2B  | Static prototype     | done    | `worker [460499b1-…]` complete; `docs/design/prototype/` (2 pages + css); 6 verified screenshots in `docs/design/screenshots/`; critique logged below |
 | 2C  | Prototype revision   | done    | `worker [3becd11a-…]` on `gpt-6-astra:medium` complete; theme switch, charcoal dark, 3 font candidates; human picked Geist + JetBrains Mono figures, font switcher to go |
 | 2D  | Final prototype      | done    | `worker [df7bb46d-…]` on `gpt-6-astra:high` complete; font switcher removed, Geist + JetBrains Mono figures locked, theme switcher kept; verified no dangling font refs |
-| 2E  | Gloss pass (hovers)    | done    | `worker [ceeb475c-…]` on `gpt-6-astra:high` + Emil steer complete; css-only hover/accent layer with measured contrasts (see table below); committed for hover-testing |
+| 2E  | Gloss pass (hovers)    | done    | `worker [ceeb475c-…]` + Emil steer complete; css-only hover/accent layer, contrasts logged below |
+| 2F  | Emil final (borders)   | done    | `worker [e0984cd1-…]` on `gpt-6-astra:high` + skill complete; css-only, contrasts below; committed for your verdict |
 | 3   | Flagship build       | pending | Waits for your Gate 1 rating + explicit go |
 | 4   | Emil polish          | pending | Restrained pass, feedback-only motion                                                       |
 | 5   | Rollout + gates      | pending | Remaining screens, `format && lint`, `lint:design-system`                                   |
@@ -68,6 +69,18 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | Basic press | 0.97 scale, 140ms custom ease-out; instant color feedback | Crisp, transform-only |
 
 Focus stays blue (light) / yellow (dark); reduced motion drops transforms, keeps color. All pairs ≥ AA for their use.
+
+## Emil final result (borders + intensity)
+
+| Before | After | Why |
+|---|---|---|
+| Yellow marker barely registered (light) | Widened 4→8px, still non-text | One identity accent, no status semantics |
+| Light primary lacked framing | Pale-blue border + stronger inset hover frame, white text 12.47:1 | Presence, labels intact |
+| Dark secondary competed | Neutral fill, quiet 1px border, text 12.81:1 | Hierarchy restored |
+| Dark primary lacked definition | Blue border + inset hover frame, text 4.66:1 | Principal action emphasized |
+| Other hovers | Light secondary/segmented 9.48:1; links 11.08–12.47:1 light, 9.85–13.16:1 dark | Contrast preserved |
+
+140ms custom ease-out, transform-only, .97 press, gated hover, reduced-motion color feedback — all retained.
 
 ## Locked decisions (human, 2026-10-05)
 
