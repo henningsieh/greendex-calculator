@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+import type { Outputs } from "@/lib/orpc/router";
 
 export function OrganizationSettings() {
   const options = orpcQuery.organizations.getSettings.queryOptions({
@@ -25,13 +26,13 @@ export function OrganizationSettings() {
 function CountrySettings({
   organization,
 }: {
-  organization: { name: string; country: EUCountryCode };
+  organization: Outputs["organizations"]["getSettings"];
 }) {
   const queryClient = useQueryClient();
   const [country, setCountry] = useState(organization.country);
   const [notice, setNotice] = useState("");
   const update = useMutation({
-    mutationFn: () => orpc.organizations.updateCountry({ country: country }),
+    mutationFn: () => orpc.organizations.updateCountry({ country }),
     onSuccess: async () => {
       setNotice("Organization country saved.");
       await queryClient.invalidateQueries();

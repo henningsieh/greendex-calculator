@@ -32,6 +32,7 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0016](0016-split-participant-surfaces-by-scope-and-edit-only-on-a-details-page.md)      | Split the Participant Surfaces by Scope, and Edit Only on a Details Page            | accepted       |               |
 | [0017](0017-own-the-claim-lifecycle-once.md)                                             | Own the Claim Lifecycle Once: One Lock Order, Shared Capabilities                    | accepted       |               |
 | [0018](0018-derive-refusal-construction-from-the-error-catalog.md)                       | Derive Refusal Construction From the Error Catalog                                  | accepted       |               |
+| [0019](0019-require-organization-country-and-synchronize-role-values.md)                  | Require Organization Country and Synchronize Role Values                            | accepted       | 0012, in part; 0004, spelling only |
 
 [ADR-0019](0019-require-organization-country-and-synchronize-role-values.md) requires Organization country and synchronizes the shared role values. It supersedes ADR-0012's Calculator compatibility allowance and ADR-0004's stored coordinator spelling, not their authorization scopes.
 
