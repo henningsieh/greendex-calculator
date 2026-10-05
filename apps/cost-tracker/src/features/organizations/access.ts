@@ -30,7 +30,8 @@ export async function canManageOrganization(): Promise<boolean> {
       hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) ||
       hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
     );
-  } catch {
+  } catch (error) {
+    console.error("Organization management access lookup failed", { error });
     return false;
   }
 }
@@ -57,7 +58,8 @@ export async function canViewPartnerNetwork(): Promise<boolean> {
       return true;
     const assigned = await assignedPartnershipIds(userId, activeOrganizationId);
     return assigned.length > 0;
-  } catch {
+  } catch (error) {
+    console.error("Partner network access lookup failed", { error });
     return false;
   }
 }

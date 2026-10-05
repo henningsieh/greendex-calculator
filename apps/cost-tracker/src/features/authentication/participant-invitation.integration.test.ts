@@ -370,6 +370,25 @@ describe("email-bound Participant Invitations", () => {
     expect(await recipientMemberships()).toHaveLength(0);
   });
 
+  it("serializes simultaneous issuance and delivers only for the winner", async () => {
+    const results = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        client.participantOnboarding.issueInvitation({
+          partnershipId: partnership,
+          email: recipientEmail,
+        }),
+      ),
+    );
+    expect(new Set(results.map((result) => result.invitationId)).size).toBe(1);
+    expect(results.filter((result) => result.delivery === "sent")).toHaveLength(
+      1,
+    );
+    expect(
+      results.filter((result) => result.delivery === "already-issued"),
+    ).toHaveLength(3);
+    expect(delivery.sendParticipantInvitation).toHaveBeenCalledTimes(1);
+  });
+
   it("preserves duplicate issuance without resending or recovering the secret", async () => {
     const first = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,

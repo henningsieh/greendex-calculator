@@ -109,7 +109,7 @@ export async function recheckEntryToken(
   token: EntryToken,
 ) {
   const [locked] = await tx
-    .select({ status: tokens.status })
+    .select({ status: tokens.status, expiresAt: tokens.expiresAt })
     .from(tokens)
     .where(
       and(eq(tokens.id, token.id), eq(tokens.partnershipId, token.partnershipId)),
@@ -129,6 +129,13 @@ export async function recheckEntryToken(
     throw token.email !== null
       ? createSituationErrors(errors).participantInvitationClosed()
       : createSituationErrors(errors).registrationLinkClosed();
+  if (
+    token.email !== null &&
+    locked.status === "pending" &&
+    locked.expiresAt !== null &&
+    locked.expiresAt <= new Date()
+  )
+    throw createSituationErrors(errors).participantInvitationExpired();
 }
 
 /** Marks an invitation consumed. Links stay reusable and are never consumed. */
@@ -165,8 +172,9 @@ export async function revokeEntryTokenInTransaction(
 export async function findPendingInvitationToken(
   projectId: string,
   email: string,
+  executor: Pick<typeof db, "select"> = db,
 ) {
-  const [token] = await db
+  const [token] = await executor
     .select({
       id: tokens.id,
       partnershipId: tokens.partnershipId,

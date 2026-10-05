@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
+  permitted: true,
   draft: null as null | {
     id: string;
     partnershipId: string;
@@ -70,6 +71,10 @@ const mocks = vi.hoisted(() => ({
   updateJourney: vi.fn(),
   saveCost: vi.fn(),
   link: vi.fn(),
+}));
+
+vi.mock("@/features/authentication/participant-entry-access", () => ({
+  useParticipantEntryAccess: () => ({ permitted: mocks.permitted }),
 }));
 
 vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
@@ -190,6 +195,7 @@ function mount() {
 }
 
 beforeEach(() => {
+  mocks.permitted = true;
   mocks.draft = null;
   mocks.history = [];
   mocks.selected = null;
@@ -234,6 +240,22 @@ beforeEach(() => {
 });
 
 describe("Claim workspace", () => {
+  it("hides editing controls when the client scope check refuses an editable Claim", async () => {
+    mocks.permitted = false;
+    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mount();
+    await screen.findByText("No costs saved yet.");
+    expect(screen.getByLabelText("Payout Account")).toBeDisabled();
+    for (const name of [
+      "Save cost",
+      "Save journey",
+      "Create Payout Account",
+      "Submit Claim",
+    ])
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
   it("corrects a saved journey in editable and correction_requested, never once locked", async () => {
     mocks.journeys = [
       {
