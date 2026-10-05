@@ -147,8 +147,13 @@ describe("Claim decisions", () => {
         }}
       />,
     );
-    expect(screen.getByText(/Partner · DE123/)).toBeInTheDocument();
-    expect(screen.getByText(/train · 800.00 EUR/)).toBeInTheDocument();
+    expect(screen.getByText("Partner")).toBeInTheDocument();
+    expect(screen.getByText("DE123")).toHaveClass("font-mono");
+    expect(screen.getByRole("cell", { name: "train" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "800.00" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /Travel Cost Entries table/ }),
+    ).toHaveAttribute("tabindex", "0");
     expect(screen.getByText(/^Proof Document: receipt.pdf/)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Download Proof Document: receipt.pdf" }),

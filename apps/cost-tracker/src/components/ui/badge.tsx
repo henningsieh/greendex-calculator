@@ -8,6 +8,7 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
+        "claim-status": "border border-claim-band-foreground px-3 py-1 text-base tracking-normal whitespace-normal text-claim-band-foreground normal-case",
         default: "text-foreground [a]:hover:text-foreground/70",
         secondary: "text-muted-foreground [a]:hover:text-foreground",
         destructive:

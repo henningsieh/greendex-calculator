@@ -12,6 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useParticipantEntryAccess } from "@/features/authentication/participant-entry-access";
 import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
+import {
+  ClaimBand,
+  ClaimCostTable,
+  PayoutAccountLines,
+  claimStatusLabel,
+} from "@/features/projects/components/claim-document";
 import { ClaimHistory } from "@/features/projects/components/claim-review";
 import { ClaimSubmission } from "@/features/projects/components/claim-submission";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
@@ -125,11 +131,25 @@ function JourneyCorrection({
   }
 
   return (
-    <div>
-      {name}: {journey.origin} → {journey.destination}, {journey.tripType},{" "}
-      {journey.erasmusDistanceKm} km (calculator distance)
+    <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
+      <div className="min-w-0 wrap-anywhere">
+        <p className="font-semibold">{name}</p>
+        <p>
+          {journey.origin} → {journey.destination}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {journey.tripType},{" "}
+          <span className="font-mono">{journey.erasmusDistanceKm}</span> km
+          (calculator distance)
+        </p>
+      </div>
       {!editing ? (
-        <Button type="button" onClick={() => setEditing(true)}>
+        <Button
+          size="accounting"
+          variant="accounting-outline"
+          type="button"
+          onClick={() => setEditing(true)}
+        >
           Correct {name}&apos;s journey
         </Button>
       ) : (
@@ -138,6 +158,7 @@ function JourneyCorrection({
           <div>
             <Label htmlFor={`${id}-origin`}>Origin for {name}</Label>
             <Input
+              variant="accounting"
               id={`${id}-origin`}
               value={origin}
               onChange={(event) => setOrigin(event.target.value)}
@@ -147,6 +168,7 @@ function JourneyCorrection({
           <div>
             <Label htmlFor={`${id}-destination`}>Destination for {name}</Label>
             <Input
+              variant="accounting"
               id={`${id}-destination`}
               value={destination}
               onChange={(event) => setDestination(event.target.value)}
@@ -157,7 +179,7 @@ function JourneyCorrection({
             <Label htmlFor={`${id}-type`}>Trip type for {name}</Label>
             <select
               id={`${id}-type`}
-              className="w-full rounded-md border bg-background p-2"
+              className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
               value={tripType}
               onChange={(event) =>
                 setTripType(event.target.value as typeof tripType)
@@ -173,6 +195,7 @@ function JourneyCorrection({
               Erasmus Distance-Calculator distance (km) for {name}
             </Label>
             <Input
+              variant="accounting"
               id={`${id}-distance`}
               inputMode="decimal"
               value={distance}
@@ -180,10 +203,17 @@ function JourneyCorrection({
             />
             <FieldError message={errors.erasmusDistanceKm} />
           </div>
-          <Button type="submit" disabled={pending}>
+          <Button
+            size="accounting"
+            variant="accounting"
+            type="submit"
+            disabled={pending}
+          >
             Save correction
           </Button>
           <Button
+            variant="accounting"
+            size="accounting"
             type="button"
             disabled={pending}
             onClick={() => {
@@ -251,15 +281,15 @@ function JourneyEditor({
     }
   }
   return (
-    <Card>
+    <Card variant="document">
       <CardHeader>
-        <CardTitle>Participant Journeys</CardTitle>
+        <CardTitle as="h2">Participant Journeys</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5" id="claim-journeys">
         {saved.length === 0 ? (
           <p>No journeys saved yet.</p>
         ) : (
-          <ul>
+          <ul className="space-y-4">
             {saved.map((journey) => (
               <li key={journey.id} id={`journey-${journey.projectParticipantId}`}>
                 {corrections ? (
@@ -300,12 +330,16 @@ function JourneyEditor({
           </ul>
         )}
         {editable && (
-          <form className="space-y-4" onSubmit={save} noValidate>
+          <form
+            className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>fieldset]:col-span-full [&>p]:col-span-full"
+            onSubmit={save}
+            noValidate
+          >
             <div>
               <Label htmlFor="journey-person">Participation</Label>
               <select
                 id="journey-person"
-                className="w-full rounded-md border bg-background p-2"
+                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 value={person}
                 onChange={(event) => setPerson(event.target.value)}
               >
@@ -323,6 +357,7 @@ function JourneyEditor({
             <div>
               <Label htmlFor="journey-origin">Origin</Label>
               <Input
+                variant="accounting"
                 id="journey-origin"
                 value={origin}
                 onChange={(event) => setOrigin(event.target.value)}
@@ -332,6 +367,7 @@ function JourneyEditor({
             <div>
               <Label htmlFor="journey-destination">Destination</Label>
               <Input
+                variant="accounting"
                 id="journey-destination"
                 value={destination}
                 onChange={(event) => setDestination(event.target.value)}
@@ -342,7 +378,7 @@ function JourneyEditor({
               <Label htmlFor="journey-type">Trip type</Label>
               <select
                 id="journey-type"
-                className="w-full rounded-md border bg-background p-2"
+                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 value={tripType}
                 onChange={(event) =>
                   setTripType(event.target.value as typeof tripType)
@@ -358,6 +394,7 @@ function JourneyEditor({
                 Erasmus Distance-Calculator distance (km)
               </Label>
               <Input
+                variant="figure"
                 id="journey-distance"
                 inputMode="decimal"
                 value={distance}
@@ -365,7 +402,12 @@ function JourneyEditor({
               />
               <FieldError message={errors.erasmusDistanceKm} />
             </div>
-            <Button type="submit" disabled={pending || !person}>
+            <Button
+              size="accounting"
+              variant="accounting"
+              type="submit"
+              disabled={pending || !person}
+            >
               Save journey
             </Button>
           </form>
@@ -379,12 +421,14 @@ function CostEditor({
   partnershipId,
   participants,
   entries,
+  documents,
   editable,
   refresh,
 }: {
   partnershipId: string;
   participants: Participation[];
   entries: Cost[];
+  documents: Outputs["documents"]["list"];
   editable: boolean;
   refresh: () => Promise<void>;
 }) {
@@ -452,56 +496,76 @@ function CostEditor({
     }
   }
   return (
-    <Card>
+    <Card variant="document">
       <CardHeader>
-        <CardTitle>Travel Cost Entries</CardTitle>
+        <CardTitle as="h2">Travel Cost Entries</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5" id="claim-costs">
         {entries.length === 0 ? (
           <p>No costs saved yet.</p>
         ) : (
-          <ul className="space-y-3">
-            {entries.map((entry) => (
-              <li key={entry.id} id={`cost-${entry.id}`}>
-                <p>
-                  {entry.transportProfile}: {entry.amountEur} EUR ·{" "}
-                  {entry.allocationMethod}
-                </p>
-                <ul>
+          <ClaimCostTable
+            actions={editable}
+            rows={entries.map((entry) => ({
+              id: entry.id,
+              transportProfile: entry.transportProfile,
+              amountEur: entry.amountEur,
+              allocationMethod: entry.allocationMethod,
+              allocations: (
+                <ul className="space-y-2">
                   {entry.allocations.map((share) => (
                     <li key={share.projectParticipantId}>
                       {participants.find(
                         (item) => item.id === share.projectParticipantId,
                       )?.displayName ?? "Participant"}
                       :{" "}
-                      {entry.allocationMethod === "percentage"
-                        ? `${share.percentage}%`
-                        : `${share.amountEur} EUR`}
+                      <span className="font-mono tabular-nums">
+                        {entry.allocationMethod === "percentage"
+                          ? `${share.percentage}%`
+                          : `${share.amountEur} EUR`}
+                      </span>
                       {entry.allocationMethod === "equal" && " (computed)"}
                     </li>
                   ))}
                 </ul>
-                {editable && (
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={() => edit(entry)}
-                  >
-                    Edit cost
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
+              ),
+              documents: entry.proofDocumentIds.length ? (
+                <ul className="space-y-2">
+                  {entry.proofDocumentIds.map((id) => (
+                    <li key={id}>
+                      {documents.find((document) => document.id === id)
+                        ?.originalFileName ?? "Document"}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                "None"
+              ),
+              action: editable ? (
+                <Button
+                  size="accounting"
+                  variant="accounting-outline"
+                  type="button"
+                  onClick={() => edit(entry)}
+                >
+                  Edit cost
+                </Button>
+              ) : undefined,
+            }))}
+          />
         )}
         {editable && (
-          <form className="space-y-4" onSubmit={save} noValidate>
+          <form
+            className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>fieldset]:col-span-full [&>p]:col-span-full"
+            onSubmit={save}
+            noValidate
+          >
             <p>{entryId ? "Edit saved cost" : "Add cost"}</p>
             <div>
               <Label htmlFor="cost-profile">Transport</Label>
               <select
                 id="cost-profile"
-                className="w-full rounded-md border bg-background p-2"
+                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 value={profile}
                 onChange={(event) => setProfile(event.target.value)}
               >
@@ -516,6 +580,7 @@ function CostEditor({
             <div>
               <Label htmlFor="cost-amount">Exact total (EUR)</Label>
               <Input
+                variant="figure"
                 id="cost-amount"
                 inputMode="decimal"
                 value={amount}
@@ -527,7 +592,7 @@ function CostEditor({
               <Label htmlFor="cost-method">Allocation method</Label>
               <select
                 id="cost-method"
-                className="w-full rounded-md border bg-background p-2"
+                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 value={method}
                 onChange={(event) =>
                   setMethod(event.target.value as typeof method)
@@ -576,6 +641,7 @@ function CostEditor({
                           {method === "percentage" ? "percentage" : "EUR share"}
                         </Label>
                         <Input
+                          variant="figure"
                           id={`share-${item.id}`}
                           inputMode="decimal"
                           value={shares[item.id] ?? ""}
@@ -608,7 +674,12 @@ function CostEditor({
                     method,
                   )} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
             </p>
-            <Button type="submit" disabled={pending}>
+            <Button
+              size="accounting"
+              variant="accounting"
+              type="submit"
+              disabled={pending}
+            >
               Save cost
             </Button>
           </form>
@@ -704,9 +775,9 @@ function ProofEditor({
     }
   }
   return (
-    <Card>
+    <Card variant="document">
       <CardHeader>
-        <CardTitle>Proof Documents</CardTitle>
+        <CardTitle as="h2">Proof Documents</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4" id="claim-proofs">
         {documents.length === 0 ? (
@@ -714,30 +785,41 @@ function ProofEditor({
         ) : (
           <ul>
             {documents.map((document) => (
-              <li key={document.id}>
+              <li key={document.id} className="wrap-anywhere">
                 {document.originalFileName} ({document.byteSize} bytes)
               </li>
             ))}
           </ul>
         )}
         {editable && (
-          <form onSubmit={upload}>
+          <form className="space-y-4" onSubmit={upload}>
             <Label htmlFor="proof-file">
               Upload Proof Document (PDF, JPEG, PNG; up to 10 MB)
             </Label>
             <Input
+              variant="accounting"
               id="proof-file"
               name="file"
               type="file"
               accept="application/pdf,image/jpeg,image/png"
             />
-            <Button type="submit" disabled={busy}>
+            <Button
+              size="accounting"
+              variant="accounting"
+              type="submit"
+              disabled={busy}
+            >
               Upload document
             </Button>
           </form>
         )}
         {progress !== null && (
-          <progress value={progress} max={100} aria-label="Upload progress">
+          <progress
+            className="w-full accent-primary"
+            value={progress}
+            max={100}
+            aria-label="Upload progress"
+          >
             Upload: {progress}%
           </progress>
         )}
@@ -745,9 +827,12 @@ function ProofEditor({
         {entries.map((entry) => (
           <div key={entry.id} id={`proof-${entry.id}`}>
             <p>
-              {entry.transportProfile} · {entry.amountEur} EUR
+              {entry.transportProfile}{" "}
+              <span className="font-mono tabular-nums">
+                {entry.amountEur} EUR
+              </span>
             </p>
-            <p>
+            <p className="wrap-anywhere">
               Linked:{" "}
               {entry.proofDocumentIds
                 .map(
@@ -764,7 +849,7 @@ function ProofEditor({
                 </Label>
                 <select
                   id={`link-${entry.id}`}
-                  className="w-full rounded-md border bg-background p-2"
+                  className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                   disabled={busy}
                   defaultValue=""
                   onChange={(event) => {
@@ -790,6 +875,30 @@ function ProofEditor({
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+function SelectedClaimPayout({
+  payout,
+  editable,
+}: {
+  payout: Outputs["claims"]["listPayoutAccounts"];
+  editable: boolean;
+}) {
+  const account = payout.accounts.find(
+    (item) => item.id === payout.selectedPayoutAccountId,
+  );
+  if (!payout.selectedPayoutAccountId) return null;
+  return account ? (
+    <div className="my-5 space-y-3">
+      <p>Selected Payout Account:{editable && " change using the selector"}</p>
+      <PayoutAccountLines account={account} />
+    </div>
+  ) : (
+    <p>
+      Selected Payout Account: Unavailable
+      {editable && " · change using the selector"}
+    </p>
   );
 }
 
@@ -986,151 +1095,179 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
     }
   }
   return (
-    <section className="space-y-6" aria-label="Claim workspace">
-      <Card>
-        <CardHeader>
-          <CardTitle>Claim draft</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p>
-            {draft
-              ? `Claim ${draft.status} · saved`
-              : "No Claim has been created. Opening this workspace saves nothing."}
-          </p>
-          <div id="claim-payout">
-            <Label htmlFor="claim-payout-select">Payout Account</Label>
-            {payout.accounts.length ? (
-              <select
-                id="claim-payout-select"
-                className="w-full rounded-md border bg-background p-2"
-                disabled={!editable || pending}
-                value={payout.selectedPayoutAccountId ?? ""}
-                onChange={(event) => void selectAccount(event.target.value)}
-              >
-                <option value="">Select account</option>
-                {payout.accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.accountHolder} · {account.iban}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p>No Payout Accounts available. Create one below.</p>
-            )}
-            {editable && (
-              <form className="space-y-4" onSubmit={addAccount} noValidate>
-                <p>Create Payout Account</p>
-                <FieldError message={accountErrors.account} />
-                <div>
-                  <Label htmlFor="account-holder">Account holder</Label>
-                  <Input
-                    id="account-holder"
-                    value={accountHolder}
-                    onChange={(event) => setAccountHolder(event.target.value)}
-                    disabled={pending}
-                  />
-                  <FieldError message={accountErrors.accountHolder} />
-                </div>
-                <div>
-                  <Label htmlFor="account-iban">IBAN</Label>
-                  <Input
-                    id="account-iban"
-                    value={iban}
-                    onChange={(event) => setIban(event.target.value)}
-                    disabled={pending}
-                  />
-                  <FieldError message={accountErrors.iban} />
-                </div>
-                <div>
-                  <Label htmlFor="account-bic">BIC (optional)</Label>
-                  <Input
-                    id="account-bic"
-                    value={bic}
-                    onChange={(event) => setBic(event.target.value)}
-                    disabled={pending}
-                  />
-                  <FieldError message={accountErrors.bic} />
-                </div>
-                <Button type="submit" disabled={pending}>
-                  Create Payout Account
-                </Button>
-              </form>
-            )}
-            {payout.selectedPayoutAccountId && (
-              <p>
-                Selected Payout Account:{" "}
-                {payout.accounts.find(
-                  (account) => account.id === payout.selectedPayoutAccountId,
-                )?.accountHolder ?? "Unavailable"}
-                {editable && " · change using the selector"}
-              </p>
-            )}
-          </div>
-          {editable && !draft && (
-            <Button
-              type="button"
-              disabled={pending || !payout.selectedPayoutAccountId}
-              onClick={() => void saveDraft()}
+    <section className="min-w-0" aria-label="Claim workspace">
+      <ClaimBand title="Claim workspace" status={draft?.status} />
+      <div className="min-w-0 border border-t-0 bg-card">
+        <div
+          className={
+            editable && preview
+              ? "grid min-w-0 min-[961px]:grid-cols-[minmax(0,1fr)_340px]"
+              : "min-w-0"
+          }
+        >
+          {editable && preview && (
+            <aside
+              className="min-w-0 border-b bg-muted min-[961px]:col-start-2 min-[961px]:row-start-1 min-[961px]:border-b-0 min-[961px]:border-l"
+              aria-label="Submission"
             >
-              Save Claim draft
-            </Button>
+              <ClaimSubmission
+                partnershipId={partnershipId}
+                preview={preview}
+                refresh={refresh}
+              />
+            </aside>
           )}
-          {feedback && <output>{feedback}</output>}
-        </CardContent>
-      </Card>
-      <ClaimStateNotice draft={draft} history={history} />
-      {draft && !editable && (
-        <Alert>
-          <AlertDescription>
-            This Claim is locked for Partner editing. Only a Hosting-side
-            correction request can reopen it.
-            {draft.approvedAmountEur &&
-              ` Calculated payable: ${draft.approvedAmountEur} EUR (computed by the server).`}
-          </AlertDescription>
-        </Alert>
-      )}
-      <JourneyEditor
-        partnershipId={partnershipId}
-        participants={people.participations}
-        saved={journeys}
-        editable={editable}
-        corrections={corrections}
-        refresh={refresh}
-      />
-      {draft && (
-        <>
-          <CostEditor
-            partnershipId={partnershipId}
-            participants={people.participations}
-            entries={costs.entries}
-            editable={editable}
-            refresh={refresh}
-          />
-          <ProofEditor
-            partnershipId={partnershipId}
-            entries={costs.entries}
-            documents={documents}
-            editable={editable}
-            refresh={refresh}
-          />
-        </>
-      )}
-      {editable && preview && (
-        <ClaimSubmission
-          partnershipId={partnershipId}
-          preview={preview}
-          refresh={refresh}
-        />
-      )}
-      {draft && <ClaimHistory events={history} />}
-      {!draft && (
-        <Alert>
-          <AlertDescription>
-            Select a Payout Account and explicitly save a Claim draft to add costs
-            or Proof Documents. Journeys can be prepared separately.
-          </AlertDescription>
-        </Alert>
-      )}
+          <div className="min-w-0 min-[961px]:col-start-1 min-[961px]:row-start-1">
+            <Card variant="document">
+              <CardHeader>
+                <CardTitle as="h2">Claim draft</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p>
+                  {draft
+                    ? `Claim ${claimStatusLabel(draft.status)} / saved`
+                    : "No Claim has been created. Opening this workspace saves nothing."}
+                </p>
+                <div id="claim-payout">
+                  <Label htmlFor="claim-payout-select">Payout Account</Label>
+                  {payout.accounts.length ? (
+                    <select
+                      id="claim-payout-select"
+                      className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                      disabled={!editable || pending}
+                      value={payout.selectedPayoutAccountId ?? ""}
+                      onChange={(event) => void selectAccount(event.target.value)}
+                    >
+                      <option value="">Select account</option>
+                      {payout.accounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.accountHolder} · {account.iban}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p>No Payout Accounts available. Create one below.</p>
+                  )}
+                  <SelectedClaimPayout payout={payout} editable={editable} />
+                  {editable && (
+                    <form
+                      className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>p]:col-span-full"
+                      onSubmit={addAccount}
+                      noValidate
+                    >
+                      <p>Create Payout Account</p>
+                      <FieldError message={accountErrors.account} />
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="account-holder">Account holder</Label>
+                        <Input
+                          variant="accounting"
+                          id="account-holder"
+                          value={accountHolder}
+                          onChange={(event) =>
+                            setAccountHolder(event.target.value)
+                          }
+                          disabled={pending}
+                        />
+                        <FieldError message={accountErrors.accountHolder} />
+                      </div>
+                      <div>
+                        <Label htmlFor="account-iban">IBAN</Label>
+                        <Input
+                          variant="figure"
+                          id="account-iban"
+                          value={iban}
+                          onChange={(event) => setIban(event.target.value)}
+                          disabled={pending}
+                        />
+                        <FieldError message={accountErrors.iban} />
+                      </div>
+                      <div>
+                        <Label htmlFor="account-bic">BIC (optional)</Label>
+                        <Input
+                          variant="figure"
+                          id="account-bic"
+                          value={bic}
+                          onChange={(event) => setBic(event.target.value)}
+                          disabled={pending}
+                        />
+                        <FieldError message={accountErrors.bic} />
+                      </div>
+                      <Button
+                        size="accounting"
+                        variant="accounting"
+                        type="submit"
+                        disabled={pending}
+                      >
+                        Create Payout Account
+                      </Button>
+                    </form>
+                  )}
+                </div>
+                {editable && !draft && (
+                  <Button
+                    variant="accounting"
+                    size="accounting"
+                    type="button"
+                    disabled={pending || !payout.selectedPayoutAccountId}
+                    onClick={() => void saveDraft()}
+                  >
+                    Save Claim draft
+                  </Button>
+                )}
+                {feedback && <output>{feedback}</output>}
+              </CardContent>
+            </Card>
+            <ClaimStateNotice draft={draft} history={history} />
+            {draft && !editable && (
+              <Alert>
+                <AlertDescription>
+                  This Claim is locked for Partner editing. Only a Hosting-side
+                  correction request can reopen it.
+                  {draft.approvedAmountEur &&
+                    ` Calculated payable: ${draft.approvedAmountEur} EUR (computed by the server).`}
+                </AlertDescription>
+              </Alert>
+            )}
+            <JourneyEditor
+              partnershipId={partnershipId}
+              participants={people.participations}
+              saved={journeys}
+              editable={editable}
+              corrections={corrections}
+              refresh={refresh}
+            />
+          </div>
+        </div>
+        {draft && (
+          <>
+            <CostEditor
+              partnershipId={partnershipId}
+              participants={people.participations}
+              entries={costs.entries}
+              documents={documents}
+              editable={editable}
+              refresh={refresh}
+            />
+            <ProofEditor
+              partnershipId={partnershipId}
+              entries={costs.entries}
+              documents={documents}
+              editable={editable}
+              refresh={refresh}
+            />
+          </>
+        )}
+
+        {draft && <ClaimHistory events={history} />}
+        {!draft && (
+          <Alert>
+            <AlertDescription>
+              Select a Payout Account and explicitly save a Claim draft to add
+              costs or Proof Documents. Journeys can be prepared separately.
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
     </section>
   );
 }

@@ -3,79 +3,120 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant fine-hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.148 0.004 228.8);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.148 0.004 228.8);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.148 0.004 228.8);
-  --primary: oklch(0.525 0.223 3.958);
-  --primary-foreground: oklch(0.971 0.014 343.198);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(0.56 0.021 213.5);
-  --accent: oklch(0.963 0.002 197.1);
-  --accent-foreground: oklch(0.218 0.008 223.9);
+  --background: #edf2f8;
+  --foreground: #102b50;
+  --card: #ffffff;
+  --card-foreground: #102b50;
+  --popover: #ffffff;
+  --popover-foreground: #102b50;
+  --primary: #003399;
+  --primary-foreground: #ffffff;
+  --secondary: #edf2f8;
+  --secondary-foreground: #102b50;
+  --muted: #edf2f8;
+  --muted-foreground: #52647a;
+  --accent: #e8f0ff;
+  --accent-foreground: #003399;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.925 0.005 214.3);
-  --input: oklch(0.925 0.005 214.3);
-  --ring: oklch(0.723 0.014 214.4);
+  --border: #cdd5e0;
+  --input: #788597;
+  --ring: #003399;
   --chart-1: oklch(0.871 0.15 154.449);
   --chart-2: oklch(0.723 0.219 149.579);
   --chart-3: oklch(0.627 0.194 149.214);
   --chart-4: oklch(0.527 0.154 150.069);
   --chart-5: oklch(0.448 0.119 151.328);
   --radius: 0.625rem;
-  --sidebar: oklch(0.987 0.002 197.1);
-  --sidebar-foreground: oklch(0.148 0.004 228.8);
-  --sidebar-primary: oklch(0.592 0.249 0.584);
-  --sidebar-primary-foreground: oklch(0.971 0.014 343.198);
-  --sidebar-accent: oklch(0.963 0.002 197.1);
-  --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-  --sidebar-border: oklch(0.925 0.005 214.3);
-  --sidebar-ring: oklch(0.723 0.014 214.4);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #102b50;
+  --sidebar-primary: #003399;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #edf2f8;
+  --sidebar-accent-foreground: #003399;
+  --sidebar-border: #cdd5e0;
+  --sidebar-ring: #003399;
+  --claim-band: #102b50;
+  --claim-band-foreground: #ffffff;
+  --brand: #ffcc00;
+  --link: #003399;
+  --link-hover: #002b85;
+  --primary-hover: #002b85;
+  --primary-border: #93b4ff;
+  --secondary-hover: #e8f0ff;
+  --secondary-hover-foreground: #003399;
+  --primary-glow: 0 0 12px rgb(255 204 0 / 50%);
+  --secondary-glow: 0 0 7px rgb(255 204 0 / 35%);
 }
 
 .dark {
-  --background: oklch(0.148 0.004 228.8);
-  --foreground: oklch(0.987 0.002 197.1);
-  --card: oklch(0.218 0.008 223.9);
-  --card-foreground: oklch(0.987 0.002 197.1);
-  --popover: oklch(0.218 0.008 223.9);
-  --popover-foreground: oklch(0.987 0.002 197.1);
-  --primary: oklch(0.459 0.187 3.815);
-  --primary-foreground: oklch(0.971 0.014 343.198);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.275 0.011 216.9);
-  --muted-foreground: oklch(0.723 0.014 214.4);
-  --accent: oklch(0.275 0.011 216.9);
-  --accent-foreground: oklch(0.987 0.002 197.1);
+  --background: #09090b;
+  --foreground: #e4e4e7;
+  --card: #18181b;
+  --card-foreground: #e4e4e7;
+  --popover: #18181b;
+  --popover-foreground: #e4e4e7;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #27272a;
+  --secondary-foreground: #e4e4e7;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #172a4d;
+  --accent-foreground: #93b4ff;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.56 0.021 213.5);
+  --border: #3f3f46;
+  --input: #71717a;
+  --ring: #ffcc00;
   --chart-1: oklch(0.871 0.15 154.449);
   --chart-2: oklch(0.723 0.219 149.579);
   --chart-3: oklch(0.627 0.194 149.214);
   --chart-4: oklch(0.527 0.154 150.069);
   --chart-5: oklch(0.448 0.119 151.328);
-  --sidebar: oklch(0.218 0.008 223.9);
-  --sidebar-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-primary: oklch(0.656 0.241 354.308);
-  --sidebar-primary-foreground: oklch(0.971 0.014 343.198);
-  --sidebar-accent: oklch(0.275 0.011 216.9);
-  --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.56 0.021 213.5);
+  --sidebar: #18181b;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #93b4ff;
+  --sidebar-border: #3f3f46;
+  --sidebar-ring: #ffcc00;
+  --claim-band: #102b50;
+  --claim-band-foreground: #ffffff;
+  --brand: #ffcc00;
+  --link: #93b4ff;
+  --link-hover: #ffcc00;
+  --primary-hover: #2d6bf3;
+  --primary-border: #739fff;
+  --secondary-hover: #202023;
+  --secondary-hover-foreground: #e4e4e7;
+  --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
+  --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
 }
 
 @theme inline {
-  --font-sans: var(--font-sans);
-  --font-heading: var(--font-heading);
+  --color-claim-band: var(--claim-band);
+  --color-claim-band-foreground: var(--claim-band-foreground);
+  --color-brand: var(--brand);
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-border: var(--primary-border);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-hover-foreground: var(--secondary-hover-foreground);
+  --shadow-primary-glow: var(--primary-glow);
+  --shadow-secondary-glow: var(--secondary-glow);
+  --font-sans: var(--font-geist);
+  --font-heading: var(--font-geist);
+  --font-mono: var(--font-jetbrains-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -122,6 +163,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  :focus-visible {
+    @apply outline-3 outline-offset-4 outline-ring;
   }
   html {
     @apply font-sans;

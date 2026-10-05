@@ -416,7 +416,7 @@ describe("Claim workspace", () => {
       expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
     expect(
-      await screen.findByText(/Claim submitted · saved/),
+      await screen.findByText(/Claim Submitted \/ saved/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Tallinn → Riga City/)).toBeInTheDocument();
     expect(
@@ -502,7 +502,9 @@ describe("Claim workspace", () => {
       screen.getByRole("button", { name: "Save Claim draft" }),
     );
     await waitFor(() =>
-      expect(screen.getByText(/Claim editable · saved/)).toBeInTheDocument(),
+      expect(
+        screen.getByText(/Claim Editable draft \/ saved/),
+      ).toBeInTheDocument(),
     );
     expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" });
   });
@@ -837,9 +839,7 @@ describe("Claim workspace", () => {
       calculatedPayableEur: "726.00",
     };
     mount();
-    expect(
-      await screen.findByText(/Calculated payable: 726.00 EUR/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("726.00 EUR")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
     expect(mocks.submit).not.toHaveBeenCalled();
     expect(screen.getByText(/submission locks the Claim/)).toBeInTheDocument();
@@ -850,7 +850,7 @@ describe("Claim workspace", () => {
       expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
     expect(
-      await screen.findByText(/Claim submitted · saved/),
+      await screen.findByText(/Claim Submitted \/ saved/),
     ).toBeInTheDocument();
     expect(screen.getByText(/locked for Partner editing/)).toBeInTheDocument();
     expect(screen.getByLabelText("Payout Account")).toBeDisabled();
@@ -919,7 +919,7 @@ describe("Claim workspace", () => {
       });
     });
     mount();
-    await screen.findByText(/Calculated payable: 726.00 EUR/);
+    await screen.findByText("726.00 EUR");
     await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
     await userEvent.click(
       screen.getByRole("button", { name: "Confirm submission" }),

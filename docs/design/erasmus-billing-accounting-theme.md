@@ -1,6 +1,6 @@
 # Erasmus Re-theme: Billing & Accounting (Cost Tracker)
 
-**Status:** Prototype APPROVED by human 🎉 — 3px focus outline retained (human checked, looks good). Awaiting go for Session 3 real build.
+**Status:** Session 3 BUILD complete (green: format+lint, design-system gate, 64 tests, prod build) — uncommitted, awaiting human review route decision.
 **Branch:** `design/erasmus-billing-accounting-theme` (based off `origin/chore/add-cost-tracker-app` @ `469a0a23`).
 > Earlier the branch was cut from the wrong base (`refactor/cost-tracker-participant-and-claim-model` @ `5d9244ef`); re-created on the correct base 2026-10-05. No commits were made on the wrong base, only the untracked track file, which carried over.
 **Scope:** Cost Tracker Billing/Accounting surfaces — `Claim`, `Travel Cost Entry`, `Cost Allocation`, `Payout Account`, `Proof Document` ([cost-tracker glossary](../../apps/cost-tracker/GLOSSARY.md), [shared language](../../GLOSSARY.md)).
@@ -35,8 +35,11 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | 2G  | Yellow glow hovers     | done    | `worker [77f7a270-…]` complete; outward box-shadow glow, no layout shift; committed for hover-testing |
 | 2H  | Border-swap hover      | done    | `worker [bafda504-…]` on `astra:low` complete; 1px recolor + zero-spread halo, footprint identical; committed for hover-testing |
 | R   | Sol vs Astra research  | done    | `researcher [0a2109ae-…]` on `gpt-6-luna:low` complete; brief at `docs/design/model-ui-comparison.md`: no public docs for exact codenames, local evidence favors astra for polish but no head-to-head |
-| 3   | Flagship build       | pending | Waits for your Gate 1 rating + explicit go |
-| 4   | Emil polish          | pending | Restrained pass, feedback-only motion                                                       |
+| 3   | Flagship build       | done    | `worker [5953bc70-…]` on `sol:medium` complete; cva variants, tokens, fonts; behaviors preserved; repo gates green — BUT editor Tailwind hygiene failed (conflicts/non-canonical, see 3B) |
+| 3B  | Tailwind hygiene fix   | done    | `worker [e5c655ad-…]` complete; 13 canonical fixes, 798-candidate sweep clean, 220 unit tests green |
+| 3C  | Variant-block refactor | done    | `worker [4e484299-…]` complete; card/input/table into condensed cva blocks, 40 comparisons + 46 tests green |
+| 3D  | Tailwind lint gate     | done    | `better-tailwindcss` 4 rules as errors in `.oxlintrc.json` via jsPlugins (plugin+config, zero hand-written checkers); eslint experiment fully reverted (TS 7 unparsable); `lint:design-system` wired in root `lint`; twlinter evaluated (542 warnings, single-theme limitation) but NOT wired — pending per-app verification |
+| 4   | Emil polish (app)    | pending | astra returns for taste pass on the real build |
 | 5   | Rollout + gates      | pending | Remaining screens, `format && lint`, `lint:design-system`                                   |
 
 ## Session 1 handoff (scout `8c77170f`, mission `4f325349`)

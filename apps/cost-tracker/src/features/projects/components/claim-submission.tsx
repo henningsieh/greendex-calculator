@@ -70,9 +70,9 @@ export function ClaimSubmission({
     }
   }
   return (
-    <Card>
+    <Card variant="action">
       <CardHeader>
-        <CardTitle>Submission</CardTitle>
+        <CardTitle as="h2">Submission</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <ul aria-label="Submission checklist" className="space-y-3">
@@ -83,28 +83,40 @@ export function ClaimSubmission({
               </p>
               {item.gaps.map((gap) => (
                 <p key={`${gap.path.join(".")}-${gap.message}`}>
-                  <a href={`#${gapAnchor(gap.path)}`} className="underline">
+                  <a
+                    href={`#${gapAnchor(gap.path)}`}
+                    className="text-link underline underline-offset-4 focus-visible:decoration-brand fine-hover:text-link-hover fine-hover:decoration-brand"
+                  >
                     {gap.message} — Go to gap
                   </a>
                 </p>
               ))}
               {item.passed && (
-                <a href={`#${gapAnchor([item.key])}`} className="underline">
+                <a
+                  href={`#${gapAnchor([item.key])}`}
+                  className="text-link underline underline-offset-4 focus-visible:decoration-brand fine-hover:text-link-hover fine-hover:decoration-brand"
+                >
                   View section
                 </a>
               )}
             </li>
           ))}
         </ul>
-        <p>
+        <p className="border-t pt-5">
           Calculated payable:{" "}
-          {preview.calculatedPayableEur === null
-            ? "Not available until the checklist passes"
-            : `${preview.calculatedPayableEur} EUR`}{" "}
+          {preview.calculatedPayableEur === null ? (
+            "Not available until the checklist passes"
+          ) : (
+            <span className="block font-mono tabular-nums">
+              {preview.calculatedPayableEur} EUR
+            </span>
+          )}{" "}
           (computed by the server; not editable)
         </p>
         {!confirming ? (
           <Button
+            variant="accounting"
+            size="accounting"
             type="button"
             disabled={!ready || pending}
             onClick={() => setConfirming(true)}
@@ -118,8 +130,10 @@ export function ClaimSubmission({
               Account for Partner editing until the Hosting side requests a
               correction.
             </AlertDescription>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
+                variant="accounting"
+                size="accounting"
                 type="button"
                 disabled={!ready || pending}
                 onClick={() => void submit()}
@@ -127,8 +141,9 @@ export function ClaimSubmission({
                 Confirm submission
               </Button>
               <Button
+                size="accounting"
                 type="button"
-                variant="outline"
+                variant="accounting-outline"
                 disabled={pending}
                 onClick={() => setConfirming(false)}
               >
