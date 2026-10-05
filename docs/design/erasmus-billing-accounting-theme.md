@@ -31,7 +31,8 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | 2C  | Prototype revision   | done    | `worker [3becd11a-…]` on `gpt-6-astra:medium` complete; theme switch, charcoal dark, 3 font candidates; human picked Geist + JetBrains Mono figures, font switcher to go |
 | 2D  | Final prototype      | done    | `worker [df7bb46d-…]` on `gpt-6-astra:high` complete; font switcher removed, Geist + JetBrains Mono figures locked, theme switcher kept; verified no dangling font refs |
 | 2E  | Gloss pass (hovers)    | done    | `worker [ceeb475c-…]` + Emil steer complete; css-only hover/accent layer, contrasts logged below |
-| 2F  | Emil final (borders)   | done    | `worker [e0984cd1-…]` on `gpt-6-astra:high` + skill complete; css-only, contrasts below; committed for your verdict |
+| 2F  | Emil final (borders)   | superseded | Border-on-hover rejected by human (shrink illusion, too light) — see 2G |
+| 2G  | Yellow glow hovers     | done    | `worker [77f7a270-…]` complete; outward box-shadow glow, no layout shift; contrasts below; committed for hover-testing |
 | 3   | Flagship build       | pending | Waits for your Gate 1 rating + explicit go |
 | 4   | Emil polish          | pending | Restrained pass, feedback-only motion                                                       |
 | 5   | Rollout + gates      | pending | Remaining screens, `format && lint`, `lint:design-system`                                   |
@@ -69,6 +70,17 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | Basic press | 0.97 scale, 140ms custom ease-out; instant color feedback | Crisp, transform-only |
 
 Focus stays blue (light) / yellow (dark); reduced motion drops transforms, keeps color. All pairs ≥ AA for their use.
+
+## Glow result (shrink illusion fixed)
+
+| Before | After | Why |
+|---|---|---|
+| Inset hover border implied shrinking | Outward-only box-shadows; borders/dimensions unchanged | Layout shift structurally impossible |
+| Pale borders | Stronger primary glow, quieter ghost glow | Theme-tuned hierarchy |
+| Plain links | Yellow underline/halo, readable blue text on light | Links ≥11.08:1 light, ≥9.85:1 dark |
+| Button colors | Preserved | Primary 12.47:1 light / 4.66:1 dark; secondary 9.48:1 / 12.81:1 |
+
+140ms ease-out, transform-only, gated hover, .97 press retained; reduced motion drops scale, keeps glow.
 
 ## Emil final result (borders + intensity)
 
