@@ -1,3 +1,7 @@
+import {
+  ORGANIZATION_ROLES,
+  type OrganizationRole,
+} from "@greendex/config/organization-roles";
 import { createAccessControl } from "better-auth/plugins/access";
 import {
   adminAc,
@@ -6,15 +10,10 @@ import {
   ownerAc,
 } from "better-auth/plugins/organization/access";
 
-export const ORGANIZATION_ROLES = {
-  OrganizationOwner: "owner",
-  ProjectCoordinator: "coordinator",
-  OrganizationAdmin: "admin",
-  Participant: "participant",
-} as const;
-
-export type OrganizationRole =
-  (typeof ORGANIZATION_ROLES)[keyof typeof ORGANIZATION_ROLES];
+export {
+  ORGANIZATION_ROLES,
+  type OrganizationRole,
+} from "@greendex/config/organization-roles";
 
 const statement = {
   ...defaultStatements,

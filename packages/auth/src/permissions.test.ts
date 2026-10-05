@@ -1,3 +1,4 @@
+import { member } from "@greendex/database/schema";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -13,6 +14,10 @@ import {
 const roles = ORGANIZATION_ROLES;
 
 describe("Organization permissions", () => {
+  it("defaults Memberships to the shared Participant role", () => {
+    expect(member.role.default).toBe(roles.Participant);
+  });
+
   it("uses the same final role values in both apps", () => {
     expect(Object.keys(calculatorOrganizationRoles).sort()).toEqual(
       Object.values(roles).sort(),
@@ -37,7 +42,7 @@ describe("Organization permissions", () => {
     }
   });
 
-  it("keeps Calculator admin Project management unchanged", () => {
+  it("intentionally grants Calculator admins shared Project archive authority without delete", () => {
     expect(
       calculatorOrganizationRoles[roles.OrganizationAdmin].authorize({
         project: ["create", "read", "update", "archive"],
