@@ -977,7 +977,7 @@ describe("assignment-scoped participation coordination", () => {
   });
 });
 
-describe("read-only Hosting Participant report", () => {
+describe("read-only Hosting Participant view", () => {
   const reportRows = async () =>
     db
       .insert(participants)

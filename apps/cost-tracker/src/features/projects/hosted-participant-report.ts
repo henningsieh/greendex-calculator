@@ -1,4 +1,4 @@
-/** One Project Participation as the Hosting report reads it. */
+/** One Project Participation as the Hosting Participant view reads it. */
 export type HostedParticipantRow = {
   participationId: string;
   organizationId: string;

@@ -65,13 +65,13 @@ beforeEach(() => {
   };
 });
 
-describe("Hosting Participant report", { timeout: 20_000 }, () => {
+describe("Hosting Participant view", { timeout: 20_000 }, () => {
   it("groups totals by Partner Organization and hides Participants until expanded", async () => {
     renderReport();
 
     const report = await screen.findByRole(
       "region",
-      { name: "Participants report" },
+      { name: "Hosting Participant view" },
       { timeout: 10_000 },
     );
     expect(within(report).getByText("Alpha Mobility")).toBeTruthy();
@@ -101,7 +101,7 @@ describe("Hosting Participant report", { timeout: 20_000 }, () => {
 
     const report = await screen.findByRole(
       "region",
-      { name: "Participants report" },
+      { name: "Hosting Participant view" },
       { timeout: 10_000 },
     );
     await userEvent.click(

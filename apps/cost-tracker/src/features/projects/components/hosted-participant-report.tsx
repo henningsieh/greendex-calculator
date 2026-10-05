@@ -32,7 +32,7 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
   );
 
   return (
-    <section aria-label="Participants report" className="space-y-6">
+    <section aria-label="Hosting Participant view" className="space-y-6">
       <p className="text-sm text-muted-foreground">
         Totals count the Project Participations that exist, each in the Partner
         Organization it represents. Invitees who have not joined and unknown

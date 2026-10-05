@@ -150,7 +150,7 @@ describe("Project list", { timeout: 20_000 }, () => {
     ).toBeNull();
   });
 
-  it("offers the Hosting Participants report beside the details destination", async () => {
+  it("offers the Hosting Participant view beside the details destination", async () => {
     renderList();
 
     expect(
