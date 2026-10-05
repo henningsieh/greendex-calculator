@@ -13,7 +13,7 @@ supersedes:
 
 Both applications use the shared role constants: `OrganizationOwner: owner`, `OrganizationAdmin: admin`, `Participant: participant`, and `ProjectCoordinator: coordinator`. The former Owner definition key and Calculator lowest-role entry are removed, not aliased. Cost Tracker's coordinator grants and assignment scopes are unchanged. Calculator retains its existing admin Project-management behavior and recognizes coordinator with no grants; further Calculator coordination behavior is outside this decision.
 
-This supersedes ADR-0012's Calculator compatibility allowance and ADR-0004's stored coordinator spelling, not their authorization scopes. Library Membership table names are unaffected. Applied migration files and their historical regression coverage remain immutable records, not live role definitions.
+This supersedes ADR-0012's Calculator compatibility allowance and ADR-0004's stored coordinator spelling, not their authorization scopes. Calculator `admin` intentionally converges to the shared Project `archive` grant (same person, same roles); Project deletion remains reserved to Organization Owners. Library Membership table names are unaffected. Applied migration files and their historical regression coverage remain immutable records, not live role definitions.
 
 ## Clean development state
 
