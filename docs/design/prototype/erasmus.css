@@ -22,10 +22,11 @@
   --focus: var(--eu-blue);
   --primary-border: #93B4FF;
   --primary-hover: #002B85;
-  --primary-glow: 0 0 0 2px var(--eu-yellow), 0 0 12px 2px rgb(255 204 0 / 50%);
+  --primary-glow: 0 0 12px rgb(255 204 0 / 50%);
   --secondary-hover: #E8F0FF;
   --secondary-hover-ink: var(--link);
-  --secondary-glow: 0 0 0 1px var(--eu-yellow), 0 0 7px 1px rgb(255 204 0 / 35%);
+  --secondary-feedback-border: var(--eu-yellow);
+  --secondary-glow: 0 0 7px rgb(255 204 0 / 35%);
   --link-glow: 0 2px 5px rgb(255 204 0 / 35%);
   --brand-marker-width: 8px;
   --link-hover: #002B85;
@@ -137,10 +138,11 @@ footer { margin-top: 20px; color: var(--muted); font-size: 14px; }
   --focus: var(--eu-yellow);
   --primary-border: #739FFF;
   --primary-hover: #2D6BF3;
-  --primary-glow: 0 0 0 2px var(--eu-yellow), 0 0 14px 1px rgb(255 204 0 / 28%);
+  --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
   --secondary-hover: #202023;
   --secondary-hover-ink: var(--ink);
-  --secondary-glow: 0 0 0 1px rgb(255 204 0 / 75%), 0 0 8px rgb(255 204 0 / 18%);
+  --secondary-feedback-border: rgb(255 204 0 / 75%);
+  --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
   --link-glow: 0 2px 6px rgb(255 204 0 / 22%);
   --brand-marker-width: 4px;
   --link-hover: var(--eu-yellow);
@@ -161,29 +163,30 @@ footer { margin-top: 20px; color: var(--muted); font-size: 14px; }
     --focus: var(--eu-yellow);
     --primary-border: #739FFF;
     --primary-hover: #2D6BF3;
-    --primary-glow: 0 0 0 2px var(--eu-yellow), 0 0 14px 1px rgb(255 204 0 / 28%);
+    --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
     --secondary-hover: #202023;
     --secondary-hover-ink: var(--ink);
-    --secondary-glow: 0 0 0 1px rgb(255 204 0 / 75%), 0 0 8px rgb(255 204 0 / 18%);
+    --secondary-feedback-border: rgb(255 204 0 / 75%);
+    --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
     --link-glow: 0 2px 6px rgb(255 204 0 / 22%);
     --brand-marker-width: 4px;
     --link-hover: var(--eu-yellow);
   }
 }
 /* Hover labels: white on #002B85 = 12.47:1; white on #2D6BF3 = 4.66:1.
-   Outward-only shadows preserve the resting border and interior: no inset shrink illusion.
+   Feedback recolors the existing 1px border; zero-spread blur adds no solid outer ring.
    Light links keep blue text; yellow lives in the underline and halo.
    Light feedback is immediate (also with reduced motion); only the press transform animates. */
 a:focus-visible { color: var(--link-hover); text-decoration: underline; text-decoration-color: var(--eu-yellow); text-decoration-thickness: 2px; text-shadow: var(--link-glow); }
-button:focus-visible:not(:disabled) { box-shadow: var(--secondary-glow); }
-button.primary:focus-visible:not(:disabled) { box-shadow: var(--primary-glow); }
+button:focus-visible:not(:disabled) { border-color: var(--secondary-feedback-border); box-shadow: var(--secondary-glow); }
+button.primary:focus-visible:not(:disabled) { border-color: var(--eu-yellow); box-shadow: var(--primary-glow); }
 @media (hover: hover) and (pointer: fine) {
   a:hover { color: var(--link-hover); text-decoration: underline; text-decoration-color: var(--eu-yellow); text-decoration-thickness: 2px; text-shadow: var(--link-glow); }
-  button:not(.primary):hover:not(:disabled) { background: var(--secondary-hover); color: var(--secondary-hover-ink); box-shadow: var(--secondary-glow); }
-  button.primary:hover:not(:disabled) { background: var(--primary-hover); box-shadow: var(--primary-glow); }
+  button:not(.primary):hover:not(:disabled) { background: var(--secondary-hover); color: var(--secondary-hover-ink); border-color: var(--secondary-feedback-border); box-shadow: var(--secondary-glow); }
+  button.primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--eu-yellow); box-shadow: var(--primary-glow); }
 }
-button:not(.primary):active:not(:disabled) { background: var(--secondary-hover); color: var(--secondary-hover-ink); box-shadow: var(--secondary-glow); }
-button.primary:active:not(:disabled) { background: var(--primary-hover); box-shadow: var(--primary-glow); }
+button:not(.primary):active:not(:disabled) { background: var(--secondary-hover); color: var(--secondary-hover-ink); border-color: var(--secondary-feedback-border); box-shadow: var(--secondary-glow); }
+button.primary:active:not(:disabled) { background: var(--primary-hover); border-color: var(--eu-yellow); box-shadow: var(--primary-glow); }
 @media (max-width: 960px) {
   .shell { width: calc(100% - 32px); margin-top: 20px; }
   .columns { display: flex; flex-direction: column; }

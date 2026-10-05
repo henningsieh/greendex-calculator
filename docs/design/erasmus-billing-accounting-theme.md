@@ -32,7 +32,8 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | 2D  | Final prototype      | done    | `worker [df7bb46d-…]` on `gpt-6-astra:high` complete; font switcher removed, Geist + JetBrains Mono figures locked, theme switcher kept; verified no dangling font refs |
 | 2E  | Gloss pass (hovers)    | done    | `worker [ceeb475c-…]` + Emil steer complete; css-only hover/accent layer, contrasts logged below |
 | 2F  | Emil final (borders)   | superseded | Border-on-hover rejected by human (shrink illusion, too light) — see 2G |
-| 2G  | Yellow glow hovers     | done    | `worker [77f7a270-…]` complete; outward box-shadow glow, no layout shift; contrasts below; committed for hover-testing |
+| 2G  | Yellow glow hovers     | done    | `worker [77f7a270-…]` complete; outward box-shadow glow, no layout shift; committed for hover-testing |
+| 2H  | Border-swap hover      | done    | `worker [bafda504-…]` on `astra:low` complete; 1px recolor + zero-spread halo, footprint identical; committed for hover-testing |
 | 3   | Flagship build       | pending | Waits for your Gate 1 rating + explicit go |
 | 4   | Emil polish          | pending | Restrained pass, feedback-only motion                                                       |
 | 5   | Rollout + gates      | pending | Remaining screens, `format && lint`, `lint:design-system`                                   |
@@ -70,6 +71,15 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | Basic press | 0.97 scale, 140ms custom ease-out; instant color feedback | Crisp, transform-only |
 
 Focus stays blue (light) / yellow (dark); reduced motion drops transforms, keeps color. All pairs ≥ AA for their use.
+
+## Border-swap result (footprint identical)
+
+| Before | After | Why |
+|---|---|---|
+| Hard outer yellow rings | Existing 1px border recolored yellow | No solid-edge growth |
+| Spread shadows | Zero-spread soft halos | Primary strong / ghost quiet hierarchy kept |
+
+Backgrounds, text contrasts, 3px focus outline, motion guards all preserved.
 
 ## Glow result (shrink illusion fixed)
 
