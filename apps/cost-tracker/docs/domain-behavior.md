@@ -1,6 +1,6 @@
 # Cost Tracker Domain Behavior
 
-Current rules extracted from the former app context during the v1.3.1 skills setup migration. [The glossary](../GLOSSARY.md) owns names; this reference owns the behavioral and persistence details formerly mixed into those definitions. Existing [ADRs](../../../docs/adr/README.md) and the [Claim workflow](claim-workflow.md) retain their authority.
+This reference owns Cost Tracker's behavioral and persistence rules; [the glossary](../GLOSSARY.md) owns terminology. Existing [ADRs](../../../docs/adr/README.md) and the [Claim workflow](claim-workflow.md) retain their authority.
 
 ## Participation and entry points
 

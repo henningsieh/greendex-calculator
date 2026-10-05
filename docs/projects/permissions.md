@@ -26,6 +26,8 @@ Both apps use only the four shared role values above; unknown and omitted grants
 
 Library table/field names and ordinary Membership wording are unaffected.
 
+Role lists derive from the shared auth constants rather than separate app-owned lists. Only defined shared role values may be invited, assigned, or seeded; staff invitations remain limited to `owner` and `admin`.
+
 One Membership may hold several roles. Assigning `participant` or `coordinator` never removes an existing role.
 
 ## Project Coordinator scope

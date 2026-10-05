@@ -6,6 +6,10 @@ Status: approved design; the proposed schema changes are not implemented.
 
 This document is the cross-application source of truth for Project identity and Project Participation. Read [ADR-0001](../adr/0001-model-project-organizations-and-participation.md) for rationale and [shared permissions](permissions.md) for Better Auth integration.
 
+## Organization country
+
+Every Organization is based in exactly one EU country, stored in its required `country` field as an EU code. See [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) for the decision and migration constraints.
+
 ## Project
 
 Every Project has exactly one owning Organization. Applications may present that Organization differently, but they reference the same Project and Organization records.
