@@ -9,25 +9,33 @@
 
 ## Contexts
 
-Read the owning app's context before changing its code. Shared language lives in [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md); app-specific terms live in the owning `CONTEXT.md`.
+Before changing app code, read the shared [glossary](GLOSSARY.md) and the owning app glossary. [GLOSSARY-MAP.md](GLOSSARY-MAP.md) identifies contexts, relationships, and behavior routes.
 
-- [Calculator](apps/calculator/CONTEXT.md): carbon-footprint calculation from Participant journeys and questionnaire data.
-- [Cost Tracker](apps/cost-tracker/CONTEXT.md): journey-ticket costs per Partner Organization; owns Project Partnerships and the Hosting/Partner distinction (hidden from Calculator).
-- [Documentation](apps/documentation/CONTEXT.md): published user documentation (Fumadocs); not engineering documentation.
+## Agent skills
 
-Both applications reference the same Organizations, Projects, Users, and Project Participations. CO₂ and cost records stay independent. Domain route: [domain](docs/agents/domain.md); shared features: [Projects](docs/projects/README.md); decisions: [ADRs](docs/adr/README.md).
+### Issue tracker
+
+Issues and specs live on GitHub. Follow [issue-tracker rules](docs/agents/issue-tracker.md), including keeping implementation tickets open until merged.
+
+### Triage labels
+
+Use the five default roles mapped in [triage labels](docs/agents/triage-labels.md).
+
+### Domain docs
+
+Multi-context: shared root glossary plus app glossaries, discovered through [GLOSSARY-MAP.md](GLOSSARY-MAP.md). Read [domain rules](docs/agents/domain.md) when changing language, relationships, business rules, or persistence.
 
 ## Where Does a Statement Belong?
 
 Documentation has five kinds with different rules. Placing a statement in the wrong kind is the most common way this repo gets confusing, so pick deliberately before writing.
 
-| Kind            | Rule                                                               | Lives in                                                                                              | Answers                               |
-| --------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **Decision**    | Immutable. Reversal means a new ADR that supersedes the old one.   | [`docs/adr/`](docs/adr/README.md)                                                                     | Why this shape, and what was rejected |
-| **Instruction** | Mutable current rules. Rewrite when the practice changes.          | [`docs/agents/instructions/`](docs/agents/instructions/)                                              | How to work here now                  |
-| **Model**       | Mutable description of the domain. Must match the code and schema. | `CONTEXT.md`, [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md), [`docs/projects/`](docs/projects/README.md) | What the things are                   |
-| **Open work**   | Mutable. Needs a decision or an implementation.                    | [GitHub issues](docs/agents/issue-tracker.md); app `docs/backlog/`                                    | What still needs doing                |
-| **Archive**     | Frozen. Never follow as instructions.                              | app `docs/archive/`                                                                                   | What was true at a past review        |
+| Kind            | Rule                                                                                                | Lives in                                                                               | Answers                               |
+| --------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------- |
+| **Decision**    | Immutable. Reversal means a new ADR that supersedes the old one.                                    | [`docs/adr/`](docs/adr/README.md)                                                      | Why this shape, and what was rejected |
+| **Instruction** | Mutable current rules. Rewrite when the practice changes.                                           | [`docs/agents/instructions/`](docs/agents/instructions/)                               | How to work here now                  |
+| **Model**       | Mutable domain descriptions: glossaries define names; behavior docs describe rules and persistence. | [Glossaries](GLOSSARY-MAP.md), [shared Projects](docs/projects/README.md), app `docs/` | What the things are                   |
+| **Open work**   | Mutable. Needs a decision or an implementation.                                                     | [GitHub issues](docs/agents/issue-tracker.md); app `docs/backlog/`                     | What still needs doing                |
+| **Archive**     | Frozen. Never follow as instructions.                                                               | app `docs/archive/`                                                                    | What was true at a past review        |
 
 Rules that follow from this:
 
@@ -40,8 +48,8 @@ Rules that follow from this:
 
 Do not pre-read documentation. Open only what the task touches, when you need it:
 
-- Code under `apps/<app>/` → read that app's `CONTEXT.md` first.
-- Domain language, relationships, or persistence → [domain](docs/agents/domain.md) plus [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md).
+- Code under `apps/<app>/` → read the shared `GLOSSARY.md` and that app's `GLOSSARY.md` first; use [the map](GLOSSARY-MAP.md) for behavior routes.
+- Domain language, relationships, or persistence → [domain](docs/agents/domain.md).
 - Files match a row of the scoped index below → read only that instruction file.
 - Unfamiliar or cross-cutting work → [task routes](docs/agents/agent-workflows.md) or the [documentation index](docs/README.md).
 - Vendor APIs → [integrations](docs/agents/integrations.md): confirm the installed version, then fetch only the smallest relevant official page.

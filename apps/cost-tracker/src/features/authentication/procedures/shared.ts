@@ -26,7 +26,7 @@ export const profileInput = z.object({
 });
 export const joinProfileInput = profileInput.extend({
   // EU country from the participation questionnaire. Stored on the Project
-  // Participation, never on the User profile (CONTEXT.md).
+  // Participation, never on the User profile (docs/domain-behavior.md).
   country: z.enum(EU_COUNTRY_CODES),
 });
 export const agreementInput = z.object({ accepted: z.literal(true) });

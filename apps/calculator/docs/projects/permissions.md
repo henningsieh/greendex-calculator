@@ -47,7 +47,7 @@ Organization Owners may manage every Project in the active Organization and alon
 
 Before changing Participant roles, invitations, or Project Participation identity, read:
 
-- [Shared domain language](../../../../DOMAIN-GLOSSARY.md)
+- [Shared domain language](../../../../GLOSSARY.md)
 - [Cost Tracker domain model](../../../cost-tracker/docs/domain-model.md)
 - [ADR-0001: Project Organizations and Project Participation](../../../../docs/adr/0001-model-project-organizations-and-participation.md)
 - [ADR-0002: Participant integration with Better Auth](../../../../docs/adr/0002-integrate-participants-with-better-auth.md)

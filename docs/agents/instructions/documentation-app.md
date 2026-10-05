@@ -12,4 +12,6 @@ Confirm installed Fumadocs versions in `apps/documentation/package.json` and `pn
 
 Greendex owns documentation source loading, locale integration, layouts, navigation, search, and LLM-facing routes in `apps/documentation/`. Preserve these application boundaries; do not copy Fumadocs tutorials into this repository.
 
+Published user pages live in `apps/documentation/content/docs/` and are rendered through Fumadocs layouts, navigation, search, and LLM routes. Repository-wide specs remain in `docs/`; app-owned engineering behavior remains in `apps/<app>/docs/`.
+
 The documentation app also renders Tailwind + shadcn primitives from `apps/documentation/src/components/`, so the shared design-system lint rules from the root `.oxlintrc.json` apply here. Read [UI components](shadcn.md) before changing component class usage.

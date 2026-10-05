@@ -9,6 +9,7 @@ import {
   matchesStaleGuidance,
   retiredPointerPatterns,
   referenceFiles,
+  retiredAgentGuidancePaths,
   requiredRepositoryPaths,
   stalePatterns,
 } from "./check-agent-instructions.policy";
@@ -109,6 +110,18 @@ describe("retired vendor-documentation pointer matcher", () => {
 });
 
 describe("stale guidance matcher", () => {
+  it.each(["CONTEXT.md", "CONTEXT-MAP.md", "DOMAIN-GLOSSARY.md"])(
+    "flags retired glossary guidance: %s",
+    (fileName) => {
+      expect(matchesStaleGuidance(`read apps/example/${fileName}`)).toBe(true);
+    },
+  );
+
+  it("accepts the current glossary layout", () => {
+    expect(matchesStaleGuidance("read GLOSSARY-MAP.md and GLOSSARY.md")).toBe(
+      false,
+    );
+  });
   it("flags stale package-manager guidance", () => {
     expect(matchesStaleGuidance("run bunx install")).toBe(true);
     expect(matchesStaleGuidance("see pnpm.lockb for details")).toBe(true);
@@ -120,5 +133,37 @@ describe("stale guidance matcher", () => {
 
   it("does not treat unrelated pattern lists as stale", () => {
     expect(findPatternHits("run pnpm install", stalePatterns)).toEqual([]);
+  });
+});
+
+describe("glossary migration coverage", () => {
+  it("requires and checks the map, glossaries, domain route, and extracted behavior", () => {
+    for (const filePath of [
+      "GLOSSARY.md",
+      "GLOSSARY-MAP.md",
+      "apps/calculator/GLOSSARY.md",
+      "apps/cost-tracker/GLOSSARY.md",
+      "apps/documentation/GLOSSARY.md",
+      "docs/agents/domain.md",
+      "apps/cost-tracker/docs/domain-behavior.md",
+    ]) {
+      expect(requiredRepositoryPaths).toContain(filePath);
+      expect(referenceFiles).toContain(filePath);
+    }
+  });
+
+  it("retires the previous shared glossary and app context paths", () => {
+    for (const filePath of [
+      "DOMAIN-GLOSSARY.md",
+      "CONTEXT.md",
+      "CONTEXT-MAP.md",
+      "apps/calculator/CONTEXT.md",
+      "apps/cost-tracker/CONTEXT.md",
+      "apps/documentation/CONTEXT.md",
+    ]) {
+      expect(retiredAgentGuidancePaths).toContain(filePath);
+      expect(requiredRepositoryPaths).not.toContain(filePath);
+      expect(referenceFiles).not.toContain(filePath);
+    }
   });
 });

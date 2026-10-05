@@ -24,9 +24,15 @@ Neither answer replaces the other. A role never grants access to every Project, 
 
 Both apps use only the four shared role values above; unknown and omitted grants are refused. [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) replaces the former Calculator compatibility values. Calculator retains its `admin` Project-management behavior; its `coordinator` role grants nothing yet.
 
+Library table/field names and ordinary Membership wording are unaffected.
+
 One Membership may hold several roles. Assigning `participant` or `coordinator` never removes an existing role.
 
 ## Project Coordinator scope
+
+### Runtime role identifiers
+
+Cost Tracker maps Better Auth `owner` to `organisationOwner` (exact spelling), `admin` to `organizationAdmin`, and `participant` to `projectParticipant`. Calculator retains `legacyCalculatorAdminRole` for its existing `admin` behavior. A Participant Role may coexist with other roles on the same Organization Membership and does not identify which Projects the User participates in.
 
 ADR-0004 defines one `coordinator` role with two possible scopes:
 
@@ -34,6 +40,8 @@ ADR-0004 defines one `coordinator` role with two possible scopes:
 - A Project Coordinator assigned to their Organization's Project Partnership performs Partner-side coordination for that Partnership only.
 
 Organization Owners and Organization Admins retain Organization-wide authority. Project Coordinator assignments never grant Organization management authority.
+
+UI wording is `Project Coordinator` for Hosting Organization scope and `Group Organizer` for Partner Organization scope. The role alone grants neither Organization-wide authority nor access to an unassigned Project.
 
 ## Participant onboarding
 

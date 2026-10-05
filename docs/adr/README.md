@@ -45,6 +45,6 @@ rules with authoritative server enforcement. This is not a reversal or supersess
 
 ## Related
 
-- Ubiquitous language: [DOMAIN-GLOSSARY.md](../../DOMAIN-GLOSSARY.md)
+- Ubiquitous language: [GLOSSARY.md](../../GLOSSARY.md)
 - Documentation index: [docs/README.md](../../docs/README.md)
-- App contexts: [Calculator](../../apps/calculator/CONTEXT.md) · [Cost Tracker](../../apps/cost-tracker/CONTEXT.md) · [Documentation](../../apps/documentation/CONTEXT.md)
+- App contexts: [Calculator](../../apps/calculator/GLOSSARY.md) · [Cost Tracker](../../apps/cost-tracker/GLOSSARY.md) · [Documentation](../../apps/documentation/GLOSSARY.md) — [map](../../GLOSSARY-MAP.md)

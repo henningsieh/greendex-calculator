@@ -7,11 +7,11 @@ Use `/grill-with-docs` to guide this work step by step. This is a discovery and 
 - Original request: [`align-with-requirements.md`](align-with-requirements.md)
 - Clickdummy repository: <https://github.com/nilsleichsenring/KarmensLittleHelper.git>
 - Live clickdummy: <https://karmens-little-helper.vercel.app>
-- Cost Tracker context: [`../../CONTEXT.md`](../../CONTEXT.md)
+- Cost Tracker glossary: [`../../GLOSSARY.md`](../../GLOSSARY.md)
 - Cost Tracker documentation index: [`../README.md`](../README.md)
 - Repository domain route: [`../../../../docs/agents/domain.md`](../../../../docs/agents/domain.md)
 - Shared contexts: [`AGENTS.md`](../../../../AGENTS.md#contexts)
-- Shared glossary: [`../../../../DOMAIN-GLOSSARY.md`](../../../../DOMAIN-GLOSSARY.md)
+- Shared glossary: [`../../../../GLOSSARY.md`](../../../../GLOSSARY.md)
 
 The clickdummy is authoritative evidence for intended actors, domain requirements, business rules, and use cases. Its terminology, information architecture, interaction patterns, visual design, source structure, and implementation choices are hypotheses to evaluate—not specifications to copy. Preserve traceability between every extracted requirement and its clickdummy evidence.
 
