@@ -173,10 +173,10 @@ function AccountMenu({
           {getInitials(name)}
         </span>
         <span className={cn("min-w-0", compact && "sr-only")}>
-          <span className="block max-w-44 truncate text-sm leading-5 font-semibold">
+          <span className="block max-w-44 truncate text-sm/5 font-semibold">
             {name}
           </span>
-          <span className="block max-w-44 truncate text-xs leading-4 text-muted-foreground">
+          <span className="block max-w-44 truncate text-xs/4 text-muted-foreground">
             {email}
           </span>
         </span>

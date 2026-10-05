@@ -28,7 +28,7 @@ export default function AuthLayout({
         </p>
       </section>
 
-      <section className="flex min-h-svh flex-col bg-background px-5 py-5 sm:px-8 lg:px-14 xl:px-20">
+      <section className="flex min-h-svh flex-col bg-background p-5 sm:px-8 lg:px-14 xl:px-20">
         <SiteBrand className="lg:hidden" />
         <div className="flex flex-1 items-center justify-center py-12">
           {children}

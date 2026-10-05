@@ -81,7 +81,7 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
               <Dialog.Title className="font-heading text-2xl font-semibold">
                 Create Organization
               </Dialog.Title>
-              <Dialog.Description className="mt-2 text-sm leading-6 text-muted-foreground">
+              <Dialog.Description className="mt-2 text-sm/6 text-muted-foreground">
                 You’ll become its owner and can start hosting Projects right away.
               </Dialog.Description>
               <form className="mt-6" onSubmit={createOrganization}>

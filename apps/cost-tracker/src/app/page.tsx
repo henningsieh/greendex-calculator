@@ -35,7 +35,7 @@ const journeySteps = [
 export default function LandingPage() {
   return (
     <main className="min-h-svh overflow-hidden">
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+      <header className="mx-auto flex w-full max-w-7xl items-center justify-between p-5 sm:px-8 lg:px-10">
         <SiteBrand />
         <nav aria-label="Account" className="flex items-center gap-2">
           <Link
@@ -61,7 +61,7 @@ export default function LandingPage() {
           <h1 className="max-w-xl font-heading text-5xl font-semibold tracking-[-0.045em] text-balance sm:text-6xl lg:text-7xl">
             Every journey cost, accounted for.
           </h1>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
+          <p className="mt-7 max-w-xl text-lg/8 text-muted-foreground sm:text-xl">
             Collect travel receipts, allocate shared costs, and keep every Project
             Participant working from the same clear record.
           </p>
