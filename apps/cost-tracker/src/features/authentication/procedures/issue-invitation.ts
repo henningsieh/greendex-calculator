@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@greendex/database";
 import {
   projectParticipantsTable as participants,
+  projectsTable as projects,
   user,
 } from "@greendex/database/schema";
 import { and, eq, or, sql } from "drizzle-orm";
@@ -11,7 +12,7 @@ import {
   findPendingInvitationToken,
   invitationTokenExpiry,
   issueEntryToken,
-  revokeEntryToken,
+  revokeEntryTokenInTransaction,
 } from "@/features/authentication/procedures/entry-tokens";
 import { deliverParticipantInvitation } from "@/features/authentication/procedures/invitation-delivery";
 import {
@@ -52,40 +53,50 @@ export function buildIssueInvitation() {
         .limit(1);
       if (existingParticipation)
         throw createSituationErrors(errors).participantAlreadyParticipates();
-      const existing = await findPendingInvitationToken(
-        partnership.projectId,
-        input.email,
-      );
-      if (existing) {
-        if (existing.partnershipId !== partnership.id)
-          throw createSituationErrors(errors).participantAlreadyInvited();
-        if (existing.expiresAt !== null && existing.expiresAt > new Date())
-          // Idempotent issuance never resends and never recovers the secret:
-          // only explicit reissue delivers again.
-          return {
-            invitationId: existing.id,
-            secret: null,
-            delivery: "already-issued" as const,
-          };
-        // Stale invitation: retire it and fall through to fresh issuance below.
-        await revokeEntryToken(existing.id);
-      }
-      // Only the Partner Organization issues entry points. The invitation is
-      // app-owned: durable issuance first, delivery afterwards, never a
-      // Better Auth write (ADR-0013).
-      const issued = await issueEntryToken(errors, {
-        partnershipId: partnership.id,
-        projectId: partnership.projectId,
-        email: input.email,
-        expiresAt: invitationTokenExpiry(INVITATION_TTL_MS),
-        issuedByUserId: context.user.id,
+      const result = await db.transaction(async (tx) => {
+        // Share the Project lock with reissue: only the winning issuer delivers.
+        await tx
+          .select({ id: projects.id })
+          .from(projects)
+          .where(eq(projects.id, partnership.projectId))
+          .for("update");
+        const existing = await findPendingInvitationToken(
+          partnership.projectId,
+          input.email,
+          tx,
+        );
+        if (existing) {
+          if (existing.partnershipId !== partnership.id)
+            throw createSituationErrors(errors).participantAlreadyInvited();
+          if (existing.expiresAt !== null && existing.expiresAt > new Date())
+            return { kind: "already-issued", id: existing.id } as const;
+          await revokeEntryTokenInTransaction(tx, existing.id);
+        }
+        const issued = await issueEntryToken(
+          errors,
+          {
+            partnershipId: partnership.id,
+            projectId: partnership.projectId,
+            email: input.email,
+            expiresAt: invitationTokenExpiry(INVITATION_TTL_MS),
+            issuedByUserId: context.user.id,
+          },
+          tx,
+        );
+        return { kind: "issued", ...issued } as const;
       });
+      if (result.kind === "already-issued")
+        return {
+          invitationId: result.id,
+          secret: null,
+          delivery: "already-issued" as const,
+        };
       console.info("Participant invitation issued", {
         issuer: context.user.id,
         recipient: input.email,
         partnershipId: partnership.id,
         at: new Date().toISOString(),
       });
-      return deliverParticipantInvitation(input.email, issued.id, issued.secret);
+      return deliverParticipantInvitation(input.email, result.id, result.secret);
     });
 }

@@ -82,6 +82,36 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       },
     },
     orpcQuery: {
+      duplicateReviews: {
+        list: {
+          queryOptions: (
+            ...args: Parameters<
+              typeof original.orpcQuery.duplicateReviews.list.queryOptions
+            >
+          ) => ({
+            ...original.orpcQuery.duplicateReviews.list.queryOptions(...args),
+            queryFn: async () => [
+              {
+                id: "review-open",
+                partnershipId: "own-partnership",
+                candidateEmail: "review@example.org",
+                status: "open",
+                existingParticipationId: "person-1",
+                decision: null,
+              },
+              {
+                id: "review-assigned",
+                partnershipId: "own-partnership",
+                candidateEmail: "assigned@example.org",
+                status: "assigned",
+                existingParticipationId: "person-1",
+                assignedToUserId: "user-1",
+                decision: null,
+              },
+            ],
+          }),
+        },
+      },
       participations: {
         listPartnership: {
           queryKey: (
@@ -531,29 +561,78 @@ describe("ParticipantCoordination", () => {
     ).toBeTruthy();
   });
 
-  it("hides every participant entry control from Hosting Organization staff", async () => {
-    browserSession.activeOrganizationId = "host-1";
+  it("retains Partner mutation controls when the shared scope gate permits", async () => {
     await renderCoordination();
-    expect(
-      screen.getAllByText(
-        "Only the Partner Organization of this Project Partnership issues participant entry points.",
-      ).length,
-    ).toBeGreaterThan(0);
     for (const name of [
-      "Send Participant Invitation",
-      "Create Participant Registration Link",
-      "Reissue invitation for pending@example.org",
-      "Close invitation for pending@example.org",
-      "Close registration link link-1",
-      "Reopen registration link link-1",
+      "Add Participation",
+      "Remove Project Participation for Own Person",
+      "Manage Group Organizers",
     ])
-      expect(screen.queryByRole("button", { name })).toBeNull();
-    // Oversight of the existing entries stays available.
-    expect(screen.getByText("pending@example.org")).toBeTruthy();
-    expect(screen.getByText("Link link-1")).toBeTruthy();
+      expect(screen.getByRole("button", { name })).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show Review Tasks" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Assign Review Task to me" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Resolve Review Task" }),
+    ).toBeTruthy();
   });
 
-  it("keeps entry controls for a Partner Group Organizer only with an assignment", async () => {
+  it.each([
+    ORGANIZATION_ROLES.OrganizationOwner,
+    ORGANIZATION_ROLES.OrganizationAdmin,
+    ORGANIZATION_ROLES.ProjectCoordinator,
+  ])(
+    "hides every Partner mutation from Hosting %s while retaining read-only navigation",
+    async (role) => {
+      browserSession.activeOrganizationId = "host-1";
+      browserSession.role = role;
+      await renderCoordination();
+      expect(
+        screen.getAllByText(
+          "Only the Partner Organization of this Project Partnership issues participant entry points.",
+        ).length,
+      ).toBeGreaterThan(0);
+      for (const name of [
+        "Add Participation",
+        "Remove Project Participation for Own Person",
+        "Manage Group Organizers",
+        "Send Participant Invitation",
+        "Create Participant Registration Link",
+        "Reissue invitation for pending@example.org",
+        "Close invitation for pending@example.org",
+        "Close registration link link-1",
+        "Reopen registration link link-1",
+      ])
+        expect(screen.queryByRole("button", { name })).toBeNull();
+      // Oversight of the existing entries stays available.
+      expect(screen.getByText("pending@example.org")).toBeTruthy();
+      expect(screen.getByText("Link link-1")).toBeTruthy();
+      expect(
+        screen.getByRole("link", { name: "Participant details for Own Person" }),
+      ).toBeTruthy();
+      await userEvent.click(
+        screen.getByRole("button", { name: "Show Review Tasks" }),
+      );
+      await screen.findByText("Registered User: review@example.org");
+      expect(
+        screen.getByText("Registered User: assigned@example.org"),
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: "Assign Review Task to me" }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "Resolve Review Task" }),
+      ).toBeNull();
+      expect(screen.queryByLabelText("Review Task decision")).toBeNull();
+      expect(mocks.create).not.toHaveBeenCalled();
+      expect(mocks.remove).not.toHaveBeenCalled();
+    },
+  );
+
+  it("gates all Partner controls on the same coordinator assignment", async () => {
     browserSession.role = ORGANIZATION_ROLES.ProjectCoordinator;
     await renderCoordination();
     expect(
@@ -561,8 +640,19 @@ describe("ParticipantCoordination", () => {
         "Ask an Organization Owner or Admin to assign you as Group Organizer for this Project Partnership.",
       ).length,
     ).toBeGreaterThan(0);
+    for (const name of [
+      "Send Participant Invitation",
+      "Add Participation",
+      "Remove Project Participation for Own Person",
+      "Manage Group Organizers",
+    ])
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show Review Tasks" }),
+    );
+    await screen.findByText("Registered User: review@example.org");
     expect(
-      screen.queryByRole("button", { name: "Send Participant Invitation" }),
+      screen.queryByRole("button", { name: "Assign Review Task to me" }),
     ).toBeNull();
   });
 

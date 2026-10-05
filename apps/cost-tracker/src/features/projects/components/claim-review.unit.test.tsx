@@ -1,12 +1,53 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ClaimReview,
   ClaimDecisionPanel,
   ClaimHistory,
   ClaimReviewDetails,
 } from "@/features/projects/components/claim-review";
+
+const access = vi.hoisted(() => ({
+  role: "coordinator",
+  canReview: true,
+}));
+vi.mock("@/lib/auth-client", async (importOriginal) => {
+  const { authClient } =
+    await importOriginal<typeof import("@/lib/auth-client")>();
+  return {
+    authClient: {
+      ...authClient,
+      organization: authClient.organization,
+      useSession: () => ({ data: { user: { id: "reviewer" } } }),
+      useActiveOrganization: () => ({
+        data: { members: [{ userId: "reviewer", role: access.role }] },
+      }),
+    },
+  };
+});
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-query")>()),
+  useQueryClient: () => ({}),
+  useSuspenseQueries: () => [
+    { data: { status: "submitted", approvedAmountEur: "726.00" } },
+    { data: [] },
+    { data: { canReview: access.canReview } },
+    {
+      data: {
+        entries: [],
+        journeys: [],
+        payoutAccount: null,
+        approvedAmountEur: "726.00",
+      },
+    },
+  ],
+}));
+beforeEach(() => {
+  access.role = "coordinator";
+  access.canReview = true;
+});
 
 const history = [
   {
@@ -38,6 +79,30 @@ const base = {
 };
 
 describe("Claim decisions", () => {
+  it.each(["coordinator", "owner", "admin"])(
+    "offers decisions for an authorized %s through Better Auth permissions",
+    (role) => {
+      access.role = role;
+      render(<ClaimReview partnershipId="partner" />);
+      expect(
+        screen.getByRole("button", { name: "Approve Claim" }),
+      ).toBeInTheDocument();
+    },
+  );
+  it.each(["participant", ""])(
+    "fails closed for client role %s despite a server hint",
+    (role) => {
+      access.role = role;
+      render(<ClaimReview partnershipId="partner" />);
+      expect(screen.queryByRole("button", { name: "Approve Claim" })).toBeNull();
+    },
+  );
+  it("retains the authoritative assignment/scope refusal despite a client permission", () => {
+    access.canReview = false;
+    render(<ClaimReview partnershipId="partner" />);
+    expect(screen.queryByRole("button", { name: "Approve Claim" })).toBeNull();
+  });
+
   it("renders a Hosting reviewer snapshot with cost allocations, proof references, payout and journeys", () => {
     render(
       <ClaimReviewDetails

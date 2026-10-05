@@ -16,13 +16,17 @@ import {
   type SituationErrorConstructors,
 } from "@/lib/orpc/errors";
 
-export const id = z.string().min(1).max(128);
+const MIN_REQUIRED_LENGTH = 1;
+const MAX_ID_LENGTH = 128;
+const MAX_FULL_NAME_LENGTH = 200;
+
+export const id = z.string().min(MIN_REQUIRED_LENGTH).max(MAX_ID_LENGTH);
 export const normalizedEmail = z.string().trim().toLowerCase().pipe(z.email());
 export const secretHash = (secret: string) =>
   createHash("sha256").update(secret).digest("hex");
 export const success = z.object({ success: z.literal(true) });
 export const profileInput = z.object({
-  fullName: z.string().trim().min(1).max(200),
+  fullName: z.string().trim().min(MIN_REQUIRED_LENGTH).max(MAX_FULL_NAME_LENGTH),
 });
 export const joinProfileInput = profileInput.extend({
   // EU country from the participation questionnaire. Stored on the Project
@@ -34,11 +38,15 @@ export const joinInput = z.object({
   profile: joinProfileInput,
   agreement: agreementInput,
   source: z.discriminatedUnion("kind", [
-    z.object({ kind: z.literal("link"), id, secret: z.string().min(1) }),
+    z.object({
+      kind: z.literal("link"),
+      id,
+      secret: z.string().min(MIN_REQUIRED_LENGTH),
+    }),
     z.object({
       kind: z.literal("invitation"),
       invitationId: id,
-      secret: z.string().min(1),
+      secret: z.string().min(MIN_REQUIRED_LENGTH),
     }),
   ]),
 });

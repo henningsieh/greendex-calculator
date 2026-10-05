@@ -1,5 +1,7 @@
 "use client";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { PROJECT_PARTICIPATION_CREATE } from "@greendex/auth/project-authorization";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
@@ -12,6 +14,7 @@ import {
   claimPanelActions,
   type ClaimPanelAction,
 } from "@/features/projects/claim-lifecycle";
+import { authClient } from "@/lib/auth-client";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -28,13 +31,32 @@ type DecisionInput = {
   amountEur?: string;
 };
 
-const decisionLabels: Record<Decision, string> = {
-  requestCorrection: "correction request",
-  approve: "approval",
-  reject: "rejection",
-  reopen: "reopening",
-  markPaid: "payment",
-  correctPayment: "paid-flag correction",
+const decisionDefinitions: Record<
+  Decision,
+  {
+    confirmation: string;
+    label: string;
+    reasonLabel?: string;
+  }
+> = {
+  requestCorrection: {
+    confirmation: "correction request",
+    label: "Request correction",
+    reasonLabel: "Correction reason",
+  },
+  approve: { confirmation: "approval", label: "Approve Claim" },
+  reject: {
+    confirmation: "rejection",
+    label: "Reject Claim",
+    reasonLabel: "Rejection reason",
+  },
+  reopen: { confirmation: "reopening", label: "Reopen Claim" },
+  markPaid: { confirmation: "payment", label: "Mark paid" },
+  correctPayment: {
+    confirmation: "paid-flag correction",
+    label: "Correct paid flag",
+    reasonLabel: "Paid-flag correction reason",
+  },
 };
 const historyLabels: Record<History[number]["eventType"], string> = {
   submitted: "Submitted",
@@ -88,30 +110,19 @@ export function ClaimDecisionPanel({
   const [reason, setReason] = useState("");
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const actionLabels: Record<Decision, string> = {
-    requestCorrection: "Request correction",
-    approve: "Approve Claim",
-    reject: "Reject Claim",
-    reopen: "Reopen Claim",
-    markPaid: "Mark paid",
-    correctPayment: "Correct paid flag",
-  };
   const controls = claimPanelActions(status).map((action) => ({
     action,
-    label: actionLabels[action],
+    label: decisionDefinitions[action].label,
   }));
+  const definition = confirming ? decisionDefinitions[confirming] : null;
   function begin(action: Decision) {
     setConfirming(action);
     setReason("");
     setFeedback("");
   }
   async function execute() {
-    if (!confirming || pending) return;
-    const needsReason = [
-      "requestCorrection",
-      "reject",
-      "correctPayment",
-    ].includes(confirming);
+    if (!canReview || !confirming || pending) return;
+    const needsReason = Boolean(definition?.reasonLabel);
     if (needsReason && !reason.trim()) return;
     setPending(true);
     setFeedback("");
@@ -174,17 +185,11 @@ export function ClaimDecisionPanel({
                 ? `Confirm only after one full bank transfer of ${approvedAmountEur} EUR was actually sent.`
                 : confirming === "reopen"
                   ? "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed."
-                  : `Confirm ${decisionLabels[confirming]} for this Claim.`}
-              {(
-                ["requestCorrection", "reject", "correctPayment"] as Decision[]
-              ).includes(confirming) && (
+                  : `Confirm ${definition?.confirmation} for this Claim.`}
+              {definition?.reasonLabel && (
                 <div>
                   <Label htmlFor="decision-reason">
-                    {confirming === "requestCorrection"
-                      ? "Correction reason"
-                      : confirming === "reject"
-                        ? "Rejection reason"
-                        : "Paid-flag correction reason"}
+                    {definition.reasonLabel}
                   </Label>
                   <textarea
                     id="decision-reason"
@@ -202,15 +207,12 @@ export function ClaimDecisionPanel({
                 type="button"
                 disabled={
                   pending ||
-                  (["requestCorrection", "reject", "correctPayment"].includes(
-                    confirming,
-                  ) &&
-                    !reason.trim()) ||
+                  (Boolean(definition?.reasonLabel) && !reason.trim()) ||
                   (confirming === "markPaid" && !approvedAmountEur)
                 }
                 onClick={() => void execute()}
               >
-                Confirm {decisionLabels[confirming]}
+                Confirm {definition?.confirmation}
               </Button>
               <Button
                 type="button"
@@ -314,6 +316,17 @@ export function ClaimReviewDetails({
 
 export function ClaimReview({ partnershipId }: { partnershipId: string }) {
   const client = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const { data: organization } = authClient.useActiveOrganization();
+  const role = organization?.members.find(
+    (entry) => entry.userId === session?.user.id,
+  )?.role;
+  const mayReview =
+    Boolean(role) &&
+    authClient.organization.checkRolePermission({
+      role: role ?? ORGANIZATION_ROLES.Participant,
+      permissions: PROJECT_PARTICIPATION_CREATE,
+    });
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
   const [claimQuery, historyQuery, reviewerQuery, detailsQuery] =
@@ -380,7 +393,7 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
           partnershipId={partnershipId}
           status={claim.status}
           approvedAmountEur={claim.approvedAmountEur}
-          canReview={reviewer.canReview}
+          canReview={mayReview && reviewer.canReview}
           onDecision={decide}
         />
       )}
