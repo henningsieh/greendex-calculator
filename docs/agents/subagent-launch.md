@@ -52,6 +52,15 @@ Keep `context: "fresh"` explicit: it wins over inherited global preferences. For
 
 Inspect `status` or `view: "transcript"` at decision/debugging boundaries, not on a timer. Use `steer` for active guidance and `subagent_supervisor` for child questions. A delivered message is not proof the child followed it. Completion is also not acceptance: inspect the affected diff and check evidence; use a runtime gate when verified execution is required.
 
+## Supervised issue-implementation chain
+
+For a fully-specified issue (decisions locked, file lists known): one async workflow, sequential single-writer lanes on the issue branch — implement → test → review → fix-if-blocked → commit. The reusable template lives at [`.pi/workflows/issue-implementation.js`](../../.pi/workflows/issue-implementation.js) (validated script file; launch with `args: { issue, branch, sources, tests, decisions, commitSubject, commitBody }`).
+
+- **Lane model policy** (per-lane overrides on the project default family; the supervisor stays fully engaged): implement `worker` medium, test `worker` low, review `reviewer` high, fix `worker` medium, commit `delegate` low. The mapping lives in the template, not in settings — one role needs different thinking per lane (worker medium vs low), and the reviewer global default stays untouched.
+- **Reviewer contract:** ends with exactly `Merge verdict: BLOCK` or `Merge verdict: OK`; the script branches on it (fix + re-check only when blocked, second BLOCK returns uncommitted).
+- **Commit scoping:** explicit file lists, never `git add -A`, no pushes. Issue progress comments and final acceptance stay with the parent per [issue tracker](issue-tracker.md).
+- **Escalation:** every lane uses `contact_supervisor` instead of guessing; the parent answers via `subagent_supervisor` and steers with `runs.steer`-style guidance. A delivered message is not proof it was followed — verify the diff.
+
 ## Recovery and durable records
 
 Keep normal missions for substantive work; use `mission: false` for disposable probes. After compaction or a new chat, recover the objective, decisions, run IDs, and artifact paths from `mission.list` / `mission.show`, not reconstructed chat history. These persisted records are not Pi Durable's checkpointed execution.
