@@ -17,10 +17,10 @@ describe("retired vendor-documentation pointer matcher", () => {
     expect(matchesRetiredVendorPointer("docs/orpc")).toBe(true);
   });
 
-  it("ignores app-owned documentation such as apps/cost-tracker/docs/clickdummy/", () => {
+  it("ignores app-owned documentation such as apps/documentation/content/docs/", () => {
     expect(
       matchesRetiredVendorPointer(
-        "see apps/cost-tracker/docs/clickdummy/requirements-traceability.md",
+        "see apps/documentation/content/docs/orpc/procedures.md",
       ),
     ).toBe(false);
     expect(

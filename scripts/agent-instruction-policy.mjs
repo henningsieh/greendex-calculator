@@ -29,15 +29,15 @@ export const expectedScopes = {
   "i18n.md":
     "packages/i18n/src/**/*.ts,packages/i18n/src/locales/*.json,packages/config/src/languages.ts,apps/calculator/src/lib/i18n/**/*.ts,apps/calculator/src/proxy.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/app/sitemap.ts",
   "nuqs.md":
-    "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/components/nuqs-provider.tsx,apps/cost-tracker/src/features/**/project-list-query-options.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx",
+    "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx",
   "orpc.md":
-    "apps/calculator/src/lib/orpc/**/*.ts,apps/calculator/src/app/api/rpc/**/*.ts,apps/calculator/src/app/api/openapi/**/*.ts,apps/calculator/src/features/**/procedures.ts,apps/calculator/src/features/**/validation-schemas.ts,apps/calculator/src/instrumentation.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/lib/orpc/**/*.ts,apps/cost-tracker/src/app/api/rpc/**/*.ts,apps/cost-tracker/src/features/**/procedures/*.ts,apps/cost-tracker/src/features/**/*procedure*.ts,apps/cost-tracker/src/features/**/validation-schemas.ts,apps/cost-tracker/src/instrumentation.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx",
+    "apps/calculator/src/lib/orpc/**/*.ts,apps/calculator/src/app/api/rpc/**/*.ts,apps/calculator/src/app/api/openapi/**/*.ts,apps/calculator/src/features/**/procedures.ts,apps/calculator/src/features/**/validation-schemas.ts,apps/calculator/src/instrumentation.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx",
   "shadcn.md":
-    "apps/calculator/src/components/**/*.ts,apps/calculator/src/components/**/*.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx,apps/cost-tracker/src/components/**/*.ts,apps/cost-tracker/src/components/**/*.tsx,apps/cost-tracker/src/features/**/components/**/*.ts,apps/cost-tracker/src/features/**/components/**/*.tsx",
+    "apps/calculator/src/components/**/*.ts,apps/calculator/src/components/**/*.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx",
   "tanstack-query.md":
-    "apps/calculator/src/lib/tanstack-react-query/**/*.ts,apps/calculator/src/lib/tanstack-react-query/**/*.tsx,apps/calculator/src/components/providers/query-provider.tsx,apps/calculator/src/lib/orpc/orpc.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/features/**/hooks/**/*.ts,apps/calculator/src/features/**/hooks/**/*.tsx,apps/cost-tracker/src/lib/tanstack-react-query/**/*.ts,apps/cost-tracker/src/lib/tanstack-react-query/**/*.tsx,apps/cost-tracker/src/components/query-provider.tsx,apps/cost-tracker/src/lib/orpc/orpc.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx,apps/cost-tracker/src/features/**/components/**/*.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/features/**/hooks/**/*.ts,apps/cost-tracker/src/features/**/hooks/**/*.tsx",
+    "apps/calculator/src/lib/tanstack-react-query/**/*.ts,apps/calculator/src/lib/tanstack-react-query/**/*.tsx,apps/calculator/src/components/providers/query-provider.tsx,apps/calculator/src/lib/orpc/orpc.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/features/**/components/**/*.ts,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/features/**/hooks/**/*.ts,apps/calculator/src/features/**/hooks/**/*.tsx",
   "tanstack-table.md":
-    "apps/calculator/src/features/**/components/**/*table*.ts,apps/calculator/src/features/**/components/**/*table*.tsx,apps/calculator/src/features/**/__tests__/**/*table*.ts,apps/calculator/src/features/**/__tests__/**/*table*.tsx,apps/cost-tracker/src/features/**/components/**/*list*.tsx,apps/cost-tracker/src/features/**/components/**/*table*.tsx,apps/cost-tracker/src/features/**/__tests__/**/*table*.tsx",
+    "apps/calculator/src/features/**/components/**/*table*.ts,apps/calculator/src/features/**/components/**/*table*.tsx,apps/calculator/src/features/**/__tests__/**/*table*.ts,apps/calculator/src/features/**/__tests__/**/*table*.tsx",
   "workspace.md":
     "package.json,apps/*/package.json,packages/*/package.json,pnpm-workspace.yaml,turbo.json,.node-version",
 };
@@ -100,17 +100,8 @@ export const requiredIntegrationAnchors = [
 
 export const requiredRepositoryPaths = [
   ".node-version",
-  "CONTEXT-MAP.md",
   "DOMAIN-GLOSSARY.md",
-  "apps/calculator/CONTEXT.md",
-  "apps/calculator/docs/README.md",
-  "apps/cost-tracker/CONTEXT.md",
-  "apps/cost-tracker/docs/README.md",
-  "apps/cost-tracker/docs/domain-model.md",
-  "apps/cost-tracker/docs/projects/README.md",
-  "docs/adr",
   "docs/projects/README.md",
-  "docs/projects/model.md",
   "docs/projects/permissions.md",
   "apps/calculator/.env.example",
   "apps/documentation/.env.example",
@@ -150,33 +141,18 @@ export const requiredRepositoryPaths = [
 /** Extra files scanned for retired pointers (beyond the router and workflow). */
 export const referenceFiles = [
   "README.md",
-  "CONTEXT-MAP.md",
   "DOMAIN-GLOSSARY.md",
   "docs/README.md",
   "docs/projects/README.md",
-  "docs/projects/model.md",
   "docs/projects/permissions.md",
   "docs/agents/agent-workflows.md",
-  "apps/calculator/CONTEXT.md",
-  "apps/calculator/docs/README.md",
-  "apps/calculator/docs/participate/README.md",
-  "apps/calculator/docs/projects/README.md",
-  "apps/calculator/docs/projects/permissions.md",
   "apps/calculator/src/lib/orpc/README.md",
-  "apps/cost-tracker/CONTEXT.md",
-  "apps/cost-tracker/docs/README.md",
-  "apps/cost-tracker/docs/domain-model.md",
-  "apps/cost-tracker/docs/projects/README.md",
-  "docs/adr/0001-model-project-organizations-and-participation.md",
-  "docs/adr/0002-integrate-participants-with-better-auth.md",
-  "docs/adr/0003-model-cost-submissions-and-travel-costs.md",
   "docs/database/README.md",
   "docs/agents/integrations.md",
 ];
 
 export const retiredDocumentationRoots = [
   "better-auth",
-  "participate",
   "clickdummy",
   "fumadocs",
   "i18n",
@@ -232,7 +208,7 @@ const retiredVendorRoots =
 export const retiredPointerPatterns = [
   {
     // Anchored with (?<![\w/]) so app-owned documentation such as
-    // apps/cost-tracker/docs/clickdummy/ never matches: only the retired
+    // apps/documentation/content/docs/ never matches: only the retired
     // root-level docs/ roots are flagged.
     pattern: new RegExp(`(?<![\\w/])docs/${retiredVendorRoots}(?:/|\\b)`, "u"),
     message: "replace pointers to retired vendor-documentation roots",

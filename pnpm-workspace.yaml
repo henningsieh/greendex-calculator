@@ -12,14 +12,15 @@ catalog:
   next: 16.3.5
   next-intl: 4.14.2
   dotenv-cli: ^11.0.0
-  oxfmt: ^0.66.0
-  oxlint: ^1.81.0
-  tsx: ^4.23.13 ,
+  oxfmt: ^0.71.0
+  oxlint: ^1.86.0
+  tsx: ^4.23.15
+  vitest: ^5.0.3
   better-auth: 1.7.3
   typescript: 7.0.2
-  "@types/node": 26.4.1
-  "@types/react": 19.2.18
-  "@types/react-dom": 19.2.7
+  "@types/node": 26.6.3
+  "@types/react": 19.3.0
+  "@types/react-dom": 19.3.0
 
 hoistPattern:
   - typescript
@@ -41,11 +42,11 @@ allowBuilds:
   sharp: true
 
 minimumReleaseAgeExclude:
-  - turbo@2.11.5
-  - "@turbo/darwin-64@2.11.5"
-  - "@turbo/darwin-arm64@2.11.5"
-  - "@turbo/linux-64@2.11.5"
-  - "@turbo/linux-arm64@2.11.5"
-  - "@turbo/windows-64@2.11.5"
-  - "@turbo/windows-arm64@2.11.5"
-  - "@shadcn/lint@0.1.1"
+  - turbo@2.11.7
+  - "@turbo/darwin-64@2.11.7"
+  - "@turbo/darwin-arm64@2.11.7"
+  - "@turbo/linux-64@2.11.7"
+  - "@turbo/linux-arm64@2.11.7"
+  - "@turbo/windows-64@2.11.7"
+  - "@turbo/windows-arm64@2.11.7"
+  - "@shadcn/lint@0.2.0"
