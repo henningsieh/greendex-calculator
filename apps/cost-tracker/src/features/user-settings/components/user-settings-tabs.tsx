@@ -64,9 +64,7 @@ function SettingsPanel({ children, description, title }: SettingsPanelProps) {
     <section className="grid gap-7 border-b pb-9 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-12 lg:pb-11">
       <div>
         <h2 className="font-heading text-xl font-semibold">{title}</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-2 text-sm/6 text-muted-foreground">{description}</p>
       </div>
       {children}
     </section>

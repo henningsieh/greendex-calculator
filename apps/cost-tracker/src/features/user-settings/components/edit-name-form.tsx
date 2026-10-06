@@ -15,6 +15,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toast";
 import type { EditNameValues } from "@/features/user-settings/types";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -28,7 +29,6 @@ type EditNameFormProps = {
 export function EditNameForm({ email, name }: EditNameFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string>();
-  const [notice, setNotice] = useState<string>();
   const form = useForm<EditNameValues>({
     resolver: zodResolver(EditNameSchema),
     defaultValues: { name },
@@ -36,13 +36,12 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
 
   async function saveName(values: EditNameValues) {
     setError(undefined);
-    setNotice(undefined);
 
     try {
       await orpc.authentication.updateUser({ name: values.name });
 
       form.reset(values);
-      setNotice("Your name has been updated.");
+      toast.add({ title: "Your name has been updated.", type: "success" });
       router.refresh();
     } catch (error) {
       setError(getORPCRequestErrorMessage(error).text);
@@ -66,7 +65,6 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
                 id={field.name}
                 onChange={(event) => {
                   setError(undefined);
-                  setNotice(undefined);
                   field.onChange(event);
                 }}
               />
@@ -88,11 +86,6 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
         </Field>
 
         {error && <FieldError>{error}</FieldError>}
-        {notice && (
-          <output className="text-sm font-medium" aria-live="polite">
-            {notice}
-          </output>
-        )}
 
         <Button
           className="w-fit"

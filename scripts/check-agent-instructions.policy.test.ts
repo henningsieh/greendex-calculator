@@ -23,7 +23,7 @@ describe("delegation guidance coverage", () => {
     expect(settings).toMatchObject({
       subagents: {
         defaultModel: "openai-codex/gpt-6.1-sol",
-        agentOverrides: { reviewer: { thinking: "xhigh" } },
+        agentOverrides: { reviewer: { thinking: "high" } },
       },
     });
   });

@@ -67,7 +67,7 @@ export default async function OrganizationPage() {
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
           Organization
         </h1>
-        <p className="mt-4 text-lg leading-8 text-muted-foreground">
+        <p className="mt-4 text-lg/8 text-muted-foreground">
           Organization staff management is available to owners and admins.
         </p>
       </div>
@@ -81,7 +81,7 @@ export default async function OrganizationPage() {
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
           Organization
         </h1>
-        <p className="mt-4 text-lg leading-8 text-muted-foreground">
+        <p className="mt-4 text-lg/8 text-muted-foreground">
           Manage staff members and pending invitations for the active
           Organization.
         </p>

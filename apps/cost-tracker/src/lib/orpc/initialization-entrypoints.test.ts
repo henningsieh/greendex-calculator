@@ -16,6 +16,7 @@ vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "" }),
   Geist_Mono: () => ({ variable: "" }),
   Inter: () => ({ variable: "" }),
+  JetBrains_Mono: () => ({ variable: "" }),
 }));
 vi.mock("@/components/nuqs-provider", async () => {
   const { orpc } = await import("@/lib/orpc/orpc");

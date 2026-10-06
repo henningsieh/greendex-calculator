@@ -14,7 +14,7 @@ export default async function UserSettingsPage() {
         <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
           User settings
         </h1>
-        <p className="mt-4 text-lg leading-8 text-muted-foreground">
+        <p className="mt-4 text-lg/8 text-muted-foreground">
           Choose how Cost Tracker looks and keep your account details current.
         </p>
       </header>

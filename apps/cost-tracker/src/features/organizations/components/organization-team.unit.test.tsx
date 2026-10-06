@@ -6,9 +6,14 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  toastAdd: vi.fn(),
   inviteMember: vi.fn(),
   cancelInvitation: vi.fn(),
 }));
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: mocks.toastAdd },
+}));
+
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: {
     organizations: {
@@ -115,9 +120,27 @@ describe("Organization team", () => {
         role: ORGANIZATION_ROLES.OrganizationAdmin,
       }),
     );
-    expect(
-      await screen.findByText("Invitation sent to new@example.org."),
-    ).toBeTruthy();
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
+        title: "Invitation sent to new@example.org.",
+        type: "success",
+      }),
+    );
+  });
+
+  it("keeps invitation failures inline without a success toast", async () => {
+    mocks.inviteMember.mockRejectedValueOnce(new Error("network unavailable"));
+    const user = userEvent.setup();
+    renderTeam();
+    await screen.findByText("Staff Owner");
+
+    await user.type(screen.getByLabelText("Email"), "new@example.org");
+    await user.click(screen.getByRole("button", { name: "Send invitation" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The server or network is unreachable. Check your connection and try again.",
+    );
+    expect(mocks.toastAdd).not.toHaveBeenCalled();
   });
 
   it("cancels a pending invitation", async () => {
@@ -132,6 +155,11 @@ describe("Organization team", () => {
         invitationId: "invitation-1",
       }),
     );
-    expect(await screen.findByText("Invitation cancelled.")).toBeTruthy();
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
+        title: "Invitation cancelled.",
+        type: "success",
+      }),
+    );
   });
 });
