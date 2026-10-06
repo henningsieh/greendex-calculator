@@ -3,6 +3,7 @@ import {
   projectSharedTravelLegsTable,
   projectsTable,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -241,12 +242,14 @@ export async function deleteProjectSharedTravelLegHandler(
 
 export const listProjectSharedTravelLegs = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects/{projectId}/shared-travel-legs",
-    summary: "List Project Shared Travel Legs",
-    tags: ["project", "shared-travel-leg"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{projectId}/shared-travel-legs",
+      summary: "List Project Shared Travel Legs",
+      tags: ["project", "shared-travel-leg"],
+    }),
+  )
   .input(ListProjectSharedTravelLegsInputSchema)
   .output(z.array(ProjectSharedTravelLegWithRelationsSchema))
   .handler(({ input, context, errors }) =>
@@ -260,12 +263,14 @@ const projectSharedTravelLegMutationOutputSchema = z.object({
 
 export const createProjectSharedTravelLeg = authorized
   .use(requireProjectPermissions(["update"]))
-  .route({
-    method: "POST",
-    path: "/projects/{projectId}/shared-travel-legs",
-    summary: "Create a Project Shared Travel Leg",
-    tags: ["project", "shared-travel-leg"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/projects/{projectId}/shared-travel-legs",
+      summary: "Create a Project Shared Travel Leg",
+      tags: ["project", "shared-travel-leg"],
+    }),
+  )
   .input(CreateProjectSharedTravelLegInputSchema)
   .output(projectSharedTravelLegMutationOutputSchema)
   .handler(({ input, context, errors }) =>
@@ -274,12 +279,14 @@ export const createProjectSharedTravelLeg = authorized
 
 export const updateProjectSharedTravelLeg = authorized
   .use(requireProjectPermissions(["update"]))
-  .route({
-    method: "PATCH",
-    path: "/projects/{projectId}/shared-travel-legs/{id}",
-    summary: "Update a Project Shared Travel Leg",
-    tags: ["project", "shared-travel-leg"],
-  })
+  .meta(
+    openapi({
+      method: "PATCH",
+      path: "/projects/{projectId}/shared-travel-legs/{id}",
+      summary: "Update a Project Shared Travel Leg",
+      tags: ["project", "shared-travel-leg"],
+    }),
+  )
   .input(UpdateProjectSharedTravelLegInputSchema)
   .output(projectSharedTravelLegMutationOutputSchema)
   .handler(({ input, context, errors }) =>
@@ -288,12 +295,14 @@ export const updateProjectSharedTravelLeg = authorized
 
 export const deleteProjectSharedTravelLeg = authorized
   .use(requireProjectPermissions(["update"]))
-  .route({
-    method: "DELETE",
-    path: "/projects/{projectId}/shared-travel-legs/{id}",
-    summary: "Delete a Project Shared Travel Leg",
-    tags: ["project", "shared-travel-leg"],
-  })
+  .meta(
+    openapi({
+      method: "DELETE",
+      path: "/projects/{projectId}/shared-travel-legs/{id}",
+      summary: "Delete a Project Shared Travel Leg",
+      tags: ["project", "shared-travel-leg"],
+    }),
+  )
   .input(DeleteProjectSharedTravelLegInputSchema)
   .output(z.object({ success: z.boolean() }))
   .handler(({ input, context, errors }) =>

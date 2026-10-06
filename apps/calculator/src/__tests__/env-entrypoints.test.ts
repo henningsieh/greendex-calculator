@@ -60,7 +60,7 @@ describe("environment entrypoints", () => {
       "dotenv -v NODE_ENV=development -e .env --",
     );
     expect(calculatorPackage.scripts.prebuild).toBe(
-      "dotenv -e .env -- pnpm -w run db:migrate && dotenv -e .env -- pnpm run generate:sri && dotenv -e .env -- pnpm run check:sri",
+      "dotenv -e .env -- pnpm -w run db:migrate",
     );
     expect(calculatorPackage.scripts.build).toBe("next build");
     expect(calculatorPackage.scripts.prestart).toContain("dotenv -e .env --");

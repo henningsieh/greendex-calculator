@@ -8,6 +8,7 @@ import {
   session as sessionTable,
   user,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -52,12 +53,14 @@ async function hasHostAssignment(projectId: string, userId: string) {
  */
 export const createProject = authorized
   .use(requireProjectPermissions(["create"]))
-  .route({
-    method: "POST",
-    path: "/projects",
-    summary: "Create a new project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/projects",
+      summary: "Create a new project",
+      tags: ["project"],
+    }),
+  )
   .input(ProjectCreateFormSchema)
   .output(
     z.object({
@@ -122,12 +125,14 @@ export const createProject = authorized
 
 export const listProjects = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects",
-    summary: "List all projects in the active organization",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects",
+      summary: "List all projects in the active organization",
+      tags: ["project"],
+    }),
+  )
   .input(
     z
       .object({
@@ -178,12 +183,14 @@ export const listProjects = authorized
  */
 export const getProjectById = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects/:id",
-    summary: "Get project details by ID",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{id}",
+      summary: "Get project details by ID",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -239,12 +246,14 @@ export const getProjectById = authorized
  */
 export const updateProject = authorized
   .use(requireProjectPermissions(["update"]))
-  .route({
-    method: "PATCH",
-    path: "/projects/:id",
-    summary: "Update project details",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "PATCH",
+      path: "/projects/{id}",
+      summary: "Update project details",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -324,12 +333,14 @@ export const updateProject = authorized
  */
 export const deleteProject = authorized
   .use(requireProjectPermissions(["delete"]))
-  .route({
-    method: "DELETE",
-    path: "/projects/:id",
-    summary: "Delete a project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "DELETE",
+      path: "/projects/{id}",
+      summary: "Delete a project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -405,12 +416,14 @@ export const deleteProject = authorized
  */
 export const archiveProject = authorized
   .use(requireProjectPermissions(["archive"]))
-  .route({
-    method: "PATCH",
-    path: "/projects/:id/archive",
-    summary: "Archive a project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "PATCH",
+      path: "/projects/{id}/archive",
+      summary: "Archive a project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -506,12 +519,14 @@ export const archiveProject = authorized
  * - Project must belong to user's active organization (if projectId is provided)
  */
 export const setActiveProject = authorized
-  .route({
-    method: "POST",
-    path: "/projects/active",
-    summary: "Set active project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/projects/active",
+      summary: "Set active project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectId: z.string().optional(),
@@ -593,12 +608,14 @@ export const setActiveProject = authorized
  */
 export const getProjectParticipants = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects/:id/participants",
-    summary: "Get project participants with user details",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{projectId}/participants",
+      summary: "Get project participants with user details",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectId: z.string().describe("Project ID"),
@@ -672,12 +689,14 @@ export const getProjectParticipants = authorized
  */
 export const batchDeleteProjects = authorized
   .use(requireProjectPermissions(["delete"]))
-  .route({
-    method: "DELETE",
-    path: "/projects/batch",
-    summary: "Batch delete multiple projects",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "DELETE",
+      path: "/projects/batch",
+      summary: "Batch delete multiple projects",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectIds: z.array(z.string()).min(1),
@@ -765,12 +784,14 @@ export const batchDeleteProjects = authorized
  * Returns project details with canonical Project Shared Travel Legs.
  */
 export const getProjectForParticipation = base
-  .route({
-    method: "GET",
-    path: "/projects/:id/participate",
-    summary: "Get project details for participation (public)",
-    tags: ["project", "public"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{id}/participate",
+      summary: "Get project details for participation (public)",
+      tags: ["project", "public"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
