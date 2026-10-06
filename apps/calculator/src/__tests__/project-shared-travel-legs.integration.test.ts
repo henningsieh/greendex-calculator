@@ -115,6 +115,7 @@ describe("Project Shared Travel Legs integration", () => {
     it("should create test organization in database", async () => {
       // Insert test organization
       await db.insert(organization).values({
+        country: "DE",
         id: TEST_ORG.id,
         name: TEST_ORG.name,
         slug: TEST_ORG.slug,
@@ -130,6 +131,7 @@ describe("Project Shared Travel Legs integration", () => {
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe(TEST_ORG.name);
       expect(result[0].slug).toBe(TEST_ORG.slug);
+      expect(result[0].country).toBe("DE");
 
       orgId = TEST_ORG.id;
     });

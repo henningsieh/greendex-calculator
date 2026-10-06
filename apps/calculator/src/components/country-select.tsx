@@ -2,7 +2,7 @@
 
 import { useLocale } from "@greendex/i18n/client";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ComponentProps, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { getAllCountries, getEUCountries } from "@/lib/i18n/countries";
 import { cn } from "@/lib/utils";
 
-interface CountrySelectProps {
+interface CountrySelectProps extends Pick<
+  ComponentProps<typeof Button>,
+  "id" | "aria-describedby" | "aria-invalid"
+> {
   value?: string;
   onValueChange: (value: string) => void;
   euOnly?: boolean;
@@ -46,6 +49,7 @@ export function CountrySelect({
   placeholder = "Select country...",
   className,
   disabled = false,
+  ...triggerProps
 }: CountrySelectProps) {
   const locale = useLocale();
   const [open, setOpen] = useState(false);
@@ -61,6 +65,7 @@ export function CountrySelect({
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
+          {...triggerProps}
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
           disabled={disabled}

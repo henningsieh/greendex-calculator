@@ -194,6 +194,7 @@ async function seed() {
     } else {
       orgId = createId();
       await db.insert(organization).values({
+        country: "DE",
         id: orgId,
         name: SEED_ORGANIZATION.name,
         slug: SEED_ORGANIZATION.slug,

@@ -1,3 +1,4 @@
+import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import {
   invitation,
   member as memberTable,
@@ -60,6 +61,9 @@ export const InviteFormSchema = createInsertSchema(invitation)
     role: z.enum(Object.values(MEMBER_ROLES)),
   });
 
+// The edit form requires country; Better Auth partial updates may omit it and retain
+// the existing required country, while still rejecting invalid supplied values.
 export const EditOrganizationFormSchema = z.object({
+  country: z.enum(EU_COUNTRY_CODES),
   name: z.string().min(1, { error: "Organization name is required" }),
 });
