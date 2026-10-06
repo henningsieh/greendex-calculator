@@ -220,21 +220,21 @@ export function AppSidebarSkeleton() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <div className="mb-2 h-4 w-20 animate-pulse rounded bg-muted" />
+          <div className="mb-2 h-4 w-20 animate-pulse rounded-sm bg-muted" />
           <div className="space-y-2">
-            <div className="h-8 w-full animate-pulse rounded bg-muted" />
-            <div className="h-8 w-full animate-pulse rounded bg-muted" />
-            <div className="h-8 w-full animate-pulse rounded bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
           </div>
         </SidebarGroup>
         <div className="grow" />
         <SidebarGroup>
-          <div className="mb-2 h-4 w-24 animate-pulse rounded bg-muted" />
+          <div className="mb-2 h-4 w-24 animate-pulse rounded-sm bg-muted" />
           <div className="space-y-2">
-            <div className="h-8 w-full animate-pulse rounded bg-muted" />
-            <div className="h-8 w-full animate-pulse rounded bg-muted" />
-            <div className="h-8 w-full animate-pulse rounded bg-muted" />
-            <div className="h-8 w-full animate-pulse rounded bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
+            <div className="h-8 w-full animate-pulse rounded-sm bg-muted" />
           </div>
         </SidebarGroup>
       </SidebarContent>

@@ -22,15 +22,15 @@ export async function WorkshopsHeroSection() {
     >
       {/* Background decorative elements */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
-        <div className="absolute -right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-teal-500/5 blur-3xl" />
+        <div className="absolute top-1/4 -left-1/4 size-96 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute -right-1/4 bottom-1/4 size-96 rounded-full bg-teal-500/5 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header - Enhanced */}
         <div className="mb-20 text-center">
           <Badge className="mb-12 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 backdrop-blur-sm">
-            <span className="flex h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+            <span className="flex size-2 animate-pulse rounded-full bg-emerald-500" />
             <span className="text-sm font-semibold tracking-wider text-primary uppercase">
               {t("workshops.badge")}
             </span>
@@ -44,10 +44,10 @@ export async function WorkshopsHeroSection() {
           </h2>
 
           <div className="mx-auto max-w-3xl space-y-6">
-            <p className="text-xl leading-relaxed text-muted-foreground">
+            <p className="text-xl/relaxed text-muted-foreground">
               {t("workshops.intro1")}
             </p>
-            <p className="text-lg leading-relaxed text-muted-foreground">
+            <p className="text-lg/relaxed text-muted-foreground">
               {intro2Parts[0]}{" "}
               <span className="rounded-lg bg-primary/10 px-3 py-1 font-semibold text-primary">
                 {t("workshops.keyword")}

@@ -122,7 +122,7 @@ export function GlobeSection() {
                 </span>
               </h2>
 
-              <p className="text-lg leading-relaxed text-muted-foreground md:text-xl">
+              <p className="text-lg/relaxed text-muted-foreground md:text-xl">
                 Greendex connects organizations across all {EU_MEMBER_COUNT} EU
                 member states, creating a unified network dedicated to
                 environmental sustainability and green initiatives.

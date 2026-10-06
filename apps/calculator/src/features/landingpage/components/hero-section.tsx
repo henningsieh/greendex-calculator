@@ -36,7 +36,7 @@ export async function HeroSection() {
 
         {/* Subtitle */}
         <p
-          className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg xl:text-xl"
+          className="mx-auto max-w-2xl text-base/relaxed text-muted-foreground md:text-lg xl:text-xl"
           style={{ fontFamily: "var(--font-body)" }}
         >
           {t("hero.subtitle")}
