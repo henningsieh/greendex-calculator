@@ -1,8 +1,11 @@
 import { accessControl as ac, calculatorRoles } from "@greendex/auth/permissions";
+import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
+import { organizationAdditionalFields } from "@greendex/config/organization-country";
 import { db } from "@greendex/database";
 import * as schema from "@greendex/database/schema";
 import { member } from "@greendex/database/schema";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import {
@@ -12,6 +15,7 @@ import {
 } from "better-auth/plugins";
 import { desc, eq } from "drizzle-orm";
 import { after } from "next/server";
+import { z } from "zod";
 
 import { env } from "@/env";
 import { emailSender } from "@/lib/email";
@@ -86,6 +90,30 @@ export const auth = betterAuth({
     organizationPlugin({
       ac,
       roles: calculatorRoles,
+      schema: {
+        organization: { additionalFields: organizationAdditionalFields },
+      },
+      // Better Auth 1.7 treats array field types as z.any() and bypasses input
+      // validators for organizations, so enforce the enum in the write hooks.
+      organizationHooks: {
+        beforeCreateOrganization: async ({ organization }) => {
+          if (!z.enum(EU_COUNTRY_CODES).safeParse(organization.country).success) {
+            throw new APIError("BAD_REQUEST", {
+              message: "An EU organization country is required",
+            });
+          }
+        },
+        beforeUpdateOrganization: async ({ organization }) => {
+          if (
+            "country" in organization &&
+            !z.enum(EU_COUNTRY_CODES).safeParse(organization.country).success
+          ) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Organization country must be an EU country",
+            });
+          }
+        },
+      },
       async sendInvitationEmail(data) {
         try {
           const inviteLink = `${env.NEXT_PUBLIC_BASE_URL}/accept-invitation/${data.id}`;

@@ -1,3 +1,7 @@
+import {
+  EU_COUNTRY_CODES,
+  type EUCountryCode,
+} from "@greendex/config/eu-countries";
 import { ORGANIZATION_ROLES } from "@greendex/config/organization-roles";
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
@@ -77,6 +81,10 @@ export const verification = pgTable(
 );
 
 export const organization = pgTable("organization", {
+  country: text("country", {
+    // The shared list contains all 27 EU countries; Drizzle requires a non-empty tuple.
+    enum: EU_COUNTRY_CODES as [EUCountryCode, ...EUCountryCode[]],
+  }).notNull(),
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),

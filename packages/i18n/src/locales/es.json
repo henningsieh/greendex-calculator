@@ -429,6 +429,10 @@
     }
   },
   "organization": {
+    "country": {
+      "label": "País",
+      "placeholder": "Selecciona un país de la UE"
+    },
     "dashboard": {
       "title": "Panel",
       "description": "Resumen de las estadísticas, proyectos y participantes de tu organización.",

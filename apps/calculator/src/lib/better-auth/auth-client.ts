@@ -1,4 +1,5 @@
 import { accessControl as ac, calculatorRoles } from "@greendex/auth/permissions";
+import { organizationAdditionalFields } from "@greendex/config/organization-country";
 import {
   inferAdditionalFields,
   lastLoginMethodClient,
@@ -19,6 +20,9 @@ export const authClient = createAuthClient({
     organizationClient({
       ac,
       roles: calculatorRoles,
+      schema: {
+        organization: { additionalFields: organizationAdditionalFields },
+      },
     }),
     magicLinkClient(),
     lastLoginMethodClient(),

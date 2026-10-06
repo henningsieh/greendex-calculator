@@ -429,6 +429,7 @@
     }
   },
   "organization": {
+    "country": { "label": "Land", "placeholder": "EU-Land auswählen" },
     "dashboard": {
       "title": "Dashboard",
       "description": "Überblick über die Statistiken, Projekte und Teilnehmenden deiner Organisation.",

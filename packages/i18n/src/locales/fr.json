@@ -429,6 +429,10 @@
     }
   },
   "organization": {
+    "country": {
+      "label": "Pays",
+      "placeholder": "Sélectionnez un pays de l’UE"
+    },
     "dashboard": {
       "title": "Tableau de bord",
       "description": "Vue d'ensemble des statistiques, projets et participants de votre organisation.",
