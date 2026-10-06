@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addOrganizationRole,
+  assertRoleMapCoversRoles,
   calculatorOrganizationRoles,
   costTrackerOrganizationRoles,
   hasOrganizationRole,
@@ -12,6 +13,63 @@ import {
 } from "./permissions";
 
 const roles = ORGANIZATION_ROLES;
+
+describe("role contract", () => {
+  it("keeps canonical role keys in descending order", () => {
+    expect(Object.keys(ORGANIZATION_ROLES)).toEqual([
+      "OrganizationOwner",
+      "OrganizationAdmin",
+      "ProjectCoordinator",
+      "Participant",
+    ]);
+  });
+
+  it("keeps all role values distinct", () => {
+    const values = Object.values(ORGANIZATION_ROLES);
+    expect(new Set(values).size).toBe(values.length);
+  });
+
+  it("covers the ordered roles in both app maps", () => {
+    expect(() =>
+      assertRoleMapCoversRoles(calculatorOrganizationRoles),
+    ).not.toThrow();
+    expect(() =>
+      assertRoleMapCoversRoles(costTrackerOrganizationRoles),
+    ).not.toThrow();
+  });
+
+  it("validates structure without inspecting role contents", () => {
+    expect(() =>
+      assertRoleMapCoversRoles({
+        owner: null,
+        admin: null,
+        coordinator: null,
+        participant: null,
+      }),
+    ).not.toThrow();
+  });
+
+  it.each([
+    { name: "missing", keys: ["owner", "admin", "coordinator"] },
+    {
+      name: "extra",
+      keys: ["owner", "admin", "coordinator", "participant", "unknown"],
+    },
+    {
+      name: "unknown",
+      keys: ["owner", "admin", "coordinator", "unknown"],
+    },
+    {
+      name: "reordered",
+      keys: ["owner", "admin", "participant", "coordinator"],
+    },
+  ])("rejects $name role keys", ({ keys }) => {
+    const roleMap = Object.fromEntries(keys.map((key) => [key, null]));
+    expect(() => assertRoleMapCoversRoles(roleMap)).toThrow(
+      "Role map must contain exactly these roles in order: owner, admin, coordinator, participant",
+    );
+  });
+});
 
 describe("Organization permissions", () => {
   it("defaults Memberships to the shared Participant role", () => {

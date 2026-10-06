@@ -80,6 +80,21 @@ export const costTrackerOrganizationRoles = {
   [ORGANIZATION_ROLES.Participant]: projectParticipant,
 };
 
+/** Validate role-map coverage and order without inspecting permission statements. */
+export function assertRoleMapCoversRoles(roleMap: Record<string, unknown>): void {
+  const expectedRoles = Object.values(ORGANIZATION_ROLES);
+  const actualRoles = Object.keys(roleMap);
+
+  if (
+    actualRoles.length !== expectedRoles.length ||
+    actualRoles.some((role, index) => role !== expectedRoles[index])
+  ) {
+    throw new Error(
+      `Role map must contain exactly these roles in order: ${expectedRoles.join(", ")}`,
+    );
+  }
+}
+
 /** Reject omitted defaults and unknown roles, including in combined Memberships. */
 export function isValidOrganizationRole(
   role: string | null | undefined,
