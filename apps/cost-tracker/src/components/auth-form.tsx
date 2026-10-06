@@ -29,12 +29,13 @@ type AuthFormProps = {
 export function AuthForm({ mode, returnTo }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string>();
-  const [notice, setNotice] = useState<string>();
+  // Email verification is required before sign-in, so keep this instruction inline.
+  const [verificationMessage, setVerificationMessage] = useState<string>();
   const isSignIn = mode === "sign-in";
 
   async function submit(formData: FormData) {
     setError(undefined);
-    setNotice(undefined);
+    setVerificationMessage(undefined);
 
     const email = String(formData.get("email"));
     const password = String(formData.get("password"));
@@ -48,7 +49,7 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
       }
 
       if (!isSignIn) {
-        setNotice(
+        setVerificationMessage(
           "Check your inbox to verify your email, then return here to sign in.",
         );
         return;
@@ -138,9 +139,9 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
           </Field>
 
           {error && <FieldError>{error}</FieldError>}
-          {notice && (
-            <output className="rounded-xl bg-secondary px-4 py-3 text-sm leading-6 text-secondary-foreground">
-              {notice}
+          {verificationMessage && (
+            <output className="rounded-xl bg-secondary px-4 py-3 text-sm/6 text-secondary-foreground">
+              {verificationMessage}
             </output>
           )}
 

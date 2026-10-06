@@ -4,7 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ updateCountry: vi.fn() }));
+const mocks = vi.hoisted(() => ({ updateCountry: vi.fn(), toastAdd: vi.fn() }));
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: mocks.toastAdd },
+}));
+
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { organizations: { updateCountry: mocks.updateCountry } },
   orpcQuery: {
@@ -56,8 +60,11 @@ describe("Organization country settings", () => {
     await waitFor(() =>
       expect(mocks.updateCountry).toHaveBeenCalledWith({ country: "FR" }),
     );
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Organization country saved.",
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
+        title: "Organization country saved.",
+        type: "success",
+      }),
     );
   });
 
@@ -69,8 +76,13 @@ describe("Organization country settings", () => {
     await user.click(
       screen.getByRole("button", { name: "Save Organization country" }),
     );
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The server or network is unreachable.",
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
+        title: "Could not save Organization country",
+        description:
+          "The server or network is unreachable. Check your connection and try again.",
+        type: "error",
+      }),
     );
     expect(
       screen.getByRole("button", { name: "Save Organization country" }),

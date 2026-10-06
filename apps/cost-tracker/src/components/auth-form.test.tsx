@@ -50,6 +50,24 @@ describe("AuthForm", () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
+  it("keeps successful sign-up verification instructions inline without navigating", async () => {
+    mocks.signUp.mockResolvedValue({});
+    const user = userEvent.setup();
+    render(<AuthForm mode="sign-up" />);
+
+    await user.type(screen.getByLabelText("Name"), "Alex Morgan");
+    await user.type(screen.getByLabelText("Email address"), "user@example.org");
+    await user.type(screen.getByLabelText("Password"), "example-password");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByText(
+        "Check your inbox to verify your email, then return here to sign in.",
+      ),
+    ).toBeTruthy();
+    expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
   it("shows the safe rate-limit message returned by its oRPC command", async () => {
     mocks.signIn.mockRejectedValue(new ORPCError("TOO_MANY_REQUESTS"));
     const user = userEvent.setup();
