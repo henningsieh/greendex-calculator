@@ -8,8 +8,9 @@ node_modules
 # turborepo
 /.turbo/
 
-# local subagent runtime records (keep .pi/settings.json tracked)
-/.pi/subagents/
+# local Pi configuration, workflows, and runtime records
+# tracked .pi/mcp.json symlink remains the repository MCP adapter
+/.pi/
 
 # playwright
 apps/*/src/__tests__/e2e/.playwright/

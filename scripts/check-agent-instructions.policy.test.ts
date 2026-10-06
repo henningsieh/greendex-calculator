@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
@@ -13,49 +13,46 @@ import {
   requiredRepositoryPaths,
   stalePatterns,
 } from "./check-agent-instructions.policy";
-import { readJson } from "./check-agent-instructions.utils";
 
 describe("delegation guidance coverage", () => {
-  it("preserves the approved default model and reviewer thinking policy", async () => {
-    const settings = await readJson(
-      fileURLToPath(new URL("../.pi/settings.json", import.meta.url)),
-    );
-    expect(settings).toMatchObject({
-      subagents: {
-        defaultModel: "openai-codex/gpt-6.1-sol",
-        agentOverrides: { reviewer: { thinking: "xhigh" } },
-      },
-    });
-  });
-
-  it("requires and checks links in both launch and quota runbooks", () => {
-    expect(delegationGuidanceFiles).toEqual([
-      "docs/agents/subagent-launch.md",
-      "docs/agents/codex-usage-meter.md",
-    ]);
+  it("requires and checks links in tool-neutral delegation guidance", () => {
+    expect(delegationGuidanceFiles).toEqual(["docs/agents/delegation.md"]);
     for (const filePath of delegationGuidanceFiles) {
       expect(requiredRepositoryPaths).toContain(filePath);
       expect(referenceFiles).toContain(filePath);
     }
-    expect(requiredRepositoryPaths).toContain(".pi/settings.json");
+    expect(requiredRepositoryPaths).not.toContain(".pi/settings.json");
   });
 
-  it("keeps ordinary children fresh and supervisor-controlled in project settings", async () => {
-    const settings = await readJson(
-      fileURLToPath(new URL("../.pi/settings.json", import.meta.url)),
+  it("keeps shared policy independent of personal runtimes and configuration", async () => {
+    for (const filePath of ["AGENTS.md", ...delegationGuidanceFiles]) {
+      const guidance = await readFile(
+        new URL(`../${filePath}`, import.meta.url),
+        "utf8",
+      );
+      expect(guidance).not.toMatch(
+        /pi-subagents|subagents_enable|openai-codex|gpt-6|codex-usage-meter|subagent-launch|\.pi\/|\/home\//u,
+      );
+    }
+  });
+
+  it("preserves direct implementation, bounded authority, acceptance and safe recovery", async () => {
+    const guidance = await readFile(
+      new URL("../docs/agents/delegation.md", import.meta.url),
+      "utf8",
     );
-    const roles = ["delegate", "worker", "scout", "researcher", "reviewer"];
-    expect(settings).toMatchObject({
-      subagents: {
-        projectRootResolution: "git-root",
-        agentOverrides: Object.fromEntries(
-          roles.map((name) => [
-            name,
-            { defaultContext: "fresh", allowNestedSubagents: false },
-          ]),
-        ),
-      },
-    });
+    for (const rule of [
+      "execute directly",
+      "one writer",
+      "fresh context",
+      "explicitly allowed",
+      "final acceptance",
+      "partial diff",
+      "no longer active",
+      "resume",
+    ]) {
+      expect(guidance).toContain(rule);
+    }
   });
 });
 

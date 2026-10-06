@@ -57,7 +57,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 - Touching the SSR/oRPC seam → [oRPC](docs/agents/instructions/orpc.md): preserve both `@/lib/orpc/client.server` imports and their evaluation order.
 - UI components → [UI components](docs/agents/instructions/shadcn.md) (`@shadcn/lint` rules in the root `.oxlintrc.json`).
 - Issue-tracked work → [issue tracker](docs/agents/issue-tracker.md), [triage labels](docs/agents/triage-labels.md).
-- Delegation or child recovery → [subagent launch](docs/agents/subagent-launch.md); its Codex quota gate pauses new launches until reset + 2 minutes (CEST).
+- Delegation or child recovery → [delegation policy](docs/agents/delegation.md).
 
 ## Delegation
 

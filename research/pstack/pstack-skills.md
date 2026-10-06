@@ -74,9 +74,9 @@ There is also real setup beyond Markdown: router scripts include Bun tooling; `b
 
 **Claim.** The mirror improves portability but does not supply a tested Pi orchestration adapter. **Support: direct source plus local configuration comparison. Confidence: high on mismatches; actual runtime behavior untested.**
 
-Its harness mapping translates Cursor `Task` to other agents' tools and says to execute roles sequentially if no subagent tool exists. It lists Pi paths, but does not implement this repository's `pi-subagents` role contracts, fresh contexts, async notifications, quota gate or supervisor decisions. It also retains Cursor-specific parameters and external tool assumptions. `make-bot-ui` still uses `update_state` and `SendToUser`; installing a skill does not create those tools. [Harness mapping][mode] [Swarm][swarm] [Bot UI][bot]
+Its harness mapping translates Cursor `Task` to other agents' tools and says to execute roles sequentially if no subagent tool exists. It lists Pi paths, but does not implement the personal `pi-subagents` setup inspected at review time: role contracts, fresh contexts, async notifications, quota gate or supervisor decisions. It also retains Cursor-specific parameters and external tool assumptions. `make-bot-ui` still uses `update_state` and `SendToUser`; installing a skill does not create those tools. [Harness mapping][mode] [Swarm][swarm] [Bot UI][bot]
 
-Local [`.pi/settings.json`](../../../.pi/settings.json) disables nested subagents for every configured role. [The delegation runbook](../subagent-launch.md) assigns orchestration to the main agent and requires explicit commit/external-write permissions. Fork feature instructions include a fallback for a subagent forbidden to spawn, but other skills still require their own fanouts. Do not hand those unchanged to leaf workers. [Feature][feature]
+[The repository delegation policy](../../docs/agents/delegation.md) assigns orchestration to the main agent, forbids nested delegation by children, and requires explicit commit/external-write permissions. Fork feature instructions include a fallback for a subagent forbidden to spawn, but other skills still require their own fanouts. Do not hand those unchanged to leaf workers. [Feature][feature]
 
 More serious policy conflicts:
 

@@ -14,10 +14,7 @@ export interface AgentGuidancePattern {
 
 export const instructionLineBudget = 180;
 
-export const delegationGuidanceFiles = [
-  "docs/agents/subagent-launch.md",
-  "docs/agents/codex-usage-meter.md",
-];
+export const delegationGuidanceFiles = ["docs/agents/delegation.md"];
 
 export const expectedScopes: Record<string, string> = {
   "architecture.md":
@@ -109,7 +106,6 @@ export const requiredIntegrationAnchors = [
 ];
 
 export const requiredRepositoryPaths = [
-  ".pi/settings.json",
   ...delegationGuidanceFiles,
   ".node-version",
   "apps/documentation/GLOSSARY.md",

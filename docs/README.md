@@ -21,6 +21,7 @@ Sharing a table does not make an application workflow repository-wide. Keep the 
 
 - [Repository rules and scoped instruction index](../AGENTS.md)
 - [Task routes](agents/agent-workflows.md)
+- [Delegation policy and recovery](agents/delegation.md)
 - [Integration reference routes](agents/integrations.md)
 - [Domain documentation route](agents/domain.md)
 - [Glossary map](../GLOSSARY-MAP.md) and [shared glossary](../GLOSSARY.md): [Calculator](../apps/calculator/GLOSSARY.md) · [Cost Tracker](../apps/cost-tracker/GLOSSARY.md) · [Documentation](../apps/documentation/GLOSSARY.md)
