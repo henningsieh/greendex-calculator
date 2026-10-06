@@ -1,51 +1,17 @@
-import { accessControl as ac, calculatorRoles } from "@greendex/auth/permissions";
-import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
-import { organizationAdditionalFields } from "@greendex/config/organization-country";
-import { db } from "@greendex/database";
-import * as schema from "@greendex/database/schema";
-import { member } from "@greendex/database/schema";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
-import { betterAuth } from "better-auth/minimal";
-import { nextCookies } from "better-auth/next-js";
-import {
-  lastLoginMethod,
-  magicLink,
-  organization as organizationPlugin,
-} from "better-auth/plugins";
-import { desc, eq } from "drizzle-orm";
+import { createServerAuth } from "@greendex/auth";
+import { lastLoginMethod, magicLink } from "better-auth/plugins";
 import { after } from "next/server";
-import { z } from "zod";
 
 import { env } from "@/env";
 import { emailSender } from "@/lib/email";
 
-export const auth = betterAuth({
+export const auth = createServerAuth({
   appName: "Next WebSocket Server",
   baseURL: env.NEXT_PUBLIC_BASE_URL,
-
-  experimental: {
-    joins: true,
-  },
-
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema,
-  }),
-
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: true, // Must be true to block login until verified
-    sendResetPassword: async ({ user, url }) => {
-      await emailSender.sendPasswordResetEmail({
-        user,
-        url,
-      });
-    },
-  },
+  secret: env.BETTER_AUTH_SECRET,
+  emailSender,
   emailVerification: {
     autoSignInAfterVerification: true,
-    sendOnSignUp: true, // This triggers email verification on signup
     sendOnSignIn: false, // Don't send on every sign-in, only on signup
     sendVerificationEmail: async ({ user, url }) => {
       after(async () => {
@@ -71,64 +37,32 @@ export const auth = betterAuth({
       clientSecret: env.GITHUB_CLIENT_SECRET,
     },
   },
-  session: {
-    cookieCache: {
-      enabled: false,
-      // maxAge: 60, // 1 minute
-    },
-    additionalFields: {
-      activeProjectId: {
-        type: "string",
-        required: false,
-      },
+  organization: {
+    async sendInvitationEmail(data) {
+      try {
+        const inviteLink = `${env.NEXT_PUBLIC_BASE_URL}/accept-invitation/${data.id}`;
+        await emailSender.sendOrganizationInvitation({
+          email: data.email,
+          inviterName: data.inviter?.user?.name,
+          inviteLink,
+          organizationName: data.organization?.name,
+        });
+      } catch (err) {
+        console.error("Failed to send organization invitation email:", err);
+        throw err;
+      }
     },
   },
-  user: {
-    // No additional fields - country is stored in project_participant table
+  sessionUpdate: {
+    before: (session) =>
+      Promise.resolve({
+        data: {
+          ...session,
+          activeProjectId: null,
+        },
+      }),
   },
   plugins: [
-    organizationPlugin({
-      ac,
-      roles: calculatorRoles,
-      schema: {
-        organization: { additionalFields: organizationAdditionalFields },
-      },
-      // Better Auth 1.7 treats array field types as z.any() and bypasses input
-      // validators for organizations, so enforce the enum in the write hooks.
-      organizationHooks: {
-        beforeCreateOrganization: async ({ organization }) => {
-          if (!z.enum(EU_COUNTRY_CODES).safeParse(organization.country).success) {
-            throw new APIError("BAD_REQUEST", {
-              message: "An EU organization country is required",
-            });
-          }
-        },
-        beforeUpdateOrganization: async ({ organization }) => {
-          if (
-            "country" in organization &&
-            !z.enum(EU_COUNTRY_CODES).safeParse(organization.country).success
-          ) {
-            throw new APIError("BAD_REQUEST", {
-              message: "Organization country must be an EU country",
-            });
-          }
-        },
-      },
-      async sendInvitationEmail(data) {
-        try {
-          const inviteLink = `${env.NEXT_PUBLIC_BASE_URL}/accept-invitation/${data.id}`;
-          await emailSender.sendOrganizationInvitation({
-            email: data.email,
-            inviterName: data.inviter?.user?.name,
-            inviteLink,
-            organizationName: data.organization?.name,
-          });
-        } catch (err) {
-          console.error("Failed to send organization invitation email:", err);
-          throw err;
-        }
-      },
-    }),
     magicLink({
       sendMagicLink: async ({ email, url }) => {
         await emailSender.sendMagicLinkEmail({ email, url });
@@ -144,62 +78,5 @@ export const auth = betterAuth({
         return null;
       },
     }),
-    nextCookies(),
   ],
-
-  databaseHooks: {
-    session: {
-      create: {
-        before: async (userSession) => {
-          const membership = await db.query.member.findFirst({
-            where: eq(member.userId, userSession.userId),
-            // always get the most recent organization membership
-            orderBy: desc(member.createdAt),
-            columns: {
-              organizationId: true,
-            },
-          });
-
-          return {
-            data: {
-              ...userSession,
-              activeOrganizationId: membership?.organizationId,
-            },
-          };
-        },
-      },
-
-      update: {
-        before: (session, _context) => {
-          // console.log("=== SESSION UPDATE HOOK CALLED ===");
-          // console.log(
-          //   "Incoming session object:",
-          //   JSON.stringify(session, null, 2),
-          // );
-          // console.log("Session keys:", Object.keys(session));
-          // console.log(
-          //   "Has activeOrganizationId?",
-          //   "activeOrganizationId" in session,
-          // );
-          // console.log(
-          //   "activeOrganizationId value:",
-          //   session.activeOrganizationId,
-          // );
-          // console.log("activeProjectId value:", session.activeProjectId);
-
-          const result = {
-            data: {
-              ...session,
-              activeProjectId: null,
-            },
-          };
-
-          // console.log("Returning:", JSON.stringify(result, null, 2));
-          // console.log("=== END HOOK ===");
-
-          return Promise.resolve(result);
-        },
-      },
-    },
-  },
 });

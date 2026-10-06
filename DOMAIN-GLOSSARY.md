@@ -9,7 +9,8 @@ A user with organization-wide responsibility and authority over the organization
 _Avoid_: Administrator, Owner, Employee
 
 **Project Coordinator**:
-A user responsible for managing projects and coordinating participants, without the organization-wide authority of an Organization Administrator.
+The acting person who runs a project day to day.
+Coordinates participants. Has no organization-wide authority.
 _Avoid_: Employee, Project Manager, Coordinator
 
 **Participant**:

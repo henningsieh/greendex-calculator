@@ -11,6 +11,9 @@
 export type { AuthClientConfig } from "./auth-client";
 export type { Session, User } from "better-auth/types";
 
+// Shared server factory: one home for auth logic, thin wrappers per app
+export { createServerAuth, type ServerAuthConfig } from "./server-auth";
+
 // Export auth client utilities
 export { createAuthClient } from "./auth-client";
 

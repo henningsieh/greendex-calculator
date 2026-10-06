@@ -49,11 +49,11 @@ const owner = accessControl.newRole({
 
 /**
  * Organization Admin role (stored `admin` value).
- * Can create, read, and update projects, but cannot delete or archive them.
+ * Can create, read, update, and archive projects, but cannot delete them.
  */
 const admin = accessControl.newRole({
   ...adminAc.statements,
-  project: ["create", "read", "update"],
+  project: ["create", "read", "update", "archive"],
 });
 
 /**

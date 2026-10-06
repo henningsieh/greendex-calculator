@@ -21,7 +21,8 @@
     "@greendex/config": "workspace:*",
     "@greendex/database": "workspace:*",
     "@greendex/email": "workspace:*",
-    "better-auth": "catalog:"
+    "better-auth": "catalog:",
+    "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
     "oxfmt": "catalog:",

@@ -14,7 +14,8 @@ This document describes the current Calculator implementation, not a proposed st
 | [packages/config/src/organization-roles.ts](../../packages/config/src/organization-roles.ts) | Canonical `ORGANIZATION_ROLES` stored values and `OrganizationRole` type. |
 | [packages/auth/src/organization-roles.ts](../../packages/auth/src/organization-roles.ts) | Re-exports the role constants; validates, parses, adds, and checks comma-separated role strings. `assertRoleMapCoversRoles` checks exact role-map coverage and descending key order. |
 | [packages/auth/src/permissions.ts](../../packages/auth/src/permissions.ts) | Access-control statements, `accessControl`, `calculatorRoles`, and `ProjectPermission`. |
-| [Calculator Better Auth server](../../apps/calculator/src/lib/better-auth/index.ts) and [browser client](../../apps/calculator/src/lib/better-auth/auth-client.ts) | Both configure the organization plugin with the shared access controller and `calculatorRoles`. |
+| [Shared server factory](../../packages/auth/src/server-auth.ts) | `createServerAuth`: one home for the Better Auth setup. Owns the organization plugin, `calculatorRoles`, session tenant select, and country checks. |
+| [Calculator Better Auth server](../../apps/calculator/src/lib/better-auth/index.ts) and [browser client](../../apps/calculator/src/lib/better-auth/auth-client.ts) | Thin wrapper passes env, email sender, invitation link, and magic link. Browser client configures the organization plugin with the shared access controller and `calculatorRoles`. |
 | [oRPC middleware](../../apps/calculator/src/lib/orpc/middleware.ts) | `authorized` authenticates requests; `requireProjectPermissions` calls `auth.api.hasPermission` for project actions. |
 | [Project procedures](../../apps/calculator/src/features/projects/procedures.ts) | Active-organization filtering and project-specific role/responsibility checks. |
 | [Browser permission utilities](../../apps/calculator/src/lib/better-auth/permissions-utils.ts) | `useProjectPermissions` checks role permissions for UI decisions; it does not perform the handlers' responsibility checks. |
@@ -26,11 +27,13 @@ The project statement defines `create`, `read`, `update`, `delete`, and `archive
 | Stored role | create | read | update | delete | archive |
 | --- | --- | --- | --- | --- | --- |
 | `owner` | Yes | Yes | Yes | Yes | Yes |
-| `admin` | Yes | Yes | Yes | No | No |
+| `admin` | Yes | Yes | Yes | No | Yes |
 | `coordinator` | Yes | Yes | Yes | No | No |
 | `participant` | No | Yes | No | No | No |
 
 The definitions also include Better Auth's organization-plugin statements: `owner` spreads `ownerAc`, `admin` and `coordinator` spread `adminAc`, and `participant` spreads `memberAc`. Descending role order is a structural contract, not a substitute for these explicit permissions.
+
+Simple rule: Organization Administrator can archive. Project Coordinator mirrors Organization Administrator for now, but has no archive yet. Only Organization Owner can delete.
 
 ## Procedure gates and scope
 
@@ -40,7 +43,7 @@ The [project procedures](../../apps/calculator/src/features/projects/procedures.
 - `listProjects`, `getProjectById`, and `getProjectParticipants` use the `read` middleware and constrain access to the active organization. Listing is not restricted to own projects or projects in which the caller participates.
 - `updateProject` uses the `update` middleware and looks up the project in the active organization. It has **no own-project check**.
 - The handler checks in `deleteProject`, `batchDeleteProjects`, and `archiveProject` allow `owner` to act on any project in the active organization; `admin` and `coordinator` may act only on own projects. `participant` does not pass these checks. Batch deletion checks responsibility for every requested project before deleting.
-- Deletion procedures additionally use `requireProjectPermissions(["delete"])`; `archiveProject` does not use project-permission middleware. The declared role map above does **not** grant `delete` or `archive` to `admin` or `coordinator`, even though the handler responsibility checks allow them on own projects. These are separate layers and must not be represented as one unconditional permission matrix.
+- Deletion procedures additionally use `requireProjectPermissions(["delete"])`; `archiveProject` does not use project-permission middleware. The declared role map above does **not** grant `delete` to `admin` or `coordinator`, and grants `archive` only to `admin` (not to `coordinator`), even though the handler responsibility checks allow both on own projects. These are separate layers and must not be represented as one unconditional permission matrix.
 - `setActiveProject` checks for `owner`, `admin`, or `coordinator` and active-organization project membership when `projectId` is supplied. It does not require responsibility for that project. When `projectId` is omitted, those checks are skipped and the session update still runs.
 - `getProjectForParticipation` uses the unauthenticated `base` procedure and fetches by project ID without an active-organization check. It is a public participation endpoint, not an organization-role read gate.
 
