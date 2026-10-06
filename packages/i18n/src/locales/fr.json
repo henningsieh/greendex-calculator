@@ -673,8 +673,8 @@
     "roles": {
       "owner": "Propriétaire de l’organisation",
       "admin": "Administrateur de l’organisation",
-      "participant": "Participant",
-      "coordinator": "Coordinateur du projet"
+      "coordinator": "Coordinateur du projet",
+      "participant": "Participant"
     },
     "invitation": {
       "title": "Accepter l'invitation",

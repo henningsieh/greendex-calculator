@@ -673,8 +673,8 @@
     "roles": {
       "owner": "Lastnik organizacije",
       "admin": "Skrbnik organizacije",
-      "participant": "Udeleženec",
-      "coordinator": "Koordinator projekta"
+      "coordinator": "Koordinator projekta",
+      "participant": "Udeleženec"
     },
     "invitation": {
       "title": "Sprejmi povabilo",

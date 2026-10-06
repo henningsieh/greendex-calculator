@@ -69,15 +69,15 @@ export const organizationRoles = {
 export const calculatorOrganizationRoles = {
   [ORGANIZATION_ROLES.OrganizationOwner]: organisationOwner,
   [ORGANIZATION_ROLES.OrganizationAdmin]: legacyCalculatorAdminRole,
-  [ORGANIZATION_ROLES.Participant]: projectParticipant,
   [ORGANIZATION_ROLES.ProjectCoordinator]: calculatorCoordinatorRole,
+  [ORGANIZATION_ROLES.Participant]: projectParticipant,
 };
 
 export const costTrackerOrganizationRoles = {
   [ORGANIZATION_ROLES.OrganizationOwner]: organisationOwner,
   [ORGANIZATION_ROLES.OrganizationAdmin]: organizationAdmin,
-  [ORGANIZATION_ROLES.Participant]: projectParticipant,
   [ORGANIZATION_ROLES.ProjectCoordinator]: projectCoordinatorRole,
+  [ORGANIZATION_ROLES.Participant]: projectParticipant,
 };
 
 /** Reject omitted defaults and unknown roles, including in combined Memberships. */

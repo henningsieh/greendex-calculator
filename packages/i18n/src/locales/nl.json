@@ -673,8 +673,8 @@
     "roles": {
       "owner": "Organisatie-eigenaar",
       "admin": "Organisatiebeheerder",
-      "participant": "Deelnemer",
-      "coordinator": "Projectcoördinator"
+      "coordinator": "Projectcoördinator",
+      "participant": "Deelnemer"
     },
     "invitation": {
       "title": "Uitnodiging accepteren",
