@@ -1999,7 +1999,9 @@ describe("Claim competing writes", () => {
         approvedAmountEur: payable,
       });
       expect(claim.status).toBe("paid");
-      expect(types).toEqual(["submitted", "approved", "paid"]);
+      // Approval and payment land in the same instant, so only the set
+      // of events is stable here, not their timestamp order.
+      expect([...types].sort()).toEqual(["approved", "paid", "submitted"]);
     } else {
       // Payment lost the race before approval: approval is required first.
       expect(payment).toMatchObject({
