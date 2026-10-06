@@ -1,7 +1,4 @@
-import {
-  ORGANIZATION_ROLES,
-  type OrganizationRole,
-} from "@greendex/config/organization-roles";
+import { ORGANIZATION_ROLES } from "@greendex/config/organization-roles";
 import { createAccessControl } from "better-auth/plugins/access";
 import {
   adminAc,
@@ -52,7 +49,10 @@ export const projectCoordinatorRole = accessControl.newRole({
   projectParticipation: ["create"],
 });
 
-export const calculatorCoordinatorRole = accessControl.newRole({});
+export const calculatorCoordinatorRole = accessControl.newRole({
+  ...adminAc.statements,
+  project: ["create", "read", "update"],
+});
 
 export const projectParticipant = accessControl.newRole({
   ...memberAc.statements,
@@ -80,65 +80,16 @@ export const costTrackerOrganizationRoles = {
   [ORGANIZATION_ROLES.Participant]: projectParticipant,
 };
 
-/** Validate role-map coverage and order without inspecting permission statements. */
-export function assertRoleMapCoversRoles(roleMap: Record<string, unknown>): void {
-  const expectedRoles = Object.values(ORGANIZATION_ROLES);
-  const actualRoles = Object.keys(roleMap);
-
-  if (
-    actualRoles.length !== expectedRoles.length ||
-    actualRoles.some((role, index) => role !== expectedRoles[index])
-  ) {
-    throw new Error(
-      `Role map must contain exactly these roles in order: ${expectedRoles.join(", ")}`,
-    );
-  }
-}
-
-/** Reject omitted defaults and unknown roles, including in combined Memberships. */
-export function isValidOrganizationRole(
-  role: string | null | undefined,
-): boolean {
-  if (!role) return false;
-  const knownRoles = new Set<string>(Object.values(ORGANIZATION_ROLES));
-  return role.split(",").every((value) => knownRoles.has(value.trim()));
-}
-
 export type ProjectPermission = (typeof statement)["project"][number];
 export type ProjectPartnershipPermission =
   (typeof statement)["projectPartnership"][number];
 export type ProjectParticipationPermission =
   (typeof statement)["projectParticipation"][number];
 
-export function parseOrganizationRoles(role: string): OrganizationRole[] {
-  const knownRoles = new Set<string>(Object.values(ORGANIZATION_ROLES));
-
-  return role
-    .split(",")
-    .map((value) => value.trim())
-    .filter(
-      (value): value is OrganizationRole =>
-        value.length > 0 && knownRoles.has(value),
-    );
-}
-
-export function addOrganizationRole(
-  role: string,
-  addedRole: OrganizationRole,
-): string {
-  const roles = role
-    .split(",")
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
-
-  if (!roles.includes(addedRole)) roles.push(addedRole);
-
-  return roles.join(",");
-}
-
-export function hasOrganizationRole(
-  role: string,
-  expectedRole: OrganizationRole,
-): boolean {
-  return parseOrganizationRoles(role).includes(expectedRole);
-}
+export {
+  addOrganizationRole,
+  assertRoleMapCoversRoles,
+  hasOrganizationRole,
+  isValidOrganizationRole,
+  parseOrganizationRoles,
+} from "./organization-roles";

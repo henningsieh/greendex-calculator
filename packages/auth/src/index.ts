@@ -32,3 +32,5 @@ export {
   type ProjectPartnershipPermission,
   type ProjectPermission,
 } from "./permissions";
+
+export { assertRoleMapCoversRoles } from "./organization-roles";

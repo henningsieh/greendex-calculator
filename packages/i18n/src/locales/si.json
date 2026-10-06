@@ -429,6 +429,10 @@
     }
   },
   "organization": {
+    "country": {
+      "label": "Država",
+      "placeholder": "Izberite državo EU"
+    },
     "dashboard": {
       "title": "Nadzorna plošča",
       "description": "Pregled statistike, projektov in udeležencev organizacije.",

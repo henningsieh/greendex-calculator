@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   delegationGuidanceFiles,
+  expectedScopes,
   findPatternHits,
   matchesRetiredVendorPointer,
   matchesStaleGuidance,
@@ -161,6 +162,41 @@ describe("glossary migration coverage", () => {
       expect(retiredAgentGuidancePaths).toContain(filePath);
       expect(requiredRepositoryPaths).not.toContain(filePath);
       expect(referenceFiles).not.toContain(filePath);
+    }
+  });
+});
+
+describe("project permissions instruction policy", () => {
+  it("keeps the project permissions document in the reference scan", () => {
+    expect(referenceFiles).toContain("docs/projects/permissions.md");
+    expect(requiredRepositoryPaths).toContain("docs/projects/permissions.md");
+  });
+
+  it("tracks the shared auth permission and organization-role modules", () => {
+    const authModulePaths = [
+      "packages/auth/src/permissions.ts",
+      "packages/auth/src/organization-roles.ts",
+    ];
+    const betterAuthScopes = expectedScopes["better-auth.md"].split(",");
+
+    for (const path of authModulePaths) {
+      expect(requiredRepositoryPaths).toContain(path);
+      expect(betterAuthScopes).toContain(path);
+    }
+  });
+
+  it("accepts source links from the rewritten project permissions document", () => {
+    const sourceLinks = [
+      "../../packages/auth/src/permissions.ts",
+      "../../packages/auth/src/organization-roles.ts",
+      "../../packages/config/src/organization-roles.ts",
+      "../../apps/calculator/src/features/projects/procedures.ts",
+    ];
+
+    for (const path of sourceLinks) {
+      const link = `[source](${path})`;
+      expect(matchesRetiredVendorPointer(link)).toBe(false);
+      expect(matchesStaleGuidance(link)).toBe(false);
     }
   });
 });

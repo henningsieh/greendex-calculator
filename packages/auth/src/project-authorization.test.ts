@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { ORGANIZATION_ROLES } from "./permissions";
-import { costTrackerOrganizationRoles } from "./permissions";
+import {
+  calculatorOrganizationRoles,
+  costTrackerOrganizationRoles,
+} from "./permissions";
 import {
   PROJECT_PARTICIPATION_CREATE,
   evaluateProjectScopeAccess,
@@ -141,4 +144,21 @@ describe("project scope authorization", () => {
       reason: "UNRELATED_ORGANIZATION",
     });
   });
+});
+
+describe("Calculator project authorization", () => {
+  it.each(Object.values(ORGANIZATION_ROLES))(
+    "pins exact project grants for %s",
+    (role) => {
+      const expected = {
+        owner: ["create", "read", "update", "delete", "archive"],
+        admin: ["create", "read", "update", "archive"],
+        coordinator: ["create", "read", "update"],
+        participant: ["read"],
+      };
+      expect(calculatorOrganizationRoles[role].statements.project).toEqual(
+        expected[role],
+      );
+    },
+  );
 });

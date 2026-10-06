@@ -1,4 +1,4 @@
-import { hasOrganizationRole } from "@greendex/auth";
+import { hasOrganizationRole } from "@greendex/auth/organization-roles";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
@@ -48,7 +48,7 @@ async function hasHostAssignment(projectId: string, userId: string) {
  * Requires:
  * - Authentication
  * - Active organization
- * - "create" permission on project resource (owner/admin only)
+ * - "create" permission on project resource (owner/admin/coordinator)
  */
 export const createProject = authorized
   .use(requireProjectPermissions(["create"]))
@@ -112,8 +112,8 @@ export const createProject = authorized
  * List projects based on user's organization membership
  *
  * Behavior:
- * - Participants (role: participant): See all projects in their organization (read-only)
- * - Project Coordinators/Organization Administrators: See all projects in their organization (full access)
+ * - Participants (role: "participant"): See all projects in their organization (read-only)
+ * - Organization Owners, admins, and coordinators: See all projects in their organization (full access)
  *
  * This respects Better Auth's organization-based permissions:
  * - Users can only see projects from organizations they are members of
@@ -234,7 +234,7 @@ export const getProjectById = authorized
  *
  * Requires:
  * - Authentication
- * - "update" permission on project resource (admin/owner only)
+ * - "update" permission on project resource (owner/admin/coordinator)
  * - Project must belong to user's active organization
  */
 export const updateProject = authorized
@@ -319,7 +319,7 @@ export const updateProject = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of the project
+ * - Organization Owner role, or admin/coordinator role AND is the responsible user of the project
  * - Project must belong to user's active organization
  */
 export const deleteProject = authorized
@@ -370,13 +370,14 @@ export const deleteProject = authorized
       headers: await headers(),
     });
 
-    // Organization Administrators can delete any project; Project Coordinators can delete only assigned projects.
+    // Organization Owners can delete any project; admins and coordinators can delete only their own.
     const isOrganizationOwner = hasOrganizationRole(
-      role,
+      role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
-      hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
+      (hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator)) &&
       (await hasHostAssignment(existingProject.id, context.user.id));
 
     if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
@@ -399,10 +400,11 @@ export const deleteProject = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of the project
+ * - Organization Owner role, or admin role with a Host assignment
  * - Project must belong to user's active organization
  */
 export const archiveProject = authorized
+  .use(requireProjectPermissions(["archive"]))
   .route({
     method: "PATCH",
     path: "/projects/:id/archive",
@@ -451,13 +453,13 @@ export const archiveProject = authorized
       });
     }
 
-    // Organization Administrators can archive any project; Project Coordinators can archive only assigned projects.
+    // Organization Owners can archive any project; admins need a Host assignment.
     const isOrganizationOwner = hasOrganizationRole(
-      role,
+      role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
-      hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
+      hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) &&
       (await hasHostAssignment(existingProject.id, context.user.id));
 
     if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
@@ -500,6 +502,7 @@ export const archiveProject = authorized
  * Requires:
  * - Authentication
  * - "read" permission on project resource
+ * - Organization Owner, admin, or coordinator role
  * - Project must belong to user's active organization (if projectId is provided)
  */
 export const setActiveProject = authorized
@@ -527,10 +530,12 @@ export const setActiveProject = authorized
         headers: await headers(),
       });
 
-      if (
-        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
-        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationOwner)
-      ) {
+      // Owners, admins, and coordinators may set the active project.
+      const canSetActiveProject =
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationOwner) ||
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator);
+      if (!canSetActiveProject) {
         throw errors.FORBIDDEN({
           message: "You don't have permission to set an active project",
         });
@@ -662,7 +667,7 @@ export const getProjectParticipants = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of each project
+ * - Organization Owner role, or admin/coordinator role AND is the responsible user of each project
  * - All projects must belong to user's active organization
  */
 export const batchDeleteProjects = authorized
@@ -714,14 +719,15 @@ export const batchDeleteProjects = authorized
       });
     }
 
-    // Organization Administrators can delete any project; Project Coordinators only assigned projects.
+    // Organization Owners can delete any project; admins and coordinators only their own.
     const isOrganizationOwner = hasOrganizationRole(
-      role,
+      role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     for (const project of projectsToDelete) {
       const isResponsibleProjectCoordinator =
-        hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
+        (hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
+          hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator)) &&
         (await hasHostAssignment(project.id, context.user.id));
 
       if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {

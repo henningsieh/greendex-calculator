@@ -1,6 +1,6 @@
+import type { ProjectPermission } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/server";
 
-import type { ProjectPermission } from "@/features/projects/permissions";
 import { auth } from "@/lib/better-auth";
 import { base, rootBase } from "@/lib/orpc/context";
 
@@ -104,7 +104,7 @@ export const requireProjectPermissions =
       },
     });
 
-    if (!hasPermission) {
+    if (!hasPermission.success) {
       throw errors.FORBIDDEN({
         message: `Missing required permissions: ${permissions.join(", ")}`,
       });

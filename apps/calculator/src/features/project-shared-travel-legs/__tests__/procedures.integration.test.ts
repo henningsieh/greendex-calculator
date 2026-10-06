@@ -101,7 +101,7 @@ beforeEach(() => {
       email: `shared-travel-${userId}@example.com`,
     },
   });
-  authMocks.hasPermission.mockResolvedValue(true);
+  authMocks.hasPermission.mockResolvedValue({ success: true, error: null });
 });
 
 afterEach(async () => {

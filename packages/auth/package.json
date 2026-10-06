@@ -8,7 +8,8 @@
     "./permissions": "./src/permissions.ts",
     "./project-authorization": "./src/project-authorization.ts",
     "./oauth-icons": "./src/oauth-icons.tsx",
-    "./seed-user": "./src/seed-user.ts"
+    "./seed-user": "./src/seed-user.ts",
+    "./organization-roles": "./src/organization-roles.ts"
   },
   "scripts": {
     "clean": "rm -rf node_modules .turbo",

@@ -66,7 +66,7 @@ describe("role contract", () => {
   ])("rejects $name role keys", ({ keys }) => {
     const roleMap = Object.fromEntries(keys.map((key) => [key, null]));
     expect(() => assertRoleMapCoversRoles(roleMap)).toThrow(
-      "Role map must contain exactly these roles in order: owner, admin, coordinator, participant",
+      "Role map must cover exactly [owner, admin, coordinator, participant] in order",
     );
   });
 });
@@ -113,16 +113,14 @@ describe("Organization permissions", () => {
     ).toBe(false);
   });
 
-  it("grants Calculator coordinators nothing", () => {
+  it("mirrors Calculator admin project rights without archive or delete", () => {
     const coordinator = calculatorOrganizationRoles[roles.ProjectCoordinator];
-    expect(coordinator.statements).toEqual({});
-    expect(coordinator.authorize({ project: ["read"] }).success).toBe(false);
+    expect(coordinator.statements.project).toEqual(["create", "read", "update"]);
     expect(
-      coordinator.authorize({ projectParticipation: ["create"] }).success,
-    ).toBe(false);
-    expect(coordinator.authorize({ organization: ["update"] }).success).toBe(
-      false,
-    );
+      coordinator.authorize({ project: ["create", "read", "update"] }).success,
+    ).toBe(true);
+    expect(coordinator.authorize({ project: ["archive"] }).success).toBe(false);
+    expect(coordinator.authorize({ project: ["delete"] }).success).toBe(false);
   });
 
   it("keeps Cost Tracker coordination minimal and assignment-scoped", () => {

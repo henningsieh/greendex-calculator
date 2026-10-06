@@ -133,6 +133,7 @@ describe("Project Shared Travel Legs integration", () => {
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe(TEST_ORG.name);
       expect(result[0].slug).toBe(TEST_ORG.slug);
+      expect(result[0].country).toBe("DE");
 
       orgId = TEST_ORG.id;
     });

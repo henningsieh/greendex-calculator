@@ -1,4 +1,4 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { ORGANIZATION_ROLES } from "@greendex/auth/organization-roles";
 import { db } from "@greendex/database";
 import {
   projectSharedTravelLegsTable,
@@ -12,6 +12,7 @@ import { z } from "zod";
 import {
   canonicalCalculatorRole,
   USERS_SORT_FIELDS,
+  type MemberRole,
   type MemberSortField,
 } from "@/features/organizations/types";
 import {
@@ -31,10 +32,14 @@ function getSortKey(
     return Number.isNaN(time) ? 0 : time;
   }
   if (sortBy === "role") {
-    const roleOrder = {
+    // Sort order: owner < admin < coordinator < participant.
+    // Record<MemberRole, number> keeps this exhaustive: adding a role
+    // value without ranking it here fails the build.
+    const roleOrder: Record<MemberRole, number> = {
       [ORGANIZATION_ROLES.OrganizationOwner]: 0,
       [ORGANIZATION_ROLES.OrganizationAdmin]: 1,
-      [ORGANIZATION_ROLES.Participant]: 2,
+      [ORGANIZATION_ROLES.ProjectCoordinator]: 2,
+      [ORGANIZATION_ROLES.Participant]: 3,
     };
     const role = canonicalCalculatorRole(member.role);
     return role && role in roleOrder
@@ -125,16 +130,16 @@ export const getOrganizationRole = authorized
         (member) => member.userId === context.user.id,
       );
 
-      if (!currentMember?.role) {
+      // Reduce to the Calculator's role contract; unknown values fail closed.
+      const role = currentMember?.role
+        ? canonicalCalculatorRole(currentMember.role)
+        : null;
+      if (!role) {
         throw errors.NOT_FOUND({
           message: "Organization role not found",
         });
       }
 
-      // #183 appends a Cost Tracker role to legacy admins; Calculator exposes only its existing role contract.
-      const role = canonicalCalculatorRole(currentMember.role);
-      if (!role)
-        throw errors.FORBIDDEN({ message: "Organization role not found" });
       return role;
     } catch (error) {
       if (error instanceof ORPCError) {

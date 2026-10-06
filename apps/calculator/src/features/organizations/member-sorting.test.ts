@@ -42,7 +42,7 @@ beforeEach(() => {
 
 describe("Calculator Membership role sorting", () => {
   it.each(["asc", "desc"] as const)(
-    "ranks the Participant role below staff and above unsupported coordination (%s)",
+    "ranks roles in descending hierarchy (%s)",
     async (sortDirection) => {
       const result = await client.searchMembers({
         organizationId: "org-id",
@@ -51,8 +51,8 @@ describe("Calculator Membership role sorting", () => {
       const expected = [
         role.OrganizationOwner,
         role.OrganizationAdmin,
-        role.Participant,
         role.ProjectCoordinator,
+        role.Participant,
       ];
       expect(result.members.map(({ role }) => role)).toEqual(
         sortDirection === "asc" ? expected : expected.toReversed(),

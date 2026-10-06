@@ -10,99 +10,70 @@ import { SEED_USER } from "@greendex/auth/seed-user";
  *
  * Note: These tests require a running server and are skipped in CI if the server is not available.
  */
-import { chromium } from "playwright";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { env } from "@/env";
 
 const OPENAPI_VERSION_REGEX = /^3\.\d+\.\d+$/;
 const baseUrl = `${env.NEXT_PUBLIC_BASE_URL}/api/openapi`;
-let serverAvailable = false;
+// Decide HTTP-suite availability before collecting tests. Browser tests live in e2e.
+const serverAvailable = await fetch(`${baseUrl}/health`, {
+  signal: AbortSignal.timeout(2_000),
+}).then(
+  (response) => response.ok,
+  () => false,
+);
 
-// Check if server is available before running tests
-beforeAll(async () => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20_000);
+describe("SSR oRPC client", () => {
+  it("uses server-side client during SSR and doesn't call /api/rpc", async () => {
+    vi.resetModules();
+    // Programmatically attach a server-side router client to globalThis
+    const { createRouterClient } = await import("@orpc/server");
+    const { router } = await import("@/lib/orpc/router");
 
-  try {
-    console.log(`Checking server availability at: ${baseUrl}/health`);
-    const response = await fetch(`${baseUrl}/health`, {
-      signal: controller.signal,
+    // Snap-in a server client for SSR (no network)
+    globalThis.$client = createRouterClient(router, {
+      context: async () => ({ headers: new Headers() }),
     });
-    console.log(`Server response status: ${response.status}`);
-    if (response.ok) {
-      serverAvailable = true;
-      console.log("✅ Server is available");
-    } else {
-      serverAvailable = false;
-      console.log("❌ Server responded but not OK");
-    }
-  } catch (error) {
-    serverAvailable = false;
-    console.warn(
-      "⚠️  OpenAPI server not running, skipping integration tests",
-      error,
-    );
-  } finally {
-    clearTimeout(timeout);
-  }
-});
 
-describe("OpenAPI REST Endpoint", () => {
-  describe("SSR oRPC client", () => {
-    it("uses server-side client during SSR and doesn't call /api/rpc", async () => {
-      // Programmatically attach a server-side router client to globalThis
-      const { createRouterClient } = await import("@orpc/server");
-      const { router } = await import("@/lib/orpc/router");
+    // Patch global fetch to fail if /api/rpc is called
+    const g = globalThis as unknown as {
+      fetch?: (...args: unknown[]) => Promise<unknown>;
+      $client?: unknown;
+    };
+    const originalFetch = g.fetch;
+    g.fetch = (...args: unknown[]) => {
+      const resource = args[0] as string | { url?: string } | undefined;
+      const url = typeof resource === "string" ? resource : resource?.url;
+      if (typeof url === "string" && url.includes("/api/rpc")) {
+        throw new Error("RPCLink network call detected during SSR");
+      }
+      if (typeof originalFetch === "function") {
+        return (originalFetch as (...a: unknown[]) => Promise<unknown>)(...args);
+      }
+      return Promise.reject(new Error("No fetch available"));
+    };
 
-      // Snap-in a server client for SSR (no network)
-      globalThis.$client = createRouterClient(router, {
-        context: async () => ({ headers: new Headers() }),
-      });
-
-      // Patch global fetch to fail if /api/rpc is called
-      const g = globalThis as unknown as {
+    try {
+      const { orpc } = await import("@/lib/orpc/orpc");
+      const result = await orpc.health();
+      expect(result).toBeDefined();
+      // If the server client was not used, network fetch would have thrown
+    } finally {
+      // cleanup
+      const g2 = globalThis as unknown as {
         fetch?: (...args: unknown[]) => Promise<unknown>;
         $client?: unknown;
       };
-      const originalFetch = g.fetch;
-      g.fetch = (...args: unknown[]) => {
-        const resource = args[0] as string | { url?: string } | undefined;
-        const url = typeof resource === "string" ? resource : resource?.url;
-        if (typeof url === "string" && url.includes("/api/rpc")) {
-          throw new Error("RPCLink network call detected during SSR");
-        }
-        if (typeof originalFetch === "function") {
-          return (originalFetch as (...a: unknown[]) => Promise<unknown>)(
-            ...args,
-          );
-        }
-        return Promise.reject(new Error("No fetch available"));
-      };
-
-      try {
-        const { orpc } = await import("@/lib/orpc/orpc");
-        const result = await orpc.health();
-        expect(result).toBeDefined();
-        // If the server client was not used, network fetch would have thrown
-      } finally {
-        // cleanup
-        const g2 = globalThis as unknown as {
-          fetch?: (...args: unknown[]) => Promise<unknown>;
-          $client?: unknown;
-        };
-        g2.fetch = originalFetch;
-        g2.$client = undefined;
-      }
-    });
+      g2.fetch = originalFetch;
+      g2.$client = undefined;
+    }
   });
+});
 
+describe.skipIf(!serverAvailable)("OpenAPI REST Endpoint", () => {
   describe("Public Endpoints", () => {
     it("should return health status via GET /health", async () => {
-      if (!serverAvailable) {
-        return it.skip("Server not available");
-      }
-
       const response = await fetch(`${baseUrl}/health`, {
         method: "GET",
       });
@@ -117,10 +88,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should handle hello world via POST /helloWorld", async () => {
-      if (!serverAvailable) {
-        return it.skip("Server not available");
-      }
-
       const response = await fetch(`${baseUrl}/helloWorld`, {
         method: "POST",
         headers: {
@@ -138,10 +105,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should use default name when name not provided", async () => {
-      if (!serverAvailable) {
-        return it.skip("Server not available");
-      }
-
       const response = await fetch(`${baseUrl}/helloWorld`, {
         method: "POST",
         headers: {
@@ -157,10 +120,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should handle valid JSON request with complete response validation", async () => {
-      if (!serverAvailable) {
-        return it.skip("Server not available");
-      }
-
       const requestBody = { name: "Alice" };
       const response = await fetch(`${baseUrl}/helloWorld`, {
         method: "POST",
@@ -196,9 +155,6 @@ describe("OpenAPI REST Endpoint", () => {
 
   describe("Protected Endpoints", () => {
     it("should return 401 for protected endpoints without auth", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
       const response = await fetch(`${baseUrl}/users/profile`, {
         method: "GET",
       });
@@ -208,9 +164,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should return session info when requesting /auth/session", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
       const response = await fetch(`${baseUrl}/auth/session`, {
         method: "GET",
       });
@@ -226,10 +179,6 @@ describe("OpenAPI REST Endpoint", () => {
 
   describe("Authentication Endpoints", () => {
     it("should sign in user via POST /auth/sign-in", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
-
       const response = await fetch(`${baseUrl}/auth/sign-in`, {
         method: "POST",
         headers: {
@@ -269,10 +218,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should sign up new user via POST /auth/sign-up", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
-
       const newUser = {
         name: "Test User",
         email: `test-${Date.now()}@sieh.org`,
@@ -304,10 +249,6 @@ describe("OpenAPI REST Endpoint", () => {
     }, 10_000); // 10 second timeout for sign-up
 
     it("should handle sign-in with invalid credentials", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
-
       const response = await fetch(`${baseUrl}/auth/sign-in`, {
         method: "POST",
         headers: {
@@ -324,10 +265,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should sign out user via POST /auth/sign-out", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
-
       // First sign in to get a session
       const signInResponse = await fetch(`${baseUrl}/auth/sign-in`, {
         method: "POST",
@@ -359,10 +296,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should maintain session across authenticated requests", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
-
       // Sign in
       const signInResponse = await fetch(`${baseUrl}/auth/sign-in`, {
         method: "POST",
@@ -410,10 +343,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should invalidate session after sign out", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
-
       // Sign in
       const signInResponse = await fetch(`${baseUrl}/auth/sign-in`, {
         method: "POST",
@@ -459,9 +388,6 @@ describe("OpenAPI REST Endpoint", () => {
 
   describe("Error Handling", () => {
     it("should return 404 for non-existent endpoints", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
       const response = await fetch(`${baseUrl}/non-existent-endpoint`, {
         method: "GET",
       });
@@ -473,9 +399,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should handle invalid JSON input gracefully", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
       const response = await fetch(`${baseUrl}/helloWorld`, {
         method: "POST",
         headers: {
@@ -491,9 +414,6 @@ describe("OpenAPI REST Endpoint", () => {
 
   describe("CORS Headers", () => {
     it("should include proper CORS headers", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
       const response = await fetch(`${baseUrl}/health`, {
         method: "GET",
         headers: {
@@ -516,9 +436,6 @@ describe("OpenAPI REST Endpoint", () => {
     });
 
     it("should handle CORS preflight requests", async () => {
-      if (!serverAvailable) {
-        throw new Error("Server not available");
-      }
       const response = await fetch(`${baseUrl}/health`, {
         method: "OPTIONS",
         headers: {
@@ -546,14 +463,10 @@ describe("OpenAPI REST Endpoint", () => {
   });
 });
 
-describe("API Documentation UI", () => {
+describe.skipIf(!serverAvailable)("API Documentation UI", () => {
   const docsUrl = `${env.NEXT_PUBLIC_BASE_URL}/api/docs`;
 
   it("should serve HTML with Scalar API reference script", async () => {
-    if (!serverAvailable) {
-      throw new Error("Server not available");
-    }
-
     const response = await fetch(docsUrl);
     expect(response.status).toBe(200);
 
@@ -567,48 +480,12 @@ describe("API Documentation UI", () => {
     // Should reference Scalar script
     expect(html).toContain("https://cdn.jsdelivr.net/npm/@scalar/api-reference");
   });
-
-  it("should render accessible API documentation UI", async () => {
-    if (!serverAvailable) {
-      throw new Error("Server not available");
-    }
-
-    // Verify the docs page is available and the Scalar UI actually renders.
-    // Uses stable markers from the plugin's own HTML template (#app), the
-    // <main> landmark Scalar mounts, and the page title instead of a
-    // Scalar-internal aria-label, which changes between Scalar versions.
-    const browser = await chromium.launch({
-      headless: process.env.HEADED !== "true",
-    });
-    try {
-      const page = await browser.newPage();
-      await page.goto(docsUrl, { timeout: 10_000 });
-      await page.waitForSelector("div#app", {
-        timeout: 10_000,
-      });
-      // Scalar mounts its UI once the bundle executes
-      await page.waitForSelector("main", { timeout: 10_000 });
-      // The docs heading shows the API title from specGenerateOptions.info.title
-      await page.waitForSelector("h1.section-header-label", {
-        timeout: 10_000,
-      });
-      expect(
-        await page.locator("h1.section-header-label").textContent(),
-      ).toContain("Greendex Calculator API");
-      expect(await page.title()).toContain("API Reference");
-    } finally {
-      await browser.close();
-    }
-  });
 });
 
-describe("OpenAPI Specification", () => {
+describe.skipIf(!serverAvailable)("OpenAPI Specification", () => {
   const specUrl = `${env.NEXT_PUBLIC_BASE_URL}/api/openapi-spec`;
 
   it("should serve OpenAPI specification", async () => {
-    if (!serverAvailable) {
-      throw new Error("Server not available");
-    }
     const response = await fetch(specUrl);
     expect(response.status).toBe(200);
 

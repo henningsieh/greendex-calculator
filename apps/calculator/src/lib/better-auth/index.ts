@@ -9,15 +9,10 @@ export const auth = createServerAuth({
   appName: "Next WebSocket Server",
   baseURL: env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
-  advanced: {
-    database: {
-      joins: true,
-    },
-  },
   emailSender,
   emailVerification: {
     autoSignInAfterVerification: true,
-    sendOnSignIn: false,
+    sendOnSignIn: false, // Don't send on every sign-in, only on signup
     sendVerificationEmail: async ({ user, url }) => {
       after(async () => {
         try {
@@ -52,31 +47,10 @@ export const auth = createServerAuth({
           inviteLink,
           organizationName: data.organization?.name,
         });
-      } catch (error) {
-        console.error("Failed to send organization invitation email:", error);
-        throw error;
+      } catch (err) {
+        console.error("Failed to send organization invitation email:", err);
+        throw err;
       }
-    },
-  },
-  plugins: [
-    magicLink({
-      sendMagicLink: ({ email, url }) =>
-        emailSender.sendMagicLinkEmail({ email, url }),
-    }),
-    lastLoginMethod({
-      customResolveMethod: (context) =>
-        context.path === "/magic-link/verify" ? "magic-link" : null,
-    }),
-  ],
-  session: {
-    cookieCache: {
-      enabled: false,
-    },
-    additionalFields: {
-      activeProjectId: {
-        type: "string",
-        required: false,
-      },
     },
   },
   sessionUpdate: {
@@ -88,4 +62,21 @@ export const auth = createServerAuth({
         },
       }),
   },
+  plugins: [
+    magicLink({
+      sendMagicLink: async ({ email, url }) => {
+        await emailSender.sendMagicLinkEmail({ email, url });
+      },
+    }),
+    lastLoginMethod({
+      customResolveMethod: (ctx) => {
+        // Track magic link authentication
+        if (ctx.path === "/magic-link/verify") {
+          return "magic-link";
+        }
+        // Return null to use default logic
+        return null;
+      },
+    }),
+  ],
 });

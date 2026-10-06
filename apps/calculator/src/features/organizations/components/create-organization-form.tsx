@@ -123,9 +123,9 @@ export function CreateOrganizationForm({
                 <FormLabel>{t("label")}</FormLabel>
                 <FormControl>
                   <CountrySelect
-                    euOnly
                     value={field.value}
                     onValueChange={field.onChange}
+                    euOnly
                     placeholder={t("placeholder")}
                     disabled={form.formState.isSubmitting}
                   />
@@ -137,7 +137,11 @@ export function CreateOrganizationForm({
 
           <Button
             className="w-full"
-            disabled={form.formState.isSubmitting || !form.watch("name")}
+            disabled={
+              form.formState.isSubmitting ||
+              !form.watch("name") ||
+              !form.watch("country")
+            }
             onClick={handleSubmit}
             type="button"
           >

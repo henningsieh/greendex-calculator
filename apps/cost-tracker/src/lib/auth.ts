@@ -11,7 +11,8 @@ import { emailSender } from "@/lib/email";
 
 export const auth = createServerAuth({
   appName: "Cost Tracker",
-  costTrackerRoles: true,
+  flags: { singleOrganization: true },
+  roleSet: "costTracker",
   organizationHooks: costTrackerOrganizationHooks,
   plugins: [costTrackerInvitationRoleGate, participantMembershipGrantPlugin],
   baseURL: env.NEXT_PUBLIC_BASE_URL,

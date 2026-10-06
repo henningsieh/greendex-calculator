@@ -1,5 +1,5 @@
 import {
-  accessControl,
+  accessControl as ac,
   calculatorOrganizationRoles,
 } from "@greendex/auth/permissions";
 import { organizationCountryFields } from "@greendex/config/organization-country";
@@ -21,9 +21,11 @@ export const authClient = createAuthClient({
   baseURL: clientBaseURL,
   plugins: [
     organizationClient({
-      ac: accessControl,
+      ac,
       roles: calculatorOrganizationRoles,
-      schema: { organization: { additionalFields: organizationCountryFields } },
+      schema: {
+        organization: { additionalFields: organizationCountryFields },
+      },
     }),
     magicLinkClient(),
     lastLoginMethodClient(),

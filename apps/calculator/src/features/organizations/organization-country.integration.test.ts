@@ -78,6 +78,52 @@ afterEach(async () => {
 });
 
 describe("Organization country through Better Auth", () => {
+  it("leaves Calculator multi-Organization creation enabled and uses the Owner creator role", async () => {
+    const owner = await account();
+    const first = await createOwnOrganization(owner.headers);
+    const second = await createOwnOrganization(owner.headers);
+    expect(second.id).not.toBe(first.id);
+    const membership = await db.query.member.findFirst({
+      where: eq(member.organizationId, second.id),
+    });
+    expect(membership?.role).toBe(ORGANIZATION_ROLES.OrganizationOwner);
+  });
+
+  it("rejects case-insensitive duplicate Organization names", async () => {
+    const owner = await account();
+    const first = await createOwnOrganization(owner.headers);
+    await expect(
+      auth.api.createOrganization({
+        headers: owner.headers,
+        body: {
+          name: first.name.toLowerCase(),
+          slug: randomUUID(),
+          country: "DE",
+        },
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("rejects unknown member roles before persistence", async () => {
+    const owner = await account();
+    const organization = await createOwnOrganization(owner.headers);
+    const target = await account();
+    await expect(
+      auth.api.addMember({
+        body: {
+          userId: target.userId,
+          organizationId: organization.id,
+          role: "unknown",
+        },
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(
+      await db.query.member.findFirst({
+        where: eq(member.userId, target.userId),
+      }),
+    ).toBeUndefined();
+  });
+
   it("accepts native array role grants without replacing combined authority", async () => {
     const owner = await account();
     const organization = await createOwnOrganization(owner.headers);
