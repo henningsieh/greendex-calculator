@@ -10,8 +10,8 @@ Calculator uses Better Auth Organization Membership roles to authorize Organizat
 | ------------- | ----------------------------------- |
 | `owner`       | Organization Owner                  |
 | `admin`       | Organization Admin                  |
-| `participant` | Participant                         |
 | `coordinator` | Project Coordinator (no grants yet) |
+| `participant` | Participant                         |
 
 Both applications use the shared final role constants. Memberships may carry several roles. Calculator recognizes `coordinator` but grants it nothing; its existing `admin` behavior remains unchanged. See [ADR-0019](../../../../docs/adr/0019-require-organization-country-and-synchronize-role-values.md).
 
@@ -21,8 +21,8 @@ Both applications use the shared final role constants. Memberships may carry sev
 | ------------- | ------ | ---- | ------ | ------ | ----------------------------- |
 | `owner`       | yes    | yes  | yes    | yes    | yes                           |
 | `admin`       | yes    | yes  | yes    | no     | only Projects they coordinate |
-| `participant` | no     | yes  | no     | no     | no                            |
 | `coordinator` | no     | no   | no     | no     | no                            |
+| `participant` | no     | yes  | no     | no     | no                            |
 
 Organization Owners may manage every Project in the active Organization and alone may delete Projects. Organization Admins retain the existing Project-management grants and resource checks, including responsibility checks for archiving. The separate `coordinator` value grants no Calculator authority.
 

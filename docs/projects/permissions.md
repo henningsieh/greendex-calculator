@@ -30,6 +30,10 @@ Library table/field names and ordinary Membership wording are unaffected.
 
 Role lists derive from the shared auth constants rather than separate app-owned lists. Only defined shared role values may be invited, assigned, or seeded; staff invitations remain limited to `owner` and `admin`.
 
+The canonical enumeration order is `owner`, `admin`, `coordinator`, `participant`: [`ORGANIZATION_ROLES`](../../packages/config/src/organization-roles.ts) declares `OrganizationOwner`, `OrganizationAdmin`, `ProjectCoordinator`, then `Participant`. Both application role maps and every locale's `organization.roles` block follow this order, so role selectors enumerate consistently.
+
+[`assertRoleMapCoversRoles`](../../packages/auth/src/permissions.ts) rejects missing, extra, unknown, or reordered role-map keys. It validates structure only, not permission statements. The [role contract tests](../../packages/auth/src/permissions.test.ts) lock constant-key order and distinct role values, and validate both application maps. Enumeration order does not change authorization grants or assignment scope.
+
 One Membership may hold several roles. Assigning `participant` or `coordinator` never removes an existing role.
 
 ## Project Coordinator scope
