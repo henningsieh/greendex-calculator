@@ -13,3 +13,14 @@ export type { Session, User } from "better-auth/types";
 
 // Export auth client utilities
 export { createAuthClient } from "./auth-client";
+
+// Export shared organization role contract
+// (canonical role values plus pure membership-role helpers)
+export {
+  addOrganizationRole,
+  hasOrganizationRole,
+  isValidOrganizationRole,
+  ORGANIZATION_ROLES,
+  parseOrganizationRoles,
+  type OrganizationRole,
+} from "./organization-roles";

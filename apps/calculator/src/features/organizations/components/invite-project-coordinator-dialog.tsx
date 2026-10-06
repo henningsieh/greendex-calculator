@@ -88,8 +88,8 @@ export function InviteProjectCoordinatorDialog({
                   organizationId,
                   filters: {
                     roles: [
-                      MEMBER_ROLES.OrganizationAdministrator,
-                      MEMBER_ROLES.ProjectCoordinator,
+                      MEMBER_ROLES.OrganizationOwner,
+                      MEMBER_ROLES.OrganizationAdmin,
                     ],
                   },
                 },

@@ -16,8 +16,9 @@ import { env } from "@/env";
 import {
   ac,
   admin,
-  member as memberRole,
+  coordinator,
   owner,
+  participant,
 } from "@/features/projects/permissions";
 import { emailSender } from "@/lib/email";
 
@@ -93,7 +94,8 @@ export const auth = betterAuth({
       roles: {
         owner,
         admin,
-        member: memberRole,
+        coordinator,
+        participant,
       },
       async sendInvitationEmail(data) {
         try {

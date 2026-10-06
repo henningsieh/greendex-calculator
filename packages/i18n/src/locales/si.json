@@ -671,9 +671,10 @@
       "description": "Podrobnosti in nastavitve organizacije."
     },
     "roles": {
-      "owner": "Skrbnik organizacije",
-      "admin": "Koordinator projekta",
-      "member": "Udeleženec"
+      "owner": "Lastnik organizacije",
+      "admin": "Skrbnik organizacije",
+      "coordinator": "Koordinator projekta",
+      "participant": "Udeleženec"
     },
     "invitation": {
       "title": "Sprejmi povabilo",

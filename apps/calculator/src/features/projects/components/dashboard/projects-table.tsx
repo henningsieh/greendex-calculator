@@ -350,7 +350,7 @@ export function ProjectsTable({ projects }: { projects: ProjectType[] }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {memberRole === MEMBER_ROLES.OrganizationAdministrator &&
+            {memberRole === MEMBER_ROLES.OrganizationOwner &&
               selectedRows.length > 0 && (
                 <Button
                   disabled={isBatchDeleting}

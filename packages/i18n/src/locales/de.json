@@ -671,9 +671,10 @@
       "description": "Dies sind die Details und Einstellungen der Organisation."
     },
     "roles": {
-      "owner": "Organisationsadministrator",
-      "admin": "Projektkoordinator",
-      "member": "Teilnehmer"
+      "owner": "Organisationsinhaber",
+      "admin": "Organisationsadmin",
+      "coordinator": "Projektkoordinator",
+      "participant": "Teilnehmer"
     },
     "invitation": {
       "title": "Einladung annehmen",

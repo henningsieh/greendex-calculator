@@ -671,9 +671,10 @@
       "description": "Voici les détails et paramètres de l'organisation."
     },
     "roles": {
-      "owner": "Administrateur de l’organisation",
-      "admin": "Coordinateur de projet",
-      "member": "Participant"
+      "owner": "Propriétaire de l’organisation",
+      "admin": "Administrateur de l’organisation",
+      "coordinator": "Coordinateur du projet",
+      "participant": "Participant"
     },
     "invitation": {
       "title": "Accepter l'invitation",

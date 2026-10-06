@@ -34,7 +34,7 @@ const statement = {
 export const ac = createAccessControl(statement);
 
 /**
- * Organization Administrator role (Better Auth `owner`)
+ * Organization Owner role (stored `owner` value)
  * - Full control over all resources including projects
  * - Can create, read, update, delete, and archive projects
  * - Inherits all default owner permissions
@@ -45,7 +45,7 @@ export const owner = ac.newRole({
 });
 
 /**
- * Project Coordinator role (Better Auth `admin`)
+ * Organization Admin role (stored `admin` value)
  * - Can manage projects and most organization resources
  * - Can create, read, and update projects
  * - Can archive projects they are responsible for (dynamic permission)
@@ -58,11 +58,22 @@ export const admin = ac.newRole({
 });
 
 /**
- * Participant role (Better Auth `member`)
+ * Project Coordinator role (stored `coordinator` value)
+ * - Same project authority the Calculator previously granted its `admin`
+ *   value: create, read, and update projects, but no delete or archive
+ * - Inherits all default admin permissions
+ */
+export const coordinator = ac.newRole({
+  ...adminAc.statements,
+  project: ["create", "read", "update"],
+});
+
+/**
+ * Participant role (stored `participant` value)
  * - Can only read projects within their organization
  * - Cannot create, update, delete, or archive projects
  */
-export const member = ac.newRole({
+export const participant = ac.newRole({
   ...memberAc.statements,
   project: ["read"], // Participants can only read projects
 });

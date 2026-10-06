@@ -1,3 +1,4 @@
+import { ORGANIZATION_ROLES } from "@greendex/auth/organization-roles";
 import { db } from "@greendex/database";
 import {
   projectSharedTravelLegsTable,
@@ -9,7 +10,9 @@ import { and, count, countDistinct, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
+  canonicalCalculatorRole,
   USERS_SORT_FIELDS,
+  type MemberRole,
   type MemberSortField,
 } from "@/features/organizations/types";
 import {
@@ -29,9 +32,19 @@ function getSortKey(
     return Number.isNaN(time) ? 0 : time;
   }
   if (sortBy === "role") {
-    // Sort order: owner < admin < member
-    const roleOrder = { owner: 0, admin: 1, member: 2 };
-    return roleOrder[member.role as keyof typeof roleOrder] ?? 999;
+    // Sort order: owner < admin < coordinator < participant.
+    // Record<MemberRole, number> keeps this exhaustive: adding a role
+    // value without ranking it here fails the build.
+    const roleOrder: Record<MemberRole, number> = {
+      [ORGANIZATION_ROLES.OrganizationOwner]: 0,
+      [ORGANIZATION_ROLES.OrganizationAdmin]: 1,
+      [ORGANIZATION_ROLES.ProjectCoordinator]: 2,
+      [ORGANIZATION_ROLES.Participant]: 3,
+    };
+    const role = canonicalCalculatorRole(member.role);
+    return role && role in roleOrder
+      ? roleOrder[role as keyof typeof roleOrder]
+      : 999;
   }
   if (sortBy === "user.name") {
     return (member.user?.name || "").toLowerCase();
@@ -117,13 +130,17 @@ export const getOrganizationRole = authorized
         (member) => member.userId === context.user.id,
       );
 
-      if (!currentMember?.role) {
+      // Reduce to the Calculator's role contract; unknown values fail closed.
+      const role = currentMember?.role
+        ? canonicalCalculatorRole(currentMember.role)
+        : null;
+      if (!role) {
         throw errors.NOT_FOUND({
           message: "Organization role not found",
         });
       }
 
-      return currentMember.role;
+      return role;
     } catch (error) {
       if (error instanceof ORPCError) {
         throw error;
