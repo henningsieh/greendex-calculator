@@ -33,7 +33,7 @@ import {
  * Requires:
  * - Authentication
  * - Active organization
- * - "create" permission on project resource (owner/admin only)
+ * - "create" permission on project resource (owner/admin/coordinator)
  */
 export const createProject = authorized
   .use(requireProjectPermissions(["create"]))
@@ -213,7 +213,7 @@ export const getProjectById = authorized
  *
  * Requires:
  * - Authentication
- * - "update" permission on project resource (owner/admin only)
+ * - "update" permission on project resource (owner/admin/coordinator)
  * - Project must belong to user's active organization
  */
 export const updateProject = authorized
@@ -298,7 +298,7 @@ export const updateProject = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of the project
+ * - Organization Owner role, or admin/coordinator role AND is the responsible user of the project
  * - Project must belong to user's active organization
  */
 export const deleteProject = authorized
@@ -379,7 +379,7 @@ export const deleteProject = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of the project
+ * - Organization Owner role, or admin/coordinator role AND is the responsible user of the project
  * - Project must belong to user's active organization
  */
 export const archiveProject = authorized
@@ -481,6 +481,7 @@ export const archiveProject = authorized
  * Requires:
  * - Authentication
  * - "read" permission on project resource
+ * - Organization Owner, admin, or coordinator role
  * - Project must belong to user's active organization (if projectId is provided)
  */
 export const setActiveProject = authorized
@@ -639,7 +640,7 @@ export const getProjectParticipants = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of each project
+ * - Organization Owner role, or admin/coordinator role AND is the responsible user of each project
  * - All projects must belong to user's active organization
  */
 export const batchDeleteProjects = authorized

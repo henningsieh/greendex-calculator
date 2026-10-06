@@ -17,7 +17,14 @@ export { createAuthClient } from "./auth-client";
 // Export shared organization role contract
 // (canonical role values plus pure membership-role helpers)
 export {
+  accessControl,
+  calculatorRoles,
+  type ProjectPermission,
+} from "./permissions";
+
+export {
   addOrganizationRole,
+  assertRoleMapCoversRoles,
   hasOrganizationRole,
   isValidOrganizationRole,
   ORGANIZATION_ROLES,

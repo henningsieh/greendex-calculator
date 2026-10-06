@@ -13,7 +13,7 @@ export const expectedScopes = {
   "architecture.md":
     "apps/*/src/**/*.ts,apps/*/src/**/*.tsx,packages/*/src/**/*.ts,packages/*/src/**/*.tsx",
   "better-auth.md":
-    "apps/calculator/src/lib/better-auth/**/*.ts,apps/calculator/src/features/authentication/**/*.ts,apps/calculator/src/features/authentication/**/*.tsx,apps/calculator/src/features/organizations/**/*.ts,apps/calculator/src/features/organizations/**/*.tsx,apps/calculator/src/features/projects/permissions.ts,apps/calculator/src/lib/orpc/middleware.ts,apps/calculator/src/lib/orpc/procedures.ts,apps/calculator/src/app/api/auth/**/*.ts,packages/database/src/schemas/auth-schema.ts",
+    "apps/calculator/src/lib/better-auth/**/*.ts,apps/calculator/src/features/authentication/**/*.ts,apps/calculator/src/features/authentication/**/*.tsx,apps/calculator/src/features/organizations/**/*.ts,apps/calculator/src/features/organizations/**/*.tsx,packages/auth/src/permissions.ts,packages/auth/src/organization-roles.ts,apps/calculator/src/lib/orpc/middleware.ts,apps/calculator/src/lib/orpc/procedures.ts,apps/calculator/src/app/api/auth/**/*.ts,packages/database/src/schemas/auth-schema.ts",
   "code-standards.md":
     "apps/*/src/**/*.ts,apps/*/src/**/*.tsx,apps/*/src/**/*.js,apps/*/src/**/*.jsx,packages/*/src/**/*.ts,packages/*/src/**/*.tsx,packages/*/src/**/*.js,packages/*/src/**/*.jsx,scripts/**/*.js,scripts/**/*.mjs",
   "conventions.md":
@@ -114,7 +114,8 @@ export const requiredRepositoryPaths = [
   "apps/calculator/src/app/api/openapi/[[...rest]]/route.ts",
   "apps/calculator/src/app/api/rpc/[[...rest]]/route.ts",
   "apps/calculator/src/env.ts",
-  "apps/calculator/src/features/projects/permissions.ts",
+  "packages/auth/src/permissions.ts",
+  "packages/auth/src/organization-roles.ts",
   "apps/calculator/src/instrumentation.ts",
   "apps/calculator/src/lib/better-auth/index.ts",
   "apps/calculator/src/lib/email.ts",

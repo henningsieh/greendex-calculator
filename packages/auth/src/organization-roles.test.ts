@@ -16,6 +16,22 @@ describe("Organization roles", () => {
   });
 });
 
+describe("Organization role contract", () => {
+  it("lists roles in descending hierarchy order", () => {
+    expect(Object.keys(ORGANIZATION_ROLES)).toEqual([
+      "OrganizationOwner",
+      "OrganizationAdmin",
+      "ProjectCoordinator",
+      "Participant",
+    ]);
+  });
+
+  it("uses distinct stored values", () => {
+    const values = Object.values(ORGANIZATION_ROLES);
+    expect(new Set(values).size).toBe(values.length);
+  });
+});
+
 describe("Membership roles", () => {
   it("preserves coexisting authority", () => {
     const combined = `${roles.OrganizationOwner}, ${roles.Participant}`;

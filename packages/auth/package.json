@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/auth-client.ts",
-    "./organization-roles": "./src/organization-roles.ts"
+    "./organization-roles": "./src/organization-roles.ts",
+    "./permissions": "./src/permissions.ts"
   },
   "scripts": {
     "format": "oxfmt",

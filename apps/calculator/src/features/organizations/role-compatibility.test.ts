@@ -1,4 +1,8 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/organization-roles";
+import {
+  assertRoleMapCoversRoles,
+  ORGANIZATION_ROLES,
+} from "@greendex/auth/organization-roles";
+import { calculatorRoles } from "@greendex/auth/permissions";
 import { describe, expect, it } from "vitest";
 
 import { canonicalCalculatorRole } from "./types";
@@ -24,5 +28,9 @@ describe("Calculator role compatibility", () => {
   it("returns null for unknown roles so callers fail closed", () => {
     expect(canonicalCalculatorRole("unknown")).toBeNull();
     expect(canonicalCalculatorRole("")).toBeNull();
+  });
+
+  it("covers the shared role contract in hierarchy order", () => {
+    expect(() => assertRoleMapCoversRoles(calculatorRoles)).not.toThrow();
   });
 });

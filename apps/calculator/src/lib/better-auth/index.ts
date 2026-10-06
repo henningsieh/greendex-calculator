@@ -1,3 +1,4 @@
+import { accessControl as ac, calculatorRoles } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import * as schema from "@greendex/database/schema";
 import { member } from "@greendex/database/schema";
@@ -13,13 +14,6 @@ import { desc, eq } from "drizzle-orm";
 import { after } from "next/server";
 
 import { env } from "@/env";
-import {
-  ac,
-  admin,
-  coordinator,
-  owner,
-  participant,
-} from "@/features/projects/permissions";
 import { emailSender } from "@/lib/email";
 
 export const auth = betterAuth({
@@ -91,12 +85,7 @@ export const auth = betterAuth({
   plugins: [
     organizationPlugin({
       ac,
-      roles: {
-        owner,
-        admin,
-        coordinator,
-        participant,
-      },
+      roles: calculatorRoles,
       async sendInvitationEmail(data) {
         try {
           const inviteLink = `${env.NEXT_PUBLIC_BASE_URL}/accept-invitation/${data.id}`;
