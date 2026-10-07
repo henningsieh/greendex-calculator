@@ -15,7 +15,7 @@
     "dev": "turbo run dev",
     "format": "turbo run format",
     "lint": "turbo run lint --concurrency 1 && pnpm run lint:design-system && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam",
-    "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/cost-tracker/src",
+    "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/calculator/src apps/cost-tracker/src apps/documentation/src",
     "predev": "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     "prepare": "husky",
     "start": "turbo run start",
