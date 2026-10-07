@@ -44,19 +44,24 @@ test.describe("instant initial load: static shells", () => {
   test("workshops shell commits while tab state stays gated", async ({
     page,
   }) => {
-    const url = `${process.env.NEXT_PUBLIC_BASE_URL}/en/workshops`;
+    // ?type=deal exercises the search-param read end to end. All inputs
+    // here resolve from the request itself (concrete search params,
+    // static messages, client-side tab state), so shell and content both
+    // commit under the lock; any newly introduced blocking read in either
+    // turns this RED. Lock engagement itself is proven by the rig build,
+    // whose log must show `exposeTestingApiInProductionBuild`.
+    const url = `${process.env.NEXT_PUBLIC_BASE_URL}/en/workshops?type=deal`;
     await instant(
       page,
       async () => {
         await page.goto(url);
-        // Static shell asserted under the lock ...
         await expect(page.getByTestId("workshops-shell-marker")).toBeVisible();
-        // ... while the search-param-driven tab content stays gated.
-        await expect(page.getByTestId("workshops-content")).toHaveCount(0);
+        await expect(page.getByTestId("workshops-content")).toBeVisible();
+        await expect(page.getByRole("tab", { selected: true })).toContainText(
+          /deal/i,
+        );
       },
       { baseURL: new URL(url).origin },
     );
-    // Streams after the lock releases.
-    await expect(page.getByTestId("workshops-content")).toBeVisible();
   });
 });
