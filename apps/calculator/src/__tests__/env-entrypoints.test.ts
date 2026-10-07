@@ -45,7 +45,7 @@ describe("environment entrypoints", () => {
   it("delegates root lifecycle commands directly to Turbo", () => {
     expect(rootPackage.scripts.dev).toBe("turbo run dev");
     expect(rootPackage.scripts.predev).toBe(
-      "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
+      "dotenv run -f apps/calculator/.env -f apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
     );
     expect(rootPackage.scripts.build).toBe("turbo run build");
     expect(rootPackage.scripts.start).toBe("turbo run start");
@@ -53,50 +53,50 @@ describe("environment entrypoints", () => {
 
   it("loads Calculator's app-local environment for non-Next processes", () => {
     expect(calculatorPackage.scripts.dev).toContain(
-      "dotenv -v NODE_ENV=development -e .env --",
+      "NODE_ENV=development dotenv run -f .env --",
     );
-    expect(calculatorPackage.scripts.prebuild).toContain("dotenv -e .env --");
+    expect(calculatorPackage.scripts.prebuild).toContain("dotenv run -f .env --");
     expect(calculatorPackage.scripts.build).toBe("next build");
-    expect(calculatorPackage.scripts.prestart).toContain("dotenv -e .env --");
+    expect(calculatorPackage.scripts.prestart).toContain("dotenv run -f .env --");
     expect(calculatorPackage.scripts.start).toContain(
-      "dotenv -v NODE_ENV=production -e .env --",
+      "NODE_ENV=production dotenv run -f .env --",
     );
     expect(calculatorPackage.scripts["auth:generate"]).toContain(
-      "dotenv -e .env --",
+      "dotenv run -f .env --",
     );
   });
 
   it("configures every service port from the environment", () => {
     expect(calculatorPackage.scripts["dev:next"]).toBe("next dev --port $PORT");
     expect(calculatorPackage.scripts.prestart).toBe(
-      "dotenv -e .env -- pnpm run start:prepare",
+      "dotenv run -f .env -- pnpm run start:prepare",
     );
     expect(calculatorPackage.scripts["start:prepare"]).toContain(
       'pnpm dlx kill-port "$PORT" "$SOCKET_PORT"',
     );
     expect(calculatorPackage.scripts.start).toBe(
-      "dotenv -v NODE_ENV=production -e .env -- pnpm run serve",
+      "NODE_ENV=production dotenv run -f .env -- pnpm run serve",
     );
     expect(calculatorPackage.scripts.serve).toContain("next start --port $PORT");
     expect(calculatorPackage.scripts["test:e2e:report"]).toBe(
       "pnpm dlx kill-port 9323 || true && pnpm exec playwright show-report src/__tests__/e2e/.playwright/report",
     );
     expect(documentationPackage.scripts.dev).toBe(
-      "dotenv -v NODE_ENV=development -e .env -- sh -c 'next dev --port \"$DOCUMENTATION_PORT\"'",
+      "NODE_ENV=development dotenv run -f .env -- sh -c 'next dev --port \"$DOCUMENTATION_PORT\"'",
     );
     expect(documentationPackage.scripts.start).toBe(
-      "dotenv -v NODE_ENV=production -e .env -- sh -c 'next start --port \"$DOCUMENTATION_PORT\"'",
+      "NODE_ENV=production dotenv run -f .env -- sh -c 'next start --port \"$DOCUMENTATION_PORT\"'",
     );
   });
 
   it("keeps runtime CLI dependencies available to the production start commands", () => {
     expect(rootPackage.dependencies).toMatchObject({
-      "dotenv-cli": expect.any(String),
+      dotenv: expect.any(String),
       turbo: expect.any(String),
     });
     expect(calculatorPackage.dependencies).toMatchObject({
       concurrently: expect.any(String),
-      "dotenv-cli": expect.any(String),
+      dotenv: expect.any(String),
       tsx: expect.any(String),
     });
   });

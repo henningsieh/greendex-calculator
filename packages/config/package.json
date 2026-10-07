@@ -13,7 +13,7 @@
     "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
-    "lucide-react": "1.41.0"
+    "lucide-react": "1.52.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
