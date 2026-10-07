@@ -85,19 +85,19 @@ git log dc5a3cc..320c381 --oneline
 
 ### August 20 — deployment and environment stabilization
 
-| Commit    | Change                                                                                           | Final effect                                            |
-| --------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| `6bbd947` | Turbo updated to `2.10.10`                                                                       | Superseded by `5d55ac0`                                 |
-| `5d55ac0` | Turbo updated to `2.10.11`                                                                       | Current Turbo version                                   |
-| `1eda256` | Added Dockerfile and `.dockerignore` for Coolify env propagation                                 | Experimental; later reverted                            |
-| `6bb9612` | Added Docker health check                                                                        | Experimental; later reverted                            |
-| `d36151b` | Adjusted broken Coolify build-arg handling and health check                                      | Experimental; later reverted                            |
-| `ba86bed` | Reverted the Dockerfile approach                                                                 | **Final state: no repository Dockerfile**               |
-| `275ddaa` | Added `env: ["*"]` to the Turbo `build` task                                                     | Build tasks receive Coolify-injected variables          |
-| `d67c610` | Socket server switched to validated `@/env`; local scripts load root `.env` through `dotenv-cli` | Same entrypoint works locally and on Coolify            |
-| `5f301a0` | Reworked Scalar/OpenAPI UI test around stable page markers                                       | Faster, less version-fragile test                       |
-| `f8ddfda` | Added `NEXT_PUBLIC_SOCKET_URL`                                                                   | Socket clients no longer derive URLs by replacing ports |
-| `675c62a` | Published a complete root `.env.example`                                                         | Canonical environment-variable inventory                |
+| Commit    | Change                                                                                | Final effect                                                                                         |
+| --------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `6bbd947` | Turbo updated to `2.10.10`                                                            | Superseded by `5d55ac0`                                                                              |
+| `5d55ac0` | Turbo updated to `2.10.11`                                                            | Current Turbo version                                                                                |
+| `1eda256` | Added Dockerfile and `.dockerignore` for Coolify env propagation                      | Experimental; later reverted                                                                         |
+| `6bb9612` | Added Docker health check                                                             | Experimental; later reverted                                                                         |
+| `d36151b` | Adjusted broken Coolify build-arg handling and health check                           | Experimental; later reverted                                                                         |
+| `ba86bed` | Reverted the Dockerfile approach                                                      | **Final state: no repository Dockerfile**                                                            |
+| `275ddaa` | Added `env: ["*"]` to the Turbo `build` task                                          | Build tasks receive Coolify-injected variables                                                       |
+| `d67c610` | Socket server switched to validated `@/env`; local scripts gained environment loading | Same entrypoint works locally and on Coolify; current scripts use app-local `.env` with `dotenv run` |
+| `5f301a0` | Reworked Scalar/OpenAPI UI test around stable page markers                            | Faster, less version-fragile test                                                                    |
+| `f8ddfda` | Added `NEXT_PUBLIC_SOCKET_URL`                                                        | Socket clients no longer derive URLs by replacing ports                                              |
+| `675c62a` | Published a complete root `.env.example`                                              | Canonical environment-variable inventory                                                             |
 
 ### August 21 — dependency modernization branch
 
@@ -251,12 +251,12 @@ root `.oxfmtrc.json`; app-specific `.oxfmtrc.json` files were removed.
 1. The Dockerfile experiment was fully reverted.
 2. Coolify injects environment variables into its build/runtime environment.
 3. `turbo.json` forwards all variables to `build` and `start` tasks.
-4. Local calculator socket scripts load the repository-root `.env` through
-   `dotenv-cli`.
+4. Local Calculator scripts load `apps/calculator/.env` through
+   `dotenv run` from the `dotenv` package.
 5. The Socket.IO module itself reads only the validated shared `@/env` module.
 6. Browser socket connections use `NEXT_PUBLIC_SOCKET_URL`.
 
-`.env.example` is the canonical variable inventory. Secrets remain in local or
+`apps/calculator/.env.example` is the Calculator variable inventory. Secrets remain in local or
 Coolify-managed environment configuration and must never be committed.
 
 ---

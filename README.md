@@ -44,12 +44,12 @@ terms to avoid, is in [`DOMAIN-GLOSSARY.md`](DOMAIN-GLOSSARY.md).
 
 | Area                 | Technology                                         |
 | -------------------- | -------------------------------------------------- |
-| Web applications     | Next.js, React, App Router, React Compiler          |
+| Web applications     | Next.js, React, App Router, React Compiler         |
 | Language             | TypeScript                                         |
 | Monorepo             | Turborepo and pnpm workspaces/catalog              |
-| UI                   | shadcn/ui, Radix UI, cmdk, Tailwind CSS             |
+| UI                   | shadcn/ui, Radix UI, cmdk, Tailwind CSS            |
 | Authentication       | Better Auth with organization and social providers |
-| API                  | oRPC, TanStack Query, OpenAPI/Scalar                |
+| API                  | oRPC, TanStack Query, OpenAPI/Scalar               |
 | Database             | PostgreSQL and Drizzle ORM/Kit                     |
 | Tables               | TanStack Table                                     |
 | Internationalization | next-intl                                          |
@@ -327,7 +327,7 @@ package API; transport uses Nodemailer.
 
 `apps/calculator/src/socket-server.ts` is a separate Socket.IO process. It reads
 validated process environment from `@/env`; Calculator scripts inject its
-app-local `.env` through `dotenv-cli`, while Coolify injects runtime values
+app-local `.env` through `dotenv run`, while Coolify injects runtime values
 directly.
 
 Clients connect through `NEXT_PUBLIC_SOCKET_URL`, so local ports and the deployed
@@ -357,7 +357,7 @@ seeded local development server.
 > that expects the calculator server on `localhost:3000`. Its no-server skip
 > path is not compatible with Vitest 4 yet. The remaining tests can be run with
 > `pnpm --filter @greendex/calculator exec vitest run --exclude
-src/__tests__/openapi-rest.test.ts`.
+> src/__tests__/openapi-rest.test.ts`.
 
 ---
 
