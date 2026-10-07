@@ -1,7 +1,7 @@
 export const ORGANIZATION_ROLES = {
   OrganizationOwner: "owner",
-  ProjectCoordinator: "coordinator",
   OrganizationAdmin: "admin",
+  ProjectCoordinator: "coordinator",
   Participant: "participant",
 } as const;
 

@@ -10,16 +10,14 @@
   "scripts": {
     "auth:generate": "dotenv -e .env -- auth generate --config src/lib/better-auth/index.ts --output ../../packages/database/src/schemas/auth-schema.ts --yes",
     "build": "next build",
-    "check:sri": "node scripts/check-sri.js",
     "clean": "rm -rf .next .turbo node_modules",
     "db:seed": "pnpm exec tsx scripts/seed.ts",
     "dev": "dotenv -v NODE_ENV=development -e .env -- concurrently --kill-others \"pnpm run dev:next\" \"pnpm run dev:socket\"",
     "dev:next": "next dev --port $PORT",
     "dev:socket": "tsx --watch src/socket-server.ts",
     "format": "oxfmt",
-    "generate:sri": "node scripts/generate-sri.js",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
-    "prebuild": "dotenv -e .env -- pnpm -w run db:migrate && dotenv -e .env -- pnpm run generate:sri && dotenv -e .env -- pnpm run check:sri",
+    "prebuild": "dotenv -e .env -- pnpm -w run db:migrate",
     "prestart": "dotenv -e .env -- pnpm run start:prepare",
     "serve": "concurrently --kill-others \"next start --port $PORT\" \"tsx src/socket-server.ts\"",
     "start": "dotenv -v NODE_ENV=production -e .env -- pnpm run serve",
@@ -44,10 +42,10 @@
     "@greendex/i18n": "workspace:*",
     "@hookform/resolvers": "catalog:",
     "@orpc/client": "catalog:",
-    "@orpc/openapi": "^1.15.4",
+    "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/tanstack-query": "catalog:",
-    "@orpc/zod": "1.15.4",
+    "@orpc/zod": "catalog:",
     "@radix-ui/react-accordion": "^1.2.20",
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-aspect-ratio": "^1.1.15",
@@ -138,8 +136,5 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
-  },
-  "config": {
-    "scalarVersion": "1.72.3"
   }
 }

@@ -1,4 +1,4 @@
-import { hasOrganizationRole } from "@greendex/auth";
+import { hasOrganizationRole } from "@greendex/auth/organization-roles";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
@@ -8,6 +8,7 @@ import {
   session as sessionTable,
   user,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -48,16 +49,18 @@ async function hasHostAssignment(projectId: string, userId: string) {
  * Requires:
  * - Authentication
  * - Active organization
- * - "create" permission on project resource (owner/admin only)
+ * - "create" permission on project resource (owner/admin/coordinator)
  */
 export const createProject = authorized
   .use(requireProjectPermissions(["create"]))
-  .route({
-    method: "POST",
-    path: "/projects",
-    summary: "Create a new project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/projects",
+      summary: "Create a new project",
+      tags: ["project"],
+    }),
+  )
   .input(ProjectCreateFormSchema)
   .output(
     z.object({
@@ -112,8 +115,8 @@ export const createProject = authorized
  * List projects based on user's organization membership
  *
  * Behavior:
- * - Participants (role: participant): See all projects in their organization (read-only)
- * - Project Coordinators/Organization Administrators: See all projects in their organization (full access)
+ * - Participants (role: "participant"): See all projects in their organization (read-only)
+ * - Organization Owners, admins, and coordinators: See all projects in their organization (full access)
  *
  * This respects Better Auth's organization-based permissions:
  * - Users can only see projects from organizations they are members of
@@ -122,12 +125,14 @@ export const createProject = authorized
 
 export const listProjects = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects",
-    summary: "List all projects in the active organization",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects",
+      summary: "List all projects in the active organization",
+      tags: ["project"],
+    }),
+  )
   .input(
     z
       .object({
@@ -178,12 +183,14 @@ export const listProjects = authorized
  */
 export const getProjectById = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects/:id",
-    summary: "Get project details by ID",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{id}",
+      summary: "Get project details by ID",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -234,17 +241,19 @@ export const getProjectById = authorized
  *
  * Requires:
  * - Authentication
- * - "update" permission on project resource (admin/owner only)
+ * - "update" permission on project resource (owner/admin/coordinator)
  * - Project must belong to user's active organization
  */
 export const updateProject = authorized
   .use(requireProjectPermissions(["update"]))
-  .route({
-    method: "PATCH",
-    path: "/projects/:id",
-    summary: "Update project details",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "PATCH",
+      path: "/projects/{id}",
+      summary: "Update project details",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -319,17 +328,19 @@ export const updateProject = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of the project
+ * - Organization Owner role, or admin/coordinator role AND is the responsible user of the project
  * - Project must belong to user's active organization
  */
 export const deleteProject = authorized
   .use(requireProjectPermissions(["delete"]))
-  .route({
-    method: "DELETE",
-    path: "/projects/:id",
-    summary: "Delete a project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "DELETE",
+      path: "/projects/{id}",
+      summary: "Delete a project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -370,13 +381,14 @@ export const deleteProject = authorized
       headers: await headers(),
     });
 
-    // Organization Administrators can delete any project; Project Coordinators can delete only assigned projects.
+    // Organization Owners can delete any project; admins and coordinators can delete only their own.
     const isOrganizationOwner = hasOrganizationRole(
-      role,
+      role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
-      hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
+      (hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator)) &&
       (await hasHostAssignment(existingProject.id, context.user.id));
 
     if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
@@ -399,16 +411,19 @@ export const deleteProject = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of the project
+ * - Organization Owner role, or admin role with a Host assignment
  * - Project must belong to user's active organization
  */
 export const archiveProject = authorized
-  .route({
-    method: "PATCH",
-    path: "/projects/:id/archive",
-    summary: "Archive a project",
-    tags: ["project"],
-  })
+  .use(requireProjectPermissions(["archive"]))
+  .meta(
+    openapi({
+      method: "PATCH",
+      path: "/projects/{id}/archive",
+      summary: "Archive a project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -451,13 +466,13 @@ export const archiveProject = authorized
       });
     }
 
-    // Organization Administrators can archive any project; Project Coordinators can archive only assigned projects.
+    // Organization Owners can archive any project; admins need a Host assignment.
     const isOrganizationOwner = hasOrganizationRole(
-      role,
+      role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
-      hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
+      hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) &&
       (await hasHostAssignment(existingProject.id, context.user.id));
 
     if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
@@ -500,15 +515,18 @@ export const archiveProject = authorized
  * Requires:
  * - Authentication
  * - "read" permission on project resource
+ * - Organization Owner, admin, or coordinator role
  * - Project must belong to user's active organization (if projectId is provided)
  */
 export const setActiveProject = authorized
-  .route({
-    method: "POST",
-    path: "/projects/active",
-    summary: "Set active project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/projects/active",
+      summary: "Set active project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectId: z.string().optional(),
@@ -527,10 +545,12 @@ export const setActiveProject = authorized
         headers: await headers(),
       });
 
-      if (
-        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
-        !hasOrganizationRole(role, MEMBER_ROLES.OrganizationOwner)
-      ) {
+      // Owners, admins, and coordinators may set the active project.
+      const canSetActiveProject =
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationOwner) ||
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
+        hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator);
+      if (!canSetActiveProject) {
         throw errors.FORBIDDEN({
           message: "You don't have permission to set an active project",
         });
@@ -588,12 +608,14 @@ export const setActiveProject = authorized
  */
 export const getProjectParticipants = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects/:id/participants",
-    summary: "Get project participants with user details",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{projectId}/participants",
+      summary: "Get project participants with user details",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectId: z.string().describe("Project ID"),
@@ -662,17 +684,19 @@ export const getProjectParticipants = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Administrator role OR Project Coordinator role AND is the responsible user of each project
+ * - Organization Owner role, or admin/coordinator role AND is the responsible user of each project
  * - All projects must belong to user's active organization
  */
 export const batchDeleteProjects = authorized
   .use(requireProjectPermissions(["delete"]))
-  .route({
-    method: "DELETE",
-    path: "/projects/batch",
-    summary: "Batch delete multiple projects",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "DELETE",
+      path: "/projects/batch",
+      summary: "Batch delete multiple projects",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectIds: z.array(z.string()).min(1),
@@ -714,14 +738,15 @@ export const batchDeleteProjects = authorized
       });
     }
 
-    // Organization Administrators can delete any project; Project Coordinators only assigned projects.
+    // Organization Owners can delete any project; admins and coordinators only their own.
     const isOrganizationOwner = hasOrganizationRole(
-      role,
+      role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     for (const project of projectsToDelete) {
       const isResponsibleProjectCoordinator =
-        hasOrganizationRole(role, MEMBER_ROLES.OrganizationAdmin) &&
+        (hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
+          hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator)) &&
         (await hasHostAssignment(project.id, context.user.id));
 
       if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
@@ -759,12 +784,14 @@ export const batchDeleteProjects = authorized
  * Returns project details with canonical Project Shared Travel Legs.
  */
 export const getProjectForParticipation = base
-  .route({
-    method: "GET",
-    path: "/projects/:id/participate",
-    summary: "Get project details for participation (public)",
-    tags: ["project", "public"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{id}/participate",
+      summary: "Get project details for participation (public)",
+      tags: ["project", "public"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),

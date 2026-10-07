@@ -14,16 +14,13 @@ export interface AgentGuidancePattern {
 
 export const instructionLineBudget = 180;
 
-export const delegationGuidanceFiles = [
-  "docs/agents/subagent-launch.md",
-  "docs/agents/codex-usage-meter.md",
-];
+export const delegationGuidanceFiles = ["docs/agents/delegation.md"];
 
 export const expectedScopes: Record<string, string> = {
   "architecture.md":
     "apps/*/src/**/*.ts,apps/*/src/**/*.tsx,packages/*/src/**/*.ts,packages/*/src/**/*.tsx",
   "better-auth.md":
-    "apps/calculator/src/lib/better-auth/**/*.ts,apps/calculator/src/features/authentication/**/*.ts,apps/calculator/src/features/authentication/**/*.tsx,apps/calculator/src/features/organizations/**/*.ts,apps/calculator/src/features/organizations/**/*.tsx,apps/calculator/src/features/projects/permissions.ts,apps/calculator/src/lib/orpc/middleware.ts,apps/calculator/src/lib/orpc/procedures.ts,apps/calculator/src/app/api/auth/**/*.ts,packages/database/src/schemas/auth-schema.ts",
+    "apps/calculator/src/lib/better-auth/**/*.ts,apps/calculator/src/features/authentication/**/*.ts,apps/calculator/src/features/authentication/**/*.tsx,apps/calculator/src/features/organizations/**/*.ts,apps/calculator/src/features/organizations/**/*.tsx,packages/auth/src/permissions.ts,packages/auth/src/organization-roles.ts,apps/calculator/src/lib/orpc/middleware.ts,apps/calculator/src/lib/orpc/procedures.ts,apps/calculator/src/app/api/auth/**/*.ts,packages/database/src/schemas/auth-schema.ts",
   "code-standards.md":
     "apps/*/src/**/*.ts,apps/*/src/**/*.tsx,apps/*/src/**/*.js,apps/*/src/**/*.jsx,packages/*/src/**/*.ts,packages/*/src/**/*.tsx,packages/*/src/**/*.js,packages/*/src/**/*.jsx,scripts/**/*.js,scripts/**/*.mjs",
   "conventions.md":
@@ -78,9 +75,8 @@ export const requiredOnlineRoutes = {
     "https://nuqs.dev/docs/adapters#nextjs-app-router",
   ],
   "orpc.md": [
-    "https://v1.orpc.dev/docs/getting-started.md",
+    "https://orpc.dev/docs/getting-started.md",
     "https://orpc.dev/llms.txt",
-    "https://v1.orpc.dev/llms.txt",
   ],
   "shadcn.md": [
     "https://ui.shadcn.com/llms.txt",
@@ -109,7 +105,6 @@ export const requiredIntegrationAnchors = [
 ];
 
 export const requiredRepositoryPaths = [
-  ".pi/settings.json",
   ...delegationGuidanceFiles,
   ".node-version",
   "apps/documentation/GLOSSARY.md",
@@ -125,7 +120,6 @@ export const requiredRepositoryPaths = [
   "apps/cost-tracker/docs/projects/README.md",
   "docs/adr",
   "docs/projects/README.md",
-  "docs/projects/model.md",
   "docs/projects/permissions.md",
   "apps/calculator/.env.example",
   "apps/documentation/.env.example",
@@ -138,7 +132,10 @@ export const requiredRepositoryPaths = [
   "apps/calculator/src/app/api/openapi/[[...rest]]/route.ts",
   "apps/calculator/src/app/api/rpc/[[...rest]]/route.ts",
   "apps/calculator/src/env.ts",
-  "apps/calculator/src/features/projects/permissions.ts",
+  "packages/auth/src/server-auth.ts",
+  "packages/config/src/feature-flags.ts",
+  "packages/auth/src/permissions.ts",
+  "packages/auth/src/organization-roles.ts",
   "apps/calculator/src/instrumentation.ts",
   "apps/calculator/src/lib/better-auth/index.ts",
   "apps/calculator/src/lib/email.ts",
@@ -173,7 +170,6 @@ export const referenceFiles = [
   "apps/cost-tracker/docs/domain-behavior.md",
   "docs/README.md",
   "docs/projects/README.md",
-  "docs/projects/model.md",
   "docs/projects/permissions.md",
   "docs/agents/agent-workflows.md",
   "apps/calculator/GLOSSARY.md",
@@ -195,7 +191,6 @@ export const referenceFiles = [
 
 export const retiredDocumentationRoots = [
   "better-auth",
-  "participate",
   "clickdummy",
   "fumadocs",
   "i18n",
@@ -255,7 +250,7 @@ const retiredVendorRoots =
 export const retiredPointerPatterns: AgentGuidancePattern[] = [
   {
     // Anchored with (?<![\w/]) so app-owned documentation such as
-    // apps/cost-tracker/docs/clickdummy/ never matches: only the retired
+    // apps/documentation/content/docs/ never matches: only the retired
     // root-level docs/ roots are flagged.
     pattern: new RegExp(`(?<![\\w/])docs/${retiredVendorRoots}(?:/|\\b)`, "u"),
     message: "replace pointers to retired vendor-documentation roots",
@@ -347,3 +342,11 @@ export const matchesStaleGuidance = (text: string): boolean =>
 
 export const matchesRetiredVendorPointer = (text: string): boolean =>
   findPatternHits(text, retiredPointerPatterns).length > 0;
+
+/** Working oRPC guidance must not route agents to the retired major. */
+export const orpcGuidanceFiles = [
+  "docs/agents/instructions/orpc.md",
+  "docs/agents/instructions/architecture.md",
+  "docs/agents/integrations.md",
+];
+export const oldMajorOrpcUrlPattern = /https:\/\/v1\.orpc\.dev\//u;

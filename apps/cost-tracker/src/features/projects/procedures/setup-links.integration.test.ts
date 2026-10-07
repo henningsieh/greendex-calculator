@@ -1,6 +1,6 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
-// @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
@@ -13,7 +13,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -185,7 +185,6 @@ describe("Partner Organization setup links", () => {
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       message: "Verify your email before continuing.",
       data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
     });
@@ -288,7 +287,8 @@ describe("Partner Organization setup links", () => {
     // Redemption only binds: the Organization (and creator Ownership) is
     // created beforehand through the supported Better Auth flow (ADR-0013),
     // so consuming the link must not add Organization or Membership rows.
-    const freshOrgId = `setup-bind-${randomUUID()}`;
+    const bindSuffix = randomUUID();
+    const freshOrgId = `setup-bind-${bindSuffix}`;
     await db.insert(organization).values({
       country: "DE",
       id: freshOrgId,
@@ -308,22 +308,34 @@ describe("Partner Organization setup links", () => {
       recipientEmail,
     });
     try {
+      // Files run in parallel workers against one database, so only rows
+      // carrying this test's unique suffix give a stable snapshot.
       const organizationsBefore = await db
         .select({ id: organization.id })
-        .from(organization);
-      const membershipsBefore = await db.select({ id: member.id }).from(member);
+        .from(organization)
+        .where(like(organization.id, `%-${bindSuffix}`));
+      const membershipsBefore = await db
+        .select({ id: member.id })
+        .from(member)
+        .where(eq(member.organizationId, freshOrgId));
       const result = await client.projectPartnerships.consumeSetupLink({
         id: link.id,
         secret: link.secret,
         organizationId: freshOrgId,
       });
       expect(result.organizationId).toBe(freshOrgId);
-      expect(await db.select({ id: organization.id }).from(organization)).toEqual(
-        organizationsBefore,
-      );
-      expect(await db.select({ id: member.id }).from(member)).toEqual(
-        membershipsBefore,
-      );
+      expect(
+        await db
+          .select({ id: organization.id })
+          .from(organization)
+          .where(like(organization.id, `%-${bindSuffix}`)),
+      ).toEqual(organizationsBefore);
+      expect(
+        await db
+          .select({ id: member.id })
+          .from(member)
+          .where(eq(member.organizationId, freshOrgId)),
+      ).toEqual(membershipsBefore);
     } finally {
       await db.delete(links).where(eq(links.id, link.id));
       await db
@@ -442,7 +454,6 @@ describe("Partner Organization setup links", () => {
         }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
-        status: 403,
         message:
           "You need Hosting Organization staff access or an assignment to this Project.",
         data: { reason: "HOST_COORDINATION_REQUIRED" },

@@ -1,25 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("Cost Tracker browser oRPC client", () => {
+describe("Browser oRPC transport", () => {
   beforeEach(() => {
     delete globalThis.$costTrackerClient;
     vi.resetModules();
   });
+  afterEach(() => vi.unstubAllGlobals());
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("uses the internal RPC endpoint when no direct server client exists", async () => {
+  it("uses the current origin and internal RPC path with the v2 fetch arguments", async () => {
     const fetch = vi.fn().mockRejectedValue(new Error("network unavailable"));
     vi.stubGlobal("fetch", fetch);
-
     const { orpc } = await import("@/lib/orpc/orpc");
-
     await expect(orpc.projects.scopes()).rejects.toThrow("network unavailable");
-
-    const [request] = fetch.mock.calls[0] ?? [];
-    expect(request).toBeInstanceOf(Request);
-    expect(new URL(request.url).pathname).toBe("/api/rpc/projects/scopes");
+    const [url, init] = fetch.mock.calls[0] ?? [];
+    expect(new URL(url).origin).toBe(window.location.origin);
+    expect(new URL(url).pathname).toBe("/api/rpc/projects/scopes");
+    expect(init.method).toBe("POST");
   });
 });

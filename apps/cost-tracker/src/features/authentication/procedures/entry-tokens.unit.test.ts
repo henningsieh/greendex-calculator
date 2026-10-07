@@ -8,18 +8,18 @@ vi.mock("server-only", () => ({}));
 vi.mock("@greendex/database", () => ({ db: {} }));
 vi.mock("@/lib/orpc/middleware", () => ({ authorized: {} }));
 
-import { ORPCError } from "@orpc/server";
+import { call, os } from "@orpc/server";
 
 import {
   recheckEntryToken,
   type EntryToken,
   type EntryTokenTransaction,
 } from "@/features/authentication/procedures/entry-tokens";
+import { errorDefinitions } from "@/lib/orpc/error-contract";
 
-const errors = {
-  BAD_REQUEST: (options: object) => new ORPCError("BAD_REQUEST", options),
-  NOT_FOUND: (options: object) => new ORPCError("NOT_FOUND", options),
-} as Parameters<typeof recheckEntryToken>[1];
+const errors: Parameters<typeof recheckEntryToken>[1] = await call(
+  os.errors(errorDefinitions).handler(({ errors }) => errors),
+);
 const token = {
   id: "token",
   partnershipId: "partnership",

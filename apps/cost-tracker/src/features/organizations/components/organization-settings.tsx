@@ -11,6 +11,7 @@ import { useState, type SyntheticEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { toast } from "@/components/ui/toast";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -30,19 +31,23 @@ function CountrySettings({
 }) {
   const queryClient = useQueryClient();
   const [country, setCountry] = useState(organization.country);
-  const [notice, setNotice] = useState("");
   const update = useMutation({
     mutationFn: () => orpc.organizations.updateCountry({ country }),
     onSuccess: async () => {
-      setNotice("Organization country saved.");
+      toast.add({ title: "Organization country saved.", type: "success" });
       await queryClient.invalidateQueries();
     },
-    onError: (error) => setNotice(getORPCRequestErrorMessage(error).text),
+    onError: (error) => {
+      toast.add({
+        description: getORPCRequestErrorMessage(error).text,
+        title: "Could not save Organization country",
+        type: "error",
+      });
+    },
   });
 
   function save(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice("");
     update.mutate();
   }
 
@@ -77,7 +82,6 @@ function CountrySettings({
           <Button disabled={update.isPending} type="submit">
             {update.isPending ? "Saving…" : "Save Organization country"}
           </Button>
-          {notice && <p role={update.isError ? "alert" : "status"}>{notice}</p>}
         </form>
       </CardContent>
     </Card>

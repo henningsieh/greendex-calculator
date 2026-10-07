@@ -65,8 +65,8 @@ function EditOrganizationInnerForm({
   const form = useForm<z.infer<typeof EditOrganizationFormSchema>>({
     resolver: zodResolver(EditOrganizationFormSchema),
     defaultValues: {
-      name: organization.name,
-      country: organization.country,
+      name: organization?.name || "",
+      country: organization?.country,
     },
   });
 
@@ -150,9 +150,9 @@ function EditOrganizationInnerForm({
                   <FormLabel>{t("label")}</FormLabel>
                   <FormControl>
                     <CountrySelect
-                      euOnly
                       value={field.value}
                       onValueChange={field.onChange}
+                      euOnly
                       placeholder={t("placeholder")}
                       disabled={form.formState.isSubmitting}
                     />

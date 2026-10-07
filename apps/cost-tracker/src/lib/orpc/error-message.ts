@@ -41,10 +41,8 @@ export function getORPCRequestErrorMessage(
             : situation.message,
       };
     // Unknown metadata never activates reason-specific recovery. Require the
-    // canonical code/status pair even for the generic sign-in fallback.
-    const fallback = genericSituations.find(
-      (entry) => entry.code === error.code && entry.status === error.status,
-    );
+    // canonical code even for the generic sign-in fallback.
+    const fallback = genericSituations.find((entry) => entry.code === error.code);
     return {
       sessionExpired:
         fallback?.reason === situationCatalog.unauthenticated.reason,

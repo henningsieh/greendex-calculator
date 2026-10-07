@@ -8,7 +8,8 @@
     "./permissions": "./src/permissions.ts",
     "./project-authorization": "./src/project-authorization.ts",
     "./oauth-icons": "./src/oauth-icons.tsx",
-    "./seed-user": "./src/seed-user.ts"
+    "./seed-user": "./src/seed-user.ts",
+    "./organization-roles": "./src/organization-roles.ts"
   },
   "scripts": {
     "clean": "rm -rf node_modules .turbo",
@@ -23,7 +24,8 @@
     "@greendex/database": "workspace:*",
     "@greendex/email": "workspace:*",
     "better-auth": "catalog:",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "oxfmt": "catalog:",

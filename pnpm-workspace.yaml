@@ -7,12 +7,16 @@ networkConcurrency: 16
 
 catalog:
   "@hookform/resolvers": ^5.9.1
-  "@orpc/client": ^1.15.4
-  "@orpc/server": ^1.15.4
-  "@orpc/tanstack-query": ^1.15.4
+  "@orpc/client": 2.0.0-beta.42
+  "@orpc/json-schema": 2.0.0-beta.42
+  "@orpc/openapi": 2.0.0-beta.42
+  "@orpc/server": 2.0.0-beta.42
+  "@orpc/tanstack-query": 2.0.0-beta.42
+  "@orpc/zod": 2.0.0-beta.42
   "@paralleldrive/cuid2": ^3.3.0
   "@playwright/test": ^1.63.0
   "@radix-ui/react-dropdown-menu": ^2.1.24
+  "@scalar/api-reference": 1.73.0
   "@t3-oss/env-nextjs": ^0.13.11
   "@tailwindcss/postcss": 4.3.3
   "@tanstack/react-query": ^5.104.0
@@ -76,13 +80,13 @@ allowBuilds:
   sharp: true
 
 minimumReleaseAgeExclude:
-  - turbo@2.11.6
-  - "@turbo/darwin-64@2.11.6"
-  - "@turbo/darwin-arm64@2.11.6"
-  - "@turbo/linux-64@2.11.6"
-  - "@turbo/linux-arm64@2.11.6"
-  - "@turbo/windows-64@2.11.6"
-  - "@turbo/windows-arm64@2.11.6"
+  - turbo@2.11.7
+  - "@turbo/darwin-64@2.11.7"
+  - "@turbo/darwin-arm64@2.11.7"
+  - "@turbo/linux-64@2.11.7"
+  - "@turbo/linux-arm64@2.11.7"
+  - "@turbo/windows-64@2.11.7"
+  - "@turbo/windows-arm64@2.11.7"
   - "@shadcn/lint@0.1.1"
   - "@aws-sdk/client-s3@3.1144.0"
   - "@better-auth/core@1.7.7"
@@ -115,3 +119,4 @@ minimumReleaseAgeExclude:
   - pg@8.23.1
   - react-day-picker@10.0.2
   - vitest@5.0.3
+  - "@shadcn/lint@0.2.0"

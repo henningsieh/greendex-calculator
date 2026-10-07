@@ -34,6 +34,9 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0018](0018-derive-refusal-construction-from-the-error-catalog.md)                       | Derive Refusal Construction From the Error Catalog                                  | accepted       |               |
 | [0019](0019-require-organization-country-and-synchronize-role-values.md)                  | Require Organization Country and Synchronize Role Values                            | accepted       | 0012, in part; 0004, spelling only |
 
+| [0020](0020-shared-auth-roles-and-factory.md) | Shared Auth Roles and Factory | accepted | 0019, Calculator coordinator Project grants only |
+| [0021](0021-centralized-feature-flags.md) | Centralized Feature Flags | accepted | |
+
 [ADR-0019](0019-require-organization-country-and-synchronize-role-values.md) requires Organization country and synchronizes the shared role values. It supersedes ADR-0012's Calculator compatibility allowance and ADR-0004's stored coordinator spelling, not their authorization scopes.
 
 ADR-0003 is superseded by ADR-0006, ADR-0007, and ADR-0011 together. ADR-0002 is superseded in part by ADR-0005.

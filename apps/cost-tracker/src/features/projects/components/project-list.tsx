@@ -1,6 +1,6 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import {
   columnFilteringFeature,
   filterFn_includesString,
@@ -329,9 +329,13 @@ function ResolvedProjectList({
     setUrlState,
   ]);
 
-  const { data, dataUpdatedAt, isFetching, refetch } = useSuspenseQuery(
-    getProjectListQueryOptions(scope, state),
-  );
+  // Single-element suspense list (not a singular query): the hosted and
+  // partner query functions carry incompatible scope-specific tagged key
+  // contracts, so only tuple inference keeps both callable here. Do not
+  // "simplify" back to useSuspenseQuery.
+  const [{ data, dataUpdatedAt, isFetching, refetch }] = useSuspenseQueries({
+    queries: [getProjectListQueryOptions(scope, state)],
+  });
 
   const browserUrl =
     typeof window === "undefined"

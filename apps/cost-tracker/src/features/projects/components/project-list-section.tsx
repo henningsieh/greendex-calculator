@@ -40,9 +40,15 @@ export async function ProjectListSection({
       availableScopes,
     );
     if (resolution.scope) {
-      await queryClient
-        .query(getProjectListQueryOptions(resolution.scope, resolution.state))
-        .catch(swallowPrefetchError);
+      await (
+        resolution.scope === "hosted"
+          ? queryClient.query(
+              getProjectListQueryOptions("hosted", resolution.state),
+            )
+          : queryClient.query(
+              getProjectListQueryOptions("partner", resolution.state),
+            )
+      ).catch(swallowPrefetchError);
     } else if (availableScopes.canCreate) {
       await queryClient
         .query(

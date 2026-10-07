@@ -429,6 +429,10 @@
     }
   },
   "organization": {
+    "country": {
+      "label": "País",
+      "placeholder": "Selecciona un país de la UE"
+    },
     "dashboard": {
       "title": "Panel",
       "description": "Resumen de las estadísticas, proyectos y participantes de tu organización.",
@@ -673,8 +677,8 @@
     "roles": {
       "owner": "Propietario de la organización",
       "admin": "Administrador de la organización",
-      "participant": "Participante",
-      "coordinator": "Coordinador del proyecto"
+      "coordinator": "Coordinador del proyecto",
+      "participant": "Participante"
     },
     "invitation": {
       "title": "Aceptar invitación",

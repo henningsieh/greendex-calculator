@@ -1,4 +1,4 @@
-import { StandardRPCJsonSerializer } from "@orpc/client/standard";
+import { RPCJsonSerializer } from "@orpc/client";
 import {
   defaultShouldDehydrateQuery,
   QueryCache,
@@ -6,7 +6,7 @@ import {
   type QueryCacheConfig,
 } from "@tanstack/react-query";
 
-const serializer = new StandardRPCJsonSerializer();
+const serializer = new RPCJsonSerializer();
 
 export function createQueryClient(queryCacheConfig?: QueryCacheConfig) {
   return new QueryClient({
@@ -15,7 +15,7 @@ export function createQueryClient(queryCacheConfig?: QueryCacheConfig) {
       queries: {
         staleTime: 60_000,
         queryKeyHashFn(queryKey) {
-          const [json, meta] = serializer.serialize(queryKey);
+          const { json, meta } = serializer.serialize(queryKey);
           return JSON.stringify({ json, meta });
         },
       },
@@ -23,12 +23,12 @@ export function createQueryClient(queryCacheConfig?: QueryCacheConfig) {
         shouldDehydrateQuery: (query) =>
           defaultShouldDehydrateQuery(query) || query.state.status === "pending",
         serializeData(data) {
-          const [json, meta] = serializer.serialize(data);
+          const { json, meta } = serializer.serialize(data);
           return { json, meta };
         },
       },
       hydrate: {
-        deserializeData: (data) => serializer.deserialize(data.json, data.meta),
+        deserializeData: (data) => serializer.deserialize(data),
       },
     },
   });

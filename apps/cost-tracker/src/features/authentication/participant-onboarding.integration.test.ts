@@ -311,7 +311,6 @@ describe("Participant onboarding procedures", () => {
       client.participantOnboarding.join(input("missing", "forged")),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      status: 404,
       data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
     });
     actor = owner;
@@ -326,7 +325,6 @@ describe("Participant onboarding procedures", () => {
       ),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       data: { reason: "PARTICIPANT_INVITATION_WRONG_ACCOUNT" },
     });
     // A forged secret resolves to nothing, without leaking the bound email.
@@ -335,7 +333,6 @@ describe("Participant onboarding procedures", () => {
       client.participantOnboarding.join(input(issued.invitationId, "forged")),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      status: 404,
       data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
     });
     await db
@@ -348,7 +345,6 @@ describe("Participant onboarding procedures", () => {
       ),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "PARTICIPANT_INVITATION_EXPIRED" },
     });
     expect(authMocks.addMember).not.toHaveBeenCalled();
@@ -418,7 +414,12 @@ describe("Participant onboarding procedures", () => {
           agreement: { accepted: true },
         }),
       ).rejects.toMatchObject({
-        status: expectedStatus,
+        code:
+          expectedStatus === 429
+            ? "TOO_MANY_REQUESTS"
+            : expectedStatus === 503
+              ? "SERVICE_UNAVAILABLE"
+              : "INTERNAL_SERVER_ERROR",
         data: { reason: expectedReason },
       });
       expect(await memberships()).toHaveLength(0);
@@ -481,7 +482,6 @@ describe("Participant onboarding procedures", () => {
       client.participantOnboarding.listMyProjects(),
     ).rejects.toMatchObject({
       code: "UNPROCESSABLE_CONTENT",
-      status: 422,
       data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
       message: "Complete your Participant profile before accessing Projects.",
     });
@@ -490,7 +490,6 @@ describe("Participant onboarding procedures", () => {
       client.participantOnboarding.listMyProjects(),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
       message:
         "Accept the current Participant agreement before accessing Projects.",
@@ -528,7 +527,6 @@ describe("Participant onboarding procedures", () => {
       client.participantOnboarding.listMyProjects(),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
       message:
         "Accept the current Participant agreement before accessing Projects.",
@@ -734,7 +732,6 @@ describe("Participant onboarding procedures", () => {
       }
       expect(refusal).toMatchObject({
         code: "BAD_REQUEST",
-        status: 400,
         message: "Use a defined Organization role.",
       });
     }
@@ -808,7 +805,6 @@ describe("Participant onboarding procedures", () => {
     );
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "MEMBERSHIP_CHANGED" },
     });
     expect(
@@ -1155,7 +1151,6 @@ describe("Participant onboarding procedures", () => {
     };
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
-      status: 500,
     });
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
@@ -1377,7 +1372,6 @@ describe("Participant onboarding procedures", () => {
       ])
         await expect(attempt()).rejects.toMatchObject({
           code: "FORBIDDEN",
-          status: 403,
           data: { reason: "PARTNER_ENTRY_REQUIRED" },
         });
       expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
@@ -1450,7 +1444,6 @@ describe("Participant onboarding procedures", () => {
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       data: { reason: "PARTNER_COORDINATION_REQUIRED" },
     });
     await db.delete(member).where(eq(member.userId, recipient));

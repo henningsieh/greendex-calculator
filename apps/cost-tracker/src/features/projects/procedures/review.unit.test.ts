@@ -1,6 +1,8 @@
-// @vitest-environment node
 import { createRouterClient } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// @vitest-environment node
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -86,10 +88,11 @@ describe("review predicate outcomes", () => {
   ] as const)(
     "approve separates absence, state and amount invariant (%s)",
     async (claim, code, status, reason) => {
+      expect(getErrorStatus(code)).toBe(status);
       mocks.lock.mockResolvedValue({ claim });
       await expect(
         client.approve({ partnershipId: "own" }),
-      ).rejects.toMatchObject({ code, status, data: { reason } });
+      ).rejects.toMatchObject({ code, data: { reason } });
       expect(mocks.write).not.toHaveBeenCalled();
     },
   );
@@ -99,7 +102,6 @@ describe("review predicate outcomes", () => {
     });
     await expect(client.reopen({ partnershipId: "own" })).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "CLAIM_REJECTED_REQUIRED" },
     });
     expect(mocks.write).not.toHaveBeenCalled();
@@ -109,7 +111,6 @@ describe("review predicate outcomes", () => {
       client.requestCorrection({ partnershipId: "own" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "REVIEW_REASON_REQUIRED" },
     });
     expect(mocks.lock).not.toHaveBeenCalled();

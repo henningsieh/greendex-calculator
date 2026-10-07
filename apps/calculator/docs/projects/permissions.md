@@ -6,14 +6,14 @@ Status: current Calculator implementation. The accepted future Participant integ
 
 Calculator uses Better Auth Organization Membership roles to authorize Organization-owned Project operations. The current stored values map to product language as follows:
 
-| Stored role   | Current product term                |
-| ------------- | ----------------------------------- |
-| `owner`       | Organization Owner                  |
-| `admin`       | Organization Admin                  |
-| `participant` | Participant                         |
-| `coordinator` | Project Coordinator (no grants yet) |
+| Stored role   | Current product term |
+| ------------- | -------------------- |
+| `owner`       | Organization Owner   |
+| `admin`       | Organization Admin   |
+| `coordinator` | Project Coordinator  |
+| `participant` | Participant          |
 
-Both applications use the shared final role constants. Memberships may carry several roles. Calculator recognizes `coordinator` but grants it nothing; its existing `admin` behavior remains unchanged. See [ADR-0019](../../../../docs/adr/0019-require-organization-country-and-synchronize-role-values.md).
+Both applications use the shared final role constants. Memberships may carry several roles. Calculator grants `coordinator` Project create, read, and update rights. It grants no archive or delete rights. See [ADR-0019](../../../../docs/adr/0019-require-organization-country-and-synchronize-role-values.md).
 
 ## Project permissions
 
@@ -21,10 +21,10 @@ Both applications use the shared final role constants. Memberships may carry sev
 | ------------- | ------ | ---- | ------ | ------ | ----------------------------- |
 | `owner`       | yes    | yes  | yes    | yes    | yes                           |
 | `admin`       | yes    | yes  | yes    | no     | only Projects they coordinate |
+| `coordinator` | yes    | yes  | yes    | no     | no                            |
 | `participant` | no     | yes  | no     | no     | no                            |
-| `coordinator` | no     | no   | no     | no     | no                            |
 
-Organization Owners may manage every Project in the active Organization and alone may delete Projects. Organization Admins retain the existing Project-management grants and resource checks, including responsibility checks for archiving. The separate `coordinator` value grants no Calculator authority.
+Organization Owners may manage every Project in the active Organization and alone may delete Projects. Organization Admins retain the existing Project-management grants and resource checks, including responsibility checks for archiving. The separate `coordinator` value mirrors Admin Project create, read, and update rights, without archive.
 
 ## Enforcement
 
@@ -36,7 +36,7 @@ Organization Owners may manage every Project in the active Organization and alon
 
 ## Sources of truth
 
-- [`src/features/projects/permissions.ts`](../../src/features/projects/permissions.ts): access-control statements and current roles
+- [`packages/auth/src/permissions.ts`](../../../../packages/auth/src/permissions.ts): access-control statements and current roles
 - [`src/features/projects/procedures.ts`](../../src/features/projects/procedures.ts): Project operations and resource checks
 - [`src/lib/better-auth/index.ts`](../../src/lib/better-auth/index.ts): Better Auth Organization plugin
 - [`src/lib/better-auth/auth-client.ts`](../../src/lib/better-auth/auth-client.ts): browser plugin configuration

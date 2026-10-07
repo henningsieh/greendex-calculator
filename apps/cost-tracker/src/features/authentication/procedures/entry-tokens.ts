@@ -3,15 +3,16 @@ import { randomBytes } from "node:crypto";
 
 import { db } from "@greendex/database";
 import { participantEntryTokensTable as tokens } from "@greendex/database/schema";
+import type { ORPCErrorConstructorMap } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 
 import { secretHash } from "@/features/authentication/procedures/shared";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-type ProcedureErrors = Parameters<
-  Parameters<typeof authorized.use>[0]
->[0]["errors"];
+type ProcedureErrors = ORPCErrorConstructorMap<
+  (typeof authorized)["~orpc"]["errorMap"]
+>;
 
 export type EntryToken = typeof tokens.$inferSelect;
 

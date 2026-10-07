@@ -1,6 +1,8 @@
-// @vitest-environment node
 import { ORPCError } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// @vitest-environment node
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
@@ -34,7 +36,7 @@ async function expectSituation(
   name: keyof typeof situationCatalog,
 ) {
   const situation = situationCatalog[name];
-  expect(response.status).toBe(situation.status);
+  expect(response.status).toBe(getErrorStatus(situation.code));
   expect(await response.json()).toEqual({
     error: situation.message,
     code: situation.code,
@@ -68,7 +70,7 @@ describe("Proof transport semantic adapters", () => {
         await GET(new Request(url)),
         await POST(multipart()),
       ]) {
-        expect(response.status).toBe(situation.status);
+        expect(response.status).toBe(getErrorStatus(situation.code));
         expect(await response.json()).toEqual({
           error: situation.message,
           code: situation.code,
@@ -83,8 +85,7 @@ describe("Proof transport semantic adapters", () => {
       message: "private",
       data: { reason: "SESSION_REQUIRED" },
     }),
-    new ORPCError("BAD_REQUEST", {
-      status: 500,
+    new ORPCError("UNKNOWN", {
       message: "private",
       data: { reason: "INVALID_INPUT" },
     }),

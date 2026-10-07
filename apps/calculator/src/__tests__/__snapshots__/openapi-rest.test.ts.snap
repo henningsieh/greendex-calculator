@@ -1,0 +1,83 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OpenAPI Specification > should serve OpenAPI specification 1`] = `
+{
+  "openapi": "3.1.1",
+  "routes": {
+    "/auth/session": [
+      "get",
+    ],
+    "/auth/sign-in": [
+      "post",
+    ],
+    "/auth/sign-out": [
+      "post",
+    ],
+    "/auth/sign-up": [
+      "post",
+    ],
+    "/health": [
+      "get",
+    ],
+    "/helloWorld": [
+      "post",
+    ],
+    "/organizations": [
+      "get",
+    ],
+    "/organizations/active": [
+      "get",
+    ],
+    "/organizations/members/search": [
+      "post",
+    ],
+    "/organizations/role": [
+      "get",
+    ],
+    "/organizations/stats": [
+      "post",
+    ],
+    "/projects": [
+      "get",
+      "post",
+    ],
+    "/projects/active": [
+      "post",
+    ],
+    "/projects/batch": [
+      "delete",
+    ],
+    "/projects/{id}": [
+      "get",
+      "patch",
+      "delete",
+    ],
+    "/projects/{id}/archive": [
+      "patch",
+    ],
+    "/projects/{id}/participate": [
+      "get",
+    ],
+    "/projects/{projectId}/participants": [
+      "get",
+    ],
+    "/projects/{projectId}/shared-travel-legs": [
+      "get",
+      "post",
+    ],
+    "/projects/{projectId}/shared-travel-legs/{id}": [
+      "patch",
+      "delete",
+    ],
+    "/users/profile": [
+      "get",
+    ],
+  },
+  "servers": [
+    {
+      "description": "OpenAPI REST endpoint",
+      "url": "/api/openapi",
+    },
+  ],
+}
+`;

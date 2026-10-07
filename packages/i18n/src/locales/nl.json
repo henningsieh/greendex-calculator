@@ -429,6 +429,10 @@
     }
   },
   "organization": {
+    "country": {
+      "label": "Land",
+      "placeholder": "Selecteer een EU-land"
+    },
     "dashboard": {
       "title": "Dashboard",
       "description": "Overzicht van de statistieken, projecten en deelnemers van je organisatie.",
@@ -673,8 +677,8 @@
     "roles": {
       "owner": "Organisatie-eigenaar",
       "admin": "Organisatiebeheerder",
-      "participant": "Deelnemer",
-      "coordinator": "Projectcoördinator"
+      "coordinator": "Projectcoördinator",
+      "participant": "Deelnemer"
     },
     "invitation": {
       "title": "Uitnodiging accepteren",

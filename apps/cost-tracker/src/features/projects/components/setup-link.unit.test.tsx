@@ -370,10 +370,9 @@ describe("Setup Link UI", () => {
     expect(screen.queryByText("Disabled setup link")).toBeNull();
   });
 
-  it("does not activate link-state copy for contradictory status metadata", async () => {
+  it("does not activate link-state copy for contradictory code/reason metadata", async () => {
     mocks.consume.mockRejectedValue(
-      new ORPCError("BAD_REQUEST", {
-        status: 403,
+      new ORPCError("FORBIDDEN", {
         message: "This setup link is disabled.",
         data: { reason: "SETUP_LINK_DISABLED" },
       }),

@@ -32,6 +32,10 @@ Schemas and migrations live in `packages/database/src/`.
 
 Better Auth schema generation uses the calculator's `auth:generate` script and writes to `packages/database/src/schemas/auth-schema.ts`.
 
+## Migration regression checks
+
+Calculator's Project Shared Travel Leg [cutover](../../apps/calculator/src/__tests__/project-shared-travel-legs-migration.integration.test.ts) and [compatibility cleanup](../../apps/calculator/src/__tests__/project-shared-travel-legs-cleanup.integration.test.ts) tests compare the exact primary-key and foreign-key constraint names. Their catalog queries filter `pg_constraint` to `contype IN ('p', 'f')`; unrelated constraints, including catalog-exposed `NOT NULL` entries, must not affect those assertions. This keeps the checks precise across PostgreSQL versions without changing migrations or snapshots.
+
 ## Connection
 
 The client reads `DATABASE_URL` from the environment and creates a `pg` connection pool lazily on first query. See [Coolify database connections](./coolify-ssl-connection.md) for the current platform boundary; retrieve resource-specific settings from Coolify rather than preserving a connection-string recipe in the repository.

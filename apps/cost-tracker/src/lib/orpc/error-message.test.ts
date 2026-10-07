@@ -80,39 +80,29 @@ it.each([
     503,
     "The service is temporarily unavailable. Try again later.",
   ],
-] as const)("safe generic %s/%s fallback", (code, status, text) => {
+] as const)("safe generic %s/%s fallback", (code, _status, text) => {
   expect(
     getORPCRequestErrorMessage(
       new ORPCError(code, {
-        status,
         message: "private SQL token",
         data: { reason: "UNKNOWN" },
       }),
     ),
   ).toEqual({ sessionExpired: false, text });
 });
-it.each([
-  ["UNAUTHORIZED", 500],
-  ["BAD_REQUEST", 401],
-  ["FORBIDDEN", 401],
-  ["UNKNOWN", 401],
-] as const)(
-  "contradictory %s/%s never offers sign-in recovery",
-  (code, status) => {
-    expect(
-      getORPCRequestErrorMessage(
-        new ORPCError(code, {
-          status,
-          message: "hostile",
-          data: { reason: "SESSION_REQUIRED" },
-        }),
-      ),
-    ).toEqual({
-      sessionExpired: false,
-      text: "The request could not be completed. Try again.",
-    });
-  },
-);
+it("unknown codes never offer sign-in recovery", () => {
+  expect(
+    getORPCRequestErrorMessage(
+      new ORPCError("UNKNOWN", {
+        data: { reason: "SESSION_REQUIRED" },
+        message: "hostile",
+      }),
+    ),
+  ).toEqual({
+    sessionExpired: false,
+    text: "The request could not be completed. Try again.",
+  });
+});
 it("network errors stay connectivity failures without exposing prose", () => {
   expect(getORPCRequestErrorMessage(new Error("private"))).toEqual({
     sessionExpired: false,

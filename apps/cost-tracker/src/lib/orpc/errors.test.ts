@@ -24,7 +24,6 @@ describe("derived situation refusals", () => {
     const situation = situationCatalog[name];
     expect(errors[name]()).toMatchObject({
       code: situation.code,
-      status: situation.status,
       message: situation.message,
       data: { reason: situation.reason },
     });
@@ -62,7 +61,6 @@ describe("derived situation refusals", () => {
       ]),
     ).toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       message:
         "Cannot complete Project: Group A (submitted), Group B (no Claim).",
       data: { reason: "PROJECT_COMPLETION_BLOCKED" },
@@ -75,7 +73,6 @@ describe("derived situation refusals", () => {
     ];
     expect(errors.submissionIncomplete(issues)).toMatchObject({
       code: situationCatalog.submissionIncomplete.code,
-      status: situationCatalog.submissionIncomplete.status,
       message: situationCatalog.submissionIncomplete.message,
       data: { reason: situationCatalog.submissionIncomplete.reason, issues },
     });

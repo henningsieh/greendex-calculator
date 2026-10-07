@@ -81,7 +81,6 @@ describe("Participation constraint recovery", () => {
       client.create({ partnershipId: "own", userId: "candidate" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       message: "Participation cannot be created for this Project Partnership.",
       data: { reason: "PARTICIPATION_REPRESENTATION_CONFLICT" },
     });
@@ -96,7 +95,6 @@ describe("Participation constraint recovery", () => {
       client.create({ partnershipId: "own", userId: "candidate" }),
     ).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
-      status: 500,
       data: { reason: "INTERNAL_FAILURE" },
     });
     expect(mocks.reviewInsert).not.toHaveBeenCalled();
@@ -110,7 +108,6 @@ describe("Participation constraint recovery", () => {
       client.create({ partnershipId: "own", userId: "candidate" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "PARTICIPATION_DUPLICATE" },
     });
     expect(mocks.reviewInsert).toHaveBeenCalledTimes(1);

@@ -38,4 +38,4 @@ For any Next.js task, read the version-matched docs bundled in the single catalo
 
 ## Delegated implementation
 
-The main agent passes the matching route, relevant paths, and acceptance criteria; the child reads the owning app context and scoped instructions. Return changed files, check results, blockers, and evidence paths rather than copying documentation or logs into the main chat. The main agent verifies the affected diff and evidence, reading deeper only where needed. Launch and recovery mechanics live in [subagent launch](subagent-launch.md).
+The main agent passes the matching route, relevant paths, and acceptance criteria; the child reads the owning app context and scoped instructions. Return changed files, check results, blockers, and evidence paths rather than copying documentation or logs into the main chat. The main agent verifies the affected diff and evidence, reading deeper only where needed. Contributor contracts and safe recovery live in [delegation policy](delegation.md).

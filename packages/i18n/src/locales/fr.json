@@ -429,6 +429,10 @@
     }
   },
   "organization": {
+    "country": {
+      "label": "Pays",
+      "placeholder": "Sélectionnez un pays de l’UE"
+    },
     "dashboard": {
       "title": "Tableau de bord",
       "description": "Vue d'ensemble des statistiques, projets et participants de votre organisation.",
@@ -673,8 +677,8 @@
     "roles": {
       "owner": "Propriétaire de l’organisation",
       "admin": "Administrateur de l’organisation",
-      "participant": "Participant",
-      "coordinator": "Coordinateur du projet"
+      "coordinator": "Coordinateur du projet",
+      "participant": "Participant"
     },
     "invitation": {
       "title": "Accepter l'invitation",

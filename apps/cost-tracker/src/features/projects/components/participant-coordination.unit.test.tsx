@@ -342,12 +342,9 @@ describe("ParticipantCoordination", () => {
         "Identity already participates in this Project; request merge review.",
     }),
     new ORPCError("FORBIDDEN", { data: { reason: "PARTICIPATION_DUPLICATE" } }),
-    new ORPCError("BAD_REQUEST", {
-      status: 409,
-      data: { reason: "PARTICIPATION_DUPLICATE" },
-    }),
+    new ORPCError("UNKNOWN", { data: { reason: "PARTICIPATION_DUPLICATE" } }),
   ])(
-    "does not activate duplicate recovery for legacy prose or wrong code/status",
+    "does not activate duplicate recovery for legacy prose or wrong code/reason",
     async (error) => {
       mocks.create.mockRejectedValue(error);
       const user = userEvent.setup();

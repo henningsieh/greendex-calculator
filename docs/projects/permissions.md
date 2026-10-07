@@ -2,7 +2,7 @@
 
 Status: approved target model. The current Calculator and Cost Tracker implementations do not yet implement this model completely.
 
-This document owns the cross-application permission model. Read [ADR-0002](../adr/0002-integrate-participants-with-better-auth.md), [ADR-0004](../adr/0004-scope-project-coordination-through-assignments.md), and [ADR-0005](../adr/0005-require-authenticated-participant-onboarding.md).
+This document owns the cross-application permission model. Domain names follow the [canonical glossary](../../GLOSSARY.md). Read [ADR-0002](../adr/0002-integrate-participants-with-better-auth.md), [ADR-0004](../adr/0004-scope-project-coordination-through-assignments.md), and [ADR-0005](../adr/0005-require-authenticated-participant-onboarding.md).
 
 ## Two authorization questions
 
@@ -22,13 +22,17 @@ Neither answer replaces the other. A role never grants access to every Project, 
 | Project Coordinator | `coordinator` | Coordination capability narrowed by an explicit hosted-Project or Project-Partnership assignment. |
 | Participant | `participant` | Participant-facing capability narrowed by the User's own Project Participation. |
 
-Both apps use only the four shared role values above; unknown and omitted grants are refused. [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) replaces the former Calculator compatibility values. Calculator retains its `admin` Project-management behavior; its `coordinator` role grants nothing yet.
+Both apps use only the four shared role values above; unknown and omitted grants are refused. [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) replaces the former Calculator compatibility values. Calculator grants `coordinator` Project create, read, and update rights. It grants neither archive nor delete.
 
 Calculator `admin` intentionally converges to the shared Project `archive` grant; Project deletion remains reserved to Organization Owners.
 
 Library table/field names and ordinary Membership wording are unaffected.
 
 Role lists derive from the shared auth constants rather than separate app-owned lists. Only defined shared role values may be invited, assigned, or seeded; staff invitations remain limited to `owner` and `admin`.
+
+The canonical enumeration order is `owner`, `admin`, `coordinator`, `participant`: [`ORGANIZATION_ROLES`](../../packages/config/src/organization-roles.ts) declares `OrganizationOwner`, `OrganizationAdmin`, `ProjectCoordinator`, then `Participant`. Both application role maps and every locale's `organization.roles` block follow this order, so role selectors enumerate consistently.
+
+[`assertRoleMapCoversRoles`](../../packages/auth/src/permissions.ts) rejects missing, extra, unknown, or reordered role-map keys. It validates structure only, not permission statements. The [role contract tests](../../packages/auth/src/permissions.test.ts) lock constant-key order and distinct role values, and validate both application maps. Enumeration order does not change authorization grants or assignment scope.
 
 One Membership may hold several roles. Assigning `participant` or `coordinator` never removes an existing role.
 
@@ -84,4 +88,17 @@ A recipient completes their profile and accepts the current agreement version be
 
 ## Application boundaries
 
-Cost Tracker applies assignment-scoped coordination and authenticated Participant entry. Calculator retains its existing administrative Project checks: the `admin` value still manages Projects, while `coordinator` confers no grants. No stored-role compatibility map or data backfill is retained; development mock data is wiped and reseeded with final roles before applying the required country column.
+Cost Tracker applies assignment-scoped coordination and authenticated Participant entry. Calculator retains its existing administrative Project checks: the `admin` value still manages Projects, while `coordinator` grants Project create, read, and update rights, but no archive or delete. No stored-role compatibility map or data backfill is retained; development mock data is wiped and reseeded with final roles before applying the required country column.
+
+## Declared Calculator Project permissions
+
+| Stored role | create | read | update | delete | archive |
+| --- | --- | --- | --- | --- | --- |
+| `owner` | Yes | Yes | Yes | Yes | Yes |
+| `admin` | Yes | Yes | Yes | No | Yes |
+| `coordinator` | Yes | Yes | Yes | No | No |
+| `participant` | No | Yes | No | No | No |
+
+The [shared auth factory](../../packages/auth/src/server-auth.ts) owns validation and selects the app's role map. Calculator uses `calculatorOrganizationRoles`. Cost Tracker uses `costTrackerOrganizationRoles` and keeps assignment-scoped coordination. Both maps live in [permissions.ts](../../packages/auth/src/permissions.ts). Pure role helpers live in [organization-roles.ts](../../packages/auth/src/organization-roles.ts).
+
+Calculator archive checks the declared archive permission. It also checks the active Organization and permits an Owner or an Admin with a Host assignment. A Coordinator cannot archive. Browser permission checks are presentation aids, not server authorization.

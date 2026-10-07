@@ -89,8 +89,8 @@ describe("QueryProvider", () => {
   });
 
   it("shows one toast for an identical oRPC failure burst across queries", async () => {
-    const firstError = new ORPCError("SERVICE_UNAVAILABLE", { status: 503 });
-    const secondError = new ORPCError("SERVICE_UNAVAILABLE", { status: 503 });
+    const firstError = new ORPCError("SERVICE_UNAVAILABLE", {});
+    const secondError = new ORPCError("SERVICE_UNAVAILABLE", {});
 
     render(
       <QueryProvider>

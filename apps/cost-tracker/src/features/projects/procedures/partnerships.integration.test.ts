@@ -1,6 +1,6 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
-// @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
@@ -265,7 +265,6 @@ describe("Project Partnership procedures", () => {
       }),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      status: 404,
       data: { reason: "PROJECT_NOT_FOUND" },
     });
   });
@@ -322,7 +321,6 @@ describe("Project Partnership procedures", () => {
       await expect(assignment).resolves.toMatchObject({
         error: {
           code: "NOT_FOUND",
-          status: 404,
           data: { reason: "PROJECT_NOT_FOUND" },
         },
       });

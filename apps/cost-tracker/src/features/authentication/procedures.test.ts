@@ -94,9 +94,14 @@ describe("Cost Tracker authentication procedures", () => {
     ]);
   });
 
-  it.each([400, 401, 403, 429] as const)(
+  it.each([
+    [400, "BAD_REQUEST"],
+    [401, "UNAUTHORIZED"],
+    [403, "FORBIDDEN"],
+    [429, "TOO_MANY_REQUESTS"],
+  ] as const)(
     "preserves a Better Auth HTTP %i failure as a distinct typed oRPC error",
-    async (status) => {
+    async (status, code) => {
       mocks.signInEmail.mockResolvedValue(response(status));
 
       await expect(
@@ -104,7 +109,7 @@ describe("Cost Tracker authentication procedures", () => {
           email: "user@example.org",
           password: "correct-horse-battery-staple",
         }),
-      ).rejects.toMatchObject({ status });
+      ).rejects.toMatchObject({ code });
     },
   );
 
@@ -120,7 +125,6 @@ describe("Cost Tracker authentication procedures", () => {
       }),
     ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
-      status: 401,
       message: "Incorrect email or password.",
       data: { reason: "INVALID_CREDENTIALS" },
     });
@@ -136,7 +140,6 @@ describe("Cost Tracker authentication procedures", () => {
       createClient().authentication.updateUser({ name: "Updated" }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
     });
     mocks.signInEmail.mockRejectedValue(new Error("private internal detail"));
@@ -147,7 +150,6 @@ describe("Cost Tracker authentication procedures", () => {
       }),
     ).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
-      status: 500,
       message: "Internal server error",
       data: { reason: "INTERNAL_FAILURE" },
     });

@@ -95,7 +95,6 @@ describe("Claim first-save conflict recovery", () => {
       client.saveDraft({ partnershipId: "own" }),
     ).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
-      status: 500,
       message: "Internal server error",
       data: { reason: "INTERNAL_FAILURE" },
     });
@@ -106,7 +105,6 @@ describe("Claim first-save conflict recovery", () => {
       client.saveDraft({ partnershipId: "own" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "CLAIM_NOT_EDITABLE" },
     });
   });
@@ -130,7 +128,6 @@ describe("Claim first-save conflict recovery", () => {
       client.saveDraft({ partnershipId: "own" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "CLAIM_NOT_EDITABLE" },
     });
   });

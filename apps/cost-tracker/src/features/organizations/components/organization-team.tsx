@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/components/ui/toast";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
@@ -80,7 +81,6 @@ export function OrganizationTeam({
   const [role, setRole] = useState<StaffRole>(
     ORGANIZATION_ROLES.OrganizationAdmin,
   );
-  const [notice, setNotice] = useState("");
   const [formError, setFormError] = useState("");
 
   const memberRows = members.data.members;
@@ -113,11 +113,13 @@ export function OrganizationTeam({
       setEmail("");
       setRole(ORGANIZATION_ROLES.OrganizationAdmin);
       setFormError("");
-      setNotice(`Invitation sent to ${result.email}.`);
+      toast.add({
+        title: `Invitation sent to ${result.email}.`,
+        type: "success",
+      });
       await refresh();
     },
     onError: (error) => {
-      setNotice("");
       setFormError(getORPCRequestErrorMessage(error).text);
     },
   });
@@ -127,11 +129,10 @@ export function OrganizationTeam({
       orpc.organizations.cancelInvitation({ invitationId }),
     onSuccess: async () => {
       setFormError("");
-      setNotice("Invitation cancelled.");
+      toast.add({ title: "Invitation cancelled.", type: "success" });
       await refresh();
     },
     onError: (error) => {
-      setNotice("");
       setFormError(getORPCRequestErrorMessage(error).text);
     },
   });
@@ -149,12 +150,6 @@ export function OrganizationTeam({
         <Alert variant="destructive">
           <AlertTitle>Organization staff is unavailable</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {notice && (
-        <Alert>
-          <AlertTitle>Done</AlertTitle>
-          <AlertDescription>{notice}</AlertDescription>
         </Alert>
       )}
 

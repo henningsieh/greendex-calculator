@@ -1,10 +1,11 @@
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { ORGANIZATION_ROLES } from "@greendex/auth/organization-roles";
 import { db } from "@greendex/database";
 import {
   projectSharedTravelLegsTable,
   projectParticipantsTable,
   projectsTable,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { and, count, countDistinct, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -12,6 +13,7 @@ import { z } from "zod";
 import {
   canonicalCalculatorRole,
   USERS_SORT_FIELDS,
+  type MemberRole,
   type MemberSortField,
 } from "@/features/organizations/types";
 import {
@@ -31,10 +33,14 @@ function getSortKey(
     return Number.isNaN(time) ? 0 : time;
   }
   if (sortBy === "role") {
-    const roleOrder = {
+    // Sort order: owner < admin < coordinator < participant.
+    // Record<MemberRole, number> keeps this exhaustive: adding a role
+    // value without ranking it here fails the build.
+    const roleOrder: Record<MemberRole, number> = {
       [ORGANIZATION_ROLES.OrganizationOwner]: 0,
       [ORGANIZATION_ROLES.OrganizationAdmin]: 1,
-      [ORGANIZATION_ROLES.Participant]: 2,
+      [ORGANIZATION_ROLES.ProjectCoordinator]: 2,
+      [ORGANIZATION_ROLES.Participant]: 3,
     };
     const role = canonicalCalculatorRole(member.role);
     return role && role in roleOrder
@@ -56,11 +62,13 @@ function getSortKey(
  * Uses Better Auth's implicit getFullOrganization endpoint
  */
 export const getFullOrganization = authorized
-  .route({
-    method: "GET",
-    path: "/organizations/active",
-    summary: "Get active organization details",
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/organizations/active",
+      summary: "Get active organization details",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     // Validate active organization first (no try-catch needed for our own throws)
     if (!context.session.activeOrganizationId) {
@@ -97,11 +105,13 @@ export const getFullOrganization = authorized
   });
 
 export const getOrganizationRole = authorized
-  .route({
-    method: "GET",
-    path: "/organizations/role",
-    summary: "Get user's role in the active organization",
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/organizations/role",
+      summary: "Get user's role in the active organization",
+    }),
+  )
   .output(MemberRoleSchema)
   .handler(async ({ context, errors }) => {
     if (!context.session.activeOrganizationId) {
@@ -125,16 +135,16 @@ export const getOrganizationRole = authorized
         (member) => member.userId === context.user.id,
       );
 
-      if (!currentMember?.role) {
+      // Reduce to the Calculator's role contract; unknown values fail closed.
+      const role = currentMember?.role
+        ? canonicalCalculatorRole(currentMember.role)
+        : null;
+      if (!role) {
         throw errors.NOT_FOUND({
           message: "Organization role not found",
         });
       }
 
-      // #183 appends a Cost Tracker role to legacy admins; Calculator exposes only its existing role contract.
-      const role = canonicalCalculatorRole(currentMember.role);
-      if (!role)
-        throw errors.FORBIDDEN({ message: "Organization role not found" });
       return role;
     } catch (error) {
       if (error instanceof ORPCError) {
@@ -153,11 +163,13 @@ export const getOrganizationRole = authorized
  * Uses Better Auth's implicit organization.list endpoint
  */
 export const listOrganizations = base
-  .route({
-    method: "GET",
-    path: "/organizations",
-    summary: "List user's organizations",
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/organizations",
+      summary: "List user's organizations",
+    }),
+  )
   .handler(async ({ context }) => {
     const organizations = await auth.api.listOrganizations({
       headers: context.headers,
@@ -166,12 +178,14 @@ export const listOrganizations = base
   });
 
 export const searchMembers = authorized
-  .route({
-    method: "POST",
-    path: "/organizations/members/search",
-    description: "Search members with flexible filters",
-    tags: ["Organizations"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/organizations/members/search",
+      description: "Search members with flexible filters",
+      tags: ["Organizations"],
+    }),
+  )
   .input(
     z.object({
       organizationId: z.string(),
@@ -276,13 +290,15 @@ export const searchMembers = authorized
  * Returns total projects, Project Participants, and Project Shared Travel Legs for an organization
  */
 export const getOrganizationStats = authorized
-  .route({
-    method: "POST",
-    path: "/organizations/stats",
-    description:
-      "Get organization statistics including total projects, Project Participants, and Project Shared Travel Legs",
-    tags: ["Organizations"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/organizations/stats",
+      description:
+        "Get organization statistics including total projects, Project Participants, and Project Shared Travel Legs",
+      tags: ["Organizations"],
+    }),
+  )
   .input(
     z.object({
       organizationId: z.string(),

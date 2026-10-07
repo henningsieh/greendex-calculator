@@ -1,6 +1,8 @@
-// @vitest-environment node
 import { createRouterClient } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// @vitest-environment node
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -88,10 +90,11 @@ describe("payment predicate outcomes", () => {
   ] as const)(
     "markPaid separates absence, state, invariant and amount (%s)",
     async (claim, code, status, reason) => {
+      expect(getErrorStatus(code)).toBe(status);
       mocks.lock.mockResolvedValue({ claim });
       await expect(
         client.markPaid({ partnershipId: "own", amountEur: "10.00" }),
-      ).rejects.toMatchObject({ code, status, data: { reason } });
+      ).rejects.toMatchObject({ code, data: { reason } });
       expect(mocks.write).not.toHaveBeenCalled();
     },
   );
@@ -112,10 +115,11 @@ describe("payment predicate outcomes", () => {
   ] as const)(
     "correctPayment separates absence, state and invariant (%s)",
     async (claim, code, status, reason) => {
+      expect(getErrorStatus(code)).toBe(status);
       mocks.lock.mockResolvedValue({ claim });
       await expect(
         client.correctPayment({ partnershipId: "own", reason: "Correction" }),
-      ).rejects.toMatchObject({ code, status, data: { reason } });
+      ).rejects.toMatchObject({ code, data: { reason } });
       expect(mocks.write).not.toHaveBeenCalled();
     },
   );

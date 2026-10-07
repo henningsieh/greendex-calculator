@@ -7,6 +7,7 @@ import {
   membershipMisconfigurationNames,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
+import { getErrorStatus } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
 type Situations = ReturnType<typeof createSituationErrors>;
@@ -17,7 +18,12 @@ const MAX_ERROR_BODY_BYTES = 4096;
 const genericRefusalByStatus = new Map<
   number,
   (typeof genericClientRefusalNames)[number]
->(genericClientRefusalNames.map((name) => [situationCatalog[name].status, name]));
+>(
+  genericClientRefusalNames.map((name) => [
+    getErrorStatus(situationCatalog[name].code),
+    name,
+  ]),
+);
 
 function mapFailure(status: number, body: unknown, errors: Situations) {
   const parsed = BodySchema.safeParse(body);

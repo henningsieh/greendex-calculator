@@ -62,4 +62,6 @@ export const InviteFormSchema = createInsertSchema(invitation)
     role: z.enum(Object.values(MEMBER_ROLES)),
   });
 
+// The edit form requires country; Better Auth partial updates may omit it and retain
+// the existing required country, while still rejecting invalid supplied values.
 export const EditOrganizationFormSchema = OrganizationFormSchema;

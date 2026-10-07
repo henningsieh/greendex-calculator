@@ -429,6 +429,10 @@
     }
   },
   "organization": {
+    "country": {
+      "label": "Država",
+      "placeholder": "Izberite državo EU"
+    },
     "dashboard": {
       "title": "Nadzorna plošča",
       "description": "Pregled statistike, projektov in udeležencev organizacije.",
@@ -673,8 +677,8 @@
     "roles": {
       "owner": "Lastnik organizacije",
       "admin": "Skrbnik organizacije",
-      "participant": "Udeleženec",
-      "coordinator": "Koordinator projekta"
+      "coordinator": "Koordinator projekta",
+      "participant": "Udeleženec"
     },
     "invitation": {
       "title": "Sprejmi povabilo",

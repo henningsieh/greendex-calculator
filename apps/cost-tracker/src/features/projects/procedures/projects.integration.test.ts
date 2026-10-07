@@ -391,7 +391,6 @@ describe("projects procedures", () => {
       useSession(partnerIds[0]!);
       await expect(complete()).rejects.toMatchObject({
         code: "NOT_FOUND",
-        status: 404,
         data: { reason: "PROJECT_NOT_FOUND" },
       });
       authMocks.getSession.mockResolvedValue(null);
@@ -548,7 +547,6 @@ describe("projects procedures", () => {
 
       await expect(client.projects.get({ projectId })).rejects.toMatchObject({
         code: "NOT_FOUND",
-        status: 404,
         message: "Project not found in scope.",
         data: { reason: "PROJECT_NOT_FOUND" },
       });

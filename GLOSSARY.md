@@ -24,7 +24,7 @@ A User with Organization-wide administrative authority below the Organization Ow
 _Avoid_: Project Coordinator, Owner
 
 **Project Coordinator**:
-A User whose coordination authority is scoped by an explicit Project or Project Partnership assignment. The Partner-side UI calls this actor a Group Organizer.
+The acting person who runs a project day to day. Coordinates participants. Has no organization-wide authority. The Partner-side UI calls this actor a Group Organizer.
 _Avoid_: Organization Admin, Employee, Project Manager, Coordinator
 
 **Participant Role**:

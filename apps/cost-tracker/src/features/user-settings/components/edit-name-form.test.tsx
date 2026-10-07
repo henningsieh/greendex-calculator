@@ -5,8 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EditNameForm } from "@/features/user-settings/components/edit-name-form";
 
 const mocks = vi.hoisted(() => ({
+  toastAdd: vi.fn(),
   refresh: vi.fn(),
   updateUser: vi.fn(),
+}));
+
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: mocks.toastAdd },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -36,6 +41,7 @@ async function enterName(nameInput: HTMLElement, name: string) {
 
 describe("EditNameForm", () => {
   beforeEach(() => {
+    mocks.toastAdd.mockReset();
     mocks.refresh.mockReset();
     mocks.updateUser.mockReset();
   });
@@ -71,7 +77,12 @@ describe("EditNameForm", () => {
     await waitFor(() => {
       expect(mocks.updateUser).toHaveBeenCalledWith({ name: "Morgan Lee" });
     });
-    expect(await screen.findByText("Your name has been updated.")).toBeTruthy();
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
+        title: "Your name has been updated.",
+        type: "success",
+      }),
+    );
     expect(mocks.refresh).toHaveBeenCalledOnce();
     expect((nameInput as HTMLInputElement).value).toBe("Morgan Lee");
     expect((saveButton as HTMLButtonElement).disabled).toBe(true);
@@ -133,6 +144,11 @@ describe("EditNameForm", () => {
     expect(mocks.updateUser).toHaveBeenCalledOnce();
 
     resolveUpdate?.({ success: true });
-    await screen.findByText("Your name has been updated.");
+    await waitFor(() =>
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
+        title: "Your name has been updated.",
+        type: "success",
+      }),
+    );
   });
 });

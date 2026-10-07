@@ -165,7 +165,7 @@ export const LandingHeader = () => {
                 <SheetTrigger asChild>
                   <Button
                     aria-label={t("navigation.openMenu")}
-                    className="h-8 w-8"
+                    className="size-8"
                     size="icon"
                     variant="ghost"
                   >

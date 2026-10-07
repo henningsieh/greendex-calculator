@@ -33,7 +33,8 @@ describe("NoOrganizationAccess", () => {
 
   it("navigates once after creating an Organization", async () => {
     mocks.createOrganization.mockResolvedValue({});
-    const user = userEvent.setup();
+    // No inter-keystroke delay: keystroke timing must not eat the timeout.
+    const user = userEvent.setup({ delay: null });
     render(<NoOrganizationAccess autoOpen />);
 
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
@@ -51,7 +52,8 @@ describe("NoOrganizationAccess", () => {
 
   it("clears pending state and gives safe feedback when Organization creation rejects", async () => {
     mocks.createOrganization.mockRejectedValue(new Error("network unavailable"));
-    const user = userEvent.setup();
+    // No inter-keystroke delay: keystroke timing must not eat the timeout.
+    const user = userEvent.setup({ delay: null });
     render(<NoOrganizationAccess autoOpen />);
 
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
