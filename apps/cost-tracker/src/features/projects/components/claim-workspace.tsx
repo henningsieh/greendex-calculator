@@ -146,8 +146,8 @@ function JourneyCorrection({
       </div>
       {!editing ? (
         <Button
-          size="accounting"
-          variant="accounting-outline"
+          size="lg"
+          variant="outline"
           type="button"
           onClick={() => setEditing(true)}
         >
@@ -204,17 +204,12 @@ function JourneyCorrection({
             />
             <FieldError message={errors.erasmusDistanceKm} />
           </div>
-          <Button
-            size="accounting"
-            variant="accounting"
-            type="submit"
-            disabled={pending}
-          >
+          <Button size="lg" variant="default" type="submit" disabled={pending}>
             Save correction
           </Button>
           <Button
-            variant="accounting"
-            size="accounting"
+            variant="default"
+            size="lg"
             type="button"
             disabled={pending}
             onClick={() => {
@@ -404,8 +399,8 @@ function JourneyEditor({
               <FieldError message={errors.erasmusDistanceKm} />
             </div>
             <Button
-              size="accounting"
-              variant="accounting"
+              size="lg"
+              variant="default"
               type="submit"
               disabled={pending || !person}
             >
@@ -544,8 +539,8 @@ function CostEditor({
               ),
               action: editable ? (
                 <Button
-                  size="accounting"
-                  variant="accounting-outline"
+                  size="lg"
+                  variant="outline"
                   type="button"
                   onClick={() => edit(entry)}
                 >
@@ -675,12 +670,7 @@ function CostEditor({
                     method,
                   )} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
             </p>
-            <Button
-              size="accounting"
-              variant="accounting"
-              type="submit"
-              disabled={pending}
-            >
+            <Button size="lg" variant="default" type="submit" disabled={pending}>
               Save cost
             </Button>
           </form>
@@ -804,12 +794,7 @@ function ProofEditor({
               type="file"
               accept="application/pdf,image/jpeg,image/png"
             />
-            <Button
-              size="accounting"
-              variant="accounting"
-              type="submit"
-              disabled={busy}
-            >
+            <Button size="lg" variant="default" type="submit" disabled={busy}>
               Upload document
             </Button>
           </form>
@@ -1194,8 +1179,8 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                         <FieldError message={accountErrors.bic} />
                       </div>
                       <Button
-                        size="accounting"
-                        variant="accounting"
+                        size="lg"
+                        variant="default"
                         type="submit"
                         disabled={pending}
                       >
@@ -1206,8 +1191,8 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                 </div>
                 {editable && !draft && (
                   <Button
-                    variant="accounting"
-                    size="accounting"
+                    variant="default"
+                    size="lg"
                     type="button"
                     disabled={pending || !payout.selectedPayoutAccountId}
                     onClick={() => void saveDraft()}

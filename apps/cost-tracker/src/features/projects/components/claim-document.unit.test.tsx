@@ -12,6 +12,65 @@ import {
 const filename = `${"long-receipt-name-".repeat(12)}.pdf`;
 
 describe("Claim document presentation", () => {
+  it.each([
+    ["default", "brand", "primary-glow"],
+    ["outline", "secondary-feedback-border", "secondary-glow"],
+  ] as const)(
+    "%s keeps the yellow border swap and halo for hover, focus and press",
+    (variant, border, shadow) => {
+      render(
+        <Button variant={variant} size="lg">
+          Claim action
+        </Button>,
+      );
+      const button = screen.getByRole("button", { name: "Claim action" });
+      expect(button).toHaveClass(
+        "border",
+        "h-11",
+        "active:enabled:scale-[.97]",
+        `fine-hover:enabled:border-${border}`,
+        `fine-hover:enabled:shadow-${shadow}`,
+        `focus-visible:border-${border}`,
+        `focus-visible:shadow-${shadow}`,
+        `active:enabled:border-${border}`,
+        `active:enabled:shadow-${shadow}`,
+        "focus-visible:ring-0",
+        "transition-transform",
+        "motion-reduce:transition-none",
+        "motion-reduce:active:enabled:scale-100",
+      );
+      expect(button).not.toHaveClass("transition-all", "focus-visible:ring-2");
+    },
+  );
+
+  it("uses the unified primary look by default while retaining disabled and invalid states", () => {
+    const activate = vi.fn();
+    render(
+      <Button disabled aria-invalid onClick={activate}>
+        Unavailable action
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Unavailable action" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-invalid", "true");
+    expect(button).toHaveClass(
+      "h-10",
+      "border-primary-border",
+      "bg-primary",
+      "text-primary-foreground",
+      "fine-hover:enabled:border-brand",
+      "fine-hover:enabled:shadow-primary-glow",
+      "disabled:pointer-events-none",
+      "disabled:opacity-50",
+      "aria-invalid:border-destructive",
+      "aria-invalid:ring-2",
+      "dark:aria-invalid:border-destructive/50",
+      "dark:aria-invalid:ring-destructive/40",
+    );
+    fireEvent.click(button);
+    expect(activate).not.toHaveBeenCalled();
+  });
+
   it("keeps full evidence and exact figures in a keyboard-accessible table with existing edit actions", () => {
     const edit = vi.fn();
     render(
@@ -31,11 +90,7 @@ describe("Claim document presentation", () => {
             ),
             documents: filename,
             action: (
-              <Button
-                variant="accounting-outline"
-                size="accounting"
-                onClick={edit}
-              >
+              <Button variant="outline" size="lg" onClick={edit}>
                 Edit cost
               </Button>
             ),

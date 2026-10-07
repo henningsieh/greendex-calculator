@@ -53,6 +53,7 @@
   --primary-border: #93b4ff;
   --secondary-hover: #e8f0ff;
   --secondary-hover-foreground: #003399;
+  --secondary-feedback-border: #ffcc00;
   --primary-glow: 0 0 12px rgb(255 204 0 / 50%);
   --secondary-glow: 0 0 7px rgb(255 204 0 / 35%);
 }
@@ -98,6 +99,7 @@
   --primary-border: #739fff;
   --secondary-hover: #202023;
   --secondary-hover-foreground: #e4e4e7;
+  --secondary-feedback-border: rgb(255 204 0 / 75%);
   --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
   --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
 }
@@ -112,6 +114,7 @@
   --color-primary-border: var(--primary-border);
   --color-secondary-hover: var(--secondary-hover);
   --color-secondary-hover-foreground: var(--secondary-hover-foreground);
+  --color-secondary-feedback-border: var(--secondary-feedback-border);
   --shadow-primary-glow: var(--primary-glow);
   --shadow-secondary-glow: var(--secondary-glow);
   --font-sans: var(--font-geist);
