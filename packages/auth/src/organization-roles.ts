@@ -2,19 +2,47 @@ import {
   ORGANIZATION_ROLES,
   type OrganizationRole,
 } from "@greendex/config/organization-roles";
+import { z } from "zod";
 
 export {
   ORGANIZATION_ROLES,
   type OrganizationRole,
 } from "@greendex/config/organization-roles";
 
+/**
+ * Canonical role schema: the single definition of valid roles.
+ * Validation and inferred types derive from here, never from copies.
+ */
+export const OrganizationRoleSchema = z.enum([
+  ORGANIZATION_ROLES.OrganizationOwner,
+  ORGANIZATION_ROLES.OrganizationAdmin,
+  ORGANIZATION_ROLES.ProjectCoordinator,
+  ORGANIZATION_ROLES.Participant,
+]);
+
+type Equals<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? true
+    : false;
+
+// Compile-time proof the schema infers exactly the canonical role type,
+// so the two can never drift apart.
+const _schemaMatchesType: Equals<
+  z.infer<typeof OrganizationRoleSchema>,
+  OrganizationRole
+> = true;
+
+/** Stored membership values: comma-separated roles, same schema family. */
+const OrganizationRoleListSchema = z
+  .string()
+  .transform((value) => value.split(",").map((part) => part.trim()))
+  .pipe(z.array(OrganizationRoleSchema).min(1));
+
 /** Reject omitted defaults and unknown roles, including in combined Memberships. */
 export function isValidOrganizationRole(
   role: string | null | undefined,
 ): boolean {
-  if (!role) return false;
-  const knownRoles = new Set<string>(Object.values(ORGANIZATION_ROLES));
-  return role.split(",").every((value) => knownRoles.has(value.trim()));
+  return OrganizationRoleListSchema.safeParse(role).success;
 }
 
 export function parseOrganizationRoles(role: string): OrganizationRole[] {

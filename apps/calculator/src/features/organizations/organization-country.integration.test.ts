@@ -3,7 +3,12 @@ import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
-import { member, organization, user } from "@greendex/database/schema";
+import {
+  invitation,
+  member,
+  organization,
+  user,
+} from "@greendex/database/schema";
 import { eq, inArray } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -107,20 +112,16 @@ describe("Organization country through Better Auth", () => {
   it("rejects unknown member roles before persistence", async () => {
     const owner = await account();
     const organization = await createOwnOrganization(owner.headers);
-    const target = await account();
-    await expect(
-      auth.api.addMember({
-        body: {
-          userId: target.userId,
-          organizationId: organization.id,
-          // @ts-expect-error Deliberately invalid runtime input must remain type-invalid.
-          role: "unknown",
-        },
-      }),
-    ).rejects.toMatchObject({ statusCode: 400 });
+    const email = `invited-${randomUUID()}@example.org`;
+    const response = await request("invite-member", owner.headers, {
+      organizationId: organization.id,
+      email,
+      role: "unknown",
+    });
+    expect(response.status).toBe(400);
     expect(
-      await db.query.member.findFirst({
-        where: eq(member.userId, target.userId),
+      await db.query.invitation.findFirst({
+        where: eq(invitation.email, email),
       }),
     ).toBeUndefined();
   });

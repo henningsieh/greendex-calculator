@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import {
   addOrganizationRole,
   hasOrganizationRole,
+  isValidOrganizationRole,
   ORGANIZATION_ROLES,
+  OrganizationRoleSchema,
   parseOrganizationRoles,
 } from "./organization-roles";
 
@@ -45,6 +47,23 @@ describe("Membership roles", () => {
     expect(parseOrganizationRoles(`unknown, ,${roles.Participant}`)).toEqual([
       roles.Participant,
     ]);
+  });
+  it("validates known roles and rejects unknown or missing ones", () => {
+    expect(isValidOrganizationRole(roles.OrganizationAdmin)).toBe(true);
+    expect(
+      isValidOrganizationRole(`${roles.Participant},${roles.ProjectCoordinator}`),
+    ).toBe(true);
+    expect(isValidOrganizationRole("unknown")).toBe(false);
+    expect(isValidOrganizationRole("admin,unknown")).toBe(false);
+    expect(isValidOrganizationRole("")).toBe(false);
+    expect(isValidOrganizationRole(null)).toBe(false);
+    expect(isValidOrganizationRole(undefined)).toBe(false);
+  });
+  it("validates single and combined roles through the canonical schema", () => {
+    expect(OrganizationRoleSchema.safeParse("unknown").success).toBe(false);
+    for (const role of Object.values(ORGANIZATION_ROLES)) {
+      expect(OrganizationRoleSchema.safeParse(role).success).toBe(true);
+    }
   });
   it("adds without replacing or duplicating roles", () => {
     expect(addOrganizationRole(roles.ProjectCoordinator, roles.Participant)).toBe(
