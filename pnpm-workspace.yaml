@@ -8,6 +8,7 @@ networkConcurrency: 16
 catalog:
   "@hookform/resolvers": ^5.9.1
   "@orpc/client": 2.0.0-beta.42
+  "@orpc/json-schema": 2.0.0-beta.42
   "@orpc/openapi": 2.0.0-beta.42
   "@orpc/server": 2.0.0-beta.42
   "@orpc/tanstack-query": 2.0.0-beta.42

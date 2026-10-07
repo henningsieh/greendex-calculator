@@ -170,6 +170,9 @@ catalogs:
     '@orpc/client':
       specifier: 2.0.0-beta.42
       version: 2.0.0-beta.42
+    '@orpc/json-schema':
+      specifier: 2.0.0-beta.42
+      version: 2.0.0-beta.42
     '@orpc/openapi':
       specifier: 2.0.0-beta.42
       version: 2.0.0-beta.42
@@ -686,12 +689,21 @@ importers:
       '@orpc/client':
         specifier: 'catalog:'
         version: 2.0.0-beta.42
+      '@orpc/json-schema':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.42
+      '@orpc/openapi':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.42
       '@orpc/server':
         specifier: 'catalog:'
         version: 2.0.0-beta.42
       '@orpc/tanstack-query':
         specifier: 'catalog:'
         version: 2.0.0-beta.42(@tanstack/query-core@5.104.0)
+      '@orpc/zod':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.42(zod@4.6.5)
       '@t3-oss/env-nextjs':
         specifier: 'catalog:'
         version: 0.13.11(typescript@7.0.2)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
