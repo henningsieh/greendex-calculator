@@ -115,8 +115,8 @@ export function ClaimSubmission({
         </p>
         {!confirming ? (
           <Button
-            variant="accounting"
-            size="accounting"
+            variant="default"
+            size="lg"
             type="button"
             disabled={!ready || pending}
             onClick={() => setConfirming(true)}
@@ -132,8 +132,8 @@ export function ClaimSubmission({
             </AlertDescription>
             <div className="flex flex-wrap gap-2">
               <Button
-                variant="accounting"
-                size="accounting"
+                variant="default"
+                size="lg"
                 type="button"
                 disabled={!ready || pending}
                 onClick={() => void submit()}
@@ -141,9 +141,9 @@ export function ClaimSubmission({
                 Confirm submission
               </Button>
               <Button
-                size="accounting"
+                size="lg"
                 type="button"
-                variant="accounting-outline"
+                variant="outline"
                 disabled={pending}
                 onClick={() => setConfirming(false)}
               >

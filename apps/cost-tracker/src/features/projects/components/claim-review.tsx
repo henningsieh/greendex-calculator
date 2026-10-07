@@ -189,13 +189,13 @@ export function ClaimDecisionPanel({
         {canReview &&
           controls.map(({ action, label }) => (
             <Button
-              size="accounting"
+              size="lg"
               key={action}
               type="button"
               variant={
                 action === "approve" || action === "markPaid"
-                  ? "accounting"
-                  : "accounting-outline"
+                  ? "default"
+                  : "outline"
               }
               disabled={pending}
               onClick={() => begin(action)}
@@ -229,8 +229,8 @@ export function ClaimDecisionPanel({
             </AlertDescription>
             <div className="flex flex-wrap gap-2">
               <Button
-                variant="accounting"
-                size="accounting"
+                variant="default"
+                size="lg"
                 type="button"
                 disabled={
                   pending ||
@@ -242,9 +242,9 @@ export function ClaimDecisionPanel({
                 Confirm {definition?.confirmation}
               </Button>
               <Button
-                size="accounting"
+                size="lg"
                 type="button"
-                variant="accounting-outline"
+                variant="outline"
                 disabled={pending}
                 onClick={() => setConfirming(null)}
               >

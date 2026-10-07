@@ -2,21 +2,24 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 
-// Accounting feedback swaps the existing border: no solid-edge growth or layout shift.
-const accountingFeedback = "rounded-sm text-sm tracking-normal normal-case whitespace-normal text-center transition-transform duration-140 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline-solid focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring focus-visible:ring-0 active:not-aria-[haspopup]:translate-y-0 active:enabled:scale-[.97] motion-reduce:transition-none motion-reduce:active:enabled:scale-100";
-const primaryFeedback = "border-primary-border bg-primary text-primary-foreground fine-hover:enabled:bg-primary-hover fine-hover:enabled:border-brand fine-hover:enabled:shadow-primary-glow focus-visible:border-brand focus-visible:shadow-primary-glow active:enabled:bg-primary-hover active:enabled:border-brand active:enabled:shadow-primary-glow";
-const secondaryFeedback = "border-input bg-card text-foreground fine-hover:enabled:bg-secondary-hover fine-hover:enabled:text-secondary-hover-foreground fine-hover:enabled:border-brand fine-hover:enabled:shadow-secondary-glow focus-visible:border-brand focus-visible:shadow-secondary-glow active:enabled:bg-secondary-hover active:enabled:text-secondary-hover-foreground active:enabled:border-brand active:enabled:shadow-secondary-glow";
+// Button feedback swaps the existing border: no solid-edge growth or layout shift.
+const buttonFeedback =
+  "rounded-sm text-sm tracking-normal normal-case whitespace-normal text-center transition-transform duration-140 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline-solid focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring focus-visible:ring-0 active:not-aria-[haspopup]:translate-y-0 active:enabled:scale-[.97] motion-reduce:transition-none motion-reduce:active:enabled:scale-100";
+const primaryFeedback =
+  "border-primary-border bg-primary text-primary-foreground fine-hover:enabled:bg-primary-hover fine-hover:enabled:border-brand fine-hover:enabled:shadow-primary-glow focus-visible:border-brand focus-visible:shadow-primary-glow active:enabled:bg-primary-hover active:enabled:border-brand active:enabled:shadow-primary-glow";
+const secondaryFeedback =
+  "border-input bg-card text-foreground fine-hover:enabled:bg-secondary-hover fine-hover:enabled:text-secondary-hover-foreground fine-hover:enabled:border-secondary-feedback-border fine-hover:enabled:shadow-secondary-glow focus-visible:border-secondary-feedback-border focus-visible:shadow-secondary-glow active:enabled:bg-secondary-hover active:enabled:text-secondary-hover-foreground active:enabled:border-secondary-feedback-border active:enabled:shadow-secondary-glow";
+
+const defaultButtonStyle = `${buttonFeedback} ${primaryFeedback}`;
+const outlineButtonStyle = `${buttonFeedback} ${secondaryFeedback}`;
 
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-none border border-transparent bg-clip-padding text-xs font-semibold tracking-widest whitespace-nowrap uppercase transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       variant: {
-        accounting: `${accountingFeedback} ${primaryFeedback}`,
-        "accounting-outline": `${accountingFeedback} ${secondaryFeedback}`,
-        default: "bg-primary text-primary-foreground fine-hover:enabled:bg-primary-hover",
-        outline:
-          "border-border bg-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-input/30",
+        default: defaultButtonStyle,
+        outline: outlineButtonStyle,
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
@@ -26,7 +29,6 @@ const buttonVariants = cva(
         link: "text-primary underline underline-offset-4 hover:underline",
       },
       size: {
-        accounting: "min-h-11 h-auto gap-2 px-4 py-2",
         default:
           "h-10 gap-1.5 px-6 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
         xs: "h-7 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
