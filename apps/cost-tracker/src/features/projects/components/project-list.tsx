@@ -329,6 +329,9 @@ function ResolvedProjectList({
     setUrlState,
   ]);
 
+  // Single-element suspense list (not a singular query): tuple inference
+  // preserves the scope-discriminated data union, while useSuspenseQuery
+  // would collapse it to unknown. Do not "simplify" back.
   const [{ data, dataUpdatedAt, isFetching, refetch }] = useSuspenseQueries({
     queries: [getProjectListQueryOptions(scope, state)],
   });
