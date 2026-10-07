@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "predev": "dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
+    "predev": "dotenv run -f apps/calculator/.env -f apps/documentation/.env -- node scripts/prepare-dev-ports.mjs",
     "dev": "turbo run dev",
     "lint": "turbo run lint --concurrency 1 && pnpm run check:agent-instructions",
     "check:agent-instructions": "node scripts/check-agent-instructions.mjs",
@@ -29,7 +29,7 @@
     "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/calculator/src apps/documentation/src"
   },
   "dependencies": {
-    "dotenv-cli": "catalog:",
+    "dotenv": "catalog:",
     "turbo": "^2.11.6"
   },
   "devDependencies": {

@@ -6,19 +6,19 @@ linkWorkspacePackages: true
 networkConcurrency: 16
 
 catalog:
-  react: 19.2.8
-  react-dom: 19.2.8
-  react-email: 6.9.3
-  next: 16.3.5
-  next-intl: 4.14.2
-  dotenv-cli: ^11.0.0
-  oxfmt: ^0.71.0
-  oxlint: ^1.86.0
+  react: 19.3.0
+  react-dom: 19.3.0
+  react-email: 6.11.0
+  next: 16.4.0
+  next-intl: 4.14.9
+  dotenv: ^18.0.5
+  oxfmt: ^0.72.0
+  oxlint: ^1.87.0
   tsx: ^4.23.15
   vitest: ^5.0.3
-  better-auth: 1.7.3
+  better-auth: 1.7.7
   typescript: 7.0.2
-  "@types/node": 26.6.3
+  "@types/node": 26.6.4
   "@types/react": 19.3.0
   "@types/react-dom": 19.3.0
 
@@ -50,3 +50,13 @@ minimumReleaseAgeExclude:
   - "@turbo/windows-64@2.11.7"
   - "@turbo/windows-arm64@2.11.7"
   - "@shadcn/lint@0.2.0"
+  - "@next/env@16.4.0"
+  - "@next/swc-darwin-arm64@16.4.0"
+  - "@next/swc-darwin-x64@16.4.0"
+  - "@next/swc-linux-arm64-gnu@16.4.0"
+  - "@next/swc-linux-arm64-musl@16.4.0"
+  - "@next/swc-linux-x64-gnu@16.4.0"
+  - "@next/swc-linux-x64-musl@16.4.0"
+  - "@next/swc-win32-arm64-msvc@16.4.0"
+  - "@next/swc-win32-x64-msvc@16.4.0"
+  - next@16.4.0
