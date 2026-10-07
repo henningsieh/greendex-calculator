@@ -3,6 +3,11 @@ import { LandingHeader } from "@/features/landingpage/components/landing-header"
 import { LandingPageBackground } from "@/features/landingpage/components/landing-page-background";
 import { LandingPageGradients } from "@/features/landingpage/components/landing-page-gradients";
 
+// ensureStatic = 'prefetch': the marketing shell and per-link prefetches stay
+// static; only request-specific islands (workshops tab state, auth forms)
+// stream at navigation (#246).
+export const ensureStatic = "prefetch";
+
 /**
  * Layout wrapper that renders the landing page chrome and hosts page content.
  *

@@ -22,6 +22,10 @@ interface ResetPasswordPageProps {
  * the missing-token redirect) streams in behind a Suspense boundary while
  * the shell stays static.
  */
+// ensureStatic = 'prefetch': the auth shell and per-link prefetches stay
+// static; the token-driven form streams at navigation (#246).
+export const ensureStatic = "prefetch";
+
 export default async function ResetPasswordPage({
   params,
   searchParams,

@@ -1,3 +1,6 @@
+// ensureStatic = 'navigation': fully static page (#246).
+export const ensureStatic = "navigation";
+
 export default function TipsAndTricksPage() {
   return (
     <main className="relative min-h-screen py-28">

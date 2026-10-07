@@ -15,6 +15,10 @@ import { WorkshopsHeroSection } from "@/features/landingpage/components/workshop
  *
  * @returns The JSX element for the landing page.
  */
+// ensureStatic = 'navigation': fully static marketing page; the build fails
+// if request-time rendering creeps in (#246).
+export const ensureStatic = "navigation";
+
 export default async function LandingPage({
   params,
 }: {

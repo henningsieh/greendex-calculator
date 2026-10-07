@@ -10,6 +10,9 @@ import { PartnersSection } from "@/features/landingpage/components/about/partner
  *
  * @returns The About page JSX element
  */
+// ensureStatic = 'navigation': fully static marketing page (#246).
+export const ensureStatic = "navigation";
+
 export default async function AboutPage({
   params,
 }: {

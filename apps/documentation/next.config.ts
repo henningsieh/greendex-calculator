@@ -10,14 +10,10 @@ const nextConfig = {
   partialPrefetching: true,
   typedRoutes: true,
   reactStrictMode: true,
-  async rewrites() {
-    return [
-      {
-        source: "/docs/:path*.mdx",
-        destination: "/llms.mdx/docs/:path*",
-      },
-    ];
-  },
+  // NOTE (#246): the former `/docs/:path*.mdx` rewrite was removed — a
+  // wildcard segment combined with a `.mdx` suffix never matches, so every
+  // `.mdx` URL fell through to the locale middleware and 404ed. Markdown is
+  // served directly at `/[lang]/llms.mdx/docs/[[...slug]]`.
 } satisfies NextConfig;
 
 export default withMDX(nextConfig);

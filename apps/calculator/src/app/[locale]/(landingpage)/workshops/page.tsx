@@ -28,6 +28,11 @@ const typeParser = createParser({
  * @param searchParams - An object or Promise resolving to an object that may contain a `type` query parameter used to select the initial workshop tab.
  * @returns A JSX element representing the Workshops page layout with the parsed initial workshop type applied to `WorkshopContent`.
  */
+// ensureStatic = 'prefetch': the marketing shell and per-link prefetches
+// stay static; the search-param-driven tab state streams at navigation
+// (#246).
+export const ensureStatic = "prefetch";
+
 export default async function WorkshopsPage({
   params,
   searchParams,
