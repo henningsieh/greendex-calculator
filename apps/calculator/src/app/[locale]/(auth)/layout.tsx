@@ -7,8 +7,10 @@ import { redirect } from "@/lib/i18n/routing";
 // instant = false: kept on purpose — this layout is an authentication gate.
 // The signed-in check must resolve before first paint (a signed-in visitor
 // must never see the login form flash before the redirect), so there is no
-// useful static shell for the wrong audience. Restructuring into a streaming
-// AuthGate is a deliberate follow-up, not part of this adoption (#246).
+// useful static shell for the wrong audience. Page-level `ensureStatic` is
+// intentionally absent here: no navigation stage can stay static while the
+// gate reads request headers. Restructuring into a streaming AuthGate is a
+// deliberate follow-up, not part of this adoption (#246).
 export const instant = false;
 
 /**

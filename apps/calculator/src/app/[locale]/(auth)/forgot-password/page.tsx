@@ -12,9 +12,6 @@ interface ForgotPasswordPageProps {
  *
  * Fully static: no request-time reads.
  */
-// ensureStatic = 'navigation': fully static page (#246).
-export const ensureStatic = "navigation";
-
 export default async function ForgotPasswordPage({
   params,
 }: ForgotPasswordPageProps) {

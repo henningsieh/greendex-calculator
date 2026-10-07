@@ -19,10 +19,6 @@ interface SignupPageProps {
  * The `nextPageUrl` query parameter is request-time data, so the form
  * streams in behind a Suspense boundary while the shell stays static.
  */
-// ensureStatic = 'prefetch': the auth shell and per-link prefetches stay
-// static; the search-param-driven form streams at navigation (#246).
-export const ensureStatic = "prefetch";
-
 export default async function SignupPage({
   params,
   searchParams,

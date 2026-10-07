@@ -17,10 +17,6 @@ interface VerifyEmailPageProps {
  *
  * @returns A React element containing an AuthFlowLayout configured with a localized back link and the VerifyEmailContent component.
  */
-// ensureStatic = 'navigation': fully static page; the token is read
-// client-side (#246).
-export const ensureStatic = "navigation";
-
 export default async function VerifyEmailPage({ params }: VerifyEmailPageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
