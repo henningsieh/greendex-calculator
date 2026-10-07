@@ -6,17 +6,17 @@ holds ALL tables (calculator and cost-tracker) because the journal in
 
 ## Rule
 
-Both apps share ONE development database, mirroring production (single
-database for both apps). Point every local checkout and dev server at it.
-Do not split apps across databases — empty-looking pages are usually a
-wrong-database symptom, not missing data.
+Each app keeps its own development database, and each database is seeded on
+its own. Same tables everywhere (shared chain), separate rows per app.
+Seed every database you use; an empty page usually means that database was
+never seeded, not that data is missing.
 
 ## Instances (Coolify)
 
 | Public port | Coolify resource | Databases | Purpose | Backups |
 | --- | --- | --- | --- | --- |
 | `5444` | `greendex-calculator-dev-postgres` (`m0w8…`) | `postgres` | Legacy calculator dev | Daily, 7-day retention |
-| `5445` | `postgresql-database-cost-tracker` (`o0de…`) | `calculator_dev`, `costtracker_dev` | **Shared dev database is `calculator_dev`** (both apps, seeded); `costtracker_dev` is isolated test data | None — enable before relying on it |
+| `5445` | `postgresql-database-cost-tracker` (`o0de…`) | `calculator_dev`, `costtracker_dev` | Calculator uses `calculator_dev`, cost-tracker uses `costtracker_dev`; seed each one | None — enable before relying on it |
 | `5488` | `greendex-dev-postgres` (`a004…`, Live) | managed | Shared development data, private network only | None |
 
 Preview databases are per-PR and isolated: use the private UUID hostname on
