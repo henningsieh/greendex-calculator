@@ -7,6 +7,7 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Cost Tracking glossary](../GLOSSARY.md)
 - Other contexts: [Calculator](../../../apps/calculator/GLOSSARY.md) · [Documentation](../../../apps/documentation/GLOSSARY.md) — overview in [Glossary map](../../../GLOSSARY-MAP.md)
 - [Cost Tracker architecture](architecture.md)
+- [HTTP API and real-HTTP test prerequisites](openapi.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
 - [Shared Greendex language](../../../GLOSSARY.md)
 - [Shared Projects documentation](../../../docs/projects/README.md)
