@@ -638,18 +638,21 @@ describe("HTTP prefix and address preservation", () => {
     });
   });
 
-  it("keeps router-derived RPC paths under /api/rpc", async () => {
-    const response = await routeFetch(
-      `${env.NEXT_PUBLIC_BASE_URL}/api/rpc/health`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      },
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ json: { status: "ok" } });
-  });
+  it.each(["GET", "POST"])(
+    "keeps router-derived %s RPC reads under /api/rpc",
+    async (method) => {
+      const response = await routeFetch(
+        `${env.NEXT_PUBLIC_BASE_URL}/api/rpc/health`,
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          ...(method === "POST" ? { body: JSON.stringify({}) } : {}),
+        },
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ json: { status: "ok" } });
+    },
+  );
 
   it("does not expose REST paths outside the request-time prefix", async () => {
     for (const path of [

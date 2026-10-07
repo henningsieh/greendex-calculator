@@ -1,13 +1,21 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
-import { ResponseHeadersPlugin } from "@orpc/server/plugins";
+import {
+  ResponseHeadersPlugin,
+  GetMethodCsrfProtectionHandlerPlugin,
+} from "@orpc/server/plugins";
+import { RPC_DEFAULT_ALLOW_METHODS } from "@orpc/server/standard";
 
 import { normalizeBetterAuthError } from "@/lib/orpc/better-auth-errors";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { router } from "@/lib/orpc/router";
 
 const handler = new RPCHandler(router, {
-  plugins: [new ResponseHeadersPlugin()],
+  allowMethods: ["GET", ...RPC_DEFAULT_ALLOW_METHODS],
+  plugins: [
+    new ResponseHeadersPlugin(),
+    new GetMethodCsrfProtectionHandlerPlugin(),
+  ],
   interceptors: [
     async (options) => {
       try {

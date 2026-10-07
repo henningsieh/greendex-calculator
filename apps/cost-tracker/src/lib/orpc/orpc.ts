@@ -10,12 +10,13 @@ declare global {
 }
 
 const link = new RPCLink({
-  url: () => {
+  url: "/api/rpc",
+  origin: () => {
     if (typeof window === "undefined") {
       throw new Error("RPCLink is not allowed on the server side.");
     }
 
-    return `${window.location.origin}/api/rpc`;
+    return window.location.origin;
   },
 });
 

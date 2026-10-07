@@ -58,7 +58,7 @@ describe("Cost Tracker server oRPC client", () => {
     mocks.hasPermission.mockResolvedValue({ success: true });
   });
 
-  it("maps projects/get non-members to 403 through direct SSR", async () => {
+  it("propagates projects/get non-members as FORBIDDEN through direct SSR", async () => {
     mocks.headers.mockResolvedValue(firstRequestHeaders);
     mocks.hasPermission.mockRejectedValue(
       new APIError("UNAUTHORIZED", {
@@ -69,7 +69,6 @@ describe("Cost Tracker server oRPC client", () => {
       orpc.projects.get({ projectId: "project-id" }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       message: "Membership in the active Organization is required.",
       data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
     });

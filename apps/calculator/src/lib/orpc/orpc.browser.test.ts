@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("Browser oRPC transport", () => {
   beforeEach(() => {
-    delete globalThis.$costTrackerClient;
+    delete globalThis.$client;
     vi.resetModules();
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -11,10 +11,10 @@ describe("Browser oRPC transport", () => {
     const fetch = vi.fn().mockRejectedValue(new Error("network unavailable"));
     vi.stubGlobal("fetch", fetch);
     const { orpc } = await import("@/lib/orpc/orpc");
-    await expect(orpc.projects.scopes()).rejects.toThrow("network unavailable");
+    await expect(orpc.health()).rejects.toThrow("network unavailable");
     const [url, init] = fetch.mock.calls[0] ?? [];
     expect(new URL(url).origin).toBe(window.location.origin);
-    expect(new URL(url).pathname).toBe("/api/rpc/projects/scopes");
+    expect(new URL(url).pathname).toBe("/api/rpc/health");
     expect(init.method).toBe("POST");
   });
 });
