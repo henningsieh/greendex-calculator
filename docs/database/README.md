@@ -5,6 +5,7 @@ Use these documents when changing database schemas, migrations, or the connectio
 ## Documents
 
 - [Coolify database connections](./coolify-ssl-connection.md) — private-network connection boundary for the deployed database.
+- [Development databases](./development-databases.md) — which instance, port, and database each app uses locally, and how each is seeded.
 - [Drizzle map](../agents/instructions/drizzle.md) — official lookup route and schema/migration workflow.
 
 ## Source of truth
