@@ -15,9 +15,15 @@ never seeded, not that data is missing.
 
 | Public port | Coolify resource | Databases | Purpose | Backups |
 | --- | --- | --- | --- | --- |
-| `5444` | `greendex-calculator-dev-postgres` (`m0w8…`) | `postgres` | Legacy calculator dev | Daily, 7-day retention |
-| `5445` | `postgresql-database-cost-tracker` (`o0de…`) | `calculator_dev`, `costtracker_dev` | Calculator uses `calculator_dev`, cost-tracker uses `costtracker_dev`; seed each one | None — enable before relying on it |
+| `5444` | `greendex-calculator-dev-postgres` (`m0w8…`) | `postgres` | Spare demo database (seeded); doubles as the only backup-covered copy | Daily, 7-day retention |
+| `5445` | `postgresql-database-cost-tracker` (`o0de…`) | `calculator_dev`, `costtracker_dev` | Calculator uses `calculator_dev`, cost-tracker uses `costtracker_dev`; seed each one | Daily since this change was made |
 | `5488` | `greendex-dev-postgres` (`a004…`, Live) | managed | Shared development data, private network only | None |
+
+## Which checkout uses which database
+
+- Main checkout (`greendex-calculator`, `main`): calculator → `:5444/postgres`.
+- Cost worktree (`greendex-cost-tracker`, `chore/add-cost-tracker-app`): calculator → `:5445/calculator_dev`, cost-tracker → `:5445/costtracker_dev`.
+- Any other checkout without its own `.env` uses whichever `DATABASE_URL` it is given; there is no automatic routing. When a page looks wrongly empty, check the checkout's `.env` first.
 
 Preview databases are per-PR and isolated: use the private UUID hostname on
 port `5432`, never a host IP or public port.
@@ -42,6 +48,9 @@ port `5432`, never a host IP or public port.
   never as routine).
 - Dropping a dev database means its lived-in rows are gone unless that
   instance has backups (see table). The journal re-migrates schema, never data.
+- Test and agent lanes must drop the databases they create (`lane_*`,
+  `shared_travel_*`, `cleanup_*`, …) when finished. Twenty stale lane
+  databases were swept in one cleanup; do not let them accumulate again.
 
 ## See also
 
