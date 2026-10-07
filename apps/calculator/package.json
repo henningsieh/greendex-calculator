@@ -114,6 +114,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@next/playwright": "16.4.0",
     "@noble/hashes": "^2.4.0",
     "@paralleldrive/cuid2": "^3.3.0",
     "@playwright/test": "^1.63.0",

@@ -19,7 +19,10 @@ export async function AboutHeader({ locale }: { locale: string }) {
       />
       <div className="absolute inset-0 bg-background/70" />
       <div className="relative z-10 container mx-auto flex h-full items-center justify-center">
-        <h1 className="text-center text-5xl font-bold text-foreground lg:text-7xl">
+        <h1
+          className="text-center text-5xl font-bold text-foreground lg:text-7xl"
+          data-testid="about-heading"
+        >
           {t("aboutTitle")}
         </h1>
       </div>

@@ -25,7 +25,10 @@ export async function HeroSection({ locale }: { locale: string }) {
           />
         </div>
         {/* Gradient Headline */}
-        <h1 className="font-clash text-6xl font-extrabold tracking-tight text-balance sm:text-7xl md:text-8xl lg:text-9xl">
+        <h1
+          className="font-clash text-6xl font-extrabold tracking-tight text-balance sm:text-7xl md:text-8xl lg:text-9xl"
+          data-testid="landing-hero-heading"
+        >
           <span className="bg-linear-to-r from-emerald-500 via-teal-500 to-sky-500 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-sky-400">
             GreenDex
           </span>

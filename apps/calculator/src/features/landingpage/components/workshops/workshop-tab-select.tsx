@@ -25,7 +25,11 @@ export function WorkshopContent({ initialType }: { initialType: WorkshopType }) 
   );
 
   return (
-    <Tabs onValueChange={(value) => setType(value as WorkshopType)} value={type}>
+    <Tabs
+      data-testid="workshops-content"
+      onValueChange={(value) => setType(value as WorkshopType)}
+      value={type}
+    >
       <TabsList className="grid w-full grid-cols-3 bg-secondary/40">
         <TabsTrigger
           className="focus-visible:border-secondary focus-visible:ring-secondary/50 focus-visible:outline-secondary dark:text-secondary-foreground dark:data-[state=active]:border-secondary dark:data-[state=active]:bg-secondary/30 dark:data-[state=active]:text-foreground"

@@ -68,7 +68,10 @@ export default async function WorkshopsPage({
             </span>
           </div>
 
-          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-balance lg:text-5xl">
+          <h1
+            className="mb-6 text-4xl font-semibold tracking-tight text-balance lg:text-5xl"
+            data-testid="workshops-shell-marker"
+          >
             {t("headingPrefix")}{" "}
             <span className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
               {t("headingEmphasis")}
