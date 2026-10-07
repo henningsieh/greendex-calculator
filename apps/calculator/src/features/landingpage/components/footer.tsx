@@ -85,12 +85,15 @@ export async function FooterSection({ locale }: { locale: string }) {
             <Link
               aria-label="GREENDEX home"
               className="block size-fit"
+              locale={locale}
               href={HOME_PATH}
             >
               <Logo />
             </Link>
             <div className="mt-6">
-              <PillCTA href={DASHBOARD_PATH}>{t("launchButton")}</PillCTA>
+              <PillCTA href={DASHBOARD_PATH} locale={locale}>
+                {t("launchButton")}
+              </PillCTA>
             </div>
           </div>
 
@@ -103,6 +106,7 @@ export async function FooterSection({ locale }: { locale: string }) {
                 {navigationLinks.map((item, index) => (
                   <Link
                     className="text-muted-foreground transition-colors hover:text-foreground"
+                    locale={locale}
                     href={item.href}
                     key={index}
                   >
@@ -120,6 +124,7 @@ export async function FooterSection({ locale }: { locale: string }) {
                 {companyLinks.map((item, index) => (
                   <Link
                     className="text-muted-foreground transition-colors hover:text-foreground"
+                    locale={locale}
                     href={item.href}
                     key={index}
                   >
@@ -137,6 +142,7 @@ export async function FooterSection({ locale }: { locale: string }) {
                 {appLinks.map((item, index) => (
                   <Link
                     className="text-muted-foreground transition-colors hover:text-foreground"
+                    locale={locale}
                     href={item.href}
                     key={index}
                   >

@@ -43,7 +43,12 @@ export async function HeroSection({ locale }: { locale: string }) {
         </p>
 
         {/* Pill CTA */}
-        <PillCTA href={DASHBOARD_PATH} showNewBadge className="my-8">
+        <PillCTA
+          href={DASHBOARD_PATH}
+          showNewBadge
+          className="my-8"
+          locale={locale}
+        >
           {t("launchButton")}
         </PillCTA>
       </div>

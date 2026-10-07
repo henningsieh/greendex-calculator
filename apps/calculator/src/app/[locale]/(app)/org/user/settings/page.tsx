@@ -6,6 +6,13 @@
 
 import { UserSettingsPage } from "@/features/user/components/user-settings-page";
 
-export default function UserSettings() {
-  return <UserSettingsPage />;
+export default async function UserSettings({
+  params,
+}: {
+  params: Promise<{
+    locale: string;
+  }>;
+}) {
+  const { locale } = await params;
+  return <UserSettingsPage locale={locale} />;
 }

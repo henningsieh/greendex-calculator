@@ -33,6 +33,11 @@ import {
  * @param params - A promise that resolves to the route parameters object containing the `id` of the project to render
  * @returns The React element that displays the project's tabs wrapped in error and suspense boundaries
  */
+// instant = false: kept on purpose — session-gated data page prefetching
+// project, participant and travel-leg queries keyed on session and project
+// id; streaming it is a deliberate follow-up (#246).
+export const instant = false;
+
 export default async function ProjectsDetailsPage({
   params,
 }: {

@@ -76,6 +76,7 @@ export async function PartnerCard({ partner, locale }: PartnerCardProps) {
           <Button asChild className="gap-2" size="sm" variant="secondaryoutline">
             <Link
               aria-label={`${t("visitWebsite")}: ${partner.name}`}
+              locale={locale}
               href={partner.website}
               rel="noopener noreferrer"
               target="_blank"

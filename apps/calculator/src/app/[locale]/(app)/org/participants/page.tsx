@@ -22,6 +22,10 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
+// instant = false: kept on purpose — session-gated data page keyed on the
+// active organization; streaming it is a deliberate follow-up (#246).
+export const instant = false;
+
 export default async () => {
   const headers = await nextHeaders();
 

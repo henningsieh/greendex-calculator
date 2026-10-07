@@ -21,6 +21,10 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
+// instant = false: kept on purpose — session-gated data page keyed on the
+// active organization (#246).
+export const instant = false;
+
 export default async function ProjectsArchivePage() {
   const t = await getTranslations("organization.projectsArchive");
 

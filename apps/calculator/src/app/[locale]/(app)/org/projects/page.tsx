@@ -34,6 +34,11 @@ import {
  *
  * @returns A React element representing the projects page layout (header, description, conditional create button, and the ProjectsTab content).
  */
+// instant = false: kept on purpose — session- and permission-gated data
+// page (create-project permission resolves per request and keys the UI);
+// streaming it is a deliberate follow-up (#246).
+export const instant = false;
+
 export default async function ProjectsPage() {
   const t = await getTranslations("organization.projects");
 

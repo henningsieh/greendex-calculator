@@ -74,6 +74,7 @@ export async function WorkshopsHeroSection({ locale }: { locale: string }) {
 
             return (
               <Link
+                locale={locale}
                 className="group block h-full"
                 href={`/workshops?type=${workshop.id}`}
                 key={workshop.id}
@@ -138,6 +139,7 @@ export async function WorkshopsHeroSection({ locale }: { locale: string }) {
           <p className="text-muted-foreground">
             {t("workshops.bottomP2Prefix")}{" "}
             <Link
+              locale={locale}
               className="font-semibold text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
               href="/library"
             >
@@ -145,6 +147,7 @@ export async function WorkshopsHeroSection({ locale }: { locale: string }) {
             </Link>{" "}
             {t("workshops.bottomP2Middle") ?? "and"}{" "}
             <Link
+              locale={locale}
               className="font-semibold text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
               href="/tips-and-tricks"
             >

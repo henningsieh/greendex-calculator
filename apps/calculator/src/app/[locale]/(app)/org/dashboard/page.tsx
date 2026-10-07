@@ -22,6 +22,11 @@ import {
  *
  * @returns The React element that renders the organization dashboard for the resolved active organization.
  */
+// instant = false: kept on purpose — session-gated data page. The session
+// and active organization resolve per request and key every prefetch below;
+// restructuring into streamed halves is a deliberate follow-up (#246).
+export const instant = false;
+
 export default async function DashboardPage() {
   const t = await getTranslations("organization.dashboard");
   const queryClient = getQueryClient();

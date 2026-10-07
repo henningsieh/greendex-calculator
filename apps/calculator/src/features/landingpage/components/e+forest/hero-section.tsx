@@ -1,3 +1,5 @@
+"use client";
+
 import { eForestConfig } from "@greendex/config/e-forest";
 import { useTranslations } from "@greendex/i18n/client";
 import Image from "next/image";
