@@ -1,4 +1,4 @@
-import { SUPPORTED_LANGUAGES } from "@greendex/config/languages";
+import { LANGUAGE_CODES, SUPPORTED_LANGUAGES } from "@greendex/config/languages";
 import { defineI18nUI } from "fumadocs-ui/i18n";
 import { RootProvider } from "fumadocs-ui/provider/next";
 
@@ -29,6 +29,10 @@ const { provider } = defineI18nUI(
 );
 
 // export default function Layout({ children }: LayoutProps<"">) {
+export function generateStaticParams() {
+  return LANGUAGE_CODES.map((lang) => ({ lang }));
+}
+
 export default async function RootLayout({
   params,
   children,

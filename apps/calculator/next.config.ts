@@ -5,6 +5,8 @@ const nextConfig = {
   // This repository keeps a single root AGENTS.md: Next.js must not write its
   // agent-rules block into this project directory.
   agentRules: false,
+  cacheComponents: true,
+  partialPrefetching: true,
   typedRoutes: true,
   reactCompiler: true,
   devIndicators: {

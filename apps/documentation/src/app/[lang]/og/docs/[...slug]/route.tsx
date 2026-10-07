@@ -1,23 +1,33 @@
 import { generate as DefaultImage } from "fumadocs-ui/og";
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import { ImageResponse } from "next/og";
 
 import { getPageImage, source } from "@/lib/source";
 
-export const revalidate = false;
+async function getOgData(
+  slug: string[],
+): Promise<{ title: string; description?: string } | null> {
+  "use cache";
+  cacheLife("max");
+
+  const page = source.getPage(slug.slice(0, -1));
+  if (!page) return null;
+  return { title: page.data.title, description: page.data.description };
+}
 
 export async function GET(
   _req: Request,
   { params }: RouteContext<"/[lang]/og/docs/[...slug]">,
 ) {
   const { slug } = await params;
-  const page = source.getPage(slug.slice(0, -1));
-  if (!page) notFound();
+  const data = await getOgData(slug);
+  if (!data) notFound();
 
   return new ImageResponse(
     <DefaultImage
-      title={page.data.title}
-      description={page.data.description}
+      title={data.title}
+      description={data.description}
       site="My App"
     />,
     {

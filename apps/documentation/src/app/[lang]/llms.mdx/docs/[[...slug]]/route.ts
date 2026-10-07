@@ -1,18 +1,28 @@
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 
 import { getLLMText, source } from "@/lib/source";
 
-export const revalidate = false;
+async function getPageMarkdown(
+  slug: string[] | undefined,
+): Promise<string | null> {
+  "use cache";
+  cacheLife("max");
+
+  const page = source.getPage(slug);
+  if (!page) return null;
+  return getLLMText(page);
+}
 
 export async function GET(
   _req: Request,
   { params }: RouteContext<"/[lang]/llms.mdx/docs/[[...slug]]">,
 ) {
   const { slug } = await params;
-  const page = source.getPage(slug);
-  if (!page) notFound();
+  const text = await getPageMarkdown(slug);
+  if (text === null) notFound();
 
-  return new Response(await getLLMText(page), {
+  return new Response(text, {
     headers: {
       "Content-Type": "text/markdown",
     },
