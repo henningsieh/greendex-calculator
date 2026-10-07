@@ -4,5 +4,10 @@ import { COMMON_ERROR_STATUS_MAP } from "@orpc/server";
 export const ERROR_STATUS_MAP = { ...COMMON_ERROR_STATUS_MAP };
 
 export function getErrorStatus(code: string): number {
-  return ERROR_STATUS_MAP[code as keyof typeof ERROR_STATUS_MAP] ?? 500;
+  if (!Object.prototype.hasOwnProperty.call(ERROR_STATUS_MAP, code)) {
+    return 500;
+  }
+
+  const status = ERROR_STATUS_MAP[code as keyof typeof ERROR_STATUS_MAP];
+  return typeof status === "number" ? status : 500;
 }

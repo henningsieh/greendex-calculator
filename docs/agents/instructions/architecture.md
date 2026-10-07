@@ -36,7 +36,7 @@ Application runtime database access belongs in owning feature procedures. Route 
 
 ## Critical SSR oRPC invariant
 
-Preserve the owning app's server-client initialization order: its `instrumentation.ts` dynamically imports `@/lib/orpc/client.server` in the Node.js runtime, and its root app layout side-effect-imports that client before local SSR consumers. The [oRPC instruction](orpc.md) owns the full invariant. Read it and the [official v1 SSR guide](https://v1.orpc.dev/docs/best-practices/optimize-ssr.md) before editing this seam, then run its app-local SSR regression coverage.
+Preserve the owning app's server-client initialization order: its `instrumentation.ts` dynamically imports `@/lib/orpc/client.server` in the Node.js runtime, and its root app layout side-effect-imports that client before local SSR consumers. The [oRPC instruction](orpc.md) owns the full invariant. Read it and the [official v2 SSR guide](https://orpc.dev/docs/recipes/optimizing-ssr.md) before editing this seam, then run its app-local SSR regression coverage.
 
 ## Server and client data flow
 

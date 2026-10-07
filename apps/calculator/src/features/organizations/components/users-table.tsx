@@ -2,7 +2,7 @@
 
 import { DEFAULT_PAGE_SIZE } from "@greendex/config/pagination";
 import { useLocale, useTranslations } from "@greendex/i18n/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import { flexRender, type SortingState, useTable } from "@tanstack/react-table";
 import { FilterXIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -95,7 +95,7 @@ export function UsersTable({
         },
       },
       // keep previous data while fetching new
-      keepPreviousData: true,
+      placeholderData: keepPreviousData,
     }),
   );
 

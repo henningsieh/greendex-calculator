@@ -113,6 +113,7 @@ describe("Organization country through Better Auth", () => {
         body: {
           userId: target.userId,
           organizationId: organization.id,
+          // @ts-expect-error Deliberately invalid runtime input must remain type-invalid.
           role: "unknown",
         },
       }),

@@ -342,3 +342,11 @@ export const matchesStaleGuidance = (text: string): boolean =>
 
 export const matchesRetiredVendorPointer = (text: string): boolean =>
   findPatternHits(text, retiredPointerPatterns).length > 0;
+
+/** Working oRPC guidance must not route agents to the retired major. */
+export const orpcGuidanceFiles = [
+  "docs/agents/instructions/orpc.md",
+  "docs/agents/instructions/architecture.md",
+  "docs/agents/integrations.md",
+];
+export const oldMajorOrpcUrlPattern = /https:\/\/v1\.orpc\.dev\//u;

@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   delegationGuidanceFiles,
+  orpcGuidanceFiles,
+  oldMajorOrpcUrlPattern,
   expectedScopes,
   findPatternHits,
   matchesRetiredVendorPointer,
@@ -17,6 +19,27 @@ import {
 } from "./check-agent-instructions.policy";
 
 describe("oRPC documentation major", () => {
+  it("keeps architecture SSR guidance on v2 and rejects old-major URLs", async () => {
+    const guidance = await readFile(
+      new URL("../docs/agents/instructions/architecture.md", import.meta.url),
+      "utf8",
+    );
+    expect(orpcGuidanceFiles).toContain(
+      "docs/agents/instructions/architecture.md",
+    );
+    expect(guidance).toContain("https://orpc.dev/docs/recipes/optimizing-ssr.md");
+    for (const filePath of orpcGuidanceFiles) {
+      const text = await readFile(
+        new URL(`../${filePath}`, import.meta.url),
+        "utf8",
+      );
+      expect(text).not.toMatch(oldMajorOrpcUrlPattern);
+    }
+    expect(matchesStaleGuidance(guidance)).toBe(false);
+    expect(
+      "[official v1 SSR guide](https://v1.orpc.dev/docs/best-practices/optimize-ssr.md)",
+    ).toMatch(oldMajorOrpcUrlPattern);
+  });
   it("routes working instructions and the registry only to v2", async () => {
     expect(requiredOnlineRoutes["orpc.md"]).toEqual([
       "https://orpc.dev/docs/getting-started.md",

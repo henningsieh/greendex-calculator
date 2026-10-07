@@ -1,8 +1,6 @@
-import { OpenAPIGenerator } from "@orpc/openapi";
-import { ZodToJsonSchemaConverter } from "@orpc/zod";
 import { NextResponse } from "next/server";
 
-import { router } from "@/lib/orpc/router";
+import { generateOpenAPISpec } from "@/lib/orpc/openapi-generator";
 
 /**
  * OpenAPI specification endpoint
@@ -10,26 +8,19 @@ import { router } from "@/lib/orpc/router";
  * Used by Scalar UI and other API documentation tools
  */
 export async function GET() {
-  const generator = new OpenAPIGenerator({
-    converters: [new ZodToJsonSchemaConverter()],
-  });
-
-  const spec = await generator.generate(router, {
-    version: "3.1.1",
-    base: {
-      info: {
-        title: "Greendex Calculator API",
-        version: "1.0.0",
-        description:
-          "API for the Greendex Calculator application. This API provides endpoints for project management, organization management, and user authentication.",
-      },
-      servers: [
-        {
-          url: "/api/openapi",
-          description: "OpenAPI REST endpoint",
-        },
-      ],
+  const spec = await generateOpenAPISpec({
+    info: {
+      title: "Greendex Calculator API",
+      version: "1.0.0",
+      description:
+        "API for the Greendex Calculator application. This API provides endpoints for project management, organization management, and user authentication.",
     },
+    servers: [
+      {
+        url: "/api/openapi",
+        description: "OpenAPI REST endpoint",
+      },
+    ],
   });
 
   return NextResponse.json(spec, {

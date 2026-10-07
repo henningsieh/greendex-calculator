@@ -1,11 +1,10 @@
-import { OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferenceHandlerPlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError } from "@orpc/server";
 import { CORSHandlerPlugin } from "@orpc/server/plugins";
-import { ZodToJsonSchemaConverter } from "@orpc/zod";
 
 import { ERROR_STATUS_MAP, getErrorStatus } from "@/lib/orpc/error-status";
+import { generateOpenAPISpec } from "@/lib/orpc/openapi-generator";
 import { router } from "@/lib/orpc/router";
 
 /**
@@ -14,10 +13,6 @@ import { router } from "@/lib/orpc/router";
  * - Serves the OpenAPI REST endpoints under `/api/openapi/*`
  * - Serves the interactive API reference UI at `/api/docs` (Scalar)
  */
-const generator = new OpenAPIGenerator({
-  converters: [new ZodToJsonSchemaConverter()],
-});
-
 export const openapiHandler = new OpenAPIHandler(router, {
   errorStatusMap: ERROR_STATUS_MAP,
   plugins: [
@@ -35,20 +30,17 @@ export const openapiHandler = new OpenAPIHandler(router, {
       docsPath: "/api/docs",
       specPath: "/api/openapi-spec",
       spec: () =>
-        generator.generate(router, {
-          version: "3.1.1",
-          base: {
-            info: {
-              title: "Greendex Calculator API",
-              version: "1.0.0",
-            },
-            // The OpenAPI `servers` property sets the base URL used by the
-            // generated spec and documentation UI. We serve REST endpoints under
-            // `/api/openapi/*`, so expose that as the server URL. This makes
-            // tools like Scalar and generated curl examples include the correct
-            // `/api/openapi` prefix (e.g. `/api/openapi/health`).
-            servers: [{ url: "/api/openapi" }],
+        generateOpenAPISpec({
+          info: {
+            title: "Greendex Calculator API",
+            version: "1.0.0",
           },
+          // The OpenAPI `servers` property sets the base URL used by the
+          // generated spec and documentation UI. We serve REST endpoints under
+          // `/api/openapi/*`, so expose that as the server URL. This makes
+          // tools like Scalar and generated curl examples include the correct
+          // `/api/openapi` prefix (e.g. `/api/openapi/health`).
+          servers: [{ url: "/api/openapi" }],
         }),
     }),
   ],
