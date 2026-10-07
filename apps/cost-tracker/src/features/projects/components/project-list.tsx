@@ -1,6 +1,6 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import {
   columnFilteringFeature,
   filterFn_includesString,
@@ -329,9 +329,9 @@ function ResolvedProjectList({
     setUrlState,
   ]);
 
-  const { data, dataUpdatedAt, isFetching, refetch } = useSuspenseQuery(
-    getProjectListQueryOptions(scope, state),
-  );
+  const [{ data, dataUpdatedAt, isFetching, refetch }] = useSuspenseQueries({
+    queries: [getProjectListQueryOptions(scope, state)],
+  });
 
   const browserUrl =
     typeof window === "undefined"

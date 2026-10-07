@@ -1,4 +1,3 @@
-import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 import {
   createLoader,
   parseAsIsoDate,
@@ -9,7 +8,10 @@ import {
   type inferParserType,
 } from "nuqs/server";
 
-import type { ProjectListData } from "@/features/projects/types";
+import type {
+  HostedProjectList,
+  PartnerProjectList,
+} from "@/features/projects/types";
 import {
   PROJECT_LIST_SCOPES,
   PROJECT_PAGE_SIZES,
@@ -47,6 +49,13 @@ export const loadProjectListSearchParams = createLoader(projectListParsers);
 export type ProjectListUrlState = inferParserType<typeof projectListParsers>;
 
 export type ProjectListScope = (typeof PROJECT_LIST_SCOPES)[number];
+
+type HostedProjectListQueryOptions = ReturnType<
+  typeof orpcQuery.projects.listHosted.queryOptions<HostedProjectList>
+>;
+type PartnerProjectListQueryOptions = ReturnType<
+  typeof orpcQuery.projects.listPartner.queryOptions<PartnerProjectList>
+>;
 
 export type ProjectListScopeAvailability = Record<ProjectListScope, boolean>;
 
@@ -159,11 +168,25 @@ export function getProjectAvailableScopesQueryOptions() {
  * Bridges two intentionally different safe output projections into one
  * discriminated client view while preserving the generated oRPC query key and
  * query function for the selected scope.
+ * Keep the scope-specific data/error tags: one widened suspense-options type
+ * cannot honestly describe both query functions' key parameters.
  */
+export function getProjectListQueryOptions(
+  scope: "hosted",
+  state: ProjectListState,
+): HostedProjectListQueryOptions;
+export function getProjectListQueryOptions(
+  scope: "partner",
+  state: ProjectListState,
+): PartnerProjectListQueryOptions;
 export function getProjectListQueryOptions(
   scope: ProjectListScope,
   state: ProjectListState,
-): UseSuspenseQueryOptions<ProjectListData> {
+): HostedProjectListQueryOptions | PartnerProjectListQueryOptions;
+export function getProjectListQueryOptions(
+  scope: ProjectListScope,
+  state: ProjectListState,
+): HostedProjectListQueryOptions | PartnerProjectListQueryOptions {
   const commonInput = {
     search: state.search,
     window: state.window,
