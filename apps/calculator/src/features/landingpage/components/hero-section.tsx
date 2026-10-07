@@ -9,8 +9,8 @@ import { PillCTA } from "@/features/landingpage/components/pill-cta";
  * Hero Section - Clean centered layout (OpenClaw.ai style)
  * No hero image here - moved to PreviewSection below the fold
  */
-export async function HeroSection() {
-  const t = await getTranslations("landingPage");
+export async function HeroSection({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: "landingPage" });
 
   return (
     <section className="relative flex min-h-[90vh] flex-col items-center justify-center px-4 pt-32 pb-16 md:pt-28 md:pb-20">

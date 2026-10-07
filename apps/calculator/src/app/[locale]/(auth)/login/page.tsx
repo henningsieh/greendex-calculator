@@ -1,17 +1,42 @@
+import { Suspense } from "react";
+
 import AuthFlowLayout from "@/features/authentication/components/auth-flow-layout";
+import { AuthFormSkeleton } from "@/features/authentication/components/auth-form-skeleton";
 import { LoginForm } from "@/features/authentication/components/login-form";
 
 interface LoginPageProps {
+  params: Promise<{
+    locale: string;
+  }>;
   searchParams: Promise<{
     [key: string]: string | string[] | undefined;
   }>;
 }
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const nextPageUrl = (await searchParams).nextPageUrl;
+/**
+ * Render the login page with a statically prerendered auth shell.
+ *
+ * The `nextPageUrl` query parameter is request-time data, so the form
+ * streams in behind a Suspense boundary while the shell stays static.
+ */
+export default async function LoginPage({
+  params,
+  searchParams,
+}: LoginPageProps) {
+  const { locale } = await params;
+
   return (
-    <AuthFlowLayout>
-      <LoginForm nextPageUrl={nextPageUrl} />
+    <AuthFlowLayout locale={locale}>
+      <Suspense fallback={<AuthFormSkeleton />}>
+        <LoginFromSearchParams searchParams={searchParams} />
+      </Suspense>
     </AuthFlowLayout>
   );
+}
+
+async function LoginFromSearchParams({
+  searchParams,
+}: Pick<LoginPageProps, "searchParams">) {
+  const nextPageUrl = (await searchParams).nextPageUrl;
+  return <LoginForm nextPageUrl={nextPageUrl} />;
 }

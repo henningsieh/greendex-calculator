@@ -1,9 +1,24 @@
 import AuthFlowLayout from "@/features/authentication/components/auth-flow-layout";
 import { ForgotPasswordForm } from "@/features/authentication/components/forgot-password-form";
 
-export default function ForgotPasswordPage() {
+interface ForgotPasswordPageProps {
+  params: Promise<{
+    locale: string;
+  }>;
+}
+
+/**
+ * Renders the forgot-password page inside the authentication flow layout.
+ *
+ * Fully static: no request-time reads.
+ */
+export default async function ForgotPasswordPage({
+  params,
+}: ForgotPasswordPageProps) {
+  const { locale } = await params;
+
   return (
-    <AuthFlowLayout>
+    <AuthFlowLayout locale={locale}>
       <ForgotPasswordForm />
     </AuthFlowLayout>
   );

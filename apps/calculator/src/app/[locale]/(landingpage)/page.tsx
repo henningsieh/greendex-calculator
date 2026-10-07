@@ -10,22 +10,32 @@ import { WorkshopsHeroSection } from "@/features/landingpage/components/workshop
  * 3. PreviewSection - Hero image below the fold
  * 4. GlobeSection - Keep existing globe
  *
+ * Fully static: the `[locale]` param is forwarded to the translated
+ * sections so no request-header lookup runs during prerendering (#246).
+ *
  * @returns The JSX element for the landing page.
  */
-export default function LandingPage() {
+export default async function LandingPage({
+  params,
+}: {
+  params: Promise<{
+    locale: string;
+  }>;
+}) {
+  const { locale } = await params;
   return (
     <main className="relative overflow-hidden">
       {/* Hero - Clean centered, no image */}
-      <HeroSection />
+      <HeroSection locale={locale} />
 
       {/* Globe - Keep existing */}
       <GlobeSection />
 
       {/* Workshops - MOST prominent section */}
-      <WorkshopsHeroSection />
+      <WorkshopsHeroSection locale={locale} />
 
       {/* Preview - Hero image below the fold */}
-      <PreviewSection />
+      <PreviewSection locale={locale} />
     </main>
   );
 }

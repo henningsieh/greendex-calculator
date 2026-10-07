@@ -8,6 +8,11 @@ import {
 } from "@/components/ui/card";
 import { orpc } from "@/lib/orpc/orpc";
 
+// instant = false: kept on purpose — this debug page exists to assert live
+// SSR procedure calls on every load; caching or streaming it would defeat
+// its purpose (#246).
+export const instant = false;
+
 /**
  * Server Component demonstrating oRPC usage during SSR
  * This uses the optimized server-side client (no HTTP overhead)

@@ -1,9 +1,15 @@
-import { getLocale } from "@greendex/i18n/server";
 import { headers } from "next/headers";
 
 import { CREATE_ORG_PATH, DASHBOARD_PATH } from "@/app/routes";
 import { auth } from "@/lib/better-auth";
 import { redirect } from "@/lib/i18n/routing";
+
+// instant = false: kept on purpose — this layout is an authentication gate.
+// The signed-in check must resolve before first paint (a signed-in visitor
+// must never see the login form flash before the redirect), so there is no
+// useful static shell for the wrong audience. Restructuring into a streaming
+// AuthGate is a deliberate follow-up, not part of this adoption (#246).
+export const instant = false;
 
 /**
  * Server-side layout that either renders authentication pages or redirects signed-in users to the appropriate app route.
@@ -11,14 +17,19 @@ import { redirect } from "@/lib/i18n/routing";
  * If a signed-in user exists, redirects to the dashboard when they belong to at least one organization, otherwise redirects to the organization creation flow. If no signed-in user exists, renders the provided auth-related children (e.g., login, signup, verify-email).
  *
  * @param children - Auth page content to render when there is no active user session.
+ * @param params - Route params carrying the `[locale]` segment for redirects.
  * @returns The `children` wrapped in a fragment when no user session is present.
  */
 export default async function AuthLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
 }>) {
-  const locale = await getLocale();
+  const { locale } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });

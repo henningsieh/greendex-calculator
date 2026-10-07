@@ -10,12 +10,19 @@ import { PartnersSection } from "@/features/landingpage/components/about/partner
  *
  * @returns The About page JSX element
  */
-export default async function AboutPage() {
+export default async function AboutPage({
+  params,
+}: {
+  params: Promise<{
+    locale: string;
+  }>;
+}) {
+  const { locale } = await params;
   return (
     <main className="min-h-screen">
-      <AboutHeader />
-      <PartnersSection />
-      <AboutFooter />
+      <AboutHeader locale={locale} />
+      <PartnersSection locale={locale} />
+      <AboutFooter locale={locale} />
     </main>
   );
 }

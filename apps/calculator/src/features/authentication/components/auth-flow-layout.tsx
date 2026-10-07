@@ -12,6 +12,7 @@ interface AuthFlowLayoutProps {
   children: ReactNode;
   backLabel?: string;
   backHref?: string;
+  locale: string;
 }
 
 export function normalizeRedirectPath(
@@ -43,8 +44,11 @@ export default async function AuthFlowLayout({
   children,
   backHref,
   backLabel,
+  locale,
 }: AuthFlowLayoutProps) {
-  const t = await getTranslations("authentication.brand");
+  // NOTE (Cache Components, #246): explicit `locale` — the header-backed
+  // lookup resolves per segment, so a bare call would block prerendering.
+  const t = await getTranslations({ locale, namespace: "authentication.brand" });
   const highlights = highlightKeys.map((key) => t(`values.${key}`));
 
   return (

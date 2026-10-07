@@ -5,8 +5,8 @@ import Image from "next/image";
  * Preview Section - Hero image below the fold
  * Displays the app interface preview in a bordered card
  */
-export async function PreviewSection() {
-  const t = await getTranslations("landingPage");
+export async function PreviewSection({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: "landingPage" });
 
   return (
     <section className="relative px-4 py-16 md:py-24">

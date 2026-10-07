@@ -1,5 +1,5 @@
 import type { Partner } from "@greendex/config/partners";
-import { getLocale, getTranslations } from "@greendex/i18n/server";
+import { getTranslations } from "@greendex/i18n/server";
 import { ExternalLinkIcon } from "lucide-react";
 import Image from "next/image";
 
@@ -18,11 +18,11 @@ import { Link } from "@/lib/i18n/routing";
 
 interface PartnerCardProps {
   partner: Partner;
+  locale: string;
 }
 
-export async function PartnerCard({ partner }: PartnerCardProps) {
-  const t = await getTranslations("landingPage.about");
-  const locale = await getLocale();
+export async function PartnerCard({ partner, locale }: PartnerCardProps) {
+  const t = await getTranslations({ locale, namespace: "landingPage.about" });
 
   const countryData = partner.countryCode
     ? getCountryData(partner.countryCode, locale)

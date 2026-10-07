@@ -1,21 +1,47 @@
-import { getLocale } from "@greendex/i18n/server";
+import { Suspense } from "react";
 
 import { LOGIN_PATH } from "@/app/routes";
 import AuthFlowLayout from "@/features/authentication/components/auth-flow-layout";
+import { AuthFormSkeleton } from "@/features/authentication/components/auth-form-skeleton";
 import { ResetPasswordForm } from "@/features/authentication/components/reset-password-form";
 import { redirect } from "@/lib/i18n/routing";
 
 interface ResetPasswordPageProps {
+  params: Promise<{
+    locale: string;
+  }>;
   searchParams: Promise<{
     [key: string]: string | string[] | undefined;
   }>;
 }
 
+/**
+ * Render the reset-password page with a statically prerendered auth shell.
+ *
+ * The `token` query parameter is request-time data, so the form (including
+ * the missing-token redirect) streams in behind a Suspense boundary while
+ * the shell stays static.
+ */
 export default async function ResetPasswordPage({
+  params,
   searchParams,
 }: ResetPasswordPageProps) {
+  const { locale } = await params;
+
+  return (
+    <AuthFlowLayout locale={locale}>
+      <Suspense fallback={<AuthFormSkeleton />}>
+        <ResetFromSearchParams searchParams={searchParams} locale={locale} />
+      </Suspense>
+    </AuthFlowLayout>
+  );
+}
+
+async function ResetFromSearchParams({
+  searchParams,
+  locale,
+}: Pick<ResetPasswordPageProps, "searchParams"> & { locale: string }) {
   const params = await searchParams;
-  const locale = await getLocale();
   const token = params.token;
 
   // If no token is provided, redirect to forgot password page
@@ -26,9 +52,5 @@ export default async function ResetPasswordPage({
     });
   }
 
-  return (
-    <AuthFlowLayout>
-      <ResetPasswordForm token={token} />
-    </AuthFlowLayout>
-  );
+  return <ResetPasswordForm token={token} />;
 }
