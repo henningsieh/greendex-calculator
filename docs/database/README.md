@@ -6,6 +6,7 @@ Use these documents when changing database schemas, migrations, or the connectio
 
 - [Coolify database connections](./coolify-ssl-connection.md) — private-network connection boundary for the deployed database.
 - [Project Partnership invariant rollout](./project-partnership-invariants-rollout.md) — controlled rollout and verification for migration `0017`.
+- [Development databases](./development-databases.md) — which instance, port, and database each app uses locally, and how each is seeded.
 - [Drizzle map](../agents/instructions/drizzle.md) — official lookup route and schema/migration workflow.
 
 ## Source of truth
