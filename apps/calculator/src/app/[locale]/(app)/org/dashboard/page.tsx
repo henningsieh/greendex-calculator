@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { ContentContainer } from "@/components/content-container";
 import { PageHeader } from "@/components/page-header";
+import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { OrganizationDashboard } from "@/features/organizations/components/organization-dashboard";
 import { ORGANIZATION_ICONS } from "@/features/organizations/organization-icons";
 import { MEMBER_ROLES } from "@/features/organizations/types";
@@ -89,7 +90,9 @@ export default async function DashboardPage() {
         description={t("description")}
       />
       <ContentContainer width="lg">
-        <OrganizationDashboard organizationId={activeOrganizationId} />
+        <NuqsProvider>
+          <OrganizationDashboard organizationId={activeOrganizationId} />
+        </NuqsProvider>
       </ContentContainer>
     </div>
   );

@@ -35,8 +35,10 @@ async function getCurrentYear() {
   return new Date().getFullYear();
 }
 
-export async function FooterSection() {
-  const t = await getTranslations("landingPage");
+export async function FooterSection({ locale }: { locale: string }) {
+  // NOTE (Cache Components, #246): explicit `locale` — the header-backed
+  // lookup resolves per segment, so a bare call would block prerendering.
+  const t = await getTranslations({ locale, namespace: "landingPage" });
 
   const navigationLinks = [
     {

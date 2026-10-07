@@ -11,6 +11,7 @@ import { ErrorBoundary } from "react-error-boundary";
 
 import { ContentContainer } from "@/components/content-container";
 import { PageHeader } from "@/components/page-header";
+import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { CreateProjectButton } from "@/features/projects/components/create-project-button";
 import { ProjectsTab } from "@/features/projects/components/dashboard/projects-tab";
 import { ProjectsTabSkeleton } from "@/features/projects/components/dashboard/projects-table";
@@ -84,7 +85,9 @@ export default async function ProjectsPage() {
       <ContentContainer width="lg">
         <Suspense fallback={<ProjectsTabSkeleton />}>
           <ErrorBoundary fallback={<div>{t("error-message")}</div>}>
-            <ProjectsTab />
+            <NuqsProvider>
+              <ProjectsTab />
+            </NuqsProvider>
           </ErrorBoundary>
         </Suspense>
       </ContentContainer>

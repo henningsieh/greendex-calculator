@@ -1,10 +1,14 @@
 import { NextIntlClientProvider } from "@greendex/i18n/client";
-import { getMessages, setRequestLocale } from "@greendex/i18n/server";
+import {
+  getMessages,
+  getTimeZone,
+  setRequestLocale,
+} from "@greendex/i18n/server";
+import { cacheLife } from "next/cache";
 import { Comfortaa, DM_Sans, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { notFound } from "next/navigation";
 
-import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import "@/lib/orpc/client.server";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -53,6 +57,18 @@ export function generateStaticParams() {
   }));
 }
 
+/**
+ * Reference timestamp for the intl provider. Cached with the longest
+ * lifetime: nothing in the app reads relative time (`useNow` has no
+ * consumers), so the value is inert — but the provider requires a concrete
+ * `now` to skip its request-time lookup during prerendering.
+ */
+async function getPrerenderNow() {
+  "use cache";
+  cacheLife("max");
+  return new Date();
+}
+
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale } = await params;
 
@@ -65,9 +81,11 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   // Providing all messages to the client side is the easiest way to get started
-  // NOTE (Cache Components, #246): explicit `locale` keeps this call out of
+  // NOTE (Cache Components, #246): explicit `locale` keeps these calls out of
   // the request-header lookup, so the layout prerenders statically.
   const messages = await getMessages({ locale });
+  const timeZone = await getTimeZone({ locale });
+  const now = await getPrerenderNow();
 
   return (
     <div
@@ -82,13 +100,22 @@ export default async function LocaleLayout({ children, params }: Props) {
         rel="preconnect"
       />
       <ThemeProvider>
-        <NuqsProvider>
-          <QueryProvider>
-            <NextIntlClientProvider messages={messages}>
-              {children}
-            </NextIntlClientProvider>
-          </QueryProvider>
-        </NuqsProvider>
+        <QueryProvider>
+          {/* NOTE (Cache Components, #246): every prop is explicit — without
+              them the provider fills locale/timeZone/now/formats via a
+              request-header lookup that blocks prerendering. `now` is frozen
+              per prerender (no `useNow` consumers exist); `formats` stays
+              empty as the request config defines none. */}
+          <NextIntlClientProvider
+            locale={locale}
+            messages={messages}
+            timeZone={timeZone}
+            now={now}
+            formats={{}}
+          >
+            {children}
+          </NextIntlClientProvider>
+        </QueryProvider>
       </ThemeProvider>
     </div>
   );

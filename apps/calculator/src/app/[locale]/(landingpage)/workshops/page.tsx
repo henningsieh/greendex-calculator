@@ -1,7 +1,10 @@
-import { getTranslations } from "@greendex/i18n/server";
+import { getTranslations, setRequestLocale } from "@greendex/i18n/server";
 import { createParser } from "nuqs/server";
+import { Suspense } from "react";
 
+import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { WorkshopContent } from "@/features/landingpage/components/workshops/workshop-tab-select";
+import type { WorkshopType } from "@/features/landingpage/types";
 
 const typeParser = createParser({
   parse: (value: unknown) => {
@@ -15,16 +18,23 @@ const typeParser = createParser({
 });
 
 /**
- * Render the Workshops page and determine the initial workshop type from the provided search parameters.
+ * Render the Workshops page with a statically prerendered shell.
  *
- * The function reads `searchParams.type`, parses it into one of `"moment" | "deal" | "day"`, and falls back to `"moment"` when absent or unrecognized. The parsed value is passed as the `initialType` prop to the client-side `WorkshopContent` component.
+ * The tab selection reads `searchParams.type` (request-time data), so it
+ * streams in behind a Suspense boundary together with the nuqs adapter
+ * context the client-side tabs require. The header above stays static.
  *
+ * @param params - Route params carrying the `[locale]` segment.
  * @param searchParams - An object or Promise resolving to an object that may contain a `type` query parameter used to select the initial workshop tab.
  * @returns A JSX element representing the Workshops page layout with the parsed initial workshop type applied to `WorkshopContent`.
  */
 export default async function WorkshopsPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{
+    locale: string;
+  }>;
   searchParams:
     | Promise<{
         type?: string;
@@ -33,13 +43,12 @@ export default async function WorkshopsPage({
         type?: string;
       };
 }) {
-  const t = await getTranslations("landingPage.workshops");
-  const params = await searchParams;
-  const type =
-    (typeParser.parse((params?.type ?? "") as string) as
-      | "moment"
-      | "deal"
-      | "day") ?? "moment";
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({
+    locale,
+    namespace: "landingPage.workshops",
+  });
 
   return (
     <main className="relative min-h-screen py-28">
@@ -71,9 +80,61 @@ export default async function WorkshopsPage({
           </p>
         </div>
 
-        {/* Client-side interactive tabs and content. Pass server-parsed initial type. */}
-        <WorkshopContent initialType={type} />
+        {/* Client-side interactive tabs and content. The server-parsed initial
+            type and the nuqs adapter context stream in; the shell above is
+            already visible. */}
+        <Suspense fallback={<WorkshopTabsSkeleton />}>
+          <WorkshopTypeFromSearchParams searchParams={searchParams} />
+        </Suspense>
       </div>
     </main>
+  );
+}
+
+/**
+ * Resolve the initial workshop tab from the URL query string and provide the
+ * nuqs adapter context for the client-side tab state.
+ *
+ * Runs inside Suspense: `searchParams` is request-time data. The parser
+ * accepts `"moment" | "deal" | "day"` and falls back to `"moment"` when the
+ * parameter is absent or unrecognized.
+ */
+async function WorkshopTypeFromSearchParams({
+  searchParams,
+}: {
+  searchParams:
+    | Promise<{
+        type?: string;
+      }>
+    | {
+        type?: string;
+      };
+}) {
+  const params = await searchParams;
+  const type =
+    (typeParser.parse((params?.type ?? "") as string) as WorkshopType) ??
+    "moment";
+
+  return (
+    <NuqsProvider>
+      <WorkshopContent initialType={type} />
+    </NuqsProvider>
+  );
+}
+
+/**
+ * Deterministic placeholder approximating the tab layout while the
+ * search-param-driven tab selection streams in.
+ */
+function WorkshopTabsSkeleton() {
+  return (
+    <div className="w-full" aria-hidden="true">
+      <div className="grid w-full grid-cols-3 gap-1 rounded-lg bg-secondary/40 p-1">
+        <div className="h-9 rounded-md bg-muted/60" />
+        <div className="h-9 rounded-md bg-muted/60" />
+        <div className="h-9 rounded-md bg-muted/60" />
+      </div>
+      <div className="mt-8 h-64 rounded-lg bg-muted/40" />
+    </div>
   );
 }

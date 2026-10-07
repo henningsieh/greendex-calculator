@@ -3,22 +3,25 @@ import { LandingHeader } from "@/features/landingpage/components/landing-header"
 import { LandingPageBackground } from "@/features/landingpage/components/landing-page-background";
 import { LandingPageGradients } from "@/features/landingpage/components/landing-page-gradients";
 
-// Ensure the landing page uses static rendering for optimal SEO and performance
-// export const dynamic = "force-static";
-
 /**
  * Layout wrapper that renders the landing page chrome and hosts page content.
  *
  * Renders background, the landing header, the provided `children`, and the footer in a stacked layout.
  *
  * @param children - React nodes to be displayed as the main content of the landing page
+ * @param params - Route params carrying the `[locale]` segment, forwarded to the footer translations.
  * @returns The composed landing page JSX element
  */
-export default function LandingPageLayout({
+export default async function LandingPageLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
 }) {
+  const { locale } = await params;
   return (
     <div className="relative min-h-screen">
       <LandingPageGradients />
@@ -26,7 +29,7 @@ export default function LandingPageLayout({
       <div className="relative z-10">
         <LandingHeader />
         {children}
-        <FooterSection />
+        <FooterSection locale={locale} />
       </div>
     </div>
   );
