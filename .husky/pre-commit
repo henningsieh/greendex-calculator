@@ -12,9 +12,13 @@ fi
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -n "$staged" ] || exit 0
 
-# Protect unrelated unstaged edits while tools write the selected files.
+# Protect unstaged edits, but only for the files the tools below actually write.
+# They only touch staged files, so unstaged edits elsewhere cannot be affected and
+# do not need protecting. Stashing those anyway makes `git stash pop` fail whenever
+# oxfmt reformats a staged file (realigning a Markdown table, for example), because
+# the stash still holds the pre-format content.
 stash_created=0
-if ! git diff --quiet; then
+if ! git diff --quiet -- $staged; then
   git stash push --keep-index --message 'husky pre-commit unstaged changes' >/dev/null
   stash_created=1
 fi
@@ -29,14 +33,30 @@ restore_stash() {
 }
 trap restore_stash EXIT
 
+# Format every staged source file in place. The first grep keeps only file
+# types the formatter understands; the second grep drops paths the formatter
+# is configured to ignore (.oxfmtrc.json: docs, specs). Without that second
+# filter, a docs-only commit hands the formatter nothing it may touch, and
+# the formatter fails the whole commit instead of passing quietly.
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
-  | xargs -0 -r pnpm exec oxfmt --write
+  | grep -zvE '^(docs/|\.specify/|specs/)' \
+  | xargs -0 -r pnpm exec oxfmt --write --no-error-on-unmatched-pattern
+# Lint every staged script file. Same selection idea, narrower file types:
+# only code reaches the linter, docs never do.
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
   | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json
 
+# Keep agent-context quality high: the drift guard and its policy tests are
+# build-free reads (node + single-file vitest, ~seconds) and block the commit
+# on drift. Bypass with --no-verify when appropriate.
+pnpm run check:agent-instructions
+
 # Only re-stage files that were selected from the original staged snapshot.
+# Uses the same two filters as the format step above, so exactly the files
+# the formatter may have rewritten get re-staged — nothing more.
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
+  | grep -zvE '^(docs/|\.specify/|specs/)' \
   | xargs -0 -r git add --
