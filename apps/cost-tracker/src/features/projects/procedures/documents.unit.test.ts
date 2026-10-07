@@ -1,6 +1,8 @@
-// @vitest-environment node
 import { createRouterClient } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// @vitest-environment node
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   scope: vi.fn(),
@@ -136,9 +138,9 @@ describe("Proof Document upload outcomes", () => {
       "Choose a Proof Document with a file name.",
     ],
   ] as const)("%s", async (_name, makeInput, code, status, reason, message) => {
+    expect(getErrorStatus(code)).toBe(status);
     await expect(uploadProofDocument(makeInput())).rejects.toMatchObject({
       code,
-      status,
       message,
       data: { reason },
     });
@@ -164,7 +166,6 @@ describe("Proof Document upload outcomes", () => {
         uploadProofDocument({ ...input, file: file() }),
       ).rejects.toMatchObject({
         code: "BAD_REQUEST",
-        status: 400,
         message,
         data: { reason },
       });
@@ -175,7 +176,6 @@ describe("Proof Document upload outcomes", () => {
     mocks.scope.mockResolvedValue({ partnerId: "other", hostId: "partner" });
     const expected = {
       code: "FORBIDDEN",
-      status: 403,
       message: "Only the Partner Organization may manage Proof Documents.",
       data: { reason: "PARTNER_DOCUMENTS_REQUIRED" },
     };
@@ -220,7 +220,6 @@ describe("Proof Document download scope", () => {
         downloadProofDocument({ ...input, documentId }),
       ).rejects.toMatchObject({
         code: "NOT_FOUND",
-        status: 404,
         message: "Proof Document not found in scope.",
         data: { reason: "PROOF_DOCUMENT_NOT_FOUND" },
       });
@@ -234,7 +233,6 @@ describe("Proof Document download scope", () => {
       downloadProofDocument({ ...input, documentId: "foreign" }),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      status: 404,
       data: { reason: "PROOF_DOCUMENT_NOT_FOUND" },
     });
     expect(mocks.scope).toHaveBeenCalledWith("own", "actor", "partner", {});

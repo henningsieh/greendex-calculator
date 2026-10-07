@@ -1,13 +1,14 @@
 import { ORPCError } from "@orpc/client";
 
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 /** Identical Cost Tracker oRPC failures share one toast for two seconds. */
 export const ORPC_ERROR_TOAST_GROUPING_INTERVAL_MS = 2_000;
 
 function getErrorGroupingKey(error: unknown): unknown {
   if (error instanceof ORPCError) {
-    return `orpc:${error.status}:${error.code}:${getSafeErrorSituation(error)?.reason ?? "unknown"}`;
+    return `orpc:${getErrorStatus(error.code)}:${error.code}:${getSafeErrorSituation(error)?.reason ?? "unknown"}`;
   }
 
   if (error instanceof Error) {

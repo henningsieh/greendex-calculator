@@ -32,19 +32,16 @@ describe("safe error contract validation", () => {
     { reason: "SESSION_REQUIRED", vendor: "private" },
   ])("rejects unknown client metadata %j", (data) => {
     expect(SafeErrorDataSchema.safeParse(data).success).toBe(false);
-    expect(
-      getSafeErrorSituation({ code: "FORBIDDEN", status: 403, data }),
-    ).toBeUndefined();
+    expect(getSafeErrorSituation({ code: "FORBIDDEN", data })).toBeUndefined();
   });
 
-  it("rejects forged reason/code/status combinations", () => {
+  it("rejects forged reason/code combinations", () => {
     const notMember = errors.notMember();
     const forged = [
       { ...notMember, code: "NOT_FOUND" },
-      { ...notMember, status: 404 },
-      { code: "FORBIDDEN", status: 403, data: { reason: "PROJECT_NOT_FOUND" } },
-      { code: "FORBIDDEN", status: 403, data: { reason: "SESSION_REQUIRED" } },
-      { code: "FORBIDDEN", status: 403 },
+      { code: "FORBIDDEN", data: { reason: "PROJECT_NOT_FOUND" } },
+      { code: "FORBIDDEN", data: { reason: "SESSION_REQUIRED" } },
+      { code: "FORBIDDEN" },
     ];
     for (const candidate of forged)
       expect(getSafeErrorSituation(candidate)).toBeUndefined();

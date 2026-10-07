@@ -1,7 +1,7 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
-// @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
@@ -161,7 +161,6 @@ describe("entity picker procedures", () => {
       client.organizations.search({ search: "Part" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       message:
         "Select an active Organization before accessing Cost Tracker data.",
       data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
@@ -328,7 +327,6 @@ describe("entity picker procedures", () => {
       client.projects.searchHosted({ search: "" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       message:
         "Select an active Organization before accessing Cost Tracker data.",
       data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
@@ -338,7 +336,6 @@ describe("entity picker procedures", () => {
       client.projects.searchHosted({ search: "" }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       message: "Membership in the active Organization is required.",
       data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
     });
@@ -352,7 +349,6 @@ describe("entity picker procedures", () => {
         client.projects.searchHosted({ search: "" }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
-        status: 403,
         message:
           "You need Hosting Organization Owner, Admin, or Project Coordinator access.",
         data: { reason: "HOSTING_STAFF_REQUIRED" },

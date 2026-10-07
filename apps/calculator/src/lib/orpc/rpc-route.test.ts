@@ -3,6 +3,8 @@ import { createORPCClient, type Client } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
+vi.hoisted(() => vi.resetModules());
+
 // Exercise the production HTTP handler with a public, header-observing procedure.
 vi.mock("@/lib/orpc/router", async () => {
   const { os } = await import("@orpc/server");
@@ -85,4 +87,20 @@ describe("RPC methods and GET CSRF protection", () => {
 afterAll(() => {
   vi.doUnmock("@/lib/orpc/router");
   vi.resetModules();
+});
+
+it("echoes the RPC browser origin instead of a credential-incompatible wildcard", async () => {
+  const response = await routes.POST(
+    new Request("http://localhost/api/rpc/read", {
+      method: "POST",
+      headers: {
+        origin: "https://consumer.example",
+        "content-type": "application/json",
+      },
+      body: '{"json":null}',
+    }),
+  );
+  expect(response.headers.get("access-control-allow-origin")).toBe(
+    "https://consumer.example",
+  );
 });

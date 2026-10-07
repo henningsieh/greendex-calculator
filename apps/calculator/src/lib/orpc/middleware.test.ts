@@ -6,6 +6,8 @@ import {
 import { createRouterClient } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.hoisted(() => vi.resetModules());
+
 const mocks = vi.hoisted(() => ({ getSession: vi.fn(), hasPermission: vi.fn() }));
 vi.mock("@/lib/better-auth", () => ({ auth: { api: mocks } }));
 
@@ -42,6 +44,8 @@ describe("requireProjectPermissions", () => {
         role === ORGANIZATION_ROLES.OrganizationAdmin
       ) {
         await expect(client.archive()).resolves.toBe("permitted");
+        expect(mocks.getSession).toHaveBeenCalledOnce();
+        expect(mocks.hasPermission).toHaveBeenCalledOnce();
       } else {
         await expect(client.archive()).rejects.toMatchObject({
           code: "FORBIDDEN",
@@ -64,4 +68,38 @@ describe("requireProjectPermissions", () => {
     await expect(client.archive()).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.hasPermission).not.toHaveBeenCalled();
   });
+});
+
+it("logs an unexpected failure once with the original code/status/data content", async () => {
+  const { ORPCError } = await import("@orpc/server");
+  const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const failure = new ORPCError("INTERNAL_SERVER_ERROR", {
+    data: { reason: "fixture" },
+  });
+  const failing = createRouterClient(
+    {
+      fail: authorized.handler(() => {
+        throw failure;
+      }),
+    },
+    { context: { headers: new Headers() } },
+  );
+  try {
+    await expect(failing.fail()).rejects.toMatchObject({
+      code: failure.code,
+      data: failure.data,
+      message: failure.message,
+    });
+    expect(mocks.getSession).toHaveBeenCalledOnce();
+    expect(log.mock.calls).toEqual([
+      ["=== oRPC Error ==="],
+      ["Procedure:", ["fail"]],
+      ["Error:", failure],
+      ["Error code:", "INTERNAL_SERVER_ERROR"],
+      ["Error status:", 500],
+      ["Error data:", JSON.stringify(failure.data, null, 2)],
+    ]);
+  } finally {
+    log.mockRestore();
+  }
 });

@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 
 import { auth } from "@/lib/better-auth";
 import { base, rootBase } from "@/lib/orpc/context";
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 /**
  * Middleware that logs errors with full context for debugging
@@ -33,7 +34,7 @@ const loggingMiddleware = rootBase.middleware(async ({ next, path }) => {
 
     if (error instanceof ORPCError) {
       console.error("Error code:", error.code);
-      console.error("Error status:", error.status);
+      console.error("Error status:", getErrorStatus(error.code));
       console.error("Error data:", JSON.stringify(error.data, null, 2));
     }
 
@@ -87,7 +88,7 @@ export const requireProjectPermissions =
     context,
     next,
     errors,
-  }: Parameters<Parameters<typeof authorized.use>[0]>[0]) => {
+  }: Parameters<Parameters<typeof authorized.middleware>[0]>[0]) => {
     if (!context.session.activeOrganizationId) {
       throw errors.FORBIDDEN({
         message: "No active organization. Please select an organization first.",

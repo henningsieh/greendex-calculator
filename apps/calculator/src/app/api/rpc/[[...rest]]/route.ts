@@ -1,11 +1,12 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import {
-  CORSPlugin,
+  CORSHandlerPlugin,
   GetMethodCsrfProtectionHandlerPlugin,
 } from "@orpc/server/plugins";
 import { RPC_DEFAULT_ALLOW_METHODS } from "@orpc/server/standard";
 
+import { ERROR_STATUS_MAP } from "@/lib/orpc/error-status";
 import { router } from "@/lib/orpc/router";
 
 /**
@@ -14,8 +15,12 @@ import { router } from "@/lib/orpc/router";
  * This matches with RPCLink on the client side for optimal performance
  */
 const handler = new RPCHandler(router, {
+  errorStatusMap: ERROR_STATUS_MAP,
   allowMethods: ["GET", ...RPC_DEFAULT_ALLOW_METHODS],
-  plugins: [new CORSPlugin(), new GetMethodCsrfProtectionHandlerPlugin()],
+  plugins: [
+    new CORSHandlerPlugin({ origin: (origin) => origin }),
+    new GetMethodCsrfProtectionHandlerPlugin(),
+  ],
   interceptors: [
     onError((error) => {
       console.error("[oRPC Error]", error);

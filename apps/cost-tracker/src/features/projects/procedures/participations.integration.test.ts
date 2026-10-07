@@ -1,6 +1,6 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
-// @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
@@ -455,7 +455,6 @@ describe("assignment-scoped participation coordination", () => {
         client.participations.listMine({ projectId: project }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
-        status: 403,
         data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
       });
       await db.delete(profiles).where(eq(profiles.userId, candidate));
@@ -463,7 +462,6 @@ describe("assignment-scoped participation coordination", () => {
         client.participations.listMine({ projectId: project }),
       ).rejects.toMatchObject({
         code: "UNPROCESSABLE_CONTENT",
-        status: 422,
         data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
       });
     } finally {
@@ -735,7 +733,6 @@ describe("assignment-scoped participation coordination", () => {
         }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
-        status: 403,
         data: { reason: "REVIEW_TASK_ASSIGNEE_REQUIRED" },
       });
     } finally {
@@ -926,7 +923,6 @@ describe("assignment-scoped participation coordination", () => {
       client.participations.remove({ partnershipId: own, id: created.id }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED" },
     });
     await db.delete(journeys).where(eq(journeys.id, candidate));

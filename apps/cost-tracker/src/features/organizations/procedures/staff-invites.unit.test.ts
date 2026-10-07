@@ -136,7 +136,6 @@ describe("organizations staff invites", () => {
     session(memberId, null);
     await expect(client.organizations.listMembers({})).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       message:
         "Select an active Organization before accessing Cost Tracker data.",
       data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
@@ -233,7 +232,6 @@ describe("organizations staff invites", () => {
         client.organizations.inviteMember({ email: "target@example.org", role }),
       ).rejects.toMatchObject({
         code: "BAD_REQUEST",
-        status: 400,
         message: "Input validation failed",
         data: {
           issues: expect.arrayContaining([
@@ -330,7 +328,6 @@ describe("organizations staff invites", () => {
         }),
       ).rejects.toMatchObject({
         code,
-        status: Number(status),
         message,
         data: { reason },
       });
@@ -352,7 +349,6 @@ describe("organizations staff invites", () => {
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       message: "Membership in the active Organization is required.",
       data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
     });
@@ -364,7 +360,6 @@ describe("organizations staff invites", () => {
       }),
     ).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
-      status: 500,
       message: "Internal server error",
       data: { reason: "INTERNAL_FAILURE" },
     });
@@ -389,7 +384,6 @@ describe("organizations staff invites", () => {
         client.organizations.acceptInvitation({ invitationId: id }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
-        status: 403,
         message: "Verify your email before continuing.",
         data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
       });
@@ -398,7 +392,6 @@ describe("organizations staff invites", () => {
         client.organizations.cancelInvitation({ invitationId: id }),
       ).rejects.toMatchObject({
         code: "INTERNAL_SERVER_ERROR",
-        status: 500,
         message: "Internal server error",
         data: { reason: "INTERNAL_FAILURE" },
       });

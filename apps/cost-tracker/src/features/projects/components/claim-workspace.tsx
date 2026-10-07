@@ -22,6 +22,7 @@ import { ClaimHistory } from "@/features/projects/components/claim-review";
 import { ClaimSubmission } from "@/features/projects/components/claim-submission";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { getErrorStatus } from "@/lib/orpc/error-status";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -744,10 +745,10 @@ function ProofEditor({
           ) {
             const situation = getSafeErrorSituation({
               code: body.code,
-              status: request.status,
               data: { reason: body.reason },
             });
-            if (situation) text = situation.message;
+            if (situation && getErrorStatus(situation.code) === request.status)
+              text = situation.message;
           }
         } catch {
           // A malformed response must not expose remote prose or guessed causes.

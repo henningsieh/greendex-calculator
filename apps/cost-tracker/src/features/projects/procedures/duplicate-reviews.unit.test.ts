@@ -1,6 +1,8 @@
-// @vitest-environment node
 import { createRouterClient } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// @vitest-environment node
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -53,10 +55,11 @@ describe("duplicate Review Task guarded refusal", () => {
   ] as const)(
     "assign distinguishes scoped absence, state and unexplained refusal (%s)",
     async (rows, code, status, reason) => {
+      expect(getErrorStatus(code)).toBe(status);
       mocks.limit.mockResolvedValue(rows);
       await expect(
         client.assign({ partnershipId: "own", id: "task" }),
-      ).rejects.toMatchObject({ code, status, data: { reason } });
+      ).rejects.toMatchObject({ code, data: { reason } });
       expect(mocks.returning).toHaveBeenCalledTimes(1);
     },
   );
@@ -96,6 +99,7 @@ describe("duplicate Review Task guarded refusal", () => {
   ] as const)(
     "resolve distinguishes absence, state, assignment, selection and invariant (%s)",
     async (rows, code, status, reason) => {
+      expect(getErrorStatus(code)).toBe(status);
       mocks.limit.mockResolvedValue(rows);
       await expect(
         client.resolve({
@@ -104,7 +108,7 @@ describe("duplicate Review Task guarded refusal", () => {
           decision: "dismiss",
           survivorParticipationId: "survivor",
         }),
-      ).rejects.toMatchObject({ code, status, data: { reason } });
+      ).rejects.toMatchObject({ code, data: { reason } });
       expect(mocks.returning).toHaveBeenCalledTimes(1);
     },
   );

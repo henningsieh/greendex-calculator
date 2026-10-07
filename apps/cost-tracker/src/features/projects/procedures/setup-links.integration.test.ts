@@ -1,6 +1,6 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
-// @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
@@ -185,7 +185,6 @@ describe("Partner Organization setup links", () => {
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       message: "Verify your email before continuing.",
       data: { reason: "EMAIL_VERIFICATION_REQUIRED" },
     });
@@ -455,7 +454,6 @@ describe("Partner Organization setup links", () => {
         }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
-        status: 403,
         message:
           "You need Hosting Organization staff access or an assignment to this Project.",
         data: { reason: "HOST_COORDINATION_REQUIRED" },

@@ -1,6 +1,6 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 
-// @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
@@ -528,7 +528,6 @@ describe("Participant Journey procedures", () => {
         client.journeys.update({ ...journey, origin: "Changed" }),
       ).rejects.toMatchObject({
         code: "INTERNAL_SERVER_ERROR",
-        status: 500,
         message: "Internal server error",
         data: { reason: "INTERNAL_FAILURE" },
       });

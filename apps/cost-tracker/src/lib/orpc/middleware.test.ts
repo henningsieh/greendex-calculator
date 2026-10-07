@@ -1,7 +1,9 @@
-// @vitest-environment node
 import { createRouterClient } from "@orpc/server";
 import { APIError } from "better-auth/api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// @vitest-environment node
+import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
@@ -80,7 +82,8 @@ describe("Cost Tracker permission middleware outcome matrix", () => {
     async (_name, arrange, code, status, reason, message) => {
       arrange();
       const error = await client.procedure().catch((error: unknown) => error);
-      expect(error).toMatchObject({ code, status, message, data: { reason } });
+      expect(error).toMatchObject({ code, message, data: { reason } });
+      expect(getErrorStatus(code)).toBe(status);
       expect(getORPCRequestErrorMessage(error)).toEqual({
         sessionExpired: reason === "SESSION_REQUIRED",
         text: message,
@@ -93,5 +96,7 @@ describe("Cost Tracker permission middleware outcome matrix", () => {
   it("retains successful permission behavior", async () => {
     await expect(client.procedure()).resolves.toBe("allowed");
     expect(mocks.operation).toHaveBeenCalledOnce();
+    expect(mocks.session).toHaveBeenCalledOnce();
+    expect(mocks.permission).toHaveBeenCalledOnce();
   });
 });

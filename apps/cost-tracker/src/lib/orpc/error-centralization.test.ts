@@ -10,6 +10,7 @@ import {
   SafeErrorDataSchema,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
+import { getErrorStatus } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
 // Only these pre-existing private invariant exceptions remain raw. Their exact
@@ -63,7 +64,14 @@ function sourceFiles(directory: string): string[] {
 
 describe("centralized error guardrails", () => {
   it("pins the complete situation matrix independently of factories", () => {
-    expect(situationCatalog).toMatchSnapshot();
+    expect(
+      Object.fromEntries(
+        Object.entries(situationCatalog).map(([name, situation]) => [
+          name,
+          { ...situation, status: getErrorStatus(situation.code) },
+        ]),
+      ),
+    ).toMatchSnapshot();
   });
   it.each(Object.entries(situationCatalog))(
     "%s fixes code/status/message/reason and validates client metadata",
@@ -80,7 +88,6 @@ describe("centralized error guardrails", () => {
             : (method as () => ReturnType<typeof methods.badInput>)();
       expect(error).toMatchObject({
         code: expected.code,
-        status: expected.status,
         // A composed refusal declares the prefix its per-request detail follows.
         message: hasComposedCopy(expected)
           ? expect.stringContaining(expected.message)
@@ -92,7 +99,6 @@ describe("centralized error guardrails", () => {
       expect(
         getSafeErrorSituation({ ...error, code: "WRONG_CODE" }),
       ).toBeUndefined();
-      expect(getSafeErrorSituation({ ...error, status: 999 })).toBeUndefined();
     },
   );
   it("has no free-form domain error construction outside the designated factory/native boundary", () => {

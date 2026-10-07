@@ -1,10 +1,11 @@
 import { OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferenceHandlerPlugin } from "@orpc/openapi/plugins";
-import { onError } from "@orpc/server";
+import { ORPCError, onError } from "@orpc/server";
 import { CORSHandlerPlugin } from "@orpc/server/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod";
 
+import { ERROR_STATUS_MAP, getErrorStatus } from "@/lib/orpc/error-status";
 import { router } from "@/lib/orpc/router";
 
 /**
@@ -18,6 +19,7 @@ const generator = new OpenAPIGenerator({
 });
 
 export const openapiHandler = new OpenAPIHandler(router, {
+  errorStatusMap: ERROR_STATUS_MAP,
   plugins: [
     new CORSHandlerPlugin({
       origin: (origin) => origin,
@@ -54,8 +56,8 @@ export const openapiHandler = new OpenAPIHandler(router, {
     onError((error) => {
       const isParsingError = error instanceof SyntaxError;
       const isClientError =
-        error && typeof error === "object" && "status" in error
-          ? (error.status as number) >= 400 && (error.status as number) < 500
+        error instanceof ORPCError
+          ? getErrorStatus(error.code) >= 400 && getErrorStatus(error.code) < 500
           : false;
 
       if (isParsingError || isClientError) {

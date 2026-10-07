@@ -159,7 +159,6 @@ describe("projects.create", () => {
       }
       expect(refusal).toMatchObject({
         code: "BAD_REQUEST",
-        status: 400,
         message: "Use a defined Organization role.",
       });
     }
@@ -186,7 +185,6 @@ describe("projects.create", () => {
       client.projects.get({ projectId: foreignProject }),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      status: 404,
       message: "Project not found in scope.",
       data: { reason: "PROJECT_NOT_FOUND" },
     });
@@ -202,7 +200,6 @@ describe("projects.create", () => {
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       message:
         "You need Hosting Organization staff access or an assignment to this Project.",
       data: { reason: "HOST_COORDINATION_REQUIRED" },
@@ -231,7 +228,6 @@ describe("projects.create", () => {
       requireHostCoordination("missing", actor, null, errors),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       message:
         "Select an active Organization before accessing Cost Tracker data.",
       data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
@@ -240,7 +236,6 @@ describe("projects.create", () => {
       requireHostCoordination("missing", "not-a-member", host, errors),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
-      status: 403,
       message: "Membership in the active Organization is required.",
       data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
     });
@@ -248,7 +243,6 @@ describe("projects.create", () => {
       requireHostCoordination("missing", actor, host, errors),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      status: 404,
       message: "Project not found in scope.",
       data: { reason: "PROJECT_NOT_FOUND" },
     });
@@ -276,7 +270,6 @@ describe("projects.create", () => {
     session(null);
     await expect(client.projects.create(input)).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      status: 400,
       data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
     });
     session(host, "not-a-member");

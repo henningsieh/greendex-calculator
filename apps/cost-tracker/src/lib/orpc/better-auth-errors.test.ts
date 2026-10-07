@@ -35,7 +35,6 @@ describe("Better Auth error adapter", () => {
     ]) {
       expect(actual).toMatchObject({
         code: expected.code,
-        status: expected.status,
         message: expected.message,
         data: expected.data,
       });
@@ -61,7 +60,6 @@ describe("Better Auth error adapter", () => {
       ),
     ).toMatchObject({
       code: expected.code,
-      status: expected.status,
       message: expected.message,
       data: expected.data,
     });
@@ -133,21 +131,20 @@ describe("privileged Participant membership failures", () => {
         ),
       ).toMatchObject({
         code: "INTERNAL_SERVER_ERROR",
-        status: 500,
         data: { reason: "INTERNAL_FAILURE" },
       });
     },
   );
   it.each([
-    [429, "RATE_LIMITED"],
-    [503, "SERVICE_UNAVAILABLE"],
-  ] as const)("preserves upstream %s", async (status, reason) => {
+    [429, "TOO_MANY_REQUESTS", "RATE_LIMITED"],
+    [503, "SERVICE_UNAVAILABLE", "SERVICE_UNAVAILABLE"],
+  ] as const)("preserves upstream %s", async (status, code, reason) => {
     expect(
       await normalizeParticipantMembershipResponse(
         new Response(null, { status }),
         errors,
       ),
-    ).toMatchObject({ status, data: { reason } });
+    ).toMatchObject({ code, data: { reason } });
   });
   it("preserves verification and failure cookies but masks a thrown non-member cause", () => {
     const headers = new Headers({ "set-cookie": "fixture=; Max-Age=0" });
@@ -162,7 +159,7 @@ describe("privileged Participant membership failures", () => {
         errors,
         target,
       ),
-    ).toMatchObject({ code: "INTERNAL_SERVER_ERROR", status: 500 });
+    ).toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
     expect(target.getSetCookie()).toEqual(headers.getSetCookie());
     expect(
       normalizeParticipantMembershipError(

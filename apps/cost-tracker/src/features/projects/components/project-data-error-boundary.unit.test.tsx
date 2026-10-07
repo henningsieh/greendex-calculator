@@ -46,7 +46,6 @@ describe("ProjectDataErrorBoundary", () => {
           error={
             new ORPCError("SERVICE_UNAVAILABLE", {
               message: "database password leaked",
-              status: 503,
             })
           }
         />
