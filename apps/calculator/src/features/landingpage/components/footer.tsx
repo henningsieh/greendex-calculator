@@ -1,4 +1,5 @@
 import { getTranslations } from "@greendex/i18n/server";
+import { cacheLife } from "next/cache";
 
 import {
   ABOUT_PATH,
@@ -23,6 +24,17 @@ import { Link } from "@/lib/i18n/routing";
  *
  * @returns A JSX element representing the footer containing the logo, CTA, localized navigation links, and copyright.
  */
+/**
+ * Copyright year for the footer. Cached with the longest lifetime: the value
+ * only changes at the year boundary, so it is safe to bake into the prerender
+ * (Cache Components treats `new Date()` as unstable otherwise).
+ */
+async function getCurrentYear() {
+  "use cache";
+  cacheLife("max");
+  return new Date().getFullYear();
+}
+
 export async function FooterSection() {
   const t = await getTranslations("landingPage");
 
@@ -136,7 +148,7 @@ export async function FooterSection() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
           <span className="text-center text-sm text-muted-foreground sm:text-left">
-            &copy; {new Date().getFullYear()} Greendex | {t("footer.copyright")}
+            &copy; {await getCurrentYear()} Greendex | {t("footer.copyright")}
           </span>
         </div>
       </div>

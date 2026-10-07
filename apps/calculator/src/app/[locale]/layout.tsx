@@ -65,7 +65,9 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   // Providing all messages to the client side is the easiest way to get started
-  const messages = await getMessages();
+  // NOTE (Cache Components, #246): explicit `locale` keeps this call out of
+  // the request-header lookup, so the layout prerenders statically.
+  const messages = await getMessages({ locale });
 
   return (
     <div
