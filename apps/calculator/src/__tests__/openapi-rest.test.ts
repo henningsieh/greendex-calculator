@@ -462,8 +462,12 @@ describe("OpenAPI REST Endpoint", () => {
         body: "invalid json",
       });
 
-      // Should return an error response (400 or 500 depending on implementation)
-      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        code: "BAD_REQUEST",
+        message:
+          "Malformed request. Ensure the request body is properly formatted and the 'Content-Type' header is set correctly.",
+      });
     });
   });
 
@@ -665,4 +669,91 @@ describe("HTTP prefix and address preservation", () => {
       expect(await response.text()).toBe("Not found");
     }
   });
+});
+
+describe("OpenAPI contract gaps", () => {
+  it("rejects undocumented methods for every documented address", async () => {
+    const response = await routeFetch(
+      `${env.NEXT_PUBLIC_BASE_URL}/api/openapi-spec`,
+    );
+    const spec: { paths: Record<string, Record<string, unknown>> } =
+      await response.json();
+    for (const [template, operations] of Object.entries(spec.paths)) {
+      const path = template.replace(/\{[^}]+\}/g, "routing-missing-project");
+      for (const method of ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]) {
+        if (method.toLowerCase() in operations) continue;
+        // Static addresses can also match a documented parameterized address.
+        if (
+          Object.entries(spec.paths).some(
+            ([candidate, methods]) =>
+              method.toLowerCase() in methods &&
+              new RegExp(`^${candidate.replace(/\{[^}]+\}/g, "[^/]+")}$`).test(
+                path,
+              ),
+          )
+        )
+          continue;
+        const result = await routeFetch(`${baseUrl}${path}`, { method });
+        expect(result.status, `${method} ${template}`).toBe(404);
+        expect(await result.text(), `${method} ${template}`).toBe("Not found");
+      }
+    }
+  });
+
+  it.each([
+    ["/helloWorld", { name: 42 }],
+    ["/auth/sign-in", { email: "not-an-email", password: "" }],
+    ["/auth/sign-up", { name: "", email: "invalid", password: "short" }],
+  ])(
+    "returns the documented validation error for POST %s",
+    async (path, body) => {
+      const response = await routeFetch(`${baseUrl}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Input validation failed",
+      });
+    },
+  );
+
+  it.each([
+    ["GET", "/auth/session", "getSession", 500, "Failed to fetch session"],
+    ["GET", "/organizations", "listOrganizations", 500, "Internal Server Error"],
+    ["POST", "/auth/sign-in", "signInEmail", 500, "Failed to sign in"],
+    ["POST", "/auth/sign-up", "signUpEmail", 400, "Failed to sign up"],
+    ["POST", "/auth/sign-out", "signOut", 500, "Failed to sign out"],
+  ] as const)(
+    "keeps the %s %s failure status and safe message",
+    async (method, path, api, status, message) => {
+      const { auth } = await import("@/lib/better-auth");
+      vi.mocked(auth.api[api]).mockRejectedValueOnce(
+        new Error("private backend detail"),
+      );
+      const response = await routeFetch(`${baseUrl}${path}`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        ...(method === "POST" && api !== "signOut"
+          ? {
+              body: JSON.stringify({
+                name: "Routing User",
+                email: authFixture.user.email,
+                password: "routing-password",
+              }),
+            }
+          : {}),
+      });
+      expect(response.status).toBe(status);
+      const body = await response.json();
+      expect(body).toMatchObject({
+        code: status === 400 ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
+        message,
+      });
+      expect(body).not.toHaveProperty("status");
+      expect(JSON.stringify(body)).not.toContain("private backend detail");
+    },
+  );
 });

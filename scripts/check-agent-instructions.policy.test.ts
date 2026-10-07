@@ -12,8 +12,32 @@ import {
   referenceFiles,
   retiredAgentGuidancePaths,
   requiredRepositoryPaths,
+  requiredOnlineRoutes,
   stalePatterns,
 } from "./check-agent-instructions.policy";
+
+describe("oRPC documentation major", () => {
+  it("routes working instructions and the registry only to v2", async () => {
+    expect(requiredOnlineRoutes["orpc.md"]).toEqual([
+      "https://orpc.dev/docs/getting-started.md",
+      "https://orpc.dev/llms.txt",
+    ]);
+    for (const filePath of [
+      "docs/agents/instructions/orpc.md",
+      "docs/agents/integrations.md",
+    ]) {
+      const guidance = await readFile(
+        new URL(`../${filePath}`, import.meta.url),
+        "utf8",
+      );
+      for (const route of requiredOnlineRoutes["orpc.md"]) {
+        expect(guidance).toContain(route);
+      }
+      expect(guidance).not.toContain("v1.orpc.dev");
+      expect(guidance).not.toMatch(/generate-sri|check-sri|scalarVersion/u);
+    }
+  });
+});
 
 describe("delegation guidance coverage", () => {
   it("requires and checks links in tool-neutral delegation guidance", () => {

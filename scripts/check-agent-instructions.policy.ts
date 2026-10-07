@@ -75,9 +75,8 @@ export const requiredOnlineRoutes = {
     "https://nuqs.dev/docs/adapters#nextjs-app-router",
   ],
   "orpc.md": [
-    "https://v1.orpc.dev/docs/getting-started.md",
+    "https://orpc.dev/docs/getting-started.md",
     "https://orpc.dev/llms.txt",
-    "https://v1.orpc.dev/llms.txt",
   ],
   "shadcn.md": [
     "https://ui.shadcn.com/llms.txt",
