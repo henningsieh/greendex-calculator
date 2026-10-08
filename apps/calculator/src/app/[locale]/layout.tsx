@@ -64,8 +64,8 @@ export function generateStaticParams() {
  * `now` to skip its request-time lookup during prerendering.
  */
 async function getPrerenderNow() {
-  // AUDIT-EXPERIMENT: directive removed
-  // AUDIT-EXPERIMENT: cacheLife removed
+  "use cache";
+  cacheLife("max");
   return new Date();
 }
 
