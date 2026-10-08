@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import { Buffer } from "node:buffer";
 /**
  * Development DB seeder
  *
@@ -9,11 +10,14 @@
  *
  * Uses its own DB pool and will exit the process when finished. For local/dev use only — do not run in production.
  */
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
 
-import { Buffer } from "node:buffer";
-
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
 import {
+  hostProjectAssignmentsTable,
   projectSharedTravelLegsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -21,13 +25,12 @@ import * as schema from "@greendex/database/schema";
 import { account, member, organization, user } from "@greendex/database/schema";
 import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { createId } from "@paralleldrive/cuid2";
-import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
 // Load environment variables from .env file
-config({ path: ".env" });
+if (existsSync(".env")) loadEnvFile(".env");
 
 // Validate DATABASE_URL is available
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -44,15 +47,10 @@ const seedPool = new Pool({
 
 const db = drizzle(seedPool, { schema });
 
-export const SEED_USER = {
-  name: "Seed Owner",
-  email: "owner@sieh.org",
-  password: "SecurePassword123!",
-} as const;
-
 const SEED_ORGANIZATION = {
   name: "Seed Organization",
   slug: "seed-org",
+  country: "DE",
 } as const;
 
 const PROJECT_NAMES = [
@@ -194,10 +192,10 @@ async function seed() {
     } else {
       orgId = createId();
       await db.insert(organization).values({
-        country: "DE",
         id: orgId,
         name: SEED_ORGANIZATION.name,
         slug: SEED_ORGANIZATION.slug,
+        country: SEED_ORGANIZATION.country,
         createdAt: new Date(),
       });
       console.log(
@@ -220,7 +218,7 @@ async function seed() {
         id: memberId,
         organizationId: orgId,
         userId,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: new Date(),
       });
       console.log("✅ User set as organization owner");
@@ -243,13 +241,13 @@ async function seed() {
         location: location.city,
         country: location.country,
         welcomeMessage: `Welcome to ${PROJECT_NAMES[i]}! We're excited to have you join us for this important sustainability initiative.`,
-        responsibleUserId: userId,
         organizationId: orgId,
         archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
+      await db.insert(hostProjectAssignmentsTable).values({ projectId, userId });
       projectIds.push(projectId);
       console.log(
         `  ✅ Project ${i + 1}/10: ${PROJECT_NAMES[i]} in ${location.city}, ${location.country}`,

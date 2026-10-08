@@ -692,6 +692,10 @@
         "confirm-button": "Uitnodiging annuleren",
         "cancel-button": "Uitnodiging bewaren"
       }
+    },
+    "country": {
+      "label": "Land van de organisatie",
+      "placeholder": "Selecteer een EU-land"
     }
   },
   "participation": {

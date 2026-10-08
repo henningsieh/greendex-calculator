@@ -37,7 +37,7 @@ export function PageHeader({
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div className="space-y-3 sm:min-w-0 sm:flex-1">
             <div className="flex min-w-0 items-center justify-start gap-3 font-serif">
-              <span className="flex shrink-0 items-center justify-center text-2xl sm:text-3xl md:text-4xl [&_svg]:inline-block [&_svg]:h-[1em] [&_svg]:w-[1em]">
+              <span className="flex shrink-0 items-center justify-center text-2xl sm:text-3xl md:text-4xl [&_svg]:inline-block [&_svg]:size-[1em]">
                 {icon}
               </span>
               <h1 className="truncate text-2xl font-bold whitespace-nowrap sm:text-3xl md:text-4xl">

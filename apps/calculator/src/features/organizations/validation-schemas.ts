@@ -38,6 +38,7 @@ export const MemberWithUserSchema = createSelectSchema(memberTable).extend({
 
 export const OrganizationFormSchema = createInsertSchema(organization, {
   name: (schema) => schema.min(1, { error: "Organization name is required" }),
+  country: z.enum(EU_COUNTRY_CODES),
 }).omit({
   id: true,
   slug: true,
@@ -63,7 +64,4 @@ export const InviteFormSchema = createInsertSchema(invitation)
 
 // The edit form requires country; Better Auth partial updates may omit it and retain
 // the existing required country, while still rejecting invalid supplied values.
-export const EditOrganizationFormSchema = z.object({
-  country: z.enum(EU_COUNTRY_CODES),
-  name: z.string().min(1, { error: "Organization name is required" }),
-});
+export const EditOrganizationFormSchema = OrganizationFormSchema;

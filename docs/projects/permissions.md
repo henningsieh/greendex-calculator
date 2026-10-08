@@ -1,28 +1,96 @@
----
-applyTo: "**"
-description: Current Calculator project permissions and organization role gates
----
+# Shared Project Permissions and Participant Authentication
 
-# Project permissions
+Status: approved target model. The current Calculator and Cost Tracker implementations do not yet implement this model completely.
 
-This document describes the current Calculator implementation, not a proposed staffing model. Stored organization roles, in descending hierarchy order, are **`owner` > `admin` > `coordinator` > `participant`**. Domain-facing names follow the [canonical glossary](../../DOMAIN-GLOSSARY.md): Organization Administrator, Project Coordinator, and Participant. Stored values remain distinct from those names.
+This document owns the cross-application permission model. Domain names follow the [canonical glossary](../../GLOSSARY.md). Read [ADR-0002](../adr/0002-integrate-participants-with-better-auth.md), [ADR-0004](../adr/0004-scope-project-coordination-through-assignments.md), and [ADR-0005](../adr/0005-require-authenticated-participant-onboarding.md).
 
-## Source of truth
+## Two authorization questions
 
-| Module | Responsibility |
-| --- | --- |
-| [packages/config/src/organization-roles.ts](../../packages/config/src/organization-roles.ts) | Canonical `ORGANIZATION_ROLES` stored values and `OrganizationRole` type. |
-| [packages/auth/src/organization-roles.ts](../../packages/auth/src/organization-roles.ts) | Re-exports the role constants; validates, parses, adds, and checks comma-separated role strings. `assertRoleMapCoversRoles` checks exact role-map coverage and descending key order. |
-| [packages/auth/src/permissions.ts](../../packages/auth/src/permissions.ts) | Access-control statements, `accessControl`, `calculatorRoles`, and `ProjectPermission`. |
-| [Shared server factory](../../packages/auth/src/server-auth.ts) | `createServerAuth`: one home for the Better Auth setup. Owns the organization plugin, `calculatorRoles`, session tenant select, and country checks. |
-| [Calculator Better Auth server](../../apps/calculator/src/lib/better-auth/index.ts) and [browser client](../../apps/calculator/src/lib/better-auth/auth-client.ts) | Thin wrapper passes env, email sender, invitation link, and magic link. Browser client configures the organization plugin with the shared access controller and `calculatorRoles`. |
-| [oRPC middleware](../../apps/calculator/src/lib/orpc/middleware.ts) | `authorized` authenticates requests; `requireProjectPermissions` calls `auth.api.hasPermission` for project actions. |
-| [Project procedures](../../apps/calculator/src/features/projects/procedures.ts) | Active-organization filtering and project-specific role/responsibility checks. |
-| [Browser permission utilities](../../apps/calculator/src/lib/better-auth/permissions-utils.ts) | `useProjectPermissions` checks role permissions for UI decisions; it does not perform the handlers' responsibility checks. |
+```text
+Better Auth role                         → what type of action may a User perform?
+Project relationship or assignment        → for which exact Project or Project Partnership?
+```
 
-## Declared project permissions
+Neither answer replaces the other. A role never grants access to every Project, and a Project relationship never grants Organization-wide authority.
 
-The project statement defines `create`, `read`, `update`, `delete`, and `archive`; there is no `share` action. The following table describes **`calculatorRoles` declarations**, not every handler's authorization logic.
+## Organization Membership roles
+
+| Greendex name | Better Auth role | Meaning |
+| --- | --- | --- |
+| Organization Owner | `owner` | Full authority over one Organization, including Organization-level users and settings. |
+| Organization Admin | `admin` | Organization-wide administrative authority below the Owner. |
+| Project Coordinator | `coordinator` | Coordination capability narrowed by an explicit hosted-Project or Project-Partnership assignment. |
+| Participant | `participant` | Participant-facing capability narrowed by the User's own Project Participation. |
+
+Both apps use only the four shared role values above; unknown and omitted grants are refused. [ADR-0019](../adr/0019-require-organization-country-and-synchronize-role-values.md) replaces the former Calculator compatibility values. Calculator grants `coordinator` Project create, read, and update rights. It grants neither archive nor delete.
+
+Calculator `admin` intentionally converges to the shared Project `archive` grant; Project deletion remains reserved to Organization Owners.
+
+Library table/field names and ordinary Membership wording are unaffected.
+
+Role lists derive from the shared auth constants rather than separate app-owned lists. Only defined shared role values may be invited, assigned, or seeded; staff invitations remain limited to `owner` and `admin`.
+
+The canonical enumeration order is `owner`, `admin`, `coordinator`, `participant`: [`ORGANIZATION_ROLES`](../../packages/config/src/organization-roles.ts) declares `OrganizationOwner`, `OrganizationAdmin`, `ProjectCoordinator`, then `Participant`. Both application role maps and every locale's `organization.roles` block follow this order, so role selectors enumerate consistently.
+
+[`assertRoleMapCoversRoles`](../../packages/auth/src/permissions.ts) rejects missing, extra, unknown, or reordered role-map keys. It validates structure only, not permission statements. The [role contract tests](../../packages/auth/src/permissions.test.ts) lock constant-key order and distinct role values, and validate both application maps. Enumeration order does not change authorization grants or assignment scope.
+
+One Membership may hold several roles. Assigning `participant` or `coordinator` never removes an existing role.
+
+## Project Coordinator scope
+
+### Runtime role identifiers
+
+Cost Tracker maps Better Auth `owner` to `organisationOwner` (exact spelling), `admin` to `organizationAdmin`, and `participant` to `projectParticipant`. Calculator retains `legacyCalculatorAdminRole` for its existing `admin` behavior. A Participant Role may coexist with other roles on the same Organization Membership and does not identify which Projects the User participates in.
+
+ADR-0004 defines one `coordinator` role with two possible scopes:
+
+- A Project Coordinator assigned to a Project hosted by their Organization performs Host-side coordination for that Project only.
+- A Project Coordinator assigned to their Organization's Project Partnership performs Partner-side coordination for that Partnership only.
+
+Organization Owners and Organization Admins retain Organization-wide authority. Project Coordinator assignments never grant Organization management authority.
+
+UI wording is `Project Coordinator` for Hosting Organization scope and `Group Organizer` for Partner Organization scope. The role alone grants neither Organization-wide authority nor access to an unassigned Project.
+
+## Participant onboarding
+
+Every new Participant uses a Better Auth User account. There is no unauthenticated participant workflow and no secret personal dashboard link.
+
+A Participant may join one Project Partnership in either of two ways:
+
+1. **Known email:** a Better Auth Invitation to the Project's Hosting Organization grants the `participant` role after the recipient signs in and completes onboarding.
+2. **Email unknown:** a reusable, app-owned Participant Registration Link identifies one Project Partnership and may be shared through WhatsApp or another channel. A recipient signs in or creates an account and completes the same onboarding.
+
+A Better Auth Invitation is always an invitation into the inviting Organization. A Participant Registration Link is not a Better Auth Invitation.
+
+Both routes end identically:
+
+- the User has a Membership in the Project's Hosting Organization with the `participant` role;
+- the User has one Project Participation for that Project;
+- that Project Participation identifies the represented Partner Organization through its Project Partnership.
+
+A User may have several Hosting-Organization Memberships and several Project Participations. A User may retain only one Project Participation per Project; attempting to join the same Project through a second Partner Organization is blocked.
+
+A Participant dashboard lists only the User's Project Participations. A Hosting-Organization Membership alone never exposes unrelated Projects.
+
+## App-wide participant profile and agreement
+
+Participant profile data and agreement answers are centralized for the User rather than duplicated per Project Participation. The EU–Erasmus agreement is app-wide, versioned, and preserved when accepted.
+
+A recipient completes their profile and accepts the current agreement version before their Participant access becomes valid. A newer agreement version blocks further participant actions until accepted. Previous accepted versions remain historical evidence.
+
+## Authorization
+
+- Organization Owners and Organization Admins of a Hosting Organization may access Participant profiles across its hosted Projects.
+- Project Coordinators may access profiles and perform staff actions only within their explicit hosted-Project or Project-Partnership assignments.
+- Partner Organization staff access Participants only through their assigned Project Partnerships.
+- Participant personal access requires both the `participant` role in the Hosting Organization and the User's own Project Participation.
+- Client-side checks control presentation only; server-side authorization is authoritative.
+
+## Application boundaries
+
+Cost Tracker applies assignment-scoped coordination and authenticated Participant entry. Calculator retains its existing administrative Project checks: the `admin` value still manages Projects, while `coordinator` grants Project create, read, and update rights, but no archive or delete. No stored-role compatibility map or data backfill is retained; development mock data is wiped and reseeded with final roles before applying the required country column.
+
+## Declared Calculator Project permissions
 
 | Stored role | create | read | update | delete | archive |
 | --- | --- | --- | --- | --- | --- |
@@ -31,32 +99,6 @@ The project statement defines `create`, `read`, `update`, `delete`, and `archive
 | `coordinator` | Yes | Yes | Yes | No | No |
 | `participant` | No | Yes | No | No | No |
 
-The definitions also include Better Auth's organization-plugin statements: `owner` spreads `ownerAc`, `admin` and `coordinator` spread `adminAc`, and `participant` spreads `memberAc`. Descending role order is a structural contract, not a substitute for these explicit permissions.
+The [shared auth factory](../../packages/auth/src/server-auth.ts) owns validation and selects the app's role map. Calculator uses `calculatorOrganizationRoles`. Cost Tracker uses `costTrackerOrganizationRoles` and keeps assignment-scoped coordination. Both maps live in [permissions.ts](../../packages/auth/src/permissions.ts). Pure role helpers live in [organization-roles.ts](../../packages/auth/src/organization-roles.ts).
 
-Simple rule: Organization Administrator can archive. Project Coordinator mirrors Organization Administrator for now, but has no archive yet. Only Organization Owner can delete.
-
-## Procedure gates and scope
-
-The [project procedures](../../apps/calculator/src/features/projects/procedures.ts) distinguish role permissions from project responsibility. Here, **own project** means `project.responsibleUserId === context.user.id`, not staffing membership.
-
-- `createProject` uses `requireProjectPermissions(["create"])`, sets the active organization as `organizationId`, and sets the caller as `responsibleUserId`.
-- `listProjects`, `getProjectById`, and `getProjectParticipants` use the `read` middleware and constrain access to the active organization. Listing is not restricted to own projects or projects in which the caller participates.
-- `updateProject` uses the `update` middleware and looks up the project in the active organization. It has **no own-project check**.
-- The handler checks in `deleteProject`, `batchDeleteProjects`, and `archiveProject` allow `owner` to act on any project in the active organization; `admin` and `coordinator` may act only on own projects. `participant` does not pass these checks. Batch deletion checks responsibility for every requested project before deleting.
-- Deletion procedures additionally use `requireProjectPermissions(["delete"])`; `archiveProject` does not use project-permission middleware. The declared role map above does **not** grant `delete` to `admin` or `coordinator`, and grants `archive` only to `admin` (not to `coordinator`), even though the handler responsibility checks allow both on own projects. These are separate layers and must not be represented as one unconditional permission matrix.
-- `setActiveProject` checks for `owner`, `admin`, or `coordinator` and active-organization project membership when `projectId` is supplied. It does not require responsibility for that project. When `projectId` is omitted, those checks are skipped and the session update still runs.
-- `getProjectForParticipation` uses the unauthenticated `base` procedure and fetches by project ID without an active-organization check. It is a public participation endpoint, not an organization-role read gate.
-
-`participant` is read-only for the declared project resource. This does not describe every participation workflow or the session-update case above.
-
-## Enforcement details
-
-In [middleware](../../apps/calculator/src/lib/orpc/middleware.ts), `authorized` raises `UNAUTHORIZED` when no session/user is present. `requireProjectPermissions` raises `FORBIDDEN` if there is no active organization, calls `auth.api.hasPermission`, and raises `FORBIDDEN` when the returned value is falsy. That is the current implementation; the role declaration table and handler checks should be read alongside it rather than treated as proof of the complete API result.
-
-Protected project handlers check the active organization before accessing the requested project. Several subsequent writes use only the project ID after that lookup; not every query has an `organizationId` predicate. The public participation lookup is explicitly outside this organization-scoped flow.
-
-Browser checks are UI aids, not server enforcement. `useProjectPermissions` defaults to `participant` and uses `checkRolePermission`; it does not inspect `responsibleUserId`.
-
-## Open staffing scope
-
-Issue #237 remains open for staffing-scope decisions. The current project handler gates use stored roles, the active organization, and (for deletion and archiving) `responsibleUserId`. They do not use country as a permission condition, and the role contract has no country column. This document does not decide who should be allowed to staff projects or change that behavior.
+Calculator archive checks the declared archive permission. It also checks the active Organization and permits an Owner or an Admin with a Host assignment. A Coordinator cannot archive. Browser permission checks are presentation aids, not server authorization.

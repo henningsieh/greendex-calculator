@@ -7,30 +7,30 @@
  * (env variables, email handlers, etc.)
  */
 
-// Export types
-export type { AuthClientConfig } from "./auth-client";
 export type { Session, User } from "better-auth/types";
 
-// Shared server factory: one home for auth logic, thin wrappers per app
 export { createServerAuth, type ServerAuthConfig } from "./server-auth";
 
-// Export auth client utilities
-export { createAuthClient } from "./auth-client";
-
-// Export shared organization role contract
-// (canonical role values plus pure membership-role helpers)
 export {
   accessControl,
-  calculatorRoles,
+  addOrganizationRole,
+  costTrackerOrganizationRoles,
+  calculatorOrganizationRoles,
+  legacyCalculatorAdminRole,
+  calculatorCoordinatorRole,
+  isValidOrganizationRole,
+  hasOrganizationRole,
+  ORGANIZATION_ROLES,
+  organisationOwner,
+  organizationAdmin,
+  organizationRoles,
+  parseOrganizationRoles,
+  projectParticipant,
+  projectCoordinatorRole,
+  type OrganizationRole,
+  type ProjectParticipationPermission,
+  type ProjectPartnershipPermission,
   type ProjectPermission,
 } from "./permissions";
 
-export {
-  addOrganizationRole,
-  assertRoleMapCoversRoles,
-  hasOrganizationRole,
-  isValidOrganizationRole,
-  ORGANIZATION_ROLES,
-  parseOrganizationRoles,
-  type OrganizationRole,
-} from "./organization-roles";
+export { assertRoleMapCoversRoles } from "./organization-roles";

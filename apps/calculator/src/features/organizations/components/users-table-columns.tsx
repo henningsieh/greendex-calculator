@@ -1,5 +1,6 @@
 "use client";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import type { ColumnDef } from "@tanstack/react-table";
 import type z from "zod";
 
@@ -97,7 +98,11 @@ export function UserTableColumns(
       ),
       cell: (info) => (
         <Badge
-          variant={String(info.getValue()) === "owner" ? "default" : "secondary"}
+          variant={
+            String(info.getValue()) === ORGANIZATION_ROLES.OrganizationOwner
+              ? "default"
+              : "secondary"
+          }
         >
           {tRoles(String(info.getValue()))}
         </Badge>

@@ -1,3 +1,4 @@
+import { openapi } from "@orpc/openapi";
 import { z } from "zod";
 
 import { env } from "@/env";
@@ -11,7 +12,7 @@ import { authorized } from "@/lib/orpc/middleware";
  * Simple demonstration of a basic oRPC procedure
  */
 export const helloWorld = base
-  .route({ method: "POST" })
+  .meta(openapi({ method: "POST" }))
   .input(
     z.object({
       name: z.string().optional().default("World"),
@@ -28,7 +29,7 @@ export const helloWorld = base
  * Public health check procedure
  * Returns server status and uptime
  */
-export const getHealth = base.route({ method: "GET" }).handler(() => {
+export const getHealth = base.meta(openapi({ method: "GET" })).handler(() => {
   return {
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -42,7 +43,13 @@ export const getHealth = base.route({ method: "GET" }).handler(() => {
  * Requires authentication and returns user info
  */
 export const getProfile = authorized
-  .route({ method: "GET", path: "/users/profile", summary: "Get user profile" })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/users/profile",
+      summary: "Get user profile",
+    }),
+  )
   .handler(({ context, errors }) => {
     if (!(context.user && context.session)) {
       throw errors.UNAUTHORIZED();
@@ -65,11 +72,13 @@ export const getProfile = authorized
  * Returns session and user info if authenticated
  */
 export const getSession = base
-  .route({
-    method: "GET",
-    path: "/auth/session",
-    summary: "Get authentication session",
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/auth/session",
+      summary: "Get authentication session",
+    }),
+  )
   .output(SessionSchema)
   .handler(async ({ context, errors }) => {
     try {
@@ -90,11 +99,13 @@ export const getSession = base
  * Returns session and user info on successful authentication
  */
 export const signIn = base
-  .route({
-    method: "POST",
-    path: "/auth/sign-in",
-    summary: "Sign in with email and password",
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/auth/sign-in",
+      summary: "Sign in with email and password",
+    }),
+  )
   .input(
     z.object({
       email: z.email(),
@@ -137,11 +148,13 @@ export const signIn = base
  * Returns session and user info on successful registration
  */
 export const signUp = base
-  .route({
-    method: "POST",
-    path: "/auth/sign-up",
-    summary: "Sign up with email and password",
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/auth/sign-up",
+      summary: "Sign up with email and password",
+    }),
+  )
   .input(
     z.object({
       name: z.string().min(1),
@@ -171,11 +184,13 @@ export const signUp = base
  * Invalidates the current session
  */
 export const signOut = base
-  .route({
-    method: "POST",
-    path: "/auth/sign-out",
-    summary: "Sign out and invalidate session",
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/auth/sign-out",
+      summary: "Sign out and invalidate session",
+    }),
+  )
   .output(z.custom<Awaited<ReturnType<typeof auth.api.signOut>>>())
   .handler(async ({ context, errors }) => {
     try {

@@ -692,6 +692,10 @@
         "confirm-button": "Cancelar invitación",
         "cancel-button": "Mantener invitación"
       }
+    },
+    "country": {
+      "label": "País de la organización",
+      "placeholder": "Selecciona un país de la UE"
     }
   },
   "participation": {

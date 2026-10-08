@@ -53,7 +53,7 @@ export function Location({
       className="h-[1em] w-auto rounded-[2px] object-cover shadow-sm"
     />
   ) : (
-    <GlobeIcon className="h-[1em] w-[1em] text-muted-foreground/70" />
+    <GlobeIcon className="size-[1em] text-muted-foreground/70" />
   );
 
   // Flag only mode - just show flag with tooltip
@@ -120,7 +120,7 @@ export function Location({
       )}
     >
       {!showFlag && (
-        <PROJECT_ICONS.location className="h-[1em] w-[1em] text-muted-foreground/70" />
+        <PROJECT_ICONS.location className="size-[1em] text-muted-foreground/70" />
       )}
       {content}
     </span>

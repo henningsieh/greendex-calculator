@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable,
   member,
   organization,
   projectSharedTravelLegsTable,
@@ -45,7 +47,7 @@ export class TestProjectFixture {
       id: randomUUID(),
       organizationId: this.orgId,
       userId: this.userId,
-      role: "owner",
+      role: ORGANIZATION_ROLES.OrganizationOwner,
       createdAt: new Date(),
     });
 
@@ -60,10 +62,13 @@ export class TestProjectFixture {
       welcomeMessage:
         "Welcome to the E2E Test Project! Let's calculate your carbon footprint.",
       organizationId: this.orgId,
-      responsibleUserId: this.userId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    await db
+      .insert(hostProjectAssignmentsTable)
+      .values({ projectId: this.projectId, userId: this.userId });
 
     // Add canonical Project Shared Travel for participant-visible coverage.
     const sharedTravelLegs: Omit<

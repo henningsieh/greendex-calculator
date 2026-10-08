@@ -28,7 +28,7 @@ export async function UserSettingsPage({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: "app" });
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex size-full flex-col">
       <PageHeader
         icon={<UserCogIcon />}
         title={t("userSettings.title")}

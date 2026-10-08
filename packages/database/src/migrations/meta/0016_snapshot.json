@@ -1,6 +1,6 @@
 {
-  "id": "e50ac42a-79e8-4726-a132-cf9ae4c0ec3f",
-  "prevId": "441095af-fa75-4de8-ae69-2b8bbbbab2b5",
+  "id": "34270b69-07ec-407b-921d-e4ef3a77c7e4",
+  "prevId": "ef0e9a09-907b-4d9c-858d-2bc24794fd49",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,7 +262,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'participant'"
+          "default": "'member'"
         },
         "created_at": {
           "name": "created_at",
@@ -333,12 +333,6 @@
       "name": "organization",
       "schema": "",
       "columns": {
-        "country": {
-          "name": "country",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "id": {
           "name": "id",
           "type": "text",
@@ -643,20 +637,229 @@
           "primaryKey": false,
           "notNull": true
         },
-        "member_id": {
-          "name": "member_id",
+        "represented_organization_id": {
+          "name": "represented_organization_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "user_id": {
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "country": {
           "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "merged_into_participant_id": {
+          "name": "merged_into_participant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "merged_at": {
+          "name": "merged_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "merged_by_user_id": {
+          "name": "merged_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "project_participant_project_idx": {
+          "name": "project_participant_project_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_participant_represented_org_idx": {
+          "name": "project_participant_represented_org_idx",
+          "columns": [
+            {
+              "expression": "represented_organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_participant_project_email_unique": {
+          "name": "project_participant_project_email_unique",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"project_participant\".\"email\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_participant_project_user_unique": {
+          "name": "project_participant_project_user_unique",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"project_participant\".\"user_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_participant_project_id_project_id_fk": {
+          "name": "project_participant_project_id_project_id_fk",
+          "tableFrom": "project_participant",
+          "tableTo": "project",
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "project_participant_represented_organization_id_organization_id_fk": {
+          "name": "project_participant_represented_organization_id_organization_id_fk",
+          "tableFrom": "project_participant",
+          "tableTo": "organization",
+          "columnsFrom": ["represented_organization_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "project_participant_user_id_user_id_fk": {
+          "name": "project_participant_user_id_user_id_fk",
+          "tableFrom": "project_participant",
+          "tableTo": "user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "project_participant_merged_into_participant_id_project_participant_id_fk": {
+          "name": "project_participant_merged_into_participant_id_project_participant_id_fk",
+          "tableFrom": "project_participant",
+          "tableTo": "project_participant",
+          "columnsFrom": ["merged_into_participant_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "project_participant_merged_by_user_id_user_id_fk": {
+          "name": "project_participant_merged_by_user_id_user_id_fk",
+          "tableFrom": "project_participant",
+          "tableTo": "user",
+          "columnsFrom": ["merged_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "project_participant_email_normalized": {
+          "name": "project_participant_email_normalized",
+          "value": "\"project_participant\".\"email\" is null or \"project_participant\".\"email\" = lower(trim(\"project_participant\".\"email\"))"
+        },
+        "project_participant_not_merged_into_self": {
+          "name": "project_participant_not_merged_into_self",
+          "value": "\"project_participant\".\"merged_into_participant_id\" is null or \"project_participant\".\"merged_into_participant_id\" <> \"project_participant\".\"id\""
+        },
+        "project_participant_merge_fields_consistent": {
+          "name": "project_participant_merge_fields_consistent",
+          "value": "(\"project_participant\".\"merged_into_participant_id\" is null and \"project_participant\".\"merged_at\" is null and \"project_participant\".\"merged_by_user_id\" is null) or (\"project_participant\".\"merged_into_participant_id\" is not null and \"project_participant\".\"merged_at\" is not null and \"project_participant\".\"merged_by_user_id\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.project_partner_organization": {
+      "name": "project_partner_organization",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -676,31 +879,74 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "project_partner_organization_project_org_unique": {
+          "name": "project_partner_organization_project_org_unique",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_partner_organization_project_idx": {
+          "name": "project_partner_organization_project_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_partner_organization_organization_idx": {
+          "name": "project_partner_organization_organization_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
-        "project_participant_project_id_project_id_fk": {
-          "name": "project_participant_project_id_project_id_fk",
-          "tableFrom": "project_participant",
+        "project_partner_organization_project_id_project_id_fk": {
+          "name": "project_partner_organization_project_id_project_id_fk",
+          "tableFrom": "project_partner_organization",
           "tableTo": "project",
           "columnsFrom": ["project_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "project_participant_member_id_member_id_fk": {
-          "name": "project_participant_member_id_member_id_fk",
-          "tableFrom": "project_participant",
-          "tableTo": "member",
-          "columnsFrom": ["member_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "project_participant_user_id_user_id_fk": {
-          "name": "project_participant_user_id_user_id_fk",
-          "tableFrom": "project_participant",
-          "tableTo": "user",
-          "columnsFrom": ["user_id"],
+        "project_partner_organization_organization_id_organization_id_fk": {
+          "name": "project_partner_organization_organization_id_organization_id_fk",
+          "tableFrom": "project_partner_organization",
+          "tableTo": "organization",
+          "columnsFrom": ["organization_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -851,6 +1097,13 @@
           "notNull": true,
           "default": false
         },
+        "cost_submission_window_open": {
+          "name": "cost_submission_window_open",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -866,7 +1119,102 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "project_hosted_overview_operational_idx": {
+          "name": "project_hosted_overview_operational_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "archived",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "cost_submission_window_open",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_hosted_overview_date_idx": {
+          "name": "project_hosted_overview_date_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "archived",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "end_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_name_trigram_idx": {
+          "name": "project_name_trigram_idx",
+          "columns": [
+            {
+              "expression": "lower(\"name\") gin_trgm_ops",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"project\".\"archived\" = false",
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "project_responsible_user_id_user_id_fk": {
           "name": "project_responsible_user_id_user_id_fk",

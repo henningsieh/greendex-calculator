@@ -1,0 +1,7 @@
+# Codex loads project configuration only after the repository is trusted.
+# Keep this transport adapter aligned with next-devtools in ../.mcp.json.
+# Pi's exposure setting is not a Codex configuration option.
+[mcp_servers.next-devtools]
+command = "pnpm"
+args = ["dlx", "next-devtools-mcp@latest"]
+enabled = true

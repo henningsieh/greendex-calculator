@@ -1,34 +1,50 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+Use this route before changing domain language, relationships, business rules, or persistence models.
 
-## Before exploring, read these
+## Read in order
 
-- **`DOMAIN-GLOSSARY.md`** at the repository root: it defines Greendex's canonical domain language.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in.
+1. [Glossary map](../../GLOSSARY-MAP.md) to identify the owning context, relationships, and behavior routes.
+2. [`GLOSSARY.md`](../../GLOSSARY.md) for language shared by every application.
+3. The relevant app glossary:
+   - [Calculator](../../apps/calculator/GLOSSARY.md)
+   - [Cost Tracker](../../apps/cost-tracker/GLOSSARY.md)
+   - [Documentation](../../apps/documentation/GLOSSARY.md)
+4. Accepted records in [`docs/adr/`](../adr/) that concern the change.
+5. The owning application's documentation index.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+Proceed silently when a glossary or ADR directory does not yet exist. Create these lazily only when a term or qualifying decision is resolved.
 
-## File structure
+## Ownership
 
-This repository currently uses one domain context:
-
-```
+```text
 /
-├── DOMAIN-GLOSSARY.md                ← canonical domain language
-├── docs/adr/                         ← architectural decisions
-├── apps/                             ← application code
-└── packages/                         ← shared packages
+├── GLOSSARY-MAP.md                   ← context navigation and relationships
+├── GLOSSARY.md                       ← shared canonical language
+├── docs/adr/                         ← cross-context architectural decisions
+├── docs/projects/                    ← shared Project model and permissions
+├── apps/calculator/GLOSSARY.md       ← carbon-footprint language
+├── apps/calculator/docs/             ← Calculator behavior
+├── apps/cost-tracker/GLOSSARY.md      ← cost-tracking language
+├── apps/cost-tracker/docs/           ← Cost Tracker behavior
+├── apps/documentation/GLOSSARY.md    ← publishing language
+└── apps/documentation/content/docs/  ← published user documentation
 ```
 
-## Use the glossary's vocabulary
+Root `docs/` contains repository-wide architecture, operations, decisions, and agent routes. App-specific flows belong under the owning application's `docs/` directory. Package-specific persistence or integration details belong with the owning package when introduced.
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `DOMAIN-GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
+## Language rules
 
-If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (update `DOMAIN-GLOSSARY.md` through the domain-modeling workflow).
+- Use the shared glossary for Organization, User, Membership, Project, Project Participation, and Participant.
+- Use the app glossary for terms that another application does not expose. For example, Partner Organization and Cost Submission Window belong to Cost Tracker. Shared terms have one definition unless an app explicitly refines their meaning; Cost Tracker refines Project Participation for authenticated participation.
+- Treat shared database identity and shared business behavior separately. Two applications referencing the same Project does not make every Project workflow shared.
+- When a new term conflicts with existing language, resolve the conflict before changing code and update the owning glossary immediately.
+- Use the canonical terms in issue titles, hypotheses, tests, and proposals; consult `_Avoid_` entries before substituting synonyms.
+- Keep glossaries to project-specific terms: one or two sentences defining what a concept is, with `_Avoid_` alternatives where useful. Put workflow, schema fields, permission identifiers, and implementation details in behavior or instruction docs, not glossaries.
+- Read the owning behavior docs when changing rules: [shared Projects](../projects/README.md), [Cost Tracker domain behavior](../../apps/cost-tracker/docs/domain-behavior.md), and the app documentation routes in the map.
 
-## Flag ADR conflicts
+## Decisions
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+Read every ADR that intersects the change. Surface conflicts explicitly rather than silently overriding an accepted decision. Changes to an accepted relationship, authentication model, or cost-allocation invariant require a superseding ADR.
 
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+Offer a new ADR only when a choice is hard to reverse, surprising without its context, and the result of a real trade-off. Record the decision and why briefly; retain the numbering and history of existing ADRs. This documentation migration changes neither domain rules nor accepted decisions.

@@ -5,6 +5,7 @@ Use these documents when changing database schemas, migrations, or the connectio
 ## Documents
 
 - [Coolify database connections](./coolify-ssl-connection.md) — private-network connection boundary for the deployed database.
+- [Project Partnership invariant rollout](./project-partnership-invariants-rollout.md) — controlled rollout and verification for migration `0017`.
 - [Development databases](./development-databases.md) — which instance, port, and database each app uses locally, and how each is seeded.
 - [Drizzle map](../agents/instructions/drizzle.md) — official lookup route and schema/migration workflow.
 
@@ -31,6 +32,10 @@ Schemas and migrations live in `packages/database/src/`.
 4. Apply with `pnpm run db:migrate` only against the intended database.
 
 Better Auth schema generation uses the calculator's `auth:generate` script and writes to `packages/database/src/schemas/auth-schema.ts`.
+
+## Migration regression checks
+
+Calculator's Project Shared Travel Leg [cutover](../../apps/calculator/src/__tests__/project-shared-travel-legs-migration.integration.test.ts) and [compatibility cleanup](../../apps/calculator/src/__tests__/project-shared-travel-legs-cleanup.integration.test.ts) tests compare the exact primary-key and foreign-key constraint names. Their catalog queries filter `pg_constraint` to `contype IN ('p', 'f')`; unrelated constraints, including catalog-exposed `NOT NULL` entries, must not affect those assertions. This keeps the checks precise across PostgreSQL versions without changing migrations or snapshots.
 
 ## Connection
 

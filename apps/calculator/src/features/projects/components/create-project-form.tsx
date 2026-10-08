@@ -7,7 +7,13 @@ import {
 import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -325,7 +331,7 @@ export function CreateProjectForm({
               variant="secondary"
             >
               {tSharedTravel("title")}
-              <ArrowRight className="ml-2 size-4" />
+              <ArrowRightIcon className="ml-2 size-4" />
             </Button>
           </FieldGroup>
         )}
@@ -360,7 +366,7 @@ export function CreateProjectForm({
                         type="button"
                         variant="ghost"
                       >
-                        <Trash2 className="size-4 text-destructive" />
+                        <Trash2Icon className="size-4 text-destructive" />
                       </Button>
 
                       <div className="grid gap-4 pr-8 sm:grid-cols-2">
@@ -485,7 +491,7 @@ export function CreateProjectForm({
                   type="button"
                   variant="outline"
                 >
-                  <Plus className="mr-2 size-4" />
+                  <PlusIcon className="mr-2 size-4" />
                   {tSharedTravel("form.title")}
                 </Button>
               </CardContent>
@@ -498,7 +504,7 @@ export function CreateProjectForm({
                 type="button"
                 variant="outline"
               >
-                <ArrowLeft className="mr-2 size-4" />
+                <ArrowLeftIcon className="mr-2 size-4" />
                 {t("back")}
               </Button>
 
@@ -512,7 +518,7 @@ export function CreateProjectForm({
                   t("creating")
                 ) : (
                   <>
-                    <Check className="mr-2 size-4" />
+                    <CheckIcon className="mr-2 size-4" />
                     {t("create-project")}
                   </>
                 )}

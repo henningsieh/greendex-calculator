@@ -30,6 +30,7 @@ import { findAvailableSlug } from "@/features/organizations/utils";
 import { EditOrganizationFormSchema } from "@/features/organizations/validation-schemas";
 import { authClient } from "@/lib/better-auth/auth-client";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import type { Outputs } from "@/lib/orpc/router";
 
 /**
  * Renders a form to edit the active organization's name and applies updates (adjusting the slug when the name changes).
@@ -39,11 +40,26 @@ import { orpcQuery } from "@/lib/orpc/orpc";
  * @returns The React element for the edit organization form, or a skeleton placeholder while the organization data is loading.
  */
 export function EditOrganizationForm() {
-  const queryClient = useQueryClient();
   const { data: organization } = useSuspenseQuery(
     orpcQuery.organizations.getActive.queryOptions(),
   );
 
+  if (!organization) return <EditOrganizationFormSkeleton />;
+
+  return (
+    <EditOrganizationInnerForm
+      key={organization.id}
+      organization={organization}
+    />
+  );
+}
+
+function EditOrganizationInnerForm({
+  organization,
+}: {
+  organization: NonNullable<Outputs["organizations"]["getActive"]>;
+}) {
+  const queryClient = useQueryClient();
   const t = useTranslations("organization.country");
 
   const form = useForm<z.infer<typeof EditOrganizationFormSchema>>({
@@ -55,11 +71,6 @@ export function EditOrganizationForm() {
   });
 
   async function onSubmit(data: z.infer<typeof EditOrganizationFormSchema>) {
-    if (!organization) {
-      toast.error("No organization found");
-      return;
-    }
-
     try {
       let slugToUse = organization.slug;
 
@@ -104,15 +115,11 @@ export function EditOrganizationForm() {
     void form.handleSubmit(onSubmit)(e);
   };
 
-  if (!organization) {
-    return <EditOrganizationFormSkeleton />;
-  }
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Edit Organization</CardTitle>
-        <CardDescription>Update your organization's name.</CardDescription>
+        <CardDescription>Update your organization&apos;s name.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

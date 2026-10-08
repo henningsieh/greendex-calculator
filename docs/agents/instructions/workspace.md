@@ -32,7 +32,7 @@ The catalog pins one `next` version for the whole workspace, and `publicHoistPat
 
 - the Next.js-managed agent-rules block in the root `AGENTS.md` resolves `node_modules/next/dist/docs` verbatim;
 - the bundled version-matched docs exist once, not per app;
-- Next.js tooling (the `nextjs_docs` MCP tool, the `agents-md` codemod refresh) works from the repository root.
+- Next.js documentation is resolved from the single catalog-managed installation at `node_modules/next/dist/docs/` from the repository root; do not regenerate a downloaded documentation corpus.
 
 Do not add `next` to the root `dependencies`: a root install can resolve a second, differently peer-suffixed copy. Keep the link, not a copy.
 - Use an override only for a deliberate transitive-resolution fix that the catalog cannot express; document why it exists.

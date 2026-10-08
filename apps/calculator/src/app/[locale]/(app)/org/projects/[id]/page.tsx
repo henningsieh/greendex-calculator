@@ -49,9 +49,9 @@ export default async function ProjectsDetailsPage({
   const locale = await getLocale();
   const queryClient = getQueryClient();
 
-  const { error, isDefined } = await safe(orpc.projects.getById({ id }));
+  const [, , definedError] = await safe(orpc.projects.getById({ id }));
 
-  if (isDefined && error.code === "UNAUTHORIZED") {
+  if (definedError?.code === "UNAUTHORIZED") {
     // Redirect to projects list when access is forbidden
     redirect({ href: PROJECTS_PATH, locale });
   }

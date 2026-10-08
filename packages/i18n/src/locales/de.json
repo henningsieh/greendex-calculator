@@ -689,6 +689,10 @@
         "confirm-button": "Einladung stornieren",
         "cancel-button": "Einladung behalten"
       }
+    },
+    "country": {
+      "label": "Land der Organisation",
+      "placeholder": "EU-Land auswählen"
     }
   },
   "participation": {

@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import { ORGANIZATION_ROLES } from "./organization-roles";
-import { calculatorRoles } from "./permissions";
+import { calculatorOrganizationRoles } from "./permissions";
 
-function projectActions(role: unknown): string[] {
-  const statements = (role as { statements?: Record<string, readonly string[]> })
-    .statements;
-  return [...(statements?.["project"] ?? [])];
+function projectActions(
+  role: (typeof calculatorOrganizationRoles)[keyof typeof calculatorOrganizationRoles],
+): readonly string[] {
+  return role.statements.project;
 }
 
 describe("calculator role map", () => {
   it("grants Organization Administrator archive but not delete", () => {
     const actions = projectActions(
-      calculatorRoles[ORGANIZATION_ROLES.OrganizationAdmin],
+      calculatorOrganizationRoles[ORGANIZATION_ROLES.OrganizationAdmin],
     );
     expect(actions).toContain("archive");
     expect(actions).not.toContain("delete");
@@ -20,7 +20,7 @@ describe("calculator role map", () => {
 
   it("mirrors Project Coordinator on Organization Administrator minus archive", () => {
     const coordinator = projectActions(
-      calculatorRoles[ORGANIZATION_ROLES.ProjectCoordinator],
+      calculatorOrganizationRoles[ORGANIZATION_ROLES.ProjectCoordinator],
     );
     expect(coordinator).toEqual(["create", "read", "update"]);
     expect(coordinator).not.toContain("archive");
@@ -29,13 +29,13 @@ describe("calculator role map", () => {
 
   it("keeps Participant read-only", () => {
     expect(
-      projectActions(calculatorRoles[ORGANIZATION_ROLES.Participant]),
+      projectActions(calculatorOrganizationRoles[ORGANIZATION_ROLES.Participant]),
     ).toEqual(["read"]);
   });
 
   it("grants Organization Owner everything", () => {
     const actions = projectActions(
-      calculatorRoles[ORGANIZATION_ROLES.OrganizationOwner],
+      calculatorOrganizationRoles[ORGANIZATION_ROLES.OrganizationOwner],
     );
     expect(actions).toEqual(
       expect.arrayContaining(["create", "read", "update", "delete", "archive"]),

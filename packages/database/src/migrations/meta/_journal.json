@@ -110,15 +110,134 @@
     {
       "idx": 15,
       "version": "7",
-      "when": 1791267514133,
-      "tag": "0015_skinny_ronan",
+      "when": 1788810963133,
+      "tag": "0015_project_partnership_foundation",
       "breakpoints": true
     },
     {
       "idx": 16,
       "version": "7",
-      "when": 1791296257065,
-      "tag": "0016_certain_terrax",
+      "when": 1788953079724,
+      "tag": "0016_dusty_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789271863383,
+      "tag": "0017_project-partnership-invariants",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790424078453,
+      "tag": "0018_flashy_dreaming_celestial",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790427222968,
+      "tag": "0019_daily_overlord",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790429588000,
+      "tag": "0020_good_nextwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790431132600,
+      "tag": "0021_overconfident_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790434155616,
+      "tag": "0022_giant_lady_ursula",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790491530767,
+      "tag": "0023_tricky_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790494934167,
+      "tag": "0024_bizarre_spot",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790496366595,
+      "tag": "0025_backfill_project_coordinator_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790500378223,
+      "tag": "0026_sloppy_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790520998928,
+      "tag": "0027_brief_pepper_potts",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790529533917,
+      "tag": "0028_tiny_natasha_romanoff",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791121145377,
+      "tag": "0029_participant-invitation-entry",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791121159442,
+      "tag": "0030_drop-participant-invitation-bridge",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791124570765,
+      "tag": "0031_unify-participant-entry-token",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791124579525,
+      "tag": "0032_drop-split-entry-tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791187986671,
+      "tag": "0033_awesome_the_enforcers",
       "breakpoints": true
     }
   ]

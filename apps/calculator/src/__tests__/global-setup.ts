@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-
-import { config } from "dotenv";
+import { loadEnvFile } from "node:process";
 
 // Load environment variables from monorepo root BEFORE any tests run
 // Calculator owns the environment used by its test suite.
@@ -12,7 +11,7 @@ if (!existsSync(envPath)) {
   process.exit(1);
 }
 
-config({ path: envPath });
+loadEnvFile(envPath);
 
 console.log(`✅ Loaded environment variables from: ${envPath}`);
 

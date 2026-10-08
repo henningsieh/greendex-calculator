@@ -50,7 +50,7 @@ export async function PartnerCard({ partner, locale }: PartnerCardProps) {
         {/* Title & Badge & Country */}
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="line-clamp-2 text-lg leading-tight md:text-xl">
+            <CardTitle className="line-clamp-2 text-lg/tight md:text-xl">
               {partner.name}
             </CardTitle>
             <Badge className="shrink-0" variant="secondary">
@@ -72,7 +72,7 @@ export async function PartnerCard({ partner, locale }: PartnerCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="grow text-sm leading-relaxed">
+      <CardContent className="grow text-sm/relaxed">
         <p className="text-muted-foreground">{partner.description}</p>
       </CardContent>
 
