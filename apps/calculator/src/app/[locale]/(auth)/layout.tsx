@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { connection } from "next/server";
 
 import { CREATE_ORG_PATH, DASHBOARD_PATH } from "@/app/routes";
 import { auth } from "@/lib/better-auth";
@@ -34,6 +35,7 @@ export default async function AuthLayout({
   }>;
 }>) {
   const { locale } = await params;
+  await connection();
   const session = await auth.api.getSession({
     headers: await headers(),
   });

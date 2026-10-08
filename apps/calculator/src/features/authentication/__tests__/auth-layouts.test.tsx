@@ -9,11 +9,13 @@ const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   listOrganizations: vi.fn(),
   headers: vi.fn(),
+  connection: vi.fn(),
   checkAuthAndOrgs: vi.fn(),
   handleUnauthenticatedRedirect: vi.fn(),
   redirect: vi.fn(),
 }));
 vi.mock("next/headers", () => ({ headers: mocks.headers }));
+vi.mock("next/server", () => ({ connection: mocks.connection }));
 vi.mock("@/lib/better-auth", () => ({
   auth: {
     api: {
@@ -31,6 +33,7 @@ vi.mock("@/lib/i18n/routing", () => ({ redirect: mocks.redirect }));
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.headers.mockResolvedValue(new Headers({ "x-test-request": "current" }));
+  mocks.connection.mockResolvedValue(undefined);
   mocks.redirect.mockImplementation(() => {
     throw new Error("redirect");
   });
