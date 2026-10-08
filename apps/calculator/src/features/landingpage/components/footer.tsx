@@ -30,8 +30,8 @@ import { Link } from "@/lib/i18n/routing";
  * (Cache Components treats `new Date()` as unstable otherwise).
  */
 async function getCurrentYear() {
-  // AUDIT-EXPERIMENT: directive removed
-  // AUDIT-EXPERIMENT: cacheLife removed
+  "use cache";
+  cacheLife("max");
   return new Date().getFullYear();
 }
 
