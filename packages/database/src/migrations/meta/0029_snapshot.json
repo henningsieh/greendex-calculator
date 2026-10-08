@@ -1,6 +1,4 @@
 {
-  "id": "317902c0-5fd7-4f86-a0b2-e0859c1408f3",
-  "prevId": "4bf465ab-e75d-48f4-a00c-b7e31ac0e86c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,7 +260,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'member'"
+          "default": "'participant'"
         },
         "created_at": {
           "name": "created_at",
@@ -333,6 +331,12 @@
       "name": "organization",
       "schema": "",
       "columns": {
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "id": {
           "name": "id",
           "type": "text",
@@ -1284,147 +1288,6 @@
         "participant_invitation_bridge_issued_by_user_id_user_id_fk": {
           "name": "participant_invitation_bridge_issued_by_user_id_user_id_fk",
           "tableFrom": "participant_invitation_bridge",
-          "tableTo": "user",
-          "columnsFrom": ["issued_by_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.participant_invitation": {
-      "name": "participant_invitation",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "partnership_id": {
-          "name": "partnership_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "project_id": {
-          "name": "project_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "secret_hash": {
-          "name": "secret_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "issued_by_user_id": {
-          "name": "issued_by_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "issued_at": {
-          "name": "issued_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "accepted_at": {
-          "name": "accepted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "participant_invitation_partnership_idx": {
-          "name": "participant_invitation_partnership_idx",
-          "columns": [
-            {
-              "expression": "partnership_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "participant_invitation_pending_email_unique": {
-          "name": "participant_invitation_pending_email_unique",
-          "columns": [
-            {
-              "expression": "project_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "email",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"participant_invitation\".\"status\" = 'pending'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "participant_invitation_partnership_id_project_partner_organization_id_fk": {
-          "name": "participant_invitation_partnership_id_project_partner_organization_id_fk",
-          "tableFrom": "participant_invitation",
-          "tableTo": "project_partner_organization",
-          "columnsFrom": ["partnership_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "participant_invitation_project_id_project_id_fk": {
-          "name": "participant_invitation_project_id_project_id_fk",
-          "tableFrom": "participant_invitation",
-          "tableTo": "project",
-          "columnsFrom": ["project_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "participant_invitation_issued_by_user_id_user_id_fk": {
-          "name": "participant_invitation_issued_by_user_id_user_id_fk",
-          "tableFrom": "participant_invitation",
           "tableTo": "user",
           "columnsFrom": ["issued_by_user_id"],
           "columnsTo": ["id"],
@@ -2604,18 +2467,6 @@
           "notNull": true,
           "default": false
         },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "completed_by_user_id": {
-          "name": "completed_by_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -2735,15 +2586,6 @@
           "columnsFrom": ["organization_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "project_completed_by_user_id_user_id_fk": {
-          "name": "project_completed_by_user_id_user_id_fk",
-          "tableFrom": "project",
-          "tableTo": "user",
-          "columnsFrom": ["completed_by_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -3067,8 +2909,10 @@
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "9465722f-eee4-4845-b07e-57df0b4c0505",
+  "prevId": "9d4aca0a-9328-4325-9be2-73eafc52f69b"
 }

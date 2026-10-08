@@ -1,6 +1,4 @@
 {
-  "id": "9ed0ad6b-dd13-4d34-8aac-8367739ee085",
-  "prevId": "117d3463-00fa-47bb-82e0-637b9ce0da17",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,7 +260,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'member'"
+          "default": "'participant'"
         },
         "created_at": {
           "name": "created_at",
@@ -333,6 +331,12 @@
       "name": "organization",
       "schema": "",
       "columns": {
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "id": {
           "name": "id",
           "type": "text",
@@ -1174,8 +1178,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.participant_entry_token": {
-      "name": "participant_entry_token",
+    "public.participant_invitation": {
+      "name": "participant_invitation",
       "schema": "",
       "columns": {
         "id": {
@@ -1200,7 +1204,7 @@
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "secret_hash": {
           "name": "secret_hash",
@@ -1219,7 +1223,7 @@
           "name": "expires_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "issued_by_user_id": {
           "name": "issued_by_user_id",
@@ -1239,23 +1243,11 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
-        },
-        "closed_at": {
-          "name": "closed_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closed_by_user_id": {
-          "name": "closed_by_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
-        "participant_entry_token_partnership_idx": {
-          "name": "participant_entry_token_partnership_idx",
+        "participant_invitation_partnership_idx": {
+          "name": "participant_invitation_partnership_idx",
           "columns": [
             {
               "expression": "partnership_id",
@@ -1269,8 +1261,8 @@
           "method": "btree",
           "with": {}
         },
-        "participant_entry_token_pending_email_unique": {
-          "name": "participant_entry_token_pending_email_unique",
+        "participant_invitation_pending_email_unique": {
+          "name": "participant_invitation_pending_email_unique",
           "columns": [
             {
               "expression": "project_id",
@@ -1286,45 +1278,36 @@
             }
           ],
           "isUnique": true,
-          "where": "\"participant_entry_token\".\"status\" = 'pending' and \"participant_entry_token\".\"email\" is not null",
+          "where": "\"participant_invitation\".\"status\" = 'pending'",
           "concurrently": false,
           "method": "btree",
           "with": {}
         }
       },
       "foreignKeys": {
-        "participant_entry_token_partnership_id_project_partner_organization_id_fk": {
-          "name": "participant_entry_token_partnership_id_project_partner_organization_id_fk",
-          "tableFrom": "participant_entry_token",
+        "participant_invitation_partnership_id_project_partner_organization_id_fk": {
+          "name": "participant_invitation_partnership_id_project_partner_organization_id_fk",
+          "tableFrom": "participant_invitation",
           "tableTo": "project_partner_organization",
           "columnsFrom": ["partnership_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "participant_entry_token_project_id_project_id_fk": {
-          "name": "participant_entry_token_project_id_project_id_fk",
-          "tableFrom": "participant_entry_token",
+        "participant_invitation_project_id_project_id_fk": {
+          "name": "participant_invitation_project_id_project_id_fk",
+          "tableFrom": "participant_invitation",
           "tableTo": "project",
           "columnsFrom": ["project_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "participant_entry_token_issued_by_user_id_user_id_fk": {
-          "name": "participant_entry_token_issued_by_user_id_user_id_fk",
-          "tableFrom": "participant_entry_token",
+        "participant_invitation_issued_by_user_id_user_id_fk": {
+          "name": "participant_invitation_issued_by_user_id_user_id_fk",
+          "tableFrom": "participant_invitation",
           "tableTo": "user",
           "columnsFrom": ["issued_by_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "participant_entry_token_closed_by_user_id_user_id_fk": {
-          "name": "participant_entry_token_closed_by_user_id_user_id_fk",
-          "tableFrom": "participant_entry_token",
-          "tableTo": "user",
-          "columnsFrom": ["closed_by_user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -1454,6 +1437,113 @@
           "columnsFrom": ["user_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.participant_registration_link": {
+      "name": "participant_registration_link",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "partnership_id": {
+          "name": "partnership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "secret_hash": {
+          "name": "secret_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "closed_by_user_id": {
+          "name": "closed_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "participant_registration_link_partnership_idx": {
+          "name": "participant_registration_link_partnership_idx",
+          "columns": [
+            {
+              "expression": "partnership_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "participant_registration_link_partnership_id_project_partner_organization_id_fk": {
+          "name": "participant_registration_link_partnership_id_project_partner_organization_id_fk",
+          "tableFrom": "participant_registration_link",
+          "tableTo": "project_partner_organization",
+          "columnsFrom": ["partnership_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "participant_registration_link_created_by_user_id_user_id_fk": {
+          "name": "participant_registration_link_created_by_user_id_user_id_fk",
+          "tableFrom": "participant_registration_link",
+          "tableTo": "user",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "participant_registration_link_closed_by_user_id_user_id_fk": {
+          "name": "participant_registration_link_closed_by_user_id_user_id_fk",
+          "tableFrom": "participant_registration_link",
+          "tableTo": "user",
+          "columnsFrom": ["closed_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -2858,8 +2948,10 @@
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "44abd91a-a3ed-40df-9292-25dc9595136d",
+  "prevId": "1fc4c34b-2b6f-4aa6-824c-722d96c6f5a8"
 }

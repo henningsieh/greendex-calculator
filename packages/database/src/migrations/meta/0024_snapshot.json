@@ -1,6 +1,4 @@
 {
-  "id": "262d403f-9611-4ba6-a0dd-bc691d11851b",
-  "prevId": "967107be-342b-4f10-b4f0-7717e143bb03",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,7 +260,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'member'"
+          "default": "'participant'"
         },
         "created_at": {
           "name": "created_at",
@@ -333,6 +331,12 @@
       "name": "organization",
       "schema": "",
       "columns": {
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "id": {
           "name": "id",
           "type": "text",
@@ -874,168 +878,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.duplicate_review_task": {
-      "name": "duplicate_review_task",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "partnership_id": {
-          "name": "partnership_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "existing_participation_id": {
-          "name": "existing_participation_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "candidate_user_id": {
-          "name": "candidate_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "candidate_email": {
-          "name": "candidate_email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "duplicate_review_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'open'"
-        },
-        "assigned_to_user_id": {
-          "name": "assigned_to_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "decision": {
-          "name": "decision",
-          "type": "duplicate_review_decision",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "survivor_participation_id": {
-          "name": "survivor_participation_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "resolved_at": {
-          "name": "resolved_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "duplicate_review_attempt_unique": {
-          "name": "duplicate_review_attempt_unique",
-          "columns": [
-            {
-              "expression": "partnership_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "existing_participation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "candidate_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "duplicate_review_task_partnership_id_project_partner_organization_id_fk": {
-          "name": "duplicate_review_task_partnership_id_project_partner_organization_id_fk",
-          "tableFrom": "duplicate_review_task",
-          "tableTo": "project_partner_organization",
-          "columnsFrom": ["partnership_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "duplicate_review_task_existing_participation_id_project_participant_id_fk": {
-          "name": "duplicate_review_task_existing_participation_id_project_participant_id_fk",
-          "tableFrom": "duplicate_review_task",
-          "tableTo": "project_participant",
-          "columnsFrom": ["existing_participation_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "duplicate_review_task_candidate_user_id_user_id_fk": {
-          "name": "duplicate_review_task_candidate_user_id_user_id_fk",
-          "tableFrom": "duplicate_review_task",
-          "tableTo": "user",
-          "columnsFrom": ["candidate_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "duplicate_review_task_assigned_to_user_id_user_id_fk": {
-          "name": "duplicate_review_task_assigned_to_user_id_user_id_fk",
-          "tableFrom": "duplicate_review_task",
-          "tableTo": "user",
-          "columnsFrom": ["assigned_to_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "duplicate_review_task_survivor_participation_id_project_participant_id_fk": {
-          "name": "duplicate_review_task_survivor_participation_id_project_participant_id_fk",
-          "tableFrom": "duplicate_review_task",
-          "tableTo": "project_participant",
-          "columnsFrom": ["survivor_participation_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "duplicate_review_lifecycle_check": {
-          "name": "duplicate_review_lifecycle_check",
-          "value": "(\n      (\"duplicate_review_task\".\"status\" = 'open' and \"duplicate_review_task\".\"assigned_to_user_id\" is null and \"duplicate_review_task\".\"decision\" is null and \"duplicate_review_task\".\"survivor_participation_id\" is null and \"duplicate_review_task\".\"resolved_at\" is null) or\n      (\"duplicate_review_task\".\"status\" = 'assigned' and \"duplicate_review_task\".\"assigned_to_user_id\" is not null and \"duplicate_review_task\".\"decision\" is null and \"duplicate_review_task\".\"survivor_participation_id\" is null and \"duplicate_review_task\".\"resolved_at\" is null) or\n      (\"duplicate_review_task\".\"status\" = 'resolved' and \"duplicate_review_task\".\"assigned_to_user_id\" is not null and \"duplicate_review_task\".\"decision\" is not null and \"duplicate_review_task\".\"survivor_participation_id\" = \"duplicate_review_task\".\"existing_participation_id\" and \"duplicate_review_task\".\"resolved_at\" is not null)\n    )"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.participant_agreement_acceptance": {
       "name": "participant_agreement_acceptance",
       "schema": "",
@@ -1423,23 +1265,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "participant_registration_link_partnership_idx": {
-          "name": "participant_registration_link_partnership_idx",
-          "columns": [
-            {
-              "expression": "partnership_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "participant_registration_link_partnership_id_project_partner_organization_id_fk": {
           "name": "participant_registration_link_partnership_id_project_partner_organization_id_fk",
@@ -1470,7 +1296,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "participant_registration_link_partnership_id_unique": {
+          "name": "participant_registration_link_partnership_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["partnership_id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2831,16 +2663,6 @@
       "schema": "public",
       "values": ["equal", "percentage", "amount"]
     },
-    "public.duplicate_review_decision": {
-      "name": "duplicate_review_decision",
-      "schema": "public",
-      "values": ["same_person", "distinct_persons", "dismiss"]
-    },
-    "public.duplicate_review_status": {
-      "name": "duplicate_review_status",
-      "schema": "public",
-      "values": ["open", "assigned", "resolved"]
-    },
     "public.journey_trip_type": {
       "name": "journey_trip_type",
       "schema": "public",
@@ -2863,8 +2685,10 @@
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "19602d58-e1eb-4652-b318-06a6a31dae51",
+  "prevId": "185accef-a942-44d2-91e7-e10cc8d9e94f"
 }

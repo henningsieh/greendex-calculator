@@ -1,6 +1,4 @@
 {
-  "id": "967107be-342b-4f10-b4f0-7717e143bb03",
-  "prevId": "aee9642d-5a4b-4504-abed-aa124edcfab7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,7 +260,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'member'"
+          "default": "'participant'"
         },
         "created_at": {
           "name": "created_at",
@@ -333,6 +331,12 @@
       "name": "organization",
       "schema": "",
       "columns": {
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "id": {
           "name": "id",
           "type": "text",
@@ -1261,23 +1265,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "participant_registration_link_partnership_idx": {
-          "name": "participant_registration_link_partnership_idx",
-          "columns": [
-            {
-              "expression": "partnership_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "participant_registration_link_partnership_id_project_partner_organization_id_fk": {
           "name": "participant_registration_link_partnership_id_project_partner_organization_id_fk",
@@ -1308,7 +1296,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "participant_registration_link_partnership_id_unique": {
+          "name": "participant_registration_link_partnership_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["partnership_id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1733,12 +1727,6 @@
         "rules_version": {
           "name": "rules_version",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "participant_transport_profiles": {
-          "name": "participant_transport_profiles",
-          "type": "jsonb",
           "primaryKey": false,
           "notNull": true
         },
@@ -2691,8 +2679,10 @@
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "185accef-a942-44d2-91e7-e10cc8d9e94f",
+  "prevId": "fc1b29ce-e22a-444c-8702-56e1e62bf69b"
 }

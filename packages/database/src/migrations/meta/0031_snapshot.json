@@ -1,6 +1,4 @@
 {
-  "id": "117d3463-00fa-47bb-82e0-637b9ce0da17",
-  "prevId": "b472cab8-68f7-46ec-9e50-8dbe223a2501",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,7 +260,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'member'"
+          "default": "'participant'"
         },
         "created_at": {
           "name": "created_at",
@@ -333,6 +331,12 @@
       "name": "organization",
       "schema": "",
       "columns": {
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "id": {
           "name": "id",
           "type": "text",
@@ -1174,12 +1178,12 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.participant_entry_token": {
-      "name": "participant_entry_token",
+    "public.participant_invitation_bridge": {
+      "name": "participant_invitation_bridge",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
+        "invitation_id": {
+          "name": "invitation_id",
           "type": "text",
           "primaryKey": true,
           "notNull": true
@@ -1200,12 +1204,6 @@
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
-        },
-        "secret_hash": {
-          "name": "secret_hash",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "status": {
@@ -1214,12 +1212,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'pending'"
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
         },
         "issued_by_user_id": {
           "name": "issued_by_user_id",
@@ -1239,38 +1231,11 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
-        },
-        "closed_at": {
-          "name": "closed_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closed_by_user_id": {
-          "name": "closed_by_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
-        "participant_entry_token_partnership_idx": {
-          "name": "participant_entry_token_partnership_idx",
-          "columns": [
-            {
-              "expression": "partnership_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "participant_entry_token_pending_email_unique": {
-          "name": "participant_entry_token_pending_email_unique",
+        "participant_invitation_live_email_unique": {
+          "name": "participant_invitation_live_email_unique",
           "columns": [
             {
               "expression": "project_id",
@@ -1286,45 +1251,45 @@
             }
           ],
           "isUnique": true,
-          "where": "\"participant_entry_token\".\"status\" = 'pending' and \"participant_entry_token\".\"email\" is not null",
+          "where": "\"participant_invitation_bridge\".\"status\" = 'pending'",
           "concurrently": false,
           "method": "btree",
           "with": {}
         }
       },
       "foreignKeys": {
-        "participant_entry_token_partnership_id_project_partner_organization_id_fk": {
-          "name": "participant_entry_token_partnership_id_project_partner_organization_id_fk",
-          "tableFrom": "participant_entry_token",
+        "participant_invitation_bridge_invitation_id_invitation_id_fk": {
+          "name": "participant_invitation_bridge_invitation_id_invitation_id_fk",
+          "tableFrom": "participant_invitation_bridge",
+          "tableTo": "invitation",
+          "columnsFrom": ["invitation_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "participant_invitation_bridge_partnership_id_project_partner_organization_id_fk": {
+          "name": "participant_invitation_bridge_partnership_id_project_partner_organization_id_fk",
+          "tableFrom": "participant_invitation_bridge",
           "tableTo": "project_partner_organization",
           "columnsFrom": ["partnership_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "participant_entry_token_project_id_project_id_fk": {
-          "name": "participant_entry_token_project_id_project_id_fk",
-          "tableFrom": "participant_entry_token",
+        "participant_invitation_bridge_project_id_project_id_fk": {
+          "name": "participant_invitation_bridge_project_id_project_id_fk",
+          "tableFrom": "participant_invitation_bridge",
           "tableTo": "project",
           "columnsFrom": ["project_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "participant_entry_token_issued_by_user_id_user_id_fk": {
-          "name": "participant_entry_token_issued_by_user_id_user_id_fk",
-          "tableFrom": "participant_entry_token",
+        "participant_invitation_bridge_issued_by_user_id_user_id_fk": {
+          "name": "participant_invitation_bridge_issued_by_user_id_user_id_fk",
+          "tableFrom": "participant_invitation_bridge",
           "tableTo": "user",
           "columnsFrom": ["issued_by_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "participant_entry_token_closed_by_user_id_user_id_fk": {
-          "name": "participant_entry_token_closed_by_user_id_user_id_fk",
-          "tableFrom": "participant_entry_token",
-          "tableTo": "user",
-          "columnsFrom": ["closed_by_user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -3106,8 +3071,10 @@
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "1fc4c34b-2b6f-4aa6-824c-722d96c6f5a8",
+  "prevId": "195fbdf8-bff4-4fda-a5c9-d91de1b8d8db"
 }

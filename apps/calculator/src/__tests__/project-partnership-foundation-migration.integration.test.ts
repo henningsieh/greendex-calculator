@@ -9,7 +9,7 @@ const migrationsDirectory = resolve(
   import.meta.dirname,
   "../../../../packages/database/src/migrations",
 );
-const projectPartnershipInvariantMigrationIndex = 17;
+const projectPartnershipInvariantMigrationIndex = 19;
 
 function databaseUrl(databaseName: string): string {
   const url = new URL(process.env.DATABASE_URL!);
@@ -93,8 +93,8 @@ async function seedLegacyParticipation(pool: Pool) {
     INSERT INTO "user" ("id", "name", "email", "email_verified", "created_at", "updated_at")
     VALUES ('participant', 'Legacy Participant', 'participant@example.com', true, now(), now());
 
-    INSERT INTO "organization" ("id", "name", "slug", "created_at")
-    VALUES ('hosting-organization', 'Hosting Organization', 'hosting-organization', now());
+    INSERT INTO "organization" ("id", "name", "slug", "country", "created_at")
+    VALUES ('hosting-organization', 'Hosting Organization', 'hosting-organization', 'DE', now());
 
     INSERT INTO "member" ("id", "organization_id", "user_id", "role", "created_at")
     VALUES ('participant-membership', 'hosting-organization', 'participant', 'member', now());
@@ -117,10 +117,10 @@ describe("Project Partnership foundation migration", () => {
   it("backfills existing Calculator Project Participations before requiring the new identity fields", async () => {
     const database = await createDisposableDatabase();
     databases.push(database);
-    await applyMigrationsThrough(database.pool, 14);
+    await applyMigrationsThrough(database.pool, 16);
     await seedLegacyParticipation(database.pool);
 
-    await expect(applyMigration(database.pool, 15)).resolves.toBeUndefined();
+    await expect(applyMigration(database.pool, 17)).resolves.toBeUndefined();
 
     const participation = await database.pool.query(
       `SELECT "represented_organization_id", "display_name", "email", "user_id", "country"
@@ -139,15 +139,15 @@ describe("Project Partnership foundation migration", () => {
     ]);
   });
 
-  it("repairs the historical 0015 state with backfill and invariant enforcement", async () => {
+  it("repairs the historical foundation state with backfill and invariant enforcement", async () => {
     const database = await createDisposableDatabase();
     databases.push(database);
-    await applyMigrationsThrough(database.pool, 14);
+    await applyMigrationsThrough(database.pool, 16);
     await seedLegacyParticipation(database.pool);
-    await applyMigration(database.pool, 15);
+    await applyMigration(database.pool, 17);
     await database.pool.query(`
-      INSERT INTO "organization" ("id", "name", "slug", "created_at")
-      VALUES ('partner-organization', 'Partner Organization', 'partner-organization', now());
+      INSERT INTO "organization" ("id", "name", "slug", "country", "created_at")
+      VALUES ('partner-organization', 'Partner Organization', 'partner-organization', 'DE', now());
 
       INSERT INTO "project_partner_organization" ("id", "project_id", "organization_id")
       VALUES ('partnership', 'project', 'partner-organization');
@@ -160,7 +160,7 @@ describe("Project Partnership foundation migration", () => {
       WHERE "id" = 'participation';
     `);
     await removeProjectPartnershipInvariantEnforcement(database.pool);
-    await applyMigration(database.pool, 16);
+    await applyMigration(database.pool, 18);
 
     await expect(
       applyMigration(database.pool, projectPartnershipInvariantMigrationIndex),
@@ -198,10 +198,10 @@ describe("Project Partnership foundation migration", () => {
       INSERT INTO "user" ("id", "name", "email", "email_verified", "created_at", "updated_at")
       VALUES ('owner', 'Organization Administrator', 'organization-administrator@example.com', true, now(), now());
 
-      INSERT INTO "organization" ("id", "name", "slug", "created_at") VALUES
-        ('hosting-organization', 'Hosting Organization', 'hosting-organization', now()),
-        ('partner-organization', 'Partner Organization', 'partner-organization', now()),
-        ('unrelated-organization', 'Unrelated Organization', 'unrelated-organization', now());
+      INSERT INTO "organization" ("id", "name", "slug", "country", "created_at") VALUES
+        ('hosting-organization', 'Hosting Organization', 'hosting-organization', 'DE', now()),
+        ('partner-organization', 'Partner Organization', 'partner-organization', 'DE', now()),
+        ('unrelated-organization', 'Unrelated Organization', 'unrelated-organization', 'DE', now());
 
       INSERT INTO "project" ("id", "name", "start_date", "end_date", "location", "country", "responsible_user_id", "organization_id", "archived", "created_at", "updated_at")
       VALUES ('project', 'Project', '2026-01-01', '2026-01-02', 'Berlin', 'DE', 'owner', 'hosting-organization', false, now(), now());

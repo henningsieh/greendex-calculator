@@ -1,6 +1,4 @@
 {
-  "id": "a4ca0124-a185-4970-8a33-f58d48e23632",
-  "prevId": "64fc60a6-09c6-4ab1-b8f3-a6fdadfec0f4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -262,7 +260,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'member'"
+          "default": "'participant'"
         },
         "created_at": {
           "name": "created_at",
@@ -333,6 +331,12 @@
       "name": "organization",
       "schema": "",
       "columns": {
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "id": {
           "name": "id",
           "type": "text",
@@ -2811,8 +2815,7 @@
         "rejected",
         "reopened",
         "paid",
-        "payment_corrected",
-        "journey_updated"
+        "payment_corrected"
       ]
     },
     "public.claim_status": {
@@ -2864,8 +2867,10 @@
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "0ba9893a-f26f-4bcf-9036-6fedcfe4c06c",
+  "prevId": "307cc555-fd74-4c02-af16-d0bc6f55a960"
 }

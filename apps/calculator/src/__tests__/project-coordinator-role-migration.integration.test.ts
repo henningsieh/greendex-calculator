@@ -23,7 +23,7 @@ it("appends coordinator only to assignment-holding admins and preserves every ot
       .filter((file) => /^\d{4}_.*\.sql$/.test(file))
       .sort();
     for (const filename of filenames.filter(
-      (file) => Number(file.slice(0, 4)) <= 24,
+      (file) => Number(file.slice(0, 4)) <= 26,
     )) {
       await pool.query(await readFile(resolve(migrations, filename), "utf8"));
     }
@@ -31,8 +31,8 @@ it("appends coordinator only to assignment-holding admins and preserves every ot
       INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
       SELECT id, id, id || '@example.com', true, now(), now()
       FROM unnest(ARRAY['host-admin','partner-admin','plain-admin','owner-admin','member-assigned','member-plain','already']) AS id;
-      INSERT INTO "organization" (id, name, slug, created_at)
-      VALUES ('host','Host','host',now()), ('partner','Partner','partner',now());
+      INSERT INTO "organization" (id, name, slug, country, created_at)
+      VALUES ('host','Host','host','LV',now()), ('partner','Partner','partner','LV',now());
       INSERT INTO "member" (id, organization_id, user_id, role, created_at)
       VALUES ('h','host','host-admin','admin',now()),
         ('p','partner','partner-admin','admin',now()),
@@ -52,7 +52,7 @@ it("appends coordinator only to assignment-holding admins and preserves every ot
       VALUES ('partnership','partner-admin');
     `);
     const sql = await readFile(
-      resolve(migrations, "0025_backfill_project_coordinator_role.sql"),
+      resolve(migrations, "0027_backfill_project_coordinator_role.sql"),
       "utf8",
     );
     await pool.query(sql);
