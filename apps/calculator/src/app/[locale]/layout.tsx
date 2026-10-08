@@ -64,8 +64,8 @@ export function generateStaticParams() {
  * `now` to skip its request-time lookup during prerendering.
  */
 async function getPrerenderNow() {
-  "use cache";
-  cacheLife("max");
+  // AUDIT-EXPERIMENT: directive removed
+  // AUDIT-EXPERIMENT: cacheLife removed
   return new Date();
 }
 
@@ -103,7 +103,8 @@ export default async function LocaleLayout({ children, params }: Props) {
         <QueryProvider>
           {/* NOTE (Cache Components, #246): every prop is explicit — without
               them the provider fills locale/timeZone/now/formats via a
-              request-header lookup that blocks prerendering. `now` is frozen
+              request-time lookup, so the route stays protected (no prerender).
+              `now` is frozen
               per prerender (no `useNow` consumers exist); `formats` stays
               empty as the request config defines none. */}
           <NextIntlClientProvider
