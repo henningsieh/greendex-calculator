@@ -59,8 +59,11 @@ describe("environment entrypoints", () => {
     expect(calculatorPackage.scripts.dev).toContain(
       "dotenv -v NODE_ENV=development -e .env --",
     );
-    expect(calculatorPackage.scripts.prebuild).toBe(
-      "dotenv -e .env -- pnpm -w run db:migrate",
+    expect(calculatorPackage.scripts.prebuild).toContain("dotenv -e .env --");
+    expect(calculatorPackage.scripts.prebuild).toContain("pnpm run generate:sri");
+    expect(calculatorPackage.scripts.prebuild).toContain("pnpm run check:sri");
+    expect(calculatorPackage.scripts.prebuild).toContain(
+      "pnpm -w run db:migrate",
     );
     expect(calculatorPackage.scripts.build).toBe("next build");
     expect(calculatorPackage.scripts.prestart).toContain("dotenv -e .env --");
@@ -129,7 +132,7 @@ describe("environment entrypoints", () => {
       expect(app.scripts["db:migrate"]).toBeUndefined();
       expect(app.scripts.predev ?? "").not.toContain("db:migrate");
       expect(app.scripts.prebuild).toMatch(
-        /^dotenv -e \.env -- pnpm -w run db:migrate(?: &&|$)/,
+        /dotenv -e \.env -- .*pnpm -w run db:migrate/,
       );
       expect(app.scripts["start:prepare"]).toContain(
         "pnpm --filter @greendex/database run db:migrate",

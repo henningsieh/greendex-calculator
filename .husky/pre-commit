@@ -33,9 +33,17 @@ restore_stash() {
 }
 trap restore_stash EXIT
 
+# Format every staged source file in place. The first grep keeps only file
+# types the formatter understands; the second grep drops paths the formatter
+# is configured to ignore (.oxfmtrc.json: docs, specs). Without that second
+# filter, a docs-only commit hands the formatter nothing it may touch, and
+# the formatter fails the whole commit instead of passing quietly.
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
+  | grep -zvE '^(docs/|\.specify/|specs/)' \
   | xargs -0 -r pnpm exec oxfmt --write --no-error-on-unmatched-pattern
+# Lint every staged script file. Same selection idea, narrower file types:
+# only code reaches the linter, docs never do.
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
   | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json
@@ -46,6 +54,9 @@ git diff --cached --name-only -z --diff-filter=ACMR \
 pnpm run check:agent-instructions
 
 # Only re-stage files that were selected from the original staged snapshot.
+# Uses the same two filters as the format step above, so exactly the files
+# the formatter may have rewritten get re-staged — nothing more.
 git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|css|json|jsonc|js|jsx|md|mdx|mjs|mts|ts|tsx|yaml|yml)$' \
+  | grep -zvE '^(docs/|\.specify/|specs/)' \
   | xargs -0 -r git add --

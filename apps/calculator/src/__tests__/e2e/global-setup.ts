@@ -8,7 +8,7 @@ import { chromium, type FullConfig } from "@playwright/test";
  * Global setup for Playwright tests
  * This runs once before all tests and verifies the app + DB by performing a login
  *
- * Environment variables are loaded by dotenv-cli before Playwright starts.
+ * Environment variables are loaded by `dotenv run` before Playwright starts.
  * Don't import from @/env here to avoid validation errors during type-checking.
  */
 async function globalSetup(config: FullConfig) {

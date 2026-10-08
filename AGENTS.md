@@ -4,8 +4,8 @@
 
 ## 🚨 Critical Rules
 
-- Never start a dev server (`pnpm run dev`, `npm run dev`, `yarn dev` — one already runs on the respective app's port). Never run destructive git commands (`push --force`, `reset --hard`, …).
-- Allowed: `pnpm run build` / `start` / `lint` / `format` / `test…`, read-only git plus `add` / `commit` / `checkout -b`, file reads and searches. Builds and deploys are Coolify-managed — see the [Coolify runbook](docs/agents/instructions/coolify.md) and never hand-edit generated compose output. Never commit credentials.
+- Always start a dev server when needed (`pnpm run dev`, `npm run dev`, `yarn dev` — one often runs already on the respective app's port). Never run destructive git commands (`push --force`, `reset --hard`, …).
+- Also allowed: `pnpm run build` / `start` / `lint` / `format` / `test…`, read-only git plus `add` / `commit` / `checkout -b`, file reads and searches. Builds and deploys are Coolify-managed — see the [Coolify runbook](docs/agents/instructions/coolify.md) and never hand-edit generated compose output. Never commit credentials.
 
 ## Contexts
 
@@ -109,7 +109,7 @@ Before final delivery (the main agent owns these gates after shared-worktree chi
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
