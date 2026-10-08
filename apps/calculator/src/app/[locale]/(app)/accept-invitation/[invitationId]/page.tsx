@@ -10,6 +10,11 @@ import { auth } from "@/lib/better-auth";
  * @param params - A promise that resolves to an object containing `invitationId`, used to fetch the invitation.
  * @returns The `HandleInvitation` element for the fetched invitation. If the invitation does not exist, triggers a 404 page and returns `null`.
  */
+// instant = false: kept on purpose — the invitation must resolve (or 404)
+// before first paint; there is no useful shell for an unknown audience
+// (#246).
+export const instant = false;
+
 export default async function AcceptInvitationPage({
   params,
 }: {

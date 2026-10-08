@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import { ParticipateHeader } from "@/features/participate/components/participate-header";
 import { getProjectData } from "@/features/projects/utils";
 
+// instant = false: kept on purpose — the project is resolved per request
+// from the public link id (uncached read, invalid links 404). The form must
+// render complete; a skeleton shell adds no value on a single-purpose link
+// page. Caching with tags is a deliberate follow-up (#246).
+export const instant = false;
+
 /**
  * Public Project Participation Layout
  *

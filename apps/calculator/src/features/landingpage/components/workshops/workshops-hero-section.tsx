@@ -10,8 +10,8 @@ import { Link } from "@/lib/i18n/routing";
  * WorkshopsHeroSection - Most prominent section on the landing page
  * Enhanced visual treatment with glassmorphism cards
  */
-export async function WorkshopsHeroSection() {
-  const t = await getTranslations("landingPage");
+export async function WorkshopsHeroSection({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: "landingPage" });
   const intro2 = t("workshops.intro2");
   const intro2Parts = intro2.split("workshops");
 
@@ -74,6 +74,7 @@ export async function WorkshopsHeroSection() {
 
             return (
               <Link
+                locale={locale}
                 className="group block h-full"
                 href={`/workshops?type=${workshop.id}`}
                 key={workshop.id}
@@ -138,6 +139,7 @@ export async function WorkshopsHeroSection() {
           <p className="text-muted-foreground">
             {t("workshops.bottomP2Prefix")}{" "}
             <Link
+              locale={locale}
               className="font-semibold text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
               href="/library"
             >
@@ -145,6 +147,7 @@ export async function WorkshopsHeroSection() {
             </Link>{" "}
             {t("workshops.bottomP2Middle") ?? "and"}{" "}
             <Link
+              locale={locale}
               className="font-semibold text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
               href="/tips-and-tricks"
             >

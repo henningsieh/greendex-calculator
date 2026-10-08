@@ -24,8 +24,8 @@ import { Label } from "@/components/ui/label";
  * Uses PageHeader and ContentContainer for consistent layout across the application.
  * Mobile responsive with proper spacing and card-based sections.
  */
-export async function UserSettingsPage() {
-  const t = await getTranslations("app");
+export async function UserSettingsPage({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: "app" });
 
   return (
     <div className="flex h-full w-full flex-col">

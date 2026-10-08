@@ -1,4 +1,5 @@
 import { getTranslations } from "@greendex/i18n/server";
+import { cacheLife } from "next/cache";
 
 import {
   ABOUT_PATH,
@@ -16,15 +17,31 @@ import { PillCTA } from "@/features/landingpage/components/pill-cta";
 import { Link } from "@/lib/i18n/routing";
 
 /**
+ * Return the server-local calendar year when the cache entry is generated.
+ * The `days` cache profile bounds staleness to a week, so the value refreshes
+ * shortly after a year boundary.
+ */
+async function getCurrentYear() {
+  "use cache";
+  cacheLife("days");
+  return new Date().getFullYear();
+}
+
+/**
  * Renders the site's footer section with the logo, a launch CTA, and localized navigation columns.
  *
- * Uses translations from "LandingPage" and "header" to populate link titles and builds the Explore, Company,
- * and App link groups. Also includes a CTA to the dashboard and a copyright line with the current year.
+ * Uses `landingPage` translations to populate the Explore, Company, and App
+ * link groups in `locale`. Also includes a dashboard CTA and a cached copyright year.
  *
  * @returns A JSX element representing the footer containing the logo, CTA, localized navigation links, and copyright.
  */
-export async function FooterSection() {
-  const t = await getTranslations("landingPage");
+export async function FooterSection({ locale }: { locale: string }) {
+  // NOTE (Cache Components, #246): explicit `locale` — the header-backed
+  // lookup resolves per segment, so a bare call would block prerendering.
+  const [t, currentYear] = await Promise.all([
+    getTranslations({ locale, namespace: "landingPage" }),
+    getCurrentYear(),
+  ]);
 
   const navigationLinks = [
     {
@@ -71,12 +88,15 @@ export async function FooterSection() {
             <Link
               aria-label="GREENDEX home"
               className="block size-fit"
+              locale={locale}
               href={HOME_PATH}
             >
               <Logo />
             </Link>
             <div className="mt-6">
-              <PillCTA href={DASHBOARD_PATH}>{t("launchButton")}</PillCTA>
+              <PillCTA href={DASHBOARD_PATH} locale={locale}>
+                {t("launchButton")}
+              </PillCTA>
             </div>
           </div>
 
@@ -89,6 +109,7 @@ export async function FooterSection() {
                 {navigationLinks.map((item, index) => (
                   <Link
                     className="text-muted-foreground transition-colors hover:text-foreground"
+                    locale={locale}
                     href={item.href}
                     key={index}
                   >
@@ -106,6 +127,7 @@ export async function FooterSection() {
                 {companyLinks.map((item, index) => (
                   <Link
                     className="text-muted-foreground transition-colors hover:text-foreground"
+                    locale={locale}
                     href={item.href}
                     key={index}
                   >
@@ -123,6 +145,7 @@ export async function FooterSection() {
                 {appLinks.map((item, index) => (
                   <Link
                     className="text-muted-foreground transition-colors hover:text-foreground"
+                    locale={locale}
                     href={item.href}
                     key={index}
                   >
@@ -136,7 +159,7 @@ export async function FooterSection() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
           <span className="text-center text-sm text-muted-foreground sm:text-left">
-            &copy; {new Date().getFullYear()} Greendex | {t("footer.copyright")}
+            &copy; {currentYear} Greendex | {t("footer.copyright")}
           </span>
         </div>
       </div>

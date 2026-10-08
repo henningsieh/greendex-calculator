@@ -245,7 +245,7 @@ export const appAgentFileNames = [
 
 export const nextConfigsToCheck = [
   { configPath: "apps/calculator/next.config.ts", label: "calculator" },
-  { configPath: "apps/documentation/next.config.mjs", label: "documentation" },
+  { configPath: "apps/documentation/next.config.ts", label: "documentation" },
 ];
 
 export const retiredAgentGuidancePaths = [

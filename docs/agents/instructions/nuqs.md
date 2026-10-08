@@ -22,11 +22,11 @@ No official `SKILL.md` is available. The maintainer-authored [nuqs contributor A
 | Concern | Location |
 | --- | --- |
 | App Router adapter boundary | `apps/calculator/src/components/providers/nuqs-adapter.tsx` |
-| Adapter placement | `apps/calculator/src/app/[locale]/layout.tsx` |
+| Adapter placement | Scoped `NuqsProvider` around each consuming subtree (dashboard, projects, workshops) |
 | Client URL state | Owning Calculator feature component |
 | Server URL parsing | Owning Calculator page with `nuqs/server` |
 
-The Calculator uses the App Router adapter, `NuqsAdapter` from `nuqs/adapters/next/app`, once around the locale layout's descendants. Preserve that boundary when adding client URL state; do not add feature-local adapters or use a Pages Router/unified adapter.
+The Calculator uses the App Router adapter, `NuqsAdapter` from `nuqs/adapters/next/app`, scoped to the subtrees that use client URL state. The provider itself only stores the adapter (consumers invoke the search-param hook, and its navigation spy carries its own Suspense boundary), so this scoping is policy, not a rendering requirement: keep URL-state context with its consumers instead of implying global availability. Do not use a Pages Router/unified adapter.
 
 ## URL-state rules
 

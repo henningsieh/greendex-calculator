@@ -19,6 +19,9 @@ type PillCTAButtonProps = PillCTABaseProps & {
 type PillCTALinkProps = PillCTABaseProps & {
   href: AppRoute;
   onClick?: never;
+  // Explicit locale keeps the localized link out of the request-header
+  // lookup during prerendering (Cache Components, #246).
+  locale: string;
 };
 
 type PillCTAProps = PillCTAButtonProps | PillCTALinkProps;
@@ -30,7 +33,8 @@ type PillCTAProps = PillCTAButtonProps | PillCTALinkProps;
  * Theme-aware (works in light/dark)
  *
  * Can be used as either a button (with onClick) or a link (with href)
- * One of onClick or href must be provided
+ * One of onClick or href must be provided. Links also require `locale` for
+ * localized navigation. Returns null if neither a truthy href nor onClick is supplied.
  */
 export function PillCTA({
   children,
@@ -79,7 +83,7 @@ export function PillCTA({
   // Render as link if href is provided
   if ("href" in props && props.href) {
     return (
-      <Link className={baseClasses} href={props.href}>
+      <Link className={baseClasses} href={props.href} locale={props.locale}>
         {content}
       </Link>
     );

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { ContentContainer } from "@/components/content-container";
 import { PageHeader } from "@/components/page-header";
+import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { OrganizationDashboard } from "@/features/organizations/components/organization-dashboard";
 import { ORGANIZATION_ICONS } from "@/features/organizations/organization-icons";
 import { MEMBER_ROLES } from "@/features/organizations/types";
@@ -14,10 +15,17 @@ import {
   getQueryClient,
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
+// instant = false: kept on purpose — session-gated data page. The session
+// and active organization resolve per request and key every prefetch below;
+// restructuring into streamed halves is a deliberate follow-up (#246).
+export const instant = false;
+
 /**
- * Render the organization dashboard page while prefetching and hydrating required server-side data for client components.
+ * Render the organization dashboard page while prefetching required server-side data for client components.
  *
  * Prefetches current session, organizations, projects (with default project sort), members (filtered to Participant role with default pagination), and organization statistics. Chooses the active organization from the session's activeOrganizationId, or the first available organization, or an empty string if none exist.
+ *
+ * Prefetch failures are ignored; session and organization lookup failures propagate.
  *
  * @returns The React element that renders the organization dashboard for the resolved active organization.
  */
@@ -89,7 +97,9 @@ export default async function DashboardPage() {
         description={t("description")}
       />
       <ContentContainer width="lg">
-        <OrganizationDashboard organizationId={activeOrganizationId} />
+        <NuqsProvider>
+          <OrganizationDashboard organizationId={activeOrganizationId} />
+        </NuqsProvider>
       </ContentContainer>
     </div>
   );

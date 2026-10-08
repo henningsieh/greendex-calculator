@@ -1,7 +1,10 @@
-import { getTranslations } from "@greendex/i18n/server";
+import { getTranslations, setRequestLocale } from "@greendex/i18n/server";
 import { createParser } from "nuqs/server";
+import { Suspense } from "react";
 
+import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { WorkshopContent } from "@/features/landingpage/components/workshops/workshop-tab-select";
+import type { WorkshopType } from "@/features/landingpage/types";
 
 const typeParser = createParser({
   parse: (value: unknown) => {
@@ -14,15 +17,121 @@ const typeParser = createParser({
   serialize: (value: unknown) => String(value),
 });
 
+// ensureStatic = 'prefetch': the marketing shell and per-link prefetches
+// stay static; the search-param-driven tab state streams at navigation
+// (#246).
+export const ensureStatic = "prefetch";
+
 /**
- * Render the Workshops page and determine the initial workshop type from the provided search parameters.
+ * Render the Workshops page with a layout-shaped placeholder that paints
+ * first.
  *
- * The function reads `searchParams.type`, parses it into one of `"moment" | "deal" | "day"`, and falls back to `"moment"` when absent or unrecognized. The parsed value is passed as the `initialType` prop to the client-side `WorkshopContent` component.
+ * Both the `[locale]` param and the tab selection read from `searchParams`
+ * are request-time data, so the localized header and the tab state stream in
+ * behind Suspense boundaries while the page frame stays static.
  *
+ * @param params - Route params carrying the `[locale]` segment.
  * @param searchParams - An object or Promise resolving to an object that may contain a `type` query parameter used to select the initial workshop tab.
  * @returns A JSX element representing the Workshops page layout with the parsed initial workshop type applied to `WorkshopContent`.
  */
-export default async function WorkshopsPage({
+export default function WorkshopsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{
+    locale: string;
+  }>;
+  searchParams:
+    | Promise<{
+        type?: string;
+      }>
+    | {
+        type?: string;
+      };
+}) {
+  return (
+    <main className="relative min-h-screen py-28" data-testid="workshops-frame">
+      {/* Background decorative elements */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-teal-500/5 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-5xl px-6">
+        <Suspense fallback={<WorkshopsHeaderSkeleton />}>
+          <LocalizedWorkshopsHeader params={params} />
+        </Suspense>
+
+        {/* Client-side interactive tabs and content. The server-parsed initial
+            type and the nuqs adapter context stream in; the shell above is
+            already visible. */}
+        <Suspense fallback={<WorkshopTabsSkeleton />}>
+          <WorkshopTypeFromSearchParams searchParams={searchParams} />
+        </Suspense>
+      </div>
+    </main>
+  );
+}
+
+async function LocalizedWorkshopsHeader({
+  params,
+}: {
+  params: Promise<{
+    locale: string;
+  }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({
+    locale,
+    namespace: "landingPage.workshops",
+  });
+
+  return (
+    <div className="mb-12 text-center">
+      <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 backdrop-blur-sm">
+        <span className="flex h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+        <span className="text-sm font-semibold tracking-wider text-primary uppercase">
+          {t("badge")}
+        </span>
+      </div>
+
+      <h1
+        className="mb-6 text-4xl font-semibold tracking-tight text-balance lg:text-5xl"
+        data-testid="workshops-shell-marker"
+      >
+        {t("headingPrefix")}{" "}
+        <span className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
+          {t("headingEmphasis")}
+        </span>
+      </h1>
+
+      <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+        {t("pageSubtitle")}
+      </p>
+    </div>
+  );
+}
+
+function WorkshopsHeaderSkeleton() {
+  return (
+    <div aria-hidden="true" className="mb-12 space-y-6 text-center">
+      <div className="mx-auto h-8 w-48 animate-pulse rounded-full bg-muted/60" />
+      <div className="mx-auto h-14 w-3/4 animate-pulse rounded-2xl bg-muted/60" />
+      <div className="mx-auto h-6 w-2/3 animate-pulse rounded-xl bg-muted/40" />
+    </div>
+  );
+}
+
+/**
+ * Resolve the initial workshop tab from the URL query string and provide the
+ * nuqs adapter context for the client-side tab state.
+ *
+ * Runs inside Suspense: `searchParams` is request-time data. The parser
+ * accepts `"moment" | "deal" | "day"` and falls back to `"moment"` when the
+ * parameter is absent or unrecognized.
+ */
+async function WorkshopTypeFromSearchParams({
   searchParams,
 }: {
   searchParams:
@@ -33,47 +142,31 @@ export default async function WorkshopsPage({
         type?: string;
       };
 }) {
-  const t = await getTranslations("landingPage.workshops");
   const params = await searchParams;
   const type =
-    (typeParser.parse((params?.type ?? "") as string) as
-      | "moment"
-      | "deal"
-      | "day") ?? "moment";
+    (typeParser.parse((params?.type ?? "") as string) as WorkshopType) ??
+    "moment";
 
   return (
-    <main className="relative min-h-screen py-28">
-      {/* Background decorative elements */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
-        <div className="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-teal-500/5 blur-3xl" />
+    <NuqsProvider>
+      <WorkshopContent initialType={type} />
+    </NuqsProvider>
+  );
+}
+
+/**
+ * Deterministic placeholder approximating the tab layout while the
+ * search-param-driven tab selection streams in.
+ */
+function WorkshopTabsSkeleton() {
+  return (
+    <div className="w-full" aria-hidden="true">
+      <div className="grid w-full grid-cols-3 gap-1 rounded-lg bg-secondary/40 p-1">
+        <div className="h-9 rounded-md bg-muted/60" />
+        <div className="h-9 rounded-md bg-muted/60" />
+        <div className="h-9 rounded-md bg-muted/60" />
       </div>
-
-      <div className="relative z-10 mx-auto max-w-5xl px-6">
-        {/* Enhanced Header */}
-        <div className="mb-12 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 backdrop-blur-sm">
-            <span className="flex h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            <span className="text-sm font-semibold tracking-wider text-primary uppercase">
-              {t("badge")}
-            </span>
-          </div>
-
-          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-balance lg:text-5xl">
-            {t("headingPrefix")}{" "}
-            <span className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
-              {t("headingEmphasis")}
-            </span>
-          </h1>
-
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            {t("pageSubtitle")}
-          </p>
-        </div>
-
-        {/* Client-side interactive tabs and content. Pass server-parsed initial type. */}
-        <WorkshopContent initialType={type} />
-      </div>
-    </main>
+      <div className="mt-8 h-64 rounded-lg bg-muted/40" />
+    </div>
   );
 }

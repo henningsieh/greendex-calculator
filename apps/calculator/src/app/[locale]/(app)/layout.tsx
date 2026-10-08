@@ -1,5 +1,5 @@
-import { getLocale } from "@greendex/i18n/server";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -29,6 +29,14 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
+// instant = false: kept on purpose — this layout is an authentication and
+// organization gate (redirects before paint) that also reads the sidebar
+// cookie and prefetches session-keyed queries. The descendant data pages
+// carry their own per-route decisions below; restructuring the gate into a
+// streaming AuthGate is a deliberate follow-up, not part of this adoption
+// (#246).
+export const instant = false;
+
 /**
  * App root layout that enforces authentication and organization presence, prefetches client data, and renders the main application shell.
  *
@@ -38,15 +46,24 @@ import {
  * - Reads the persisted sidebar state from cookies.
  * - Prefetches queries required by client components to avoid hydration mismatches.
  *
+ * Organization lookup failures are treated as having no organizations. Query
+ * prefetch failures are ignored; session lookup failures propagate.
+ *
+ * @param params - Route locale used for authentication and organization redirects.
  * @param children - Content rendered inside the main application area beneath the header and alongside the sidebar.
  * @returns The application layout element containing the sidebar, header (breadcrumb), main content area, and global UI providers (hydration, loading, error boundaries, toaster).
  */
 export default async function AppLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
 }>) {
-  const locale = await getLocale();
+  const { locale } = await params;
+  await connection();
   const { session, hasOrgs, rememberedPath } = await checkAuthAndOrgs();
 
   if (!session?.user) {

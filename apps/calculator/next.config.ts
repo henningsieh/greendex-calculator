@@ -5,6 +5,8 @@ const nextConfig = {
   // This repository keeps a single root AGENTS.md: Next.js must not write its
   // agent-rules block into this project directory.
   agentRules: false,
+  cacheComponents: true,
+  partialPrefetching: true,
   typedRoutes: true,
   reactCompiler: true,
   devIndicators: {
@@ -47,6 +49,9 @@ const nextConfig = {
     turbopackFileSystemCacheForDev: true,
     // Enable filesystem caching for `next build`
     turbopackFileSystemCacheForBuild: true,
+    // Expose the instant-navigation testing API only in explicitly flagged
+    // builds used by the `instant()` regression specs (never production).
+    exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
   },
 } satisfies NextConfig;
 

@@ -1,9 +1,16 @@
 import { eForestConfig } from "@greendex/config/e-forest";
-import { useTranslations } from "@greendex/i18n/client";
+import { getTranslations } from "@greendex/i18n/server";
 import Image from "next/image";
 
-export function HeroSection() {
-  const t = useTranslations("landingPage.EPlusForest.hero");
+/**
+ * Render the E+ Forest banner with its title and image alternative text
+ * translated into `locale`.
+ */
+export async function HeroSection({ locale }: { locale: string }) {
+  const t = await getTranslations({
+    locale,
+    namespace: "landingPage.EPlusForest.hero",
+  });
 
   return (
     <div className="relative h-[50vh] min-h-125 w-full overflow-hidden">
@@ -17,7 +24,10 @@ export function HeroSection() {
       />
       <div className="absolute inset-0 bg-background/60" />
       <div className="relative z-10 container mx-auto flex h-full items-center justify-center">
-        <h1 className="text-center text-5xl font-bold text-foreground lg:text-7xl">
+        <h1
+          className="text-center text-5xl font-bold text-foreground lg:text-7xl"
+          data-testid="eforest-hero-heading"
+        >
           {t("title")}
         </h1>
       </div>

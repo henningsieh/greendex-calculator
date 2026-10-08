@@ -1,11 +1,15 @@
-import { getLocale } from "@greendex/i18n/server";
-
 import { CREATE_ORG_PATH, DASHBOARD_PATH } from "@/app/routes";
 import {
   checkAuthAndOrgs,
   handleUnauthenticatedRedirect,
 } from "@/features/authentication/utils";
 import { redirect } from "@/lib/i18n/routing";
+
+// instant = false: kept on purpose — this layout is an authentication gate.
+// The membership check must resolve before first paint (visitors who do not
+// belong here must never see the setup form flash before the redirect), so
+// there is no useful static shell for the wrong audience (#246).
+export const instant = false;
 
 /**
  * Organization Setup Layout
@@ -14,13 +18,20 @@ import { redirect } from "@/lib/i18n/routing";
  * - Unauthenticated users -> redirected to /login (with nextPageUrl preserved)
  * - Authenticated users WITH orgs -> redirected to /org/dashboard
  * - Authenticated users WITHOUT orgs -> can access (org-setup) pages
+ *
+ * Organization lookup failures are treated as having no organizations;
+ * session lookup failures propagate. Redirects use the route locale.
  */
 export default async function OrgSetupLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
 }>) {
-  const locale = await getLocale();
+  const { locale } = await params;
   const { session, hasOrgs, rememberedPath } = await checkAuthAndOrgs();
 
   if (!session?.user) {

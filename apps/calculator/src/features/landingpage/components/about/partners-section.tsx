@@ -6,8 +6,8 @@ import { PartnerCard } from "@/features/landingpage/components/about/partner-car
 /**
  * Partners content section with title, intro, and partner cards grid
  */
-export async function PartnersSection() {
-  const t = await getTranslations("landingPage.about");
+export async function PartnersSection({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: "landingPage.about" });
 
   return (
     <section className="py-12">
@@ -21,7 +21,7 @@ export async function PartnersSection() {
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
             {PARTNERS.map((p) => (
-              <PartnerCard key={p.id} partner={p} />
+              <PartnerCard key={p.id} partner={p} locale={locale} />
             ))}
           </div>
         </div>

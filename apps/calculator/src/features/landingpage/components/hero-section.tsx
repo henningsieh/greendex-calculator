@@ -9,8 +9,8 @@ import { PillCTA } from "@/features/landingpage/components/pill-cta";
  * Hero Section - Clean centered layout (OpenClaw.ai style)
  * No hero image here - moved to PreviewSection below the fold
  */
-export async function HeroSection() {
-  const t = await getTranslations("landingPage");
+export async function HeroSection({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: "landingPage" });
 
   return (
     <section className="relative flex min-h-[90vh] flex-col items-center justify-center px-4 pt-32 pb-16 md:pt-28 md:pb-20">
@@ -25,7 +25,10 @@ export async function HeroSection() {
           />
         </div>
         {/* Gradient Headline */}
-        <h1 className="font-clash text-6xl font-extrabold tracking-tight text-balance sm:text-7xl md:text-8xl lg:text-9xl">
+        <h1
+          className="font-clash text-6xl font-extrabold tracking-tight text-balance sm:text-7xl md:text-8xl lg:text-9xl"
+          data-testid="landing-hero-heading"
+        >
           <span className="bg-linear-to-r from-emerald-500 via-teal-500 to-sky-500 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-sky-400">
             GreenDex
           </span>
@@ -43,7 +46,12 @@ export async function HeroSection() {
         </p>
 
         {/* Pill CTA */}
-        <PillCTA href={DASHBOARD_PATH} showNewBadge className="my-8">
+        <PillCTA
+          href={DASHBOARD_PATH}
+          showNewBadge
+          className="my-8"
+          locale={locale}
+        >
           {t("launchButton")}
         </PillCTA>
       </div>

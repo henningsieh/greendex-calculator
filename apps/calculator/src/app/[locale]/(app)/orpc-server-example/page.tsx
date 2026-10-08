@@ -1,3 +1,6 @@
+import { createRouterClient } from "@orpc/server";
+import { headers } from "next/headers";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -6,17 +9,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { orpc } from "@/lib/orpc/orpc";
+import { router } from "@/lib/orpc/router";
+
+// instant = false: kept on purpose — this debug page exists to assert live
+// SSR procedure calls on every load; caching or streaming it would defeat
+// its purpose (#246).
+export const instant = false;
 
 /**
  * Server Component demonstrating oRPC usage during SSR
  * This uses the optimized server-side client (no HTTP overhead)
  */
 export default async function ORPCServerExample() {
-  // These calls happen on the server during SSR
-  // Using the server-side client means no HTTP requests are made
-  const health = await orpc.health();
-  const hello = await orpc.helloWorld({
+  // These calls happen on the server during SSR. The caller is constructed
+  // at render time (same shape as `@/lib/orpc/client.server`) because the
+  // shared `orpc` singleton resolves its transport at module-evaluation
+  // time, which races the server-client attachment during prerendering.
+  const serverOrpc = createRouterClient(router, {
+    context: async () => ({
+      headers: await headers(),
+    }),
+  });
+  const health = await serverOrpc.health();
+  const hello = await serverOrpc.helloWorld({
     name: "Server",
   });
 

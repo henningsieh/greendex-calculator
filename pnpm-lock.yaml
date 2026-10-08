@@ -483,6 +483,9 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      '@next/playwright':
+        specifier: 16.4.0
+        version: 16.4.0(@playwright/test@1.63.0)
       '@noble/hashes':
         specifier: ^2.4.0
         version: 2.4.0
@@ -2016,6 +2019,14 @@ packages:
 
   '@next/env@16.4.0':
     resolution: {integrity: sha512-pyLlT5oafGlX8X7xjgGNXz5dNIDSxREm+qD6i9VLSZiZFopA/XWl8NM/KPmLx/8EG/++c49iid3gNWSQW1+2dQ==}
+
+  '@next/playwright@16.4.0':
+    resolution: {integrity: sha512-qK4XHmthlrjZJd6mR5LXgsnwaAM7ZEV1hEt6/l+fRWb43izQEAvR4h1BIgWapFnqm3JVinNAih3G1iBafPWs/Q==}
+    peerDependencies:
+      '@playwright/test': '>=1.0.0'
+    peerDependenciesMeta:
+      '@playwright/test':
+        optional: true
 
   '@next/swc-darwin-arm64@16.3.5':
     resolution: {integrity: sha512-pMmGgETfKvElucLHtVaeiMRbp2zUbvKx7b1yGko0liBz3cw1mKSggWN/Rp/wPz8z+E1O82u3r4L1Co+ZS5hokQ==}
@@ -8591,6 +8602,10 @@ snapshots:
     optional: true
 
   '@next/env@16.4.0': {}
+
+  '@next/playwright@16.4.0(@playwright/test@1.63.0)':
+    optionalDependencies:
+      '@playwright/test': 1.63.0
 
   '@next/swc-darwin-arm64@16.3.5':
     optional: true

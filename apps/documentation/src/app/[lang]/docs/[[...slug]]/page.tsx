@@ -7,6 +7,7 @@ import {
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { LLMCopyButton, ViewOptions } from "@/components/ai/page-actions";
 import { getMDXComponents } from "@/components/mdx-components";
@@ -14,7 +15,15 @@ import { getPageImage, source } from "@/lib/source";
 
 // export default async function Page(props: PageProps<"/[lang]/docs/[[...slug]]">) {
 
-export default async function Page(props: PageProps<"/[lang]/docs/[[...slug]]">) {
+export default function Page(props: PageProps<"/[lang]/docs/[[...slug]]">) {
+  return (
+    <Suspense fallback={<DocsContentSkeleton />}>
+      <LocalizedDocsPage {...props} />
+    </Suspense>
+  );
+}
+
+async function LocalizedDocsPage(props: PageProps<"/[lang]/docs/[[...slug]]">) {
   const { slug, lang } = await props.params;
 
   const page = source.getPage(slug, lang);
@@ -55,6 +64,18 @@ export default async function Page(props: PageProps<"/[lang]/docs/[[...slug]]">)
 export async function generateStaticParams() {
   // return source.generateParams();
   return source.generateParams("slug", "locale");
+}
+
+function DocsContentSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-4">
+      <div className="h-10 w-1/2 animate-pulse rounded-xl bg-muted/60" />
+      <div className="h-4 w-full animate-pulse rounded bg-muted/40" />
+      <div className="h-4 w-5/6 animate-pulse rounded bg-muted/40" />
+      <div className="h-4 w-2/3 animate-pulse rounded bg-muted/40" />
+      <div className="h-64 w-full animate-pulse rounded-xl bg-muted/40" />
+    </div>
+  );
 }
 
 export async function generateMetadata(

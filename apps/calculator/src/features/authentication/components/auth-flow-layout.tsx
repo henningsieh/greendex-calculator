@@ -12,6 +12,7 @@ interface AuthFlowLayoutProps {
   children: ReactNode;
   backLabel?: string;
   backHref?: string;
+  locale: string;
 }
 
 export function normalizeRedirectPath(
@@ -35,7 +36,8 @@ export function normalizeRedirectPath(
  * Renders children inside the left panel; the right side displays translated headline, description, hero fields, and highlights.
  *
  * @param children - Content to render in the left panel of the layout
- * @param backHref - Optional URL for the back link; when omitted the back control is rendered without a destination
+ * @param backHref - Optional URL for the back link; defaults to the localized home route
+ * @param locale - Locale used for the brand panel translations.
  * @param backLabel - Optional label for the back link; defaults to "Back to Home" when not provided
  * @returns A React element containing the authentication layout
  */
@@ -43,8 +45,11 @@ export default async function AuthFlowLayout({
   children,
   backHref,
   backLabel,
+  locale,
 }: AuthFlowLayoutProps) {
-  const t = await getTranslations("authentication.brand");
+  // NOTE (Cache Components, #246): explicit `locale` — the header-backed
+  // lookup resolves per segment, so a bare call would block prerendering.
+  const t = await getTranslations({ locale, namespace: "authentication.brand" });
   const highlights = highlightKeys.map((key) => t(`values.${key}`));
 
   return (

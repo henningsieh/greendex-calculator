@@ -4,8 +4,8 @@ import Image from "next/image";
 /**
  * About page footer with Erasmus funding note
  */
-export async function AboutFooter() {
-  const t = await getTranslations("landingPage.about");
+export async function AboutFooter({ locale }: { locale: string }) {
+  const t = await getTranslations({ locale, namespace: "landingPage.about" });
 
   return (
     <div className="container mx-auto max-w-7xl px-4 pb-16 text-center">

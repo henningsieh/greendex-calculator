@@ -1,5 +1,5 @@
 import type { Partner } from "@greendex/config/partners";
-import { getLocale, getTranslations } from "@greendex/i18n/server";
+import { getTranslations } from "@greendex/i18n/server";
 import { ExternalLinkIcon } from "lucide-react";
 import Image from "next/image";
 
@@ -18,11 +18,16 @@ import { Link } from "@/lib/i18n/routing";
 
 interface PartnerCardProps {
   partner: Partner;
+  locale: string;
 }
 
-export async function PartnerCard({ partner }: PartnerCardProps) {
-  const t = await getTranslations("landingPage.about");
-  const locale = await getLocale();
+/**
+ * Render a partner card with localized labels and country information.
+ * Show a website link that opens in a new tab only when a website is provided;
+ * the partner name and description are displayed as supplied.
+ */
+export async function PartnerCard({ partner, locale }: PartnerCardProps) {
+  const t = await getTranslations({ locale, namespace: "landingPage.about" });
 
   const countryData = partner.countryCode
     ? getCountryData(partner.countryCode, locale)
@@ -76,6 +81,7 @@ export async function PartnerCard({ partner }: PartnerCardProps) {
           <Button asChild className="gap-2" size="sm" variant="secondaryoutline">
             <Link
               aria-label={`${t("visitWebsite")}: ${partner.name}`}
+              locale={locale}
               href={partner.website}
               rel="noopener noreferrer"
               target="_blank"

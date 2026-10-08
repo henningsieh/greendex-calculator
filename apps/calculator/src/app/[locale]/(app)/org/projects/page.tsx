@@ -11,6 +11,7 @@ import { ErrorBoundary } from "react-error-boundary";
 
 import { ContentContainer } from "@/components/content-container";
 import { PageHeader } from "@/components/page-header";
+import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { CreateProjectButton } from "@/features/projects/components/create-project-button";
 import { ProjectsTab } from "@/features/projects/components/dashboard/projects-tab";
 import { ProjectsTabSkeleton } from "@/features/projects/components/dashboard/projects-table";
@@ -23,6 +24,11 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
+// instant = false: kept on purpose — session- and permission-gated data
+// page (create-project permission resolves per request and keys the UI);
+// streaming it is a deliberate follow-up (#246).
+export const instant = false;
+
 /**
  * Render the Projects page with server-side data prefetching and permission-aware UI.
  *
@@ -30,6 +36,8 @@ import {
  * and checks whether the current request has permission to create projects; the UI shows a
  * conditional CreateProjectButton when creation is allowed. The main content renders the ProjectsTab
  * wrapped in Suspense with an error boundary.
+ *
+ * Prefetch failures are ignored; permission-check failures propagate.
  *
  * @returns A React element representing the projects page layout (header, description, conditional create button, and the ProjectsTab content).
  */
@@ -84,7 +92,9 @@ export default async function ProjectsPage() {
       <ContentContainer width="lg">
         <Suspense fallback={<ProjectsTabSkeleton />}>
           <ErrorBoundary fallback={<div>{t("error-message")}</div>}>
-            <ProjectsTab />
+            <NuqsProvider>
+              <ProjectsTab />
+            </NuqsProvider>
           </ErrorBoundary>
         </Suspense>
       </ContentContainer>

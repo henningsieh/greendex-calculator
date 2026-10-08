@@ -1,10 +1,15 @@
 import { NextIntlClientProvider } from "@greendex/i18n/client";
-import { getMessages, setRequestLocale } from "@greendex/i18n/server";
+import {
+  getMessages,
+  getTimeZone,
+  setRequestLocale,
+} from "@greendex/i18n/server";
+import { cacheLife } from "next/cache";
 import { Comfortaa, DM_Sans, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
-import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import "@/lib/orpc/client.server";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -53,7 +58,57 @@ export function generateStaticParams() {
   }));
 }
 
-export default async function LocaleLayout({ children, params }: Props) {
+/**
+ * Reference timestamp for the intl provider. Cached with the longest
+ * lifetime: nothing in the app reads relative time (`useNow` has no
+ * consumers), so the value is inert — but the provider requires a concrete
+ * `now` to skip its request-time lookup during prerendering.
+ */
+async function getPrerenderNow() {
+  "use cache";
+  cacheLife("max");
+  return new Date();
+}
+
+/**
+ * Provide localized messages, time zone, and a cached reference time alongside
+ * theme and query providers for the page content.
+ *
+ * Set the request locale from `params`; unsupported locales trigger Next.js
+ * not-found handling. Message and time-zone loading failures propagate.
+ */
+export default function LocaleLayout({ children, params }: Props) {
+  return (
+    <div
+      className={`${clashDisplay.variable} ${spaceGrotesk.variable} ${dmSans.className} ${dmSans.variable} ${jetbrainsMono.variable} scroll-smooth`}
+    >
+      {/* Preconnect to external resources for performance */}
+      <link href="https://fonts.googleapis.com" rel="preconnect" />
+      <link
+        crossOrigin="anonymous"
+        href="https://fonts.gstatic.com"
+        rel="preconnect"
+      />
+      <ThemeProvider>
+        <QueryProvider>
+          <Suspense fallback={<LocaleSkeleton />}>
+            <LocalizedIntl params={params}>{children}</LocalizedIntl>
+          </Suspense>
+        </QueryProvider>
+      </ThemeProvider>
+    </div>
+  );
+}
+
+async function LocalizedIntl({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
+}) {
   const { locale } = await params;
 
   // Ensure that the incoming `locale` is valid
@@ -65,29 +120,44 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   // Providing all messages to the client side is the easiest way to get started
-  const messages = await getMessages();
+  // NOTE (Cache Components, #246): explicit `locale` keeps these calls out of
+  // the request-header lookup, so the layout prerenders statically.
+  const [messages, timeZone, now] = await Promise.all([
+    getMessages({ locale }),
+    getTimeZone({ locale }),
+    getPrerenderNow(),
+  ]);
 
   return (
-    <div
-      className={`${clashDisplay.variable} ${spaceGrotesk.variable} ${dmSans.className} ${dmSans.variable} ${jetbrainsMono.variable} scroll-smooth`}
-      lang={locale}
-    >
-      {/* Preconnect to external resources for performance */}
-      <link href="https://fonts.googleapis.com" rel="preconnect" />
-      <link
-        crossOrigin="anonymous"
-        href="https://fonts.gstatic.com"
-        rel="preconnect"
-      />
-      <ThemeProvider>
-        <NuqsProvider>
-          <QueryProvider>
-            <NextIntlClientProvider messages={messages}>
-              {children}
-            </NextIntlClientProvider>
-          </QueryProvider>
-        </NuqsProvider>
-      </ThemeProvider>
+    <div lang={locale}>
+      {/* NOTE (Cache Components, #246): every prop is explicit — without
+          them the provider fills locale/timeZone/now/formats via a
+          request-time lookup, so the route stays protected (no prerender).
+          `now` is frozen
+          per prerender (no `useNow` consumers exist); `formats` stays
+          empty as the request config defines none. */}
+      <NextIntlClientProvider
+        locale={locale}
+        messages={messages}
+        timeZone={timeZone}
+        now={now}
+        formats={{}}
+      >
+        {children}
+      </NextIntlClientProvider>
+    </div>
+  );
+}
+
+function LocaleSkeleton() {
+  return (
+    <div aria-hidden="true" className="min-h-screen">
+      <div className="mx-auto mt-3 h-14 max-w-5xl animate-pulse rounded-2xl bg-muted/40" />
+      <div className="mx-auto mt-16 max-w-4xl space-y-6 px-4 text-center">
+        <div className="mx-auto h-16 w-3/4 animate-pulse rounded-2xl bg-muted/60" />
+        <div className="mx-auto h-6 w-2/3 animate-pulse rounded-xl bg-muted/40" />
+        <div className="mx-auto h-12 w-56 animate-pulse rounded-full bg-muted/60" />
+      </div>
     </div>
   );
 }
