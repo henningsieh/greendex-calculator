@@ -87,7 +87,7 @@ describe.each([
     "preserves nextPageUrl %j for the form",
     async (nextPageUrl) => {
       const html = await renderContent(
-        await Page({
+        Page({
           params: Promise.resolve({ locale: "de" }),
           searchParams: Promise.resolve({ nextPageUrl }),
         }),
@@ -112,7 +112,7 @@ describe("deferred auth forms", () => {
       const deferred = Promise.withResolvers<SearchParams>();
       // If the page itself starts awaiting searchParams, this bounded test fails
       // before it can release the promise. No timers simulate request progress.
-      const page = await Page({
+      const page = Page({
         params: Promise.resolve({ locale: "fr" }),
         searchParams: deferred.promise,
       });
@@ -146,7 +146,7 @@ describe("deferred auth forms", () => {
 describe("reset-password page", () => {
   it("passes the token unchanged to the form", async () => {
     const html = await renderContent(
-      await ResetPasswordPage({
+      ResetPasswordPage({
         params: Promise.resolve({ locale: "de" }),
         searchParams: Promise.resolve({ token: "signed+token/with=padding" }),
       }),
@@ -160,7 +160,7 @@ describe("reset-password page", () => {
   it.each([undefined, "", [], ["valid"], ["first", "second"]])(
     "redirects invalid token %j using the route locale",
     async (token) => {
-      const page = await ResetPasswordPage({
+      const page = ResetPasswordPage({
         params: Promise.resolve({ locale: "it" }),
         searchParams: Promise.resolve({ token }),
       });
@@ -185,7 +185,7 @@ describe("reset-password page", () => {
 describe("static auth pages", () => {
   it("passes the route locale to the forgot-password shell", async () => {
     const html = await renderContent(
-      await ForgotPasswordPage({ params: Promise.resolve({ locale: "nl" }) }),
+      ForgotPasswordPage({ params: Promise.resolve({ locale: "nl" }) }),
     );
     expect(html.querySelector("section")?.lang).toBe("nl");
     expect(html.textContent).toContain("forgot password");
@@ -193,7 +193,7 @@ describe("static auth pages", () => {
 
   it("uses explicit locale for the verify-email translation and back link", async () => {
     const html = await renderContent(
-      await VerifyEmailPage({ params: Promise.resolve({ locale: "es" }) }),
+      VerifyEmailPage({ params: Promise.resolve({ locale: "es" }) }),
     );
     expect(mocks.setRequestLocale).toHaveBeenCalledWith("es");
     expect(mocks.getTranslations).toHaveBeenCalledExactlyOnceWith({

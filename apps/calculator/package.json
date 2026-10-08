@@ -139,5 +139,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
+  },
+  "config": {
+    "scalarVersion": "1.25.0"
   }
 }

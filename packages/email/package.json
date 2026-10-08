@@ -14,7 +14,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "nodemailer": "^10.0.15",
+    "nodemailer": "^10.0.16",
     "react-email": "catalog:"
   },
   "devDependencies": {

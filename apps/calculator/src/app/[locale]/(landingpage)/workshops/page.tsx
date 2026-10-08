@@ -53,8 +53,8 @@ export default function WorkshopsPage({
     <main className="relative min-h-screen py-28" data-testid="workshops-frame">
       {/* Background decorative elements */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
-        <div className="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-teal-500/5 blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 size-96 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute right-1/4 bottom-1/4 size-96 rounded-full bg-teal-500/5 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-5xl px-6">
@@ -90,7 +90,7 @@ async function LocalizedWorkshopsHeader({
   return (
     <div className="mb-12 text-center">
       <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 backdrop-blur-sm">
-        <span className="flex h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+        <span className="flex size-2 animate-pulse rounded-full bg-emerald-500" />
         <span className="text-sm font-semibold tracking-wider text-primary uppercase">
           {t("badge")}
         </span>

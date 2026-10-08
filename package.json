@@ -16,7 +16,7 @@
     "format": "turbo run format",
     "lint": "turbo run lint --concurrency 1 && pnpm run lint:design-system && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam",
     "lint:design-system": "oxlint --config .oxlintrc.json -A all -D shadcn/no-restyle apps/calculator/src apps/cost-tracker/src apps/documentation/src",
-    "predev": "pnpm run db:migrate && dotenv run -f apps/calculator/.env -f apps/documentation/.env -f apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
+    "predev": "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     "prepare": "husky",
     "start": "turbo run start",
     "test": "turbo run test:run --concurrency 1 -- && vitest run scripts/check-agent-instructions.policy.test.ts scripts/check-cost-tracker-persistence-seam.test.ts",
@@ -32,7 +32,7 @@
     "type-check:cost-tracker-persistence-seam": "tsc --project scripts/tsconfig.json"
   },
   "dependencies": {
-    "dotenv": "catalog:",
+    "dotenv-cli": "catalog:",
     "turbo": "^2.11.7"
   },
   "devDependencies": {

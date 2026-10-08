@@ -63,24 +63,24 @@ function FooterSkeleton() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-5">
           <div className="space-y-6 md:col-span-2">
-            <div className="h-8 w-32 animate-pulse rounded bg-muted/60" />
+            <div className="h-8 w-32 animate-pulse rounded-sm bg-muted/60" />
             <div className="h-12 w-56 animate-pulse rounded-full bg-muted/60" />
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:col-span-3">
             <div className="space-y-3">
-              <div className="h-4 w-20 animate-pulse rounded bg-muted/60" />
-              <div className="h-4 w-24 animate-pulse rounded bg-muted/40" />
-              <div className="h-4 w-24 animate-pulse rounded bg-muted/40" />
-              <div className="h-4 w-24 animate-pulse rounded bg-muted/40" />
+              <div className="h-4 w-20 animate-pulse rounded-sm bg-muted/60" />
+              <div className="h-4 w-24 animate-pulse rounded-sm bg-muted/40" />
+              <div className="h-4 w-24 animate-pulse rounded-sm bg-muted/40" />
+              <div className="h-4 w-24 animate-pulse rounded-sm bg-muted/40" />
             </div>
             <div className="space-y-3">
-              <div className="h-4 w-20 animate-pulse rounded bg-muted/60" />
-              <div className="h-4 w-24 animate-pulse rounded bg-muted/40" />
+              <div className="h-4 w-20 animate-pulse rounded-sm bg-muted/60" />
+              <div className="h-4 w-24 animate-pulse rounded-sm bg-muted/40" />
             </div>
             <div className="space-y-3">
-              <div className="h-4 w-20 animate-pulse rounded bg-muted/60" />
-              <div className="h-4 w-24 animate-pulse rounded bg-muted/40" />
-              <div className="h-4 w-24 animate-pulse rounded bg-muted/40" />
+              <div className="h-4 w-20 animate-pulse rounded-sm bg-muted/60" />
+              <div className="h-4 w-24 animate-pulse rounded-sm bg-muted/40" />
+              <div className="h-4 w-24 animate-pulse rounded-sm bg-muted/40" />
             </div>
           </div>
         </div>
