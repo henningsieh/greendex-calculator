@@ -1,11 +1,12 @@
-"use client";
-
 import { eForestConfig } from "@greendex/config/e-forest";
-import { useTranslations } from "@greendex/i18n/client";
+import { getTranslations } from "@greendex/i18n/server";
 import Image from "next/image";
 
-export function HeroSection() {
-  const t = useTranslations("landingPage.EPlusForest.hero");
+export async function HeroSection({ locale }: { locale: string }) {
+  const t = await getTranslations({
+    locale,
+    namespace: "landingPage.EPlusForest.hero",
+  });
 
   return (
     <div className="relative h-[50vh] min-h-125 w-full overflow-hidden">

@@ -1,7 +1,5 @@
-"use client";
-
 import { eForestConfig } from "@greendex/config/e-forest";
-import { useTranslations } from "@greendex/i18n/client";
+import { getTranslations } from "@greendex/i18n/server";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -18,8 +16,11 @@ const HowItWorksIcon = eForestConfig.icons.howItWorks;
 const PlantingIcon = eForestConfig.icons.planting;
 const ContactIcon = eForestConfig.icons.contact;
 
-export function DonateSection() {
-  const t = useTranslations("landingPage.EPlusForest");
+export async function DonateSection({ locale }: { locale: string }) {
+  const t = await getTranslations({
+    locale,
+    namespace: "landingPage.EPlusForest",
+  });
 
   return (
     <section className="space-y-12 bg-muted/50 py-12">

@@ -1,7 +1,5 @@
-"use client";
-
 import { eForestConfig } from "@greendex/config/e-forest";
-import { useTranslations } from "@greendex/i18n/client";
+import { getTranslations } from "@greendex/i18n/server";
 import { ExternalLink, MapPin, Trees } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +15,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Link } from "@/lib/i18n/routing";
 
-export function DreamSection() {
-  const t = useTranslations("landingPage.EPlusForest.dream");
+export async function DreamSection({ locale }: { locale: string }) {
+  const t = await getTranslations({
+    locale,
+    namespace: "landingPage.EPlusForest.dream",
+  });
 
   return (
     <section className="py-12">
