@@ -34,6 +34,11 @@ export default async function SignupPage({
   );
 }
 
+/**
+ * Resolve the query parameters and render the signup form, passing
+ * `nextPageUrl` through unchanged for the form to choose its callback URL.
+ * Query-parameter promise rejections propagate to the caller.
+ */
 async function SignupFromSearchParams({
   searchParams,
 }: Pick<SignupPageProps, "searchParams">) {

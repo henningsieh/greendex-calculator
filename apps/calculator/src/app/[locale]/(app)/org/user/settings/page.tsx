@@ -11,6 +11,9 @@ import { UserSettingsPage } from "@/features/user/components/user-settings-page"
 // signed-in user; streaming it is a deliberate follow-up (#246).
 export const instant = false;
 
+/**
+ * Render language and theme preferences using the route locale.
+ */
 export default async function UserSettings({
   params,
 }: {

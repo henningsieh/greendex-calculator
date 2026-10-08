@@ -15,6 +15,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Link } from "@/lib/i18n/routing";
 
+/**
+ * Render localized descriptions of the forest initiatives and links to
+ * articles about the Portugal forest.
+ */
 export async function DreamSection({ locale }: { locale: string }) {
   const t = await getTranslations({
     locale,

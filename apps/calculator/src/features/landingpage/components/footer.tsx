@@ -17,17 +17,9 @@ import { PillCTA } from "@/features/landingpage/components/pill-cta";
 import { Link } from "@/lib/i18n/routing";
 
 /**
- * Renders the site's footer section with the logo, a launch CTA, and localized navigation columns.
- *
- * Uses translations from "LandingPage" and "header" to populate link titles and builds the Explore, Company,
- * and App link groups. Also includes a CTA to the dashboard and a copyright line with the current year.
- *
- * @returns A JSX element representing the footer containing the logo, CTA, localized navigation links, and copyright.
- */
-/**
- * Copyright year for the footer. Cached with the longest lifetime: the value
- * only changes at the year boundary, so it is safe to bake into the prerender
- * (Cache Components treats `new Date()` as unstable otherwise).
+ * Return the server-local calendar year when the cache entry is generated.
+ * The `max` cache profile can retain this value across a year boundary until
+ * the entry is refreshed.
  */
 async function getCurrentYear() {
   "use cache";
@@ -35,6 +27,14 @@ async function getCurrentYear() {
   return new Date().getFullYear();
 }
 
+/**
+ * Renders the site's footer section with the logo, a launch CTA, and localized navigation columns.
+ *
+ * Uses `landingPage` translations to populate the Explore, Company, and App
+ * link groups in `locale`. Also includes a dashboard CTA and a cached copyright year.
+ *
+ * @returns A JSX element representing the footer containing the logo, CTA, localized navigation links, and copyright.
+ */
 export async function FooterSection({ locale }: { locale: string }) {
   // NOTE (Cache Components, #246): explicit `locale` — the header-backed
   // lookup resolves per segment, so a bare call would block prerendering.

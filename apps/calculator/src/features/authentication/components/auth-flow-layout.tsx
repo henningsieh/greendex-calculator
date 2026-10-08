@@ -36,7 +36,8 @@ export function normalizeRedirectPath(
  * Renders children inside the left panel; the right side displays translated headline, description, hero fields, and highlights.
  *
  * @param children - Content to render in the left panel of the layout
- * @param backHref - Optional URL for the back link; when omitted the back control is rendered without a destination
+ * @param backHref - Optional URL for the back link; defaults to the localized home route
+ * @param locale - Locale used for the brand panel translations.
  * @param backLabel - Optional label for the back link; defaults to "Back to Home" when not provided
  * @returns A React element containing the authentication layout
  */

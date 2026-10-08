@@ -37,6 +37,11 @@ export default async function ResetPasswordPage({
   );
 }
 
+/**
+ * Render the reset form for a nonempty string token from the query parameters.
+ * Redirect to login in `locale` when the token is missing, empty, or an array.
+ * Query-parameter promise rejections propagate to the caller.
+ */
 async function ResetFromSearchParams({
   searchParams,
   locale,

@@ -5,6 +5,11 @@ import { ImageResponse } from "next/og";
 
 import { getPageImage, source } from "@/lib/source";
 
+/**
+ * Return cached title and description for a page in the default documentation
+ * language, or null if absent, using the `max` profile. The last slug segment
+ * is treated as the image filename and discarded without validation.
+ */
 async function getOgData(
   slug: string[],
 ): Promise<{ title: string; description?: string } | null> {
@@ -16,6 +21,12 @@ async function getOgData(
   return { title: page.data.title, description: page.data.description };
 }
 
+/**
+ * Return a 1200 by 630 pixel Open Graph image for the requested page.
+ * The last slug segment is discarded for lookup, and the route language is
+ * ignored in favor of the default documentation language. Missing pages
+ * trigger Next.js not-found handling.
+ */
 export async function GET(
   _req: Request,
   { params }: RouteContext<"/[lang]/og/docs/[...slug]">,

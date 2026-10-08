@@ -24,6 +24,11 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
+// instant = false: kept on purpose — session- and permission-gated data
+// page (create-project permission resolves per request and keys the UI);
+// streaming it is a deliberate follow-up (#246).
+export const instant = false;
+
 /**
  * Render the Projects page with server-side data prefetching and permission-aware UI.
  *
@@ -32,13 +37,10 @@ import {
  * conditional CreateProjectButton when creation is allowed. The main content renders the ProjectsTab
  * wrapped in Suspense with an error boundary.
  *
+ * Prefetch failures are ignored; permission-check failures propagate.
+ *
  * @returns A React element representing the projects page layout (header, description, conditional create button, and the ProjectsTab content).
  */
-// instant = false: kept on purpose — session- and permission-gated data
-// page (create-project permission resolves per request and keys the UI);
-// streaming it is a deliberate follow-up (#246).
-export const instant = false;
-
 export default async function ProjectsPage() {
   const t = await getTranslations("organization.projects");
 

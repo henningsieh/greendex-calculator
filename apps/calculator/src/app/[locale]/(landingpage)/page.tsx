@@ -5,22 +5,22 @@ import { HeroSection } from "@/features/landingpage/components/hero-section";
 import { PreviewSection } from "@/features/landingpage/components/preview-section";
 import { WorkshopsHeroSection } from "@/features/landingpage/components/workshops/workshops-hero-section";
 
+// ensureStatic = 'navigation': fully static marketing page; the build fails
+// if request-time rendering creeps in (#246).
+export const ensureStatic = "navigation";
+
 /**
  * Render the landing page with the following structure:
  * 1. HeroSection - Clean centered headline with CTA (no image)
- * 2. WorkshopsHeroSection - MOST prominent section (moved up)
- * 3. PreviewSection - Hero image below the fold
- * 4. GlobeSection - Keep existing globe
+ * 2. GlobeSection - Interactive globe
+ * 3. WorkshopsHeroSection - Workshop cards
+ * 4. PreviewSection - App interface preview
  *
  * Fully static: the `[locale]` param is forwarded to the translated
  * sections so no request-header lookup runs during prerendering (#246).
  *
  * @returns The JSX element for the landing page.
  */
-// ensureStatic = 'navigation': fully static marketing page; the build fails
-// if request-time rendering creeps in (#246).
-export const ensureStatic = "navigation";
-
 export default function LandingPage({
   params,
 }: {

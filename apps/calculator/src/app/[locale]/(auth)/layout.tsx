@@ -18,6 +18,8 @@ export const instant = false;
  *
  * If a signed-in user exists, redirects to the dashboard when they belong to at least one organization, otherwise redirects to the organization creation flow. If no signed-in user exists, renders the provided auth-related children (e.g., login, signup, verify-email).
  *
+ * Session and organization lookup failures propagate.
+ *
  * @param children - Auth page content to render when there is no active user session.
  * @param params - Route params carrying the `[locale]` segment for redirects.
  * @returns The `children` wrapped in a fragment when no user session is present.
