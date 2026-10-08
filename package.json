@@ -10,7 +10,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
-    "db:seed": "turbo run db:seed",
+    "db:seed": "pnpm --filter @greendex/calculator run db:seed",
     "db:studio": "turbo run db:studio",
     "dev": "turbo run dev",
     "format": "turbo run format",

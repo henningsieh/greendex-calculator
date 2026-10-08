@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -35,6 +36,52 @@ describe("environment entrypoints", () => {
     tasks: Record<string, { env?: string[] }>;
   };
 
+  it("keeps the shared URL authoritative and preserves injected Preview overrides", () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "shared-db-env-"));
+    const sharedFile = path.join(directory, "shared.env");
+    const appFile = path.join(directory, "app.env");
+    const sharedUrl = "postgres://user:password@shared-live:5432/postgres";
+    const previewUrl = "postgres://user:password@shared-preview:5432/postgres";
+    writeFileSync(sharedFile, `DATABASE_URL=${sharedUrl}\n`);
+    writeFileSync(
+      appFile,
+      "DATABASE_URL=postgres://user:password@app-fork:5432/postgres\n",
+    );
+    try {
+      for (const app of ["calculator", "cost-tracker"]) {
+        const environment = { ...process.env };
+        delete environment.DATABASE_URL;
+        const command = [
+          "-e",
+          sharedFile,
+          "-e",
+          appFile,
+          "--",
+          process.execPath,
+          "-e",
+          "process.stdout.write(process.env.DATABASE_URL)",
+        ];
+        const cwd = path.resolve(`../../apps/${app}`);
+        expect(
+          execFileSync("./node_modules/.bin/dotenv", command, {
+            cwd,
+            env: environment,
+            encoding: "utf8",
+          }),
+        ).toBe(sharedUrl);
+        expect(
+          execFileSync("./node_modules/.bin/dotenv", command, {
+            cwd,
+            env: { ...environment, DATABASE_URL: previewUrl },
+            encoding: "utf8",
+          }),
+        ).toBe(previewUrl);
+      }
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it("does not load dotenv from a hardcoded .env path", () => {
     const importLine = content
       .split("\n")
@@ -53,25 +100,34 @@ describe("environment entrypoints", () => {
     );
     expect(rootPackage.scripts.build).toBe("turbo run build --concurrency=1");
     expect(rootPackage.scripts.start).toBe("turbo run start");
+    expect(rootPackage.scripts["db:seed"]).toBe(
+      "pnpm --filter @greendex/calculator run db:seed",
+    );
   });
 
   it("loads Calculator's app-local environment for non-Next processes", () => {
     expect(calculatorPackage.scripts.dev).toContain(
-      "dotenv -v NODE_ENV=development -e .env --",
+      "dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env --",
     );
-    expect(calculatorPackage.scripts.prebuild).toContain("dotenv -e .env --");
+    expect(calculatorPackage.scripts.prebuild).toContain(
+      "dotenv -e ../../packages/database/.env -e .env --",
+    );
     expect(calculatorPackage.scripts.prebuild).toContain("pnpm run generate:sri");
     expect(calculatorPackage.scripts.prebuild).toContain("pnpm run check:sri");
     expect(calculatorPackage.scripts.prebuild).toContain(
       "pnpm -w run db:migrate",
     );
-    expect(calculatorPackage.scripts.build).toBe("next build");
-    expect(calculatorPackage.scripts.prestart).toContain("dotenv -e .env --");
+    expect(calculatorPackage.scripts.build).toBe(
+      "dotenv -e ../../packages/database/.env -e .env -- next build",
+    );
+    expect(calculatorPackage.scripts.prestart).toContain(
+      "dotenv -e ../../packages/database/.env -e .env --",
+    );
     expect(calculatorPackage.scripts.start).toContain(
-      "dotenv -v NODE_ENV=production -e .env --",
+      "dotenv -v NODE_ENV=production -e ../../packages/database/.env -e .env --",
     );
     expect(calculatorPackage.scripts["auth:generate"]).toContain(
-      "dotenv -e .env --",
+      "dotenv -e ../../packages/database/.env -e .env --",
     );
   });
 
@@ -99,13 +155,13 @@ describe("environment entrypoints", () => {
   it("configures every service port from the environment", () => {
     expect(calculatorPackage.scripts["dev:next"]).toBe("next dev --port $PORT");
     expect(calculatorPackage.scripts.prestart).toBe(
-      "dotenv -e .env -- pnpm run start:prepare",
+      "dotenv -e ../../packages/database/.env -e .env -- pnpm run start:prepare",
     );
     expect(calculatorPackage.scripts["start:prepare"]).toContain(
       'pnpm dlx kill-port "$PORT" "$SOCKET_PORT"',
     );
     expect(calculatorPackage.scripts.start).toBe(
-      "dotenv -v NODE_ENV=production -e .env -- pnpm run serve",
+      "dotenv -v NODE_ENV=production -e ../../packages/database/.env -e .env -- pnpm run serve",
     );
     expect(calculatorPackage.scripts.serve).toContain("next start --port $PORT");
     expect(calculatorPackage.scripts["test:e2e:report"]).toBe(
@@ -118,7 +174,7 @@ describe("environment entrypoints", () => {
       "dotenv -e .env -- sh -c 'fuser -k \"$DOCUMENTATION_PORT/tcp\" || true'",
     );
     expect(costTrackerPackage.scripts.predev).toBe(
-      "dotenv -e .env -- sh -c 'fuser -k \"$COST_TRACKER_PORT/tcp\" || true'",
+      "dotenv -e ../../packages/database/.env -e .env -- sh -c 'fuser -k \"$COST_TRACKER_PORT/tcp\" || true'",
     );
     expect(documentationPackage.scripts.start).toBe(
       "dotenv -v NODE_ENV=production -e .env -- sh -c 'next start --port \"$DOCUMENTATION_PORT\"'",
@@ -132,7 +188,7 @@ describe("environment entrypoints", () => {
       expect(app.scripts["db:migrate"]).toBeUndefined();
       expect(app.scripts.predev ?? "").not.toContain("db:migrate");
       expect(app.scripts.prebuild).toMatch(
-        /dotenv -e \.env -- .*pnpm -w run db:migrate/,
+        /dotenv -e \.\.\/\.\.\/packages\/database\/\.env -e \.env -- .*pnpm -w run db:migrate/,
       );
       expect(app.scripts["start:prepare"]).toContain(
         "pnpm --filter @greendex/database run db:migrate",

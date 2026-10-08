@@ -66,7 +66,7 @@ Coolify and local application scripts provide environment variables to Turbo. Th
 
 This setting is critical: without it, workspace processes do not receive the injected environment expected by application validation and build/start code. Preserve it when editing the task graph.
 
-Each application owns its local `.env` and `.env.example`; do not recreate a repository-root environment file. Turbo does not load these files. Next.js loads the documentation environment, while Calculator package scripts use the dotenv CLI (`dotenv run`) so its Next.js and Socket.IO processes receive one consistent environment. Keep `.env*` in the build task inputs so changes invalidate the correct package's cache.
+Each application owns its app-specific `.env` and `.env.example`; database-consuming apps configure local `DATABASE_URL` only in `packages/database/.env` (template: `packages/database/.env.example`). Do not recreate a repository-root environment file. Turbo does not load these files. Next.js loads the documentation environment, while Calculator package scripts use the dotenv CLI (`dotenv run`) so its Next.js and Socket.IO processes receive one consistent environment. Keep app-local `.env*` and the shared database `.env*` in build/test task inputs so changes invalidate the correct package's cache.
 
 ## Runtime consistency
 

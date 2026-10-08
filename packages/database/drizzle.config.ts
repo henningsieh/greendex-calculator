@@ -3,8 +3,9 @@ import { loadEnvFile } from "node:process";
 
 import { defineConfig } from "drizzle-kit";
 
-// Database tooling uses the consuming Calculator application's environment.
-const envPath = "../../apps/calculator/.env";
+// Tooling and both applications share one local database configuration.
+// Platform-injected DATABASE_URL takes precedence over the local file.
+const envPath = ".env";
 if (existsSync(envPath)) loadEnvFile(envPath);
 
 export default defineConfig({

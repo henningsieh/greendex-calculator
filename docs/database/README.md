@@ -6,7 +6,7 @@ Use these documents when changing database schemas, migrations, or the connectio
 
 - [Coolify database connections](./coolify-ssl-connection.md) — private-network connection boundary for the deployed database.
 - [Project Partnership invariant rollout](./project-partnership-invariants-rollout.md) — controlled rollout and verification for migration `0017`.
-- [Development databases](./development-databases.md) — which instance, port, and database each app uses locally, and how each is seeded.
+- [Development databases](./development-databases.md) — one shared Live + Preview setup and its centralized local connection.
 - [Drizzle map](../agents/instructions/drizzle.md) — official lookup route and schema/migration workflow.
 
 ## Source of truth
@@ -39,4 +39,4 @@ Calculator's Project Shared Travel Leg [cutover](../../apps/calculator/src/__tes
 
 ## Connection
 
-The client reads `DATABASE_URL` from the environment and creates a `pg` connection pool lazily on first query. See [Coolify database connections](./coolify-ssl-connection.md) for the current platform boundary; retrieve resource-specific settings from Coolify rather than preserving a connection-string recipe in the repository.
+Both apps and Drizzle Kit load local `DATABASE_URL` from `packages/database/.env`; injected platform values take precedence. The client reads that `DATABASE_URL` from the environment and creates a `pg` connection pool lazily on first query. See [Coolify database connections](./coolify-ssl-connection.md) for the current platform boundary; retrieve resource-specific settings from Coolify rather than preserving a connection-string recipe in the repository.

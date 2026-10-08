@@ -29,13 +29,20 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+// Load the shared database configuration before app-local values.
+const databaseEnvPath = new URL(
+  "../../../packages/database/.env",
+  import.meta.url,
+);
+if (existsSync(databaseEnvPath)) loadEnvFile(databaseEnvPath);
+
 // Load environment variables from .env file
 if (existsSync(".env")) loadEnvFile(".env");
 
 // Validate DATABASE_URL is available
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL is not set in .env file");
+  console.error("❌ DATABASE_URL is not configured");
   process.exit(1);
 }
 

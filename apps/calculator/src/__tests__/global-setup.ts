@@ -4,6 +4,9 @@ import { loadEnvFile } from "node:process";
 
 // Load environment variables from monorepo root BEFORE any tests run
 // Calculator owns the environment used by its test suite.
+const databaseEnvPath = resolve(process.cwd(), "../../packages/database/.env");
+if (existsSync(databaseEnvPath)) loadEnvFile(databaseEnvPath);
+
 const envPath = resolve(process.cwd(), ".env");
 
 if (!existsSync(envPath)) {
