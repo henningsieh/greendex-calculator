@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -62,6 +63,7 @@ export default async function AppLayout({
   }>;
 }>) {
   const { locale } = await params;
+  await connection();
   const { session, hasOrgs, rememberedPath } = await checkAuthAndOrgs();
 
   if (!session?.user) {
