@@ -322,7 +322,6 @@ export function ClaimReviewDetails({
                         bytes
                       </p>
                       <a
-                        className="text-link underline underline-offset-4 focus-visible:decoration-brand fine-hover:text-link-hover fine-hover:decoration-brand"
                         href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
                         download
                       >
@@ -427,12 +426,7 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
   }
   return (
     <section aria-label="Claim review" className="min-w-0 space-y-5">
-      <Link
-        className="text-link underline underline-offset-4 fine-hover:text-link-hover fine-hover:decoration-brand"
-        href="/claims/review"
-      >
-        Back to submitted Claims
-      </Link>
+      <Link href="/claims/review">Back to submitted Claims</Link>
       <div className="min-w-0">
         <ClaimBand title="Claim review" status={claim?.status} />
         <div className="min-w-0 border border-t-0 bg-card">

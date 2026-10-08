@@ -167,6 +167,37 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Button links, menu items, primary navigation, and the site brand are controls,
+     not prose links; retain their existing component treatments. */
+  a:where(
+    :not(
+      .group\/button,
+      [data-slot="dropdown-menu-item"],
+      nav[aria-label="Primary navigation"] a,
+      .font-heading
+    )
+  ) {
+    color: var(--link);
+    text-underline-offset: 3px;
+
+    &:focus-visible {
+      color: var(--link-hover);
+      text-decoration: underline;
+      text-decoration-color: var(--brand);
+      text-decoration-thickness: 2px;
+      outline: 3px solid var(--ring);
+      outline-offset: 4px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: var(--link-hover);
+        text-decoration: underline;
+        text-decoration-color: var(--brand);
+        text-decoration-thickness: 2px;
+      }
+    }
+  }
   :focus-visible {
     @apply outline-3 outline-offset-4 outline-ring;
   }
