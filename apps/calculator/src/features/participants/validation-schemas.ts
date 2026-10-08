@@ -10,11 +10,13 @@ export const ProjectParticipantWithUserSchema = createSelectSchema(
   projectParticipantsTable,
 ).extend({
   journey: createSelectSchema(participantJourneysTable).nullable(),
-  user: createSelectSchema(userTable).omit({
-    emailVerified: true,
-    createdAt: true,
-    updatedAt: true,
-  }),
+  user: createSelectSchema(userTable)
+    .omit({
+      emailVerified: true,
+      createdAt: true,
+      updatedAt: true,
+    })
+    .nullable(),
 });
 
 // Schema for UI participant display - flattens user fields for easier access

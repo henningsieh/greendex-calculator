@@ -648,7 +648,7 @@ export const getProjectParticipants = authorized
       });
     }
 
-    // Get all participants for this project with user details
+    // Participation owns display identity; a linked User is optional.
     const participants = await db
       .select({
         id: projectParticipantsTable.id,
@@ -673,7 +673,7 @@ export const getProjectParticipants = authorized
         },
       })
       .from(projectParticipantsTable)
-      .innerJoin(user, eq(projectParticipantsTable.userId, user.id))
+      .leftJoin(user, eq(projectParticipantsTable.userId, user.id))
       .leftJoin(
         participantJourneysTable,
         eq(

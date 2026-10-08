@@ -22,6 +22,8 @@ const id = randomUUID();
 const otherOrganizationId = randomUUID();
 const otherProjectId = randomUUID();
 const withoutJourneyId = randomUUID();
+const unlinkedProjectId = randomUUID();
+const unlinkedParticipationId = randomUUID();
 let headers: Headers;
 const client = createRouterClient(router, { context: () => ({ headers }) });
 
@@ -58,7 +60,7 @@ beforeAll(async () => {
     createdAt: new Date(),
   });
   await db.insert(projectsTable).values(
-    [id, otherProjectId].map((projectId) => ({
+    [id, otherProjectId, unlinkedProjectId].map((projectId) => ({
       id: projectId,
       organizationId: id,
       name: "Journey Project",
@@ -83,6 +85,14 @@ beforeAll(async () => {
       displayName: "Shared Participant",
       userId: id,
     },
+    {
+      id: unlinkedParticipationId,
+      projectId: unlinkedProjectId,
+      representedOrganizationId: id,
+      displayName: "Participation without a login",
+      email: "unlinked-participant@example.com",
+      userId: null,
+    },
   ]);
   await db.insert(participantJourneysTable).values({
     id,
@@ -91,6 +101,14 @@ beforeAll(async () => {
     destination: "Berlin",
     tripType: "round-trip",
     erasmusDistanceKm: "878.00",
+  });
+  await db.insert(participantJourneysTable).values({
+    id: unlinkedParticipationId,
+    projectParticipantId: unlinkedParticipationId,
+    origin: "Prague",
+    destination: "Berlin",
+    tripType: "one-way",
+    erasmusDistanceKm: "350.00",
   });
   const token = randomUUID();
   await db.insert(session).values({
@@ -134,6 +152,26 @@ it("reads the canonical Participant Journey on the Calculator Project without lo
   expect(
     await client.projects.getParticipants({ projectId: otherProjectId }),
   ).toEqual([expect.objectContaining({ id: withoutJourneyId, journey: null })]);
+});
+
+it("returns Participation-owned display fields and the Journey when no User is linked", async () => {
+  expect(
+    await client.projects.getParticipants({ projectId: unlinkedProjectId }),
+  ).toEqual([
+    expect.objectContaining({
+      id: unlinkedParticipationId,
+      displayName: "Participation without a login",
+      email: "unlinked-participant@example.com",
+      userId: null,
+      user: null,
+      journey: expect.objectContaining({
+        id: unlinkedParticipationId,
+        projectParticipantId: unlinkedParticipationId,
+        origin: "Prague",
+        destination: "Berlin",
+      }),
+    }),
+  ]);
 });
 
 it("does not expose Participant Journeys from another active Organization", async () => {

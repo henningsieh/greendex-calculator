@@ -8,6 +8,7 @@ const labels: Record<string, string> = {
   "one-way": "One way",
 };
 const mocks = vi.hoisted(() => ({
+  hasUser: true,
   journey: null as null | {
     origin: string;
     destination: string;
@@ -27,11 +28,15 @@ vi.mock("@tanstack/react-query", () => ({
     data: [
       {
         id: "participant",
-        user: {
-          name: "Shared Participant",
-          email: "participant@example.com",
-          image: null,
-        },
+        displayName: "Participation Display Name",
+        email: "participation@example.com",
+        user: mocks.hasUser
+          ? {
+              name: "Login Display Name",
+              email: "login@example.com",
+              image: null,
+            }
+          : null,
         createdAt: new Date("2026-10-08"),
         journey: mocks.journey,
       },
@@ -63,9 +68,32 @@ it("displays the canonical Participant Journey beside its Participant without pr
   const withoutJourney = renderToStaticMarkup(
     <ParticipantsList activeProjectId="project" />,
   );
-  expect(withoutJourney).toContain("Shared Participant");
+  expect(withoutJourney).toContain("Participation Display Name");
   expect(withoutJourney).not.toContain("Participant Journey");
 });
+
+it.each([true, false])(
+  "renders Participation-owned name and email with linked User = %s",
+  (hasUser) => {
+    mocks.hasUser = hasUser;
+    mocks.journey = {
+      origin: "Paris",
+      destination: "Berlin",
+      tripType: "round-trip",
+      erasmusDistanceKm: "878.00",
+    };
+    const html = renderToStaticMarkup(
+      <ParticipantsList activeProjectId="project" />,
+    );
+    expect(html).toContain("Participation Display Name");
+    expect(html).toContain("participation@example.com");
+    expect(html).toContain("Participant Journey");
+    expect(html).not.toContain("Login Display Name");
+    expect(html).not.toContain("login@example.com");
+    mocks.hasUser = true;
+    mocks.journey = null;
+  },
+);
 
 afterAll(() => {
   vi.doUnmock("@greendex/i18n/client");
