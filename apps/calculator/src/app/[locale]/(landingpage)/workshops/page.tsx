@@ -50,7 +50,7 @@ export default function WorkshopsPage({
       };
 }) {
   return (
-    <main className="relative min-h-screen py-28">
+    <main className="relative min-h-screen py-28" data-testid="workshops-frame">
       {/* Background decorative elements */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />

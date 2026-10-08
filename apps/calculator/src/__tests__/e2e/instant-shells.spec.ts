@@ -46,12 +46,11 @@ test.describe("instant initial load: static shells", () => {
   }) => {
     // Client navigation from the landing page through the ?type=deal card
     // exercises the search-param read end to end. Under the lock the
-    // navigation is held — shell and tab content stay absent until
-    // release — so the lock engagement is proven by the test itself:
-    // without the lock the navigation commits immediately and the
-    // in-scope assertions go RED. The post-release assertions go RED if a
-    // newly introduced blocking read stops the deferred content from
-    // streaming.
+    // prefetched shell commits immediately while dynamic data is held:
+    // the destination URL and static shell land at once, and the tab
+    // content streams only after release. Without the lock the navigation
+    // commits with content already present; a blocking destination would
+    // never commit the shell under the lock at all.
     // (A bare page.goto cannot gate this page: its deferred read resolves
     // from the request itself, so the MPA document already carries the
     // content before the client lock can engage. Only the
@@ -81,16 +80,16 @@ test.describe("instant initial load: static shells", () => {
       .toBe(true);
     await instant(page, async () => {
       await dealCard.click();
-      // Give an unlocked navigation ample time to commit; under the lock
-      // nothing may commit.
-      await page.waitForTimeout(4000);
-      expect(page.url()).toBe(`${baseURL}/en`);
-      await expect(page.getByTestId("workshops-shell-marker")).toHaveCount(0);
+      // Destination commits under the lock: URL and static shell arrive
+      // while the tab content stays gated.
+      await page.waitForURL((url) => url.pathname === "/en/workshops", {
+        timeout: 15_000,
+      });
+      expect(page.url()).toBe(`${baseURL}/en/workshops?type=deal`);
+      await expect(page.getByTestId("workshops-frame")).toBeVisible();
       await expect(page.getByTestId("workshops-content")).toHaveCount(0);
     });
-    await page.waitForURL((url) => url.pathname === "/en/workshops", {
-      timeout: 15_000,
-    });
+    await expect(page.getByTestId("workshops-shell-marker")).toBeVisible();
     await expect(page.getByTestId("workshops-content")).toBeVisible();
     await expect(page.getByRole("tab", { selected: true })).toContainText(
       /deal/i,

@@ -104,7 +104,7 @@ describe("locale layout", () => {
   it.each(["", "DE", "unsupported"])(
     "rejects unsupported locale %j before loading any messages",
     async (locale) => {
-      const errors: { message?: string }[] = [];
+      const errors: unknown[] = [];
       const stream = await renderToReadableStream(
         LocaleLayout({
           params: Promise.resolve({ locale }),
@@ -112,12 +112,16 @@ describe("locale layout", () => {
         }),
         {
           onError(error: unknown) {
-            errors.push(error as { message?: string });
+            errors.push(error);
           },
         },
       );
       await stream.allReady.then(() => new Response(stream).text());
-      expect(errors.map((error) => error?.message)).toContain("not found");
+      expect(
+        errors.map((error) =>
+          error instanceof Error ? error.message : String(error),
+        ),
+      ).toContain("not found");
       expect(mocks.setRequestLocale).not.toHaveBeenCalled();
       expect(mocks.getMessages).not.toHaveBeenCalled();
       expect(mocks.getTimeZone).not.toHaveBeenCalled();

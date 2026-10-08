@@ -49,7 +49,7 @@ describe("workshops page", () => {
   ])("selects %s as %s inside the URL-state provider", async (type, expected) => {
     for (const searchParams of [{ type }, Promise.resolve({ type })]) {
       const stream = await renderToReadableStream(
-        await WorkshopsPage({
+        WorkshopsPage({
           params: Promise.resolve({ locale: "de" }),
           searchParams,
         }),

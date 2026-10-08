@@ -122,9 +122,11 @@ async function LocalizedIntl({
   // Providing all messages to the client side is the easiest way to get started
   // NOTE (Cache Components, #246): explicit `locale` keeps these calls out of
   // the request-header lookup, so the layout prerenders statically.
-  const messages = await getMessages({ locale });
-  const timeZone = await getTimeZone({ locale });
-  const now = await getPrerenderNow();
+  const [messages, timeZone, now] = await Promise.all([
+    getMessages({ locale }),
+    getTimeZone({ locale }),
+    getPrerenderNow(),
+  ]);
 
   return (
     <div lang={locale}>

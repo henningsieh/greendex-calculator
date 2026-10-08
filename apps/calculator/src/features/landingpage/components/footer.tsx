@@ -38,7 +38,10 @@ async function getCurrentYear() {
 export async function FooterSection({ locale }: { locale: string }) {
   // NOTE (Cache Components, #246): explicit `locale` — the header-backed
   // lookup resolves per segment, so a bare call would block prerendering.
-  const t = await getTranslations({ locale, namespace: "landingPage" });
+  const [t, currentYear] = await Promise.all([
+    getTranslations({ locale, namespace: "landingPage" }),
+    getCurrentYear(),
+  ]);
 
   const navigationLinks = [
     {
@@ -156,7 +159,7 @@ export async function FooterSection({ locale }: { locale: string }) {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
           <span className="text-center text-sm text-muted-foreground sm:text-left">
-            &copy; {await getCurrentYear()} Greendex | {t("footer.copyright")}
+            &copy; {currentYear} Greendex | {t("footer.copyright")}
           </span>
         </div>
       </div>
