@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # Shared auth roles and factory

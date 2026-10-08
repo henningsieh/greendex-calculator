@@ -90,10 +90,13 @@ it.each([true, false])(
     expect(html).toContain("Participant Journey");
     expect(html).not.toContain("Login Display Name");
     expect(html).not.toContain("login@example.com");
-    mocks.hasUser = true;
-    mocks.journey = null;
   },
 );
+
+afterEach(() => {
+  mocks.hasUser = true;
+  mocks.journey = null;
+});
 
 afterAll(() => {
   vi.doUnmock("@greendex/i18n/client");
