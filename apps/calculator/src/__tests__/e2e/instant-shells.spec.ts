@@ -10,7 +10,7 @@ import { expect, test } from "@playwright/test";
  * build with the testing API exposed:
  *
  *   EXPOSE_TESTING_API=1 pnpm build && pnpm start
- *   pnpm exec playwright test instant-shells
+ *   dotenv run -f .env -- playwright test --config=playwright.instant.config.ts
  *
  * Public routes only — no authenticated session is established, so a
  * route that redirects to login fails here by design (and must keep

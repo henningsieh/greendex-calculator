@@ -155,8 +155,7 @@ The workflow depends on framework capabilities that ship with current Next.js:
   [`experimental.exposeTestingApiInProductionBuild`](https://nextjs.org/docs/app/api-reference/config/next-config-js/exposeTestingApiInProductionBuild)
   config flag (phase A).
 
-If the project does not meet these, upgrade first (`npx @next/codemod upgrade`
-automates most of it), then enable Cache Components in `next.config.ts`:
+If the project does not meet these, upgrade first (pin the codemod to the intended release line — `npx @next/codemod@16 upgrade` for Next 16 — rather than resolving it through the floating `latest` tag; it automates most of it), then enable Cache Components in `next.config.ts`:
 
 ```ts
 export default { cacheComponents: true };
@@ -403,7 +402,7 @@ Once the target routes are instant, check whether the app has already adopted
 Partial Prefetching (`partialPrefetching: true`, or the relevant destination
 still uses `prefetch = 'partial'` during an incremental rollout).
 
-Make that check mechanically:
+Make that check mechanically, from the selected Next.js app root (one app at a time in a monorepo, so nested route files are not missed and another app's config is not read):
 
 ```bash
 rg -n "partialPrefetching|prefetch\s*=\s*['\"]partial['\"]" --glob 'next.config.*' --glob 'app/**' --glob 'src/app/**'

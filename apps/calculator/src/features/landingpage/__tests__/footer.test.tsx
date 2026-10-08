@@ -73,10 +73,10 @@ describe("prerenderable footer", () => {
   it.each([
     [new Date(2026, 11, 31, 23, 59, 59), 2026],
     [new Date(2027, 0, 1, 0, 0, 0), 2027],
-  ])("renders the year at %s with the max cache lifetime", async (now, year) => {
+  ])("renders the year at %s with the days cache lifetime", async (now, year) => {
     vi.setSystemTime(now);
     const html = renderToStaticMarkup(await FooterSection({ locale: "en" }));
     expect(html).toContain(`© ${year} Greendex`);
-    expect(cacheLife).toHaveBeenCalledExactlyOnceWith("max");
+    expect(cacheLife).toHaveBeenCalledExactlyOnceWith("days");
   });
 });

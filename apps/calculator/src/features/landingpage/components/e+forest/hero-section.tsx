@@ -26,7 +26,7 @@ export async function HeroSection({ locale }: { locale: string }) {
       <div className="relative z-10 container mx-auto flex h-full items-center justify-center">
         <h1
           className="text-center text-5xl font-bold text-foreground lg:text-7xl"
-          data-testid="landing-hero-heading"
+          data-testid="eforest-hero-heading"
         >
           {t("title")}
         </h1>

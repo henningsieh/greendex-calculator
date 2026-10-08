@@ -18,12 +18,12 @@ import { Link } from "@/lib/i18n/routing";
 
 /**
  * Return the server-local calendar year when the cache entry is generated.
- * The `max` cache profile can retain this value across a year boundary until
- * the entry is refreshed.
+ * The `days` cache profile bounds staleness to a week, so the value refreshes
+ * shortly after a year boundary.
  */
 async function getCurrentYear() {
   "use cache";
-  cacheLife("max");
+  cacheLife("days");
   return new Date().getFullYear();
 }
 

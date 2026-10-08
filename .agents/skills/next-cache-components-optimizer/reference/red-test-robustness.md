@@ -153,6 +153,6 @@ Two defenses; use both:
 
 - Always measure on a production build, never `next dev`; SKILL.md phase A owns this invariant and
   its rationale.
-- Run the RED several times; an intermittently red gate is not a gate. If it flakes, determine
+- Run the RED once and trust a conclusive result; rerun it only when two observed results conflict. An intermittently red gate is not a gate. If it flakes, determine
   whether the cause is infrastructure (transient errors) or a real race before trusting either
   color.
