@@ -83,21 +83,13 @@ export function ClaimSubmission({
               </p>
               {item.gaps.map((gap) => (
                 <p key={`${gap.path.join(".")}-${gap.message}`}>
-                  <a
-                    href={`#${gapAnchor(gap.path)}`}
-                    className="text-link underline underline-offset-4 focus-visible:decoration-brand fine-hover:text-link-hover fine-hover:decoration-brand"
-                  >
+                  <a href={`#${gapAnchor(gap.path)}`}>
                     {gap.message} — Go to gap
                   </a>
                 </p>
               ))}
               {item.passed && (
-                <a
-                  href={`#${gapAnchor([item.key])}`}
-                  className="text-link underline underline-offset-4 focus-visible:decoration-brand fine-hover:text-link-hover fine-hover:decoration-brand"
-                >
-                  View section
-                </a>
+                <a href={`#${gapAnchor([item.key])}`}>View section</a>
               )}
             </li>
           ))}
