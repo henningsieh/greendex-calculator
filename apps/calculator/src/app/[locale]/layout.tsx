@@ -8,6 +8,7 @@ import { cacheLife } from "next/cache";
 import { Comfortaa, DM_Sans, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import "@/lib/orpc/client.server";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -69,7 +70,38 @@ async function getPrerenderNow() {
   return new Date();
 }
 
-export default async function LocaleLayout({ children, params }: Props) {
+export default function LocaleLayout({ children, params }: Props) {
+  return (
+    <div
+      className={`${clashDisplay.variable} ${spaceGrotesk.variable} ${dmSans.className} ${dmSans.variable} ${jetbrainsMono.variable} scroll-smooth`}
+    >
+      {/* Preconnect to external resources for performance */}
+      <link href="https://fonts.googleapis.com" rel="preconnect" />
+      <link
+        crossOrigin="anonymous"
+        href="https://fonts.gstatic.com"
+        rel="preconnect"
+      />
+      <ThemeProvider>
+        <QueryProvider>
+          <Suspense fallback={<LocaleSkeleton />}>
+            <LocalizedIntl params={params}>{children}</LocalizedIntl>
+          </Suspense>
+        </QueryProvider>
+      </ThemeProvider>
+    </div>
+  );
+}
+
+async function LocalizedIntl({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
+}) {
   const { locale } = await params;
 
   // Ensure that the incoming `locale` is valid
@@ -88,36 +120,35 @@ export default async function LocaleLayout({ children, params }: Props) {
   const now = await getPrerenderNow();
 
   return (
-    <div
-      className={`${clashDisplay.variable} ${spaceGrotesk.variable} ${dmSans.className} ${dmSans.variable} ${jetbrainsMono.variable} scroll-smooth`}
-      lang={locale}
-    >
-      {/* Preconnect to external resources for performance */}
-      <link href="https://fonts.googleapis.com" rel="preconnect" />
-      <link
-        crossOrigin="anonymous"
-        href="https://fonts.gstatic.com"
-        rel="preconnect"
-      />
-      <ThemeProvider>
-        <QueryProvider>
-          {/* NOTE (Cache Components, #246): every prop is explicit — without
-              them the provider fills locale/timeZone/now/formats via a
-              request-time lookup, so the route stays protected (no prerender).
-              `now` is frozen
-              per prerender (no `useNow` consumers exist); `formats` stays
-              empty as the request config defines none. */}
-          <NextIntlClientProvider
-            locale={locale}
-            messages={messages}
-            timeZone={timeZone}
-            now={now}
-            formats={{}}
-          >
-            {children}
-          </NextIntlClientProvider>
-        </QueryProvider>
-      </ThemeProvider>
+    <div lang={locale}>
+      {/* NOTE (Cache Components, #246): every prop is explicit — without
+          them the provider fills locale/timeZone/now/formats via a
+          request-time lookup, so the route stays protected (no prerender).
+          `now` is frozen
+          per prerender (no `useNow` consumers exist); `formats` stays
+          empty as the request config defines none. */}
+      <NextIntlClientProvider
+        locale={locale}
+        messages={messages}
+        timeZone={timeZone}
+        now={now}
+        formats={{}}
+      >
+        {children}
+      </NextIntlClientProvider>
+    </div>
+  );
+}
+
+function LocaleSkeleton() {
+  return (
+    <div aria-hidden="true" className="min-h-screen">
+      <div className="mx-auto mt-3 h-14 max-w-5xl animate-pulse rounded-2xl bg-muted/40" />
+      <div className="mx-auto mt-16 max-w-4xl space-y-6 px-4 text-center">
+        <div className="mx-auto h-16 w-3/4 animate-pulse rounded-2xl bg-muted/60" />
+        <div className="mx-auto h-6 w-2/3 animate-pulse rounded-xl bg-muted/40" />
+        <div className="mx-auto h-12 w-56 animate-pulse rounded-full bg-muted/60" />
+      </div>
     </div>
   );
 }
