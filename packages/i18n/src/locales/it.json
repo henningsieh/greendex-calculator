@@ -880,7 +880,10 @@
         "project-not-found": "Il progetto che stai cercando non esiste.",
         "project-access-denied": "Non hai accesso a questo progetto."
       },
-      "joined-on": "iscritto/a il"
+      "joined-on": "iscritto/a il",
+      "participant-journey": "Viaggio del partecipante",
+      "one-way": "Solo andata",
+      "round-trip": "Andata e ritorno"
     },
     "shared-travel": {
       "title": "Viaggi condivisi del progetto",

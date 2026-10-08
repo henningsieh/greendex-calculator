@@ -877,7 +877,10 @@
         "project-not-found": "The project you are looking for does not exist.",
         "project-access-denied": "You do not have access to this project."
       },
-      "joined-on": "joined on"
+      "joined-on": "joined on",
+      "participant-journey": "Participant Journey",
+      "one-way": "One way",
+      "round-trip": "Round trip"
     },
     "shared-travel": {
       "title": "Project Shared Travel",

@@ -89,6 +89,15 @@ export function ParticipantsList({ activeProjectId }: ParticipantsListProps) {
                 <p className="text-sm text-muted-foreground">
                   {participant.user.email}
                 </p>
+                {participant.journey && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("participant-journey")}: {participant.journey.origin} →{" "}
+                    {participant.journey.destination} ·{" "}
+                    {t(participant.journey.tripType)} ·{" "}
+                    {format.number(Number(participant.journey.erasmusDistanceKm))}{" "}
+                    km
+                  </p>
+                )}
               </div>
               <div className="text-sm text-muted-foreground">
                 {t("joined-on")}{" "}

@@ -47,6 +47,7 @@ describe("getProjectStatistics", () => {
         mergedByUserId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        journey: null,
         user: {
           id: "user-1",
           name: "Participant One",
@@ -67,6 +68,7 @@ describe("getProjectStatistics", () => {
         mergedByUserId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        journey: null,
         user: {
           id: "user-2",
           name: "Participant Two",
@@ -87,6 +89,7 @@ describe("getProjectStatistics", () => {
         mergedByUserId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        journey: null,
         user: {
           id: "user-3",
           name: "Participant Three",

@@ -880,7 +880,10 @@
         "project-not-found": "Projekt, ki ga iščete, ne obstaja.",
         "project-access-denied": "Nimate dostopa do tega projekta."
       },
-      "joined-on": "pridružil/a se"
+      "joined-on": "pridružil/a se",
+      "participant-journey": "Potovanje udeleženca",
+      "one-way": "Enosmerno potovanje",
+      "round-trip": "Povratno potovanje"
     },
     "shared-travel": {
       "title": "Skupna potovanja projekta",

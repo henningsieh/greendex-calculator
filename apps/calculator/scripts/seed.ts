@@ -16,8 +16,19 @@ import { loadEnvFile } from "node:process";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { SEED_USER } from "@greendex/auth/seed-user";
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
+import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import {
+  claimsTable,
+  costAllocationsTable,
   hostProjectAssignmentsTable,
+  participantJourneysTable,
+  participantProfilesTable,
+  partnerCoordinatorAssignmentsTable,
+  projectFundingBandsTable,
+  projectFundingSnapshotsTable,
+  projectPartnerOrganizationsTable,
+  projectParticipantsTable,
+  travelCostEntriesTable,
   projectSharedTravelLegsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -217,6 +228,8 @@ async function seed() {
         and(eq(members.userId, userId), eq(members.organizationId, orgId)),
     });
 
+    const hostingMembershipCreatedAt =
+      existingMembership?.createdAt ?? new Date();
     if (existingMembership) {
       console.log("⚠️  Membership already exists");
     } else {
@@ -226,7 +239,7 @@ async function seed() {
         organizationId: orgId,
         userId,
         role: ORGANIZATION_ROLES.OrganizationOwner,
-        createdAt: new Date(),
+        createdAt: hostingMembershipCreatedAt,
       });
       console.log("✅ User set as organization owner");
     }
@@ -292,12 +305,109 @@ async function seed() {
     console.log(
       `✅ Created ${totalTravelLegsCreated} Project Shared Travel Legs across 10 projects`,
     );
+    // One complete, mocked cross-app slice on the first Project. No proof upload,
+    // invitation or mail is needed to inspect an editable Claim.
+    console.log("🤝 Creating shared Journey and Partner Claim demo...");
+    await db.transaction(async (tx) => {
+      const existingPartner = await tx.query.organization.findFirst({
+        where: eq(organization.slug, "seed-partner-org"),
+      });
+      const partnerId = existingPartner?.id ?? createId();
+      if (!existingPartner) {
+        await tx.insert(organization).values({
+          id: partnerId,
+          name: "Seed Partner Organization",
+          slug: "seed-partner-org",
+          country: "FR",
+          createdAt: new Date(),
+        });
+        await tx.insert(member).values({
+          id: createId(),
+          organizationId: partnerId,
+          userId,
+          role: ORGANIZATION_ROLES.OrganizationOwner,
+          // Auth initially selects the newest Membership. Keep the existing
+          // Hosting default for both apps and their ordinary seed-based tests.
+          createdAt: new Date(hostingMembershipCreatedAt.getTime() - 1),
+        });
+      }
+      const projectId = projectIds[0];
+      const partnershipId = createId();
+      const participationId = createId();
+      const claimId = createId();
+      const entryId = createId();
+      await tx.insert(projectPartnerOrganizationsTable).values({
+        id: partnershipId,
+        projectId,
+        organizationId: partnerId,
+      });
+      await tx
+        .insert(partnerCoordinatorAssignmentsTable)
+        .values({ partnershipId, userId });
+      await tx
+        .insert(participantProfilesTable)
+        .values({
+          userId,
+          fullName: SEED_USER.name,
+        })
+        .onConflictDoNothing();
+      await tx.insert(projectParticipantsTable).values({
+        id: participationId,
+        projectId,
+        representedOrganizationId: partnerId,
+        userId,
+        displayName: SEED_USER.name,
+        email: SEED_USER.email,
+        country: "FR",
+      });
+      await tx.insert(projectFundingSnapshotsTable).values({
+        projectId,
+        rulesVersion: TRAVEL_FUNDING_RULES.version,
+        participantTransportProfiles: [
+          ...TRAVEL_FUNDING_RULES.participantTransportProfiles,
+        ],
+      });
+      await tx.insert(projectFundingBandsTable).values(
+        TRAVEL_FUNDING_RULES.bands.map((band) => ({
+          projectId,
+          minKm: String(band.minKm),
+          maxKm: String(band.maxKm),
+          standardEur: String(band.standardEur),
+          greenEur: String(band.greenEur),
+        })),
+      );
+      await tx.insert(participantJourneysTable).values({
+        projectParticipantId: participationId,
+        origin: "Paris",
+        destination: "Berlin",
+        tripType: "round-trip",
+        erasmusDistanceKm: "878.00",
+      });
+      await tx.insert(claimsTable).values({ id: claimId, partnershipId });
+      await tx.insert(travelCostEntriesTable).values({
+        id: entryId,
+        claimId,
+        transportProfile: "train",
+        amountEur: "120.00",
+        allocationMethod: "amount",
+      });
+      await tx.insert(costAllocationsTable).values({
+        travelCostEntryId: entryId,
+        projectParticipantId: participationId,
+        amountEur: "120.00",
+      });
+    });
+    console.log(
+      "✅ Seed Partner Organization: Paris → Berlin, round-trip, 878 km; editable train Claim: EUR 120",
+    );
+
     console.log("\n🎉 SEED COMPLETED SUCCESSFULLY!");
     console.log("=".repeat(60));
-    console.log("📋 Login Credentials:");
+    console.log(
+      "📋 Development seed summary (login defined in @greendex/auth/seed-user):",
+    );
     console.log("-".repeat(60));
     console.log(`Email:    ${SEED_USER.email}`);
-    console.log(`Password: ${SEED_USER.password}`);
     console.log("-".repeat(60));
     console.log(`User ID: ${userId}`);
     console.log(`Organization ID: ${orgId}`);

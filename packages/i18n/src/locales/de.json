@@ -877,7 +877,10 @@
         "project-not-found": "Das Projekt konnte nicht gefunden werden.",
         "project-access-denied": "Du hast keinen Zugriff auf dieses Projekt."
       },
-      "joined-on": "beigetreten am"
+      "joined-on": "beigetreten am",
+      "participant-journey": "Teilnehmerreise",
+      "one-way": "Einfache Fahrt",
+      "round-trip": "Hin- und Rückfahrt"
     },
     "shared-travel": {
       "title": "Gemeinsame Projektreisen",

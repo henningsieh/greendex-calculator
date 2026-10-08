@@ -880,7 +880,10 @@
         "project-not-found": "Het project dat je zoekt bestaat niet.",
         "project-access-denied": "Je hebt geen toegang tot dit project."
       },
-      "joined-on": "aangemeld op"
+      "joined-on": "aangemeld op",
+      "participant-journey": "Reis van de deelnemer",
+      "one-way": "Enkele reis",
+      "round-trip": "Retourreis"
     },
     "shared-travel": {
       "title": "Gedeelde projectreizen",

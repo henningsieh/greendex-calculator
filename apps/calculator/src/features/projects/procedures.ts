@@ -2,6 +2,7 @@ import { hasOrganizationRole } from "@greendex/auth/organization-roles";
 import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
+  participantJourneysTable,
   projectSharedTravelLegsTable,
   projectParticipantsTable,
   projectsTable,
@@ -663,6 +664,7 @@ export const getProjectParticipants = authorized
         mergedByUserId: projectParticipantsTable.mergedByUserId,
         createdAt: projectParticipantsTable.createdAt,
         updatedAt: projectParticipantsTable.updatedAt,
+        journey: participantJourneysTable,
         user: {
           id: user.id,
           name: user.name,
@@ -672,6 +674,13 @@ export const getProjectParticipants = authorized
       })
       .from(projectParticipantsTable)
       .innerJoin(user, eq(projectParticipantsTable.userId, user.id))
+      .leftJoin(
+        participantJourneysTable,
+        eq(
+          participantJourneysTable.projectParticipantId,
+          projectParticipantsTable.id,
+        ),
+      )
       .where(eq(projectParticipantsTable.projectId, input.projectId));
 
     // NOTE: Demo delay has been moved into a global orpc middleware
