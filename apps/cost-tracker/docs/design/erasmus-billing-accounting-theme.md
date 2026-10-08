@@ -4,7 +4,7 @@
 **Branch:** `design/erasmus-billing-accounting-theme` (based off `origin/chore/add-cost-tracker-app` @ `469a0a23`).
 
 > Earlier the branch was cut from the wrong base (`refactor/cost-tracker-participant-and-claim-model` @ `5d9244ef`); re-created on the correct base 2026-10-05. No commits were made on the wrong base, only the untracked track file, which carried over.
-> **Scope:** Cost Tracker Billing/Accounting surfaces — `Claim`, `Travel Cost Entry`, `Cost Allocation`, `Payout Account`, `Proof Document` ([cost-tracker glossary](../GLOSSARY.md), [shared language](../../../GLOSSARY.md)).
+> **Scope:** Cost Tracker Billing/Accounting surfaces — `Claim`, `Travel Cost Entry`, `Cost Allocation`, `Payout Account`, `Proof Document` ([cost-tracker glossary](../../GLOSSARY.md), [shared language](../../../../GLOSSARY.md)).
 
 App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks the redesign chain only.
 
