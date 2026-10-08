@@ -42,7 +42,7 @@ Canonical product language lives in [`GLOSSARY.md`](GLOSSARY.md). Find the ownin
 | Web applications     | Next.js, React, App Router, React Compiler         |
 | Language             | TypeScript                                         |
 | Monorepo             | Turborepo and pnpm workspaces/catalog              |
-| UI                   | shadcn/ui, Base UI, Radix UI, cmdk, Tailwind CSS   |
+| UI                   | shadcn/ui, Radix UI, cmdk, Tailwind CSS            |
 | Authentication       | Better Auth with organization and social providers |
 | API                  | oRPC, TanStack Query, OpenAPI/Scalar               |
 | Database             | PostgreSQL and Drizzle ORM/Kit                     |
@@ -53,6 +53,8 @@ Canonical product language lives in [`GLOSSARY.md`](GLOSSARY.md). Find the ownin
 | Documentation        | Fumadocs and Next.js                               |
 | Tests                | Vitest and Playwright                              |
 | Quality              | Oxlint and Oxfmt                                   |
+
+Cost Tracker also uses Base UI for its shadcn components.
 
 The owning workspace manifests, `pnpm-workspace.yaml`, and `pnpm-lock.yaml` are
 the version authorities. Formatter behavior, including import sorting, is
@@ -324,7 +326,7 @@ package API; transport uses Nodemailer.
 
 `apps/calculator/src/socket-server.ts` is a separate Socket.IO process. It reads
 validated process environment from `@/env`; Calculator scripts inject its
-app-local `.env` through `dotenv-cli`, while Coolify injects runtime values
+app-local `.env` through `dotenv run`, while Coolify injects runtime values
 directly.
 
 Clients connect through `NEXT_PUBLIC_SOCKET_URL`, so local ports and the deployed
@@ -351,7 +353,7 @@ returning 404.
 > that expects a running Calculator server. Its no-server branch does not
 > reliably skip the suite. Run the remaining tests without a server with
 > `pnpm --filter @greendex/calculator exec vitest run --exclude
-src/__tests__/openapi-rest.test.ts`.
+> src/__tests__/openapi-rest.test.ts`.
 
 ---
 
@@ -372,7 +374,7 @@ to workspace processes.
 
 Calculator applies committed Drizzle migrations during both lifecycle stages:
 
-- `prebuild` generates and checks Scalar SRI data, then runs the Turbo
+- `prebuild` loads the app-local environment, then runs the workspace Turbo
   `db:migrate` task;
 - `prestart` prepares the configured ports, then runs
   `pnpm --filter @greendex/database run db:migrate` before Next.js and Socket.IO
