@@ -33,9 +33,11 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0017](0017-own-the-claim-lifecycle-once.md)                                             | Own the Claim Lifecycle Once: One Lock Order, Shared Capabilities                    | accepted       |               |
 | [0018](0018-derive-refusal-construction-from-the-error-catalog.md)                       | Derive Refusal Construction From the Error Catalog                                  | accepted       |               |
 | [0019](0019-require-organization-country-and-synchronize-role-values.md)                  | Require Organization Country and Synchronize Role Values                            | accepted       | 0012, in part; 0004, spelling only |
-
-| [0020](0020-shared-auth-roles-and-factory.md) | Shared Auth Roles and Factory | accepted | 0019, Calculator coordinator Project grants only |
+| [0020](0020-shared-auth-roles-and-factory.md) | Shared Auth Roles and Factory | accepted | 0019, Calculator coordinator Project grants only; 0022 |
 | [0021](0021-centralized-feature-flags.md) | Centralized Feature Flags | accepted | |
+| [0022](0022-shared-auth-roles-and-factory-original.md) | Original Shared Auth Roles and Factory | **superseded by 0020** | |
+
+ADR-0022 preserves the original shared-auth decision body from `1bd184f8` (formerly `0001-shared-auth-roles-and-factory.md`). Only accepted-status metadata was added; the collision-free identifier preserves its history without replacing the unrelated ADR-0001. ADR-0020 explicitly supersedes it.
 
 [ADR-0019](0019-require-organization-country-and-synchronize-role-values.md) requires Organization country and synchronizes the shared role values. It supersedes ADR-0012's Calculator compatibility allowance and ADR-0004's stored coordinator spelling, not their authorization scopes.
 
