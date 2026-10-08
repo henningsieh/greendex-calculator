@@ -18,6 +18,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
+import { TOTAL_ALLOCATION_PERCENTAGE_UNITS } from "@/features/projects/domain-limits";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -319,7 +320,8 @@ async function evaluateSubmission(
         (entry.allocationMethod === "equal" &&
           amount !== null &&
           amount < BigInt(allocated.length)) ||
-        (entry.allocationMethod === "percentage" && sum !== BigInt(100000000)) ||
+        (entry.allocationMethod === "percentage" &&
+          sum !== TOTAL_ALLOCATION_PERCENTAGE_UNITS) ||
         (entry.allocationMethod === "amount" && sum !== amount)
       )
         issues.push(

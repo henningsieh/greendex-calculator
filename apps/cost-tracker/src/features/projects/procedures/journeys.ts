@@ -12,6 +12,7 @@ import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { z } from "zod";
 
 import { canPartnerEditClaim } from "@/features/projects/claim-lifecycle";
+import { MAX_ERASMUS_DISTANCE_KM } from "@/features/projects/domain-limits";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -33,7 +34,7 @@ const journeyInput = scopeInput.extend({
       "Enter a positive distance with at most two decimal places.",
     )
     .refine(
-      (value) => Number(value) > 0 && Number(value) <= 9999999999.99,
+      (value) => Number(value) > 0 && Number(value) <= MAX_ERASMUS_DISTANCE_KM,
       "Distance must be positive and fit the supported precision.",
     ),
 });

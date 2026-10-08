@@ -19,6 +19,7 @@ import {
   claimReviewTransition,
   type ClaimReviewDecision,
 } from "@/features/projects/claim-lifecycle";
+import { MAX_CLAIM_REASON_LENGTH } from "@/features/projects/domain-limits";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -29,7 +30,7 @@ import { authorized } from "@/lib/orpc/middleware";
 
 const claimInput = z.object({ partnershipId: coordinationId });
 const reviewInput = claimInput.extend({
-  reason: z.string().trim().max(2000).optional(),
+  reason: z.string().trim().max(MAX_CLAIM_REASON_LENGTH).optional(),
 });
 const result = z.object({
   id: z.string(),

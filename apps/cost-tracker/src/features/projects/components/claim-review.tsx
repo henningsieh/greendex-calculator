@@ -19,6 +19,7 @@ import {
   ClaimCostTable,
   PayoutAccountLines,
 } from "@/features/projects/components/claim-document";
+import { MAX_CLAIM_REASON_LENGTH } from "@/features/projects/domain-limits";
 import { authClient } from "@/lib/auth-client";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
@@ -219,7 +220,7 @@ export function ClaimDecisionPanel({
                   <textarea
                     id="decision-reason"
                     className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                    maxLength={2000}
+                    maxLength={MAX_CLAIM_REASON_LENGTH}
                     required
                     value={reason}
                     onChange={(event) => setReason(event.target.value)}

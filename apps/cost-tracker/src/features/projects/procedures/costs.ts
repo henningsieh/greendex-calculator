@@ -13,11 +13,13 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { isPartnerEditLocked } from "@/features/projects/claim-lifecycle";
+import { TOTAL_ALLOCATION_PERCENTAGE_UNITS } from "@/features/projects/domain-limits";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/projects/procedures/coordination";
+import { decimalUnits, euros } from "@/features/projects/procedures/payable";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -34,15 +36,6 @@ const percentage = z
     /^\d{1,3}(?:\.\d{1,6})?$/,
     "Enter a positive exact percentage with at most six decimal places.",
   );
-const toUnits = (value: string, scale: number) => {
-  const [whole, fraction = ""] = value.split(".");
-  return (
-    BigInt(whole) * BigInt(10) ** BigInt(scale) +
-    BigInt(fraction.padEnd(scale, "0"))
-  );
-};
-const fromCents = (value: bigint) =>
-  `${value / BigInt(100)}.${String(value % BigInt(100)).padStart(2, "0")}`;
 const allocationInput = z.object({
   projectParticipantId: coordinationId,
   percentage: percentage.optional(),
@@ -61,7 +54,7 @@ const saveInput = scopeInput
   .superRefine((input, ctx) => {
     if (
       money.safeParse(input.amountEur).success &&
-      toUnits(input.amountEur, 2) <= BigInt(0)
+      decimalUnits(input.amountEur, 2) <= BigInt(0)
     )
       ctx.addIssue({
         code: "custom",
@@ -111,7 +104,7 @@ const saveInput = scopeInput
         (input.allocationMethod === "percentage" ? percentage : money).safeParse(
           share,
         ).success &&
-        toUnits(share, input.allocationMethod === "percentage" ? 6 : 2) <=
+        decimalUnits(share, input.allocationMethod === "percentage" ? 6 : 2) <=
           BigInt(0)
       )
         ctx.addIssue({
@@ -125,20 +118,23 @@ const saveInput = scopeInput
           share,
         ).success
       )
-        total += toUnits(share, input.allocationMethod === "percentage" ? 6 : 2);
+        total += decimalUnits(
+          share,
+          input.allocationMethod === "percentage" ? 6 : 2,
+        );
     });
     if (input.allocationMethod !== "equal") {
       const expected =
         input.allocationMethod === "percentage"
-          ? BigInt(100000000)
+          ? TOTAL_ALLOCATION_PERCENTAGE_UNITS
           : money.safeParse(input.amountEur).success
-            ? toUnits(input.amountEur, 2)
+            ? decimalUnits(input.amountEur, 2)
             : BigInt(0);
       if (total !== expected)
         ctx.addIssue({
           code: "custom",
           path: ["allocations"],
-          message: `${input.allocationMethod} shares must total ${input.allocationMethod === "percentage" ? "100%" : `${input.amountEur} EUR`}; received ${input.allocationMethod === "percentage" ? `${total} millionths of a percent` : `${fromCents(total)} EUR`}.`,
+          message: `${input.allocationMethod} shares must total ${input.allocationMethod === "percentage" ? "100%" : `${input.amountEur} EUR`}; received ${input.allocationMethod === "percentage" ? `${total} millionths of a percent` : `${euros(total)} EUR`}.`,
         });
     }
   });
@@ -204,7 +200,7 @@ async function readEntries(claimId: string) {
       .sort((a, b) =>
         a.projectParticipantId.localeCompare(b.projectParticipantId),
       );
-    const cents = toUnits(row.amountEur, 2);
+    const cents = decimalUnits(row.amountEur, 2);
     const count = BigInt(covered.length);
     return {
       ...row,
@@ -213,7 +209,7 @@ async function readEntries(claimId: string) {
         percentage: share.percentage,
         amountEur:
           row.allocationMethod === "equal" && count > BigInt(0)
-            ? fromCents(
+            ? euros(
                 cents / count +
                   (BigInt(index) < cents % count ? BigInt(1) : BigInt(0)),
               )

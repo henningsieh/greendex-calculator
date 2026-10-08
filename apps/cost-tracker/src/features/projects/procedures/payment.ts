@@ -11,6 +11,7 @@ import {
   canCorrectPaidFlag,
   canRecordPayment,
 } from "@/features/projects/claim-lifecycle";
+import { MAX_CLAIM_REASON_LENGTH } from "@/features/projects/domain-limits";
 import { lockClaimScope } from "@/features/projects/procedures/claim-locks";
 import {
   coordinationId,
@@ -96,7 +97,11 @@ export const markPaid = authorized
 
 /** Corrects an application flag, not the bank transfer; the original paid event remains. */
 export const correctPayment = authorized
-  .input(claimInput.extend({ reason: z.string().trim().min(1).max(2000) }))
+  .input(
+    claimInput.extend({
+      reason: z.string().trim().min(1).max(MAX_CLAIM_REASON_LENGTH),
+    }),
+  )
   .output(result)
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerCoordination(
