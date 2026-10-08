@@ -21,6 +21,11 @@ interface PartnerCardProps {
   locale: string;
 }
 
+/**
+ * Render a partner card with localized labels and country information.
+ * Show a website link that opens in a new tab only when a website is provided;
+ * the partner name and description are displayed as supplied.
+ */
 export async function PartnerCard({ partner, locale }: PartnerCardProps) {
   const t = await getTranslations({ locale, namespace: "landingPage.about" });
 

@@ -29,6 +29,10 @@ const { provider } = defineI18nUI(
 );
 
 // export default function Layout({ children }: LayoutProps<"">) {
+/**
+ * Return one route parameter set per configured documentation language
+ * for prerendering.
+ */
 export function generateStaticParams() {
   return LANGUAGE_CODES.map((lang) => ({ lang }));
 }

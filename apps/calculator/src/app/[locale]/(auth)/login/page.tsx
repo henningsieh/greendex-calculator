@@ -34,6 +34,11 @@ export default async function LoginPage({
   );
 }
 
+/**
+ * Resolve the query parameters and render the login form, passing
+ * `nextPageUrl` through unchanged for the form to choose its callback URL.
+ * Query-parameter promise rejections propagate to the caller.
+ */
 async function LoginFromSearchParams({
   searchParams,
 }: Pick<LoginPageProps, "searchParams">) {

@@ -2,6 +2,9 @@ import { AboutFooter } from "@/features/landingpage/components/about/about-foote
 import { AboutHeader } from "@/features/landingpage/components/about/about-header";
 import { PartnersSection } from "@/features/landingpage/components/about/partners-section";
 
+// ensureStatic = 'navigation': fully static marketing page (#246).
+export const ensureStatic = "navigation";
+
 /**
  * Renders the About page with localized content and a list of partner cards.
  *
@@ -10,9 +13,6 @@ import { PartnersSection } from "@/features/landingpage/components/about/partner
  *
  * @returns The About page JSX element
  */
-// ensureStatic = 'navigation': fully static marketing page (#246).
-export const ensureStatic = "navigation";
-
 export default async function AboutPage({
   params,
 }: {

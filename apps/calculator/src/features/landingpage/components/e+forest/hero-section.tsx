@@ -2,6 +2,10 @@ import { eForestConfig } from "@greendex/config/e-forest";
 import { getTranslations } from "@greendex/i18n/server";
 import Image from "next/image";
 
+/**
+ * Render the E+ Forest banner with its title and image alternative text
+ * translated into `locale`.
+ */
 export async function HeroSection({ locale }: { locale: string }) {
   const t = await getTranslations({
     locale,

@@ -18,6 +18,9 @@ export const instant = false;
  * - Unauthenticated users -> redirected to /login (with nextPageUrl preserved)
  * - Authenticated users WITH orgs -> redirected to /org/dashboard
  * - Authenticated users WITHOUT orgs -> can access (org-setup) pages
+ *
+ * Organization lookup failures are treated as having no organizations;
+ * session lookup failures propagate. Redirects use the route locale.
  */
 export default async function OrgSetupLayout({
   children,

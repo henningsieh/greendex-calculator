@@ -16,6 +16,10 @@ const HowItWorksIcon = eForestConfig.icons.howItWorks;
 const PlantingIcon = eForestConfig.icons.planting;
 const ContactIcon = eForestConfig.icons.contact;
 
+/**
+ * Render localized donation instructions, calculator and contact links,
+ * and the Erasmus funding acknowledgment.
+ */
 export async function DonateSection({ locale }: { locale: string }) {
   const t = await getTranslations({
     locale,

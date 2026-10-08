@@ -69,6 +69,13 @@ async function getPrerenderNow() {
   return new Date();
 }
 
+/**
+ * Provide localized messages, time zone, and a cached reference time alongside
+ * theme and query providers for the page content.
+ *
+ * Set the request locale from `params`; unsupported locales trigger Next.js
+ * not-found handling. Message and time-zone loading failures propagate.
+ */
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale } = await params;
 

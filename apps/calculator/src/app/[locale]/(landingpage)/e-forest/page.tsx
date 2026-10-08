@@ -5,6 +5,10 @@ import { HeroSection } from "@/features/landingpage/components/e+forest/hero-sec
 // ensureStatic = 'navigation': fully static marketing page (#246).
 export const ensureStatic = "navigation";
 
+/**
+ * Render the E+ Forest introduction, forest initiatives, and donation
+ * information using the route locale.
+ */
 export default async function EplusForestPage({
   params,
 }: {
