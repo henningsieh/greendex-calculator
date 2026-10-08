@@ -71,9 +71,9 @@ describe("workshops page", () => {
     });
   });
 
-  it("streams the heading and placeholder before the requested tab resolves", async () => {
+  it("streams placeholders before the heading and tab resolve", async () => {
     const deferred = Promise.withResolvers<{ type?: string }>();
-    const page = await WorkshopsPage({
+    const page = WorkshopsPage({
       params: Promise.resolve({ locale: "fr" }),
       searchParams: deferred.promise,
     });
@@ -83,10 +83,10 @@ describe("workshops page", () => {
     try {
       const first = await reader.read();
       const shell = new TextDecoder().decode(first.value);
-      expect(shell).toContain('data-testid="workshops-shell-marker"');
-      expect(shell).toContain("workshops:headingEmphasis");
+      expect(shell).toContain("<main");
       expect(shell).toContain('aria-hidden="true"');
       expect(shell).not.toContain('data-testid="selected-workshop"');
+      expect(shell).not.toContain('data-testid="workshops-shell-marker"');
     } finally {
       deferred.resolve({ type: "deal" });
       let chunk = await reader.read();
@@ -96,6 +96,8 @@ describe("workshops page", () => {
       }
       reader.releaseLock();
     }
+    expect(remainder).toContain('data-testid="workshops-shell-marker"');
+    expect(remainder).toContain("workshops:headingEmphasis");
     const html = document.createElement("div");
     html.innerHTML = remainder;
     expect(

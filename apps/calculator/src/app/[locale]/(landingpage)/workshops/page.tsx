@@ -23,17 +23,18 @@ const typeParser = createParser({
 export const ensureStatic = "prefetch";
 
 /**
- * Render the Workshops page with a statically prerendered shell.
+ * Render the Workshops page with a layout-shaped placeholder that paints
+ * first.
  *
- * The tab selection reads `searchParams.type` (request-time data), so it
- * streams in behind a Suspense boundary together with the nuqs adapter
- * context the client-side tabs require. The header above stays static.
+ * Both the `[locale]` param and the tab selection read from `searchParams`
+ * are request-time data, so the localized header and the tab state stream in
+ * behind Suspense boundaries while the page frame stays static.
  *
  * @param params - Route params carrying the `[locale]` segment.
  * @param searchParams - An object or Promise resolving to an object that may contain a `type` query parameter used to select the initial workshop tab.
  * @returns A JSX element representing the Workshops page layout with the parsed initial workshop type applied to `WorkshopContent`.
  */
-export default async function WorkshopsPage({
+export default function WorkshopsPage({
   params,
   searchParams,
 }: {
@@ -48,13 +49,6 @@ export default async function WorkshopsPage({
         type?: string;
       };
 }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations({
-    locale,
-    namespace: "landingPage.workshops",
-  });
-
   return (
     <main className="relative min-h-screen py-28">
       {/* Background decorative elements */}
@@ -64,29 +58,9 @@ export default async function WorkshopsPage({
       </div>
 
       <div className="relative z-10 mx-auto max-w-5xl px-6">
-        {/* Enhanced Header */}
-        <div className="mb-12 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 backdrop-blur-sm">
-            <span className="flex h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            <span className="text-sm font-semibold tracking-wider text-primary uppercase">
-              {t("badge")}
-            </span>
-          </div>
-
-          <h1
-            className="mb-6 text-4xl font-semibold tracking-tight text-balance lg:text-5xl"
-            data-testid="workshops-shell-marker"
-          >
-            {t("headingPrefix")}{" "}
-            <span className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
-              {t("headingEmphasis")}
-            </span>
-          </h1>
-
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            {t("pageSubtitle")}
-          </p>
-        </div>
+        <Suspense fallback={<WorkshopsHeaderSkeleton />}>
+          <LocalizedWorkshopsHeader params={params} />
+        </Suspense>
 
         {/* Client-side interactive tabs and content. The server-parsed initial
             type and the nuqs adapter context stream in; the shell above is
@@ -96,6 +70,56 @@ export default async function WorkshopsPage({
         </Suspense>
       </div>
     </main>
+  );
+}
+
+async function LocalizedWorkshopsHeader({
+  params,
+}: {
+  params: Promise<{
+    locale: string;
+  }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({
+    locale,
+    namespace: "landingPage.workshops",
+  });
+
+  return (
+    <div className="mb-12 text-center">
+      <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 backdrop-blur-sm">
+        <span className="flex h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+        <span className="text-sm font-semibold tracking-wider text-primary uppercase">
+          {t("badge")}
+        </span>
+      </div>
+
+      <h1
+        className="mb-6 text-4xl font-semibold tracking-tight text-balance lg:text-5xl"
+        data-testid="workshops-shell-marker"
+      >
+        {t("headingPrefix")}{" "}
+        <span className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
+          {t("headingEmphasis")}
+        </span>
+      </h1>
+
+      <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+        {t("pageSubtitle")}
+      </p>
+    </div>
+  );
+}
+
+function WorkshopsHeaderSkeleton() {
+  return (
+    <div aria-hidden="true" className="mb-12 space-y-6 text-center">
+      <div className="mx-auto h-8 w-48 animate-pulse rounded-full bg-muted/60" />
+      <div className="mx-auto h-14 w-3/4 animate-pulse rounded-2xl bg-muted/60" />
+      <div className="mx-auto h-6 w-2/3 animate-pulse rounded-xl bg-muted/40" />
+    </div>
   );
 }
 

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import AuthFlowLayout from "@/features/authentication/components/auth-flow-layout";
 import { AuthFormSkeleton } from "@/features/authentication/components/auth-form-skeleton";
+import { AuthPageSkeleton } from "@/features/authentication/components/auth-page-skeleton";
 import { SignupForm } from "@/features/authentication/components/signup-form";
 
 interface SignupPageProps {
@@ -14,15 +15,21 @@ interface SignupPageProps {
 }
 
 /**
- * Render the signup page with a statically prerendered auth shell.
+ * Render the signup page with a layout-shaped placeholder that paints first.
  *
- * The `nextPageUrl` query parameter is request-time data, so the form
- * streams in behind a Suspense boundary while the shell stays static.
+ * Both the `[locale]` param and the `nextPageUrl` query parameter are
+ * request-time data, so the localized layout streams in behind a Suspense
+ * boundary and the form streams within it once the search params resolve.
  */
-export default async function SignupPage({
-  params,
-  searchParams,
-}: SignupPageProps) {
+export default function SignupPage({ params, searchParams }: SignupPageProps) {
+  return (
+    <Suspense fallback={<AuthPageSkeleton />}>
+      <LocalizedSignup params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function LocalizedSignup({ params, searchParams }: SignupPageProps) {
   const { locale } = await params;
 
   return (
