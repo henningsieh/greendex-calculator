@@ -16,19 +16,12 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(1),
     GOOGLE_CLIENT_ID: z
       .string()
-      .refine((value) => value.endsWith("apps.googleusercontent.com"), {
-        message: "Must end with apps.googleusercontent.com",
-      })
       .refine(
-        (value) => {
-          const firstTwelve = value.slice(0, 12);
-          return (
-            firstTwelve.length === 12 &&
-            [...firstTwelve].every((char) => char >= "0" && char <= "9")
-          );
-        },
+        (value) =>
+          /^[0-9]{12}-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/.test(value),
         {
-          message: "Must start with twelve digits",
+          message:
+            "Must match <12 digits>-<id>.apps.googleusercontent.com exactly",
         },
       ),
     GOOGLE_CLIENT_SECRET: z
