@@ -3,6 +3,7 @@ import { mkdirSync } from "fs";
 import en from "@greendex/i18n/locales/en.json" with { type: "json" };
 import { chromium, type FullConfig } from "@playwright/test";
 
+import { assertLocalTestUrls } from "../../../scripts/assert-local-test-url";
 import { SEED_USER } from "../../../scripts/seed";
 
 /**
@@ -13,6 +14,10 @@ import { SEED_USER } from "../../../scripts/seed";
  * Don't import from @/env here to avoid validation errors during type-checking.
  */
 async function globalSetup(config: FullConfig) {
+  // Never run the browser suite against production (e.g. a Coolify URL
+  // in .env). This throws before any browser launches or any login happens.
+  assertLocalTestUrls();
+
   // Launch browser for setup checks
   const browser = await chromium.launch({
     headless: process.env.HEADED !== "true",
