@@ -10,7 +10,15 @@ import { organization, projectsTable, projectParticipantsTable, participantJourn
 import { eq } from "drizzle-orm";
 `;
 
-function runInApp(app: string, script: string): string {
+// The fixture id travels via environment, never interpolated into the
+// executed code string (CodeQL js/bad-code-sanitization).
+const FIXTURE_ENV = "SHARED_DB_FIXTURE";
+
+function runInApp(
+  app: string,
+  script: string,
+  extraEnv: Record<string, string> = {},
+): string {
   return execFileSync(
     "./node_modules/.bin/dotenv",
     [
@@ -21,27 +29,33 @@ function runInApp(app: string, script: string): string {
       "--",
       "../../node_modules/.bin/tsx",
       "-e",
-      `${imports}\n(async () => { try { ${script} } finally { await global.__pool?.end(); } })().catch(() => { console.error("Shared database fixture failed"); process.exitCode = 1; });`,
+      `${imports}\nconst fixture = process.env.${FIXTURE_ENV} as string;\n(async () => { try { ${script} } finally { await global.__pool?.end(); } })().catch(() => { console.error("Shared database fixture failed"); process.exitCode = 1; });`,
     ],
-    { cwd: resolve("../../apps", app), encoding: "utf8", timeout: 15_000 },
+    {
+      cwd: resolve("../../apps", app),
+      encoding: "utf8",
+      timeout: 15_000,
+      env: { ...process.env, ...extraEnv },
+    },
   ).trim();
 }
 
 describe("shared Calculator and Cost Tracker database", () => {
   it("reads identical domain IDs and observes writes from both app environments", () => {
     const id = `shared-db-${randomUUID()}`;
-    const fixture = JSON.stringify(id);
+    const env = { [FIXTURE_ENV]: id };
     try {
       runInApp(
         "calculator",
         `
         await db.transaction(async (tx) => {
-          await tx.insert(organization).values({ id: ${fixture}, name: "Shared DB fixture", slug: ${fixture}, country: "DE", createdAt: new Date() });
-          await tx.insert(projectsTable).values({ id: ${fixture}, name: "Shared DB fixture", organizationId: ${fixture}, startDate: new Date(), endDate: new Date(), location: "Berlin", country: "DE" });
-          await tx.insert(projectParticipantsTable).values({ id: ${fixture}, projectId: ${fixture}, representedOrganizationId: ${fixture}, displayName: "Shared participant" });
-          await tx.insert(participantJourneysTable).values({ id: ${fixture}, projectParticipantId: ${fixture}, origin: "Berlin", destination: "Paris", tripType: "round-trip", erasmusDistanceKm: "1000" });
+          await tx.insert(organization).values({ id: fixture, name: "Shared DB fixture", slug: fixture, country: "DE", createdAt: new Date() });
+          await tx.insert(projectsTable).values({ id: fixture, name: "Shared DB fixture", organizationId: fixture, startDate: new Date(), endDate: new Date(), location: "Berlin", country: "DE" });
+          await tx.insert(projectParticipantsTable).values({ id: fixture, projectId: fixture, representedOrganizationId: fixture, displayName: "Shared participant" });
+          await tx.insert(participantJourneysTable).values({ id: fixture, projectParticipantId: fixture, origin: "Berlin", destination: "Paris", tripType: "round-trip", erasmusDistanceKm: "1000" });
         });
       `,
+        env,
       );
       const read = `
         const rows = await db.select({ organizationId: organization.id, projectId: projectsTable.id, participationId: projectParticipantsTable.id, journeyId: participantJourneysTable.id, destination: participantJourneysTable.destination })
@@ -49,7 +63,7 @@ describe("shared Calculator and Cost Tracker database", () => {
           .innerJoin(projectsTable, eq(projectsTable.organizationId, organization.id))
           .innerJoin(projectParticipantsTable, eq(projectParticipantsTable.projectId, projectsTable.id))
           .innerJoin(participantJourneysTable, eq(participantJourneysTable.projectParticipantId, projectParticipantsTable.id))
-          .where(eq(organization.id, ${fixture}));
+          .where(eq(organization.id, fixture));
         console.log(JSON.stringify(rows));
       `;
       const expected = [
@@ -66,7 +80,8 @@ describe("shared Calculator and Cost Tracker database", () => {
           runInApp(
             "cost-tracker",
             `${read}
-await db.update(participantJourneysTable).set({ destination: "Munich" }).where(eq(participantJourneysTable.id, ${fixture}));`,
+await db.update(participantJourneysTable).set({ destination: "Munich" }).where(eq(participantJourneysTable.id, fixture));`,
+            env,
           ),
         ),
       ).toEqual(expected);
@@ -75,21 +90,23 @@ await db.update(participantJourneysTable).set({ destination: "Munich" }).where(e
           runInApp(
             "calculator",
             `${read}
-await db.update(participantJourneysTable).set({ destination: "Hamburg" }).where(eq(participantJourneysTable.id, ${fixture}));`,
+await db.update(participantJourneysTable).set({ destination: "Hamburg" }).where(eq(participantJourneysTable.id, fixture));`,
+            env,
           ),
         ),
       ).toEqual([{ ...expected[0], destination: "Munich" }]);
-      expect(JSON.parse(runInApp("cost-tracker", read))).toEqual([
+      expect(JSON.parse(runInApp("cost-tracker", read, env))).toEqual([
         { ...expected[0], destination: "Hamburg" },
       ]);
     } finally {
       runInApp(
         "calculator",
         `
-        await db.delete(projectParticipantsTable).where(eq(projectParticipantsTable.id, ${fixture}));
-        await db.delete(projectsTable).where(eq(projectsTable.id, ${fixture}));
-        await db.delete(organization).where(eq(organization.id, ${fixture}));
+        await db.delete(projectParticipantsTable).where(eq(projectParticipantsTable.id, fixture));
+        await db.delete(projectsTable).where(eq(projectsTable.id, fixture));
+        await db.delete(organization).where(eq(organization.id, fixture));
       `,
+        env,
       );
     }
   }, 60_000);
