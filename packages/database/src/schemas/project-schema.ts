@@ -10,7 +10,7 @@ import {
   type ParticipantTransportEmissionProfile,
 } from "@greendex/config/transport-emission-profiles";
 import { createId } from "@paralleldrive/cuid2";
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
@@ -773,88 +773,3 @@ export const claimHistoryTable = pgTable(
  * has evidence; submission requires complete journeys, evidence and a payout account.
  * UI reads must not create Claims. History writes accompany every state transition.
  */
-
-// ============================================================================
-// RELATIONS
-// ============================================================================
-
-// project - relations
-export const projectRelations = relations(projectsTable, ({ one, many }) => ({
-  hostAssignments: many(hostProjectAssignmentsTable),
-  organization: one(organization, {
-    fields: [projectsTable.organizationId],
-    references: [organization.id],
-  }),
-  sharedTravelLegs: many(projectSharedTravelLegsTable),
-  participants: many(projectParticipantsTable),
-  partnerOrganizations: many(projectPartnerOrganizationsTable),
-}));
-
-export const hostProjectAssignmentRelations = relations(
-  hostProjectAssignmentsTable,
-  ({ one }) => ({
-    project: one(projectsTable, {
-      fields: [hostProjectAssignmentsTable.projectId],
-      references: [projectsTable.id],
-    }),
-    user: one(user, {
-      fields: [hostProjectAssignmentsTable.userId],
-      references: [user.id],
-    }),
-  }),
-);
-
-// projectSharedTravelLeg - relations
-export const projectSharedTravelLegRelations = relations(
-  projectSharedTravelLegsTable,
-  ({ one }) => ({
-    project: one(projectsTable, {
-      fields: [projectSharedTravelLegsTable.projectId],
-      references: [projectsTable.id],
-    }),
-  }),
-);
-
-export const projectPartnerOrganizationRelations = relations(
-  projectPartnerOrganizationsTable,
-  ({ one }) => ({
-    project: one(projectsTable, {
-      fields: [projectPartnerOrganizationsTable.projectId],
-      references: [projectsTable.id],
-    }),
-    organization: one(organization, {
-      fields: [projectPartnerOrganizationsTable.organizationId],
-      references: [organization.id],
-    }),
-  }),
-);
-
-// projectParticipant - relations
-export const projectParticipantRelations = relations(
-  projectParticipantsTable,
-  ({ one }) => ({
-    project: one(projectsTable, {
-      fields: [projectParticipantsTable.projectId],
-      references: [projectsTable.id],
-    }),
-    representedOrganization: one(organization, {
-      fields: [projectParticipantsTable.representedOrganizationId],
-      references: [organization.id],
-    }),
-    user: one(user, {
-      fields: [projectParticipantsTable.userId],
-      references: [user.id],
-      relationName: "projectParticipationUser",
-    }),
-    mergedIntoParticipant: one(projectParticipantsTable, {
-      fields: [projectParticipantsTable.mergedIntoParticipantId],
-      references: [projectParticipantsTable.id],
-      relationName: "mergedProjectParticipation",
-    }),
-    mergedByUser: one(user, {
-      fields: [projectParticipantsTable.mergedByUserId],
-      references: [user.id],
-      relationName: "projectParticipationMergedByUser",
-    }),
-  }),
-);

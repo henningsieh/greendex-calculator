@@ -6,9 +6,9 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-import * as schema from "./schema";
+import { relations } from "./relations";
 
-type Database = NodePgDatabase<typeof schema>;
+type Database = NodePgDatabase<typeof relations>;
 
 // Global variable to store the pool across hot reloads in development
 declare global {
@@ -35,7 +35,7 @@ function initializeDb(): Database {
   const pool = global.__pool ?? new Pool({ connectionString, max: 10 });
   global.__pool = pool;
 
-  dbConnection = drizzle(pool, { schema });
+  dbConnection = drizzle({ client: pool, relations });
   return dbConnection;
 }
 
@@ -63,5 +63,5 @@ export const db = lazyProxy<Database>(initializeDb);
  */
 export function createDbConnection(connectionString: string): Database {
   const pool = new Pool({ connectionString, max: 10 });
-  return drizzle(pool, { schema });
+  return drizzle({ client: pool, relations });
 }
