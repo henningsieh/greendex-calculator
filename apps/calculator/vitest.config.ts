@@ -8,9 +8,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
-    // Reuse workers across files to avoid jsdom startup for every test file.
-    // Tests must reset shared state in their hooks.
-    isolate: false,
+    // Isolated workers per file: auth mocks and module singletons must not
+    // leak across files (flaky UNAUTHORIZED/FORBIDDEN in full runs).
+    // Costs extra jsdom startup per file, but keeps repeated runs green.
+    isolate: true,
     environment: "jsdom",
     globals: true,
     experimental: {
