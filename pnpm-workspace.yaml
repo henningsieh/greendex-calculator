@@ -143,3 +143,5 @@ permissions:
   greendex-skills:
     build: true
     skills: true
+patchedDependencies:
+  "@better-auth/drizzle-adapter": patches/@better-auth__drizzle-adapter.patch

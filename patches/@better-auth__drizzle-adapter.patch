@@ -1,0 +1,103 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index f6e80b8f8b6cd4f213f8aafb9f7559b5b631f13d..51814efaf5cafdf3eb1187d994449bbb9f52fa1b 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -250,6 +250,53 @@ const drizzleAdapter = (db, config) => {
+ 			if (orGroup.length) return [orClause];
+ 			return [];
+ 		}
++		function convertRelationalFilter(where, model, modelKey) {
++			const schemaModel = getSchema(model);
++			const resolveFieldName = (w) => {
++				const field = getFieldName({
++					model: modelKey,
++					field: w.field
++				});
++				if (!is(schemaModel[field], Column)) throw new BetterAuthError(`The field "${w.field}" does not exist in the schema for the model "${model}". Please update your schema.`);
++				return field;
++			};
++			const toPlain = (w) => {
++				const field = resolveFieldName(w);
++				const isInsensitive = (w.mode ?? "sensitive") === "insensitive" && (typeof w.value === "string" || Array.isArray(w.value) && w.value.every((v) => typeof v === "string"));
++				if (w.operator === "in") {
++					if (!Array.isArray(w.value)) throw new BetterAuthError(`The value for the field "${w.field}" must be an array when using the "in" operator.`);
++					return { [field]: { in: w.value } };
++				}
++				if (w.operator === "not_in") return { [field]: { notIn: w.value } };
++				if (w.operator === "contains") return { [field]: isInsensitive && typeof w.value === "string" ? { ilike: `%${w.value}%` } : { like: `%${w.value}%` } };
++				if (w.operator === "starts_with") return { [field]: isInsensitive && typeof w.value === "string" ? { ilike: `${w.value}%` } : { like: `${w.value}%` } };
++				if (w.operator === "ends_with") return { [field]: isInsensitive && typeof w.value === "string" ? { ilike: `%${w.value}` } : { like: `%${w.value}` } };
++				if (w.operator === "lt") return { [field]: { lt: w.value } };
++				if (w.operator === "lte") return { [field]: { lte: w.value } };
++				if (w.operator === "gt") return { [field]: { gt: w.value } };
++				if (w.operator === "gte") return { [field]: { gte: w.value } };
++				if (w.operator === "ne") {
++					if (w.value === null) return { [field]: { isNotNull: true } };
++					if (isInsensitive && typeof w.value === "string") return { [field]: { NOT: { ilike: w.value } } };
++					return { [field]: { NOT: w.value } };
++				}
++				if (w.value === null) return { [field]: { isNull: true } };
++				if (isInsensitive && typeof w.value === "string") return { [field]: { ilike: w.value } };
++				return { [field]: w.value };
++			};
++			if (!where || !where.length) return void 0;
++			if (where.length === 1) {
++				const w = where[0];
++				if (!w) return void 0;
++				return toPlain(w);
++			}
++			const andGroup = where.filter((w) => w.connector === "AND" || !w.connector);
++			const orGroup = where.filter((w) => w.connector === "OR");
++			if (andGroup.length && orGroup.length) return { AND: [Object.assign({}, ...andGroup.map(toPlain)), { OR: orGroup.map(toPlain) }] };
++			if (andGroup.length) return Object.assign({}, ...andGroup.map(toPlain));
++			if (orGroup.length) return { OR: orGroup.map(toPlain) };
++			return void 0;
++		}
+ 		function checkMissingFields(schema, model, values) {
+ 			if (!schema) throw new BetterAuthError("Drizzle adapter failed to initialize. Drizzle Schema not found. Please provide a schema object in the adapter options object.");
+ 			for (const key in values) {
+@@ -316,6 +363,7 @@ const drizzleAdapter = (db, config) => {
+ 			async findOne({ model, modelKey = model, where, select, join }) {
+ 				const table = getSchema(model);
+ 				const clause = convertWhereClause(where, model, modelKey);
++				const relationalWhere = convertRelationalFilter(where, model, modelKey);
+ 				if (join) {
+ 					const queryModel = getQueryModel(model);
+ 					if (!db.query || !queryModel) {
+@@ -338,7 +386,7 @@ const drizzleAdapter = (db, config) => {
+ 							});
+ 						}
+ 						const res = await db.query[queryModel].findFirst({
+-							where: clause[0],
++							where: relationalWhere,
+ 							columns: select?.length && select.length > 0 ? select.reduce((acc, field) => {
+ 								acc[getFieldName({
+ 									model: modelKey,
+@@ -371,6 +419,7 @@ const drizzleAdapter = (db, config) => {
+ 			async findMany({ model, modelKey = model, where, sortBy, limit, select, offset, join }) {
+ 				const table = getSchema(model);
+ 				const clause = where ? convertWhereClause(where, model, modelKey) : [];
++				const relationalWhere = convertRelationalFilter(where, model, modelKey);
+ 				const sortFn = sortBy?.direction === "desc" ? desc : asc;
+ 				if (join) {
+ 					const queryModel = getQueryModel(model);
+@@ -394,12 +443,14 @@ const drizzleAdapter = (db, config) => {
+ 							});
+ 						}
+ 						let orderBy = void 0;
+-						if (sortBy?.field) orderBy = [sortFn(table[getFieldName({
+-							model: modelKey,
+-							field: sortBy?.field
+-						})])];
++						if (sortBy?.field) orderBy = {
++							[getFieldName({
++								model: modelKey,
++								field: sortBy?.field
++							})]: sortBy?.direction ?? "asc"
++						};
+ 						const res = await db.query[queryModel].findMany({
+-							where: clause[0],
++							where: relationalWhere,
+ 							with: includes,
+ 							columns: select?.length && select.length > 0 ? select.reduce((acc, field) => {
+ 								acc[getFieldName({
