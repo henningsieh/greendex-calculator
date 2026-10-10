@@ -1,6 +1,14 @@
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { cp, mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
+import {
+  cp,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
