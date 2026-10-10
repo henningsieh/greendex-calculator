@@ -3,14 +3,13 @@ import { db } from "@greendex/database";
 import {
   hostProjectAssignmentsTable,
   participantJourneysTable,
-  projectSharedTravelLegsTable,
   projectParticipantsTable,
   projectsTable,
   session as sessionTable,
   user,
 } from "@greendex/database/schema";
 import { openapi } from "@orpc/openapi";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
 
@@ -93,7 +92,7 @@ export const createProject = authorized
 
     // Fetch the created project with its Host assignment
     const project = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, newProject.id),
+      where: { id: newProject.id },
       with: {
         hostAssignments: { with: { user: true } },
         organization: true,
@@ -155,16 +154,14 @@ export const listProjects = authorized
     const sortDesc = computeSortDesc(input);
     const orderByClause = orderByClauseFor(sortField, sortDesc);
 
-    const conditions = [
-      eq(projectsTable.organizationId, context.session.activeOrganizationId),
-      ...(input?.archived !== undefined
-        ? [eq(projectsTable.archived, input.archived)]
-        : []),
-    ];
+    const conditions: Record<string, unknown> = {
+      organizationId: context.session.activeOrganizationId,
+      ...(input?.archived !== undefined ? { archived: input.archived } : {}),
+    };
 
     const projects = await db.query.projectsTable.findMany({
-      where: and(...conditions),
-      orderBy: [orderByClause],
+      where: conditions,
+      orderBy: orderByClause,
       with: {
         hostAssignments: { with: { user: true } },
         organization: true,
@@ -207,7 +204,7 @@ export const getProjectById = authorized
 
     // First, check if project exists at all
     const projectExists = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, input.id),
+      where: { id: input.id },
     });
 
     if (!projectExists) {
@@ -218,10 +215,10 @@ export const getProjectById = authorized
 
     // Fetch project and verify it belongs to user's organization
     const existingProject = await db.query.projectsTable.findFirst({
-      where: and(
-        eq(projectsTable.id, input.id),
-        eq(projectsTable.organizationId, context.session.activeOrganizationId),
-      ),
+      where: {
+        id: input.id,
+        organizationId: context.session.activeOrganizationId,
+      },
       with: {
         hostAssignments: { with: { user: true } },
         organization: true,
@@ -305,7 +302,7 @@ export const updateProject = authorized
 
     // Fetch the updated project with responsible user
     const project = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, input.id),
+      where: { id: input.id },
       with: {
         hostAssignments: { with: { user: true } },
         organization: true,
@@ -491,7 +488,7 @@ export const archiveProject = authorized
 
     // Fetch the updated project with relations
     const project = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, input.id),
+      where: { id: input.id },
       with: {
         hostAssignments: { with: { user: true } },
         organization: true,
@@ -810,12 +807,12 @@ export const getProjectForParticipation = base
   .handler(async ({ input, errors }) => {
     // Fetch project (no organization check needed for public participation)
     const project = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, input.id),
+      where: { id: input.id },
       with: {
         hostAssignments: { with: { user: true } },
         organization: true,
         sharedTravelLegs: {
-          orderBy: [asc(projectSharedTravelLegsTable.createdAt)],
+          orderBy: { createdAt: "asc" },
           with: {
             project: true,
           },

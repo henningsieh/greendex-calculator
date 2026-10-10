@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterAll, expect, it, vi } from "vitest";
+import { afterAll, afterEach, expect, it, vi } from "vitest";
 
 const labels: Record<string, string> = {
   "participant-journey": "Participant Journey",
