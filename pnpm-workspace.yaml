@@ -34,7 +34,7 @@ catalog:
   country-flag-icons: ^1.6.20
   dotenv: ^18.0.6
   dotenv-cli: ^11.0.0
-  drizzle-orm: ^0.45.3
+  drizzle-orm: 1.0.0-rc.5-ab785fc
   drizzle-zod: ^0.8.3
   eslint-plugin-better-tailwindcss: ^4.9.0
   jsdom: ^30.1.2
