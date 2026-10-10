@@ -138,6 +138,8 @@ minimumReleaseAgeExclude:
 permissions:
   "@tanstack/react-table":
     skills: true
+  drizzle-kit:
+    skills: true
   greendex-skills:
     build: true
     skills: true
