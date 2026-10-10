@@ -1,0 +1,1 @@
+DROP TABLE "participant_invitation_bridge" CASCADE;

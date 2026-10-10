@@ -1,6 +1,6 @@
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { type FeatureFlags, resolveFlags } from "@greendex/config/feature-flags";
-import { organizationAdditionalFields } from "@greendex/config/organization-country";
+import { organizationCountryFields } from "@greendex/config/organization-country";
 import { db } from "@greendex/database";
 import {
   member,
@@ -21,7 +21,11 @@ import {
   isValidOrganizationRole,
   ORGANIZATION_ROLES,
 } from "./organization-roles";
-import { accessControl, calculatorRoles } from "./permissions";
+import {
+  accessControl,
+  calculatorOrganizationRoles,
+  costTrackerOrganizationRoles,
+} from "./permissions";
 
 type EmailVerificationOptions = NonNullable<
   BetterAuthOptions["emailVerification"]
@@ -65,6 +69,7 @@ export interface ServerAuthConfig<
   >;
   /** Centralized feature flags. Every flag defaults to off (safe). */
   flags?: Partial<FeatureFlags>;
+  roleSet?: "calculator" | "costTracker";
   plugins?: P;
   session?: BetterAuthOptions["session"];
   sessionUpdate?: SessionDatabaseHooks["update"];
@@ -122,10 +127,14 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
     plugins: [
       organization({
         ac: accessControl,
-        roles: calculatorRoles,
+        roles:
+          config.roleSet === "costTracker"
+            ? costTrackerOrganizationRoles
+            : calculatorOrganizationRoles,
+        creatorRole: ORGANIZATION_ROLES.OrganizationOwner,
         ...config.organization,
         schema: {
-          organization: { additionalFields: organizationAdditionalFields },
+          organization: { additionalFields: organizationCountryFields },
           member: {
             additionalFields: {
               role: {
@@ -152,23 +161,28 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
           ...config.organizationHooks,
           beforeCreateInvitation: async (data) => {
             requireOrganizationRole(data.invitation.role);
+            return config.organizationHooks?.beforeCreateInvitation?.(data);
           },
           beforeAcceptInvitation: async (data) => {
             requireOrganizationRole(data.invitation.role);
+            await config.organizationHooks?.beforeAcceptInvitation?.(data);
           },
           beforeAddMember: async (data) => {
             requireOrganizationRole(data.member.role);
+            return config.organizationHooks?.beforeAddMember?.(data);
           },
           beforeUpdateMemberRole: async (data) => {
             requireOrganizationRole(data.newRole);
+            return config.organizationHooks?.beforeUpdateMemberRole?.(data);
           },
           beforeCreateOrganization: async ({ organization }) => {
             requireOrganizationCountry(organization.country);
             await requireUniqueOrganizationName(organization.name);
           },
-          beforeUpdateOrganization: async ({ organization }) => {
-            if ("country" in organization)
-              requireOrganizationCountry(organization.country);
+          beforeUpdateOrganization: async (data) => {
+            if ("country" in data.organization)
+              requireOrganizationCountry(data.organization.country);
+            return config.organizationHooks?.beforeUpdateOrganization?.(data);
           },
         },
       }),
@@ -244,7 +258,11 @@ function requireOrganizationCountry(country: unknown): void {
 
 /** Organization names stay unique (case-insensitive). */
 async function requireUniqueOrganizationName(name: unknown): Promise<void> {
-  if (typeof name !== "string" || name.length === 0) return;
+  if (typeof name !== "string" || name.length === 0) {
+    throw new APIError("BAD_REQUEST", {
+      message: "Organization name is required.",
+    });
+  }
 
   const existingOrganization = await db.query.organization.findFirst({
     where: ilike(organizationTable.name, name),

@@ -1,12 +1,15 @@
 import { hasOrganizationRole } from "@greendex/auth/organization-roles";
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable,
+  participantJourneysTable,
   projectSharedTravelLegsTable,
   projectParticipantsTable,
   projectsTable,
   session as sessionTable,
   user,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -27,6 +30,20 @@ import {
   ProjectWithRelationsSchema,
 } from "./validation-schemas";
 
+async function hasHostAssignment(projectId: string, userId: string) {
+  const [assignment] = await db
+    .select({ projectId: hostProjectAssignmentsTable.projectId })
+    .from(hostProjectAssignmentsTable)
+    .where(
+      and(
+        eq(hostProjectAssignmentsTable.projectId, projectId),
+        eq(hostProjectAssignmentsTable.userId, userId),
+      ),
+    )
+    .limit(1);
+  return !!assignment;
+}
+
 /**
  * Create a new project
  *
@@ -37,12 +54,14 @@ import {
  */
 export const createProject = authorized
   .use(requireProjectPermissions(["create"]))
-  .route({
-    method: "POST",
-    path: "/projects",
-    summary: "Create a new project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/projects",
+      summary: "Create a new project",
+      tags: ["project"],
+    }),
+  )
   .input(ProjectCreateFormSchema)
   .output(
     z.object({
@@ -57,20 +76,26 @@ export const createProject = authorized
       });
     }
 
-    const newProject = await db
-      .insert(projectsTable)
-      .values({
-        ...input,
-        responsibleUserId: context.user.id,
-        organizationId: context.session.activeOrganizationId,
-      })
-      .returning();
+    const newProject = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(projectsTable)
+        .values({
+          ...input,
+          organizationId: context.session.activeOrganizationId!,
+        })
+        .returning();
+      await tx.insert(hostProjectAssignmentsTable).values({
+        projectId: created.id,
+        userId: context.user.id,
+      });
+      return created;
+    });
 
-    // Fetch the created project with responsible user
+    // Fetch the created project with its Host assignment
     const project = await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, newProject[0].id),
+      where: eq(projectsTable.id, newProject.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -101,12 +126,14 @@ export const createProject = authorized
 
 export const listProjects = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects",
-    summary: "List all projects in the active organization",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects",
+      summary: "List all projects in the active organization",
+      tags: ["project"],
+    }),
+  )
   .input(
     z
       .object({
@@ -139,7 +166,7 @@ export const listProjects = authorized
       where: and(...conditions),
       orderBy: [orderByClause],
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -157,12 +184,14 @@ export const listProjects = authorized
  */
 export const getProjectById = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects/:id",
-    summary: "Get project details by ID",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{id}",
+      summary: "Get project details by ID",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -194,7 +223,7 @@ export const getProjectById = authorized
         eq(projectsTable.organizationId, context.session.activeOrganizationId),
       ),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -218,12 +247,14 @@ export const getProjectById = authorized
  */
 export const updateProject = authorized
   .use(requireProjectPermissions(["update"]))
-  .route({
-    method: "PATCH",
-    path: "/projects/:id",
-    summary: "Update project details",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "PATCH",
+      path: "/projects/{id}",
+      summary: "Update project details",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -276,7 +307,7 @@ export const updateProject = authorized
     const project = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, input.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -303,12 +334,14 @@ export const updateProject = authorized
  */
 export const deleteProject = authorized
   .use(requireProjectPermissions(["delete"]))
-  .route({
-    method: "DELETE",
-    path: "/projects/:id",
-    summary: "Delete a project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "DELETE",
+      path: "/projects/{id}",
+      summary: "Delete a project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -350,16 +383,16 @@ export const deleteProject = authorized
     });
 
     // Organization Owners can delete any project; admins and coordinators can delete only their own.
-    const isOrganizationAdministrator = hasOrganizationRole(
+    const isOrganizationOwner = hasOrganizationRole(
       role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
       (hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
         hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator)) &&
-      existingProject.responsibleUserId === context.user.id;
+      (await hasHostAssignment(existingProject.id, context.user.id));
 
-    if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
+    if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
       throw errors.FORBIDDEN({
         message:
           "You don't have permission to delete this project. Only an Organization Administrator or the responsible Project Coordinator can delete it.",
@@ -379,16 +412,19 @@ export const deleteProject = authorized
  *
  * Requires:
  * - Authentication
- * - Organization Owner role, or admin/coordinator role AND is the responsible user of the project
+ * - Organization Owner role, or admin role with a Host assignment
  * - Project must belong to user's active organization
  */
 export const archiveProject = authorized
-  .route({
-    method: "PATCH",
-    path: "/projects/:id/archive",
-    summary: "Archive a project",
-    tags: ["project"],
-  })
+  .use(requireProjectPermissions(["archive"]))
+  .meta(
+    openapi({
+      method: "PATCH",
+      path: "/projects/{id}/archive",
+      summary: "Archive a project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -431,17 +467,16 @@ export const archiveProject = authorized
       });
     }
 
-    // Organization Owners can archive any project; admins and coordinators can archive only their own.
-    const isOrganizationAdministrator = hasOrganizationRole(
+    // Organization Owners can archive any project; admins need a Host assignment.
+    const isOrganizationOwner = hasOrganizationRole(
       role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
     const isResponsibleProjectCoordinator =
-      (hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
-        hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator)) &&
-      existingProject.responsibleUserId === context.user.id;
+      hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) &&
+      (await hasHostAssignment(existingProject.id, context.user.id));
 
-    if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
+    if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
       throw errors.FORBIDDEN({
         message:
           "You don't have permission to archive this project. Only an Organization Administrator or the responsible Project Coordinator can archive it.",
@@ -458,7 +493,7 @@ export const archiveProject = authorized
     const project = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, input.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
@@ -485,12 +520,14 @@ export const archiveProject = authorized
  * - Project must belong to user's active organization (if projectId is provided)
  */
 export const setActiveProject = authorized
-  .route({
-    method: "POST",
-    path: "/projects/active",
-    summary: "Set active project",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "POST",
+      path: "/projects/active",
+      summary: "Set active project",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectId: z.string().optional(),
@@ -572,12 +609,14 @@ export const setActiveProject = authorized
  */
 export const getProjectParticipants = authorized
   .use(requireProjectPermissions(["read"]))
-  .route({
-    method: "GET",
-    path: "/projects/:id/participants",
-    summary: "Get project participants with user details",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{projectId}/participants",
+      summary: "Get project participants with user details",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectId: z.string().describe("Project ID"),
@@ -609,16 +648,23 @@ export const getProjectParticipants = authorized
       });
     }
 
-    // Get all participants for this project with user details
+    // Participation owns display identity; a linked User is optional.
     const participants = await db
       .select({
         id: projectParticipantsTable.id,
         projectId: projectParticipantsTable.projectId,
-        memberId: projectParticipantsTable.memberId,
+        representedOrganizationId:
+          projectParticipantsTable.representedOrganizationId,
+        displayName: projectParticipantsTable.displayName,
+        email: projectParticipantsTable.email,
         userId: projectParticipantsTable.userId,
         country: projectParticipantsTable.country,
+        mergedIntoParticipantId: projectParticipantsTable.mergedIntoParticipantId,
+        mergedAt: projectParticipantsTable.mergedAt,
+        mergedByUserId: projectParticipantsTable.mergedByUserId,
         createdAt: projectParticipantsTable.createdAt,
         updatedAt: projectParticipantsTable.updatedAt,
+        journey: participantJourneysTable,
         user: {
           id: user.id,
           name: user.name,
@@ -627,7 +673,14 @@ export const getProjectParticipants = authorized
         },
       })
       .from(projectParticipantsTable)
-      .innerJoin(user, eq(projectParticipantsTable.userId, user.id))
+      .leftJoin(user, eq(projectParticipantsTable.userId, user.id))
+      .leftJoin(
+        participantJourneysTable,
+        eq(
+          participantJourneysTable.projectParticipantId,
+          projectParticipantsTable.id,
+        ),
+      )
       .where(eq(projectParticipantsTable.projectId, input.projectId));
 
     // NOTE: Demo delay has been moved into a global orpc middleware
@@ -645,12 +698,14 @@ export const getProjectParticipants = authorized
  */
 export const batchDeleteProjects = authorized
   .use(requireProjectPermissions(["delete"]))
-  .route({
-    method: "DELETE",
-    path: "/projects/batch",
-    summary: "Batch delete multiple projects",
-    tags: ["project"],
-  })
+  .meta(
+    openapi({
+      method: "DELETE",
+      path: "/projects/batch",
+      summary: "Batch delete multiple projects",
+      tags: ["project"],
+    }),
+  )
   .input(
     z.object({
       projectIds: z.array(z.string()).min(1),
@@ -676,10 +731,7 @@ export const batchDeleteProjects = authorized
 
     // Verify all projects belong to user's organization and check permissions
     const projectsToDelete = await db
-      .select({
-        id: projectsTable.id,
-        responsibleUserId: projectsTable.responsibleUserId,
-      })
+      .select({ id: projectsTable.id })
       .from(projectsTable)
       .where(
         and(
@@ -696,7 +748,7 @@ export const batchDeleteProjects = authorized
     }
 
     // Organization Owners can delete any project; admins and coordinators only their own.
-    const isOrganizationAdministrator = hasOrganizationRole(
+    const isOrganizationOwner = hasOrganizationRole(
       role ?? "",
       MEMBER_ROLES.OrganizationOwner,
     );
@@ -704,9 +756,9 @@ export const batchDeleteProjects = authorized
       const isResponsibleProjectCoordinator =
         (hasOrganizationRole(role ?? "", MEMBER_ROLES.OrganizationAdmin) ||
           hasOrganizationRole(role ?? "", MEMBER_ROLES.ProjectCoordinator)) &&
-        project.responsibleUserId === context.user.id;
+        (await hasHostAssignment(project.id, context.user.id));
 
-      if (!isOrganizationAdministrator && !isResponsibleProjectCoordinator) {
+      if (!isOrganizationOwner && !isResponsibleProjectCoordinator) {
         throw errors.FORBIDDEN({
           message:
             "You don't have permission to delete one or more of these projects. Only an Organization Administrator or the responsible Project Coordinator can delete projects.",
@@ -741,12 +793,14 @@ export const batchDeleteProjects = authorized
  * Returns project details with canonical Project Shared Travel Legs.
  */
 export const getProjectForParticipation = base
-  .route({
-    method: "GET",
-    path: "/projects/:id/participate",
-    summary: "Get project details for participation (public)",
-    tags: ["project", "public"],
-  })
+  .meta(
+    openapi({
+      method: "GET",
+      path: "/projects/{id}/participate",
+      summary: "Get project details for participation (public)",
+      tags: ["project", "public"],
+    }),
+  )
   .input(
     z.object({
       id: z.string().describe("Project ID"),
@@ -758,7 +812,7 @@ export const getProjectForParticipation = base
     const project = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, input.id),
       with: {
-        responsibleUser: true,
+        hostAssignments: { with: { user: true } },
         organization: true,
         sharedTravelLegs: {
           orderBy: [asc(projectSharedTravelLegsTable.createdAt)],
@@ -775,5 +829,11 @@ export const getProjectForParticipation = base
       });
     }
 
-    return project;
+    const { hostAssignments, ...publicProject } = project;
+    return {
+      ...publicProject,
+      hostCoordinatorNames: hostAssignments
+        .map(({ user }) => user.name)
+        .sort((left, right) => left.localeCompare(right)),
+    };
   });

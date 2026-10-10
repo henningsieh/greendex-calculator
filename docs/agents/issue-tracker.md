@@ -11,6 +11,11 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
+## Ticket progress comments
+
+- After committing ticket work on a feature branch, post a progress comment (`gh issue comment <number> --body "..."`) noting the commit hash, what landed, the review result, and any pre-existing verification failures outside the change. Keep the ticket open.
+- Close a ticket only once its code has merged into the integration line, so native dependency blockers keep gating on open state until the code is actually in the base.
+
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
 ## Pull requests as a triage surface

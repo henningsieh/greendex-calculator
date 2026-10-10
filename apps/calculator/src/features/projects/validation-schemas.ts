@@ -1,5 +1,10 @@
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
-import { organization, projectsTable, user } from "@greendex/database/schema";
+import {
+  hostProjectAssignmentsTable,
+  organization,
+  projectsTable,
+  user,
+} from "@greendex/database/schema";
 import {
   createInsertSchema,
   createSelectSchema,
@@ -34,7 +39,7 @@ export const ProjectSortFieldSchema = z.enum(PROJECT_SORT_FIELDS);
  * creating a project.
  *
  * Key details:
- * - Omits database-managed fields: `id`, `responsibleUserId`, `createdAt`, and `updatedAt`.
+ * - Omits database-managed fields: `id`, `createdAt`, and `updatedAt`.
  * - Extends with `projectFormExtensions`, which enforces:
  *   - `country`: enum of EU country codes (with a custom error message)
  *   - `name`: required non-empty string
@@ -46,14 +51,10 @@ export const ProjectSortFieldSchema = z.enum(PROJECT_SORT_FIELDS);
  *   `CreateProjectWithSharedTravelLegsSchema`, which extends this schema with
  *   an optional `sharedTravelLegs` array.
  *
- * Note: `responsibleUserId` is intentionally omitted because it should be
- * populated server-side (e.g., based on the authenticated user creating the
- * project).
  */
 export const ProjectCreateFormSchema = createInsertSchema(projectsTable)
   .omit({
     id: true,
-    responsibleUserId: true,
     createdAt: true,
     updatedAt: true,
   })
@@ -62,7 +63,11 @@ export const ProjectCreateFormSchema = createInsertSchema(projectsTable)
 export const ProjectWithRelationsSchema = createSelectSchema(
   projectsTable,
 ).extend({
-  responsibleUser: createSelectSchema(user),
+  hostAssignments: z.array(
+    createSelectSchema(hostProjectAssignmentsTable).extend({
+      user: createSelectSchema(user),
+    }),
+  ),
   organization: createSelectSchema(organization),
   country: z.enum(EU_COUNTRY_CODES),
 });
@@ -73,7 +78,7 @@ export const ProjectWithRelationsSchema = createSelectSchema(
  * Built from `projectsTable` via `createUpdateSchema` and tailored for
  * edit/update payloads. This schema:
  *
- * - Omits database-managed fields: `id`, `responsibleUserId`, `createdAt`, and `updatedAt`.
+ * - Omits database-managed fields: `id`, `createdAt`, and `updatedAt`.
  * - Extends with `projectFormExtensions` so that `name`, `startDate`, and
  *   `endDate` keep their validation rules, but fields may be omitted when
  *   performing partial updates.
@@ -86,13 +91,10 @@ export const ProjectWithRelationsSchema = createSelectSchema(
  *   `EditProjectWithSharedTravelLegsSchema`, which extends this schema with
  *   an optional `sharedTravelLegs` array.
  *
- * Note: `responsibleUserId` is intentionally omitted because it should be
- * managed server-side and not provided by the client during updates.
  */
 export const ProjectUpdateFormSchema = createUpdateSchema(projectsTable)
   .omit({
     id: true,
-    responsibleUserId: true,
     createdAt: true,
     updatedAt: true,
   })
@@ -140,7 +142,7 @@ export type CreateProjectWithSharedTravelLegs = z.infer<
 export const ProjectForParticipationSchema = createSelectSchema(
   projectsTable,
 ).extend({
-  responsibleUser: createSelectSchema(user),
+  hostCoordinatorNames: z.array(z.string()),
   organization: createSelectSchema(organization),
   country: z.enum(EU_COUNTRY_CODES),
   sharedTravelLegs: z.array(ProjectSharedTravelLegWithRelationsSchema),

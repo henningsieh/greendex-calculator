@@ -1,31 +1,32 @@
-# Projects Feature Documentation
+# Shared Projects Documentation
 
-Use these documents when changing project-list sorting or authorization.
+Project is a shared Greendex feature used by Calculator and Cost Tracker. This directory owns cross-application Project identity, Project Participation, and permission rules; each application documents only its own Project workflows.
 
-## Sorting
+## Shared model
 
-- [Sorting quick reference](./SORTING-QUICKREF.md) — current sort configuration, client and server consumers, and TanStack Table V9 setup.
-- [Sorting architecture](./sorting-centralization-refactoring.md) — ownership boundaries and the checklist for adding a sortable project field.
+- [Project and Project Participation model](model.md)
+- [Shared permissions and Participant authentication](permissions.md)
+- [Shared domain language](../../GLOSSARY.md)
+- [Context relationships](../../AGENTS.md#contexts)
 
-### Current implementation
+## Decisions
 
-| Concern | Source of truth |
-| --- | --- |
-| Sort fields and default | [`apps/calculator/src/features/projects/types.ts`](../../apps/calculator/src/features/projects/types.ts) |
-| Shared sort helpers and database ordering | [`apps/calculator/src/features/projects/utils.ts`](../../apps/calculator/src/features/projects/utils.ts) |
-| Client grid | [`apps/calculator/src/features/projects/components/dashboard/projects-grid.tsx`](../../apps/calculator/src/features/projects/components/dashboard/projects-grid.tsx) |
-| TanStack Table V9 feature registry | [`apps/calculator/src/features/projects/components/dashboard/projects-table-features.ts`](../../apps/calculator/src/features/projects/components/dashboard/projects-table-features.ts) |
-| TanStack Table V9 columns | [`apps/calculator/src/features/projects/components/dashboard/projects-table-columns.tsx`](../../apps/calculator/src/features/projects/components/dashboard/projects-table-columns.tsx) |
-| TanStack Table V9 instance and controls | [`apps/calculator/src/features/projects/components/dashboard/projects-table.tsx`](../../apps/calculator/src/features/projects/components/dashboard/projects-table.tsx) |
-| List procedure | [`apps/calculator/src/features/projects/procedures.ts`](../../apps/calculator/src/features/projects/procedures.ts) |
+- [ADR-0001: Project Organizations and Project Participation](../adr/0001-model-project-organizations-and-participation.md)
+- [ADR-0002: Participant integration with Better Auth](../adr/0002-integrate-participants-with-better-auth.md) — superseded where noted by ADR-0005
+- [ADR-0004: Scope Project Coordination Through Assignments](../adr/0004-scope-project-coordination-through-assignments.md)
+- [ADR-0005: Authenticated Participant Onboarding](../adr/0005-require-authenticated-participant-onboarding.md)
+- [ADR-0006: Derive Claim Participants Through Cost Allocations](../adr/0006-derive-claim-participants-through-cost-allocations.md)
+- [ADR-0007: Share Participant Journeys and Cap Claims by Funding Rules](../adr/0007-share-participant-journeys-and-cap-claims-by-funding-rules.md)
+- [ADR-0008: Return Claims for Partner Correction](../adr/0008-return-claims-for-partner-correction.md)
+- [ADR-0009: Approve Claims Before Recording Payment](../adr/0009-approve-claims-before-recording-payment.md)
+- [ADR-0010: Reject and Reopen Claims](../adr/0010-reject-and-reopen-claims.md)
+- [ADR-0011: Complete Claim Submission and Payment Workflow](../adr/0011-complete-claim-submission-and-payment-workflow.md)
 
-## Permissions
+## Application-specific Projects features
 
-- [Permissions model](./permissions.md) — Better Auth organization roles and project access control.
+- [Calculator Projects](../../apps/calculator/docs/projects/README.md): Project management UI, sorting, and current Calculator permission implementation
+- [Cost Tracker Projects](../../apps/cost-tracker/docs/projects/README.md): Project Partnerships and the Cost Submission Window
 
-## External references
+## Persistence
 
-- [TanStack Table project map](../agents/instructions/tanstack-table.md) and [official routes](../agents/integrations.md#tanstack-table)
-- [Greendex oRPC rules](../agents/instructions/orpc.md) and [official oRPC routes](../agents/integrations.md#orpc)
-- [UI component rules](../agents/instructions/shadcn.md)
-- [Internationalization rules](../agents/instructions/i18n.md)
+Shared Project schemas and migrations are owned by [`@greendex/database`](../../packages/database/). The approved but unimplemented schema blueprint is in [model.md](model.md).

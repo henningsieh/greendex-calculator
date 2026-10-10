@@ -1,16 +1,4 @@
-/**
- * Shared Better Auth access control for organization roles.
- *
- * Single home for the access-control statement and the Calculator's role
- * map. Both Better Auth configs (server and browser) consume
- * `calculatorRoles`, so the two sides can never disagree. Statements stay
- * free of other apps' resources: no partnership, participation, or claim
- * concepts live here.
- */
-import {
-  ORGANIZATION_ROLES,
-  type OrganizationRole,
-} from "@greendex/config/organization-roles";
+import { ORGANIZATION_ROLES } from "@greendex/config/organization-roles";
 import { createAccessControl } from "better-auth/plugins/access";
 import {
   adminAc,
@@ -19,75 +7,89 @@ import {
   ownerAc,
 } from "better-auth/plugins/organization/access";
 
-/**
- * Available actions for the project resource.
- *
- * - create: Create new projects
- * - read: View project details
- * - update: Modify project information
- * - delete: Remove projects
- * - archive: Archive projects (soft delete)
- */
+export {
+  ORGANIZATION_ROLES,
+  type OrganizationRole,
+} from "@greendex/config/organization-roles";
+
 const statement = {
-  ...defaultStatements, // Includes default organization, member, invitation and team permissions
+  ...defaultStatements,
   project: ["create", "read", "update", "delete", "archive"],
+  projectPartnership: ["create", "read", "update", "delete"],
+  projectParticipation: ["create", "read", "update", "merge"],
 } as const;
 
-/**
- * Shared access controller for organization roles.
- */
 export const accessControl = createAccessControl(statement);
 
-/**
- * Organization Owner role (stored `owner` value).
- * Full control over all resources including projects.
- */
-const owner = accessControl.newRole({
+export const organisationOwner = accessControl.newRole({
   ...ownerAc.statements,
   project: ["create", "read", "update", "delete", "archive"],
+  projectPartnership: ["create", "read", "update", "delete"],
+  projectParticipation: ["create", "read", "update", "merge"],
 });
 
-/**
- * Organization Admin role (stored `admin` value).
- * Can create, read, update, and archive projects, but cannot delete them.
- */
-const admin = accessControl.newRole({
+export const legacyCalculatorAdminRole = accessControl.newRole({
   ...adminAc.statements,
   project: ["create", "read", "update", "archive"],
+  projectPartnership: ["create", "read", "update", "delete"],
+  projectParticipation: ["create", "read", "update", "merge"],
 });
 
-/**
- * Project Coordinator role (stored `coordinator` value).
- * Same project authority as the Organization Admin: create, read, and
- * update projects, but no delete or archive.
- */
-const coordinator = accessControl.newRole({
+// Organization Admin keeps the existing admin permission statements; its definition
+// name is distinct from Calculator's legacy admin meaning, not a new stored role.
+export const organizationAdmin = accessControl.newRole({
+  ...legacyCalculatorAdminRole.statements,
+});
+
+// Assignment-bound Cost Tracker procedures grant coordination. The role alone
+// grants no broad access: it may bring participants into one assigned Project
+// Partnership (ADR-0015), and nothing else without an assignment.
+export const projectCoordinatorRole = accessControl.newRole({
+  ...memberAc.statements,
+  projectParticipation: ["create"],
+});
+
+export const calculatorCoordinatorRole = accessControl.newRole({
   ...adminAc.statements,
   project: ["create", "read", "update"],
 });
 
-/**
- * Participant role (stored `participant` value).
- * Can only read projects within their organization.
- */
-const participant = accessControl.newRole({
+export const projectParticipant = accessControl.newRole({
   ...memberAc.statements,
-  project: ["read"], // Participants can only read projects
+  project: ["read"],
+  projectParticipation: ["read", "update"],
 });
 
-/**
- * Calculator role map in descending hierarchy order, keyed by stored value.
- */
-export const calculatorRoles = {
-  [ORGANIZATION_ROLES.OrganizationOwner]: owner,
-  [ORGANIZATION_ROLES.OrganizationAdmin]: admin,
-  [ORGANIZATION_ROLES.ProjectCoordinator]: coordinator,
-  [ORGANIZATION_ROLES.Participant]: participant,
+export const organizationRoles = {
+  organisationOwner,
+  organizationAdmin,
+  projectParticipant,
 };
 
-/**
- * Export types for use throughout the application.
- */
-export type ProjectPermission = (typeof statement)["project"][number];
+export const calculatorOrganizationRoles = {
+  [ORGANIZATION_ROLES.OrganizationOwner]: organisationOwner,
+  [ORGANIZATION_ROLES.OrganizationAdmin]: legacyCalculatorAdminRole,
+  [ORGANIZATION_ROLES.ProjectCoordinator]: calculatorCoordinatorRole,
+  [ORGANIZATION_ROLES.Participant]: projectParticipant,
+};
 
-export type { OrganizationRole };
+export const costTrackerOrganizationRoles = {
+  [ORGANIZATION_ROLES.OrganizationOwner]: organisationOwner,
+  [ORGANIZATION_ROLES.OrganizationAdmin]: organizationAdmin,
+  [ORGANIZATION_ROLES.ProjectCoordinator]: projectCoordinatorRole,
+  [ORGANIZATION_ROLES.Participant]: projectParticipant,
+};
+
+export type ProjectPermission = (typeof statement)["project"][number];
+export type ProjectPartnershipPermission =
+  (typeof statement)["projectPartnership"][number];
+export type ProjectParticipationPermission =
+  (typeof statement)["projectParticipation"][number];
+
+export {
+  addOrganizationRole,
+  assertRoleMapCoversRoles,
+  hasOrganizationRole,
+  isValidOrganizationRole,
+  parseOrganizationRoles,
+} from "./organization-roles";

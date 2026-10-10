@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import {
@@ -24,6 +25,7 @@ const TEST_USER = {
 };
 
 const TEST_ORG = {
+  country: "DE" as const,
   id: randomUUID(),
   name: "Test Organization",
   slug: `test-org-${Date.now()}`,
@@ -142,7 +144,7 @@ describe("Project Shared Travel Legs integration", () => {
         id: randomUUID(),
         organizationId: orgId,
         userId,
-        role: "owner",
+        role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: new Date(),
       });
 
@@ -155,7 +157,7 @@ describe("Project Shared Travel Legs integration", () => {
         );
 
       expect(result).toHaveLength(1);
-      expect(result[0].role).toBe("owner");
+      expect(result[0].role).toBe(ORGANIZATION_ROLES.OrganizationOwner);
     });
   });
 
@@ -169,11 +171,13 @@ describe("Project Shared Travel Legs integration", () => {
         location: "Test Location",
         country: "DE" as EUCountryCode,
         welcomeMessage: "Welcome to test project",
-        responsibleUserId: userId,
         organizationId: orgId,
         createdAt: new Date(),
         updatedAt: new Date(),
         archived: false,
+        costSubmissionWindowOpen: false,
+        completedAt: null,
+        completedByUserId: null,
       } satisfies ProjectType;
 
       // Insert project directly
@@ -201,11 +205,13 @@ describe("Project Shared Travel Legs integration", () => {
         location: "Berlin",
         country: "DE" as EUCountryCode,
         welcomeMessage: "Welcome to project with shared travel",
-        responsibleUserId: userId,
         organizationId: orgId,
         createdAt: new Date(),
         updatedAt: new Date(),
         archived: false,
+        costSubmissionWindowOpen: false,
+        completedAt: null,
+        completedByUserId: null,
       } satisfies ProjectType;
 
       // Insert project
@@ -470,11 +476,13 @@ describe("Project Shared Travel Legs integration", () => {
         location: "Test Location",
         country: "DE" as EUCountryCode,
         welcomeMessage: null,
-        responsibleUserId: userId,
         organizationId: orgId,
         createdAt: new Date(),
         updatedAt: new Date(),
         archived: false,
+        costSubmissionWindowOpen: false,
+        completedAt: null,
+        completedByUserId: null,
       } satisfies ProjectType;
 
       // Create project

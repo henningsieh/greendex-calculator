@@ -3,6 +3,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import {
+  hostProjectAssignmentsTable,
   organization,
   session,
   member,
@@ -22,6 +23,7 @@ import { auth } from "@/lib/better-auth";
 import { router } from "@/lib/orpc/router";
 
 const userId = randomUUID();
+const secondUserId = randomUUID();
 const organizationId = randomUUID();
 const projectId = randomUUID();
 const travelLegId = randomUUID();
@@ -39,6 +41,12 @@ describe("public participation contract", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    await db.insert(user).values({
+      id: secondUserId,
+      name: "Another Coordinator",
+      email: `public-participation-${secondUserId}@example.com`,
+      emailVerified: true,
+    });
     await db.insert(organization).values({
       country: "DE",
       id: organizationId,
@@ -53,9 +61,12 @@ describe("public participation contract", () => {
       endDate: new Date("2026-01-05T00:00:00.000Z"),
       location: "Berlin",
       country: "DE",
-      responsibleUserId: userId,
       organizationId,
     });
+    await db.insert(hostProjectAssignmentsTable).values([
+      { projectId, userId },
+      { projectId, userId: secondUserId },
+    ]);
     await db.insert(projectSharedTravelLegsTable).values({
       id: travelLegId,
       projectId,
@@ -70,6 +81,7 @@ describe("public participation contract", () => {
     await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
     await db.delete(organization).where(eq(organization.id, organizationId));
     await db.delete(user).where(eq(user.id, userId));
+    await db.delete(user).where(eq(user.id, secondUserId));
   });
 
   it("exposes only canonical shared travel records", async () => {
@@ -84,6 +96,11 @@ describe("public participation contract", () => {
         description: "Public shared transfer",
       }),
     ]);
+    expect(project.hostCoordinatorNames).toEqual([
+      "Another Coordinator",
+      "Public Participation Contract User",
+    ]);
+    expect(project).not.toHaveProperty("hostAssignments");
     expect(project).not.toHaveProperty("activities");
   });
 });

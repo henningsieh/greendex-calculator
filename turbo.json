@@ -1,10 +1,14 @@
 {
-  "$schema": "https://v2-11-5.turborepo.dev/schema.json",
+  "$schema": "https://v2-11-7.turborepo.dev/schema.json",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*",
+        "$TURBO_ROOT$/packages/database/.env*"
+      ],
       "env": ["*"]
     },
     "dev": {
@@ -26,7 +30,13 @@
       "persistent": true
     },
     "test:run": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*",
+        "$TURBO_ROOT$/packages/database/.env*"
+      ],
+      "env": ["DATABASE_URL"]
     },
     "type-check": {
       "dependsOn": ["^build"]
@@ -42,7 +52,8 @@
       "env": ["DATABASE_URL"]
     },
     "db:seed": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL"]
     },
     "auth:generate": {
       "cache": false

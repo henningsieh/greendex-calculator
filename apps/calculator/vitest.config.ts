@@ -38,6 +38,7 @@ export default defineConfig({
       "coverage",
       "storybook-static",
       "src/__tests__/e2e/**", // Exclude Playwright e2e tests
+      "src/__tests__/merge/**", // Explicit two-app Playwright proof
     ],
   },
   // Prevent Vite's file watcher from watching the large docs folder (improves watch performance)

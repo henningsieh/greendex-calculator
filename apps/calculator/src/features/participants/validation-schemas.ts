@@ -1,4 +1,5 @@
 import {
+  participantJourneysTable,
   projectParticipantsTable,
   user as userTable,
 } from "@greendex/database/schema";
@@ -8,11 +9,14 @@ import { createSelectSchema } from "drizzle-zod";
 export const ProjectParticipantWithUserSchema = createSelectSchema(
   projectParticipantsTable,
 ).extend({
-  user: createSelectSchema(userTable).omit({
-    emailVerified: true,
-    createdAt: true,
-    updatedAt: true,
-  }),
+  journey: createSelectSchema(participantJourneysTable).nullable(),
+  user: createSelectSchema(userTable)
+    .omit({
+      emailVerified: true,
+      createdAt: true,
+      updatedAt: true,
+    })
+    .nullable(),
 });
 
 // Schema for UI participant display - flattens user fields for easier access

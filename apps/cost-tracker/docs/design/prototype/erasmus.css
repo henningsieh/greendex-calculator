@@ -1,0 +1,662 @@
+/* Gate 1 prototype only. Neutral document surfaces; EU colors are identity, not status. */
+:root {
+  --trust-navy: #102b50;
+  --eu-blue: #003399;
+  --eu-yellow: #ffcc00;
+  --paper: #ffffff;
+  --quiet-blue: #edf2f8;
+  --supporting-slate: #52647a;
+  --page: var(--quiet-blue);
+  --plane: var(--paper);
+  --ink: var(--trust-navy);
+  --muted: var(--supporting-slate);
+  --line: #cdd5e0;
+  --control-line: #788597;
+  --link: var(--eu-blue);
+  --body-font: "Geist", system-ui, sans-serif;
+  --heading-font: var(--body-font);
+  --data-font: "JetBrains Mono", ui-monospace, monospace;
+  --soft: var(--quiet-blue);
+  --primary: var(--eu-blue);
+  --on-primary: var(--paper);
+  --focus: var(--eu-blue);
+  --primary-border: #93b4ff;
+  --primary-hover: #002b85;
+  --primary-glow: 0 0 12px rgb(255 204 0 / 50%);
+  --secondary-hover: #e8f0ff;
+  --secondary-hover-ink: var(--link);
+  --secondary-feedback-border: var(--eu-yellow);
+  --secondary-glow: 0 0 7px rgb(255 204 0 / 35%);
+  --link-glow: 0 2px 5px rgb(255 204 0 / 35%);
+  --brand-marker-width: 8px;
+  --link-hover: #002b85;
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 400 16px/24px var(--body-font);
+}
+h1,
+h2,
+h3 {
+  font-family: var(--heading-font);
+}
+.amount,
+.iban,
+.reference,
+.data-figure,
+#account-iban,
+#account-bic,
+#cost-amount {
+  font-family: var(--data-font);
+  font-variant-numeric: tabular-nums;
+}
+.actor {
+  font-size: 14px;
+}
+a {
+  color: var(--link);
+  text-underline-offset: 3px;
+}
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  border: 1px solid var(--control-line);
+  border-radius: 4px;
+  padding: 9px 15px;
+  min-height: 44px;
+  background: var(--plane);
+  color: var(--ink);
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+button.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary-border);
+  font-weight: 600;
+}
+button:disabled {
+  cursor: default;
+  border-style: dashed;
+}
+input:not([type="checkbox"]),
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  background: var(--plane);
+  color: var(--ink);
+  border: 1px solid var(--control-line);
+  padding: 9px 11px;
+  border-radius: 4px;
+}
+input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+label.check {
+  font-weight: 400;
+}
+fieldset {
+  margin: 18px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+}
+legend {
+  font-weight: 600;
+  padding: 0 5px;
+}
+h1 {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+  margin: 0;
+}
+h2 {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+  margin: 0 0 18px;
+}
+h3 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  margin: 24px 0 12px;
+}
+p {
+  max-width: 72ch;
+  margin: 0 0 12px;
+}
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.shell {
+  width: min(1360px, calc(100% - 64px));
+  margin: 32px auto 56px;
+}
+.topline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.prototype-note {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.prototype-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 0 0 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.prototype-toolbar > .prototype-note {
+  margin-right: auto;
+}
+.prototype-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.prototype-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+.segmented {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--soft);
+  border: 1px solid var(--control-line);
+  border-radius: 7px;
+}
+.segmented button {
+  font-size: 13px;
+  line-height: 20px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.segmented button[aria-pressed="true"] {
+  background: var(--plane);
+  color: var(--link);
+  border-color: var(--control-line);
+  font-weight: 600;
+}
+.segmented button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline-offset: 2px;
+}
+.context {
+  border: 1px solid #52647a;
+  position: relative;
+  padding: 28px 32px;
+  background: var(--trust-navy);
+  color: var(--paper);
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: start;
+}
+/* One non-text identity detail: give the light band-edge marker more presence. */
+.context::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 28px;
+  width: var(--brand-marker-width);
+  height: 48px;
+  background: var(--eu-yellow);
+}
+.context p {
+  margin: 8px 0 0;
+  color: var(--quiet-blue);
+}
+.context .status {
+  font-weight: 600;
+  border: 1px solid var(--quiet-blue);
+  padding: 5px 12px;
+  display: inline-block;
+}
+.context .state {
+  text-align: right;
+  max-width: 34ch;
+}
+.document {
+  background: var(--plane);
+  border: 1px solid var(--line);
+  border-top: 0;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+.evidence {
+  min-width: 0;
+  order: 1;
+}
+.section {
+  padding: 28px 32px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.aside {
+  background: var(--soft);
+  border-left: 1px solid var(--line);
+  padding: 28px 24px;
+  min-width: 0;
+  order: 2;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.full {
+  grid-column: 1 / -1;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.metadata {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 8px 20px;
+  margin: 18px 0 0;
+}
+dt {
+  color: var(--muted);
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.iban {
+  user-select: all;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 14px;
+  line-height: 20px;
+}
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.journey {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.journey:first-child {
+  padding-top: 0;
+}
+.journey:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.journey p {
+  margin-bottom: 4px;
+}
+.journey button {
+  align-self: start;
+}
+.checklist li {
+  margin-bottom: 16px;
+}
+.checklist p {
+  margin-bottom: 2px;
+}
+.checklist a {
+  font-size: 14px;
+  line-height: 20px;
+}
+.payable {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  margin-top: 22px;
+}
+.payable .amount {
+  display: block;
+  margin: 4px 0;
+}
+.notice {
+  border-left: 3px solid var(--line);
+  padding: 12px 0 12px 16px;
+  margin-top: 20px;
+}
+.scroll-table {
+  overflow-x: auto;
+  max-width: 100%;
+}
+table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 14px;
+  line-height: 20px;
+}
+caption {
+  text-align: left;
+  color: var(--muted);
+  padding: 0 0 12px;
+}
+th {
+  font-weight: 600;
+  text-align: left;
+  background: var(--soft);
+}
+th,
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+th.number,
+td.number {
+  text-align: right;
+  white-space: nowrap;
+}
+td li + li {
+  margin-top: 6px;
+}
+td button {
+  font-size: 14px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+.method {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.file {
+  overflow-wrap: anywhere;
+}
+.download {
+  display: block;
+  margin-top: 4px;
+}
+.proof-list li {
+  margin-bottom: 12px;
+}
+.upload {
+  max-width: 680px;
+  margin: 24px 0;
+}
+progress {
+  width: 100%;
+  height: 10px;
+  accent-color: var(--primary);
+  display: block;
+  margin: 10px 0;
+}
+progress::-webkit-progress-bar {
+  background: var(--soft);
+}
+progress::-webkit-progress-value {
+  background: var(--primary);
+}
+progress::-moz-progress-bar {
+  background: var(--primary);
+}
+.proof-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.history li {
+  display: grid;
+  grid-template-columns: 180px 200px minmax(0, 1fr);
+  gap: 8px 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.history li:last-child {
+  border-bottom: 0;
+}
+.history .reason {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.actor {
+  overflow-wrap: anywhere;
+}
+footer {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+/* Explicit light never follows the OS. System stays live when OS preference changes.
+   Dark: #2563EB / white primary ≈ 5.17:1; #93B4FF links on #27272A ≈ 7.24:1.
+   Yellow remains a separate brand/focus token, never an approval or warning. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #09090b;
+  --plane: #18181b;
+  --soft: #27272a;
+  --ink: #e4e4e7;
+  --muted: #a1a1aa;
+  --line: #3f3f46;
+  --control-line: #71717a;
+  --primary: #2563eb;
+  --on-primary: #ffffff;
+  --link: #93b4ff;
+  --focus: var(--eu-yellow);
+  --primary-border: #739fff;
+  --primary-hover: #2d6bf3;
+  --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
+  --secondary-hover: #202023;
+  --secondary-hover-ink: var(--ink);
+  --secondary-feedback-border: rgb(255 204 0 / 75%);
+  --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
+  --link-glow: 0 2px 6px rgb(255 204 0 / 22%);
+  --brand-marker-width: 4px;
+  --link-hover: var(--eu-yellow);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --page: #09090b;
+    --plane: #18181b;
+    --soft: #27272a;
+    --ink: #e4e4e7;
+    --muted: #a1a1aa;
+    --line: #3f3f46;
+    --control-line: #71717a;
+    --primary: #2563eb;
+    --on-primary: #ffffff;
+    --link: #93b4ff;
+    --focus: var(--eu-yellow);
+    --primary-border: #739fff;
+    --primary-hover: #2d6bf3;
+    --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
+    --secondary-hover: #202023;
+    --secondary-hover-ink: var(--ink);
+    --secondary-feedback-border: rgb(255 204 0 / 75%);
+    --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
+    --link-glow: 0 2px 6px rgb(255 204 0 / 22%);
+    --brand-marker-width: 4px;
+    --link-hover: var(--eu-yellow);
+  }
+}
+/* Hover labels: white on #002B85 = 12.47:1; white on #2D6BF3 = 4.66:1.
+   Feedback recolors the existing 1px border; zero-spread blur adds no solid outer ring.
+   Light links keep blue text; yellow lives in the underline and halo.
+   Light feedback is immediate (also with reduced motion); only the press transform animates. */
+a:focus-visible {
+  color: var(--link-hover);
+  text-decoration: underline;
+  text-decoration-color: var(--eu-yellow);
+  text-decoration-thickness: 2px;
+  text-shadow: var(--link-glow);
+}
+button:focus-visible:not(:disabled) {
+  border-color: var(--secondary-feedback-border);
+  box-shadow: var(--secondary-glow);
+}
+button.primary:focus-visible:not(:disabled) {
+  border-color: var(--eu-yellow);
+  box-shadow: var(--primary-glow);
+}
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+    text-decoration-color: var(--eu-yellow);
+    text-decoration-thickness: 2px;
+    text-shadow: var(--link-glow);
+  }
+  button:not(.primary):hover:not(:disabled) {
+    background: var(--secondary-hover);
+    color: var(--secondary-hover-ink);
+    border-color: var(--secondary-feedback-border);
+    box-shadow: var(--secondary-glow);
+  }
+  button.primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+    border-color: var(--eu-yellow);
+    box-shadow: var(--primary-glow);
+  }
+}
+button:not(.primary):active:not(:disabled) {
+  background: var(--secondary-hover);
+  color: var(--secondary-hover-ink);
+  border-color: var(--secondary-feedback-border);
+  box-shadow: var(--secondary-glow);
+}
+button.primary:active:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--eu-yellow);
+  box-shadow: var(--primary-glow);
+}
+@media (max-width: 960px) {
+  .shell {
+    width: calc(100% - 32px);
+    margin-top: 20px;
+  }
+  .columns {
+    display: flex;
+    flex-direction: column;
+  }
+  .aside {
+    order: -1;
+    border-left: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .section,
+  .aside {
+    padding: 24px;
+  }
+  .context {
+    padding: 24px;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .context .state {
+    text-align: left;
+    max-width: 72ch;
+  }
+  h1 {
+    font-size: 24px;
+    line-height: 30px;
+  }
+  .history li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .history .reason {
+    margin-top: 8px;
+  }
+}
+@media (max-width: 560px) {
+  .prototype-toolbar {
+    gap: 12px;
+  }
+  .prototype-toolbar > .prototype-note {
+    flex-basis: 100%;
+  }
+  .prototype-option {
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+  .segmented button {
+    min-height: 44px;
+  }
+  .section,
+  .aside {
+    padding: 24px 16px;
+  }
+  .fields,
+  .proof-links {
+    grid-template-columns: 1fr;
+  }
+  .metadata {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  dd {
+    margin-bottom: 10px;
+  }
+  .journey {
+    flex-direction: column;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}

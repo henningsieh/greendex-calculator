@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "@greendex/i18n/client";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { type ComponentProps, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ interface CountrySelectProps extends Pick<
  * ```
  */
 export function CountrySelect({
+  id,
   value,
   onValueChange,
   euOnly = false,
@@ -69,6 +70,7 @@ export function CountrySelect({
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
           disabled={disabled}
+          id={id}
           role="combobox"
           variant="outline"
         >
@@ -82,7 +84,7 @@ export function CountrySelect({
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          <ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-75 p-0">
@@ -101,7 +103,7 @@ export function CountrySelect({
                   }}
                   value={country.code}
                 >
-                  <Check
+                  <CheckIcon
                     className={cn(
                       "mr-2 size-4",
                       value === country.code ? "opacity-100" : "opacity-0",

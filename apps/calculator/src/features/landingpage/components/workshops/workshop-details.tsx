@@ -2,7 +2,7 @@
 
 import { WORKSHOP_LINKS } from "@greendex/config/workshops";
 import { useTranslations } from "@greendex/i18n/client";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2Icon, ExternalLinkIcon } from "lucide-react";
 
 import { DASHBOARD_PATH } from "@/app/routes";
 import {
@@ -158,7 +158,7 @@ export function WorkshopDetails({ type }: { type: WorkshopType }) {
                     >
                       <AccordionTrigger className="text-left">
                         <div className="flex items-start gap-3">
-                          <CheckCircle2 className="mt-1 size-5 shrink-0 text-primary" />
+                          <CheckCircle2Icon className="mt-1 size-5 shrink-0 text-primary" />
                           <span className="font-medium">
                             {stepIdx + 1}. {step.title}
                           </span>
@@ -186,7 +186,7 @@ export function WorkshopDetails({ type }: { type: WorkshopType }) {
                                       target="_blank"
                                     >
                                       {t(`links.${link.linkKey}`)}
-                                      <ExternalLink className="size-3" />
+                                      <ExternalLinkIcon className="size-3" />
                                     </a>
                                   ) : (
                                     <Link href={link.href}>

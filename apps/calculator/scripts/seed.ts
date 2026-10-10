@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import { Buffer } from "node:buffer";
 /**
  * Development DB seeder
  *
@@ -9,11 +10,25 @@
  *
  * Uses its own DB pool and will exit the process when finished. For local/dev use only — do not run in production.
  */
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
 
-import { Buffer } from "node:buffer";
-
+import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
+import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import {
+  claimsTable,
+  costAllocationsTable,
+  hostProjectAssignmentsTable,
+  participantJourneysTable,
+  participantProfilesTable,
+  partnerCoordinatorAssignmentsTable,
+  projectFundingBandsTable,
+  projectFundingSnapshotsTable,
+  projectPartnerOrganizationsTable,
+  projectParticipantsTable,
+  travelCostEntriesTable,
   projectSharedTravelLegsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -21,18 +36,24 @@ import * as schema from "@greendex/database/schema";
 import { account, member, organization, user } from "@greendex/database/schema";
 import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { createId } from "@paralleldrive/cuid2";
-import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+// Load the shared database configuration before app-local values.
+const databaseEnvPath = new URL(
+  "../../../packages/database/.env",
+  import.meta.url,
+);
+if (existsSync(databaseEnvPath)) loadEnvFile(databaseEnvPath);
+
 // Load environment variables from .env file
-config({ path: ".env" });
+if (existsSync(".env")) loadEnvFile(".env");
 
 // Validate DATABASE_URL is available
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL is not set in .env file");
+  console.error("❌ DATABASE_URL is not configured");
   process.exit(1);
 }
 
@@ -44,15 +65,10 @@ const seedPool = new Pool({
 
 const db = drizzle(seedPool, { schema });
 
-export const SEED_USER = {
-  name: "Seed Owner",
-  email: "owner@sieh.org",
-  password: "SecurePassword123!",
-} as const;
-
 const SEED_ORGANIZATION = {
   name: "Seed Organization",
   slug: "seed-org",
+  country: "DE",
 } as const;
 
 const PROJECT_NAMES = [
@@ -194,10 +210,10 @@ async function seed() {
     } else {
       orgId = createId();
       await db.insert(organization).values({
-        country: "DE",
         id: orgId,
         name: SEED_ORGANIZATION.name,
         slug: SEED_ORGANIZATION.slug,
+        country: SEED_ORGANIZATION.country,
         createdAt: new Date(),
       });
       console.log(
@@ -212,6 +228,8 @@ async function seed() {
         and(eq(members.userId, userId), eq(members.organizationId, orgId)),
     });
 
+    const hostingMembershipCreatedAt =
+      existingMembership?.createdAt ?? new Date();
     if (existingMembership) {
       console.log("⚠️  Membership already exists");
     } else {
@@ -220,8 +238,8 @@ async function seed() {
         id: memberId,
         organizationId: orgId,
         userId,
-        role: "owner",
-        createdAt: new Date(),
+        role: ORGANIZATION_ROLES.OrganizationOwner,
+        createdAt: hostingMembershipCreatedAt,
       });
       console.log("✅ User set as organization owner");
     }
@@ -243,13 +261,13 @@ async function seed() {
         location: location.city,
         country: location.country,
         welcomeMessage: `Welcome to ${PROJECT_NAMES[i]}! We're excited to have you join us for this important sustainability initiative.`,
-        responsibleUserId: userId,
         organizationId: orgId,
         archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
+      await db.insert(hostProjectAssignmentsTable).values({ projectId, userId });
       projectIds.push(projectId);
       console.log(
         `  ✅ Project ${i + 1}/10: ${PROJECT_NAMES[i]} in ${location.city}, ${location.country}`,
@@ -287,12 +305,109 @@ async function seed() {
     console.log(
       `✅ Created ${totalTravelLegsCreated} Project Shared Travel Legs across 10 projects`,
     );
+    // One complete, mocked cross-app slice on the first Project. No proof upload,
+    // invitation or mail is needed to inspect an editable Claim.
+    console.log("🤝 Creating shared Journey and Partner Claim demo...");
+    await db.transaction(async (tx) => {
+      const existingPartner = await tx.query.organization.findFirst({
+        where: eq(organization.slug, "seed-partner-org"),
+      });
+      const partnerId = existingPartner?.id ?? createId();
+      if (!existingPartner) {
+        await tx.insert(organization).values({
+          id: partnerId,
+          name: "Seed Partner Organization",
+          slug: "seed-partner-org",
+          country: "FR",
+          createdAt: new Date(),
+        });
+        await tx.insert(member).values({
+          id: createId(),
+          organizationId: partnerId,
+          userId,
+          role: ORGANIZATION_ROLES.OrganizationOwner,
+          // Auth initially selects the newest Membership. Keep the existing
+          // Hosting default for both apps and their ordinary seed-based tests.
+          createdAt: new Date(hostingMembershipCreatedAt.getTime() - 1),
+        });
+      }
+      const projectId = projectIds[0];
+      const partnershipId = createId();
+      const participationId = createId();
+      const claimId = createId();
+      const entryId = createId();
+      await tx.insert(projectPartnerOrganizationsTable).values({
+        id: partnershipId,
+        projectId,
+        organizationId: partnerId,
+      });
+      await tx
+        .insert(partnerCoordinatorAssignmentsTable)
+        .values({ partnershipId, userId });
+      await tx
+        .insert(participantProfilesTable)
+        .values({
+          userId,
+          fullName: SEED_USER.name,
+        })
+        .onConflictDoNothing();
+      await tx.insert(projectParticipantsTable).values({
+        id: participationId,
+        projectId,
+        representedOrganizationId: partnerId,
+        userId,
+        displayName: SEED_USER.name,
+        email: SEED_USER.email,
+        country: "FR",
+      });
+      await tx.insert(projectFundingSnapshotsTable).values({
+        projectId,
+        rulesVersion: TRAVEL_FUNDING_RULES.version,
+        participantTransportProfiles: [
+          ...TRAVEL_FUNDING_RULES.participantTransportProfiles,
+        ],
+      });
+      await tx.insert(projectFundingBandsTable).values(
+        TRAVEL_FUNDING_RULES.bands.map((band) => ({
+          projectId,
+          minKm: String(band.minKm),
+          maxKm: String(band.maxKm),
+          standardEur: String(band.standardEur),
+          greenEur: String(band.greenEur),
+        })),
+      );
+      await tx.insert(participantJourneysTable).values({
+        projectParticipantId: participationId,
+        origin: "Paris",
+        destination: "Berlin",
+        tripType: "round-trip",
+        erasmusDistanceKm: "878.00",
+      });
+      await tx.insert(claimsTable).values({ id: claimId, partnershipId });
+      await tx.insert(travelCostEntriesTable).values({
+        id: entryId,
+        claimId,
+        transportProfile: "train",
+        amountEur: "120.00",
+        allocationMethod: "amount",
+      });
+      await tx.insert(costAllocationsTable).values({
+        travelCostEntryId: entryId,
+        projectParticipantId: participationId,
+        amountEur: "120.00",
+      });
+    });
+    console.log(
+      "✅ Seed Partner Organization: Paris → Berlin, round-trip, 878 km; editable train Claim: EUR 120",
+    );
+
     console.log("\n🎉 SEED COMPLETED SUCCESSFULLY!");
     console.log("=".repeat(60));
-    console.log("📋 Login Credentials:");
+    console.log(
+      "📋 Development seed summary (login defined in @greendex/auth/seed-user):",
+    );
     console.log("-".repeat(60));
     console.log(`Email:    ${SEED_USER.email}`);
-    console.log(`Password: ${SEED_USER.password}`);
     console.log("-".repeat(60));
     console.log(`User ID: ${userId}`);
     console.log(`Organization ID: ${orgId}`);

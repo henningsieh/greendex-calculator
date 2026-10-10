@@ -1,68 +1,54 @@
-# Development databases
+# Shared development database
 
-Use a database whose migration history matches the checkout that connects to it.
-Main and the Cost Tracker branch currently have different migration chains.
-Separate database names do not guarantee compatible schemas.
+Calculator and Cost Tracker use the same PostgreSQL database and migration chain.
+Organization, Project, Project Participation and Participant Journey IDs identify
+one shared set of rows; there is no copying or synchronization between apps.
 
-## Rule
+## Managed resources
 
-Each app keeps its own development database, and each database is seeded on
-its own. Apply migrations from the consuming checkout, not another branch.
-Do not point main at a database migrated by the Cost Tracker branch: its host
-assignment migration removes `project.responsible_user_id`, which main needs.
-Seed every database you use; an empty page usually means that database was
-never seeded, not that data is missing.
+The Greendex `development` environment owns exactly two PostgreSQL resources:
 
-## Instances (Coolify)
+| Role | Coolify resource | Connection |
+| --- | --- | --- |
+| Live | `greendex-dev-postgres` (`a004oogs4cwss04cok0wwckk`) | Private resource hostname on `5432`; local access via the server on `5488` |
+| Preview | `greendex-preview-postgres` (`gcmwapuqoz45mjvtdwl3vgg4`) | Private resource hostname on `5432` |
 
-| Public port | Coolify resource | Databases | Purpose | Backups |
-| --- | --- | --- | --- | --- |
-| `5444` | `greendex-calculator-dev-postgres` (`m0w8…`) | `calculator_main_dev`, `postgres` | Main Calculator uses `calculator_main_dev`; `postgres` is preserved spare data with the Cost Tracker schema | Daily, 7-day retention; confirm new database coverage in backup configuration |
-| `5445` | `postgresql-database-cost-tracker` (`o0de…`) | `calculator_dev`, `costtracker_dev` | Cost branch Calculator uses `calculator_dev`, Cost Tracker uses `costtracker_dev`; neither is schema-compatible with main | Daily since this change was made |
-| `5488` | `greendex-dev-postgres` (`a004…`, Live) | managed | Shared development data, private network only | None |
+Both apps must use Live for development and the same Preview resource for preview
+deployments. Preview is separate from Live, not a separate database per app or PR.
+Production resources are outside this setup and must not be changed.
+Garage S3 remains unchanged.
 
-## Which checkout uses which database
+## One local connection configuration
 
-- Main checkout (`greendex-calculator`, `main` or a branch at the same schema): calculator → `:5444/calculator_main_dev`.
-- Cost worktree (`greendex-cost-tracker`, `chore/add-cost-tracker-app`): calculator → `:5445/calculator_dev`, cost-tracker → `:5445/costtracker_dev`.
-- Any other checkout without its own `.env` uses whichever `DATABASE_URL` it is given; there is no automatic routing. When a page looks wrongly empty, check the checkout's `.env` first.
+Copy `packages/database/.env.example` to `packages/database/.env` and set
+`DATABASE_URL` using the shared Live resource's current credentials from Coolify.
+Do not define `DATABASE_URL` in either app's `.env`; those files contain only
+app-specific configuration. Never commit credentials or complete connection strings.
 
-`calculator_main_dev` was created from main's migrations `0000`–`0016` and
-seeded with the Calculator seeder. The existing `postgres`, `calculator_dev`,
-and `costtracker_dev` databases were not reset or modified during this repair.
-Tests use Calculator's `.env`; there is no separate automatic test database.
-After changing `.env`, restart any already-running process that inherited
-`DATABASE_URL` from its launcher. Changing the file does not change that process's
-environment or existing database pool.
+Calculator and Cost Tracker lifecycle, seed and Playwright scripts load the shared
+file before their app-local file. Vitest setup and Drizzle Kit use the same shared
+file. An already injected `DATABASE_URL` takes precedence, so Coolify and one-off
+Preview migration commands select the intended shared resource without local forks.
+Documentation remains database-free. Use package scripts instead of invoking
+`next` directly, which bypasses the shared environment loader.
 
-Preview databases are per-PR and isolated: use the private UUID hostname on
-port `5432`, never a host IP or public port.
+Restart existing app processes after changing the shared configuration: an existing
+pool retains its old connection. The managed resources currently have SSL disabled;
+do not add old SSL parameters or disable certificate verification globally.
 
-## Connection values
+## Migrations and seed data
 
-- Shape: `postgres://postgres:<password>@188.245.144.137:<port>/<db>?sslmode=require`
-- Passwords live in the Coolify resource's environment records. Retrieve them
-  from Coolify; never commit credentials or complete connection strings.
-- The `:5444` instance presents a self-signed certificate chain that WSL
-  clients reject (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`). Dev-only workaround for
-  one-off scripts: `NODE_TLS_REJECT_UNAUTHORIZED=0`. The apps' `:5445`
-  connections verify normally.
+Run `pnpm run db:migrate` from the repository root. Both apps use the migrations
+in `packages/database/src/migrations`; never apply another branch's chain.
 
-## Seeding
-
-- Calculator demo data (owner, org, projects): run the seeder from the app
-  whose `.env` points at the target database —
-  `pnpm --filter @greendex/calculator run db:seed`. Stop its dev server first.
-- Cost-tracker has no seeder. Register accounts through its UI, or copy the
-  seed org the same way any row moves between dev databases (documented once,
-  never as routine).
-- Dropping a dev database means its lived-in rows are gone unless that
-  instance has backups (see table). The journal re-migrates schema, never data.
-- Test and agent lanes must drop the databases they create (`lane_*`,
-  `shared_travel_*`, `cleanup_*`, …) when finished. Twenty stale lane
-  databases were swept in one cleanup; do not let them accumulate again.
+Run root `pnpm run db:seed` (the Calculator seeder) once against shared Live,
+with local app servers stopped. Cost Tracker's seed command invokes the same seeder
+against the same database; do not run both concurrently. Seeds and migrations are
+separate operations: migrations do not insert demo data or reset existing rows.
+Destructive cleanup of mock data requires explicit owner authorization.
 
 ## See also
 
-- [Coolify database connections](./coolify-ssl-connection.md) — deployed connection boundary.
-- [Coolify runbook](../agents/instructions/coolify.md) — resources, previews, deployment contract.
+- [Database connections](./coolify-ssl-connection.md) — deployed connection boundary.
+- [Coolify runbook](../agents/instructions/coolify.md) — deployment operations.
+- [Drizzle instructions](../agents/instructions/drizzle.md) — migration workflow.

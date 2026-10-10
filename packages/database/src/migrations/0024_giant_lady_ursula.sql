@@ -1,0 +1,1 @@
+ALTER TABLE "project_funding_snapshot" ADD COLUMN "participant_transport_profiles" jsonb NOT NULL;

@@ -1,6 +1,6 @@
 # Agent Task Routes
 
-This opt-in router complements `AGENTS.md`. Start at the matching row, then follow the linked map and the integration registry.
+This opt-in router complements `AGENTS.md` for unfamiliar or cross-cutting implementation. Start at the matching row; open only the linked sources needed for that change.
 
 ## Choose the task route
 
@@ -20,12 +20,12 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 | Change email templates or delivery | [Email](instructions/email.md) | [Email routes](integrations.md#react-email) | `packages/email/`; calculator transport wiring stays app-specific |
 | Change documentation-app behavior | [Documentation application](instructions/documentation-app.md) | [Fumadocs route](integrations.md#fumadocs) | `apps/documentation/` |
 | Change dependencies or Turbo tasks | [Workspace](instructions/workspace.md) | Owning manifest and lockfile | Owning workspace plus lockfile |
-| Fix or extend questionnaire calculations | [Code standards](instructions/code-standards.md) | [Participation docs](../participate/) | `apps/calculator/src/features/participate/` |
+| Fix or extend questionnaire calculations | [Code standards](instructions/code-standards.md) | [Participation docs](../../apps/calculator/docs/participate/) | `apps/calculator/src/features/participate/` |
 | Add tests | [Code standards](instructions/code-standards.md) | Relevant feature documentation | Unit/integration or E2E test directory |
 
 ## Cross-cutting sequence
 
-1. Read `AGENTS.md`, the required map, and the relevant integration route.
+1. Read `AGENTS.md`, the shared `GLOSSARY.md`, the required app `GLOSSARY.md` (use `GLOSSARY-MAP.md` to find its behavior routes), and the relevant integration route.
 2. Inspect the named source-of-truth files and installed declarations.
 3. Implement the smallest coherent change at the owning layer.
 4. Add regression coverage at the lowest seam that reproduces the behavior.
@@ -35,3 +35,7 @@ This opt-in router complements `AGENTS.md`. Start at the matching row, then foll
 ## Next.js work
 
 For any Next.js task, read the version-matched docs bundled in the single catalog-resolved Next.js install at `node_modules/next/dist/docs/` (entry `index.md`); they upgrade with the `next` package, so there is no download or regeneration step. The catalog pins one Next.js version for the whole workspace and `publicHoistPattern` exposes that one install at the repository root; do not reintroduce per-app doc pointers. The legacy `.next-docs/` corpus and the `agents-md` download are obsolete on Next.js 16.3+.
+
+## Delegated implementation
+
+The main agent passes the matching route, relevant paths, and acceptance criteria; the child reads the owning app context and scoped instructions. Return changed files, check results, blockers, and evidence paths rather than copying documentation or logs into the main chat. The main agent verifies the affected diff and evidence, reading deeper only where needed. Contributor contracts and safe recovery live in [delegation policy](delegation.md).

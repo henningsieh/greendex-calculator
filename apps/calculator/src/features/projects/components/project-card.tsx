@@ -160,7 +160,7 @@ export function ProjectCard({
                     />
                   )}
                   <h3
-                    className="line-clamp-2 min-w-0 flex-1 text-lg leading-tight font-semibold tracking-tight"
+                    className="line-clamp-2 min-w-0 flex-1 text-lg/tight font-semibold tracking-tight"
                     title={project.name}
                   >
                     {project.name}
