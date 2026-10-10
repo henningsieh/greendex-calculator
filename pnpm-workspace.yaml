@@ -80,6 +80,10 @@ allowBuilds:
   esbuild: true
   sharp: true
 
+skills:
+  dirs:
+    - .agents/skills
+
 minimumReleaseAgeExclude:
   - turbo@2.11.7
   - "@turbo/darwin-64@2.11.7"
