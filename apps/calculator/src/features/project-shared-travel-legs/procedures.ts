@@ -4,7 +4,7 @@ import {
   projectsTable,
 } from "@greendex/database/schema";
 import { openapi } from "@orpc/openapi";
-import { and, asc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { authorized, requireProjectPermissions } from "@/lib/orpc/middleware";
@@ -56,10 +56,7 @@ async function verifyProjectAccess(
   organizationId: string,
 ): Promise<boolean> {
   const project = await db.query.projectsTable.findFirst({
-    where: and(
-      eq(projectsTable.id, projectId),
-      eq(projectsTable.organizationId, organizationId),
-    ),
+    where: { id: projectId, organizationId },
     columns: { id: true },
   });
 
@@ -125,8 +122,8 @@ export async function listProjectSharedTravelLegsHandler(
   await assertProjectAccess(input.projectId, context, errors);
 
   const travelLegs = await db.query.projectSharedTravelLegsTable.findMany({
-    where: eq(projectSharedTravelLegsTable.projectId, input.projectId),
-    orderBy: [asc(projectSharedTravelLegsTable.createdAt)],
+    where: { projectId: input.projectId },
+    orderBy: { createdAt: "asc" },
     with: { project: true },
   });
 
@@ -159,7 +156,7 @@ export async function createProjectSharedTravelLegHandler(
 
   const travelLegWithRelations =
     await db.query.projectSharedTravelLegsTable.findFirst({
-      where: eq(projectSharedTravelLegsTable.id, createdTravelLeg.id),
+      where: { id: createdTravelLeg.id },
       with: { project: true },
     });
 
@@ -208,7 +205,7 @@ export async function updateProjectSharedTravelLegHandler(
 
   const travelLegWithRelations =
     await db.query.projectSharedTravelLegsTable.findFirst({
-      where: eq(projectSharedTravelLegsTable.id, input.id),
+      where: { id: input.id },
       with: { project: true },
     });
 

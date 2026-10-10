@@ -77,12 +77,14 @@ export const relations = defineRelations(
       user: r.one.user({
         from: r.session.userId,
         to: r.user.id,
+        optional: false,
       }),
     },
     account: {
       user: r.one.user({
         from: r.account.userId,
         to: r.user.id,
+        optional: false,
       }),
     },
     organization: {
@@ -93,20 +95,24 @@ export const relations = defineRelations(
       organization: r.one.organization({
         from: r.member.organizationId,
         to: r.organization.id,
+        optional: false,
       }),
       user: r.one.user({
         from: r.member.userId,
         to: r.user.id,
+        optional: false,
       }),
     },
     invitation: {
       organization: r.one.organization({
         from: r.invitation.organizationId,
         to: r.organization.id,
+        optional: false,
       }),
       user: r.one.user({
         from: r.invitation.inviterId,
         to: r.user.id,
+        optional: false,
       }),
     },
     projectsTable: {
@@ -114,6 +120,7 @@ export const relations = defineRelations(
       organization: r.one.organization({
         from: r.projectsTable.organizationId,
         to: r.organization.id,
+        optional: false,
       }),
       sharedTravelLegs: r.many.projectSharedTravelLegsTable(),
       participants: r.many.projectParticipantsTable(),
@@ -123,36 +130,43 @@ export const relations = defineRelations(
       project: r.one.projectsTable({
         from: r.hostProjectAssignmentsTable.projectId,
         to: r.projectsTable.id,
+        optional: false,
       }),
       user: r.one.user({
         from: r.hostProjectAssignmentsTable.userId,
         to: r.user.id,
+        optional: false,
       }),
     },
     projectSharedTravelLegsTable: {
       project: r.one.projectsTable({
         from: r.projectSharedTravelLegsTable.projectId,
         to: r.projectsTable.id,
+        optional: false,
       }),
     },
     projectPartnerOrganizationsTable: {
       project: r.one.projectsTable({
         from: r.projectPartnerOrganizationsTable.projectId,
         to: r.projectsTable.id,
+        optional: false,
       }),
       organization: r.one.organization({
         from: r.projectPartnerOrganizationsTable.organizationId,
         to: r.organization.id,
+        optional: false,
       }),
     },
     projectParticipantsTable: {
       project: r.one.projectsTable({
         from: r.projectParticipantsTable.projectId,
         to: r.projectsTable.id,
+        optional: false,
       }),
       representedOrganization: r.one.organization({
         from: r.projectParticipantsTable.representedOrganizationId,
         to: r.organization.id,
+        optional: false,
       }),
       user: r.one.user({
         from: r.projectParticipantsTable.userId,
