@@ -138,3 +138,6 @@ minimumReleaseAgeExclude:
 permissions:
   "@tanstack/react-table":
     skills: true
+  greendex-skills:
+    build: true
+    skills: true
