@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Pool } from "pg";
@@ -9,8 +9,8 @@ const migrationsDirectory = resolve(
   import.meta.dirname,
   "../../../../packages/database/src/migrations",
 );
-const priorMigrationPrefix = "0012_";
-const cleanupMigrationPrefix = "0013_";
+const priorMigrationIndex = 12;
+const cleanupMigrationIndex = 13;
 
 function disposableDatabaseUrl(databaseName: string): string {
   const url = new URL(process.env.DATABASE_URL!);
@@ -24,27 +24,39 @@ function adminDatabaseUrl(): string {
   return url.toString();
 }
 
-async function applyMigrationsUpTo(pool: Pool, maxPrefix: string): Promise<void> {
-  const filenames = (await readdir(migrationsDirectory))
-    .filter((filename) => filename.endsWith(".sql"))
-    .filter((filename) => filename <= `${maxPrefix}\uffff`)
-    .sort();
+async function v3MigrationDirs(): Promise<string[]> {
+  const names = await readdir(migrationsDirectory);
+  const dirs: string[] = [];
+  for (const name of names.sort()) {
+    if ((await stat(resolve(migrationsDirectory, name))).isDirectory()) {
+      dirs.push(name);
+    }
+  }
+  return dirs;
+}
 
-  for (const filename of filenames) {
-    const sql = await readFile(resolve(migrationsDirectory, filename), "utf8");
+async function applyMigrationsUpTo(pool: Pool, maxIndex: number): Promise<void> {
+  const dirs = (await v3MigrationDirs()).slice(0, maxIndex + 1);
+
+  for (const dir of dirs) {
+    const sql = await readFile(
+      resolve(migrationsDirectory, dir, "migration.sql"),
+      "utf8",
+    );
     await pool.query(sql);
   }
 }
 
 async function applyCleanupMigration(pool: Pool): Promise<void> {
-  const filenames = await readdir(migrationsDirectory);
-  const filename = filenames.find((entry) =>
-    entry.startsWith(cleanupMigrationPrefix),
-  );
-  if (!filename) {
+  const dirs = await v3MigrationDirs();
+  const dir = dirs[cleanupMigrationIndex];
+  if (!dir) {
     throw new Error("Cleanup migration 0013 is missing");
   }
-  const sql = await readFile(resolve(migrationsDirectory, filename), "utf8");
+  const sql = await readFile(
+    resolve(migrationsDirectory, dir, "migration.sql"),
+    "utf8",
+  );
   await pool.query("BEGIN");
   try {
     await pool.query(sql);
@@ -116,7 +128,7 @@ describe("Project Shared Travel Leg compatibility cleanup", () => {
     const database = await createDisposableDatabase();
     databases.push(database);
 
-    await applyMigrationsUpTo(database.pool, priorMigrationPrefix);
+    await applyMigrationsUpTo(database.pool, priorMigrationIndex);
     await createCanonicalProject(database.pool);
 
     // Seed canonical rows before cleanup — these must survive the drop.

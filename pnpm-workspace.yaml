@@ -145,3 +145,4 @@ permissions:
     skills: true
 patchedDependencies:
   "@better-auth/drizzle-adapter": patches/@better-auth__drizzle-adapter.patch
+  drizzle-zod@0.8.3: patches/drizzle-zod@0.8.3.patch

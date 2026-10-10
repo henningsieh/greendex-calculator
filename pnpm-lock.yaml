@@ -316,6 +316,7 @@ overrides:
 
 patchedDependencies:
   '@better-auth/drizzle-adapter': 19ccb5c00195f1e8a86bc9e8b9ccfd2f75ea219e6f9e81933a88e818bde47ef5
+  drizzle-zod@0.8.3: 14ed2c01fb66241bed95738f43d728eb90d6bc9c34d063b0487b5ddecb10b74f
 
 importers:
 
@@ -522,7 +523,7 @@ importers:
         version: 1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
       drizzle-zod:
         specifier: 'catalog:'
-        version: 0.8.3(drizzle-orm@1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(zod@4.6.5)
+        version: 0.8.3(patch_hash=14ed2c01fb66241bed95738f43d728eb90d6bc9c34d063b0487b5ddecb10b74f)(drizzle-orm@1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(zod@4.6.5)
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.3.0)
@@ -739,7 +740,7 @@ importers:
         version: 1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
       drizzle-zod:
         specifier: 'catalog:'
-        version: 0.8.3(drizzle-orm@1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(zod@4.6.5)
+        version: 0.8.3(patch_hash=14ed2c01fb66241bed95738f43d728eb90d6bc9c34d063b0487b5ddecb10b74f)(drizzle-orm@1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(zod@4.6.5)
       lucide-react:
         specifier: 'catalog:'
         version: 1.52.0(@types/react@19.3.0)(react@19.3.0)
@@ -11573,7 +11574,7 @@ snapshots:
       valibot: 1.5.0(typescript@7.0.2)
       zod: 4.6.5
 
-  drizzle-zod@0.8.3(drizzle-orm@1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(zod@4.6.5):
+  drizzle-zod@0.8.3(patch_hash=14ed2c01fb66241bed95738f43d728eb90d6bc9c34d063b0487b5ddecb10b74f)(drizzle-orm@1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(zod@4.6.5):
     dependencies:
       drizzle-orm: 1.0.0-rc.5-ab785fc(@types/pg@8.23.1)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
       zod: 4.6.5
