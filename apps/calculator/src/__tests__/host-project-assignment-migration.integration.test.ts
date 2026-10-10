@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Pool } from "pg";
@@ -19,13 +19,16 @@ it("backfills host assignments before dropping the legacy project column", async
   url.pathname = `/${name}`;
   const pool = new Pool({ connectionString: url.toString(), max: 1 });
   try {
-    const filenames = (await readdir(migrations))
-      .filter((file) => /^\d{4}_.*\.sql$/.test(file))
-      .sort();
-    for (const filename of filenames.filter(
-      (file) => Number(file.slice(0, 4)) <= 28,
-    )) {
-      await pool.query(await readFile(resolve(migrations, filename), "utf8"));
+    const hostAssignmentDirs: string[] = [];
+    for (const entry of (await readdir(migrations)).sort()) {
+      if ((await stat(resolve(migrations, entry))).isDirectory()) {
+        hostAssignmentDirs.push(entry);
+      }
+    }
+    for (const dir of hostAssignmentDirs.slice(0, 29)) {
+      await pool.query(
+        await readFile(resolve(migrations, dir, "migration.sql"), "utf8"),
+      );
     }
     await pool.query(`
       INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
@@ -36,7 +39,10 @@ it("backfills host assignments before dropping the legacy project column", async
       VALUES ('project', 'Project', now(), now(), 'Riga', 'LV', 'host', 'org');
     `);
     await pool.query(
-      await readFile(resolve(migrations, "0029_brief_pepper_potts.sql"), "utf8"),
+      await readFile(
+        resolve(migrations, hostAssignmentDirs[29], "migration.sql"),
+        "utf8",
+      ),
     );
     const assignment = await pool.query(
       `SELECT project_id, user_id FROM host_project_assignment WHERE project_id = 'project'`,
