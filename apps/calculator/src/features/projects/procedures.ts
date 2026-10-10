@@ -152,7 +152,12 @@ export const listProjects = authorized
     // Determine sort order using DEFAULT_PROJECT_SORT as source of truth
     const sortField = input?.sort_by ?? DEFAULT_PROJECT_SORT.column;
     const sortDesc = computeSortDesc(input);
-    const orderByClause = orderByClauseFor(sortField, sortDesc);
+    // NOTE (ORM 1.0): relational orderBy takes no SQL expressions, so
+    // case-insensitive name/location sorting happens in JS below.
+    const jsSort = sortField === "name" || sortField === "location";
+    const orderByClause = jsSort
+      ? undefined
+      : orderByClauseFor(sortField, sortDesc);
 
     const conditions: Record<string, unknown> = {
       organizationId: context.session.activeOrganizationId,
@@ -161,12 +166,23 @@ export const listProjects = authorized
 
     const projects = await db.query.projectsTable.findMany({
       where: conditions,
-      orderBy: orderByClause,
+      ...(orderByClause ? { orderBy: orderByClause } : {}),
       with: {
         hostAssignments: { with: { user: true } },
         organization: true,
       },
     });
+
+    if (jsSort) {
+      const dir = sortDesc ? -1 : 1;
+      projects.sort(
+        (a, b) =>
+          dir *
+          String(a[sortField]).localeCompare(String(b[sortField]), "de", {
+            sensitivity: "base",
+          }),
+      );
+    }
 
     return projects;
   });

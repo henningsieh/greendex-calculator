@@ -106,7 +106,7 @@ async function expectSharedAndClaimTables(pool: Pool) {
 describe("merged migration chain", () => {
   it("keeps main as the prefix and has one ordered SQL and snapshot history", async () => {
     const dirs = await folders();
-    expect(dirs.length).toBe(36);
+    expect(dirs.length).toBe(37);
     expect(dirs).toEqual([...dirs].sort());
     const suffixes = dirs.map((d) => d.slice(15));
     expect(new Set(suffixes).size).toBe(dirs.length);
@@ -116,6 +116,7 @@ describe("merged migration chain", () => {
       "certain_terrax",
       "project_partnership_foundation",
       "awesome_the_enforcers",
+      "thin_hiroim",
     ]) {
       expect(suffixes).toContain(expected);
     }
