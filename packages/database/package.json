@@ -29,6 +29,7 @@
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "drizzle-kit": "^0.31.11",
+    "greendex-skills": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "typescript": "catalog:"
