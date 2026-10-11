@@ -125,7 +125,9 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
 .m-fill:hover::before{transform:translateX(0)}
 }
 .m-ripple{position:relative;overflow:hidden}
-.m-ripple .rip{position:absolute;width:12px;height:12px;border-radius:50%;background:rgba(28,18,0,.35);transform:translate(-50%,-50%);pointer-events:none}
+.is-pending{opacity:.45;box-shadow:none;cursor:wait}
+.is-pending .auto-rip{position:absolute;left:50%;top:50%;width:130px;height:130px;border-radius:50%;background:rgba(28,18,0,.35);transform:translate(-50%,-50%) scale(0);animation:rippleLoop 1.6s var(--ease-out) infinite;pointer-events:none}
+@keyframes rippleLoop{0%{transform:translate(-50%,-50%) scale(0);opacity:.9}80%,100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
 .m-fill{position:relative;overflow:hidden;isolation:isolate}
 .m-fill::before{content:"";position:absolute;inset:0;background:#ffcc33;transform:translateX(-101%);transition:transform 250ms var(--ease-out);z-index:0}
 .m-fill span{position:relative;z-index:1}
@@ -133,7 +135,8 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
 .m-pulse{animation:glowPulse 2.4s var(--ease-in-out) infinite}
 .m-magnet{transition:transform 180ms var(--ease-out),box-shadow 200ms var(--ease-out)}
 @media(prefers-reduced-motion:reduce){
-.m-pulse,.aura,h1 .fire,.term div,.caret{animation:none}
+.m-pulse,.aura,h1 .fire,.term div,.caret,.auto-rip{animation:none}
+.auto-rip{opacity:0}
 .cta,.m-fill::before,.stat,.stat::before{transition-duration:.01ms}
 }
 .switcher{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;background:rgba(8,5,16,.85);border:1px solid var(--line);border-radius:999px;padding:8px 10px;z-index:50;backdrop-filter:blur(12px);box-shadow:0 10px 40px rgba(0,0,0,.6)}
@@ -258,7 +261,7 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
     <div class="motion-grid">
       <div class="m-cell"><button class="cta m-shine" type="button">Shine</button><div class="tag">SHINE · sweep 600ms ease-out</div></div>
       <div class="m-cell"><button class="cta m-lift" type="button">Lift</button><div class="tag">LIFT · −2px + Schatten · 200ms</div></div>
-      <div class="m-cell"><button class="cta m-ripple" type="button">Ripple</button><div class="tag">RIPPLE · scale + fade · 550ms</div></div>
+      <div class="m-cell"><button class="cta m-ripple is-pending" type="button" disabled><span>Wird eingereicht…</span><span class="auto-rip"></span></button><div class="tag">RIPPLE · React-Query pending · 40%</div></div>
       <div class="m-cell"><button class="cta m-fill" type="button"><span>Fill</span></button><div class="tag">FILL · Slide-In · 250ms</div></div>
       <div class="m-cell"><button class="cta m-magnet" type="button">Magnet</button><div class="tag">MAGNET · folgt dem Zeiger</div></div>
       <div class="m-cell"><button class="cta m-pulse" type="button">Pulse</button><div class="tag">PULSE · Glow-Atem · 2.4s</div></div>
@@ -271,7 +274,6 @@ b.addEventListener('click',()=>{n++;c.textContent=n+'× geklickt — kein Backen
 const vibes=[...document.querySelectorAll('.switcher button')];
 function setVibe(v){document.body.dataset.vibe=v==='plum'?'':v;vibes.forEach(x=>x.classList.toggle('on',x.dataset.vibe===v));try{localStorage.setItem('ember-vibe',v)}catch(e){}const u=new URL(location.href);u.searchParams.set('theme',v);history.replaceState(null,'',u);}
 vibes.forEach(x=>x.addEventListener('click',()=>setVibe(x.dataset.vibe)));
-document.querySelectorAll('.m-ripple').forEach(btn=>{btn.addEventListener('click',e=>{const r=btn.getBoundingClientRect(),s=document.createElement('span');s.className='rip';const d=Math.max(r.width,r.height)*2;s.style.width=s.style.height=d+'px';s.style.left=(e.clientX-r.left)+'px';s.style.top=(e.clientY-r.top)+'px';btn.appendChild(s);s.animate([{transform:'translate(-50%,-50%) scale(0)',opacity:.9},{transform:'translate(-50%,-50%) scale(1)',opacity:0}],{duration:550,easing:'cubic-bezier(0.23,1,0.32,1)'}).onfinish=()=>s.remove();});});
 document.querySelectorAll('.m-magnet').forEach(btn=>{btn.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const r=btn.getBoundingClientRect();const x=Math.min(7,Math.max(-7,(e.clientX-r.left-r.width/2)/r.width*22));const y=Math.min(5,Math.max(-5,(e.clientY-r.top-r.height/2)/r.height*16));btn.style.transform=`translate(${x}px,${y}px)`;});btn.addEventListener('pointerleave',()=>{btn.style.transform='';});});
 const start=(new URL(location.href).searchParams.get('theme'))||(function(){try{return localStorage.getItem('ember-vibe')}catch(e){return null}})()||'plum';
 setVibe(['plum','midnight','violet','abyss','royal'].includes(start)?start:'plum');

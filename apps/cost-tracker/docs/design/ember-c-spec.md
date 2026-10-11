@@ -63,6 +63,9 @@ ist das Fundament, kein Ersatz dafür.
   zukünftigen Landingpage — nirgendwo sonst verwenden, auch nicht im
   Motion-Lab als Dauerzustand (dort nur Vergleichszweck)
 - Die Landingpage ist der erste echte Bauabschnitt, sobald das Design steht
+- **Ripple** ist die Pending-Variante für React-Query-`isPending`: reduzierte
+  Farbe wie `:disabled` (40%, kein Glow, `cursor:wait`), Ripple als Loop.
+  Im Mock per CSS-Loop, in React pro Pending-State triggern
 
 ## Hochglanz (Aura, dosiert)
 
