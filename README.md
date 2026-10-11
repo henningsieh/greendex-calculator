@@ -127,9 +127,10 @@ pnpm install
 
 ### Configure the environment
 
-Each application owns its local environment file:
+Configure the shared database connection once, alongside app-specific local environment files:
 
 ```bash
+cp packages/database/.env.example packages/database/.env
 cp apps/calculator/.env.example apps/calculator/.env
 cp apps/cost-tracker/.env.example apps/cost-tracker/.env
 cp apps/documentation/.env.example apps/documentation/.env
@@ -139,14 +140,18 @@ Fill every required Calculator value in its example. The calculator validates
 its variables with `@t3-oss/env-nextjs`; the development configuration includes:
 
 - Application URLs and ports (`PORT` and `SOCKET_PORT`)
-- `DATABASE_URL`
 - `BETTER_AUTH_SECRET`
 - Google, GitHub, and Discord OAuth credentials
 - SMTP connection credentials
 - `NEXT_PUBLIC_SOCKET_URL`
 
+Set `DATABASE_URL` only in `packages/database/.env` for the shared Calculator/Cost
+Tracker database (see [shared setup](docs/database/development-databases.md)).
+Both apps, Vitest and Drizzle Kit load that shared file; injected platform values
+take precedence. Do not add per-app database connection forks.
+
 Cost Tracker currently requires `COST_TRACKER_PORT`; its example defaults to
-`3002`. Application scripts load their app-local files where needed, while
+`3002`. Application scripts load the shared file before their app-local files, while
 Next.js loads the Documentation file. In Coolify, each application receives
 only its own values from the platform, and those values remain outside Git.
 
@@ -326,7 +331,7 @@ package API; transport uses Nodemailer.
 
 `apps/calculator/src/socket-server.ts` is a separate Socket.IO process. It reads
 validated process environment from `@/env`; Calculator scripts inject its
-app-local `.env` through `dotenv run`, while Coolify injects runtime values
+shared database and app-local `.env` files through `dotenv run`, while Coolify injects runtime values
 directly.
 
 Clients connect through `NEXT_PUBLIC_SOCKET_URL`, so local ports and the deployed
@@ -374,7 +379,7 @@ to workspace processes.
 
 Calculator applies committed Drizzle migrations during both lifecycle stages:
 
-- `prebuild` loads the app-local environment, then runs the workspace Turbo
+- `prebuild` loads the shared database and app-local environment, then runs the workspace Turbo
   `db:migrate` task;
 - `prestart` prepares the configured ports, then runs
   `pnpm --filter @greendex/database run db:migrate` before Next.js and Socket.IO

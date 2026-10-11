@@ -5,9 +5,10 @@ Use these documents when changing database schemas, migrations, or the connectio
 ## Documents
 
 - [Coolify database connections](./coolify-ssl-connection.md) — private-network connection boundary for the deployed database.
-- [Project Partnership invariant rollout](./project-partnership-invariants-rollout.md) — controlled rollout and verification for migration `0017`.
+- [Project Partnership invariant rollout](./project-partnership-invariants-rollout.md) — controlled rollout and verification for migration `0019_project-partnership-invariants`.
 - [Shared-database merge proof](./merge-proof.md) — seed fixture and repeatable two-app browser gate.
 - [Development databases](./development-databases.md) — one shared Live + Preview setup and its centralized local connection.
+- [Local disposable test fixtures](./local-test-fixtures.md) — loopback PostgreSQL and Garage fixtures for unit/integration suites; never deployed data.
 - [Drizzle map](../agents/instructions/drizzle.md) — official lookup route and schema/migration workflow.
 
 ## Source of truth

@@ -1,6 +1,6 @@
 # Project Partnership invariant migration rollout
 
-Migration `0017_project-partnership-invariants` repairs databases that recorded the historical version of `0015_project_partnership_foundation` before its backfill, functions, and constraint triggers were added. It is append-only: do not edit or rerun `0015`.
+Migration `0019_project-partnership-invariants` repairs databases that recorded the historical version of `0017_project_partnership_foundation` before its backfill, functions, and constraint triggers were added. It is append-only: do not edit or rerun `0017`.
 
 ## Preconditions
 
@@ -14,7 +14,7 @@ Migration `0017_project-partnership-invariants` repairs databases that recorded 
 
    ```sql
    SELECT id, hash, created_at
-   FROM __drizzle_migrations
+   FROM drizzle.__drizzle_migrations
    ORDER BY created_at;
    ```
 
