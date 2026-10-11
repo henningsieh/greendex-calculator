@@ -59,11 +59,13 @@ ist das Fundament, kein Ersatz dafür.
 
 ## Motion-Entscheide (LOCKED 2026-10-11)
 
-- **Pulse** (`glowPulse`, Glow-Atem 2.4s) ist reserviert für den Main-CTA der
-  zukünftigen Landingpage — nirgendwo sonst verwenden, auch nicht im
-  Motion-Lab als Dauerzustand (dort nur Vergleichszweck)
+- **CTA** (vormals Pulse: `glowPulse`, Glow-Atem 2.4s, UI-Label `CTA`) ist
+  reserviert für den Main-CTA der zukünftigen Landingpage — nirgendwo
+  sonst verwenden, auch nicht im Motion-Lab als Dauerzustand
+  (dort nur Vergleichszweck)
 - Die Landingpage ist der erste echte Bauabschnitt, sobald das Design steht
-- **Pending** (LOCKED 2026-10-11) ist die Variante für React-Query-`isPending`:
+- **Pending** (LOCKED 2026-10-11, final abgenommen) ist die Variante für
+  React-Query-`isPending`:
   reduzierte Farbe per Color-Mix (45% Feuer auf Pflaume, Text gedimmt,
   Glow weicher, `cursor:not-allowed`) — kein `opacity`, das würde den Glow
   mitdimmen. Dazu Sweep-Band (1.4s-Loop, transform-only) plus Tipp-Punkte
