@@ -12,6 +12,29 @@ New adapted design system for Calculator and Cost Tracker, starting from `main`.
   accent (Erasmus yellow as fire), oversized type, generous whitespace,
   disciplined spacing. Crazy needs rules, otherwise it becomes carnival.
 
+## Theme scope (LOCKED 2026-10-11)
+
+7 themes, selectable side by side via next-themes:
+
+- `light` = EU-Erasmus Light (bestehend, unangetastet)
+- 5 Ember vibes = plum, midnight, violet, abyss, royal (neu)
+- Altes Zinc-Dark bleibt als 7. Option erhalten
+
+## shadcn direction (LOCKED 2026-10-11)
+
+Maximale shadcn-Nähe: gelockte Looks bleiben, Implementierung wird
+shadcn-idiomatisch. Hebel aus dem Conformity-Report:
+
+- Vollständiges Token-Mapping aller 7 Themes auf shadcn-Variablen
+  (`--primary`, `--accent`, `--muted`, `--card`, `--border`, `--ring`,
+  Radius-Scale, Fonts) — keine Rohwerte in Components
+- Customs als shadcn-Komponenten: `StarWreath` als Icon-Komponente,
+  `StatGrid`/`PendingButton`/`Aura` als Blöcke mit `cva`-Varianten
+- `data-*`-Attribute statt `:has()` (shadcn-Idiom: `data-disabled`),
+  `Spinner`-Muster prüfen wo sinnvoll, `Card`-Komposition wo möglich
+- Rest (~15%: Loops, SVG-Marke, fugenloses Raster, Aura) bleibt naturgemäß
+  Custom-CSS — shadcn sieht Brand-Motion dort auch vor
+
 ## Non-goals for this branch
 
 - No behavior changes, no API changes, no migration changes.
