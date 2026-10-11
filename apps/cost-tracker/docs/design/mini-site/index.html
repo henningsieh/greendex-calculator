@@ -49,16 +49,7 @@ h1 .fire{color:var(--fire);text-shadow:0 0 60px rgba(255,184,0,.45)}
 .cta:disabled:not(.is-pending){opacity:.4;box-shadow:none;cursor:not-allowed}
 .is-pending:disabled{box-shadow:0 0 28px rgba(255,184,0,.4),inset 0 1px 0 rgba(255,255,255,.4);cursor:not-allowed}
 .cta.small{padding:11px 24px;font-size:13px;width:auto;display:inline-block}
-.lab{margin-top:130px}
-.lab h2{font-size:clamp(40px,4.5vw,64px);font-weight:900;letter-spacing:-.03em;line-height:1.05}
-.lab h2 .fire{color:var(--fire)}
-.lab p{color:var(--muted);line-height:1.7;font-size:16.5px;margin-top:20px;max-width:56ch}
-.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:36px}
-.btn-cell{border:1px solid var(--line);border-radius:18px;padding:30px 28px;background:rgba(255,255,255,.02);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
-.btn-cell .cta{margin:0}
-.btn-cell .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);margin-top:16px}
-.btn-cell .tag span{color:var(--fire)}
-@media(max-width:760px){.btn-grid{grid-template-columns:1fr}}
+.m-cell .tag span{color:var(--fire)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:22px;overflow:hidden;margin:70px 0 0;background:rgba(255,255,255,.02);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
 .stat{padding:38px 36px;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
 .stat:nth-child(3n){border-right:none}
@@ -118,19 +109,18 @@ button{-webkit-tap-highlight-color:transparent}
 .motion p{color:var(--muted);line-height:1.7;font-size:16.5px;margin-top:20px;max-width:56ch}
 .motion-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:36px}
 .m-cell{border:1px solid var(--line);border-radius:18px;padding:30px 28px;background:rgba(255,255,255,.02);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:border-color 220ms var(--ease-out),transform 220ms var(--ease-out)}
-.btn-cell{transition:border-color 220ms var(--ease-out),transform 220ms var(--ease-out)}
+
 .m-cell .cta{margin:0;width:100%}
 .m-cell .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);margin-top:16px}
 @media(max-width:760px){.motion-grid{grid-template-columns:1fr}}
-.hero-pick{grid-column:1/-1;border-color:rgba(255,184,0,.45);background:linear-gradient(180deg,rgba(255,184,0,.08),rgba(255,255,255,.02))}
-.hero-pick .cta{box-shadow:0 0 18px rgba(255,184,0,.5),inset 0 1px 0 rgba(255,255,255,.5)}
-.hero-pick .tag{color:var(--fire)}
+.card-active{grid-column:1/-1;border-color:rgba(255,184,0,.45);background:linear-gradient(180deg,rgba(255,184,0,.08),rgba(255,255,255,.02))}
+.card-active .cta{box-shadow:0 0 18px rgba(255,184,0,.5),inset 0 1px 0 rgba(255,255,255,.5)}
+.card-active .tag{color:var(--fire)}
 @media(hover:hover) and (pointer:fine){
 .m-lift:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(255,184,0,.5),inset 0 1px 0 rgba(255,255,255,.5)}
 .m-shine:hover::after{transform:translateX(260%) skewX(-20deg);opacity:1}
-.m-fill:hover::before{transform:translateX(0)}
-.m-cell:hover,.btn-cell:hover{transform:translateY(-2px);border-color:rgba(255,184,0,.45)}
-.m-cell.calm:hover,.btn-cell.calm:hover{transform:none;border-color:var(--line)}
+.m-cell:hover{transform:translateY(-2px);border-color:rgba(255,184,0,.45)}
+.m-cell.calm:hover{transform:none;border-color:var(--line)}
 }
 .m-ripple{position:relative;overflow:hidden}
 .is-pending{background:color-mix(in srgb,#FFB800 45%,#0E0A14);color:rgba(28,18,0,.65);box-shadow:0 0 28px rgba(255,184,0,.4),inset 0 1px 0 rgba(255,255,255,.4);cursor:not-allowed}
@@ -139,15 +129,13 @@ button{-webkit-tap-highlight-color:transparent}
 .dots i{font-style:normal;animation:dotBlink 1.2s ease-in-out infinite}
 .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 @keyframes dotBlink{0%,60%,100%{opacity:.2}30%{opacity:1}}
-.m-fill{position:relative;overflow:hidden;isolation:isolate}
-.m-fill::before{content:"";position:absolute;inset:0;background:#ffcc33;transform:translateX(-101%);transition:transform 250ms var(--ease-out);z-index:0}
-.m-fill span{position:relative;z-index:1}
+
 @keyframes glowPulse{0%,100%{box-shadow:0 0 32px rgba(255,184,0,.4),inset 0 1px 0 rgba(255,255,255,.5)}50%{box-shadow:0 0 54px rgba(255,184,0,.6),inset 0 1px 0 rgba(255,255,255,.5)}}
 .m-pulse{animation:glowPulse 2.4s var(--ease-in-out) infinite}
-.m-magnet{transition:transform 180ms var(--ease-out),box-shadow 200ms var(--ease-out)}
+
 @media(prefers-reduced-motion:reduce){
 .m-pulse,.aura,h1 .fire,.term div,.caret,.sweep,.dots i{animation:none}
-.cta,.m-fill::before,.stat,.stat::before,.m-cell,.btn-cell{transition-duration:.01ms}
+.cta,.stat,.stat::before,.m-cell{transition-duration:.01ms}
 }
 .switcher{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;background:rgba(8,5,16,.85);border:1px solid var(--line);border-radius:999px;padding:8px 10px;z-index:50;backdrop-filter:blur(6px);box-shadow:0 10px 40px rgba(0,0,0,.6)}
 .sw-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);padding:0 8px 0 10px}
@@ -240,42 +228,16 @@ button{-webkit-tap-highlight-color:transparent}
       <div class="ok-row">→ 515,00 € bereit zur Einreichung <span class="caret"></span></div>
     </div>
   </div>
-  <div class="lab">
-    <div class="eyebrow">DIE KOMPONENTE</div>
-    <h2>Ein Button.<br /><span class="fire">Null Fragen.</span></h2>
-    <p>Der neue Primary aus dem Ember-System: Feuer-Fläche, dunkler Text, Glow mit Glas-Kante oben. Klick ihn — der Zähler beweist, dass er echt ist.</p>
-    <div class="btn-grid">
-      <div class="btn-cell">
-        <button class="cta m-shine m-lift" id="demo-btn">Claim einreichen</button>
-        <div class="tag">.btn-primary · Lift + Shine · LOCKED · <span id="clicks">0× geklickt</span></div>
-      </div>
-      <div class="btn-cell">
-        <button class="cta ghost">Kennzahlen ansehen</button>
-        <div class="tag">.btn-ghost</div>
-      </div>
-      <div class="btn-cell calm">
-        <button class="cta m-ripple is-pending" type="button" disabled><span>Einreichung läuft<span class="dots"><i>.</i><i>.</i><i>.</i></span></span><span class="sweep"></span></button>
-        <div class="tag">PENDING · derselbe State, dieselbe Sprache</div>
-      </div>
-      <div class="btn-cell">
-        <button class="cta small m-shine m-lift">Klein</button>
-        <button class="cta ghost small">Klein</button>
-        <div class="tag">.small · 13px</div>
-      </div>
-    </div>
-  </div>
   <div class="motion">
-    <div class="eyebrow">MOTION LAB</div>
-    <h2>Drück mal.<br /><span class="fire">Fühl mal.</span></h2>
-    <p>Sechs Kandidaten für den Ember-Primary — alle transform/opacity-only, alle mit Press-Feedback (scale .97, 160ms). Favorit merken, Rest fliegt.</p>
+    <div class="eyebrow">DAS SYSTEM</div>
+    <h2>Vier Buttons.<br /><span class="fire">Null Fragen.</span></h2>
+    <p>Das gelockte Ember-Button-System — Primary für alles Echte, Ghost für alles Ruhige, Pending für alle Warte-Zustände, CTA exklusiv für die Landingpage. Echte Buttons: Der Primary zählt seine Klicks.</p>
     <div class="motion-grid">
-      <div class="m-cell"><button class="cta m-shine" type="button">Shine</button><div class="tag">SHINE · sweep 600ms ease-out</div></div>
-      <div class="m-cell"><button class="cta m-lift" type="button">Lift</button><div class="tag">LIFT · −2px + Schatten · 200ms</div></div>
-      <div class="m-cell calm"><button class="cta m-ripple is-pending" type="button" disabled><span>Wird eingereicht<span class="dots"><i>.</i><i>.</i><i>.</i></span></span><span class="sweep"></span></button><div class="tag">PENDING · Sweep + Punkte · Glow</div></div>
-      <div class="m-cell"><button class="cta m-fill" type="button"><span>Fill</span></button><div class="tag">FILL · Slide-In · 250ms</div></div>
-      <div class="m-cell"><button class="cta m-magnet" type="button">Magnet</button><div class="tag">MAGNET · folgt dem Zeiger</div></div>
-      <div class="m-cell"><button class="cta m-pulse" type="button">CTA</button><div class="tag">CTA · Landingpage Main-CTA · Glow-Atem</div></div>
-      <div class="m-cell hero-pick"><button class="cta m-shine m-lift" type="button">Primary</button><div class="tag">★ VORSCHLAG · Lift + Shine kombiniert</div></div>
+      <div class="m-cell card-active"><button class="cta m-shine m-lift" id="demo-btn" type="button">Primary</button><div class="tag">PRIMARY · Lift + Shine · LOCKED · <span id="clicks">0× geklickt</span></div></div>
+      <div class="m-cell"><button class="cta ghost" type="button">Ghost</button><div class="tag">GHOST · ruhig · unverändert</div></div>
+      <div class="m-cell calm"><button class="cta m-ripple is-pending" type="button" disabled><span>Wird eingereicht<span class="dots"><i>.</i><i>.</i><i>.</i></span></span><span class="sweep"></span></button><div class="tag">PENDING · Sweep + Punkte · LOCKED</div></div>
+      <div class="m-cell"><button class="cta m-pulse" type="button">CTA</button><div class="tag">CTA · nur Landingpage · LOCKED</div></div>
+      <div class="m-cell"><button class="cta small m-shine m-lift" type="button">Klein</button> <button class="cta ghost small" type="button">Klein</button><div class="tag">GRÖSSEN · Small läuft mit</div></div>
     </div>
   </div>
   <div class="meta"><span>EMBER-C · PFLAUME #0E0A14 · FEUER #FFB800</span><span>MINI-SITE · KEINE ECHTDATEN</span></div>
@@ -285,7 +247,6 @@ b.addEventListener('click',()=>{n++;c.textContent=n+'× geklickt — kein Backen
 const vibes=[...document.querySelectorAll('.switcher button')];
 function setVibe(v){document.body.dataset.vibe=v==='plum'?'':v;vibes.forEach(x=>x.classList.toggle('on',x.dataset.vibe===v));try{localStorage.setItem('ember-vibe',v)}catch(e){}const u=new URL(location.href);u.searchParams.set('theme',v);history.replaceState(null,'',u);}
 vibes.forEach(x=>x.addEventListener('click',()=>setVibe(x.dataset.vibe)));
-document.querySelectorAll('.m-magnet').forEach(btn=>{btn.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const r=btn.getBoundingClientRect();const x=Math.min(7,Math.max(-7,(e.clientX-r.left-r.width/2)/r.width*22));const y=Math.min(5,Math.max(-5,(e.clientY-r.top-r.height/2)/r.height*16));btn.style.transform=`translate(${x}px,${y}px)`;});btn.addEventListener('pointerleave',()=>{btn.style.transform='';});});
 const start=(new URL(location.href).searchParams.get('theme'))||(function(){try{return localStorage.getItem('ember-vibe')}catch(e){return null}})()||'plum';
 setVibe(['plum','midnight','violet','abyss','royal'].includes(start)?start:'plum');
 </script>

@@ -69,6 +69,17 @@ ist das Fundament, kein Ersatz dafür.
 - Fenster-Punkte oben (erster Punkt `--fire`), Statuszeile unten in `--fire`
 - Symbole: `✓` erledigt, `◌` offen — Text bleibt `--muted`, Werte `--ink`
 
+## Button-System (LOCKED 2026-10-11)
+
+Eine Sektion, vier Buttons, keine Ausnahmen — die alten Kandidaten-Zellen
+(Shine/Lift/Fill/Magnet einzeln, separates Button-Labor) sind ausgebaut:
+
+- **Primary** = Lift + Shine + Press-Scale, 18px-Glow, Shine ruht unsichtbar
+- **Ghost** = transparent, 1px `--line`, kein Glow, bleibt wie er ist
+- **Pending** = Color-Mix 45%, Sweep + Punkte, Glow weich, `calm`, disabled
+- **CTA** = Glow-Atem, nur Landingpage-Main-CTA
+- Größen laufen mit (Small 13px), Zones: `calm`-Zellen ohne Card-Hover
+
 ## Motion-Entscheide (LOCKED 2026-10-11)
 
 - **Primary** (LOCKED 2026-10-11): Lift + Shine kombiniert plus Press-Scale.
