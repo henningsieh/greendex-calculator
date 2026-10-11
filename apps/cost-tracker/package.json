@@ -10,7 +10,7 @@
     "dev": "dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env -- sh -c 'next dev --port \"$COST_TRACKER_PORT\"'",
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
-    "prebuild": "dotenv -e ../../packages/database/.env -e .env -- pnpm -w run db:migrate",
+    "prebuild": "dotenv -e ../../packages/database/.env -e .env -- sh -c 'if [ -z \"$DATABASE_URL\" ]; then echo \"Skipping db:migrate: DATABASE_URL not set (preview build without build-time env; runtime start:prepare migrates)\"; else pnpm -w run db:migrate; fi'",
     "predev": "dotenv -e ../../packages/database/.env -e .env -- sh -c 'fuser -k \"$COST_TRACKER_PORT/tcp\" || true'",
     "prestart": "dotenv -e ../../packages/database/.env -e .env -- pnpm run start:prepare",
     "start": "dotenv -v NODE_ENV=production -e ../../packages/database/.env -e .env -- sh -c 'next start --port \"$COST_TRACKER_PORT\"'",
