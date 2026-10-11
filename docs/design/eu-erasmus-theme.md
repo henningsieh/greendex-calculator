@@ -29,3 +29,8 @@ New adapted design system for Calculator and Cost Tracker, starting from `main`.
 2. eu-erasmus light palette + type proposal.
 3. ember dark proposal with the single-accent rule.
 4. Preview deployment per app for visual review.
+
+## Auto-deploy check
+
+- 2026-10-11: `is_auto_deploy_enabled=true` on the Cost-Tracker app so every
+  branch commit retriggers the PR preview (`261.cost-tracker.apps.sieh.org`).
