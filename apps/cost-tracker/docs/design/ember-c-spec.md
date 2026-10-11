@@ -59,6 +59,11 @@ ist das Fundament, kein Ersatz dafür.
 
 ## Motion-Entscheide (LOCKED 2026-10-11)
 
+- **Primary** (LOCKED 2026-10-11): Lift + Shine kombiniert plus Press-Scale.
+  Hover hebt (−2px, Schatten wächst), Shine-Sweep läuft über den Button,
+  Klick federt (scale .97, 160ms). Glow straff (18px), Shine im Ruhezustand
+  unsichtbar. Das ist der Ember-Primary für alle echten Buttons.
+
 - **CTA** (vormals Pulse: `glowPulse`, Glow-Atem 2.4s, UI-Label `CTA`) ist
   reserviert für den Main-CTA der zukünftigen Landingpage — nirgendwo
   sonst verwenden, auch nicht im Motion-Lab als Dauerzustand
