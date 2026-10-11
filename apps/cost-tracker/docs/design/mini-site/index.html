@@ -46,7 +46,8 @@ h1 .fire{color:var(--fire);text-shadow:0 0 60px rgba(255,184,0,.45)}
 .cta:hover{background:var(--fire-hot)}
 .cta.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
 .cta:focus-visible{outline:3px solid var(--fire);outline-offset:4px}
-.cta:disabled{opacity:.4;box-shadow:none;cursor:not-allowed}
+.cta:disabled:not(.is-pending){opacity:.4;box-shadow:none;cursor:not-allowed}
+.is-pending:disabled{box-shadow:0 0 32px rgba(255,184,0,.45),inset 0 1px 0 rgba(255,255,255,.5);cursor:wait}
 .cta.small{padding:11px 24px;font-size:13px;width:auto;display:inline-block}
 .lab{margin-top:130px}
 .lab h2{font-size:clamp(40px,4.5vw,64px);font-weight:900;letter-spacing:-.03em;line-height:1.05}
@@ -125,7 +126,7 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
 .m-fill:hover::before{transform:translateX(0)}
 }
 .m-ripple{position:relative;overflow:hidden}
-.is-pending{opacity:.55;box-shadow:0 0 26px rgba(255,184,0,.35),inset 0 1px 0 rgba(255,255,255,.5);cursor:wait}
+.is-pending{background:color-mix(in srgb,#FFB800 55%,#0E0A14);box-shadow:0 0 32px rgba(255,184,0,.45),inset 0 1px 0 rgba(255,255,255,.5);cursor:wait}
 .is-pending .sweep{position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.4),transparent);transform:translateX(-120%);animation:sweepLoop 1.4s var(--ease-in-out) infinite;pointer-events:none}
 @keyframes sweepLoop{to{transform:translateX(280%)}}
 .dots i{font-style:normal;animation:dotBlink 1.2s ease-in-out infinite}
@@ -263,7 +264,7 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
     <div class="motion-grid">
       <div class="m-cell"><button class="cta m-shine" type="button">Shine</button><div class="tag">SHINE · sweep 600ms ease-out</div></div>
       <div class="m-cell"><button class="cta m-lift" type="button">Lift</button><div class="tag">LIFT · −2px + Schatten · 200ms</div></div>
-      <div class="m-cell"><button class="cta m-ripple is-pending" type="button" disabled><span>Wird eingereicht<span class="dots"><i>.</i><i>.</i><i>.</i></span></span><span class="sweep"></span></button><div class="tag">PENDING · Sweep + Punkte · 40%</div></div>
+      <div class="m-cell"><button class="cta m-ripple is-pending" type="button" disabled><span>Wird eingereicht<span class="dots"><i>.</i><i>.</i><i>.</i></span></span><span class="sweep"></span></button><div class="tag">PENDING · Sweep + Punkte · Glow</div></div>
       <div class="m-cell"><button class="cta m-fill" type="button"><span>Fill</span></button><div class="tag">FILL · Slide-In · 250ms</div></div>
       <div class="m-cell"><button class="cta m-magnet" type="button">Magnet</button><div class="tag">MAGNET · folgt dem Zeiger</div></div>
       <div class="m-cell"><button class="cta m-pulse" type="button">Pulse</button><div class="tag">PULSE · Glow-Atem · 2.4s</div></div>
