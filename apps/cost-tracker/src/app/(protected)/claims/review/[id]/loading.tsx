@@ -1,5 +1,12 @@
-import { PrefetchedPageSkeleton } from "@/components/prefetched-page-skeleton";
+import {
+  ClaimReviewSkeleton,
+  ProjectDataPageSkeleton,
+} from "@/features/projects/components/project-loading-states";
 
 export default function Loading() {
-  return <PrefetchedPageSkeleton label="Loading Claim review" />;
+  return (
+    <ProjectDataPageSkeleton>
+      <ClaimReviewSkeleton />
+    </ProjectDataPageSkeleton>
+  );
 }

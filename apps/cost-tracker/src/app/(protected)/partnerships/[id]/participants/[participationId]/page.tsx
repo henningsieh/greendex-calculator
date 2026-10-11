@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { ParticipantDetailsSection } from "@/features/projects/components/participant-details-section";
+import { ParticipantDetailsSkeleton } from "@/features/projects/components/project-loading-states";
 import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Participant details" };
@@ -30,11 +30,7 @@ export default async function ParticipantDetailsPage({
           to correct.
         </p>
       </header>
-      <Suspense
-        fallback={
-          <PrefetchedSectionSkeleton label="Loading Participant details" />
-        }
-      >
+      <Suspense fallback={<ParticipantDetailsSkeleton />}>
         <ParticipantDetailsSection params={params} />
       </Suspense>
     </div>

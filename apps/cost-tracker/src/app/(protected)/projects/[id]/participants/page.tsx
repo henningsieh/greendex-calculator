@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { HostedParticipantsSection } from "@/features/projects/components/hosted-participants-section";
+import { HostedParticipantsSkeleton } from "@/features/projects/components/project-loading-states";
 import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Participants report" };
@@ -30,11 +30,7 @@ export default async function HostedParticipantsPage({
           Partner Organization. This report only reads.
         </p>
       </header>
-      <Suspense
-        fallback={
-          <PrefetchedSectionSkeleton label="Loading the Participants report" />
-        }
-      >
+      <Suspense fallback={<HostedParticipantsSkeleton />}>
         <HostedParticipantsSection params={params} />
       </Suspense>
     </div>

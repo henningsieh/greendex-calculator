@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { PartnershipParticipantsSection } from "@/features/projects/components/partnership-participants-section";
+import { PartnershipParticipantsSkeleton } from "@/features/projects/components/project-loading-states";
 import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Project Participations" };
@@ -29,11 +29,7 @@ export default async function PartnershipParticipantsPage({
           Coordinate Participants for this Project Partnership.
         </p>
       </header>
-      <Suspense
-        fallback={
-          <PrefetchedSectionSkeleton label="Loading Project Participations" />
-        }
-      >
+      <Suspense fallback={<PartnershipParticipantsSkeleton />}>
         <PartnershipParticipantsSection params={params} />
       </Suspense>
     </div>

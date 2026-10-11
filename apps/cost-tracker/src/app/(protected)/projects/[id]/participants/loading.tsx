@@ -1,5 +1,12 @@
-import { PrefetchedPageSkeleton } from "@/components/prefetched-page-skeleton";
+import {
+  HostedParticipantsSkeleton,
+  ProjectDataPageSkeleton,
+} from "@/features/projects/components/project-loading-states";
 
 export default function Loading() {
-  return <PrefetchedPageSkeleton label="Loading the Participants report" />;
+  return (
+    <ProjectDataPageSkeleton>
+      <HostedParticipantsSkeleton />
+    </ProjectDataPageSkeleton>
+  );
 }

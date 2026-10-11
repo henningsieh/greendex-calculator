@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
+import { ProjectWorkspaceSkeleton } from "@/features/projects/components/project-loading-states";
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
 import { hasOrganizationMembership } from "@/lib/session";
 
@@ -21,9 +21,7 @@ export default async function ProjectPage({
   return (
     <div>
       <p className="text-sm font-medium text-primary">Project workspace</p>
-      <Suspense
-        fallback={<PrefetchedSectionSkeleton label="Loading Project workspace" />}
-      >
+      <Suspense fallback={<ProjectWorkspaceSkeleton />}>
         <ProjectWorkspaceSection params={params} searchParams={searchParams} />
       </Suspense>
     </div>
