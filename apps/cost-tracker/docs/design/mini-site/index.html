@@ -143,6 +143,7 @@ button{-webkit-tap-highlight-color:transparent}
 .switcher button{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:8px 14px;cursor:pointer}
 .switcher button:hover{color:var(--ink)}
 .switcher button.on{color:#1c1200;background:var(--fire);font-weight:600}
+.notrans *{transition:none!important;animation:none!important}
 .meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--faint);margin-top:110px;border-top:1px solid var(--line);padding-top:20px}
 @media(max-width:760px){
   .wrap{padding:0 18px 110px}
@@ -246,7 +247,7 @@ button{-webkit-tap-highlight-color:transparent}
 let n=0;const b=document.getElementById('demo-btn'),c=document.getElementById('clicks');
 b.addEventListener('click',()=>{n++;c.textContent=n+'× geklickt — kein Backend, nur Ember';});
 const vibes=[...document.querySelectorAll('.switcher button')];
-function setVibe(v){document.body.dataset.vibe=v==='plum'?'':v;vibes.forEach(x=>x.classList.toggle('on',x.dataset.vibe===v));try{localStorage.setItem('ember-vibe',v)}catch(e){}const u=new URL(location.href);u.searchParams.set('theme',v);history.replaceState(null,'',u);}
+function setVibe(v){document.documentElement.classList.add('notrans');void document.body.offsetHeight;document.body.dataset.vibe=v==='plum'?'':v;requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('notrans')));vibes.forEach(x=>x.classList.toggle('on',x.dataset.vibe===v));try{localStorage.setItem('ember-vibe',v)}catch(e){}const u=new URL(location.href);u.searchParams.set('theme',v);history.replaceState(null,'',u);}
 vibes.forEach(x=>x.addEventListener('click',()=>setVibe(x.dataset.vibe)));
 const start=(new URL(location.href).searchParams.get('theme'))||(function(){try{return localStorage.getItem('ember-vibe')}catch(e){return null}})()||'plum';
 setVibe(['plum','midnight','violet','abyss','royal'].includes(start)?start:'plum');
