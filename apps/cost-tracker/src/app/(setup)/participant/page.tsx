@@ -9,7 +9,7 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "My Project Participations" };
 
-// Keep the session gate before the Participant onboarding state machine paints.
+// Session-gated onboarding state-machine entry; restructuring it is outside this adoption.
 export const instant = false;
 
 export default async function ParticipantPage() {

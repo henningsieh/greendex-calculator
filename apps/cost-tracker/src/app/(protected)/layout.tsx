@@ -1,64 +1,45 @@
-import { connection } from "next/server";
+import { Suspense } from "react";
 
-import { AppNavigation } from "@/components/app-navigation";
-import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
-import {
-  canManageOrganization,
-  canViewPartnerNetwork,
-} from "@/features/organizations/access";
-import { SelectOrganization } from "@/features/organizations/components/select-organization";
-import { resolveStaffOrganizationContext } from "@/features/organizations/staff-eligibility";
-import { orpc } from "@/lib/orpc/orpc";
-import { requireSession } from "@/lib/session";
+import { ProtectedShell } from "@/app/(protected)/protected-shell";
+import { SiteBrand } from "@/components/site-brand";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Keep authentication and active Organization recovery before shell paint,
-// matching Calculator's request-bound protected layout rather than caching it.
-export const instant = false;
-
-export default async function ProtectedLayout({
+export default function ProtectedLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  await connection();
-  const session = await requireSession();
-  // Shell context, not policy: the caller's Memberships bootstrap the
-  // active-Membership gate and the switcher list. Procedures re-authorize
-  // every request, so this gate only decides which shell renders.
-  const memberships = await orpc.organizations.listMemberships();
-  const context = resolveStaffOrganizationContext({
-    memberships,
-    activeOrganizationId: session.session.activeOrganizationId ?? null,
-  });
-
-  if (context.status === "no-membership") {
-    const newlyRegistered =
-      Date.now() - session.user.createdAt.getTime() < 10 * 60 * 1000;
-
-    return <NoOrganizationAccess autoOpen={newlyRegistered} />;
-  }
-
-  // Missing, stale, or revoked active context: inline selection recovery.
-  // No staff actions render and nothing redirects, so this cannot loop.
-  if (context.status === "select") {
-    return <SelectOrganization organizations={context.memberships} />;
-  }
-
-  const canViewOrganization = await canManageOrganization();
-
   return (
-    <div className="min-h-svh bg-muted/35">
+    <Suspense fallback={<ProtectedShellSkeleton />}>
+      <ProtectedShell>{children}</ProtectedShell>
+    </Suspense>
+  );
+}
+
+function ProtectedShellSkeleton() {
+  return (
+    <div
+      className="min-h-svh bg-muted/35"
+      role="status"
+      aria-label="Loading Cost Tracker"
+    >
       <header className="border-b bg-background">
-        <AppNavigation
-          activeOrganizationId={context.activeOrganizationId}
-          email={session.user.email}
-          name={session.user.name}
-          showOrganization={canViewOrganization}
-          showOrganizationSwitcher={context.showSwitcher}
-          showPartnerOrganizations={await canViewPartnerNetwork()}
-          staffOrganizations={context.memberships}
-        />
+        <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="flex h-18 items-center justify-between">
+            <SiteBrand />
+            <Skeleton className="size-9" />
+          </div>
+          <div aria-hidden="true" className="flex h-14 items-center gap-6">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-36" />
+          </div>
+        </div>
       </header>
-      <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-        {children}
+      <main
+        className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-10 sm:px-8 lg:px-10 lg:py-14"
+        aria-hidden="true"
+      >
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-5 w-80 max-w-full" />
+        <Skeleton className="h-64 w-full" />
       </main>
     </div>
   );
