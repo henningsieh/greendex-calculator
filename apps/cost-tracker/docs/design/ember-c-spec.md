@@ -33,6 +33,12 @@ ist das Fundament, kein Ersatz dafür.
 - Genau EINE Hero-Stat: `linear-gradient(180deg, rgba(255,184,0,.13), transparent 75%)`
 - Glas-Kante: `inset 0 1px 0 rgba(255,255,255,.07)` auf dem Container
 
+## Brand-Zeichen (LOCKED 2026-10-11)
+
+- Sternenkranz aus 12 Feuer-Punkten (`#FFB800`), EU-Symbolik, wird nicht mehr verändert
+- Header-Lockup: Kranz (34px) + `GreenEx` (Sans 800, 19px) + `Cost Tracker` (Mono, 12px, Tracking .18em)
+- Hero-Pille über der Headline: `GREENEX COST TRACKER · ERASMUS EDITION`, Glas-Badge mit Feuer-Punkt, Abstand zum Content eng (54px Desktop / 34px Mobile)
+
 ## Eyebrow-Muster
 
 - Mono 12px, Tracking .26em, `--fire`, kein Punkt davor nötig
