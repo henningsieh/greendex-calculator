@@ -35,6 +35,16 @@ shadcn-idiomatisch. Hebel aus dem Conformity-Report:
 - Rest (~15%: Loops, SVG-Marke, fugenloses Raster, Aura) bleibt naturgemäß
   Custom-CSS — shadcn sieht Brand-Motion dort auch vor
 
+## Night mandate 2026-10-12 (answers: b + c + a, Modellwunsch: GPT Sol 6.1 / Codex Subscription)
+
+- Richtung: teilweise ersetzen (b) — Standard-Ersatz wo echt (Spinner-
+  Prüfung für Sweep), Markenzeichen bleiben (Sternenkranz, Raster, Aura)
+- Umfang: groß (c) — 7-Theme-Tokens + Komponenten-Umbau + Showcase-Page
+- Rechte: voll (a) — pushen + Preview-Builds triggern erlaubt
+- Priorität: shadcn-Standard > Emil > gelockter Look (außer Markenzeichen)
+- Ziel ~90% shadcn-Konformität. Review-Skills laufen zum Schluss.
+- Verbote: main, Spike-Branch, Env-Backups, Calculator-App, Production
+
 ## Non-goals for this branch
 
 - No behavior changes, no API changes, no migration changes.
