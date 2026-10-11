@@ -87,7 +87,7 @@ body[data-vibe=royal]{--bg:#0b1642;--muted:#a3b2d8;--faint:#6f7ea8;--line:rgba(1
 @keyframes firePulse{0%,100%{text-shadow:0 0 60px rgba(255,184,0,.45)}50%{text-shadow:0 0 90px rgba(255,184,0,.65)}}
 h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
 .cta{position:relative;overflow:hidden}
-.m-shine::after{content:"";position:absolute;top:0;left:0;width:50%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-160%) skewX(-20deg);transition:transform 600ms var(--ease-out)}
+.m-shine::after{content:"";position:absolute;top:0;left:0;width:50%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-160%) skewX(-20deg);opacity:0;transition:transform 600ms var(--ease-out),opacity 200ms var(--ease-out)}
 .stat{position:relative;transition:transform 220ms var(--ease-out),border-color 220ms var(--ease-out)}
 .stat::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 50% 0%,rgba(255,184,0,.14),transparent 70%);opacity:0;transition:opacity 220ms var(--ease-out);pointer-events:none}
 @media(hover:hover) and (pointer:fine){
@@ -121,10 +121,11 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
 .m-cell .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);margin-top:16px}
 @media(max-width:760px){.motion-grid{grid-template-columns:1fr}}
 .hero-pick{grid-column:1/-1;border-color:rgba(255,184,0,.45);background:linear-gradient(180deg,rgba(255,184,0,.08),rgba(255,255,255,.02))}
+.hero-pick .cta{box-shadow:0 0 18px rgba(255,184,0,.5),inset 0 1px 0 rgba(255,255,255,.5)}
 .hero-pick .tag{color:var(--fire)}
 @media(hover:hover) and (pointer:fine){
 .m-lift:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(255,184,0,.5),inset 0 1px 0 rgba(255,255,255,.5)}
-.m-shine:hover::after{transform:translateX(260%) skewX(-20deg)}
+.m-shine:hover::after{transform:translateX(260%) skewX(-20deg);opacity:1}
 .m-fill:hover::before{transform:translateX(0)}
 }
 .m-ripple{position:relative;overflow:hidden}
