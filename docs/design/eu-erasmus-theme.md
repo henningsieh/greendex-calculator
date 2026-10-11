@@ -46,6 +46,11 @@ shadcn-idiomatisch. Hebel aus dem Conformity-Report:
 - Schluss-Review läuft als eigener Subagent auf openai/gpt-6.1-sol
   (Owner-Vorgabe 2026-10-12).
 - Verbote: main, Spike-Branch, Env-Backups, Calculator-App, Production
+- EXTENSION 2026-10-12 00:09 (Owner): nach Design + Review NICHT aufhören —
+  weiter in die echte Implementierung: Design in die reale Cost-Tracker-
+  Architektur transformieren (Claim-Workspace, Kostenposten, Beleg-Status
+  etc. übernehmen Ember-Tokens/-Komponenten), so weit kommen wie möglich.
+  Keine Verhaltens-/API-/Migrations-Änderungen (Brief-Non-Goals bleiben).
 
 ## Non-goals for this branch
 
