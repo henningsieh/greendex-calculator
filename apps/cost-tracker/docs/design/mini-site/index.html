@@ -16,13 +16,15 @@
   --sans:"Inter",system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box;margin:0}
+html,body{overflow-x:clip}
+img,svg{max-width:100%}
 body{
   background:var(--bg);color:var(--ink);font-family:var(--sans);
   -webkit-font-smoothing:antialiased;overflow-x:hidden;
 }
 .aura{
   position:absolute;top:-320px;left:50%;transform:translateX(-50%);
-  width:1100px;height:640px;pointer-events:none;
+  width:min(1100px,100vw);height:640px;pointer-events:none;
   background:radial-gradient(ellipse at center,rgba(255,184,0,.16),rgba(255,184,0,.04) 45%,transparent 70%);
 }
 .wrap{max-width:1180px;margin:0 auto;padding:0 48px 120px;position:relative}
@@ -107,7 +109,16 @@ h1 .fire{animation:firePulse 4s ease-in-out infinite}
 .switcher button.on{color:#1c1200;background:var(--fire);font-weight:600}
 .meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--faint);margin-top:110px;border-top:1px solid var(--line);padding-top:20px}
 @media(max-width:760px){
-  .wrap{padding:0 22px 80px}
+  .wrap{padding:0 18px 110px}
+  h1{font-size:clamp(44px,14vw,64px)}
+  .sub{font-size:15.5px}
+  .eyebrow{margin-top:56px}
+  .stat{padding:22px 18px}
+  .stat .n{font-size:38px}
+  .stat .n em{font-size:22px}
+  .switcher{max-width:calc(100vw - 20px);overflow-x:auto;padding:6px 8px}
+  .switcher button{padding:8px 11px;font-size:10.5px;white-space:nowrap}
+  .brand{grid-template-columns:1fr;padding:36px 28px}
   .nav{display:none}
   .stats{grid-template-columns:1fr 1fr}
   .stat:nth-child(3n){border-right:1px solid var(--line)}
