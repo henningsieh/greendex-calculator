@@ -52,7 +52,7 @@ function Section({
   );
 }
 
-const TOKEN_PAIRS: Array<{ bg: string; fg: string; label: string }> = [
+const TOKEN_PAIRS: { bg: string; fg: string; label: string }[] = [
   {
     bg: "bg-background",
     fg: "text-foreground",
@@ -93,11 +93,11 @@ const TOKEN_PAIRS: Array<{ bg: string; fg: string; label: string }> = [
 
 export default function DesignSystemPage() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = React.useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-16 px-12 py-16 max-sm:px-[18px]">

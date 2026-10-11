@@ -43,6 +43,8 @@ shadcn-idiomatisch. Hebel aus dem Conformity-Report:
 - Rechte: voll (a) — pushen + Preview-Builds triggern erlaubt
 - Priorität: shadcn-Standard > Emil > gelockter Look (außer Markenzeichen)
 - Ziel ~90% shadcn-Konformität. Review-Skills laufen zum Schluss.
+- Schluss-Review läuft als eigener Subagent auf openai/gpt-6.1-sol
+  (Owner-Vorgabe 2026-10-12).
 - Verbote: main, Spike-Branch, Env-Backups, Calculator-App, Production
 
 ## Non-goals for this branch
