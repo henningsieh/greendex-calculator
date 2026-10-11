@@ -18,6 +18,11 @@ New adapted design system for Calculator and Cost Tracker, starting from `main`.
 - Theme switching mechanics stay untouched; only tokens, palettes, and
   type scale move.
 
+## Preview
+
+- PR preview (Cost-Tracker): `261.cost-tracker.apps.sieh.org`, rebuilt on every branch commit.
+- Dedicated preview database: `cost_tracker_pr261` on greendex-preview-postgres (migrated + seeded).
+
 ## Next steps
 
 1. Token inventory of the current light/dark setup.
