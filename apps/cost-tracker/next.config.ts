@@ -3,8 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig = {
   agentRules: false,
   cacheComponents: true,
-  // Retain existing link-prefetch behavior during this loading-only migration.
-  partialPrefetching: false,
+  // Prefetch shared static shells; private and URL-dependent data streams per request.
+  partialPrefetching: true,
   reactCompiler: true,
   experimental: {
     requestInsights: true,

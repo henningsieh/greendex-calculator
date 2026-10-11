@@ -128,3 +128,167 @@ route-level verification snapshot and the remaining UX/performance tradeoffs.
 - Installed Next.js bundled [TanStack Query guide](../../../node_modules/next/dist/docs/01-app/02-guides/client-side-data-fetching/tanstack-query.md): pending query hydration, matching keys, Suspense, and warning that independent `useSuspenseQuery` calls run sequentially.
 - TanStack Query v5 [Advanced Server Rendering](https://tanstack.com/query/v5/docs/framework/react/guides/advanced-ssr): prefetch + hydration across server/client transitions, pending-query dehydration, and request waterfall tradeoffs.
 - Project instructions: [`tanstack-query.md`](../../../docs/agents/instructions/tanstack-query.md), [`orpc.md`](../../../docs/agents/instructions/orpc.md), [`architecture.md`](architecture.md).
+
+## Partial Prefetching adoption (#259)
+
+This section supersedes the earlier blocking-layout/prefetch snapshot above.
+Cost Tracker now sets `partialPrefetching: true`. The synchronous protected
+layout wraps the unchanged request-time gate in Suspense. Neutral brand chrome
+and Skeletons paint without session data, navigation actions, or children; the
+async protected shell resolves `connection()`, session, Memberships, recovery,
+and permission flags before exposing personalized navigation and page content.
+Login redirects and inline Organization recovery remain server-side. Brief
+neutral-shell paint before recovery is accepted. Page/procedure authorization,
+Claim grouping, Cost Allocation, payout logic, and Participant Journey persistence
+are unchanged.
+
+### Complete page/layout inventory
+
+“Improved” means entry through the protected layout now has a static neutral
+shell; it does not promise that private page content is prefetched. Shared-layout
+client navigations rely on the existing route loading/inner boundaries, not the
+layout fallback above the shared segment.
+
+| Route                                               | Classification                | Shell/data decision                                                    |
+| --------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------- |
+| `/`                                                 | Deferred (already static)     | Public landing content unchanged                                       |
+| `/login`                                            | Exception                     | Signed-in redirect before form; no form flash                          |
+| `/register`                                         | Exception                     | Signed-in redirect before form; no form flash                          |
+| `/accept-invitation/[invitationId]`                 | Exception                     | Recipient/session checks, request-bound return destination             |
+| `/setup-links/[id]`                                 | Exception                     | Secret-preserving return URL and recipient checks                      |
+| `/participant`                                      | Exception                     | Session and onboarding eligibility state machine                       |
+| `/participant-links/[id]`                           | Exception                     | Request-time link source/secret and onboarding state machine           |
+| `/participant-invitations/[invitationId]`           | Exception                     | Request-time invitation source and onboarding state machine            |
+| `/projects`                                         | Improved                      | Neutral entry shell; scope/list and searchParams behind inner boundary |
+| `/projects/[id]`                                    | Improved                      | Neutral entry shell; identity/detail inside boundary                   |
+| `/projects/[id]/participants`                       | Improved                      | Neutral entry shell; identity/Hosting report inside boundary           |
+| `/partner-organizations`                            | Improved                      | Neutral entry shell; Partnership list inside boundary                  |
+| `/partnerships/[id]/participants`                   | Improved                      | Neutral entry shell; identity/Participant list inside boundary         |
+| `/partnerships/[id]/participants/[participationId]` | Improved                      | Neutral entry shell; identities/Participant detail inside boundary     |
+| `/partnerships/[id]/claim`                          | Improved                      | Neutral entry shell; identity/eight Claim queries inside boundary      |
+| `/claims/review`                                    | Improved                      | Neutral entry shell; list then drafts inside boundary                  |
+| `/claims/review/[id]`                               | Improved                      | Neutral entry shell; identity/four review queries inside boundary      |
+| `/organization`                                     | Improved                      | Neutral entry shell; three queries inside boundary                     |
+| `/user-settings`                                    | Improved entry; page deferred | Existing request-bound session read; no page restructuring             |
+
+All three layouts: root `app/layout.tsx` retains providers and the server oRPC
+side-effect import; `(auth)/layout.tsx` retains static public chrome;
+`(protected)/layout.tsx` is the new static fallback/streaming gate. There is no
+setup layout or dashboard page. API Route Handlers are not navigation shells and
+remain request-bound (including authenticated Proof Document downloads).
+There are **seven retained page exports**, not eight; the eighth previous
+`instant = false` export was on the protected layout and has been removed.
+
+### Complete Link inventory and decisions
+
+Source scan of all Cost Tracker `next/link` imports and JSX props found **zero
+`prefetch={true}` (or bare/conditional prefetch) Links**. All Links retain default
+`auto`; no Link wrapper supplies a full-prefetch override.
+
+| Source under `src/`                                                         | Destinations                                                                                                         | Decision                                            |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `app/page.tsx`                                                              | login, register                                                                                                      | Default public/auth shell                           |
+| `components/site-brand.tsx`                                                 | `/` by default; `/projects` in authorized navigation                                                                 | Default; neutral fallback links only to public home |
+| `components/app-navigation.tsx`                                             | projects, partner-organizations, organization, user-settings                                                         | Default; permission-dependent items only after gate |
+| `components/auth-form.tsx`                                                  | login/register with optional next URL; home                                                                          | Default; retain auth exception                      |
+| `features/projects/components/project-list.tsx`                             | Project detail with returnTo; Hosting Participant report                                                             | Default; URL data streams                           |
+| `features/projects/components/assigned-project-list.tsx`                    | Project detail; Hosting Participant report                                                                           | Default; URL data streams                           |
+| `features/projects/components/project-workspace.tsx`                        | Project-list return destination; Hosting report; review queue; partner-organizations; Partnership participants/Claim | Default; URL data streams                           |
+| `features/projects/components/claim-review-queue.tsx`                       | Claim review detail                                                                                                  | Default; request-bound Claim data                   |
+| `features/projects/components/claim-review.tsx`                             | Proof Document API downloads; review queue                                                                           | Default; downloads authorize per request            |
+| `features/projects/components/participant-coordination.tsx`                 | Partnership Participant detail                                                                                       | Default; request-bound Participant data             |
+| `features/projects/components/participant-details.tsx`                      | Partnership Participant list                                                                                         | Default; request-bound Participant data             |
+| `features/projects/components/project-data-error-boundary.tsx`              | login                                                                                                                | Default; retain redirect/retry semantics            |
+| `app/(protected)/partnerships/[id]/{claim,participants}/page.tsx`           | projects                                                                                                             | Default shell                                       |
+| `app/(protected)/partnerships/[id]/participants/[participationId]/page.tsx` | projects                                                                                                             | Default shell                                       |
+| `app/(protected)/projects/[id]/participants/page.tsx`                       | projects                                                                                                             | Default shell                                       |
+
+Deliberately **no per-link `prefetch={true}`** is added for Claim or Participant
+URL data (or other private detail reads). IDs/searchParams resolve inside the
+existing section boundaries; financial and Journey data stay request-bound.
+There is no legacy full-prefetch UI to preserve. This avoids a server invocation
+per visible entity link without inventing a private data cache lifetime.
+
+### Rejected cache candidates
+
+- Session/Memberships and permission-dependent navigation: reject private cache;
+  revocation and active Organization recovery must use request-time authority,
+  not stale prefetched permissions.
+- Organization/team, Project relationship, and Partnership reads: reject private
+  cache; tenant/permission changes must not expose stale authorized content.
+- Claim workspace/review, payouts, allocations, and Proof Documents: reject
+  private or shared cache adoption; financial freshness and authorization remain
+  at the existing procedure boundary.
+- Participant identity, onboarding eligibility, agreements, and Journey data:
+  reject private cache; sensitive data and state-machine order stay request-bound.
+
+Existing TanStack Query hydration/staleTime is unchanged; this is not a financial
+or Journey-data caching migration.
+
+### Verification and deferred coverage
+
+`layout.test.tsx` renders the real layout through a server stream with a deferred
+session, asserting neutral chrome/Skeletons before private children/navigation,
+then personalized content. Gate tests preserve creation/selection recovery,
+staff/Participant switcher rules, request boundary order, and session redirect
+propagation. Existing page stream and hydration tests remain in place.
+
+Playwright E2E execution is excluded from this adoption. A future separately
+approved test task should use version-matched `@next/playwright` `instant()`
+coverage for direct `/projects` entry, public-to-protected navigation, sibling
+Project/Partnership/Claim/Participant links, and denied/revoked sessions. Assert
+neutral shell first on direct entry, section fallbacks on shared-layout
+navigation, no unauthorized actions/private data while pending, then content or
+redirect/recovery. Production-like automatic Link prefetch testing requires a
+test-only build with the testing API enabled; dev alone cannot prove production
+automatic prefetch. Do not install/configure that harness in this issue.
+
+Runtime verification evidence (#259) and the remaining deferred work are
+recorded in the subsections below; passing mocked streams alone is not
+browser timing evidence.
+
+### Route opt-ins and exclusions
+
+Adoption is global (`partialPrefetching: true` in `next.config.ts`); no
+per-route `prefetch = 'partial'` export was needed because the audit found zero
+legacy `prefetch={true}` Links and every protected destination already carries
+a static shell with URL data behind Suspense. Adopted via the flag: `/`, all
+protected data pages, and `/user-settings`. Excluded from instant validation
+via retained `instant = false`: `/login`, `/register`, and the five
+onboarding/recipient entry pages inventoried above. No route carries
+`prefetch = 'force-disabled'`.
+
+### Redirect correctness
+
+`requireSession()` still redirects server-side inside `ProtectedShell`
+(`layout.test.tsx` asserts the redirect propagates without Membership reads),
+and the fallback carries no session data or actions. Verified in the running
+dev app: signed-out entry to `/projects` lands on `/login` (auth shell, no
+protected content); a Membership-free account renders creation recovery. The
+accepted neutral-shell flash replaces blocking, not authorization.
+
+### Running-app verification evidence (#259)
+
+Verified 2026-10-11 against Cost Tracker dev (Turbopack) with the in-repo seed
+Organization account; `get_compilation_issues` returned no issues and the dev
+log showed no instant/URL-data insights for the changed routes. Signed-out
+entry `/projects` redirects to `/login` (auth branding paints, no protected
+content). Authenticated entry `/projects` renders personalized navigation
+(Organization switcher, permission-gated tabs, account menu) plus the hydrated
+Project list. Journey 1, Project list to `/projects/[id]`: the workspace
+header and data render after client navigation with the shared layout intact.
+Acting for the Partner Organization (Organization switcher), the Partner
+Project workspace renders the Project Partnership card (Claim readiness,
+Hosting Organization, assignment dates) with Coordinate Participants and Open
+Claim Workspace entry points.
+Journey 2, `/partnerships/[id]/claim`: the static shell (`Claim workspace`
+heading plus skeleton) paints first. Acting for the Hosting Organization it
+resolves to the permission denial that User must see ("Only the Partner
+Organization may edit its Claim") — authorization intact, no Claim data
+leaked. Acting for the Partner Organization it streams the full workspace
+(submission checklist, editable draft, payout accounts, Participant Journeys,
+Travel Cost Entries) — request-bound financial data intact. Journey 3,
+`/partnerships/[id]/participants` to Participant detail: the list streams,
+then the detail renders participation data. Cold-compile navigations take
+roughly 9–25 s in dev; production timing is not established here. Playwright
+`instant()` regression coverage remains deferred as stated above.

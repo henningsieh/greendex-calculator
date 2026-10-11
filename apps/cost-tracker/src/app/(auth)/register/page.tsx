@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Create an account for the Greendex Cost Tracker.",
 };
 
-// Keep the signed-in redirect before the authentication form paints.
+// Signed-in visitors redirect before the sign-up form paints; no wrong-audience flash.
 export const instant = false;
 
 export default async function RegisterPage({

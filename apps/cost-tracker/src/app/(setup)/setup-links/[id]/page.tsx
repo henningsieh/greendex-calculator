@@ -5,7 +5,7 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Partner Organization setup" };
 
-// Keep the recipient session and secret-preserving sign-in destination before paint.
+// Link secret stays in the sign-in return URL; the recipient gate resolves per request.
 export const instant = false;
 
 export default async function SetupLinkPage({

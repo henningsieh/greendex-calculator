@@ -5,7 +5,7 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Organization Invitation" };
 
-// Keep the recipient session and sign-in return destination gate before paint.
+// Invitation-scoped recipient gate with a sign-in return destination; per-request by design.
 export const instant = false;
 
 export default async function OrganizationInvitationPage({
