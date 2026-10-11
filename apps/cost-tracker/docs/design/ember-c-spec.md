@@ -64,7 +64,7 @@ ist das Fundament, kein Ersatz dafür.
   Motion-Lab als Dauerzustand (dort nur Vergleichszweck)
 - Die Landingpage ist der erste echte Bauabschnitt, sobald das Design steht
 - **Pending** (LOCKED 2026-10-11) ist die Variante für React-Query-`isPending`:
-  reduzierte Farbe wie `:disabled` (40%, kein Glow, `cursor:wait`), dazu
+  reduzierte Farbe wie `:disabled` (55%, Glow bleibt, `cursor:wait`), dazu
   Sweep-Band (1.4s-Loop, transform-only) plus Tipp-Punkte statt Pulsieren.
   Im Mock per CSS-Loop, in React pro Pending-State triggern.
   Kein Pulsieren auf Pending-Buttons — das gehört allein dem Landingpage-CTA
