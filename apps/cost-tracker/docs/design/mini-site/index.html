@@ -110,7 +110,8 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
 @media(max-width:760px){.brand{grid-template-columns:1fr;padding:36px 28px}}
 :root{--ease-out:cubic-bezier(0.23,1,0.32,1);--ease-in-out:cubic-bezier(0.77,0,0.175,1)}
 .cta{transition:transform 160ms var(--ease-out),box-shadow 200ms var(--ease-out)}
-.cta:active{transform:scale(0.97)}
+.cta:not(:disabled):active{transform:scale(0.97)}
+button{-webkit-tap-highlight-color:transparent}
 .motion{margin-top:130px}
 .motion h2{font-size:clamp(40px,4.5vw,64px);font-weight:900;letter-spacing:-.03em;line-height:1.05}
 .motion h2 .fire{color:var(--fire)}
