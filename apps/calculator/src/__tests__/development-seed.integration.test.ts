@@ -1,27 +1,20 @@
 // @vitest-environment node
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
-import { Pool } from "pg";
 import { expect, it } from "vitest";
+
+import { withDisposableDatabase } from "@/__tests__/helpers/disposable-database";
 
 const execute = promisify(execFile);
 
 it("seeds a shared Project, Participant Journey and allocated editable Claim from zero", async () => {
-  const name = `development_seed_${randomUUID().replaceAll("-", "")}`;
-  const url = new URL(process.env.DATABASE_URL!);
-  url.pathname = "/postgres";
-  const admin = new Pool({ connectionString: url.toString(), max: 1 });
-  await admin.query(`CREATE DATABASE "${name}"`);
-  url.pathname = `/${name}`;
-  const pool = new Pool({ connectionString: url.toString(), max: 1 });
-  try {
+  await withDisposableDatabase("development_seed", async (pool, databaseUrl) => {
     const options = {
       cwd: resolve(import.meta.dirname, "../../../.."),
-      env: { ...process.env, DATABASE_URL: url.toString() },
+      env: { ...process.env, DATABASE_URL: databaseUrl },
     };
     await execute("pnpm", ["run", "db:migrate"], options);
     // Capture output: even legacy seeders must not leak login credentials into diagnostics.
@@ -76,9 +69,5 @@ it("seeds a shared Project, Participant Journey and allocated editable Claim fro
         partner_owners: 1,
       }),
     ]);
-  } finally {
-    await pool.end();
-    await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
-    await admin.end();
-  }
+  });
 }, 60_000);

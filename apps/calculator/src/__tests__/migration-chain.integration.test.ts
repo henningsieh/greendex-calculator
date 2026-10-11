@@ -1,13 +1,14 @@
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 
-import { Pool } from "pg";
+import type { Pool } from "pg";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+
+import { withDisposableDatabase } from "@/__tests__/helpers/disposable-database";
 
 const execute = promisify(execFile);
 const databasePackage = resolve(
@@ -54,23 +55,6 @@ async function migrate(databaseUrl: string, migrationDirectory = migrations) {
     );
   } finally {
     await rm(configDirectory, { recursive: true, force: true });
-  }
-}
-
-async function withDatabase(run: (pool: Pool, url: string) => Promise<void>) {
-  const name = `migration_chain_${randomUUID().replaceAll("-", "")}`;
-  const url = new URL(process.env.DATABASE_URL!);
-  url.pathname = "/postgres";
-  const admin = new Pool({ connectionString: url.toString(), max: 1 });
-  await admin.query(`CREATE DATABASE "${name}"`);
-  url.pathname = `/${name}`;
-  const pool = new Pool({ connectionString: url.toString(), max: 1 });
-  try {
-    await run(pool, url.toString());
-  } finally {
-    await pool.end();
-    await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
-    await admin.end();
   }
 }
 
@@ -136,14 +120,23 @@ describe("merged migration chain", () => {
   });
 
   it("migrates an empty database through the normal db:migrate command", async () => {
-    await withDatabase(async (pool, url) => {
+    await withDisposableDatabase("migration_chain", async (pool, url) => {
       await execute("pnpm", ["run", "db:migrate"], {
         cwd: databasePackage,
         env: { ...process.env, DATABASE_URL: url },
       });
       await expectSharedAndClaimTables(pool);
+      const history = await pool.query(
+        "SELECT * FROM drizzle.__drizzle_migrations ORDER BY id",
+      );
       await migrate(url);
-      await expectSharedAndClaimTables(pool);
+      expect(
+        (
+          await pool.query(
+            "SELECT * FROM drizzle.__drizzle_migrations ORDER BY id",
+          )
+        ).rows,
+      ).toEqual(history.rows);
     });
   }, 60_000);
 
@@ -157,7 +150,7 @@ describe("merged migration chain", () => {
         resolve(prefix, "meta/_journal.json"),
         JSON.stringify(mainJournal),
       );
-      await withDatabase(async (pool, url) => {
+      await withDisposableDatabase("migration_chain", async (pool, url) => {
         await migrate(url, prefix);
         await pool.query(`
           INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
