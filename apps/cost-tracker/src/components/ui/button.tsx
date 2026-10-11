@@ -2,19 +2,33 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 
-// Button feedback swaps the existing border: no solid-edge growth or layout shift.
+/* Ember button system (ember-c-spec.md, LOCKED 2026-10-11), implemented
+   shadcn-idiomatically. Semantic tokens only — no raw values.
+   - default: fire surface, pill, lift (-2px hover, hover-gated) + press .97.
+   - ghost: transparent, 1px line, hover = 6% white wash + fire border.
+   - pending: NO isPending prop (shadcn Critical Rules) — compose
+     <PendingButton> (Spinner + disabled + data-disabled) instead.
+     Color-mix 45% fire, no opacity dimming (would dim the glow).
+   - cta: landing-page main CTA only; breathes via the .ember-cta glow layer
+     (opacity-only animation, never box-shadow — Emil performance rule).
+   Hover/press feedback applies to enabled buttons only (:enabled / :not(:disabled)).
+   data-disabled (not :has()) marks exempt cells; .calm zones stay static. */
 const buttonFeedback =
-  "rounded-sm text-sm tracking-normal normal-case whitespace-normal text-center transition-transform duration-140 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline-solid focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring focus-visible:ring-0 active:not-aria-[haspopup]:translate-y-0 active:enabled:scale-[.97] motion-reduce:transition-none motion-reduce:active:enabled:scale-100";
+  "rounded-full text-sm tracking-normal normal-case whitespace-normal text-center transition-[transform,background-color,border-color,box-shadow] duration-160 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline-solid focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring focus-visible:ring-0 motion-reduce:transition-none";
 const primaryFeedback =
-  "border-primary-border bg-primary text-primary-foreground fine-hover:enabled:bg-primary-hover fine-hover:enabled:border-brand fine-hover:enabled:shadow-primary-glow focus-visible:border-brand focus-visible:shadow-primary-glow active:enabled:bg-primary-hover active:enabled:border-brand active:enabled:shadow-primary-glow";
-const secondaryFeedback =
-  "border-input bg-card text-foreground fine-hover:enabled:bg-secondary-hover fine-hover:enabled:text-secondary-hover-foreground fine-hover:enabled:border-secondary-feedback-border fine-hover:enabled:shadow-secondary-glow focus-visible:border-secondary-feedback-border focus-visible:shadow-secondary-glow active:enabled:bg-secondary-hover active:enabled:text-secondary-hover-foreground active:enabled:border-secondary-feedback-border active:enabled:shadow-secondary-glow";
+  "border-primary-border bg-primary text-primary-foreground shadow-primary-glow fine-hover:enabled:-translate-y-0.5 fine-hover:enabled:bg-primary-active fine-hover:enabled:shadow-primary-glow focus-visible:border-brand focus-visible:shadow-primary-glow active:enabled:scale-[.97] active:enabled:bg-primary-active motion-reduce:fine-hover:enabled:translate-y-0 motion-reduce:active:enabled:scale-100";
+const ghostFeedback =
+  "border-border bg-transparent text-foreground fine-hover:enabled:bg-accent fine-hover:enabled:border-brand focus-visible:border-brand active:enabled:scale-[.97] motion-reduce:active:enabled:scale-100";
+const pendingFeedback =
+  "cursor-not-allowed border-transparent bg-pending text-pending-foreground shadow-secondary-glow";
+const ctaFeedback =
+  "ember-cta border-primary-border bg-primary text-primary-foreground shadow-primary-glow fine-hover:enabled:-translate-y-0.5 fine-hover:enabled:bg-primary-active focus-visible:border-brand active:enabled:scale-[.97] motion-reduce:active:enabled:scale-100";
 
 const defaultButtonStyle = `${buttonFeedback} ${primaryFeedback}`;
-const outlineButtonStyle = `${buttonFeedback} ${secondaryFeedback}`;
+const outlineButtonStyle = `${buttonFeedback} ${ghostFeedback}`;
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-none border border-transparent bg-clip-padding text-xs font-semibold tracking-widest whitespace-nowrap uppercase transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding px-6 text-xs font-semibold tracking-widest whitespace-nowrap uppercase transition-[transform,background-color,border-color,box-shadow] outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:cursor-not-allowed disabled:data-[variant=default]:bg-pending disabled:data-[variant=default]:text-pending-foreground disabled:data-[variant=default]:shadow-secondary-glow aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       variant: {
@@ -22,8 +36,9 @@ const buttonVariants = cva(
         outline: outlineButtonStyle,
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        ghost: ghostFeedback,
+        pending: `${buttonFeedback} ${pendingFeedback}`,
+        cta: `${buttonFeedback} ${ctaFeedback}`,
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline underline-offset-4 hover:underline",
@@ -56,6 +71,7 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
+      data-variant={variant ?? "default"}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
