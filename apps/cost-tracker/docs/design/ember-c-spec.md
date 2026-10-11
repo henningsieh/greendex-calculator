@@ -57,6 +57,13 @@ ist das Fundament, kein Ersatz dafür.
 - Fenster-Punkte oben (erster Punkt `--fire`), Statuszeile unten in `--fire`
 - Symbole: `✓` erledigt, `◌` offen — Text bleibt `--muted`, Werte `--ink`
 
+## Motion-Entscheide (LOCKED 2026-10-11)
+
+- **Pulse** (`glowPulse`, Glow-Atem 2.4s) ist reserviert für den Main-CTA der
+  zukünftigen Landingpage — nirgendwo sonst verwenden, auch nicht im
+  Motion-Lab als Dauerzustand (dort nur Vergleichszweck)
+- Die Landingpage ist der erste echte Bauabschnitt, sobald das Design steht
+
 ## Hochglanz (Aura, dosiert)
 
 - Ein einziges radiales Aura-Element über der Hero:
