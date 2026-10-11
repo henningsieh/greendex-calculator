@@ -73,6 +73,15 @@ h1 .fire{color:var(--fire);text-shadow:0 0 60px rgba(255,184,0,.45)}
 .term .bar i:first-child{background:var(--fire)}
 .term .g{color:var(--fire)} .term .w{color:var(--ink)}
 .term .ok-row{border-top:1px solid var(--line);margin-top:14px;padding-top:14px;color:var(--fire)}
+body[data-vibe=midnight]{--bg:#0a1230;--muted:#9dacc9;--faint:#6b7a99;--line:rgba(147,180,255,.13)}
+body[data-vibe=violet]{--bg:#130b26;--muted:#b8a9d4;--faint:#7e6f9c;--line:rgba(200,170,255,.12)}
+body[data-vibe=abyss]{--bg:#070a16;--muted:#98a0b8;--faint:#5d6478;--line:rgba(255,255,255,.09)}
+body[data-vibe=royal]{--bg:#0b1642;--muted:#a3b2d8;--faint:#6f7ea8;--line:rgba(147,180,255,.15)}
+.switcher{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;background:rgba(8,5,16,.85);border:1px solid var(--line);border-radius:999px;padding:8px 10px;z-index:50;backdrop-filter:blur(12px);box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.sw-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);padding:0 8px 0 10px}
+.switcher button{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:8px 14px;cursor:pointer}
+.switcher button:hover{color:var(--ink)}
+.switcher button.on{color:#1c1200;background:var(--fire);font-weight:600}
 .meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--faint);margin-top:110px;border-top:1px solid var(--line);padding-top:20px}
 @media(max-width:760px){
   .wrap{padding:0 22px 80px}
@@ -87,6 +96,14 @@ h1 .fire{color:var(--fire);text-shadow:0 0 60px rgba(255,184,0,.45)}
 </head>
 <body>
 <div class="aura"></div>
+<div class="switcher" role="group" aria-label="Hintergrund-Variante">
+  <span class="sw-label">VIBE</span>
+  <button data-vibe="plum" class="on">Plum</button>
+  <button data-vibe="midnight">Midnight</button>
+  <button data-vibe="violet">Violet</button>
+  <button data-vibe="abyss">Abyss</button>
+  <button data-vibe="royal">Royal</button>
+</div>
 <div class="wrap">
   <div class="top">
     <div class="logo"><b>●</b> GREENEX COST TRACKER</div>
@@ -150,6 +167,11 @@ h1 .fire{color:var(--fire);text-shadow:0 0 60px rgba(255,184,0,.45)}
 <script>
 let n=0;const b=document.getElementById('demo-btn'),c=document.getElementById('clicks');
 b.addEventListener('click',()=>{n++;c.textContent=n+'× geklickt — kein Backend, nur Ember';});
+const vibes=[...document.querySelectorAll('.switcher button')];
+function setVibe(v){document.body.dataset.vibe=v==='plum'?'':v;vibes.forEach(x=>x.classList.toggle('on',x.dataset.vibe===v));try{localStorage.setItem('ember-vibe',v)}catch(e){}const u=new URL(location.href);u.searchParams.set('theme',v);history.replaceState(null,'',u);}
+vibes.forEach(x=>x.addEventListener('click',()=>setVibe(x.dataset.vibe)));
+const start=(new URL(location.href).searchParams.get('theme'))||(function(){try{return localStorage.getItem('ember-vibe')}catch(e){return null}})()||'plum';
+setVibe(['plum','midnight','violet','abyss','royal'].includes(start)?start:'plum');
 </script>
 </div>
 </body>
