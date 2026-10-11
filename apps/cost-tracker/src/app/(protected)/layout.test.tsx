@@ -3,11 +3,14 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  connection: vi.fn().mockResolvedValue(undefined),
   requireSession: vi.fn(),
   listMemberships: vi.fn(),
   canManageOrganization: vi.fn(),
   canViewPartnerNetwork: vi.fn(),
 }));
+
+vi.mock("next/server", () => ({ connection: mocks.connection }));
 
 vi.mock("@/lib/session", () => ({
   requireSession: mocks.requireSession,
@@ -45,7 +48,7 @@ vi.mock("@/features/organizations/components/select-organization", () => ({
   SelectOrganization: () => <p>Select Organization recovery</p>,
 }));
 
-import ProtectedLayout from "@/app/(protected)/layout";
+import ProtectedLayout, { instant } from "@/app/(protected)/layout";
 
 const ownerMembership = {
   id: "org-a",
@@ -83,6 +86,11 @@ describe("ProtectedLayout Organization context", () => {
 
     render(await ProtectedLayout({ children: <p>child</p> }));
 
+    expect(instant).toBe(false);
+    expect(mocks.connection).toHaveBeenCalledOnce();
+    expect(mocks.connection.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.requireSession.mock.invocationCallOrder[0],
+    );
     expect(screen.getByText("Create Organization recovery")).toBeInTheDocument();
     expect(screen.queryByText("child")).not.toBeInTheDocument();
   });

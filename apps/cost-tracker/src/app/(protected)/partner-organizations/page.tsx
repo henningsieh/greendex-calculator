@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 
-import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { canViewPartnerNetwork } from "@/features/organizations/access";
+import { ProjectPartnershipsSkeleton } from "@/features/projects/components/project-loading-states";
 import { ProjectPartnershipSection } from "@/features/projects/components/project-partnership-section";
 import { SetupLinkCreator } from "@/features/projects/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
@@ -53,11 +53,7 @@ export default async function PartnerOrganizationsPage() {
         </section>
       )}
 
-      <Suspense
-        fallback={
-          <PrefetchedSectionSkeleton label="Loading Project Partnerships" />
-        }
-      >
+      <Suspense fallback={<ProjectPartnershipsSkeleton />}>
         <ProjectPartnershipSection canAssign={canAssign} />
       </Suspense>
     </div>

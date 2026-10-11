@@ -183,9 +183,9 @@ describe("Project Shared Travel Leg compatibility cleanup", () => {
       ),
     ).rejects.toThrow();
 
-    // Canonical rows must be preserved.
+    // Preserve canonical rows with deterministic fixture identifier order across deployment locales.
     const preserved = await database.pool.query(
-      `SELECT id, transport_emission_profile, distance_km FROM "project_shared_travel_leg" ORDER BY id`,
+      `SELECT id, transport_emission_profile, distance_km FROM "project_shared_travel_leg" ORDER BY id COLLATE "C"`,
     );
     expect(preserved.rows).toEqual([
       { id: "leg-boat", transport_emission_profile: "boat", distance_km: "10.5" },

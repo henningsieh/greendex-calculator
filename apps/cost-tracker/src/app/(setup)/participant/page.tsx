@@ -9,6 +9,9 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "My Project Participations" };
 
+// Keep the session gate before the Participant onboarding state machine paints.
+export const instant = false;
+
 export default async function ParticipantPage() {
   await requireSession();
   return (

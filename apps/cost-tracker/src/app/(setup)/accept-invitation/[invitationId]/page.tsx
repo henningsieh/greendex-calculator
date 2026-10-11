@@ -5,6 +5,9 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Organization Invitation" };
 
+// Keep the recipient session and sign-in return destination gate before paint.
+export const instant = false;
+
 export default async function OrganizationInvitationPage({
   params,
 }: {

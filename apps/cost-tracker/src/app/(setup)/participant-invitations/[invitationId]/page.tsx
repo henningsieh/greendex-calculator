@@ -9,6 +9,9 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Accept Project invitation" };
 
+// Keep the session and invitation-source gates before the onboarding state machine paints.
+export const instant = false;
+
 export default async function ParticipantInvitationPage({
   params,
   searchParams,

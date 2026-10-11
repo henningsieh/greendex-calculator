@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { ClaimWorkspace } from "@/features/projects/components/claim-workspace";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
+import { ClaimWorkspaceSkeleton } from "@/features/projects/components/project-loading-states";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
@@ -63,9 +63,7 @@ export default async function ClaimPage({
         </Link>
         <h1 className="font-heading text-4xl font-semibold">Claim workspace</h1>
       </header>
-      <Suspense
-        fallback={<PrefetchedSectionSkeleton label="Loading Claim workspace" />}
-      >
+      <Suspense fallback={<ClaimWorkspaceSkeleton />}>
         <ClaimWorkspaceSection params={params} />
       </Suspense>
     </div>

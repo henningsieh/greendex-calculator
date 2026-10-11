@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+
 import { AppNavigation } from "@/components/app-navigation";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
 import {
@@ -9,9 +11,14 @@ import { resolveStaffOrganizationContext } from "@/features/organizations/staff-
 import { orpc } from "@/lib/orpc/orpc";
 import { requireSession } from "@/lib/session";
 
+// Keep authentication and active Organization recovery before shell paint,
+// matching Calculator's request-bound protected layout rather than caching it.
+export const instant = false;
+
 export default async function ProtectedLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  await connection();
   const session = await requireSession();
   // Shell context, not policy: the caller's Memberships bootstrap the
   // active-Membership gate and the switcher list. Procedures re-authorize

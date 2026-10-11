@@ -6,28 +6,33 @@ authoritative agent convention, see
 
 ## Verdict
 
-All eight protected routes that server-prefetch TanStack Query data now render
+All ten protected routes that server-prefetch TanStack Query data render
 an authorized page shell, then await their prefetch in an async child beneath
 an **inner Suspense boundary**. They use matching hydrated query options and
 an initial-query error boundary. Route-level `loading.tsx` remains the
-navigation fallback. The Project detail's real title depends on fetched data,
+navigation fallback. Cache Components is enabled, with deliberate request-bound
+authentication gates matching Calculator. Claim and Project Partnership surfaces
+use feature-owned card/document skeletons in both inner and navigation boundaries.
+The Project detail's real title depends on fetched data,
 so its static shell shows a section label instead. Page/layout authorization
 still precedes the shell, and navigating away can still cancel the RSC stream.
 
 ## Inventory
 
-All eight protected routes that prefetch into `HydrateClient`:
+All ten protected routes that prefetch into `HydrateClient`:
 
-| Route                             | Initial queries                                     | Boundary                | Consumer                                    |
-| --------------------------------- | --------------------------------------------------- | ----------------------- | ------------------------------------------- |
-| `/projects`                       | scopes, then selected list or assigned-project list | route and inner section | `useSuspenseQuery`                          |
-| `/projects/[id]`                  | detail                                              | route and inner section | `useSuspenseQuery`                          |
-| `/partner-organizations`          | partnership list                                    | route and inner section | `useSuspenseQuery`                          |
-| `/partnerships/[id]/participants` | participant list                                    | route and inner section | `useSuspenseQuery`                          |
-| `/partnerships/[id]/claim`        | eight parallel queries                              | route and inner section | `useSuspenseQueries`                        |
-| `/claims/review`                  | partnership list, then parallel draft reads         | route and inner section | `useSuspenseQuery` and `useSuspenseQueries` |
-| `/claims/review/[id]`             | four parallel queries                               | route and inner section | `useSuspenseQueries`                        |
-| `/organization`                   | two parallel queries                                | route and inner section | `useSuspenseQueries`                        |
+| Route                                               | Initial queries                                     | Boundary                | Consumer                                    |
+| --------------------------------------------------- | --------------------------------------------------- | ----------------------- | ------------------------------------------- |
+| `/projects`                                         | scopes, then selected list or assigned-project list | route and inner section | `useSuspenseQuery`                          |
+| `/projects/[id]`                                    | detail                                              | route and inner section | `useSuspenseQuery`                          |
+| `/partner-organizations`                            | partnership list                                    | route and inner section | `useSuspenseQuery`                          |
+| `/partnerships/[id]/participants`                   | participant list                                    | route and inner section | `useSuspenseQuery`                          |
+| `/partnerships/[id]/participants/[participationId]` | participant detail                                  | route and inner section | `useSuspenseQuery`                          |
+| `/projects/[id]/participants`                       | Hosting Participant report                          | route and inner section | `useSuspenseQuery`                          |
+| `/partnerships/[id]/claim`                          | eight parallel queries                              | route and inner section | `useSuspenseQueries`                        |
+| `/claims/review`                                    | partnership list, then parallel draft reads         | route and inner section | `useSuspenseQuery` and `useSuspenseQueries` |
+| `/claims/review/[id]`                               | four parallel queries                               | route and inner section | `useSuspenseQueries`                        |
+| `/organization`                                     | three parallel queries                              | route and inner section | `useSuspenseQueries`                        |
 
 Sources: `src/app/(protected)/**/page.tsx`, `src/app/(protected)/**/loading.tsx`,
 `src/features/projects/components/{project-list,claim-workspace,claim-review,claim-review-queue,project-workspace,participant-coordination,project-partnership-manager,assigned-project-list}.tsx`,
@@ -47,7 +52,7 @@ flow is explicitly redesigned.
   server QueryClient, `HydrationBoundary`. Root `app/layout.tsx` provides one
   browser `QueryClientProvider`; `instrumentation.ts` and root layout retain
   both server oRPC initialization paths.
-- In all eight routes, generated oRPC query options are used for prefetches
+- In all ten routes, generated oRPC query options are used for prefetches
   and the matching client reads. The multi-query pages launch independent
   prefetches concurrently. `/projects` resolves scope before its dependent
   selected-list query, and shallow nuqs changes use corresponding query keys.
@@ -77,22 +82,49 @@ flow is explicitly redesigned.
   list before it can start the draft queries. It now prefetches those drafts
   concurrently; for very large lists, a bounded server-side queue procedure
   might be more efficient than one query per partnership.
-- The streaming test covers `/projects`; the other pages use the same inner
-  boundary topology but do not yet have route-specific delayed-response
-  streaming tests. The page/section route tests cover their prefetch choices.
+- `src/app/(protected)/project-partnership-streaming.test.tsx` covers the other
+  eight Claim/Project Partnership surfaces in the inventory: Claim workspace,
+  review queue/detail, Partnership participants/detail, Hosting report, Partner
+  Organization management, and Project detail. Deferred query tests assert that
+  the authorized heading and matching card skeleton stream before data, then
+  resolve to content. Deferred URL-promise tests cover every dynamic identity
+  surface. Page tests also assert no rendering/prefetch without Membership.
+- `project-loading-states.unit.test.tsx` verifies accessible section and matching
+  route-level fallbacks. `layout.test.tsx` pins the request boundary before the
+  unchanged active Organization recovery flow.
+- These stream tests use the real page and section composition with mocked data
+  and leaf views. They do not establish production browser first-paint timing,
+  absence of hydration refetch, or error retry UX; live-browser verification is
+  still required. `/organization` keeps the existing generic skeleton because
+  it is outside the Claim/Project Partnership loading scope.
+
+## Intentional request-bound gates
+
+The protected layout retains its authentication and active Organization gates
+before paint with `instant = false` and `await connection()`. Seven routes outside
+it retain their original gate order via documented `instant = false` exports:
+`/login`, `/register`, `/accept-invitation/[invitationId]`, `/setup-links/[id]`,
+`/participant`, `/participant-links/[id]`, and
+`/participant-invitations/[invitationId]`. Existing request APIs already keep
+these seven routes request-bound; no additional `connection()` is necessary.
+The onboarding eligibility state machine is not restructured.
 
 ## Agent documentation assessment
 
 `docs/agents/instructions/tanstack-query.md` now routes agents here from its
 consumer rules and explains the inner/route-level boundaries, failure/retry
-behavior, conditional prefetches, and streaming tests. `docs/README.md`
+behavior, conditional prefetches, and streaming tests. The owning
+[architecture guide](architecture.md#cache-components-and-request-bound-loading)
+adds the installed adoption/dev-loop/shadcn skill routes and version-matched Next
+doc discovery, request-bound gate decisions, and the deliberate decision not to
+change Partial Prefetching behavior. `docs/README.md`
 routes agents to the owning Cost Tracker documentation index, which also links
 this audit. Agent instructions are the convention; this audit records the
 route-level verification snapshot and the remaining UX/performance tradeoffs.
 
 ## Primary references
 
-- Next.js 16.3.6 bundled [Streaming guide](../node_modules/next/dist/docs/01-app/02-guides/streaming.md): `loading.tsx` wraps a page and granular Suspense allows a header to render while async children wait.
-- Next.js 16.3.6 bundled [TanStack Query guide](../node_modules/next/dist/docs/01-app/02-guides/client-side-data-fetching/tanstack-query.md): pending query hydration, matching keys, Suspense, and warning that independent `useSuspenseQuery` calls run sequentially.
+- Installed Next.js bundled [Streaming guide](../../../node_modules/next/dist/docs/01-app/02-guides/streaming.md): `loading.tsx` wraps a page and granular Suspense allows a header to render while async children wait.
+- Installed Next.js bundled [TanStack Query guide](../../../node_modules/next/dist/docs/01-app/02-guides/client-side-data-fetching/tanstack-query.md): pending query hydration, matching keys, Suspense, and warning that independent `useSuspenseQuery` calls run sequentially.
 - TanStack Query v5 [Advanced Server Rendering](https://tanstack.com/query/v5/docs/framework/react/guides/advanced-ssr): prefetch + hydration across server/client transitions, pending-query dehydration, and request waterfall tradeoffs.
 - Project instructions: [`tanstack-query.md`](../../../docs/agents/instructions/tanstack-query.md), [`orpc.md`](../../../docs/agents/instructions/orpc.md), [`architecture.md`](architecture.md).

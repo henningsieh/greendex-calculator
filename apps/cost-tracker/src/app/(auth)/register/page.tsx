@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: "Create an account for the Greendex Cost Tracker.",
 };
 
+// Keep the signed-in redirect before the authentication form paints.
+export const instant = false;
+
 export default async function RegisterPage({
   searchParams,
 }: {

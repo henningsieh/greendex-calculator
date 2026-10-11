@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
 import { ClaimReview } from "@/features/projects/components/claim-review";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
+import { ClaimReviewSkeleton } from "@/features/projects/components/project-loading-states";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {
@@ -52,9 +52,7 @@ export default async function ClaimReviewPage({
   return (
     <div className="space-y-6">
       <h1 className="font-heading text-4xl font-semibold">Claim review</h1>
-      <Suspense
-        fallback={<PrefetchedSectionSkeleton label="Loading Claim review" />}
-      >
+      <Suspense fallback={<ClaimReviewSkeleton />}>
         <ClaimReviewSection params={params} />
       </Suspense>
     </div>

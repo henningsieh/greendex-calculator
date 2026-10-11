@@ -9,6 +9,9 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Join Project" };
 
+// Keep the session and link-source gates before the onboarding state machine paints.
+export const instant = false;
+
 export default async function ParticipantLinkPage({
   params,
   searchParams,
