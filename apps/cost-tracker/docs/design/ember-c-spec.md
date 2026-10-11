@@ -56,7 +56,7 @@ ist das Fundament, kein Ersatz dafür.
 - Mono 12px, Tracking .26em, `--fire`, kein Punkt davor nötig
 - Beispiele: `COST TRACKER · EMBER C`, `DER ABLAUF`
 
-## CTA
+## CTA (Primär-Regeln)
 
 - Primär: `--fire`-Fläche, dunkler Text `#1C1200`, Pill, Glow
   `0 0 32px rgba(255,184,0,.4)` + `inset 0 1px 0 rgba(255,255,255,.5)`
@@ -77,7 +77,9 @@ Eine Sektion, vier Buttons, keine Ausnahmen — die alten Kandidaten-Zellen
 - **Primary** = Lift + Shine + Press-Scale, 18px-Glow, Shine ruht unsichtbar.
   Hover-Feuer (`fire-hot`) gilt nur für enabled Buttons — disabled bleiben
   stumm, auch bei klebendem Touch-Hover
-- **Ghost** = transparent, 1px `--line`, kein Glow, bleibt wie er ist
+- **Ghost** = transparent, 1px `--line`, kein Glow, bleibt wie er ist.
+  Hover nur Hauch-Weiß (6%) + Feuer-Rahmen (shadcn-Prinzip), nie Vollfläche.
+  Hover-Feuer und Press-Scale gelten nur für enabled Buttons
 - **Pending** = Color-Mix 45%, Sweep + Punkte, Glow weich, `calm`, disabled
 - **CTA** = Glow-Atem, nur Landingpage-Main-CTA
 - Größen laufen mit (Small 13px), Zones: `calm`-Zellen ohne Card-Hover
@@ -91,7 +93,7 @@ Eine Sektion, vier Buttons, keine Ausnahmen — die alten Kandidaten-Zellen
 
 - **CTA** (vormals Pulse: `glowPulse`, Glow-Atem 2.4s, UI-Label `CTA`) ist
   reserviert für den Main-CTA der zukünftigen Landingpage — nirgendwo
-  sonst verwenden, auch nicht im Motion-Lab als Dauerzustand
+  sonst verwenden (Vergleichszelle auf der Mini-Site ausgenommen)
   (dort nur Vergleichszweck)
 - Die Landingpage ist der erste echte Bauabschnitt, sobald das Design steht
 - **Pending** (LOCKED 2026-10-11, final abgenommen) ist die Variante für
@@ -100,16 +102,20 @@ Eine Sektion, vier Buttons, keine Ausnahmen — die alten Kandidaten-Zellen
   Glow weicher, `cursor:not-allowed`) — kein `opacity`, das würde den Glow
   mitdimmen. Dazu Sweep-Band (1.4s-Loop, transform-only) plus Tipp-Punkte
   statt Pulsieren. Sieht disabled aus, arbeitet trotzdem.
-  Gilt überall: Motion-Lab und Button-Lab zeigen denselben Pending-State —
-  eine Sprache für alle Warte-Zustände. Zellen mit Pending sind `calm`
+  Gilt überall: eine Sprache für alle Warte-Zustände. Zellen mit Pending
+  sind `calm`
   (kein Card-Hover, kein Press-Feedback, kein Tap-Flash).
   Im Mock per CSS-Loop, in React pro Pending-State triggern.
   Kein Pulsieren auf Pending-Buttons — das gehört allein dem Landingpage-CTA
 
-## Hochglanz (Aura, dosiert)
+## Hochglanz (Aura, stillgelegt + gelockt, LOCKED 2026-10-11)
 
 - Ein einziges radiales Aura-Element über der Hero:
   `radial-gradient(ellipse, rgba(255,184,0,.16), transparent 70%)`
+- Der Drift-Loop ist AUS (`animation:none`) — der Schein steht still.
+  Langsame Groß-Animationen, die Layout verschieben, sind verboten.
+- **Top-Glow für die Landingpage reserviert:** genau dieser statische
+  Hintergrund-Schein oben wird auf der Landingpage wiederverwendet.
 - Headline-Akzent mit `text-shadow: 0 0 60px rgba(255,184,0,.45)`
 - Mehr Glanz nur nach Freigabe — nie flächendeckend, nie Streifen.
 
@@ -117,4 +123,4 @@ Eine Sektion, vier Buttons, keine Ausnahmen — die alten Kandidaten-Zellen
 
 - Claim-Workspace-Karten, Kostenposten-Listen, Beleg-Status: Raster + Eyebrow
   - Mono-Details aus dieser Spec übernehmen, nicht neu erfinden
-- LB-Token (`globals.css` `:root`/`.dark`) folgen erst nach Mini-Site-Feinschliff.
+- Design-Token (`globals.css` `:root`/`.dark`) folgen erst nach Mini-Site-Feinschliff.
