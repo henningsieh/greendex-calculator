@@ -39,6 +39,15 @@ ist das Fundament, kein Ersatz dafür.
 - Header-Lockup: Kranz (34px) + `GreenEx` (Sans 800, 19px) + `Cost Tracker` (Mono, 12px, Tracking .18em)
 - Hero-Pille über der Headline: `GREENEX COST TRACKER · ERASMUS EDITION`, Glas-Badge mit Feuer-Punkt, Abstand zum Content eng (54px Desktop / 34px Mobile)
 
+## Karten: Hover + Active (LOCKED 2026-10-11)
+
+- **Card-Hover:** jede Karte (Stat, Button-, Motion-Cell) hebt bei Hover
+  −2px und bekommt den Feuer-Rahmen (`rgba(255,184,0,.45)`), 220ms
+  Custom-Curve, nur hinter Hover-Gate, Reduced-Motion macht ihn statisch
+- **Card-Active:** Dauerzustand mit Feuer-Rahmen + Amber-Waschgang
+  (Verlauf von oben) für besondere Karten — aktive Auswahl, Hero-Stat,
+  Featured. Die ★-Proposal-Zelle auf der Mini-Site ist das lebende Vorbild
+
 ## Eyebrow-Muster
 
 - Mono 12px, Tracking .26em, `--fire`, kein Punkt davor nötig
