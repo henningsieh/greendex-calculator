@@ -130,6 +130,7 @@ button{-webkit-tap-highlight-color:transparent}
 .m-shine:hover::after{transform:translateX(260%) skewX(-20deg);opacity:1}
 .m-fill:hover::before{transform:translateX(0)}
 .m-cell:hover,.btn-cell:hover{transform:translateY(-2px);border-color:rgba(255,184,0,.45)}
+.m-cell:has(button:disabled):hover,.btn-cell:has(button:disabled):hover{transform:none;border-color:var(--line)}
 }
 .m-ripple{position:relative;overflow:hidden}
 .is-pending{background:color-mix(in srgb,#FFB800 45%,#0E0A14);color:rgba(28,18,0,.65);box-shadow:0 0 28px rgba(255,184,0,.4),inset 0 1px 0 rgba(255,255,255,.4);cursor:not-allowed}

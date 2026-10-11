@@ -44,7 +44,10 @@ ist das Fundament, kein Ersatz dafür.
 - **Card-Hover:** jede Karte (Stat, Button-, Motion-Cell) hebt bei Hover
   −2px und bekommt den Feuer-Rahmen (`rgba(255,184,0,.45)`), 220ms
   Custom-Curve, nur hinter Hover-Gate, Reduced-Motion macht ihn statisch
-- **Card-Active:** Dauerzustand mit Feuer-Rahmen + Amber-Waschgang
+- **Card-Active:** Dauerzustand mit Feuer-Rahmen + Amber-Waschgang.
+  Zellen mit disabled Buttons (Pending, Disabled) sind vom Card-Hover
+  ausgenommen (`:has(button:disabled)`) — sie bleiben stocksteif,
+  auch auf Touch mit klebendem Hover
   (Verlauf von oben) für besondere Karten — aktive Auswahl, Hero-Stat,
   Featured. Die ★-Proposal-Zelle auf der Mini-Site ist das lebende Vorbild
 
