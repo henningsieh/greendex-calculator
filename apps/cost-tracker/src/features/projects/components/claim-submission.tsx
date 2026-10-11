@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -79,7 +80,12 @@ export function ClaimSubmission({
           {preview.items.map((item) => (
             <li key={item.key}>
               <p>
-                {item.passed ? "Pass" : "Fail"}: {labels[item.key]}
+                {item.passed ? (
+                  <Badge variant="status-pass">Pass</Badge>
+                ) : (
+                  <Badge variant="destructive">Fail</Badge>
+                )}{" "}
+                {labels[item.key]}
               </p>
               {item.gaps.map((gap) => (
                 <p key={`${gap.path.join(".")}-${gap.message}`}>

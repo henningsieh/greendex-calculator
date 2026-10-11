@@ -12,36 +12,74 @@ import {
 const filename = `${"long-receipt-name-".repeat(12)}.pdf`;
 
 describe("Claim document presentation", () => {
-  it.each([
-    ["default", "brand", "primary-glow"],
-    ["outline", "secondary-feedback-border", "secondary-glow"],
-  ] as const)(
-    "%s keeps the yellow border swap and halo for hover, focus and press",
-    (variant, border, shadow) => {
-      render(
-        <Button variant={variant} size="lg">
-          Claim action
-        </Button>,
-      );
-      const button = screen.getByRole("button", { name: "Claim action" });
-      expect(button).toHaveClass(
-        "border",
-        "h-11",
-        "active:enabled:scale-[.97]",
-        `fine-hover:enabled:border-${border}`,
-        `fine-hover:enabled:shadow-${shadow}`,
-        `focus-visible:border-${border}`,
-        `focus-visible:shadow-${shadow}`,
-        `active:enabled:border-${border}`,
-        `active:enabled:shadow-${shadow}`,
-        "focus-visible:ring-0",
-        "transition-transform",
-        "motion-reduce:transition-none",
-        "motion-reduce:active:enabled:scale-100",
-      );
-      expect(button).not.toHaveClass("transition-all", "focus-visible:ring-2");
-    },
-  );
+  it("default keeps the fire surface, lift, glow and press", () => {
+    render(
+      <Button variant="default" size="lg">
+        Claim action
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Claim action" });
+    expect(button).toHaveClass(
+      "border",
+      "h-11",
+      "rounded-full",
+      "border-primary-border",
+      "bg-primary",
+      "text-primary-foreground",
+      "shadow-primary-glow",
+      "active:enabled:scale-[.97]",
+      "active:enabled:bg-primary-active",
+      "fine-hover:enabled:-translate-y-0.5",
+      "fine-hover:enabled:bg-primary-active",
+      "fine-hover:enabled:shadow-primary-glow",
+      "focus-visible:border-brand",
+      "focus-visible:shadow-primary-glow",
+      "focus-visible:ring-0",
+      "transition-[transform,background-color,border-color,box-shadow]",
+      "motion-reduce:transition-none",
+      "motion-reduce:active:enabled:scale-100",
+    );
+    expect(button).not.toHaveClass(
+      "transition-all",
+      "transition-transform",
+      "disabled:opacity-50",
+      "disabled:pointer-events-none",
+      "focus-visible:ring-2",
+    );
+  });
+
+  it("outline keeps the ghost wash and fire border without glow", () => {
+    render(
+      <Button variant="outline" size="lg">
+        Claim action
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Claim action" });
+    expect(button).toHaveClass(
+      "border",
+      "h-11",
+      "rounded-full",
+      "border-border",
+      "bg-transparent",
+      "text-foreground",
+      "active:enabled:scale-[.97]",
+      "fine-hover:enabled:bg-accent",
+      "fine-hover:enabled:border-brand",
+      "focus-visible:border-brand",
+      "focus-visible:ring-0",
+      "transition-[transform,background-color,border-color,box-shadow]",
+      "motion-reduce:transition-none",
+      "motion-reduce:active:enabled:scale-100",
+    );
+    expect(button).not.toHaveClass(
+      "shadow-primary-glow",
+      "shadow-secondary-glow",
+      "transition-all",
+      "disabled:opacity-50",
+      "disabled:pointer-events-none",
+      "focus-visible:ring-2",
+    );
+  });
 
   it("uses the unified primary look by default while retaining disabled and invalid states", () => {
     const activate = vi.fn();
@@ -58,14 +96,20 @@ describe("Claim document presentation", () => {
       "border-primary-border",
       "bg-primary",
       "text-primary-foreground",
-      "fine-hover:enabled:border-brand",
+      "fine-hover:enabled:bg-primary-active",
       "fine-hover:enabled:shadow-primary-glow",
-      "disabled:pointer-events-none",
-      "disabled:opacity-50",
+      "focus-visible:border-brand",
+      "disabled:cursor-not-allowed",
+      "disabled:data-[variant=default]:bg-pending",
+      "disabled:data-[variant=default]:text-pending-foreground",
       "aria-invalid:border-destructive",
       "aria-invalid:ring-2",
       "dark:aria-invalid:border-destructive/50",
       "dark:aria-invalid:ring-destructive/40",
+    );
+    expect(button).not.toHaveClass(
+      "disabled:opacity-50",
+      "disabled:pointer-events-none",
     );
     fireEvent.click(button);
     expect(activate).not.toHaveBeenCalled();

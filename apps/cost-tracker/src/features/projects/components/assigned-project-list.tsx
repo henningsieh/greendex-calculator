@@ -3,6 +3,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 /** Browse the same bounded, assignment-scoped results as the hosted search picker. */
@@ -18,7 +19,11 @@ export function AssignedProjectList() {
     <section aria-label="Assigned Projects" className="mt-10 space-y-4">
       <h2 className="font-heading text-2xl font-semibold">Your Projects</h2>
       {projects.length === 0 ? (
-        <p className="text-muted-foreground">No Projects assigned yet.</p>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>No Projects assigned yet.</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <ul className="space-y-2">
           {projects.map((project) => (
