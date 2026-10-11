@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, .theme-ember-plum *, .theme-ember-midnight *, .theme-ember-violet *, .theme-ember-abyss *, .theme-ember-royal *));
 @custom-variant fine-hover {
   @media (hover: hover) and (pointer: fine) {
     &:hover {
@@ -56,6 +56,12 @@
   --secondary-feedback-border: #ffcc00;
   --primary-glow: 0 0 12px rgb(255 204 0 / 50%);
   --secondary-glow: 0 0 7px rgb(255 204 0 / 35%);
+  --primary-active: #002b85;
+  --pending: color-mix(in srgb, #003399 45%, #edf2f8);
+  --pending-foreground: #52647a;
+  --term: #102b50;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 .dark {
@@ -102,6 +108,389 @@
   --secondary-feedback-border: rgb(255 204 0 / 75%);
   --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
   --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
+  --primary-active: #2d6bf3;
+  --pending: color-mix(in srgb, #2563eb 45%, #09090b);
+  --pending-foreground: #a1a1aa;
+  --term: #18181b;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ── Ember brand layer (7-theme scope, LOCKED 2026-10-11) ─────────────
+   :root (EU-Erasmus light) and .dark (legacy zinc) above are UNTOUCHED.
+   The five Ember vibes below map the DESIGN.md frontmatter onto shadcn
+   variables. Shared Ember decisions live in each block (no cross-theme
+   inheritance — every block is self-sufficient).
+   Custom tokens: --primary-active, --pending, --pending-foreground,
+   --ease-out, --ease-in-out. Registered in @theme inline below. */
+.theme-ember-plum {
+  --background: #0e0a14;
+  --foreground: #f7f2e9;
+  --card: rgb(255 255 255 / 0.02);
+  --card-foreground: #f7f2e9;
+  --popover: #0e0a14;
+  --popover-foreground: #f7f2e9;
+  --primary: #ffb800;
+  --primary-foreground: #1c1200;
+  --secondary: rgb(255 255 255 / 0.04);
+  --secondary-foreground: #f7f2e9;
+  --muted: rgb(255 255 255 / 0.04);
+  --muted-foreground: #b3a8c4;
+  --accent: rgb(255 255 255 / 0.06);
+  --accent-foreground: #f7f2e9;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.1);
+  --ring: #ffb800;
+  --chart-1: #ffb800;
+  --chart-2: #ffcc33;
+  --chart-3: #d99a00;
+  --chart-4: #b3a8c4;
+  --chart-5: #7c7192;
+  --sidebar: #0e0a14;
+  --sidebar-foreground: #f7f2e9;
+  --sidebar-primary: #ffb800;
+  --sidebar-primary-foreground: #1c1200;
+  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent-foreground: #f7f2e9;
+  --sidebar-border: rgb(255 255 255 / 0.1);
+  --sidebar-ring: #ffb800;
+  --claim-band: #080510;
+  --claim-band-foreground: #f7f2e9;
+  --brand: #ffb800;
+  --link: #ffb800;
+  --link-hover: #ffcc33;
+  --primary-hover: #ffcc33;
+  --primary-active: #ffcc33;
+  --primary-border: rgb(255 184 0 / 0.45);
+  --secondary-hover: rgb(255 255 255 / 0.06);
+  --secondary-hover-foreground: #f7f2e9;
+  --secondary-feedback-border: #ffb800;
+  --primary-glow: 0 0 18px rgb(255 184 0 / 0.45);
+  --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
+  --pending: color-mix(in srgb, #ffb800 45%, #0e0a14);
+  --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #0e0a14);
+  --term: #080510;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 22px;
+  --radius-3xl: 22px;
+  --radius-4xl: 999px;
+}
+.theme-ember-midnight {
+  --background: #0a1230;
+  --foreground: #f7f2e9;
+  --card: rgb(255 255 255 / 0.02);
+  --card-foreground: #f7f2e9;
+  --popover: #0a1230;
+  --popover-foreground: #f7f2e9;
+  --primary: #ffb800;
+  --primary-foreground: #1c1200;
+  --secondary: rgb(255 255 255 / 0.04);
+  --secondary-foreground: #f7f2e9;
+  --muted: rgb(255 255 255 / 0.04);
+  --muted-foreground: #9dacc9;
+  --accent: rgb(255 255 255 / 0.06);
+  --accent-foreground: #f7f2e9;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgb(147 180 255 / 0.13);
+  --input: rgb(147 180 255 / 0.13);
+  --ring: #ffb800;
+  --chart-1: #ffb800;
+  --chart-2: #ffcc33;
+  --chart-3: #d99a00;
+  --chart-4: #9dacc9;
+  --chart-5: #6b7a99;
+  --sidebar: #0a1230;
+  --sidebar-foreground: #f7f2e9;
+  --sidebar-primary: #ffb800;
+  --sidebar-primary-foreground: #1c1200;
+  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent-foreground: #f7f2e9;
+  --sidebar-border: rgb(147 180 255 / 0.13);
+  --sidebar-ring: #ffb800;
+  --claim-band: #080510;
+  --claim-band-foreground: #f7f2e9;
+  --brand: #ffb800;
+  --link: #ffb800;
+  --link-hover: #ffcc33;
+  --primary-hover: #ffcc33;
+  --primary-active: #ffcc33;
+  --primary-border: rgb(255 184 0 / 0.45);
+  --secondary-hover: rgb(255 255 255 / 0.06);
+  --secondary-hover-foreground: #f7f2e9;
+  --secondary-feedback-border: #ffb800;
+  --primary-glow: 0 0 18px rgb(255 184 0 / 0.45);
+  --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
+  --pending: color-mix(in srgb, #ffb800 45%, #0a1230);
+  --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #0a1230);
+  --term: #080510;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 22px;
+  --radius-3xl: 22px;
+  --radius-4xl: 999px;
+}
+.theme-ember-violet {
+  --background: #130b26;
+  --foreground: #f7f2e9;
+  --card: rgb(255 255 255 / 0.02);
+  --card-foreground: #f7f2e9;
+  --popover: #130b26;
+  --popover-foreground: #f7f2e9;
+  --primary: #ffb800;
+  --primary-foreground: #1c1200;
+  --secondary: rgb(255 255 255 / 0.04);
+  --secondary-foreground: #f7f2e9;
+  --muted: rgb(255 255 255 / 0.04);
+  --muted-foreground: #b8a9d4;
+  --accent: rgb(255 255 255 / 0.06);
+  --accent-foreground: #f7f2e9;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgb(200 170 255 / 0.12);
+  --input: rgb(200 170 255 / 0.12);
+  --ring: #ffb800;
+  --chart-1: #ffb800;
+  --chart-2: #ffcc33;
+  --chart-3: #d99a00;
+  --chart-4: #b8a9d4;
+  --chart-5: #7e6f9c;
+  --sidebar: #130b26;
+  --sidebar-foreground: #f7f2e9;
+  --sidebar-primary: #ffb800;
+  --sidebar-primary-foreground: #1c1200;
+  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent-foreground: #f7f2e9;
+  --sidebar-border: rgb(200 170 255 / 0.12);
+  --sidebar-ring: #ffb800;
+  --claim-band: #080510;
+  --claim-band-foreground: #f7f2e9;
+  --brand: #ffb800;
+  --link: #ffb800;
+  --link-hover: #ffcc33;
+  --primary-hover: #ffcc33;
+  --primary-active: #ffcc33;
+  --primary-border: rgb(255 184 0 / 0.45);
+  --secondary-hover: rgb(255 255 255 / 0.06);
+  --secondary-hover-foreground: #f7f2e9;
+  --secondary-feedback-border: #ffb800;
+  --primary-glow: 0 0 18px rgb(255 184 0 / 0.45);
+  --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
+  --pending: color-mix(in srgb, #ffb800 45%, #130b26);
+  --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #130b26);
+  --term: #080510;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 22px;
+  --radius-3xl: 22px;
+  --radius-4xl: 999px;
+}
+.theme-ember-abyss {
+  --background: #070a16;
+  --foreground: #f7f2e9;
+  --card: rgb(255 255 255 / 0.02);
+  --card-foreground: #f7f2e9;
+  --popover: #070a16;
+  --popover-foreground: #f7f2e9;
+  --primary: #ffb800;
+  --primary-foreground: #1c1200;
+  --secondary: rgb(255 255 255 / 0.04);
+  --secondary-foreground: #f7f2e9;
+  --muted: rgb(255 255 255 / 0.04);
+  --muted-foreground: #98a0b8;
+  --accent: rgb(255 255 255 / 0.06);
+  --accent-foreground: #f7f2e9;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgb(255 255 255 / 0.09);
+  --input: rgb(255 255 255 / 0.09);
+  --ring: #ffb800;
+  --chart-1: #ffb800;
+  --chart-2: #ffcc33;
+  --chart-3: #d99a00;
+  --chart-4: #98a0b8;
+  --chart-5: #5d6478;
+  --sidebar: #070a16;
+  --sidebar-foreground: #f7f2e9;
+  --sidebar-primary: #ffb800;
+  --sidebar-primary-foreground: #1c1200;
+  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent-foreground: #f7f2e9;
+  --sidebar-border: rgb(255 255 255 / 0.09);
+  --sidebar-ring: #ffb800;
+  --claim-band: #080510;
+  --claim-band-foreground: #f7f2e9;
+  --brand: #ffb800;
+  --link: #ffb800;
+  --link-hover: #ffcc33;
+  --primary-hover: #ffcc33;
+  --primary-active: #ffcc33;
+  --primary-border: rgb(255 184 0 / 0.45);
+  --secondary-hover: rgb(255 255 255 / 0.06);
+  --secondary-hover-foreground: #f7f2e9;
+  --secondary-feedback-border: #ffb800;
+  --primary-glow: 0 0 18px rgb(255 184 0 / 0.45);
+  --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
+  --pending: color-mix(in srgb, #ffb800 45%, #070a16);
+  --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #070a16);
+  --term: #080510;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 22px;
+  --radius-3xl: 22px;
+  --radius-4xl: 999px;
+}
+.theme-ember-royal {
+  --background: #0b1642;
+  --foreground: #f7f2e9;
+  --card: rgb(255 255 255 / 0.02);
+  --card-foreground: #f7f2e9;
+  --popover: #0b1642;
+  --popover-foreground: #f7f2e9;
+  --primary: #ffb800;
+  --primary-foreground: #1c1200;
+  --secondary: rgb(255 255 255 / 0.04);
+  --secondary-foreground: #f7f2e9;
+  --muted: rgb(255 255 255 / 0.04);
+  --muted-foreground: #a3b2d8;
+  --accent: rgb(255 255 255 / 0.06);
+  --accent-foreground: #f7f2e9;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgb(147 180 255 / 0.15);
+  --input: rgb(147 180 255 / 0.15);
+  --ring: #ffb800;
+  --chart-1: #ffb800;
+  --chart-2: #ffcc33;
+  --chart-3: #d99a00;
+  --chart-4: #a3b2d8;
+  --chart-5: #6f7ea8;
+  --sidebar: #0b1642;
+  --sidebar-foreground: #f7f2e9;
+  --sidebar-primary: #ffb800;
+  --sidebar-primary-foreground: #1c1200;
+  --sidebar-accent: rgb(255 255 255 / 0.04);
+  --sidebar-accent-foreground: #f7f2e9;
+  --sidebar-border: rgb(147 180 255 / 0.15);
+  --sidebar-ring: #ffb800;
+  --claim-band: #080510;
+  --claim-band-foreground: #f7f2e9;
+  --brand: #ffb800;
+  --link: #ffb800;
+  --link-hover: #ffcc33;
+  --primary-hover: #ffcc33;
+  --primary-active: #ffcc33;
+  --primary-border: rgb(255 184 0 / 0.45);
+  --secondary-hover: rgb(255 255 255 / 0.06);
+  --secondary-hover-foreground: #f7f2e9;
+  --secondary-feedback-border: #ffb800;
+  --primary-glow: 0 0 18px rgb(255 184 0 / 0.45);
+  --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
+  --pending: color-mix(in srgb, #ffb800 45%, #0b1642);
+  --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #0b1642);
+  --term: #080510;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 22px;
+  --radius-3xl: 22px;
+  --radius-4xl: 999px;
+}
+
+/* Ember keyframes — only the CTA breath loops (rare marketing element,
+   opacity-only on a glow layer). No firePulse: the headline glow stays
+   static per spec (LOCKED 2026-10-11). */
+@keyframes ember-cta-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Ember type utilities (Inter Black + JetBrains Mono contrast). */
+@utility type-ember-display {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-size: clamp(56px, 8.5vw, 124px);
+}
+@utility type-ember-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+@utility type-ember-stat-number {
+  font-family: var(--font-sans);
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Ember brand extensions — documented customs, not shadcn slots. */
+.ember-aura {
+  background: radial-gradient(ellipse, rgb(255 184 0 / 0.16), transparent 70%);
+  animation: none;
+}
+.ember-headline-accent {
+  text-shadow: 0 0 60px rgb(255 184 0 / 0.45);
+}
+/* Ember CTA breath — reserved for the landing-page main CTA only.
+   The glow lives on a ::before layer so only opacity animates (GPU),
+   never box-shadow (Emil: shadow loops jank under load). */
+.ember-cta {
+  position: relative;
+  isolation: isolate;
+}
+.ember-cta::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--primary);
+  filter: blur(18px);
+  opacity: 0.55;
+  animation: ember-cta-glow 2.4s var(--ease-in-out) infinite;
+}
+
+/* calm zones: no card hover, no press feedback, no tap flash. */
+.calm,
+.calm * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reduced motion ships with every animation — gentler, not zero. */
+@media (prefers-reduced-motion: reduce) {
+  .ember-cta::before {
+    animation: none;
+    opacity: 0.55;
+  }
 }
 
 @theme inline {
@@ -117,6 +506,10 @@
   --color-secondary-feedback-border: var(--secondary-feedback-border);
   --shadow-primary-glow: var(--primary-glow);
   --shadow-secondary-glow: var(--secondary-glow);
+  --color-primary-active: var(--primary-active);
+  --color-pending: var(--pending);
+  --color-pending-foreground: var(--pending-foreground);
+  --color-term: var(--term);
   --font-sans: var(--font-geist);
   --font-heading: var(--font-geist);
   --font-mono: var(--font-jetbrains-mono);
