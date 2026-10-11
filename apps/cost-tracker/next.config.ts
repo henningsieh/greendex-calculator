@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig = {
+  agentRules: false,
   reactCompiler: true,
   experimental: {
     requestInsights: true,
