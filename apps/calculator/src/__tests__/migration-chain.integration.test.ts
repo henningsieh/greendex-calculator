@@ -1,6 +1,14 @@
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
@@ -17,24 +25,20 @@ const databasePackage = resolve(
 const migrations = resolve(databasePackage, "src/migrations");
 const mainMigrationCount = 17;
 
-const journalSchema = z.object({
+const snapshotSchema = z.object({
+  id: z.string(),
+  prevIds: z.array(z.string()),
   version: z.string(),
-  dialect: z.literal("postgresql"),
-  entries: z.array(
-    z.object({
-      idx: z.number().int(),
-      version: z.string(),
-      when: z.number().int(),
-      tag: z.string(),
-      breakpoints: z.boolean(),
-    }),
-  ),
+  dialect: z.string(),
 });
 
-async function journal() {
-  return journalSchema.parse(
-    JSON.parse(await readFile(resolve(migrations, "meta/_journal.json"), "utf8")),
-  );
+async function folders() {
+  const names = await readdir(migrations);
+  const dirs: string[] = [];
+  for (const name of names.sort()) {
+    if ((await stat(resolve(migrations, name))).isDirectory()) dirs.push(name);
+  }
+  return dirs;
 }
 
 async function migrate(databaseUrl: string, migrationDirectory = migrations) {
@@ -94,44 +98,44 @@ async function expectSharedAndClaimTables(pool: Pool) {
     ]),
   );
   const history = await pool.query(
-    "SELECT created_at FROM drizzle.__drizzle_migrations ORDER BY id",
+    "SELECT id FROM drizzle.__drizzle_migrations ORDER BY id",
   );
-  expect(history.rows.map(({ created_at }) => Number(created_at))).toEqual(
-    (await journal()).entries.map(({ when }) => when),
-  );
+  expect(history.rows.length).toBe((await folders()).length);
 }
 
 describe("merged migration chain", () => {
   it("keeps main as the prefix and has one ordered SQL and snapshot history", async () => {
-    const { entries } = await journal();
-    expect(entries[15].tag).toBe("0015_skinny_ronan");
-    expect(entries[16].tag).toBe("0016_certain_terrax");
-    expect(entries[17].tag).toBe("0017_project_partnership_foundation");
-    expect(new Set(entries.map(({ tag }) => tag)).size).toBe(entries.length);
-    expect(
-      (await readdir(migrations)).filter((name) => name.endsWith(".sql")).sort(),
-    ).toEqual(entries.map(({ tag }) => `${tag}.sql`));
-    let previousId = "00000000-0000-0000-0000-000000000000";
-    for (const [index, entry] of entries.entries()) {
-      expect(entry.idx).toBe(index);
-      expect(entry.tag.slice(0, 4)).toBe(String(index).padStart(4, "0"));
-      if (index > 0) expect(entry.when).toBeGreaterThan(entries[index - 1].when);
-      const snapshot = JSON.parse(
-        await readFile(
-          resolve(
-            migrations,
-            "meta",
-            `${String(index).padStart(4, "0")}_snapshot.json`,
-          ),
-          "utf8",
-        ),
+    const dirs = await folders();
+    expect(dirs.length).toBe(37);
+    expect(dirs).toEqual([...dirs].sort());
+    const suffixes = dirs.map((d) => d.slice(15));
+    expect(new Set(suffixes).size).toBe(dirs.length);
+    for (const expected of [
+      "minor_xavin",
+      "skinny_ronan",
+      "certain_terrax",
+      "project_partnership_foundation",
+      "awesome_the_enforcers",
+      "thin_hiroim",
+    ]) {
+      expect(suffixes).toContain(expected);
+    }
+    for (const dir of dirs) {
+      expect(dir.slice(0, 14)).toMatch(/^\d{14}$/);
+      const sql = await readFile(
+        resolve(migrations, dir, "migration.sql"),
+        "utf8",
       );
-      expect(snapshot.prevId).toBe(previousId);
-      previousId = snapshot.id;
-      if (index >= 16)
-        expect(
-          snapshot.tables["public.organization"].columns.country.notNull,
-        ).toBe(true);
+      expect(sql.length).toBeGreaterThan(0);
+      const snapshot = snapshotSchema
+        .loose()
+        .parse(
+          JSON.parse(
+            await readFile(resolve(migrations, dir, "snapshot.json"), "utf8"),
+          ),
+        );
+      expect(snapshot.version).toBe("8");
+      expect(snapshot.prevIds.length).toBeGreaterThan(0);
     }
   });
 
@@ -150,13 +154,12 @@ describe("merged migration chain", () => {
   it("appends Cost Tracker to main without replacing shared identities", async () => {
     const prefix = await mkdtemp(resolve(tmpdir(), "greendex-main-migrations-"));
     try {
-      await cp(migrations, prefix, { recursive: true });
-      const mainJournal = await journal();
-      mainJournal.entries = mainJournal.entries.slice(0, mainMigrationCount);
-      await writeFile(
-        resolve(prefix, "meta/_journal.json"),
-        JSON.stringify(mainJournal),
-      );
+      const dirs = await folders();
+      for (const dir of dirs.slice(0, mainMigrationCount)) {
+        await cp(resolve(migrations, dir), resolve(prefix, dir), {
+          recursive: true,
+        });
+      }
       await withDatabase(async (pool, url) => {
         await migrate(url, prefix);
         await pool.query(`

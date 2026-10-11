@@ -1,0 +1,120 @@
+diff --git a/index.cjs b/index.cjs
+index 1448a1aa6cb3e91dc1a1388089a0d10fba2bba18..4da4a0db71aeaca089c3d540f308e64ff2c83d09 100644
+--- a/index.cjs
++++ b/index.cjs
+@@ -43,6 +43,14 @@ function columnToSchema(column, factory) {
+     const z = factory?.zodInstance ?? v4.z;
+     const coerce = factory?.coerce ?? {};
+     let schema;
++    // Compatibility with drizzle-orm 1.0 RC: dataType carries extra detail
++    // ("object date", "object json", "string numeric", "number int32", ...).
++    // Normalize back to the 0.x tags drizzle-zod maps from.
++    const dataType = column.dataType === 'object date' ? 'date'
++        : column.dataType === 'object json' ? 'json'
++        : column.dataType === 'string numeric' ? 'string'
++        : /^number int\d+$/.test(column.dataType) ? 'number'
++        : column.dataType;
+     if (isWithEnum(column)) {
+         schema = column.enumValues.length ? z.enum(column.enumValues) : z.string();
+     }
+@@ -72,31 +80,31 @@ function columnToSchema(column, factory) {
+             schema = z.array(columnToSchema(column.baseColumn, factory));
+             schema = column.size ? schema.length(column.size) : schema;
+         }
+-        else if (column.dataType === 'array') {
++        else if (dataType === 'array') {
+             schema = z.array(z.any());
+         }
+-        else if (column.dataType === 'number') {
++        else if (dataType === 'number') {
+             schema = numberColumnToSchema(column, z, coerce);
+         }
+-        else if (column.dataType === 'bigint') {
++        else if (dataType === 'bigint') {
+             schema = bigintColumnToSchema(column, z, coerce);
+         }
+-        else if (column.dataType === 'boolean') {
++        else if (dataType === 'boolean') {
+             schema = coerce === true || coerce.boolean ? z.coerce.boolean() : z.boolean();
+         }
+-        else if (column.dataType === 'date') {
++        else if (dataType === 'date') {
+             schema = coerce === true || coerce.date ? z.coerce.date() : z.date();
+         }
+-        else if (column.dataType === 'string') {
++        else if (dataType === 'string') {
+             schema = stringColumnToSchema(column, z, coerce);
+         }
+-        else if (column.dataType === 'json') {
++        else if (dataType === 'json') {
+             schema = jsonSchema;
+         }
+-        else if (column.dataType === 'custom') {
++        else if (dataType === 'custom') {
+             schema = z.any();
+         }
+-        else if (column.dataType === 'buffer') {
++        else if (dataType === 'buffer') {
+             schema = bufferSchema;
+         }
+     }
+diff --git a/index.mjs b/index.mjs
+index cb83b2bd36fb84f65a298ab0ddb0a29aadebaad7..9dfd5a342ae4d78cdbc4ff2e10b62279432a5ef5 100644
+--- a/index.mjs
++++ b/index.mjs
+@@ -41,6 +41,14 @@ function columnToSchema(column, factory) {
+     const z$1 = factory?.zodInstance ?? z;
+     const coerce = factory?.coerce ?? {};
+     let schema;
++    // Compatibility with drizzle-orm 1.0 RC: dataType carries extra detail
++    // ("object date", "object json", "string numeric", "number int32", ...).
++    // Normalize back to the 0.x tags drizzle-zod maps from.
++    const dataType = column.dataType === 'object date' ? 'date'
++        : column.dataType === 'object json' ? 'json'
++        : column.dataType === 'string numeric' ? 'string'
++        : /^number int\d+$/.test(column.dataType) ? 'number'
++        : column.dataType;
+     if (isWithEnum(column)) {
+         schema = column.enumValues.length ? z$1.enum(column.enumValues) : z$1.string();
+     }
+@@ -70,31 +78,31 @@ function columnToSchema(column, factory) {
+             schema = z$1.array(columnToSchema(column.baseColumn, factory));
+             schema = column.size ? schema.length(column.size) : schema;
+         }
+-        else if (column.dataType === 'array') {
++        else if (dataType === 'array') {
+             schema = z$1.array(z$1.any());
+         }
+-        else if (column.dataType === 'number') {
++        else if (dataType === 'number') {
+             schema = numberColumnToSchema(column, z$1, coerce);
+         }
+-        else if (column.dataType === 'bigint') {
++        else if (dataType === 'bigint') {
+             schema = bigintColumnToSchema(column, z$1, coerce);
+         }
+-        else if (column.dataType === 'boolean') {
++        else if (dataType === 'boolean') {
+             schema = coerce === true || coerce.boolean ? z$1.coerce.boolean() : z$1.boolean();
+         }
+-        else if (column.dataType === 'date') {
++        else if (dataType === 'date') {
+             schema = coerce === true || coerce.date ? z$1.coerce.date() : z$1.date();
+         }
+-        else if (column.dataType === 'string') {
++        else if (dataType === 'string') {
+             schema = stringColumnToSchema(column, z$1, coerce);
+         }
+-        else if (column.dataType === 'json') {
++        else if (dataType === 'json') {
+             schema = jsonSchema;
+         }
+-        else if (column.dataType === 'custom') {
++        else if (dataType === 'custom') {
+             schema = z$1.any();
+         }
+-        else if (column.dataType === 'buffer') {
++        else if (dataType === 'buffer') {
+             schema = bufferSchema;
+         }
+     }

@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
+    "./relations": "./src/relations.ts",
     "./schema": "./src/schema.ts"
   },
   "scripts": {
@@ -28,7 +29,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
-    "drizzle-kit": "^0.31.11",
+    "drizzle-kit": "1.0.0-rc.5-ab785fc",
+    "greendex-skills": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "typescript": "catalog:"

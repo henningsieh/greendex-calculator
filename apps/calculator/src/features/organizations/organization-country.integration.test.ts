@@ -3,12 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
-import {
-  invitation,
-  member,
-  organization,
-  user,
-} from "@greendex/database/schema";
+import { organization, user } from "@greendex/database/schema";
 import { eq, inArray } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -89,7 +84,7 @@ describe("Organization country through Better Auth", () => {
     const second = await createOwnOrganization(owner.headers);
     expect(second.id).not.toBe(first.id);
     const membership = await db.query.member.findFirst({
-      where: eq(member.organizationId, second.id),
+      where: { organizationId: second.id },
     });
     expect(membership?.role).toBe(ORGANIZATION_ROLES.OrganizationOwner);
   });
@@ -121,7 +116,7 @@ describe("Organization country through Better Auth", () => {
     expect(response.status).toBe(400);
     expect(
       await db.query.invitation.findFirst({
-        where: eq(invitation.email, email),
+        where: { email },
       }),
     ).toBeUndefined();
   });
@@ -143,8 +138,7 @@ describe("Organization country through Better Auth", () => {
     });
     expect(granted?.role).toBe(roles.join(","));
     expect(
-      (await db.query.member.findFirst({ where: eq(member.id, granted!.id) }))
-        ?.role,
+      (await db.query.member.findFirst({ where: { id: granted!.id } }))?.role,
     ).toBe(roles.join(","));
   });
 
@@ -164,7 +158,7 @@ describe("Organization country through Better Auth", () => {
     expect(
       (
         await db.query.organization.findFirst({
-          where: eq(organization.id, created.id),
+          where: { id: created.id },
         })
       )?.country,
     ).toBe("DE");
@@ -206,7 +200,7 @@ describe("Organization country through Better Auth", () => {
     expect(
       (
         await db.query.organization.findFirst({
-          where: eq(organization.id, created.id),
+          where: { id: created.id },
         })
       )?.country,
     ).toBe("FR");

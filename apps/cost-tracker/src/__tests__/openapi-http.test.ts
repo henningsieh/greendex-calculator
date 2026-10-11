@@ -15,7 +15,7 @@ import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
 import { hashPassword } from "better-auth/crypto";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { env } from "@/env";
@@ -203,7 +203,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     expect(
       (
         await db.query.organization.findFirst({
-          where: eq(organization.id, host),
+          where: { id: host },
         })
       )?.country,
     ).toBe("DE");
