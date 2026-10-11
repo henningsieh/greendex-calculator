@@ -298,9 +298,10 @@ export const updateProject = authorized
       });
     }
 
+    const { organizationId: _organizationId, ...writableData } = input.data;
     await db
       .update(projectsTable)
-      .set(input.data)
+      .set(writableData)
       .where(eq(projectsTable.id, input.id));
 
     // Fetch the updated project with responsible user

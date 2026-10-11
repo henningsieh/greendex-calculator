@@ -31,33 +31,20 @@ const projectFormExtensions = {
 
 export const ProjectSortFieldSchema = z.enum(PROJECT_SORT_FIELDS);
 
-/**
- * Schema for creating a new project (only user-provided fields).
- *
- * This schema is derived from `projectsTable` via `createInsertSchema` and
- * customized to represent the payload that can be submitted by users when
- * creating a project.
- *
- * Key details:
- * - Omits database-managed fields: `id`, `createdAt`, and `updatedAt`.
- * - Extends with `projectFormExtensions`, which enforces:
- *   - `country`: enum of EU country codes (with a custom error message)
- *   - `name`: required non-empty string
- *   - `startDate` / `endDate`: `Date` values with validation messages
- *
- * Usage:
- * - Use this schema to validate create-request payloads from forms or APIs.
- * - If you need to accept shared travel at creation time, use
- *   `CreateProjectWithSharedTravelLegsSchema`, which extends this schema with
- *   an optional `sharedTravelLegs` array.
- *
- */
+// Explicit app-owned fields prevent shared-table additions from becoming writable.
+// organizationId remains a form value; procedures use the active Organization.
+const projectFormFields = {
+  name: true,
+  startDate: true,
+  endDate: true,
+  location: true,
+  country: true,
+  welcomeMessage: true,
+  organizationId: true,
+} as const;
+
 export const ProjectCreateFormSchema = createInsertSchema(projectsTable)
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-  })
+  .pick(projectFormFields)
   .extend(projectFormExtensions);
 
 export const ProjectWithRelationsSchema = createSelectSchema(
@@ -72,32 +59,9 @@ export const ProjectWithRelationsSchema = createSelectSchema(
   country: z.enum(EU_COUNTRY_CODES),
 });
 
-/**
- * Schema for updating an existing project (partial user-provided fields).
- *
- * Built from `projectsTable` via `createUpdateSchema` and tailored for
- * edit/update payloads. This schema:
- *
- * - Omits database-managed fields: `id`, `createdAt`, and `updatedAt`.
- * - Extends with `projectFormExtensions` so that `name`, `startDate`, and
- *   `endDate` keep their validation rules, but fields may be omitted when
- *   performing partial updates.
- * - Explicitly makes `country` optional to allow updates that don't change the
- *   country value.
- *
- * Usage:
- * - Use this schema to validate update/edit request payloads from forms or APIs.
- * - For editing a project together with shared travel, use
- *   `EditProjectWithSharedTravelLegsSchema`, which extends this schema with
- *   an optional `sharedTravelLegs` array.
- *
- */
+// Generic edits do not own archive or Cost Tracker lifecycle transitions.
 export const ProjectUpdateFormSchema = createUpdateSchema(projectsTable)
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-  })
+  .pick(projectFormFields)
   .extend({
     ...projectFormExtensions,
     country: projectFormExtensions.country.optional(),
