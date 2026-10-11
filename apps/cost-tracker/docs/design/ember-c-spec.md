@@ -74,7 +74,9 @@ ist das Fundament, kein Ersatz dafür.
 Eine Sektion, vier Buttons, keine Ausnahmen — die alten Kandidaten-Zellen
 (Shine/Lift/Fill/Magnet einzeln, separates Button-Labor) sind ausgebaut:
 
-- **Primary** = Lift + Shine + Press-Scale, 18px-Glow, Shine ruht unsichtbar
+- **Primary** = Lift + Shine + Press-Scale, 18px-Glow, Shine ruht unsichtbar.
+  Hover-Feuer (`fire-hot`) gilt nur für enabled Buttons — disabled bleiben
+  stumm, auch bei klebendem Touch-Hover
 - **Ghost** = transparent, 1px `--line`, kein Glow, bleibt wie er ist
 - **Pending** = Color-Mix 45%, Sweep + Punkte, Glow weich, `calm`, disabled
 - **CTA** = Glow-Atem, nur Landingpage-Main-CTA
