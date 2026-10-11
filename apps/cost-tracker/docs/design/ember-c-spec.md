@@ -87,6 +87,9 @@ ist das Fundament, kein Ersatz dafür.
   Glow weicher, `cursor:not-allowed`) — kein `opacity`, das würde den Glow
   mitdimmen. Dazu Sweep-Band (1.4s-Loop, transform-only) plus Tipp-Punkte
   statt Pulsieren. Sieht disabled aus, arbeitet trotzdem.
+  Gilt überall: Motion-Lab und Button-Lab zeigen denselben Pending-State —
+  eine Sprache für alle Warte-Zustände. Zellen mit Pending sind `calm`
+  (kein Card-Hover, kein Press-Feedback, kein Tap-Flash).
   Im Mock per CSS-Loop, in React pro Pending-State triggern.
   Kein Pulsieren auf Pending-Buttons — das gehört allein dem Landingpage-CTA
 
