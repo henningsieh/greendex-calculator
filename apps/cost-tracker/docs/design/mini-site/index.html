@@ -120,6 +120,8 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
 .m-cell .cta{margin:0;width:100%}
 .m-cell .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);margin-top:16px}
 @media(max-width:760px){.motion-grid{grid-template-columns:1fr}}
+.hero-pick{grid-column:1/-1;border-color:rgba(255,184,0,.45);background:linear-gradient(180deg,rgba(255,184,0,.08),rgba(255,255,255,.02))}
+.hero-pick .tag{color:var(--fire)}
 @media(hover:hover) and (pointer:fine){
 .m-lift:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(255,184,0,.5),inset 0 1px 0 rgba(255,255,255,.5)}
 .m-shine:hover::after{transform:translateX(260%) skewX(-20deg)}
@@ -268,6 +270,7 @@ h1 .fire{animation:firePulse 4s var(--ease-in-out) infinite}
       <div class="m-cell"><button class="cta m-fill" type="button"><span>Fill</span></button><div class="tag">FILL · Slide-In · 250ms</div></div>
       <div class="m-cell"><button class="cta m-magnet" type="button">Magnet</button><div class="tag">MAGNET · folgt dem Zeiger</div></div>
       <div class="m-cell"><button class="cta m-pulse" type="button">CTA</button><div class="tag">CTA · Landingpage Main-CTA · Glow-Atem</div></div>
+      <div class="m-cell hero-pick"><button class="cta m-shine m-lift" type="button">Primary</button><div class="tag">★ VORSCHLAG · Lift + Shine kombiniert</div></div>
     </div>
   </div>
   <div class="meta"><span>EMBER-C · PFLAUME #0E0A14 · FEUER #FFB800</span><span>MINI-SITE · KEINE ECHTDATEN</span></div>
