@@ -15,11 +15,11 @@ function PendingButton({
   return (
     <span className="calm inline-flex" data-disabled="true">
       <Button
+        {...props}
         variant="pending"
         disabled
         data-disabled="true"
         className={cn(className)}
-        {...props}
       >
         <Spinner data-icon="inline-start" />
         {children ?? "Loading"}

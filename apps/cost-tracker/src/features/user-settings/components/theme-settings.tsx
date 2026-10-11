@@ -7,14 +7,6 @@ import * as React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FieldDescription, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Kbd } from "@/components/ui/kbd";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { THEMES, isThemeValue } from "@/lib/themes";
 
@@ -38,15 +30,11 @@ export function ThemeSettings() {
     () => true,
     () => false,
   );
-  const { resolvedTheme, setTheme, theme } = useTheme();
-  const selectedTheme = mounted && resolvedTheme === "dark" ? "dark" : "light";
+  const { setTheme, theme } = useTheme();
+  const selectedValues = mounted && theme && isThemeValue(theme) ? [theme] : [];
 
   function changeTheme(values: string[]) {
-    const nextTheme = values.at(-1);
-
-    if (nextTheme === "light" || nextTheme === "dark") {
-      setTheme(nextTheme);
-    }
+    changeFullTheme(values.at(-1) ?? null);
   }
 
   function changeFullTheme(value: string | null) {
@@ -60,51 +48,28 @@ export function ThemeSettings() {
       <FieldSet>
         <FieldLegend variant="label">Color theme</FieldLegend>
         <FieldDescription>
-          Choose the appearance used throughout Cost Tracker.
-        </FieldDescription>
-        <ToggleGroup
-          aria-label="Color theme"
-          disabled={!mounted}
-          onValueChange={changeTheme}
-          value={[selectedTheme]}
-          variant="outline"
-        >
-          <ToggleGroupItem aria-label="Use light theme" value="light">
-            <SunIcon data-icon="inline-start" />
-            Light
-          </ToggleGroupItem>
-          <ToggleGroupItem aria-label="Use dark theme" value="dark">
-            <MoonIcon data-icon="inline-start" />
-            Dark
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </FieldSet>
-
-      <FieldSet>
-        <FieldLegend variant="label">Design theme</FieldLegend>
-        <FieldDescription>
           All seven themes side by side — EU Erasmus light, five Ember vibes, and
           legacy dark.
         </FieldDescription>
-        <Select
+        <ToggleGroup
+          aria-label="Color theme"
+          className="flex-wrap justify-start"
           disabled={!mounted}
-          onValueChange={changeFullTheme}
-          value={mounted && theme ? theme : undefined}
+          onValueChange={changeTheme}
+          value={selectedValues}
+          variant="outline"
         >
-          <SelectTrigger aria-label="Design theme">
-            <SelectValue placeholder="Select a theme" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {THEMES.map((entry) => (
-                <SelectItem key={entry.value} value={entry.value}>
-                  {themeIcon(entry.value)}
-                  {entry.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+          {THEMES.map((entry) => (
+            <ToggleGroupItem
+              key={entry.value}
+              aria-label={`Use ${entry.label}`}
+              value={entry.value}
+            >
+              {themeIcon(entry.value)}
+              {entry.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </FieldSet>
 
       <Alert variant="accent">

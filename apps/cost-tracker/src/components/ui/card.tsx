@@ -8,9 +8,9 @@ import { cn } from "cn"
    Cells carrying data-disabled (pending/disabled buttons inside) and
    .calm zones are exempt — data-attribute, never :has(). */
 const emberHover =
-  "fine-hover:not-data-[disabled]:-translate-y-0.5 fine-hover:not-data-[disabled]:border-primary-border fine-hover:not-data-[disabled]:shadow-primary-glow motion-reduce:fine-hover:translate-y-0 motion-reduce:fine-hover:shadow-none transition-[transform,border-color,box-shadow] duration-220 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none";
+  "relative fine-hover:not-data-[disabled]:-translate-y-0.5 fine-hover:not-data-[disabled]:border-primary-border motion-reduce:fine-hover:translate-y-0 transition-[translate,scale,background-color,border-color] duration-220 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:bg-[radial-gradient(120%_90%_at_50%_0%,var(--amber-wash-strong),transparent_70%)] before:opacity-0 before:transition-opacity before:duration-220 fine-hover:not-data-[disabled]:before:opacity-100";
 const emberActive =
-  "border-[rgb(255_184_0/0.45)] bg-[linear-gradient(180deg,rgb(255_184_0/0.08),rgb(255_184_0/0.02))]";
+  "border-primary-border bg-[var(--ember-active-wash)]";
 
 const documentAppearance = "gap-5 overflow-visible border-b border-border py-7 text-base shadow-none ring-0 [--card-spacing:--spacing(8)] max-sm:[--card-spacing:--spacing(4)]"
 
@@ -20,7 +20,7 @@ const cardVariants = cva(
     variants: {
       variant: {
         default: "",
-        ember: emberHover,
+        ember: `${emberHover} rounded-xl border border-border`,
         "ember-active": emberActive,
         document: documentAppearance,
         action: `${documentAppearance} border-0 bg-muted [--card-spacing:--spacing(6)]`,

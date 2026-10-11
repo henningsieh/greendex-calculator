@@ -17,7 +17,7 @@ const badgeVariants = cva(
         ghost: "text-muted-foreground hover:text-foreground",
         link: "text-foreground underline-offset-4 hover:underline",
         "ember-pill":
-          "rounded-full border border-border bg-card px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground normal-case shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]",
+          "rounded-full border border-border bg-card px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground normal-case shadow-[inset_0_1px_0_var(--glass-edge)]",
         "status-pass": "text-primary",
       },
     },
