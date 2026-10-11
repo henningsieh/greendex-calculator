@@ -1,9 +1,10 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { onError } from "@orpc/server";
-import { CORSPlugin } from "@orpc/server/plugins";
-import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { OpenAPIReferenceHandlerPlugin } from "@orpc/openapi/plugins";
+import { ORPCError, onError } from "@orpc/server";
+import { CORSHandlerPlugin } from "@orpc/server/plugins";
 
+import { ERROR_STATUS_MAP, getErrorStatus } from "@/lib/orpc/error-status";
+import { generateOpenAPISpec } from "@/lib/orpc/openapi-generator";
 import { router } from "@/lib/orpc/router";
 
 /**
@@ -13,38 +14,42 @@ import { router } from "@/lib/orpc/router";
  * - Serves the interactive API reference UI at `/api/docs` (Scalar)
  */
 export const openapiHandler = new OpenAPIHandler(router, {
+  errorStatusMap: ERROR_STATUS_MAP,
   plugins: [
-    new CORSPlugin({
+    new CORSHandlerPlugin({
+      origin: (origin) => origin,
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization"],
       exposeHeaders: ["Content-Disposition"],
       credentials: true,
     }),
-    new OpenAPIReferencePlugin({
-      schemaConverters: [new ZodToJsonSchemaConverter()],
-      docsProvider: "scalar",
+    new OpenAPIReferenceHandlerPlugin({
+      provider: "scalar",
+      providerScriptUrl:
+        "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0",
       docsPath: "/api/docs",
       specPath: "/api/openapi-spec",
-      specGenerateOptions: {
-        info: {
-          title: "Greendex Calculator API",
-          version: "1.0.0",
-        },
-        // The OpenAPI `servers` property sets the base URL used by the
-        // generated spec and documentation UI. We serve REST endpoints under
-        // `/api/openapi/*`, so expose that as the server URL. This makes
-        // tools like Scalar and generated curl examples include the correct
-        // `/api/openapi` prefix (e.g. `/api/openapi/health`).
-        servers: [{ url: "/api/openapi" }],
-      },
+      spec: () =>
+        generateOpenAPISpec({
+          info: {
+            title: "Greendex Calculator API",
+            version: "1.0.0",
+          },
+          // The OpenAPI `servers` property sets the base URL used by the
+          // generated spec and documentation UI. We serve REST endpoints under
+          // `/api/openapi/*`, so expose that as the server URL. This makes
+          // tools like Scalar and generated curl examples include the correct
+          // `/api/openapi` prefix (e.g. `/api/openapi/health`).
+          servers: [{ url: "/api/openapi" }],
+        }),
     }),
   ],
   interceptors: [
     onError((error) => {
       const isParsingError = error instanceof SyntaxError;
       const isClientError =
-        error && typeof error === "object" && "status" in error
-          ? (error.status as number) >= 400 && (error.status as number) < 500
+        error instanceof ORPCError
+          ? getErrorStatus(error.code) >= 400 && getErrorStatus(error.code) < 500
           : false;
 
       if (isParsingError || isClientError) {

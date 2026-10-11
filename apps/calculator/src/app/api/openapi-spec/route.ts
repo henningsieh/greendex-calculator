@@ -1,20 +1,14 @@
-import { OpenAPIGenerator } from "@orpc/openapi";
-import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { NextResponse } from "next/server";
 
-import { router } from "@/lib/orpc/router";
+import { generateOpenAPISpec } from "@/lib/orpc/openapi-generator";
 
 /**
  * OpenAPI specification endpoint
- * Generates the OpenAPI 3.0 specification from the oRPC router
+ * Generates the OpenAPI 3.1 specification from the oRPC router
  * Used by Scalar UI and other API documentation tools
  */
 export async function GET() {
-  const generator = new OpenAPIGenerator({
-    schemaConverters: [new ZodToJsonSchemaConverter()],
-  });
-
-  const spec = await generator.generate(router, {
+  const spec = await generateOpenAPISpec({
     info: {
       title: "Greendex Calculator API",
       version: "1.0.0",

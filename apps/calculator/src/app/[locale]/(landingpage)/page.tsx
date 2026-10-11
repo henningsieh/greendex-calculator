@@ -124,7 +124,7 @@ function PreviewSkeleton() {
     <section aria-hidden="true" className="relative px-4 py-16 md:py-24">
       <div className="mx-auto max-w-6xl">
         <div className="aspect-video w-full animate-pulse rounded-2xl bg-muted/40" />
-        <div className="mx-auto mt-4 h-4 w-64 animate-pulse rounded bg-muted/40" />
+        <div className="mx-auto mt-4 h-4 w-64 animate-pulse rounded-sm bg-muted/40" />
       </div>
     </section>
   );

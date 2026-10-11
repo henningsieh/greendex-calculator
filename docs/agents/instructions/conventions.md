@@ -21,7 +21,7 @@ Keep the root `.oxlintrc.json` `jsPlugins` entry and the root `@shadcn/lint` dev
 
 ## Environment
 
-- Each application owns its local environment file, created from the `.env.example` in that application's directory.
+- Each application owns its app-specific environment file, created from its `.env.example`. Configure local `DATABASE_URL` once in `packages/database/.env`; Calculator and Cost Tracker load that shared file first. Injected platform values take precedence.
 - The calculator validates environment variables in `apps/calculator/src/env.ts`.
 - Keep secrets in local or platform-managed configuration; commit only documented placeholders.
 - Turbo's `build` and `start` tasks require `"env": ["*"]` so injected variables reach workspace processes.

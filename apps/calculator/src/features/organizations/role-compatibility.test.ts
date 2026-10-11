@@ -2,7 +2,7 @@ import {
   assertRoleMapCoversRoles,
   ORGANIZATION_ROLES,
 } from "@greendex/auth/organization-roles";
-import { calculatorRoles } from "@greendex/auth/permissions";
+import { calculatorOrganizationRoles } from "@greendex/auth/permissions";
 import { describe, expect, it } from "vitest";
 
 import { canonicalCalculatorRole } from "./types";
@@ -31,6 +31,8 @@ describe("Calculator role compatibility", () => {
   });
 
   it("covers the shared role contract in hierarchy order", () => {
-    expect(() => assertRoleMapCoversRoles(calculatorRoles)).not.toThrow();
+    expect(() =>
+      assertRoleMapCoversRoles(calculatorOrganizationRoles),
+    ).not.toThrow();
   });
 });

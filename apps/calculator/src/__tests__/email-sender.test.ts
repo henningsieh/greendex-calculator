@@ -85,6 +85,22 @@ describe("email sender", () => {
     expect(html).toContain(baseUrl);
   });
 
+  it("renders a Participant Invitation without Organization Invitation or Registration Link language", async () => {
+    const inviteLink = `${baseUrl}/participant-invitations/invitation-182`;
+    await emailSender.sendParticipantInvitation({ email: recipient, inviteLink });
+    expect(sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: senderAddress,
+        to: recipient,
+        subject: "Your Participant Invitation",
+        html: expect.stringContaining(inviteLink),
+      }),
+    );
+    const [{ html }] = sendMail.mock.calls[0];
+    expect(html).toContain("Participant Invitation");
+    expect(html).not.toMatch(/Organization Invitation|Registration Link/);
+  });
+
   it("sends a magic-link message with HTML and plain text content", async () => {
     const magicLink = "https://greendex.example/magic-link?token=magic";
 

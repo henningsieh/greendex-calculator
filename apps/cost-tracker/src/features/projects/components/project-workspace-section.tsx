@@ -1,0 +1,41 @@
+import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
+import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
+import { getProjectListReturnDestination } from "@/features/projects/project-list-query-options";
+import { orpcQuery } from "@/lib/orpc/orpc";
+import {
+  getQueryClient,
+  HydrateClient,
+  swallowPrefetchError,
+} from "@/lib/tanstack-react-query/hydration";
+
+export async function ProjectWorkspaceSection({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ id }, rawSearchParams] = await Promise.all([
+    params,
+    searchParams ??
+      Promise.resolve<Record<string, string | string[] | undefined>>({}),
+  ]);
+  const returnTo = getProjectListReturnDestination(rawSearchParams.returnTo);
+  const queryClient = getQueryClient();
+  await queryClient
+    .query(
+      orpcQuery.projects.get.queryOptions({
+        input: { projectId: id },
+        meta: { costTrackerORPC: true },
+      }),
+    )
+    .catch(swallowPrefetchError);
+
+  return (
+    <HydrateClient client={queryClient}>
+      <ProjectDataErrorBoundary resource="this Project">
+        <ProjectWorkspace projectId={id} returnTo={returnTo} />
+      </ProjectDataErrorBoundary>
+    </HydrateClient>
+  );
+}

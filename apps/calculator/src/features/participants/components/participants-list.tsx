@@ -77,18 +77,27 @@ export function ParticipantsList({ activeProjectId }: ParticipantsListProps) {
             >
               <Avatar>
                 <AvatarImage
-                  alt={participant.user.name}
-                  src={participant.user.image || undefined}
+                  alt={participant.displayName}
+                  src={participant.user?.image || undefined}
                 />
                 <AvatarFallback>
-                  {participant.user.name.charAt(0).toUpperCase()}
+                  {participant.displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="font-medium">{participant.user.name}</p>
+                <p className="font-medium">{participant.displayName}</p>
                 <p className="text-sm text-muted-foreground">
-                  {participant.user.email}
+                  {participant.email}
                 </p>
+                {participant.journey && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("participant-journey")}: {participant.journey.origin} →{" "}
+                    {participant.journey.destination} ·{" "}
+                    {t(participant.journey.tripType)} ·{" "}
+                    {format.number(Number(participant.journey.erasmusDistanceKm))}{" "}
+                    km
+                  </p>
+                )}
               </div>
               <div className="text-sm text-muted-foreground">
                 {t("joined-on")}{" "}

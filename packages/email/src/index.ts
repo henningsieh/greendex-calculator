@@ -12,6 +12,7 @@ export {
   type SendEmailVerificationEmailParams,
   type SendMagicLinkEmailParams,
   type SendOrganizationInvitationParams,
+  type SendParticipantInvitationParams,
   type SendPasswordResetEmailParams,
 } from "./email-sender";
 

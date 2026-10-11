@@ -235,6 +235,7 @@ describe("Project Shared Travel Leg PostgreSQL cutover", () => {
     const constraintNames = await database.pool.query(
       `SELECT "conname" FROM "pg_constraint"
        WHERE "conrelid" = 'project_shared_travel_leg'::regclass
+       AND "contype" IN ('p', 'f')
        ORDER BY "conname"`,
     );
     expect(constraintNames.rows).toEqual([

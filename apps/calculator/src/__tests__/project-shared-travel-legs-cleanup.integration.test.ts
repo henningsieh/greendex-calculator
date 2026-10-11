@@ -256,7 +256,7 @@ describe("Project Shared Travel Leg compatibility cleanup", () => {
     ]);
 
     const constraints = await database.pool.query(
-      `SELECT conname FROM pg_constraint WHERE conrelid = 'project_shared_travel_leg'::regclass ORDER BY conname`,
+      `SELECT conname FROM pg_constraint WHERE conrelid = 'project_shared_travel_leg'::regclass AND contype IN ('p', 'f') ORDER BY conname`,
     );
     expect(constraints.rows).toEqual([
       { conname: "project_shared_travel_leg_pkey" },

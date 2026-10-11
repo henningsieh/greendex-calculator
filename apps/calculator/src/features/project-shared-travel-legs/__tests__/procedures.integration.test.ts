@@ -68,7 +68,6 @@ beforeAll(async () => {
     endDate: new Date("2026-12-31T00:00:00.000Z"),
     location: "Berlin",
     country: "DE" as EUCountryCode,
-    responsibleUserId: userId,
     organizationId,
   });
   await db.insert(organization).values({
@@ -85,7 +84,6 @@ beforeAll(async () => {
     endDate: new Date("2026-12-31T00:00:00.000Z"),
     location: "Paris",
     country: "FR" as EUCountryCode,
-    responsibleUserId: userId,
     organizationId: foreignOrganizationId,
   });
 });
@@ -103,7 +101,7 @@ beforeEach(() => {
       email: `shared-travel-${userId}@example.com`,
     },
   });
-  authMocks.hasPermission.mockResolvedValue(true);
+  authMocks.hasPermission.mockResolvedValue({ success: true, error: null });
 });
 
 afterEach(async () => {

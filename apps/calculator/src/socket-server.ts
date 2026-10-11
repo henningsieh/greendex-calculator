@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 
 // Environment variables are injected into the process by the environment:
-// - locally, the dev/start scripts load Calculator's `.env` via `dotenv run`;
+// - locally, the dev/start scripts load the shared database `.env`, then Calculator's `.env`;
 // - on Coolify, the platform injects them into the container.
 // This module never touches .env files itself — it reads the validated process
 // environment through the shared `@/env` module.

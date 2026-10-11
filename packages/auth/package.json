@@ -5,25 +5,27 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/auth-client.ts",
-    "./organization-roles": "./src/organization-roles.ts",
-    "./permissions": "./src/permissions.ts"
+    "./permissions": "./src/permissions.ts",
+    "./project-authorization": "./src/project-authorization.ts",
+    "./oauth-icons": "./src/oauth-icons.tsx",
+    "./seed-user": "./src/seed-user.ts",
+    "./organization-roles": "./src/organization-roles.ts"
   },
   "scripts": {
+    "clean": "rm -rf node_modules .turbo",
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
     "test": "vitest",
     "test:run": "vitest run",
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf node_modules .turbo"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@greendex/config": "workspace:*",
     "@greendex/database": "workspace:*",
     "@greendex/email": "workspace:*",
     "better-auth": "catalog:",
-    "drizzle-orm": "^0.45.3",
-    "zod": "^4.6.5"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "oxfmt": "catalog:",

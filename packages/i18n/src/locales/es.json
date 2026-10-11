@@ -692,6 +692,10 @@
         "confirm-button": "Cancelar invitación",
         "cancel-button": "Mantener invitación"
       }
+    },
+    "country": {
+      "label": "País de la organización",
+      "placeholder": "Selecciona un país de la UE"
     }
   },
   "participation": {
@@ -876,7 +880,10 @@
         "project-not-found": "El proyecto que buscas no existe.",
         "project-access-denied": "No tienes acceso a este proyecto."
       },
-      "joined-on": "se unió el"
+      "joined-on": "se unió el",
+      "participant-journey": "Viaje del participante",
+      "one-way": "Solo ida",
+      "round-trip": "Ida y vuelta"
     },
     "shared-travel": {
       "title": "Viajes compartidos del proyecto",

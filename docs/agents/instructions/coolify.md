@@ -21,16 +21,19 @@ Start at the [Coolify `llms.txt`](https://coolify.io/docs/llms.txt) only when th
 
 ## Greendex resources
 
-All resources are in project `t40wk84o88wkgcocs80k0wws`, environment `rc04oc8sksggs48ggkwsgsg0` (`development`). Greendex has no production environment; temporary downtime is acceptable only when the user authorizes it.
+The shared Live and Preview databases are in project `t40wk84o88wkgcocs80k0wws`, environment `rc04oc8sksggs48ggkwsgsg0` (`development`). Greendex also has staging and production environments; production has no database resources and is outside development operations. Retrieve live application placement from Coolify; temporary downtime requires user authorization.
 
 | Resource | UUID | Deployment role |
 | --- | --- | --- |
 | Calculator | `4ioaqslgamchlltplms74nbr` | Next.js on `3000`; Socket.IO on `4000` |
 | Documentation | `nz8kya4kzwatnmbrnxktjkog` | Next.js/Fumadocs on `3001` |
-| Preview PostgreSQL | `gcmwapuqoz45mjvtdwl3vgg4` | Isolated PR-preview data on private port `5432` |
-| Live PostgreSQL | `a004oogs4cwss04cok0wwckk` | Shared development data on private port `5432` |
+| Cost Tracker | `vqud5nt2raw8yclhrypl4ipx` | Existing staging application; uses the shared development Live/Preview databases |
+| Preview PostgreSQL | `gcmwapuqoz45mjvtdwl3vgg4` | Shared preview data for both apps on private port `5432` |
+| Live PostgreSQL | `a004oogs4cwss04cok0wwckk` | Shared development data on private port `5432`; local access on `5488` |
 
 The deleted combined application `wokgg0808c8k44cgk480444c` is not a deployment target. Retrieve credentials from Coolify; keep tokens and environment values out of Git, terminal output, PR text, and chat.
+
+The Cost Tracker consumes the existing Garage S3 service from the separate `ambitia-cost-tracker` Coolify project. Read the [Garage runbook](../../../apps/cost-tracker/docs/infrastructure/garage.md) before S3 operations; its live resource identifiers, storage topology, and destructive-operation boundaries are authoritative for that service.
 
 ## Application contract
 
@@ -41,7 +44,15 @@ The deleted combined application `wokgg0808c8k44cgk480444c` is not a deployment 
 
 Both applications use repository root `/`, Railpack, GitHub App source `henningsieh/greendex-calculator`, branch `main`, and preview template `{{pr_id}}.{{domain}}`. Wildcard DNS must cover the resulting preview hosts.
 
-Preserve `"env": ["*"]` on Turbo `build` and `start`. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Calculator preview `DATABASE_URL` must use the preview database UUID hostname, never the host IP or public port. Authentication and mail settings may mirror development unless the task says otherwise.
+### Release migration gate
+
+Database-consuming apps use a **pre-build migration gate**, with the existing repeat check before boot. Calculator and Cost Tracker load `packages/database/.env` before app-local `.env` and call root `db:migrate` first in their existing `prebuild` hooks. Root `db:migrate` runs the database package's original `drizzle-kit migrate` command, with no new app-level migration scripts. Their Turbo app builds are non-cacheable so pnpm always executes that hook; there is no duplicate Turbo migration dependency. This trades app-build caching for a migration check on every deployment without a custom runner. Injected `DATABASE_URL` values take precedence over local files. Supply database connectivity at build time as well as runtime for Railpack and previews. A migration failure aborts the build before release; never suppress its exit status.
+
+Calculator's existing filtered Coolify build/start commands use these gates. Cost Tracker has the same repository wiring; inspect its existing managed resource rather than provisioning another. Documentation is database-free and has no migration or database credentials. No live Coolify settings are changed merely by updating repository scripts; verify build-time connectivity when deploying.
+
+Manual recovery remains root `pnpm run db:migrate`, with an explicit `DATABASE_URL` override when needed. Root builds run sequentially using `--concurrency=1`; root migration has one database-package task. The deployment mutex continues to serialize separate Coolify releases. There is no custom migration runner, migration lock, or automatic database repair. Coordinate separate invocations against the same database. Pre-build migration means changes must remain compatible with the previously running release until traffic switches.
+
+Preserve `"env": ["*"]` on Turbo `build` and `start`. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Authentication and mail settings may mirror development unless the task says otherwise.
 
 ## Sequential preview deployment runbook
 
@@ -92,7 +103,7 @@ Use `PATCH /applications/{uuid}` for persistent application settings and `/appli
 - Deployment commit equals the current PR head.
 - `GET https://<pr>.greendex.apps.sieh.org/api/rpc/health` succeeds.
 - `https://<pr>.socket.greendex.apps.sieh.org` routes to the same preview deployment; verify a Socket.IO handshake when practical.
-- The running container uses preview `DATABASE_URL` and the private hostname `gcmwapuqoz45mjvtdwl3vgg4:5432`.
+- The running container uses a `development`-environment `DATABASE_URL` (preview private hostname `gcmwapuqoz45mjvtdwl3vgg4:5432` preferred; direct public IP/port access is allowed in development).
 - Drizzle migrations completed and the `verification` table exists. Pass `DATABASE_URL` explicitly when invoking migration inside a container.
 
 ### Documentation
@@ -114,4 +125,6 @@ Treat logs and host metrics as evidence; never repeatedly redeploy an unchanged 
 
 ## Operational boundaries
 
-Coolify owns persistent deployment configuration. Use its UI/API; generated `/data/coolify/.../docker-compose.y*ml` files are outputs. Application-to-database traffic stays on the private `coolify` network. Keep databases and volumes when replacing an application unless deletion is explicitly authorized. Follow [Drizzle](drizzle.md) for schema changes and migrations.
+Development environment allowance: the shared databases are in `development` environment `rc04oc8sksggs48ggkwsgsg0`. Direct database access via public IP/port, `DATABASE_URL` overrides, and applying Drizzle migrations (`db:migrate`/`db:generate` targets) are explicitly allowed and pre-approved here, including for worker agents. Only restriction: do not break the database — no drops, no volume deletion, no credential leaks.
+
+Coolify owns persistent deployment configuration. Use its UI/API; generated `/data/coolify/.../docker-compose.y*ml` files are outputs. Application-to-database traffic prefers the private `coolify` network, but direct access is permitted in development. Keep databases and volumes when replacing an application unless deletion is explicitly authorized. Follow [Drizzle](drizzle.md) for schema changes and migrations.

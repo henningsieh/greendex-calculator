@@ -1,10 +1,5 @@
+import { GoogleIcon, GitHubIcon, DiscordIcon } from "@greendex/auth/oauth-icons";
 import type { ComponentProps, ElementType } from "react";
-
-import {
-  DiscordIcon,
-  GitHubIcon,
-  GoogleIcon,
-} from "@/features/authentication/components/o-auth-icons";
 
 export const SUPPORTED_OAUTH_PROVIDERS = ["google", "discord", "github"] as const;
 export type SupportedOAuthProvider = (typeof SUPPORTED_OAUTH_PROVIDERS)[number];

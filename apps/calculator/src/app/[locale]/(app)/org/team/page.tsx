@@ -29,7 +29,7 @@ import {
 // follow-up (#246).
 export const instant = false;
 
-export default async () => {
+export default async function TeamPage() {
   const headers = await nextHeaders();
 
   // Get session and organizations for server-side data
@@ -92,4 +92,4 @@ export default async () => {
       </ContentContainer>
     </div>
   );
-};
+}

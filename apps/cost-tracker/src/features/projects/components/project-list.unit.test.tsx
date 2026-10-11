@@ -1,0 +1,324 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { Suspense } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  refetch: vi.fn(),
+  canCreate: false,
+  setUrlState: vi.fn().mockResolvedValue(undefined),
+  state: {
+    scope: null as "hosted" | "partner" | null,
+    search: "",
+    window: "all" as const,
+    dateFrom: null as Date | null,
+    dateTo: null as Date | null,
+    partnerOrganizationIds: [] as string[],
+    sort: "operational" as const,
+    cursor: "",
+    pageSize: 25 as const,
+  },
+  projectReturnSearch:
+    "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque",
+}));
+
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
+  useRouter: () => ({ push: vi.fn() }),
+}));
+vi.mock("@/lib/orpc/orpc", () => ({
+  orpc: { projects: { create: vi.fn() } },
+}));
+
+vi.mock("nuqs", () => ({
+  useQueryStates: () => [mocks.state, mocks.setUrlState],
+}));
+vi.mock(
+  "@/features/projects/project-list-query-options",
+  async (importOriginal) => ({
+    ...((await importOriginal()) as Record<string, unknown>),
+    getProjectAvailableScopesQueryOptions: () => ({
+      queryKey: ["projects", "available-scopes"],
+      queryFn: async () => ({
+        hosted: true,
+        partner: true,
+        canCreate: mocks.canCreate,
+      }),
+    }),
+    getProjectListQueryOptions: (
+      scope: "hosted" | "partner",
+      state: { cursor?: string },
+    ) => ({
+      queryKey: ["projects", scope, state],
+      queryFn: async () => ({
+        scope: "hosted" as const,
+        rows: [
+          {
+            id: "project-1",
+            name: "Climate Forum",
+            startDate: new Date("2026-06-01T00:00:00.000Z"),
+            endDate: new Date("2026-06-03T00:00:00.000Z"),
+            location: "Berlin",
+            country: "DE",
+            costSubmissionWindowOpen: true,
+          },
+        ],
+        nextCursor: "next-page",
+        previousCursor: state.cursor ? "previous-page" : undefined,
+        metrics: {
+          whole: {
+            projectCount: 3,
+            openWindowCount: 2,
+            partnerOrganizationCount: 2,
+          },
+          filtered: {
+            projectCount: 1,
+            openWindowCount: 1,
+            partnerOrganizationCount: 1,
+          },
+        },
+        partnerOptions: [{ id: "partner-1", name: "Mobility Group" }],
+      }),
+    }),
+  }),
+);
+
+import { ProjectList } from "@/features/projects/components/project-list";
+
+function renderList() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Suspense fallback={<p>Loading Projects</p>}>
+        <ProjectList />
+      </Suspense>
+    </QueryClientProvider>,
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.canCreate = false;
+  mocks.state.scope = null;
+  mocks.state.search = "";
+  mocks.state.cursor = "";
+  mocks.state.dateFrom = null;
+  mocks.state.dateTo = null;
+  mocks.state.partnerOrganizationIds = [];
+  mocks.projectReturnSearch =
+    "scope=partner&search=climate&window=open&dateFrom=2026-01-01&dateTo=2026-12-31&partnerOrganizationIds=partner-1&sort=start-desc&pageSize=50&cursor=opaque";
+  window.history.replaceState({}, "", `/projects?${mocks.projectReturnSearch}`);
+});
+
+describe("Project list", { timeout: 20_000 }, () => {
+  it("shows the creation dialog trigger only with active host membership", async () => {
+    const first = renderList();
+    await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
+    expect(screen.queryByRole("button", { name: "New project" })).toBeNull();
+    first.unmount();
+    mocks.canCreate = true;
+    renderList();
+    expect(
+      await screen.findByRole(
+        "button",
+        { name: "New project" },
+        { timeout: 10_000 },
+      ),
+    ).toBeTruthy();
+  });
+  it("renders one server-returned page without exposing deferred fields", async () => {
+    renderList();
+
+    expect(
+      await screen.findByRole(
+        "link",
+        { name: "Climate Forum" },
+        { timeout: 10_000 },
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Open")).toBeTruthy();
+    expect(screen.getByText("Projects (3 total)")).toBeTruthy();
+    expect(
+      screen.queryByText(/EUR|submission count|latest activity/i),
+    ).toBeNull();
+  });
+
+  it("offers the Hosting Participant view beside the details destination", async () => {
+    renderList();
+
+    expect(
+      (
+        await screen.findByRole(
+          "link",
+          { name: "View Participants" },
+          { timeout: 10_000 },
+        )
+      ).getAttribute("href"),
+    ).toBe("/projects/project-1/participants");
+  });
+
+  it("preserves the complete list state when opening a Project", async () => {
+    renderList();
+
+    expect(
+      (
+        await screen.findByRole(
+          "link",
+          { name: "Climate Forum" },
+          { timeout: 10_000 },
+        )
+      ).getAttribute("href"),
+    ).toBe(
+      "/projects/project-1?returnTo=%2Fprojects%3Fscope%3Dpartner%26search%3Dclimate%26window%3Dopen%26dateFrom%3D2026-01-01%26dateTo%3D2026-12-31%26partnerOrganizationIds%3Dpartner-1%26sort%3Dstart-desc%26pageSize%3D50%26cursor%3Dopaque",
+    );
+  });
+
+  it("clears the cursor when scope or filters change", async () => {
+    renderList();
+    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Partner" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      scope: "partner",
+      cursor: null,
+    });
+
+    fireEvent.click(screen.getByLabelText("Mobility Group"));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      dateFrom: null,
+      dateTo: null,
+      partnerOrganizationIds: ["partner-1"],
+      search: "",
+      window: "all",
+    });
+  });
+
+  it("clears explicit Project date filters instead of restoring their previous values", async () => {
+    mocks.state.dateFrom = new Date("2026-01-01T00:00:00.000Z");
+    mocks.state.dateTo = new Date("2026-12-31T00:00:00.000Z");
+    renderList();
+    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+
+    fireEvent.change(screen.getByLabelText("Active on or after"), {
+      target: { value: "" },
+    });
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      dateFrom: null,
+      dateTo: mocks.state.dateTo,
+      partnerOrganizationIds: [],
+      search: "",
+      window: "all",
+    });
+
+    fireEvent.change(screen.getByLabelText("Active on or before"), {
+      target: { value: "" },
+    });
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      dateFrom: mocks.state.dateFrom,
+      dateTo: null,
+      partnerOrganizationIds: [],
+      search: "",
+      window: "all",
+    });
+  });
+
+  it("writes the opaque pagination cursors directly to URL state", async () => {
+    mocks.state.cursor = "current-page";
+    const browserBack = vi.spyOn(window.history, "back");
+    renderList();
+    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: "previous-page",
+    });
+    expect(browserBack).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({ cursor: "next-page" });
+  });
+
+  it("registers every Table function required by the server-controlled columns", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const consoleWarn = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+
+    try {
+      renderList();
+      await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+      fireEvent.change(screen.getByLabelText("Project name"), {
+        target: { value: "Travel" },
+      });
+      await waitFor(() => expect(mocks.setUrlState).toHaveBeenCalled());
+
+      expect(consoleWarn).not.toHaveBeenCalledWith(
+        expect.stringContaining("is not registered"),
+      );
+    } finally {
+      consoleWarn.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("coordinates table controls with URL state without processing a server page", async () => {
+    renderList();
+    const projectLink = await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
+
+    expect(projectLink.closest("tr")?.getAttribute("data-project-id")).toBe(
+      "project-1",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sort by start date" }));
+    expect(mocks.setUrlState).toHaveBeenCalledWith({
+      cursor: null,
+      sort: "start-asc",
+    });
+
+    fireEvent.change(screen.getByLabelText("Project name"), {
+      target: { value: "Travel" },
+    });
+    await waitFor(() =>
+      expect(mocks.setUrlState).toHaveBeenCalledWith({
+        cursor: null,
+        dateFrom: null,
+        dateTo: null,
+        partnerOrganizationIds: [],
+        search: "Travel",
+        window: "all",
+      }),
+    );
+
+    const user = userEvent.setup();
+    expect(
+      screen.getByRole("combobox", { name: "Submission window" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Sort" })).toBeTruthy();
+
+    const pageSizeSelect = screen.getByRole("combobox", {
+      name: "Projects per page",
+    });
+    await user.click(pageSizeSelect);
+    await user.click(await screen.findByRole("option", { name: "50" }));
+    await waitFor(() =>
+      expect(mocks.setUrlState).toHaveBeenCalledWith({
+        cursor: null,
+        pageSize: 50,
+      }),
+    );
+  });
+});

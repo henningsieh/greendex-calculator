@@ -1,0 +1,1 @@
+ALTER TYPE "public"."claim_event_type" ADD VALUE 'journey_updated';

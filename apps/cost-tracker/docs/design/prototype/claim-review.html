@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claim review | GreenEx</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      const prototypeOptions = { theme: ["light", "dark", "system"] };
+      const prototypeDefaults = { theme: "system" };
+      const prototypeParams = new URLSearchParams(location.search);
+      for (const [key, values] of Object.entries(prototypeOptions)) {
+        document.documentElement.dataset[key] = values.includes(
+          prototypeParams.get(key),
+        )
+          ? prototypeParams.get(key)
+          : prototypeDefaults[key];
+      }
+    </script>
+    <link rel="stylesheet" href="erasmus.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <div
+        class="prototype-toolbar"
+        role="group"
+        aria-label="Prototype appearance"
+      >
+        <span class="prototype-note">Prototype appearance</span>
+        <div class="prototype-option" role="group" aria-label="Theme">
+          <span class="prototype-label">Theme</span>
+          <div class="segmented">
+            <button type="button" data-theme-option="light" aria-pressed="false">
+              Light
+            </button>
+            <button type="button" data-theme-option="dark" aria-pressed="false">
+              Dark
+            </button>
+            <button type="button" data-theme-option="system" aria-pressed="false">
+              System
+            </button>
+          </div>
+        </div>
+      </div>
+      <nav class="topline" aria-label="Prototype navigation">
+        <a href="#prototype-note">Back to submitted Claims</a
+        ><a data-prototype-page href="claim-partner.html"
+          >View Partner prototype</a
+        >
+      </nav>
+      <header class="context">
+        <div>
+          <h1>Claim review</h1>
+          <p>GreenEx / Green Routes e.V.</p>
+        </div>
+        <div class="state">
+          <span class="status">Submitted</span>
+          <p>
+            This Claim is locked for Partner editing. Only a Hosting-side
+            correction request can reopen it.
+          </p>
+        </div>
+      </header>
+      <div class="document">
+        <div class="columns">
+          <aside class="aside" aria-labelledby="decision-title">
+            <h2 id="decision-title">Review decision</h2>
+            <p>Submitted / awaiting Hosting review</p>
+            <div class="payable">
+              <p>
+                Calculated payable<span class="amount">515.00 EUR</span
+                ><span class="small muted">Server-approved amount.</span>
+              </p>
+            </div>
+            <div class="actions">
+              <button class="primary" type="button">Approve Claim</button
+              ><button type="button">Request correction</button
+              ><button type="button">Reject Claim</button>
+            </div>
+            <div class="notice">
+              <p>Confirm correction request for this Claim.</p>
+              <label for="decision-reason">Correction reason</label
+              ><textarea id="decision-reason" rows="4" required maxlength="2000">
+Please attach the local bus tickets as a Proof Document.</textarea>
+              <div class="actions">
+                <button class="primary" type="button">
+                  Confirm correction request</button
+                ><button type="button">Cancel</button>
+              </div>
+            </div>
+            <p class="small muted" style="margin-top: 20px">
+              Submitted. No approval or full transfer has been recorded.
+            </p>
+          </aside>
+          <div class="evidence">
+            <section class="section" id="claim-payout">
+              <h2>Submitted Claim details</h2>
+              <h3>Payout Account</h3>
+              <dl class="metadata">
+                <dt>Account holder</dt>
+                <dd>Green Routes e.V.</dd>
+                <dt>IBAN</dt>
+                <dd class="iban">DE89 3704 0044 0532 0130 00</dd>
+                <dt>BIC</dt>
+                <dd class="reference">COBADEFFXXX</dd>
+              </dl>
+              <dl class="metadata">
+                <dt>Calculated payable</dt>
+                <dd class="amount">515.00 EUR</dd>
+              </dl>
+            </section>
+            <section class="section" id="claim-costs">
+              <h2>Travel Cost Entries</h2>
+              <div
+                class="scroll-table"
+                role="region"
+                aria-label="Travel Cost Entries table, horizontally scrollable"
+                tabindex="0"
+              >
+                <table>
+                  <caption>
+                    Exact totals, Cost Allocations and linked Proof Documents.
+                  </caption>
+                  <colgroup>
+                    <col style="width: 12%" />
+                    <col style="width: 14%" />
+                    <col style="width: 30%" />
+                    <col style="width: 44%" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th scope="col">Transport</th>
+                      <th scope="col" class="number">Total (EUR)</th>
+                      <th scope="col">Cost Allocations</th>
+                      <th scope="col">Proof Documents</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr id="cost-train">
+                      <td>train</td>
+                      <td class="number amount">428.60</td>
+                      <td>
+                        <p class="method">Amount (EUR)</p>
+                        <ul>
+                          <li>
+                            Lea Hoffmann: <span class="amount">214.30 EUR</span>
+                          </li>
+                          <li>
+                            Jonas Weber: <span class="amount">214.30 EUR</span>
+                          </li>
+                        </ul>
+                      </td>
+                      <td>
+                        <span class="file"
+                          >GreenEx_Berlin-Brussels_train_receipt.pdf</span
+                        >
+                        <p class="muted small">application/pdf</p>
+                        <a
+                          class="download"
+                          href="#prototype-note"
+                          aria-label="Download Proof Document: GreenEx_Berlin-Brussels_train_receipt.pdf"
+                          >Download Proof Document:
+                          GreenEx_Berlin-Brussels_train_receipt.pdf</a
+                        >
+                      </td>
+                    </tr>
+                    <tr id="cost-bus">
+                      <td>bus</td>
+                      <td class="number amount">86.40</td>
+                      <td>
+                        <p class="method">Percentage</p>
+                        <ul>
+                          <li>
+                            Lea Hoffmann: <span class="amount">50.000000%</span>
+                          </li>
+                          <li>
+                            Jonas Weber: <span class="amount">50.000000%</span>
+                          </li>
+                        </ul>
+                      </td>
+                      <td>
+                        <span class="file">GreenEx_local_bus_tickets.pdf</span>
+                        <p class="muted small">application/pdf</p>
+                        <a
+                          class="download"
+                          href="#prototype-note"
+                          aria-label="Download Proof Document: GreenEx_local_bus_tickets.pdf"
+                          >Download Proof Document:
+                          GreenEx_local_bus_tickets.pdf</a
+                        >
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section class="section" id="claim-journeys">
+              <h2>Participant Journeys</h2>
+              <ul>
+                <li class="journey" id="journey-1">
+                  <div>
+                    <p><strong>Lea Hoffmann</strong></p>
+                    <p>Berlin → Brussels</p>
+                    <p class="muted small">
+                      Round-trip, <span class="data-figure">651</span> km
+                      (calculator distance; saved, read-only)
+                    </p>
+                  </div>
+                </li>
+                <li class="journey" id="journey-2">
+                  <div>
+                    <p><strong>Jonas Weber</strong></p>
+                    <p>Berlin → Brussels</p>
+                    <p class="muted small">
+                      Round-trip, <span class="data-figure">651</span> km
+                      (calculator distance; saved, read-only)
+                    </p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </div>
+        <section class="section">
+          <h2>Claim history</h2>
+          <ol class="history">
+            <li>
+              <strong>Resubmitted</strong><time>5 October 2026, 11:35</time
+              ><span class="actor"
+                >Actor: <span class="reference">partner-user-2f83</span></span
+              >
+            </li>
+            <li>
+              <strong>Correction requested</strong
+              ><time>5 October 2026, 09:20</time
+              ><span class="actor"
+                >Actor: <span class="reference">hosting-reviewer-71c9</span></span
+              >
+              <p class="reason">
+                Reason: Please attach the local bus tickets as a Proof Document.
+              </p>
+            </li>
+            <li>
+              <strong>Submitted</strong><time>4 October 2026, 16:42</time
+              ><span class="actor"
+                >Actor: <span class="reference">partner-user-2f83</span></span
+              >
+            </li>
+          </ol>
+        </section>
+      </div>
+      <footer id="prototype-note">
+        Gate 1 static prototype. Sample data only; decision controls and download
+        links are non-operational. The correction confirmation is an illustrative
+        open state.
+      </footer>
+    </main>
+    <script>
+      function syncPrototypeControls() {
+        for (const key of Object.keys(prototypeOptions)) {
+          document.querySelectorAll(`[data-${key}-option]`).forEach((button) => {
+            button.setAttribute(
+              "aria-pressed",
+              String(
+                button.getAttribute(`data-${key}-option`) ===
+                  document.documentElement.dataset[key],
+              ),
+            );
+          });
+        }
+        document
+          .querySelectorAll(".topline a[data-prototype-page]")
+          .forEach((link) => {
+            const url = new URL(link.getAttribute("href"), location.href);
+            url.searchParams.set("theme", document.documentElement.dataset.theme);
+            link.href = url.href;
+          });
+      }
+      for (const key of Object.keys(prototypeOptions)) {
+        document.querySelectorAll(`[data-${key}-option]`).forEach((button) => {
+          button.addEventListener("click", () => {
+            document.documentElement.dataset[key] = button.getAttribute(
+              `data-${key}-option`,
+            );
+            const url = new URL(location.href);
+            url.searchParams.set(key, document.documentElement.dataset[key]);
+            history.replaceState(null, "", url);
+            syncPrototypeControls();
+          });
+        });
+      }
+      syncPrototypeControls();
+    </script>
+  </body>
+</html>

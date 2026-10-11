@@ -94,7 +94,7 @@ function AboutFooterSkeleton() {
   return (
     <div aria-hidden="true" className="mx-auto max-w-5xl px-6 py-12 text-center">
       <div className="mx-auto h-6 w-2/3 animate-pulse rounded-xl bg-muted/40" />
-      <div className="mx-auto mt-4 h-4 w-1/3 animate-pulse rounded bg-muted/40" />
+      <div className="mx-auto mt-4 h-4 w-1/3 animate-pulse rounded-sm bg-muted/40" />
     </div>
   );
 }

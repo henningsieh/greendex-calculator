@@ -15,7 +15,7 @@ interface ParticipantsTableProps {
 
 /**
  * Participants table component
- * Displays organization members with "member" role (project participants)
+ * Displays organization Memberships with the Participant role (project participants)
  * Reuses the UsersTable component but without the invite functionality
  */
 export function ParticipantsTable({ organizationId }: ParticipantsTableProps) {

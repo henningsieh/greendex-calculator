@@ -1,0 +1,207 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant fine-hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
+:root {
+  --background: #edf2f8;
+  --foreground: #102b50;
+  --card: #ffffff;
+  --card-foreground: #102b50;
+  --popover: #ffffff;
+  --popover-foreground: #102b50;
+  --primary: #003399;
+  --primary-foreground: #ffffff;
+  --secondary: #edf2f8;
+  --secondary-foreground: #102b50;
+  --muted: #edf2f8;
+  --muted-foreground: #52647a;
+  --accent: #e8f0ff;
+  --accent-foreground: #003399;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #cdd5e0;
+  --input: #788597;
+  --ring: #003399;
+  --chart-1: oklch(0.871 0.15 154.449);
+  --chart-2: oklch(0.723 0.219 149.579);
+  --chart-3: oklch(0.627 0.194 149.214);
+  --chart-4: oklch(0.527 0.154 150.069);
+  --chart-5: oklch(0.448 0.119 151.328);
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #102b50;
+  --sidebar-primary: #003399;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #edf2f8;
+  --sidebar-accent-foreground: #003399;
+  --sidebar-border: #cdd5e0;
+  --sidebar-ring: #003399;
+  --claim-band: #102b50;
+  --claim-band-foreground: #ffffff;
+  --brand: #ffcc00;
+  --link: #003399;
+  --link-hover: #002b85;
+  --primary-hover: #002b85;
+  --primary-border: #93b4ff;
+  --secondary-hover: #e8f0ff;
+  --secondary-hover-foreground: #003399;
+  --secondary-feedback-border: #ffcc00;
+  --primary-glow: 0 0 12px rgb(255 204 0 / 50%);
+  --secondary-glow: 0 0 7px rgb(255 204 0 / 35%);
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #e4e4e7;
+  --card: #18181b;
+  --card-foreground: #e4e4e7;
+  --popover: #18181b;
+  --popover-foreground: #e4e4e7;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #27272a;
+  --secondary-foreground: #e4e4e7;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #172a4d;
+  --accent-foreground: #93b4ff;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #3f3f46;
+  --input: #71717a;
+  --ring: #ffcc00;
+  --chart-1: oklch(0.871 0.15 154.449);
+  --chart-2: oklch(0.723 0.219 149.579);
+  --chart-3: oklch(0.627 0.194 149.214);
+  --chart-4: oklch(0.527 0.154 150.069);
+  --chart-5: oklch(0.448 0.119 151.328);
+  --sidebar: #18181b;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #93b4ff;
+  --sidebar-border: #3f3f46;
+  --sidebar-ring: #ffcc00;
+  --claim-band: #102b50;
+  --claim-band-foreground: #ffffff;
+  --brand: #ffcc00;
+  --link: #93b4ff;
+  --link-hover: #ffcc00;
+  --primary-hover: #2d6bf3;
+  --primary-border: #739fff;
+  --secondary-hover: #202023;
+  --secondary-hover-foreground: #e4e4e7;
+  --secondary-feedback-border: rgb(255 204 0 / 75%);
+  --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
+  --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
+}
+
+@theme inline {
+  --color-claim-band: var(--claim-band);
+  --color-claim-band-foreground: var(--claim-band-foreground);
+  --color-brand: var(--brand);
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-border: var(--primary-border);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-hover-foreground: var(--secondary-hover-foreground);
+  --color-secondary-feedback-border: var(--secondary-feedback-border);
+  --shadow-primary-glow: var(--primary-glow);
+  --shadow-secondary-glow: var(--secondary-glow);
+  --font-sans: var(--font-geist);
+  --font-heading: var(--font-geist);
+  --font-mono: var(--font-jetbrains-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Button links, menu items, primary navigation, and the site brand are controls,
+     not prose links; retain their existing component treatments. */
+  a:where(
+    :not(
+      .group\/button,
+      [data-slot="dropdown-menu-item"],
+      nav[aria-label="Primary navigation"] a,
+      .font-heading
+    )
+  ) {
+    color: var(--link);
+    text-underline-offset: 3px;
+
+    &:focus-visible {
+      color: var(--link-hover);
+      text-decoration: underline;
+      text-decoration-color: var(--brand);
+      text-decoration-thickness: 2px;
+      outline: 3px solid var(--ring);
+      outline-offset: 4px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: var(--link-hover);
+        text-decoration: underline;
+        text-decoration-color: var(--brand);
+        text-decoration-thickness: 2px;
+      }
+    }
+  }
+  :focus-visible {
+    @apply outline-3 outline-offset-4 outline-ring;
+  }
+  html {
+    @apply font-sans;
+  }
+}

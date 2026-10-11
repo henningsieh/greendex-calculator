@@ -1,0 +1,2 @@
+ALTER TABLE "participant_registration_link" DROP CONSTRAINT "participant_registration_link_partnership_id_unique";--> statement-breakpoint
+CREATE INDEX "participant_registration_link_partnership_idx" ON "participant_registration_link" USING btree ("partnership_id");

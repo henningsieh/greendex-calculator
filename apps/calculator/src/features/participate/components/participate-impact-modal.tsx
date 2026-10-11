@@ -277,7 +277,7 @@ export function ImpactModal({
               scale: 0.9,
             }
       }
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur sm:p-10"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm sm:p-10"
       initial={{
         opacity: 0,
         scale: 0.9,

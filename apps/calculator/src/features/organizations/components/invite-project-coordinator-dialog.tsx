@@ -62,7 +62,7 @@ export function InviteProjectCoordinatorDialog({
     defaultValues: {
       email: "",
       name: "",
-      role: MEMBER_ROLES.ProjectCoordinator,
+      role: MEMBER_ROLES.OrganizationAdmin,
     },
   });
 

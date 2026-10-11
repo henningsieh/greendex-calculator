@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
-import { organization, projectsTable } from "@greendex/database/schema";
+import {
+  hostProjectAssignmentsTable,
+  organization,
+  projectsTable,
+} from "@greendex/database/schema";
 import de from "@greendex/i18n/locales/de.json" with { type: "json" };
 import en from "@greendex/i18n/locales/en.json" with { type: "json" };
 import { expect, test } from "@playwright/test";
@@ -14,10 +18,14 @@ async function createProjectForSeedOrganization() {
   const [seedProject] = await db
     .select({
       organizationId: projectsTable.organizationId,
-      responsibleUserId: projectsTable.responsibleUserId,
+      hostUserId: hostProjectAssignmentsTable.userId,
     })
     .from(projectsTable)
     .innerJoin(organization, eq(projectsTable.organizationId, organization.id))
+    .innerJoin(
+      hostProjectAssignmentsTable,
+      eq(hostProjectAssignmentsTable.projectId, projectsTable.id),
+    )
     .where(eq(organization.slug, SEED_ORGANIZATION_SLUG))
     .limit(1);
 
@@ -36,7 +44,11 @@ async function createProjectForSeedOrganization() {
     startDate: new Date("2026-01-01"),
     endDate: new Date("2026-01-05"),
     organizationId: seedProject.organizationId,
-    responsibleUserId: seedProject.responsibleUserId,
+  });
+
+  await db.insert(hostProjectAssignmentsTable).values({
+    projectId,
+    userId: seedProject.hostUserId,
   });
 
   return projectId;

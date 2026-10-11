@@ -11,7 +11,13 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -415,7 +421,7 @@ export function EditProjectForm({ project, onSuccess }: EditProjectFormProps) {
                 variant="secondary"
               >
                 {tSharedTravel("title")}
-                <ArrowRight className="ml-2 size-4" />
+                <ArrowRightIcon className="ml-2 size-4" />
               </Button>
             </div>
           </FieldGroup>
@@ -438,7 +444,7 @@ export function EditProjectForm({ project, onSuccess }: EditProjectFormProps) {
                   <Empty>
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
-                        <Plus className="size-9 text-muted-foreground" />
+                        <PlusIcon className="size-9 text-muted-foreground" />
                       </EmptyMedia>
                       <EmptyTitle>{tSharedTravel("empty.title")}</EmptyTitle>
                       <EmptyDescription>
@@ -463,7 +469,7 @@ export function EditProjectForm({ project, onSuccess }: EditProjectFormProps) {
                           type="button"
                           variant="ghost"
                         >
-                          <Trash2 className="size-4 text-destructive" />
+                          <Trash2Icon className="size-4 text-destructive" />
                         </Button>
 
                         <div className="grid gap-4 pr-8 sm:grid-cols-2">
@@ -584,7 +590,7 @@ export function EditProjectForm({ project, onSuccess }: EditProjectFormProps) {
                   type="button"
                   variant="outline"
                 >
-                  <Plus className="mr-2 size-4" />
+                  <PlusIcon className="mr-2 size-4" />
                   {tSharedTravel("form.title")}
                 </Button>
               </CardContent>
@@ -597,7 +603,7 @@ export function EditProjectForm({ project, onSuccess }: EditProjectFormProps) {
                 type="button"
                 variant="outline"
               >
-                <ArrowLeft className="mr-2 size-4" />
+                <ArrowLeftIcon className="mr-2 size-4" />
                 {t("edit.back")}
               </Button>
 
@@ -606,7 +612,7 @@ export function EditProjectForm({ project, onSuccess }: EditProjectFormProps) {
                   tSharedTravel("form.updating")
                 ) : (
                   <>
-                    <Check className="mr-2 size-4" />
+                    <CheckIcon className="mr-2 size-4" />
                     {t("edit.update") || "Update Project"}
                   </>
                 )}

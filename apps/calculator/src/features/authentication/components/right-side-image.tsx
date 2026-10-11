@@ -34,7 +34,7 @@ export function RightSideImage({
     <div className="relative hidden w-full max-w-xl lg:flex lg:w-1/2 lg:max-w-none">
       <AnimatedGroup
         className={cn(
-          "relative flex h-full w-full flex-col gap-6 overflow-hidden border border-border/40 bg-card/30 p-6 backdrop-blur-xl lg:p-8",
+          "relative flex size-full flex-col gap-6 overflow-hidden border border-border/40 bg-card/30 p-6 backdrop-blur-xl lg:p-8",
         )}
         variants={{
           container: {
@@ -62,7 +62,7 @@ export function RightSideImage({
 
         {/* Brand headline and description */}
         <div className="relative z-10 flex flex-col gap-4">
-          <h1 className="text-2xl leading-tight font-semibold text-foreground lg:text-3xl">
+          <h1 className="text-2xl/tight font-semibold text-foreground lg:text-3xl">
             {headline}
           </h1>
           <p className="text-sm text-muted-foreground">{description}</p>
