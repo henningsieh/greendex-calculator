@@ -44,6 +44,8 @@ The Cost Tracker consumes the existing Garage S3 service from the separate `ambi
 
 Both applications use repository root `/`, Railpack, GitHub App source `henningsieh/greendex-calculator`, branch `main`, and preview template `{{pr_id}}.{{domain}}`. Wildcard DNS must cover the resulting preview hosts.
 
+Calculator and Cost Tracker must follow `main` with `git_commit_sha=HEAD` and push auto-deployment enabled outside controlled rollouts. Changing only `git_branch` does not clear an old commit pin: verify the queued deployment's SHA against the pushed commit. Manual redeployment must also resolve the branch head rather than rebuild a historical commit.
+
 ### Release migration gate
 
 Database-consuming apps migrate **before application startup**, not during image builds. Calculator and Cost Tracker retain their `prestart` → `start:prepare` migration gate. Migration failure must prevent startup; never suppress its exit status. The managed start command must invoke the package's `start` script (through pnpm/Turbo), not bypass it with `next start`. Local startup loads `packages/database/.env` before app-local `.env`; injected platform values take precedence. Image builds must receive no real application credentials, including `DATABASE_URL`.
