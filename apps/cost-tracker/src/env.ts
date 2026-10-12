@@ -6,6 +6,7 @@ import {
 } from "@/environment-schemas";
 
 export const env = createEnv({
+  skipValidation: process.env.NEXT_PHASE === "phase-production-build",
   server: CostTrackerServerEnvironmentSchema.shape,
   client: CostTrackerClientEnvironmentSchema.shape,
   runtimeEnv: {

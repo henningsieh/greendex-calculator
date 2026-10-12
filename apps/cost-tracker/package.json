@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "dotenv -e ../../packages/database/.env -e .env -- next build",
+    "build": "next build",
     "clean": "rm -rf .next .turbo node_modules",
     "db:seed": "dotenv -e ../../packages/database/.env -e .env -- pnpm exec tsx ../calculator/scripts/seed.ts",
     "dev": "dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env -- sh -c 'next dev --port \"$COST_TRACKER_PORT\"'",
