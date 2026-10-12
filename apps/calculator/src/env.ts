@@ -2,6 +2,8 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 export const env = createEnv({
+  // Next sets this phase only while building. No persistent runtime bypass flag.
+  skipValidation: process.env.NEXT_PHASE === "phase-production-build",
   server: {
     NODE_ENV: z.enum(["development", "production", "test"]),
     PORT: z.preprocess(
