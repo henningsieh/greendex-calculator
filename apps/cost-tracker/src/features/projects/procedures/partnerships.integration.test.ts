@@ -1,22 +1,15 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
-  hostProjectAssignmentsTable as hostAssignments,
-  member,
-  organization,
-  partnerCoordinatorAssignmentsTable as partnerAssignments,
-  projectParticipantsTable,
   projectPartnerOrganizationsTable,
   projectsTable,
-  user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import {
-  afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -34,19 +27,19 @@ vi.mock("server-only", () => ({}));
 
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
+// Stable identities registered in SEED_SCENARIOS.costTrackerPartnerships.
+const suffix = "canonical";
 const userId = `partnership-user-${suffix}`;
 const hostId = `partnership-host-${suffix}`;
 const foreignHostId = `partnership-foreign-host-${suffix}`;
 const assignedOrganizationId = `partnership-assigned-org-${suffix}`;
-const removableOrganizationId = `partnership-removable-org-${suffix}`;
 const candidateOrganizationId = `partnership-candidate-org-${suffix}`;
 const raceOrganizationId = `partnership-race-org-${suffix}`;
 const projectId = `partnership-project-${suffix}`;
 const foreignProjectId = `partnership-foreign-project-${suffix}`;
 const assignedPartnershipId = `partnership-assigned-${suffix}`;
 const removablePartnershipId = `partnership-removable-${suffix}`;
-const participationId = `partnership-participation-${suffix}`;
+let removableBaseline: typeof projectPartnerOrganizationsTable.$inferSelect;
 const createdPartnershipIds: string[] = [];
 const headers = new Headers();
 const client = createRouterClient(router, { context: async () => ({ headers }) });
@@ -82,103 +75,14 @@ function useActiveOrganization(activeOrganizationId: string) {
 }
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values({
-    id: userId,
-    name: "Partnership User",
-    email: `${userId}@example.com`,
-    emailVerified: true,
-    createdAt: now,
-    updatedAt: now,
+  const row = await db.query.projectPartnerOrganizationsTable.findFirst({
+    where: eq(projectPartnerOrganizationsTable.id, removablePartnershipId),
   });
-  await db.insert(organization).values([
-    {
-      country: "DE",
-      id: hostId,
-      name: "Partnership Host",
-      slug: hostId,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: foreignHostId,
-      name: "Partnership Foreign Host",
-      slug: foreignHostId,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: assignedOrganizationId,
-      name: "Assigned Organization",
-      slug: assignedOrganizationId,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: removableOrganizationId,
-      name: "Removable Organization",
-      slug: removableOrganizationId,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: candidateOrganizationId,
-      name: "Candidate Organization",
-      slug: candidateOrganizationId,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: raceOrganizationId,
-      name: "Race Organization",
-      slug: raceOrganizationId,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projectsTable).values([
-    {
-      id: projectId,
-      name: "Managed Project",
-      startDate: new Date("2026-09-01T00:00:00.000Z"),
-      endDate: new Date("2026-09-03T00:00:00.000Z"),
-      location: "Tallinn",
-      country: "EE",
-      organizationId: hostId,
-    },
-    {
-      id: foreignProjectId,
-      name: "Foreign Managed Project",
-      startDate: new Date("2026-10-01T00:00:00.000Z"),
-      endDate: new Date("2026-10-03T00:00:00.000Z"),
-      location: "Riga",
-      country: "LV",
-      organizationId: foreignHostId,
-    },
-  ]);
-  await db
-    .insert(hostAssignments)
-    .values({ projectId: projectId, userId: userId });
-  await db
-    .insert(hostAssignments)
-    .values({ projectId: foreignProjectId, userId });
-  await db.insert(projectPartnerOrganizationsTable).values([
-    {
-      id: assignedPartnershipId,
-      projectId,
-      organizationId: assignedOrganizationId,
-    },
-    {
-      id: removablePartnershipId,
-      projectId,
-      organizationId: removableOrganizationId,
-    },
-  ]);
-  await db.insert(projectParticipantsTable).values({
-    id: participationId,
-    projectId,
-    representedOrganizationId: assignedOrganizationId,
-    displayName: "Assigned Participant",
-  });
+  if (!row)
+    throw new Error(
+      "Canonical seed required: run the isolated seeded lifecycle.",
+    );
+  removableBaseline = row;
 });
 
 beforeEach(() => {
@@ -187,35 +91,22 @@ beforeEach(() => {
   useActiveOrganization(hostId);
 });
 
-afterAll(async () => {
-  await db
-    .delete(projectParticipantsTable)
-    .where(inArray(projectParticipantsTable.id, [participationId]));
-  await db
-    .delete(projectPartnerOrganizationsTable)
-    .where(
-      inArray(projectPartnerOrganizationsTable.id, [
-        assignedPartnershipId,
-        removablePartnershipId,
-        ...createdPartnershipIds,
-      ]),
-    );
-  await db
-    .delete(projectsTable)
-    .where(inArray(projectsTable.id, [projectId, foreignProjectId]));
-  await db
-    .delete(organization)
-    .where(
-      inArray(organization.id, [
-        hostId,
-        foreignHostId,
-        assignedOrganizationId,
-        removableOrganizationId,
-        candidateOrganizationId,
-        raceOrganizationId,
-      ]),
-    );
-  await db.delete(user).where(inArray(user.id, [userId]));
+afterEach(async () => {
+  if (createdPartnershipIds.length > 0) {
+    await db
+      .delete(projectPartnerOrganizationsTable)
+      .where(inArray(projectPartnerOrganizationsTable.id, createdPartnershipIds));
+    createdPartnershipIds.length = 0;
+  }
+  // Removal is the behavior under test; restore the exact canonical baseline
+  // (including its metadata) rather than recreating ordinary setup per case.
+  if (
+    removableBaseline &&
+    !(await db.query.projectPartnerOrganizationsTable.findFirst({
+      where: eq(projectPartnerOrganizationsTable.id, removablePartnershipId),
+    }))
+  )
+    await db.insert(projectPartnerOrganizationsTable).values(removableBaseline);
 });
 
 describe("Project Partnership procedures", () => {
@@ -293,6 +184,8 @@ describe("Project Partnership procedures", () => {
       await new Promise<void>((resolve) => {
         releaseOwnershipChange = resolve;
       });
+      // Corruption under test: concurrent ownership change must be rejected by
+      // the authoritative Project lock. The finally block restores the owner.
       await transaction
         .update(projectsTable)
         .set({ organizationId: foreignHostId })
@@ -358,15 +251,12 @@ describe("Project Partnership procedures", () => {
   });
 
   describe("assigned coordinator partnership visibility", () => {
-    const suffix = randomUUID();
-    const coord = `visibility-coord-${suffix}`;
-    const stranger = `visibility-stranger-${suffix}`;
-    const host = `visibility-host-${suffix}`;
-    const partner = `visibility-partner-${suffix}`;
-    const ownProject = `visibility-own-${suffix}`;
-    const otherProject = `visibility-other-${suffix}`;
-    const ownPartnership = `visibility-link-own-${suffix}`;
-    const otherPartnership = `visibility-link-other-${suffix}`;
+    // Read-only assigned/unassigned coordinator scenarios are canonical too.
+    const suffix = "canonical";
+    const coord = `partnership-visibility-coord-${suffix}`;
+    const stranger = `partnership-visibility-stranger-${suffix}`;
+    const partner = `partnership-visibility-partner-${suffix}`;
+    const ownPartnership = `partnership-visibility-link-own-${suffix}`;
     const useViewer = (viewerId: string) => {
       authMocks.getSession.mockResolvedValue({
         session: {
@@ -382,98 +272,11 @@ describe("Project Partnership procedures", () => {
       });
     };
 
-    beforeAll(async () => {
-      const now = new Date();
-      await db.insert(user).values(
-        [coord, stranger].map((id) => ({
-          id,
-          name: "Visibility viewer",
-          email: `${id}@example.com`,
-          emailVerified: true,
-        })),
-      );
-      await db.insert(organization).values(
-        [host, partner].map((id) => ({
-          country: "DE" as const,
-          id,
-          name: id,
-          slug: id,
-          createdAt: now,
-        })),
-      );
-      await db.insert(member).values([
-        {
-          id: randomUUID(),
-          organizationId: partner,
-          userId: coord,
-          role: ORGANIZATION_ROLES.ProjectCoordinator,
-          createdAt: now,
-        },
-        {
-          id: randomUUID(),
-          organizationId: partner,
-          userId: stranger,
-          role: ORGANIZATION_ROLES.ProjectCoordinator,
-          createdAt: now,
-        },
-      ]);
-      await db.insert(projectsTable).values(
-        [ownProject, otherProject].map((id) => ({
-          id,
-          name: id,
-          startDate: now,
-          endDate: now,
-          location: "Riga",
-          country: "LV" as const,
-          organizationId: host,
-        })),
-      );
-      await db.insert(projectPartnerOrganizationsTable).values([
-        { id: ownPartnership, projectId: ownProject, organizationId: partner },
-        {
-          id: otherPartnership,
-          projectId: otherProject,
-          organizationId: partner,
-        },
-      ]);
-      await db.insert(partnerAssignments).values({
-        partnershipId: ownPartnership,
-        userId: coord,
-      });
-    });
-
     beforeEach(() => {
       vi.clearAllMocks();
       // Deny Organization-wide reads so only the assignment scope grants.
       authMocks.hasPermission.mockResolvedValue({ success: false });
       useViewer(coord);
-    });
-
-    afterAll(async () => {
-      await db
-        .delete(partnerAssignments)
-        .where(
-          inArray(partnerAssignments.partnershipId, [
-            ownPartnership,
-            otherPartnership,
-          ]),
-        );
-      await db
-        .delete(projectPartnerOrganizationsTable)
-        .where(
-          inArray(projectPartnerOrganizationsTable.id, [
-            ownPartnership,
-            otherPartnership,
-          ]),
-        );
-      await db
-        .delete(projectsTable)
-        .where(inArray(projectsTable.id, [ownProject, otherProject]));
-      await db.delete(member).where(inArray(member.userId, [coord, stranger]));
-      await db
-        .delete(organization)
-        .where(inArray(organization.id, [host, partner]));
-      await db.delete(user).where(inArray(user.id, [coord, stranger]));
     });
 
     it("lists exactly the assigned Partnership", async () => {

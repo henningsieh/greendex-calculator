@@ -28,6 +28,7 @@ interface CanonicalSeedIdentity {
   organizationSlugs: string[];
   projectNames: string[];
   scenarios: {
+    costTrackerPartnerships: CostTrackerSeedScenario;
     costTrackerEntitySearch: CostTrackerSeedScenario;
     costTrackerClaims: CostTrackerSeedScenario;
     costTrackerCosts: CostTrackerSeedScenario;
@@ -470,6 +471,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
     };
     // Ten hosting Projects plus the Partner-owned scoping Project (#267).
     const costTrackerScenarios = [
+      identities.scenarios.costTrackerPartnerships,
       identities.scenarios.costTrackerEntitySearch,
       identities.scenarios.costTrackerClaims,
       identities.scenarios.costTrackerCosts,
@@ -538,6 +540,7 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     expect(output).not.toMatch(/secretHash|passwordHash|verificationToken/);
     const identities = await readSeedIdentities(databaseUrl);
     const scenarios = [
+      identities.scenarios.costTrackerPartnerships,
       identities.scenarios.costTrackerEntitySearch,
       identities.scenarios.costTrackerClaims,
       identities.scenarios.costTrackerCosts,
@@ -572,13 +575,13 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     };
     const first = await snapshot();
     expect(first).toEqual({
-      users: 13,
-      logins: 13,
-      memberships: 1073,
-      organizations: 1091,
-      projects: 12,
-      partnerships: 12,
-      participations: 10,
+      users: 16,
+      logins: 16,
+      memberships: 1075,
+      organizations: 1099,
+      projects: 16,
+      partnerships: 16,
+      participations: 11,
       claims: 6,
       payout_accounts: 3,
       entries: 1,
