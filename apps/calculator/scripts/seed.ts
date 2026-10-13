@@ -418,6 +418,48 @@ export const SEED_SHOWCASE = {
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
+  costTrackerEntitySearch: {
+    suffix: "canonical",
+    userIds: [
+      "picker-user-canonical",
+      "picker-coordinator-canonical",
+      "picker-unassigned-coordinator-canonical",
+      "picker-participant-canonical",
+    ],
+    userEmails: [
+      "user",
+      "coordinator",
+      "unassigned-coordinator",
+      "participant",
+    ].map((name) => `picker-${name}-canonical@example.com`),
+    coordinatorUserId: "picker-coordinator-canonical",
+    unassignedCoordinatorUserId: "picker-unassigned-coordinator-canonical",
+    participantUserId: "picker-participant-canonical",
+    organizationIds: [
+      "picker-host-canonical",
+      "picker-partner-canonical",
+      "picker-foreign-canonical",
+      ...Array.from({ length: 22 }, (_, i) => `picker-result-${i}-canonical`),
+      ...Array.from({ length: 55 }, (_, i) => `owned-result-${i}-canonical`),
+      ...Array.from(
+        { length: 1002 },
+        (_, i) => `picker-many-${i.toString().padStart(4, "0")}-canonical`,
+      ),
+    ],
+    projectNames: [
+      "picker-assigned-canonical",
+      "picker-unassigned-canonical",
+      "picker-foreign-project-canonical",
+    ].map((id) => `Project ${id}`),
+    ownedOrganizations: Array.from({ length: 55 }, (_, i) => ({
+      id: `owned-result-${i}-canonical`,
+      name: `Owned Search canonical ${i.toString().padStart(2, "0")}`,
+    })),
+    manyOrganizations: Array.from({ length: 1002 }, (_, i) => ({
+      id: `picker-many-${i.toString().padStart(4, "0")}-canonical`,
+      name: "Many Matches canonical",
+    })),
+  },
   costTrackerOnboardingProgress: {
     userIds: [
       "progress-coordinator-canonical",
@@ -1579,6 +1621,7 @@ export async function resetSeedData(
   const seedEmails = [
     SEED_USER.email,
     ...SEED_ORG_ROLE_EMAILS,
+    ...SEED_SCENARIOS.costTrackerEntitySearch.userEmails,
     ...SEED_SCENARIOS.costTrackerClaims.userEmails,
     ...SEED_SCENARIOS.costTrackerCosts.userEmails,
     ...SEED_SCENARIOS.costTrackerOnboardingProgress.userEmails,
@@ -1594,6 +1637,7 @@ export async function resetSeedData(
       SEED_PARTNER_ORGANIZATION.slug,
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
+      ...SEED_SCENARIOS.costTrackerEntitySearch.organizationIds,
       ...SEED_SCENARIOS.costTrackerClaims.organizationIds,
       ...SEED_SCENARIOS.costTrackerCosts.organizationIds,
       ...SEED_SCENARIOS.costTrackerOnboardingProgress.organizationIds,
@@ -1603,6 +1647,7 @@ export async function resetSeedData(
   const canonicalNames = [
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
+    ...SEED_SCENARIOS.costTrackerEntitySearch.projectNames,
     ...SEED_SCENARIOS.costTrackerClaims.projectNames,
     ...SEED_SCENARIOS.costTrackerCosts.projectNames,
     ...SEED_SCENARIOS.costTrackerOnboardingProgress.projectNames,
