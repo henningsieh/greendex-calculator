@@ -110,6 +110,9 @@ async function invalidCredentialCheck(
     host: environment.SMTP_HOST,
     port: Number(environment.SMTP_PORT),
     secure: true,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 10_000,
     auth: { user: environment.SMTP_USERNAME, pass: `invalid-${randomUUID()}` },
   });
   let timer: ReturnType<typeof setTimeout> | undefined;
