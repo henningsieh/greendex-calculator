@@ -417,9 +417,6 @@ For each vendor integration, use the [online reference registry](docs/agents/int
 - `docs/agents/instructions/shadcn.md` — UI patterns
 - `docs/agents/instructions/conventions.md` — linting and formatting
 
-`PROJECT_STATE_REPORT.md` contains the detailed August 20–23 commit ledger,
-current branch/PR state, deployment model, and remaining cleanup decisions.
-
 ---
 
 ## Known follow-ups
@@ -427,11 +424,7 @@ current branch/PR state, deployment model, and remaining cleanup decisions.
 - Close or resolve stale PR #11, which targets an old Copilot branch.
 - Remove merged/orphaned dependency branches after review.
 - Decide whether to delete the old `bun-runtime` branch.
-- Merge or further review open PR #57 (`migrate-email-to-package`), which
-  centralizes transactional email in `@greendex/email`.
-- Make the OpenAPI integration suite select/skip tests correctly when no server
-  is running.
-- Select and add a project license.
+- Select and add a project license (tracked in #262).
 
 ---
 

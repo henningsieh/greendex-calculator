@@ -105,21 +105,52 @@ describe("environment entrypoints", () => {
     );
   });
 
+  it("skips credential validation only during Next build, never via a persistent skip flag", () => {
+    for (const app of ["calculator", "cost-tracker"]) {
+      const cwd = path.resolve(`../../apps/${app}`);
+      for (const building of [true, false]) {
+        const output = execFileSync(
+          process.execPath,
+          [
+            "--import",
+            "tsx",
+            "--input-type=module",
+            "-e",
+            `
+            console.error = () => {};
+            try {
+              const { env } = await import('./src/env.ts');
+              process.stdout.write(env.SMTP_PASSWORD === undefined ? 'build-only' : 'unexpected');
+            } catch {
+              process.stdout.write('validation-rejected');
+            }
+          `,
+          ],
+          {
+            cwd,
+            env: {
+              PATH: process.env.PATH,
+              NODE_ENV: "production",
+              SKIP_ENV_VALIDATION: "true",
+              ...(building ? { NEXT_PHASE: "phase-production-build" } : {}),
+            },
+            encoding: "utf8",
+          },
+        );
+        expect(output).toBe(building ? "build-only" : "validation-rejected");
+      }
+    }
+  });
+
   it("loads Calculator's app-local environment for non-Next processes", () => {
     expect(calculatorPackage.scripts.dev).toContain(
       "dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env --",
     );
-    expect(calculatorPackage.scripts.prebuild).toContain(
-      "dotenv -e ../../packages/database/.env -e .env --",
-    );
+    expect(calculatorPackage.scripts.prebuild).not.toContain("dotenv");
     expect(calculatorPackage.scripts.prebuild).toContain("pnpm run generate:sri");
     expect(calculatorPackage.scripts.prebuild).toContain("pnpm run check:sri");
-    expect(calculatorPackage.scripts.prebuild).toContain(
-      "pnpm -w run db:migrate",
-    );
-    expect(calculatorPackage.scripts.build).toBe(
-      "dotenv -e ../../packages/database/.env -e .env -- next build",
-    );
+    expect(calculatorPackage.scripts.prebuild).not.toContain("db:migrate");
+    expect(calculatorPackage.scripts.build).toBe("next build");
     expect(calculatorPackage.scripts.prestart).toContain(
       "dotenv -e ../../packages/database/.env -e .env --",
     );
@@ -181,15 +212,14 @@ describe("environment entrypoints", () => {
     );
   });
 
-  it("migrates once before root dev and through existing per-app build hooks", () => {
+  it("migrates before dev and app startup, never during image builds", () => {
     expect(rootPackage.scripts.predev).toMatch(/^pnpm run db:migrate && /);
     expect(rootPackage.scripts["db:migrate"]).toBe("turbo run db:migrate");
     for (const app of [calculatorPackage, costTrackerPackage]) {
       expect(app.scripts["db:migrate"]).toBeUndefined();
       expect(app.scripts.predev ?? "").not.toContain("db:migrate");
-      expect(app.scripts.prebuild).toMatch(
-        /dotenv -e \.\.\/\.\.\/packages\/database\/\.env -e \.env -- .*pnpm -w run db:migrate/,
-      );
+      expect(app.scripts.prebuild ?? "").not.toContain("db:migrate");
+      expect(app.scripts.build).toBe("next build");
       expect(app.scripts["start:prepare"]).toContain(
         "pnpm --filter @greendex/database run db:migrate",
       );
