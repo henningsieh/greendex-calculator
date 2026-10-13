@@ -418,6 +418,44 @@ export const SEED_SHOWCASE = {
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
+  costTrackerJourneys: {
+    userIds: ["journey-coordinator-canonical", "journey-user-canonical"],
+    userEmails: [
+      "journey-coordinator-canonical@example.org",
+      "journey-user-canonical@example.org",
+    ],
+    organizationIds: ["host", "partner", "other"].map(
+      (name) => `journey-${name}-canonical`,
+    ),
+    projectNames: [
+      "empty",
+      "editable",
+      "legacy",
+      "correction_requested",
+      "submitted",
+      "approved",
+      "rejected",
+      "paid",
+    ].flatMap((name) =>
+      ["project", "second-project"].map(
+        (part) => `Seed Journey Project journey-${name}-${part}-canonical`,
+      ),
+    ),
+    participationIds: [
+      "empty",
+      "editable",
+      "legacy",
+      "correction_requested",
+      "submitted",
+      "approved",
+      "rejected",
+      "paid",
+    ].flatMap((name) =>
+      ["first", "second", "outside", "later"].map(
+        (part) => `journey-${name}-${part}-canonical`,
+      ),
+    ),
+  },
   costTrackerPartnerships: {
     userIds: [
       "partnership-user-canonical",
@@ -1650,6 +1688,7 @@ export async function resetSeedData(
   const seedEmails = [
     SEED_USER.email,
     ...SEED_ORG_ROLE_EMAILS,
+    ...SEED_SCENARIOS.costTrackerJourneys.userEmails,
     ...SEED_SCENARIOS.costTrackerPartnerships.userEmails,
     ...SEED_SCENARIOS.costTrackerEntitySearch.userEmails,
     ...SEED_SCENARIOS.costTrackerClaims.userEmails,
@@ -1667,6 +1706,7 @@ export async function resetSeedData(
       SEED_PARTNER_ORGANIZATION.slug,
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
+      ...SEED_SCENARIOS.costTrackerJourneys.organizationIds,
       ...SEED_SCENARIOS.costTrackerPartnerships.organizationIds,
       ...SEED_SCENARIOS.costTrackerEntitySearch.organizationIds,
       ...SEED_SCENARIOS.costTrackerClaims.organizationIds,
@@ -1678,6 +1718,7 @@ export async function resetSeedData(
   const canonicalNames = [
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
+    ...SEED_SCENARIOS.costTrackerJourneys.projectNames,
     ...SEED_SCENARIOS.costTrackerPartnerships.projectNames,
     ...SEED_SCENARIOS.costTrackerEntitySearch.projectNames,
     ...SEED_SCENARIOS.costTrackerClaims.projectNames,
@@ -1802,6 +1843,7 @@ export async function resetSeedData(
       "seed-second-onboarding-invitee@example.org",
     ]);
     const costTrackerScenarioParticipationIds = new Set<string>([
+      ...SEED_SCENARIOS.costTrackerJourneys.participationIds,
       ...SEED_SCENARIOS.costTrackerPartnerships.participationIds,
       ...SEED_SCENARIOS.costTrackerCosts.participationIds,
       ...SEED_SCENARIOS.costTrackerOnboardingProgress.participationIds,

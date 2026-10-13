@@ -10,6 +10,7 @@ import {
   participantAgreementAcceptancesTable as acceptances,
   participantEntryTokensTable as entryTokens,
   participantProfilesTable as profiles,
+  participantJourneysTable as journeys,
   member,
   organization,
   partnerCoordinatorAssignmentsTable as assignments,
@@ -1442,10 +1443,238 @@ async function ensurePartnershipScenarios(db: SeedDatabase): Promise<string[]> {
   return [actor, coord, stranger];
 }
 
+async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
+  const id = (part: string) => `journey-${part}-canonical`;
+  const host = id("host"),
+    partner = id("partner"),
+    other = id("other");
+  const coordinator = id(ORGANIZATION_ROLES.ProjectCoordinator),
+    participantUser = id("user");
+  const now = new Date();
+  {
+    const rows = [
+      {
+        id: coordinator,
+        name: "Journey Coordinator",
+        email: `${coordinator}@example.org`,
+        emailVerified: true,
+      },
+      {
+        id: participantUser,
+        name: "Journey Participant",
+        email: `${participantUser}@example.org`,
+        emailVerified: true,
+      },
+    ] satisfies (typeof user.$inferInsert)[];
+    const existing = await db.select().from(user);
+    const missing = rows.filter(
+      (row) => !existing.some((saved) => saved.id === row.id),
+    );
+    if (missing.length > 0)
+      await db.insert(user).values(missing).onConflictDoNothing();
+  }
+  {
+    const rows = [host, partner, other].map((id) => ({
+      id,
+      country: "DE" as const,
+      name: `Seed Journey Organization ${id}`,
+      slug: id,
+      createdAt: now,
+    })) satisfies (typeof organization.$inferInsert)[];
+    const existing = await db.select().from(organization);
+    const missing = rows.filter(
+      (row) => !existing.some((saved) => saved.id === row.id),
+    );
+    if (missing.length > 0)
+      await db.insert(organization).values(missing).onConflictDoNothing();
+  }
+  {
+    const rows = [
+      {
+        id: createId(),
+        userId: coordinator,
+        organizationId: partner,
+        role: ORGANIZATION_ROLES.ProjectCoordinator,
+        createdAt: now,
+      },
+      {
+        id: createId(),
+        userId: participantUser,
+        organizationId: partner,
+        role: ORGANIZATION_ROLES.Participant,
+        createdAt: now,
+      },
+    ] satisfies (typeof member.$inferInsert)[];
+    const existing = await db.select().from(member);
+    const missing = rows.filter(
+      (row) =>
+        !existing.some(
+          (saved) =>
+            saved.userId === row.userId &&
+            saved.organizationId === row.organizationId,
+        ),
+    );
+    if (missing.length > 0)
+      await db.insert(member).values(missing).onConflictDoNothing();
+  }
+  for (const name of [
+    "empty",
+    "editable",
+    "legacy",
+    "correction_requested",
+    "submitted",
+    "approved",
+    "rejected",
+    "paid",
+  ] as const) {
+    const scenarioId = (part: string) => id(`${name}-${part}`);
+    const project = scenarioId("project"),
+      secondProject = scenarioId("second-project");
+    const own = scenarioId("own"),
+      foreign = scenarioId("foreign"),
+      next = scenarioId("next");
+    {
+      const rows = [project, secondProject].map((projectId) => ({
+        id: projectId,
+        name: `Seed Journey Project ${projectId}`,
+        startDate: new Date("2024-04-01T00:00:00.000Z"),
+        endDate: new Date("2024-04-03T00:00:00.000Z"),
+        location: "Riga",
+        country: "LV" as const,
+        organizationId: host,
+      })) satisfies (typeof projects.$inferInsert)[];
+      const existing = await db.select().from(projects);
+      const missing = rows.filter(
+        (row) => !existing.some((saved) => saved.id === row.id),
+      );
+      if (missing.length > 0)
+        await db.insert(projects).values(missing).onConflictDoNothing();
+    }
+    {
+      const rows = [
+        { projectId: project, userId: coordinator },
+      ] satisfies (typeof hostAssignments.$inferInsert)[];
+      const existing = await db.select().from(hostAssignments);
+      const missing = rows.filter(
+        (row) =>
+          !existing.some(
+            (saved) =>
+              saved.projectId === row.projectId && saved.userId === row.userId,
+          ),
+      );
+      if (missing.length > 0)
+        await db.insert(hostAssignments).values(missing).onConflictDoNothing();
+    }
+    {
+      const rows = [
+        { id: own, projectId: project, organizationId: partner },
+        { id: foreign, projectId: project, organizationId: other },
+        { id: next, projectId: secondProject, organizationId: partner },
+      ] satisfies (typeof partnerships.$inferInsert)[];
+      const existing = await db.select().from(partnerships);
+      const missing = rows.filter(
+        (row) => !existing.some((saved) => saved.id === row.id),
+      );
+      if (missing.length > 0)
+        await db.insert(partnerships).values(missing).onConflictDoNothing();
+    }
+    {
+      const rows = [
+        { partnershipId: own, userId: coordinator },
+        { partnershipId: next, userId: coordinator },
+      ] satisfies (typeof assignments.$inferInsert)[];
+      const existing = await db.select().from(assignments);
+      const missing = rows.filter(
+        (row) =>
+          !existing.some(
+            (saved) =>
+              saved.partnershipId === row.partnershipId &&
+              saved.userId === row.userId,
+          ),
+      );
+      if (missing.length > 0)
+        await db.insert(assignments).values(missing).onConflictDoNothing();
+    }
+    {
+      const rows = [
+        {
+          id: scenarioId("first"),
+          projectId: project,
+          representedOrganizationId: partner,
+          displayName: "First",
+        },
+        {
+          id: scenarioId("second"),
+          projectId: project,
+          representedOrganizationId: partner,
+          displayName: "Second",
+        },
+        {
+          id: scenarioId("outside"),
+          projectId: project,
+          representedOrganizationId: other,
+          displayName: "Outside",
+        },
+        {
+          id: scenarioId("later"),
+          projectId: secondProject,
+          representedOrganizationId: partner,
+          displayName: "Later",
+        },
+      ] satisfies (typeof participants.$inferInsert)[];
+      const existing = await db.select().from(participants);
+      const missing = rows.filter(
+        (row) => !existing.some((saved) => saved.id === row.id),
+      );
+      if (missing.length > 0)
+        await db.insert(participants).values(missing).onConflictDoNothing();
+    }
+    if (name !== "empty" && name !== "legacy") {
+      {
+        const rows = [
+          { id: scenarioId("claim"), partnershipId: own, status: name },
+        ] satisfies (typeof claims.$inferInsert)[];
+        const existing = await db.select().from(claims);
+        const missing = rows.filter(
+          (row) =>
+            !existing.some((saved) => saved.partnershipId === row.partnershipId),
+        );
+        if (missing.length > 0)
+          await db.insert(claims).values(missing).onConflictDoNothing();
+      }
+    }
+    if (["legacy", "submitted", "approved", "rejected", "paid"].includes(name)) {
+      {
+        const rows = [
+          {
+            id: scenarioId("legacy-journey"),
+            projectParticipantId: scenarioId("first"),
+            origin: name === "legacy" ? "Old" : "Berlin",
+            destination: "Riga",
+            tripType: name === "legacy" ? "one-way" : "round-trip",
+            erasmusDistanceKm: name === "legacy" ? "500" : "850.25",
+          },
+        ] satisfies (typeof journeys.$inferInsert)[];
+        const existing = await db.select().from(journeys);
+        const missing = rows.filter(
+          (row) =>
+            !existing.some(
+              (saved) => saved.projectParticipantId === row.projectParticipantId,
+            ),
+        );
+        if (missing.length > 0)
+          await db.insert(journeys).values(missing).onConflictDoNothing();
+      }
+    }
+  }
+  return [coordinator, participantUser];
+}
+
 /** The sole seed entrypoint calls this builder; it has no environment/CLI path. */
 export async function ensureCostTrackerScenarios(
   db: SeedDatabase,
 ): Promise<string[]> {
+  const journeyUserIds = await ensureJourneyScenarios(db);
   const partnershipUserIds = await ensurePartnershipScenarios(db);
   const entitySearchUserIds = await ensureEntitySearchScenario(db);
   await ensureClaimScenarios(db);
@@ -1454,6 +1683,7 @@ export async function ensureCostTrackerScenarios(
   await ensureOnboardingProgressScenario(db);
   await ensureExpiredOnboardingProgressScenario(db);
   return [
+    ...journeyUserIds,
     ...partnershipUserIds,
     ...entitySearchUserIds,
     "claim-coordinator-canonical",

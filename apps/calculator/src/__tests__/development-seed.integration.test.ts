@@ -28,6 +28,7 @@ interface CanonicalSeedIdentity {
   organizationSlugs: string[];
   projectNames: string[];
   scenarios: {
+    costTrackerJourneys: CostTrackerSeedScenario;
     costTrackerPartnerships: CostTrackerSeedScenario;
     costTrackerEntitySearch: CostTrackerSeedScenario;
     costTrackerClaims: CostTrackerSeedScenario;
@@ -471,6 +472,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
     };
     // Ten hosting Projects plus the Partner-owned scoping Project (#267).
     const costTrackerScenarios = [
+      identities.scenarios.costTrackerJourneys,
       identities.scenarios.costTrackerPartnerships,
       identities.scenarios.costTrackerEntitySearch,
       identities.scenarios.costTrackerClaims,
@@ -540,6 +542,7 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     expect(output).not.toMatch(/secretHash|passwordHash|verificationToken/);
     const identities = await readSeedIdentities(databaseUrl);
     const scenarios = [
+      identities.scenarios.costTrackerJourneys,
       identities.scenarios.costTrackerPartnerships,
       identities.scenarios.costTrackerEntitySearch,
       identities.scenarios.costTrackerClaims,
@@ -560,6 +563,7 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
           (SELECT count(*)::int FROM project WHERE name = ANY ($3)) AS projects,
           (SELECT count(*)::int FROM project_partner_organization WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3))) AS partnerships,
           (SELECT count(*)::int FROM project_participant WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3))) AS participations,
+          (SELECT count(*)::int FROM participant_journey WHERE project_participant_id IN (SELECT id FROM project_participant WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3)))) AS journeys,
           (SELECT count(*)::int FROM claim WHERE partnership_id IN (SELECT id FROM project_partner_organization WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3)))) AS claims,
           (SELECT count(*)::int FROM payout_account WHERE organization_id = ANY ($2)) AS payout_accounts,
           (SELECT count(*)::int FROM travel_cost_entry WHERE id = 'cost-locked-entry-canonical') AS entries,
@@ -575,14 +579,15 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     };
     const first = await snapshot();
     expect(first).toEqual({
-      users: 16,
-      logins: 16,
-      memberships: 1075,
-      organizations: 1099,
-      projects: 16,
-      partnerships: 16,
-      participations: 11,
-      claims: 6,
+      users: 18,
+      logins: 18,
+      memberships: 1077,
+      organizations: 1102,
+      projects: 32,
+      partnerships: 40,
+      participations: 43,
+      journeys: 5,
+      claims: 12,
       payout_accounts: 3,
       entries: 1,
       allocations: 1,
