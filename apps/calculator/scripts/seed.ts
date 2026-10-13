@@ -418,6 +418,40 @@ export const SEED_SHOWCASE = {
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
+  costTrackerSetupLinks: {
+    userIds: [
+      "user",
+      "host-coordinator",
+      "host-participant",
+      "host-admin",
+      "host-owner",
+      "assigned-coordinator",
+      "partner-participant",
+    ].map((name) => `setup-${name}-canonical`),
+    userEmails: [
+      "setup-canonical@example.com",
+      ...[
+        "host-coordinator",
+        "host-participant",
+        "host-admin",
+        "host-owner",
+        "assigned-coordinator",
+        "partner-participant",
+      ].map((name) => `setup-${name}-canonical@example.com`),
+    ],
+    organizationIds: [
+      "host",
+      "partner",
+      "combined-coordinator,owner",
+      "combined-owner,participant",
+      "bind",
+      "race",
+      "rival",
+    ].map((name) => `setup-${name}-canonical`),
+    projectNames: ["project", "other-project"].map(
+      (name) => `Seed Setup Link Project setup-${name}-canonical`,
+    ),
+  },
   costTrackerJourneys: {
     userIds: ["journey-coordinator-canonical", "journey-user-canonical"],
     userEmails: [
@@ -1688,6 +1722,7 @@ export async function resetSeedData(
   const seedEmails = [
     SEED_USER.email,
     ...SEED_ORG_ROLE_EMAILS,
+    ...SEED_SCENARIOS.costTrackerSetupLinks.userEmails,
     ...SEED_SCENARIOS.costTrackerJourneys.userEmails,
     ...SEED_SCENARIOS.costTrackerPartnerships.userEmails,
     ...SEED_SCENARIOS.costTrackerEntitySearch.userEmails,
@@ -1706,6 +1741,7 @@ export async function resetSeedData(
       SEED_PARTNER_ORGANIZATION.slug,
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
+      ...SEED_SCENARIOS.costTrackerSetupLinks.organizationIds,
       ...SEED_SCENARIOS.costTrackerJourneys.organizationIds,
       ...SEED_SCENARIOS.costTrackerPartnerships.organizationIds,
       ...SEED_SCENARIOS.costTrackerEntitySearch.organizationIds,
@@ -1718,6 +1754,7 @@ export async function resetSeedData(
   const canonicalNames = [
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
+    ...SEED_SCENARIOS.costTrackerSetupLinks.projectNames,
     ...SEED_SCENARIOS.costTrackerJourneys.projectNames,
     ...SEED_SCENARIOS.costTrackerPartnerships.projectNames,
     ...SEED_SCENARIOS.costTrackerEntitySearch.projectNames,
