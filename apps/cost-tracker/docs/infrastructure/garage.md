@@ -1,19 +1,19 @@
 # Garage S3 infrastructure
 
-Deployment-specific reference for the Garage service behind this project's S3 configuration. Follow the repository-wide [Coolify runbook](../../../../docs/agents/instructions/coolify.md) for persistent resource changes, deployment operations, and incident handling. This Garage service remains in the separate `ambitia-cost-tracker` Coolify project while the consuming application lives in this repository.
+Deployment-specific reference for the staging Garage service behind this project's S3 configuration. Follow the repository-wide [Coolify runbook](../../../../docs/agents/instructions/coolify.md) for persistent resource changes, deployment operations, and incident handling. Live container labels place this service in the `greendex` Coolify project as resource `greendex-staging-s3`; the older `ambitia-cost-tracker` project name below is stale and retained only for history. Development Garage provisioning is owned by #271 and is out of scope here.
 
 This document contains no credential values. Application configuration lives in `.env.example`; usable local secrets live only in the ignored `.env`.
 
-Snapshot verified: 2026-09-04 08:23 CEST.
+Snapshot verified: 2026-10-13 (staging alias verification; replaces the stale 2026-09-04 snapshot).
 
 ## Coolify resources
 
-| Resource            | Name                   | UUID                       |
-| ------------------- | ---------------------- | -------------------------- |
-| Project             | `ambitia-cost-tracker` | `zvzfc1ubnr6qld27tgvkpev5` |
-| Environment         | `development`          | `wiryuzmtpja3crydzqg1hkwb` |
-| Service             | `garage-s3`            | `ckhy5vfyielgwo87ha4zaksd` |
-| Service application | `garage`               | `r9igtcff3sdnrdyc5adfyv77` |
+| Resource            | Name                                                                                | UUID                       |
+| ------------------- | ----------------------------------------------------------------------------------- | -------------------------- |
+| Project             | `greendex` (live label; `ambitia-cost-tracker` `zvzfc1ubnr6qld27tgvkpev5` is stale) | —                          |
+| Environment         | Greendex staging (container label reports `production`; see note)                   | —                          |
+| Service             | `greendex-staging-s3`                                                               | `ckhy5vfyielgwo87ha4zaksd` |
+| Service application | `garage`                                                                            | `r9igtcff3sdnrdyc5adfyv77` |
 
 - Coolify host: `188.245.144.137`
 - SSH alias: `coolify`
@@ -21,14 +21,17 @@ Snapshot verified: 2026-09-04 08:23 CEST.
 - Image: `dxflrs/garage:v2.1.0`
 - Docker network: `ckhy5vfyielgwo87ha4zaksd`
 - Observed state: running and healthy
+- Note: the Coolify runbook staging inventory differs from these live labels; the live container labels and Traefik routes above are authoritative for this resource. Do not hand-edit generated compose output.
 
 ## Public endpoints
 
 | Purpose                | URL                                  | Internal port |
 | ---------------------- | ------------------------------------ | ------------- |
-| S3 API                 | `https://s3-garage.apps.sieh.org`    | `3900`        |
+| S3 API                 | `https://s3.greendex.apps.sieh.org`  | `3900`        |
 | Static bucket websites | `https://web-garage.apps.sieh.org`   | `3902`        |
 | Admin API and metrics  | `https://admin-garage.apps.sieh.org` | `3903`        |
+
+Live Traefik routes (container labels) send `s3.greendex.apps.sieh.org` to port `3900`. The older `s3-garage.apps.sieh.org` hostname is stale for this resource.
 
 Traefik terminates TLS and routes each hostname to its corresponding container port. The wildcard DNS record `*.apps.sieh.org` resolves to the Coolify host.
 
@@ -68,6 +71,8 @@ root_domain = ".apps.sieh.org"
 api_bind_addr = "[::]:3903"
 ```
 
+The checked-in excerpt still shows `root_domain = ".s3-garage.apps.sieh.org"`; the live host file matches that excerpt (verified 2026-10-13, non-secret lines only). Live Traefik routes `s3.greendex.apps.sieh.org` to the same S3 port, and the staging consumer uses path-style addressing (`S3_FORCE_PATH_STYLE=true`), so virtual-host root-domain mismatch does not break access. Do not hand-edit the host file or generated compose output; any `root_domain` change is a Coolify-managed operation requiring restart coordination.
+
 Secret references omitted from that excerpt are supplied through these container environment variables:
 
 - `GARAGE_RPC_SECRET`
@@ -100,22 +105,28 @@ The default Coolify deployment started Garage without assigning the node a role.
 
 At the snapshot time, Garage reported the node healthy and approximately 10.2 GB available on the underlying data filesystem. The host filesystem was 38 GB total, 27 GB used, 9.6 GB available (74% used). These disk figures are observational; inspect live state before capacity decisions.
 
-## Application bucket and key
+## Staging application bucket and key (#272)
 
-| Setting              | Current value                      |
-| -------------------- | ---------------------------------- |
-| Bucket alias         | `ambitia-cost-tracker-development` |
-| Bucket ID prefix     | `b42cef2e76ed4a0b`                 |
-| Website hosting      | Disabled                           |
-| Current objects      | `0` at snapshot time               |
-| Application key name | `ambitia-cost-tracker-development` |
-| Bucket permissions   | Read/write                         |
-| May create buckets   | No                                 |
-| Key expiration       | Never                              |
+| Setting              | Current value                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Bucket ID prefix     | `b42cef2e76ed4a0b`                                                                                                   |
+| Global aliases       | `ambitia-cost-tracker-development` (retained through transition), `greendex-cost-tracker-staging` (added 2026-10-13) |
+| Website hosting      | Disabled                                                                                                             |
+| Current objects      | `0` at verification time                                                                                             |
+| Application key name | `ambitia-cost-tracker-development`                                                                                   |
+| Bucket permissions   | Read/write                                                                                                           |
+| May create buckets   | No                                                                                                                   |
+| Key expiration       | Never                                                                                                                |
+
+Bucket identity, objects, and permissions were preserved: both aliases resolve to the same full bucket ID, and the key keeps read/write access. The new alias was added with the supported non-destructive operation (`garage bucket alias <existing-bucket> <new-name>`); the old alias was kept. No bucket, volume, or object deletion or purge was performed.
+
+Staging consumer (Coolify-managed, verified read-only 2026-10-13): Cost Tracker staging (`vqud5nt2raw8yclhrypl4ipx`, `https://cost-tracker.apps.sieh.org`) uses `S3_ENDPOINT=https://s3.greendex.apps.sieh.org`, `S3_REGION=garage`, path-style addressing. On 2026-10-13 the staging (non-preview) `S3_BUCKET` record was patched through the Coolify API from the old alias to `greendex-cost-tracker-staging` (runtime-only flags preserved; preview record intentionally left on the retained old alias), and the staging application was redeployed (deployment `4lax82vuhgnzfmtlek7y7oqk`, commit `a8dd0212` = origin `main` HEAD, status `finished`). The running container is healthy, serves HTTP 200, and carries `S3_BUCKET=greendex-cost-tracker-staging`. Staging SMTP records were not altered (all `SMTP_*` still present, runtime-only).
 
 The access-key ID and secret key are intentionally omitted. Their local values are in `.env`; `.env.example` is the authoritative non-secret application configuration contract. The application key cannot create or administratively reconfigure buckets.
 
 A temporary object PUT/GET/delete was successfully verified against the public S3 endpoint, and the verification object was removed.
+
+One-time staging alias verification (2026-10-13, NOT a routine root-test target): PUT 64 random bytes to a run-owned key under `staging-alias-check/` in `greendex-cost-tracker-staging` via `https://s3.greendex.apps.sieh.org`, byte-for-byte GET assert passed, DELETE completed, and `head_bucket` on the old alias still resolved. Cleanup removed only the run-owned key. Re-verified after the staging redeploy using the running container's own bucket value with the same result. No secrets are recorded here.
 
 ## Proof Document policy (interim, minimal for now)
 
