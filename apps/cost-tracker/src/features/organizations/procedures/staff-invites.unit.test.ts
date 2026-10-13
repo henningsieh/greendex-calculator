@@ -26,15 +26,32 @@ vi.mock("server-only", () => ({}));
 
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
-const orgId = `staff-org-${suffix}`;
-const ownerId = `staff-owner-${suffix}`;
-const adminId = `staff-admin-${suffix}`;
-const memberId = `staff-member-${suffix}`;
-const participantId = `staff-participant-${suffix}`;
-const outsiderId = `staff-outsider-${suffix}`;
-const hybridAdminId = `staff-hybrid-admin-${suffix}`;
-const hybridMemberId = `staff-hybrid-member-${suffix}`;
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). The permission matrix resolves the
+ * seeded Hosting Organization and its named Memberships instead of
+ * inserting a private Organization/User/Membership dataset. Case
+ * invitations created below are removed in their own test; canonical rows
+ * are never deleted. Auth stays mocked: only the database is real.
+ */
+const SEED_ORG_SLUG = "seed-org";
+const SEED_PARTNER_ORG_SLUG = "seed-partner-org";
+const SEED_OWNER_EMAIL = "owner@sieh.org";
+const SEED_ADMIN_EMAIL = "seed-admin@example.org";
+const SEED_COORDINATOR_EMAIL = "seed-coordinator@example.org";
+const SEED_PARTICIPANT_EMAIL = "seed-participant@example.org";
+const SEED_OUTSIDER_EMAIL = "seed-outsider@example.org";
+const SEED_HYBRID_ADMIN_EMAIL = "seed-hybrid-admin@example.org";
+const SEED_HYBRID_COORDINATOR_EMAIL = "seed-hybrid-coordinator@example.org";
+
+let orgId = "";
+let ownerId = "";
+let adminId = "";
+let memberId = "";
+let participantId = "";
+let outsiderId = "";
+let hybridAdminId = "";
+let hybridMemberId = "";
 
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
@@ -58,72 +75,75 @@ async function invitationStatus(id: string) {
 
 describe("organizations staff invites", () => {
   beforeAll(async () => {
-    const now = new Date();
-    await db.insert(organization).values({
-      country: "DE",
-      id: orgId,
-      name: orgId,
-      slug: orgId,
-      createdAt: now,
+    const seedOrg = await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
     });
-    const users = [
-      ownerId,
-      adminId,
-      memberId,
-      participantId,
-      outsiderId,
-      hybridAdminId,
-      hybridMemberId,
+    if (!seedOrg) throw new Error("Seed Hosting Organization is missing.");
+    orgId = seedOrg.id;
+    const emails = [
+      SEED_OWNER_EMAIL,
+      SEED_ADMIN_EMAIL,
+      SEED_COORDINATOR_EMAIL,
+      SEED_PARTICIPANT_EMAIL,
+      SEED_OUTSIDER_EMAIL,
+      SEED_HYBRID_ADMIN_EMAIL,
+      SEED_HYBRID_COORDINATOR_EMAIL,
     ];
-    for (const id of users) {
-      await db.insert(user).values({
-        id,
-        name: id,
-        email: `${id}@example.org`,
-        emailVerified: true,
+    const ids: Record<string, string> = {};
+    for (const email of emails) {
+      const stored = await db.query.user.findFirst({
+        where: eq(user.email, email),
       });
+      if (!stored) throw new Error(`Seed user is missing: ${email}`);
+      ids[email] = stored.id;
     }
-    const memberships: [string, string][] = [
-      [ownerId, ORGANIZATION_ROLES.OrganizationOwner],
-      [adminId, ORGANIZATION_ROLES.OrganizationAdmin],
-      [memberId, ORGANIZATION_ROLES.ProjectCoordinator],
-      [participantId, ORGANIZATION_ROLES.Participant],
-      [
-        hybridAdminId,
-        `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
-      ],
-      [
-        hybridMemberId,
-        `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
-      ],
-    ];
-    for (const [userId, role] of memberships) {
-      await db.insert(member).values({
-        id: randomUUID(),
-        userId,
-        organizationId: orgId,
-        role,
-        createdAt: now,
-      });
-    }
+    ownerId = ids[SEED_OWNER_EMAIL] as string;
+    adminId = ids[SEED_ADMIN_EMAIL] as string;
+    memberId = ids[SEED_COORDINATOR_EMAIL] as string;
+    participantId = ids[SEED_PARTICIPANT_EMAIL] as string;
+    outsiderId = ids[SEED_OUTSIDER_EMAIL] as string;
+    hybridAdminId = ids[SEED_HYBRID_ADMIN_EMAIL] as string;
+    hybridMemberId = ids[SEED_HYBRID_COORDINATOR_EMAIL] as string;
+    // Fail fast when the canonical role matrix drifts from the seed.
+    const memberships = await db
+      .select({ userId: member.userId, role: member.role })
+      .from(member)
+      .where(eq(member.organizationId, orgId));
+    const roleByUser = new Map(
+      memberships.map((entry) => [entry.userId, entry.role]),
+    );
+    expect(roleByUser.get(ownerId)).toBe(ORGANIZATION_ROLES.OrganizationOwner);
+    expect(roleByUser.get(adminId)).toBe(ORGANIZATION_ROLES.OrganizationAdmin);
+    expect(roleByUser.get(memberId)).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
+    expect(roleByUser.get(participantId)).toBe(ORGANIZATION_ROLES.Participant);
+    expect(roleByUser.get(hybridAdminId)).toBe(
+      `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+    );
+    expect(roleByUser.get(hybridMemberId)).toBe(
+      `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+    );
+    expect(roleByUser.has(outsiderId)).toBe(false);
     vi.clearAllMocks();
   });
 
   afterAll(async () => {
-    await db.delete(invitation).where(eq(invitation.organizationId, orgId));
-    await db.delete(member).where(eq(member.organizationId, orgId));
-    await db.delete(organization).where(eq(organization.id, orgId));
-    for (const id of [
-      ownerId,
-      adminId,
-      memberId,
-      participantId,
-      outsiderId,
-      hybridAdminId,
-      hybridMemberId,
-    ]) {
-      await db.delete(user).where(eq(user.id, id));
-    }
+    // Case invitations are removed in their own tests; canonical
+    // Organizations, Memberships, and Users are never deleted. Fail loudly
+    // when a case leaked a row onto the seeded Organization.
+    const leftovers = await db
+      .select({ id: invitation.id })
+      .from(invitation)
+      .where(eq(invitation.organizationId, orgId));
+    expect(
+      leftovers,
+      "case invitations leaked onto the seed Organization",
+    ).toEqual([]);
+    expect(
+      await db.query.organization.findFirst({
+        where: eq(organization.slug, SEED_ORG_SLUG),
+      }),
+      "canonical seed Organization was deleted",
+    ).not.toBeUndefined();
   });
 
   it("denies the member list to members, participants, and outsiders", async () => {
@@ -155,8 +175,10 @@ describe("organizations staff invites", () => {
         ORGANIZATION_ROLES.Participant,
       ].sort(),
     );
+    // The canonical seed owner signs in from a real mailbox domain while
+    // role actors use the example domain: assert email shape, not domain.
     expect(asOwner.members[0]).toMatchObject({
-      email: expect.stringContaining("@example.org"),
+      email: expect.stringContaining("@"),
       name: expect.any(String),
     });
 
@@ -403,16 +425,15 @@ describe("organizations staff invites", () => {
 
   it("cancels a pending invitation and rejects unknown or settled rows", async () => {
     const pendingId = randomUUID();
-    const otherOrgId = `staff-other-org-${suffix}`;
+    // The canonical Seed Partner Organization scopes the cross-Organization
+    // isolation check: its invitation stays invisible to the Hosting
+    // Organization staff flow without inventing a private Organization.
+    const partnerOrg = await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_PARTNER_ORG_SLUG),
+    });
+    if (!partnerOrg) throw new Error("Seed Partner Organization is missing.");
     const otherInvitationId = randomUUID();
     const now = new Date();
-    await db.insert(organization).values({
-      country: "DE",
-      id: otherOrgId,
-      name: otherOrgId,
-      slug: otherOrgId,
-      createdAt: now,
-    });
     await db.insert(invitation).values([
       {
         id: pendingId,
@@ -426,7 +447,7 @@ describe("organizations staff invites", () => {
       },
       {
         id: otherInvitationId,
-        organizationId: otherOrgId,
+        organizationId: partnerOrg.id,
         email: "elsewhere@example.org",
         role: ORGANIZATION_ROLES.OrganizationAdmin,
         status: "pending",
@@ -476,7 +497,6 @@ describe("organizations staff invites", () => {
     } finally {
       await db.delete(invitation).where(eq(invitation.id, pendingId));
       await db.delete(invitation).where(eq(invitation.id, otherInvitationId));
-      await db.delete(organization).where(eq(organization.id, otherOrgId));
     }
   });
 });

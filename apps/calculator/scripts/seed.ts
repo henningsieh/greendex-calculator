@@ -16,6 +16,9 @@ import { Buffer } from "node:buffer";
  *   Journey, editable Claim) are found by stable logical identity (email,
  *   slug, project name) on every run. `SEED_SCENARIOS` is the discoverable
  *   registry tests and developers reference instead of inventing setup data.
+ *   `SEED_ORG_ROLE_USERS` adds the named Hosting Organization role actors
+ *   (admin, coordinator, participant, combined-authority hybrids) plus a
+ *   membership-free outsider for auth/Organization/permission checks.
  *
  * Deterministic reference policy:
  * - Domain dates are fixed canonical values (a 2024 reference calendar for
@@ -105,6 +108,67 @@ export const SEED_PARTNER_ORGANIZATION = {
   slug: "seed-partner-org",
   country: "FR",
 } as const;
+
+/**
+ * Named Hosting Organization actors for auth/Organization/permission tests
+ * (#266). Stable, recognizable identities so ordinary role, scope, and
+ * negative-scenario checks resolve seeded rows instead of inventing private
+ * User/Organization/Membership setup. Every entry shares the well-known
+ * development password (`SEED_USER.password`); salts stay run-scoped
+ * secrets per the deterministic reference policy above. The outsider and
+ * the creator hold no Memberships anywhere: Cost Tracker permits
+ * first-Organization creation only for membership-free callers, so each
+ * parallel creator file owns one memberless gate and must restore it after
+ * use (concurrent runs must never contend on shared rows).
+ */
+export const SEED_ORG_ROLE_USERS = [
+  {
+    key: "admin",
+    name: "Seed Admin",
+    email: "seed-admin@example.org",
+    hostingRole: ORGANIZATION_ROLES.OrganizationAdmin,
+  },
+  {
+    key: "coordinator",
+    name: "Seed Coordinator",
+    email: "seed-coordinator@example.org",
+    hostingRole: ORGANIZATION_ROLES.ProjectCoordinator,
+  },
+  {
+    key: "participant",
+    name: "Seed Participant",
+    email: "seed-participant@example.org",
+    hostingRole: ORGANIZATION_ROLES.Participant,
+  },
+  {
+    key: "hybridAdmin",
+    name: "Seed Hybrid Admin",
+    email: "seed-hybrid-admin@example.org",
+    hostingRole: `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+  },
+  {
+    key: "hybridCoordinator",
+    name: "Seed Hybrid Coordinator",
+    email: "seed-hybrid-coordinator@example.org",
+    hostingRole: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+  },
+  {
+    key: "outsider",
+    name: "Seed Outsider",
+    email: "seed-outsider@example.org",
+    hostingRole: null,
+  },
+  {
+    key: "creator",
+    name: "Seed Creator",
+    email: "seed-creator@example.org",
+    hostingRole: null,
+  },
+] as const;
+
+export const SEED_ORG_ROLE_EMAILS = SEED_ORG_ROLE_USERS.map(
+  (entry) => entry.email,
+);
 
 interface SeedTravelLegDefinition {
   transportEmissionProfile: ProjectSharedTransportEmissionProfile;
@@ -232,6 +296,60 @@ export const SEED_SCENARIOS = {
     name: SEED_USER.name,
     description:
       "Seed organization owner, host coordinator, partner coordinator, and showcase Participant.",
+  },
+  adminUser: {
+    kind: "user",
+    email: "seed-admin@example.org",
+    name: "Seed Admin",
+    hostingRole: ORGANIZATION_ROLES.OrganizationAdmin,
+    description:
+      "Seed Hosting Organization administrator for staff-invite and permission checks.",
+  },
+  coordinatorUser: {
+    kind: "user",
+    email: "seed-coordinator@example.org",
+    name: "Seed Coordinator",
+    hostingRole: ORGANIZATION_ROLES.ProjectCoordinator,
+    description:
+      "Seed Hosting Organization coordinator for staff/assignment scope checks.",
+  },
+  participantUser: {
+    kind: "user",
+    email: "seed-participant@example.org",
+    name: "Seed Participant",
+    hostingRole: ORGANIZATION_ROLES.Participant,
+    description:
+      "Seed Hosting Organization participant for negative authorization scenarios.",
+  },
+  hybridAdminUser: {
+    kind: "user",
+    email: "seed-hybrid-admin@example.org",
+    name: "Seed Hybrid Admin",
+    hostingRole: `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+    description:
+      "Seed combined-authority administrator for membership role-matrix checks.",
+  },
+  hybridCoordinatorUser: {
+    kind: "user",
+    email: "seed-hybrid-coordinator@example.org",
+    name: "Seed Hybrid Coordinator",
+    hostingRole: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+    description:
+      "Seed combined-authority coordinator for membership role-matrix checks.",
+  },
+  outsiderUser: {
+    kind: "user",
+    email: "seed-outsider@example.org",
+    name: "Seed Outsider",
+    description:
+      "Seed membership-free user: outsider-denied scenarios and Cost Tracker case-Organization creator. Restore to memberless after use.",
+  },
+  creatorUser: {
+    kind: "user",
+    email: "seed-creator@example.org",
+    name: "Seed Creator",
+    description:
+      "Second membership-free user so parallel creator files never contend on one memberless gate. Restore to memberless after use.",
   },
   showcaseProject: {
     kind: "project",
@@ -382,6 +500,42 @@ async function ensureMembership(
   });
 }
 
+/**
+ * Named Hosting Organization actors for #266 (find-or-create, never
+ * rewrites developer-modified seed rows). The outsider intentionally keeps
+ * zero Memberships so outsider-denied and first-Organization-creation
+ * scenarios resolve seeded rows.
+ */
+async function ensureSeedOrgRoleUsers(
+  db: SeedDatabase,
+  orgId: string,
+): Promise<void> {
+  for (const entry of SEED_ORG_ROLE_USERS) {
+    const existing = await db.query.user.findFirst({
+      where: eq(user.email, entry.email),
+    });
+    let userId: string;
+    if (existing) {
+      userId = existing.id;
+    } else {
+      userId = createId();
+      await db.insert(user).values({
+        id: userId,
+        name: entry.name,
+        email: entry.email,
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      console.log(`✅ User created: ${entry.email} (ID: ${userId})`);
+    }
+    await ensurePasswordAccount(db, userId);
+    if (entry.hostingRole !== null) {
+      await ensureMembership(db, orgId, userId, entry.hostingRole, new Date());
+    }
+  }
+}
+
 async function ensureSeedProject(
   db: SeedDatabase,
   orgId: string,
@@ -488,6 +642,9 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     hostingMembershipCreatedAt,
   );
   console.log("✅ User set as organization owner");
+
+  console.log("👥 Ensuring named Hosting Organization role actors...");
+  await ensureSeedOrgRoleUsers(db, orgId);
 
   console.log("📁 Ensuring projects...");
   const projectIds: string[] = [];
@@ -721,9 +878,12 @@ export async function resetSeedData(
       "Refusing to reset seed data without explicit confirmation: pass { confirmSeedReset: true }.",
     );
   }
-  const seedUser = await db.query.user.findFirst({
-    where: eq(user.email, SEED_USER.email),
+  const seedEmails = [SEED_USER.email, ...SEED_ORG_ROLE_EMAILS];
+  const seedUsers = await db.query.user.findMany({
+    where: inArray(user.email, seedEmails),
   });
+  const seedUserByEmail = new Map(seedUsers.map((entry) => [entry.email, entry]));
+  const seedUser = seedUserByEmail.get(SEED_USER.email);
   const seedOrganizations = await db.query.organization.findMany({
     where: inArray(organization.slug, [
       SEED_ORGANIZATION.slug,
@@ -879,18 +1039,21 @@ export async function resetSeedData(
       .delete(projectsTable)
       .where(inArray(projectsTable.id, seedProjectIds as string[]));
   }
-  if (seedUser && seedOrgIds.length > 0) {
+  const seedUserIds = seedUsers.map((entry) => entry.id);
+  if (seedUserIds.length > 0 && seedOrgIds.length > 0) {
     await db
       .delete(member)
       .where(
         and(
-          eq(member.userId, seedUser.id),
+          inArray(member.userId, seedUserIds as string[]),
           inArray(member.organizationId, seedOrgIds as string[]),
         ),
       );
-    await db
-      .delete(participantProfilesTable)
-      .where(eq(participantProfilesTable.userId, seedUser.id));
+    for (const seedUserId of seedUserIds) {
+      await db
+        .delete(participantProfilesTable)
+        .where(eq(participantProfilesTable.userId, seedUserId));
+    }
   }
   // Never cascade-delete a seed Organization that still carries non-seed
   // rows (developer projects, other memberships). Those dependents survive
@@ -906,10 +1069,12 @@ export async function resetSeedData(
       .where(inArray(organization.id, removableOrgIds as string[]));
   }
   let users = 0;
-  if (seedUser) {
-    await db.delete(account).where(eq(account.userId, seedUser.id));
-    await db.delete(user).where(eq(user.id, seedUser.id));
-    users = 1;
+  if (seedUserIds.length > 0) {
+    for (const seedUserId of seedUserIds) {
+      await db.delete(account).where(eq(account.userId, seedUserId));
+      await db.delete(user).where(eq(user.id, seedUserId));
+    }
+    users = seedUserIds.length;
   }
   return {
     users,

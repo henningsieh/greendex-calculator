@@ -17,12 +17,20 @@ const SEED_MODULE_ENV = "SEED_MODULE_PATH";
 
 interface CanonicalSeedIdentity {
   email: string;
+  seedEmails: string[];
   organizationSlugs: string[];
   projectNames: string[];
   scenarios: {
     hostingOrganization: { slug: string };
     partnerOrganization: { slug: string };
     ownerUser: { email: string };
+    adminUser: { email: string; hostingRole: string };
+    coordinatorUser: { email: string; hostingRole: string };
+    participantUser: { email: string; hostingRole: string };
+    hybridAdminUser: { email: string; hostingRole: string };
+    hybridCoordinatorUser: { email: string; hostingRole: string };
+    outsiderUser: { email: string };
+    creatorUser: { email: string };
     showcaseProject: { name: string };
     showcaseJourney: { origin: string; destination: string };
     showcaseClaim: { status: string };
@@ -74,6 +82,7 @@ async function readSeedIdentities(
     databaseUrl,
     `console.log(JSON.stringify({
       email: seedModule.SEED_USER.email,
+      seedEmails: [seedModule.SEED_USER.email, ...seedModule.SEED_ORG_ROLE_EMAILS],
       organizationSlugs: [seedModule.SEED_ORGANIZATION.slug, seedModule.SEED_PARTNER_ORGANIZATION.slug],
       projectNames: seedModule.SEED_PROJECTS.map((project) => project.name),
       scenarios: seedModule.SEED_SCENARIOS,
@@ -192,7 +201,7 @@ async function readSeedCounts(
   const result = await pool.query(
     `
     SELECT
-      (SELECT count(*)::int FROM "user" WHERE email = $1) AS users,
+      (SELECT count(*)::int FROM "user" WHERE email = ANY ($1)) AS users,
       (SELECT count(*)::int FROM organization WHERE slug = ANY ($2)) AS organizations,
       (SELECT count(*)::int FROM project WHERE name = ANY ($3)) AS projects,
       (SELECT count(*)::int FROM project_shared_travel_leg leg
@@ -203,17 +212,22 @@ async function readSeedCounts(
         WHERE p.name = ANY ($3) AND o.slug = ANY ($2)) AS partnerships,
       (SELECT count(*)::int FROM project_participant participant
         JOIN project p ON p.id = participant.project_id
-        WHERE p.name = ANY ($3) AND participant.email = $1) AS participations,
+        WHERE p.name = ANY ($3) AND participant.email = $4) AS participations,
       (SELECT count(*)::int FROM participant_journey journey
         JOIN project_participant participant ON participant.id = journey.project_participant_id
         JOIN project p ON p.id = participant.project_id
-        WHERE p.name = ANY ($3) AND participant.email = $1) AS journeys,
+        WHERE p.name = ANY ($3) AND participant.email = $4) AS journeys,
       (SELECT count(*)::int FROM claim
         JOIN project_partner_organization partnership ON partnership.id = claim.partnership_id
         JOIN project p ON p.id = partnership.project_id
         WHERE p.name = ANY ($3)) AS claims
     `,
-    [identities.email, identities.organizationSlugs, identities.projectNames],
+    [
+      identities.seedEmails,
+      identities.organizationSlugs,
+      identities.projectNames,
+      identities.email,
+    ],
   );
   const row = result.rows[0] as Record<string, string | number>;
   return {
@@ -244,7 +258,7 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(identities.email).toBe(SEED_USER.email);
     const countsAfterCliSeed = await readSeedCounts(pool, identities);
     expect(countsAfterCliSeed).toEqual({
-      users: 1,
+      users: identities.seedEmails.length,
       organizations: 2,
       projects: identities.projectNames.length,
       travelLegs: countsAfterCliSeed.travelLegs,
@@ -299,6 +313,43 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(summary.organizationId).toBe(resolved.hosting_org_id);
     expect(summary.partnerOrganizationId).toBe(resolved.partner_org_id);
     expect(summary.projectIds).toContain(resolved.showcase_project_id);
+
+    // Named Hosting Organization role actors resolve to seeded Memberships;
+    // the outsider stays membership-free for denied/creation scenarios.
+    const roleActors = await pool.query(
+      `
+      SELECT u.email, m.role, m.organization_id AS organization_id
+      FROM "user" u LEFT JOIN member m
+        ON m.user_id = u.id
+        AND m.organization_id = $1
+      WHERE u.email = ANY ($2)
+      `,
+      [resolved.hosting_org_id, identities.seedEmails],
+    );
+    const roleByEmail = new Map(
+      roleActors.rows.map((row) => [
+        row.email as string,
+        row.role as string | null,
+      ]),
+    );
+    expect(roleByEmail.get(identities.scenarios.adminUser.email)).toBe(
+      identities.scenarios.adminUser.hostingRole,
+    );
+    expect(roleByEmail.get(identities.scenarios.coordinatorUser.email)).toBe(
+      identities.scenarios.coordinatorUser.hostingRole,
+    );
+    expect(roleByEmail.get(identities.scenarios.participantUser.email)).toBe(
+      identities.scenarios.participantUser.hostingRole,
+    );
+    expect(roleByEmail.get(identities.scenarios.hybridAdminUser.email)).toBe(
+      identities.scenarios.hybridAdminUser.hostingRole,
+    );
+    expect(
+      roleByEmail.get(identities.scenarios.hybridCoordinatorUser.email),
+    ).toBe(identities.scenarios.hybridCoordinatorUser.hostingRole);
+    expect(roleByEmail.get(identities.scenarios.outsiderUser.email)).toBeNull();
+    expect(roleByEmail.get(identities.scenarios.creatorUser.email)).toBeNull();
+    expect(roleByEmail.get(identities.scenarios.ownerUser.email)).not.toBeNull();
   });
 }, 120_000);
 
@@ -365,6 +416,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
     };
     expect(report.projects).toBe(identities.projectNames.length);
     expect(report.travelLegs).toBe(canonicalCounts.travelLegs);
+    expect(report.users).toBe(identities.seedEmails.length);
     expect(report.retainedOrganizationSlugs).toEqual([
       identities.scenarios.hostingOrganization.slug,
     ]);
