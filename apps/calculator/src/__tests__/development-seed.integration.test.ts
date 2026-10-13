@@ -34,6 +34,10 @@ interface CanonicalSeedIdentity {
     showcaseProject: { name: string };
     showcaseJourney: { origin: string; destination: string };
     showcaseClaim: { status: string };
+    participantWithoutJourney: { email: string };
+    unlinkedParticipation: { email: string };
+    unlinkedJourney: { origin: string; destination: string };
+    partnerProject: { name: string };
   };
 }
 
@@ -98,6 +102,7 @@ async function runModuleSeed(databaseUrl: string): Promise<{
   organizationId: string;
   partnerOrganizationId: string;
   projectIds: string[];
+  partnerProjectId: string;
 }> {
   const output = await runSeedModule(
     databaseUrl,
@@ -109,6 +114,7 @@ async function runModuleSeed(databaseUrl: string): Promise<{
       organizationId: summary.organizationId,
       partnerOrganizationId: summary.partnerOrganizationId,
       projectIds: summary.projectIds,
+      partnerProjectId: summary.partnerProjectId,
     }));`,
   );
   return JSON.parse(output) as {
@@ -118,6 +124,7 @@ async function runModuleSeed(databaseUrl: string): Promise<{
     organizationId: string;
     partnerOrganizationId: string;
     projectIds: string[];
+    partnerProjectId: string;
   };
 }
 
@@ -293,7 +300,15 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
         (SELECT claim.id FROM claim
           JOIN project_partner_organization partnership ON partnership.id = claim.partnership_id
           JOIN project p ON p.id = partnership.project_id
-          WHERE p.name = $4 AND claim.status = $7) AS showcase_claim_id
+          WHERE p.name = $4 AND claim.status = $7) AS showcase_claim_id,
+        (SELECT participant.id FROM project_participant participant
+          JOIN project p ON p.id = participant.project_id
+          WHERE p.name = $4 AND participant.email = $8) AS bare_participation_id,
+        (SELECT journey.id FROM participant_journey journey
+          JOIN project_participant participant ON participant.id = journey.project_participant_id
+          WHERE participant.email = $9 AND journey.origin = $10 AND journey.destination = $11) AS unlinked_journey_id,
+        (SELECT id FROM project WHERE name = $12) AS partner_project_id,
+        (SELECT organization_id FROM project WHERE name = $12) AS partner_project_org_id
       `,
       [
         identities.scenarios.hostingOrganization.slug,
@@ -303,6 +318,11 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
         identities.scenarios.showcaseJourney.origin,
         identities.scenarios.showcaseJourney.destination,
         identities.scenarios.showcaseClaim.status,
+        identities.scenarios.participantWithoutJourney.email,
+        identities.scenarios.unlinkedParticipation.email,
+        identities.scenarios.unlinkedJourney.origin,
+        identities.scenarios.unlinkedJourney.destination,
+        identities.scenarios.partnerProject.name,
       ],
     );
     const resolved = scenarios.rows[0] as Record<string, string | null>;
@@ -313,6 +333,28 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(summary.organizationId).toBe(resolved.hosting_org_id);
     expect(summary.partnerOrganizationId).toBe(resolved.partner_org_id);
     expect(summary.projectIds).toContain(resolved.showcase_project_id);
+    // Journey-scenario rows (#267): the linked bare Participation keeps no
+    // Journey, the login-free Participation owns the Prague journey, and the
+    // Partner Project belongs to the Partner Organization.
+    const bareJourneys = await pool.query(
+      `SELECT id FROM participant_journey WHERE project_participant_id = $1`,
+      [resolved.bare_participation_id],
+    );
+    expect(bareJourneys.rows).toHaveLength(0);
+    const unlinkedOwner = await pool.query(
+      `SELECT user_id, display_name FROM project_participant WHERE id = $1`,
+      [
+        (
+          await pool.query(
+            `SELECT project_participant_id FROM participant_journey WHERE id = $1`,
+            [resolved.unlinked_journey_id],
+          )
+        ).rows[0].project_participant_id,
+      ],
+    );
+    expect(unlinkedOwner.rows[0].user_id).toBeNull();
+    expect(resolved.partner_project_org_id).toBe(resolved.partner_org_id);
+    expect(summary.partnerProjectId).toBe(resolved.partner_project_id);
 
     // Named Hosting Organization role actors resolve to seeded Memberships;
     // the outsider stays membership-free for denied/creation scenarios.
@@ -414,7 +456,8 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
       travelLegs: number;
       retainedOrganizationSlugs: string[];
     };
-    expect(report.projects).toBe(identities.projectNames.length);
+    // Ten hosting Projects plus the Partner-owned scoping Project (#267).
+    expect(report.projects).toBe(identities.projectNames.length + 1);
     expect(report.travelLegs).toBe(canonicalCounts.travelLegs);
     expect(report.users).toBe(identities.seedEmails.length);
     expect(report.retainedOrganizationSlugs).toEqual([

@@ -12,9 +12,10 @@ import { Buffer } from "node:buffer";
  * Stable identities and scenario registry:
  * - The Seed Owner (`SEED_USER`), the Hosting Organization (`seed-org`), the
  *   Seed Partner Organization (`seed-partner-org`), the ten `SEED_PROJECTS`,
- *   and the showcase slice (partnership, Project Participation, Participant
- *   Journey, editable Claim) are found by stable logical identity (email,
- *   slug, project name) on every run. `SEED_SCENARIOS` is the discoverable
+ *   the Partner-owned `SEED_PARTNER_PROJECT`, and the showcase slice
+ *   (partnership, Project Participations, Participant Journeys, editable
+ *   Claim) are found by stable logical identity (email, slug, project name)
+ *   on every run. `SEED_SCENARIOS` is the discoverable
  *   registry tests and developers reference instead of inventing setup data.
  *   `SEED_ORG_ROLE_USERS` adds the named Hosting Organization role actors
  *   (admin, coordinator, participant, combined-authority hybrids) plus a
@@ -253,6 +254,32 @@ function legTravelDate(projectStartDate: string, offsetDays: number): Date {
   );
 }
 
+/** Partner-owned Project for cross-Organization scoping checks (Calculator #267).
+ * Owned by the Seed Partner Organization so active-Organization checks resolve
+ * a seeded foreign Project instead of a private fixture. The name stays outside
+ * `SEED_PROJECTS` so hosting-Project counts keep converging on the ten basics. */
+export const SEED_PARTNER_PROJECT = {
+  name: "Seed Partner Project",
+  city: "Lyon",
+  country: "FR",
+  startDate: "2024-06-10",
+  endDate: "2024-06-15",
+} as const;
+
+/** Stable identity for the seeded Participation without a login (Calculator #267). */
+export const SEED_UNLINKED_PARTICIPANT = {
+  displayName: "Seed Participation without login",
+  email: "seed-unlinked-participant@example.org",
+} as const;
+
+/** Seeded Journey on the login-free Participation (Calculator #267). */
+export const SEED_UNLINKED_JOURNEY = {
+  origin: "Prague",
+  destination: "Berlin",
+  tripType: "one-way",
+  erasmusDistanceKm: "350.00",
+} as const;
+
 /** Showcase slice: one complete cross-app Journey on the first Project with an editable Claim. */
 export const SEED_SHOWCASE = {
   projectScenarioId: "seed-showcase-workshop",
@@ -376,6 +403,33 @@ export const SEED_SCENARIOS = {
     ...SEED_SHOWCASE.claim,
     description: "Editable train Travel Cost Entry claim for EUR 120.",
   },
+  participantWithoutJourney: {
+    kind: "participation",
+    projectScenarioId: SEED_SHOWCASE.projectScenarioId,
+    email: "seed-participant@example.org",
+    displayName: "Seed Participant",
+    description:
+      "Seed linked Participation without a Participant Journey for journey-null reads.",
+  },
+  unlinkedParticipation: {
+    kind: "participation",
+    projectScenarioId: SEED_SHOWCASE.projectScenarioId,
+    email: SEED_UNLINKED_PARTICIPANT.email,
+    displayName: SEED_UNLINKED_PARTICIPANT.displayName,
+    description:
+      "Seed login-free Participation for Participation-owned display-field reads.",
+  },
+  unlinkedJourney: {
+    kind: "journey",
+    ...SEED_UNLINKED_JOURNEY,
+    description: "Prague to Berlin one-way Participant Journey (350 km).",
+  },
+  partnerProject: {
+    kind: "project",
+    name: SEED_PARTNER_PROJECT.name,
+    description:
+      "Seed Partner Organization-owned Project for cross-Organization scoping checks.",
+  },
 } as const;
 
 export interface SeedSummary {
@@ -383,6 +437,8 @@ export interface SeedSummary {
   organizationId: string;
   partnerOrganizationId: string;
   projectIds: string[];
+  /** Partner-owned Project for cross-Organization scoping checks (#267). */
+  partnerProjectId: string;
   travelLegsEnsured: number;
   scenarios: typeof SEED_SCENARIOS;
 }
@@ -789,6 +845,72 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
         erasmusDistanceKm: SEED_SHOWCASE.journey.erasmusDistanceKm,
       });
     }
+    // Journey-null reads (#267): a linked Participation that intentionally
+    // keeps no Participant Journey. Looked up by stable email, never duplicated.
+    const participantActor = await tx.query.user.findFirst({
+      where: eq(user.email, "seed-participant@example.org"),
+    });
+    const existingBareParticipation =
+      await tx.query.projectParticipantsTable.findFirst({
+        where: (participants, { and }) =>
+          and(
+            eq(participants.projectId, projectId),
+            eq(participants.email, "seed-participant@example.org"),
+          ),
+      });
+    if (!existingBareParticipation && participantActor) {
+      await tx.insert(projectParticipantsTable).values({
+        id: createId(),
+        projectId,
+        representedOrganizationId: partnerId,
+        userId: participantActor.id,
+        displayName: participantActor.name,
+        email: participantActor.email,
+        country: SEED_PARTNER_ORGANIZATION.country,
+      });
+    }
+    // Participation-owned display fields (#267): a login-free Participation
+    // with its own Journey. No User row, no allocation, so the showcase
+    // claim slice keeps resolving to exactly one row.
+    const existingUnlinkedParticipation =
+      await tx.query.projectParticipantsTable.findFirst({
+        where: (participants, { and }) =>
+          and(
+            eq(participants.projectId, projectId),
+            eq(participants.email, SEED_UNLINKED_PARTICIPANT.email),
+          ),
+      });
+    let unlinkedParticipationId: string | null = null;
+    if (existingUnlinkedParticipation) {
+      unlinkedParticipationId = existingUnlinkedParticipation.id;
+    } else {
+      unlinkedParticipationId = createId();
+      await tx.insert(projectParticipantsTable).values({
+        id: unlinkedParticipationId,
+        projectId,
+        representedOrganizationId: partnerId,
+        userId: null,
+        displayName: SEED_UNLINKED_PARTICIPANT.displayName,
+        email: SEED_UNLINKED_PARTICIPANT.email,
+        country: SEED_PARTNER_ORGANIZATION.country,
+      });
+    }
+    const existingUnlinkedJourney =
+      await tx.query.participantJourneysTable.findFirst({
+        where: eq(
+          participantJourneysTable.projectParticipantId,
+          unlinkedParticipationId,
+        ),
+      });
+    if (!existingUnlinkedJourney && unlinkedParticipationId) {
+      await tx.insert(participantJourneysTable).values({
+        projectParticipantId: unlinkedParticipationId,
+        origin: SEED_UNLINKED_JOURNEY.origin,
+        destination: SEED_UNLINKED_JOURNEY.destination,
+        tripType: SEED_UNLINKED_JOURNEY.tripType,
+        erasmusDistanceKm: SEED_UNLINKED_JOURNEY.erasmusDistanceKm,
+      });
+    }
     const existingClaim = await tx.query.claimsTable.findFirst({
       where: eq(claimsTable.partnershipId, partnershipId),
     });
@@ -827,11 +949,45 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     where: eq(organization.slug, SEED_PARTNER_ORGANIZATION.slug),
   });
 
+  // Partner-owned Project for cross-Organization scoping checks (#267).
+  // Find-or-create by stable name inside the Partner Organization; it carries
+  // no partnership, legs, or participations so showcase counts keep converging.
+  let partnerProjectId = "";
+  if (partnerOrganization) {
+    const existingPartnerProject = await db.query.projectsTable.findFirst({
+      where: (projects, { and }) =>
+        and(
+          eq(projects.organizationId, partnerOrganization.id),
+          eq(projects.name, SEED_PARTNER_PROJECT.name),
+        ),
+    });
+    if (existingPartnerProject) {
+      partnerProjectId = existingPartnerProject.id;
+    } else {
+      partnerProjectId = createId();
+      await db.insert(projectsTable).values({
+        id: partnerProjectId,
+        name: SEED_PARTNER_PROJECT.name,
+        startDate: new Date(`${SEED_PARTNER_PROJECT.startDate}T00:00:00Z`),
+        endDate: new Date(`${SEED_PARTNER_PROJECT.endDate}T00:00:00Z`),
+        location: SEED_PARTNER_PROJECT.city,
+        country: SEED_PARTNER_PROJECT.country,
+        welcomeMessage: `Welcome to ${SEED_PARTNER_PROJECT.name}!`,
+        organizationId: partnerOrganization.id,
+        archived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      console.log(`  ✅ Partner Project: ${SEED_PARTNER_PROJECT.name}`);
+    }
+  }
+
   return {
     userId,
     organizationId: orgId,
     partnerOrganizationId: partnerOrganization?.id ?? "",
     projectIds,
+    partnerProjectId,
     travelLegsEnsured: totalTravelLegsEnsured,
     scenarios: SEED_SCENARIOS,
   };
@@ -891,7 +1047,10 @@ export async function resetSeedData(
     ]),
   });
   const seedOrgIds = seedOrganizations.map((org) => org.id);
-  const canonicalNames = SEED_PROJECTS.map((project) => project.name);
+  const canonicalNames = [
+    ...SEED_PROJECTS.map((project) => project.name),
+    SEED_PARTNER_PROJECT.name,
+  ];
   const seedProjects =
     seedOrgIds.length > 0
       ? await db.query.projectsTable.findMany({
@@ -987,13 +1146,23 @@ export async function resetSeedData(
         seedProjectIds as string[],
       ),
     });
-    const seedParticipations = seedUser
-      ? participations.filter(
-          (participation) =>
-            participation.email === SEED_USER.email &&
-            participation.userId === seedUser.id,
-        )
-      : [];
+    // Seed-owned Participations on canonical Projects: the showcase Owner
+    // row plus the #267 journey-scenario rows (linked bare Participation,
+    // login-free Participation). Matched by stable seed email so developer
+    // Participations on the same Projects survive a reset.
+    const seedParticipationEmails = new Set([
+      SEED_USER.email,
+      "seed-participant@example.org",
+      SEED_UNLINKED_PARTICIPANT.email,
+    ]);
+    const seedParticipations = participations.filter(
+      (participation) =>
+        participation.email !== null &&
+        seedParticipationEmails.has(participation.email) &&
+        (participation.email !== SEED_USER.email ||
+          !seedUser ||
+          participation.userId === seedUser.id),
+    );
     for (const participation of seedParticipations) {
       await db
         .delete(participantJourneysTable)

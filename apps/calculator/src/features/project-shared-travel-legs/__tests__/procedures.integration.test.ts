@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+import { SEED_USER } from "@greendex/auth/seed-user";
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import {
   organization,
   projectSharedTravelLegsTable,
   projectsTable,
-  user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { eq } from "drizzle-orm";
@@ -34,92 +34,108 @@ vi.mock("@/lib/better-auth", () => ({
 
 import { router } from "@/lib/orpc/router";
 
-const userId = randomUUID();
-const organizationId = randomUUID();
-const projectId = randomUUID();
-const foreignOrganizationId = randomUUID();
-const foreignProjectId = randomUUID();
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). Legs are created, updated, and
+ * deleted through the supported procedures on a case Project owned by the
+ * seeded Hosting Organization; the seeded Partner-owned Project covers
+ * cross-Organization scoping. Cleanup removes only case rows — canonical
+ * seed legs on the showcase Project are never touched.
+ */
+const SEED_ORG_SLUG = "seed-org";
+const SEED_PARTNER_PROJECT_NAME = "Seed Partner Project";
+
+let ownerUserId = "";
+let ownerUserEmail = "";
+let seedOrgId = "";
+let caseProjectId = "";
+let partnerProjectId = "";
 const headers = new Headers();
 
 const client = createRouterClient(router, {
   context: async () => ({ headers }),
 });
 
+function mockSession() {
+  authMocks.getSession.mockResolvedValue({
+    session: {
+      id: randomUUID(),
+      userId: ownerUserId,
+      activeOrganizationId: seedOrgId,
+    },
+    user: {
+      id: ownerUserId,
+      name: "Seed Owner",
+      email: ownerUserEmail,
+    },
+  });
+  authMocks.hasPermission.mockResolvedValue({ success: true, error: null });
+}
+
 beforeAll(async () => {
-  await db.insert(user).values({
-    id: userId,
-    name: "Shared Travel Contract User",
-    email: `shared-travel-${userId}@example.com`,
-    emailVerified: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+  const seedOrg = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  await db.insert(organization).values({
-    country: "DE",
-    id: organizationId,
-    name: "Shared Travel Contract Organization",
-    slug: `shared-travel-${organizationId}`,
-    createdAt: new Date(),
+  if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+  const owner = await db.query.user.findFirst({
+    where: (users, { eq: eqUser }) => eqUser(users.email, SEED_USER.email),
   });
-  await db.insert(projectsTable).values({
-    id: projectId,
+  if (!owner) throw new Error("Canonical seed Owner is missing");
+  const partnerProject = await db.query.projectsTable.findFirst({
+    where: eq(projectsTable.name, SEED_PARTNER_PROJECT_NAME),
+  });
+  if (!partnerProject)
+    throw new Error("Canonical seed Partner Project is missing");
+  ownerUserId = owner.id;
+  ownerUserEmail = owner.email ?? SEED_USER.email;
+  seedOrgId = seedOrg.id;
+  partnerProjectId = partnerProject.id;
+  mockSession();
+  const created = await client.projects.create({
     name: "Shared Travel Contract Project",
     startDate: new Date("2026-01-01T00:00:00.000Z"),
     endDate: new Date("2026-12-31T00:00:00.000Z"),
     location: "Berlin",
     country: "DE" as EUCountryCode,
-    organizationId,
+    organizationId: seedOrgId,
+    welcomeMessage: "Case project for shared travel leg procedures",
   });
-  await db.insert(organization).values({
-    country: "DE",
-    id: foreignOrganizationId,
-    name: "Foreign Shared Travel Organization",
-    slug: `foreign-shared-travel-${foreignOrganizationId}`,
-    createdAt: new Date(),
-  });
-  await db.insert(projectsTable).values({
-    id: foreignProjectId,
-    name: "Foreign Shared Travel Project",
-    startDate: new Date("2026-01-01T00:00:00.000Z"),
-    endDate: new Date("2026-12-31T00:00:00.000Z"),
-    location: "Paris",
-    country: "FR" as EUCountryCode,
-    organizationId: foreignOrganizationId,
-  });
+  caseProjectId = created.project.id;
 });
 
 beforeEach(() => {
-  authMocks.getSession.mockResolvedValue({
-    session: {
-      id: randomUUID(),
-      userId,
-      activeOrganizationId: organizationId,
-    },
-    user: {
-      id: userId,
-      name: "Shared Travel Contract User",
-      email: `shared-travel-${userId}@example.com`,
-    },
-  });
-  authMocks.hasPermission.mockResolvedValue({ success: true, error: null });
+  mockSession();
 });
 
 afterEach(async () => {
+  // Scoped to the case Project: canonical seed legs are never deleted.
   await db
     .delete(projectSharedTravelLegsTable)
-    .where(eq(projectSharedTravelLegsTable.projectId, projectId));
-  await db
-    .delete(projectSharedTravelLegsTable)
-    .where(eq(projectSharedTravelLegsTable.projectId, foreignProjectId));
+    .where(eq(projectSharedTravelLegsTable.projectId, caseProjectId));
   vi.clearAllMocks();
 });
 
 afterAll(async () => {
-  await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
-  await db.delete(projectsTable).where(eq(projectsTable.id, foreignProjectId));
-  await db.delete(organization).where(eq(organization.id, organizationId));
-  await db.delete(organization).where(eq(organization.id, foreignOrganizationId));
-  await db.delete(user).where(eq(user.id, userId));
+  if (caseProjectId) {
+    await db
+      .delete(projectSharedTravelLegsTable)
+      .where(eq(projectSharedTravelLegsTable.projectId, caseProjectId));
+    await db.delete(projectsTable).where(eq(projectsTable.id, caseProjectId));
+    caseProjectId = "";
+  }
+  // Canonical actors survive every case: fail loudly on accidental deletion.
+  expect(
+    await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    }),
+    "canonical seed Organization was deleted",
+  ).not.toBeUndefined();
+  expect(
+    await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.name, SEED_PARTNER_PROJECT_NAME),
+    }),
+    "canonical seed Partner Project was deleted",
+  ).not.toBeUndefined();
 });
 
 describe("canonical Project Shared Travel Leg procedures", () => {
@@ -127,7 +143,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
     const travelDate = new Date("2026-05-12T00:00:00.000Z");
 
     const created = await client.projectSharedTravelLegs.create({
-      projectId,
+      projectId: caseProjectId,
       transportEmissionProfile: "electricCar",
       distanceKm: 42.5,
       description: "Station transfer",
@@ -136,7 +152,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
 
     expect(created.success).toBe(true);
     expect(created.sharedTravelLeg).toMatchObject({
-      projectId,
+      projectId: caseProjectId,
       transportEmissionProfile: "electricCar",
       distanceKm: 42.5,
       description: "Station transfer",
@@ -155,13 +171,13 @@ describe("canonical Project Shared Travel Leg procedures", () => {
     expect(persisted[0].travelDate).toEqual(travelDate);
 
     await expect(
-      client.projectSharedTravelLegs.list({ projectId }),
+      client.projectSharedTravelLegs.list({ projectId: caseProjectId }),
     ).resolves.toEqual([created.sharedTravelLeg]);
   });
 
   it("updates a leg through the canonical contract", async () => {
     const created = await client.projectSharedTravelLegs.create({
-      projectId,
+      projectId: caseProjectId,
       transportEmissionProfile: "train",
       distanceKm: 80,
       description: null,
@@ -170,7 +186,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
     const travelDate = new Date("2026-06-01T00:00:00.000Z");
 
     const updated = await client.projectSharedTravelLegs.update({
-      projectId,
+      projectId: caseProjectId,
       id: created.sharedTravelLeg.id,
       data: {
         transportEmissionProfile: "bus",
@@ -184,7 +200,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
       success: true,
       sharedTravelLeg: {
         id: created.sharedTravelLeg.id,
-        projectId,
+        projectId: caseProjectId,
         transportEmissionProfile: "bus",
         distanceKm: 81.2,
         description: "Updated shared transfer",
@@ -197,19 +213,19 @@ describe("canonical Project Shared Travel Leg procedures", () => {
     ) => Promise<unknown>;
     await expect(
       unsafeUpdate({
-        projectId,
+        projectId: caseProjectId,
         id: created.sharedTravelLeg.id,
         data: { transportEmissionProfile: "plane" },
       }),
     ).rejects.toThrow();
     await expect(
-      client.projectSharedTravelLegs.list({ projectId }),
+      client.projectSharedTravelLegs.list({ projectId: caseProjectId }),
     ).resolves.toMatchObject([{ transportEmissionProfile: "bus" }]);
   });
 
   it("deletes a leg through the canonical contract", async () => {
     const created = await client.projectSharedTravelLegs.create({
-      projectId,
+      projectId: caseProjectId,
       transportEmissionProfile: "boat",
       distanceKm: 15,
       description: null,
@@ -218,22 +234,22 @@ describe("canonical Project Shared Travel Leg procedures", () => {
 
     await expect(
       client.projectSharedTravelLegs.delete({
-        projectId,
+        projectId: caseProjectId,
         id: created.sharedTravelLeg.id,
       }),
     ).resolves.toEqual({ success: true });
     await expect(
-      client.projectSharedTravelLegs.list({ projectId }),
+      client.projectSharedTravelLegs.list({ projectId: caseProjectId }),
     ).resolves.toEqual([]);
   });
 
   it("preserves active-organization scoping and typed forbidden errors", async () => {
     await expect(
-      client.projectSharedTravelLegs.list({ projectId: foreignProjectId }),
+      client.projectSharedTravelLegs.list({ projectId: partnerProjectId }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(
       client.projectSharedTravelLegs.create({
-        projectId: foreignProjectId,
+        projectId: partnerProjectId,
         transportEmissionProfile: "train",
         distanceKm: 20,
         description: null,
@@ -244,7 +260,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
     const persisted = await db
       .select()
       .from(projectSharedTravelLegsTable)
-      .where(eq(projectSharedTravelLegsTable.projectId, foreignProjectId));
+      .where(eq(projectSharedTravelLegsTable.projectId, partnerProjectId));
     expect(persisted).toEqual([]);
   });
 
@@ -256,7 +272,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
       ) => Promise<unknown>;
       await expect(
         unsafeCreate({
-          projectId,
+          projectId: caseProjectId,
           transportEmissionProfile,
           distanceKm: 20,
           description: null,
@@ -264,7 +280,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
         }),
       ).rejects.toThrow();
       await expect(
-        client.projectSharedTravelLegs.list({ projectId }),
+        client.projectSharedTravelLegs.list({ projectId: caseProjectId }),
       ).resolves.toEqual([]);
     },
   );
