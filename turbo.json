@@ -31,6 +31,7 @@
     },
     "test:run": {
       "dependsOn": ["^build"],
+      "cache": false,
       "inputs": [
         "$TURBO_DEFAULT$",
         ".env*",
