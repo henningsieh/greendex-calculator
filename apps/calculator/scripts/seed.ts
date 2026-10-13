@@ -812,7 +812,11 @@ async function ensurePasswordAccount(db: SeedDatabase, userId: string) {
 
 async function ensureSeedOrganization(
   db: SeedDatabase,
-  definition: typeof SEED_ORGANIZATION | typeof SEED_PARTNER_ORGANIZATION,
+  definition:
+    | typeof SEED_ORGANIZATION
+    | typeof SEED_PARTNER_ORGANIZATION
+    | typeof SEED_SECOND_PARTNER_ORGANIZATION
+    | typeof SEED_THIRD_PARTNER_ORGANIZATION,
 ): Promise<string> {
   const existingOrg = await db.query.organization.findFirst({
     where: eq(organization.slug, definition.slug),
