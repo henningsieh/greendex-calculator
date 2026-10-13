@@ -176,6 +176,12 @@ export const SEED_ORG_ROLE_USERS = [
     hostingRole: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
   },
   {
+    key: "costTrackerPartnerOwner",
+    name: "Seed Cost Tracker Partner Owner",
+    email: "seed-cost-tracker-partner-owner@example.org",
+    hostingRole: null,
+  },
+  {
     key: "outsider",
     name: "Seed Outsider",
     email: "seed-outsider@example.org",
@@ -419,6 +425,12 @@ export const SEED_SCENARIOS = {
     name: SEED_PARTNER_ORGANIZATION.name,
     country: SEED_PARTNER_ORGANIZATION.country,
     description: "Seed Partner Organization for the cross-app showcase slice.",
+  },
+  costTrackerPartnerOwner: {
+    kind: "user",
+    email: "seed-cost-tracker-partner-owner@example.org",
+    description:
+      "Owner of the primary Partner Organization only; HTTP tenant-isolation actor with no Hosting Membership.",
   },
   ownerUser: {
     kind: "user",
@@ -1316,6 +1328,19 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
   const partnerOrganization = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_PARTNER_ORGANIZATION.slug),
   });
+
+  const costTrackerPartnerOwner = await db.query.user.findFirst({
+    where: eq(user.email, SEED_SCENARIOS.costTrackerPartnerOwner.email),
+  });
+  if (partnerOrganization && costTrackerPartnerOwner) {
+    await ensureMembership(
+      db,
+      partnerOrganization.id,
+      costTrackerPartnerOwner.id,
+      ORGANIZATION_ROLES.OrganizationOwner,
+      new Date(),
+    );
+  }
 
   // Partner-owned Project for cross-Organization scoping checks (#267).
   // Find-or-create by stable name inside the Partner Organization; it carries

@@ -12,9 +12,9 @@ import {
   user,
 } from "@greendex/database/schema";
 import { ORPCError, createRouterClient } from "@orpc/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
-  afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -34,14 +34,15 @@ import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
-const actor = `create-actor-${suffix}`;
-const host = `create-host-${suffix}`;
-const otherHost = `create-other-host-${suffix}`;
-const foreignProject = `create-foreign-project-${suffix}`;
-const unassignedProject = `create-unassigned-project-${suffix}`;
+/** Canonical Participant has no Hosting assignments; creation owns only its new Projects. */
+let actor = "";
+let host = "";
+let otherHost = "";
+let foreignProject = "";
+let unassignedProject = "";
+let baselineRole = "";
 const input = {
-  name: "New Workshop",
+  name: `New Workshop ${randomUUID()}`,
   startDate: new Date("2027-04-01T00:00:00.000Z"),
   endDate: new Date("2027-04-03T00:00:00.000Z"),
   location: "Berlin",
@@ -76,43 +77,38 @@ async function assignments() {
 
 describe("projects.create", () => {
   beforeAll(async () => {
-    const now = new Date();
-    await db.insert(user).values({
-      id: actor,
-      name: "Creator",
-      email: `${actor}@example.org`,
-      emailVerified: true,
+    const seededActor = await db.query.user.findFirst({
+      where: eq(user.email, "seed-participant@example.org"),
     });
-    await db.insert(organization).values(
-      [host, otherHost].map((id) => ({
-        country: "DE" as const,
-        id,
-        name: id,
-        slug: id,
-        createdAt: now,
-      })),
-    );
-    await db.insert(member).values({
-      id: randomUUID(),
-      userId: actor,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
+    const seededHost = await db.query.organization.findFirst({
+      where: eq(organization.slug, "seed-org"),
     });
-    await db.insert(projectsTable).values([
-      {
-        ...input,
-        id: foreignProject,
-        name: "Foreign workshop",
-        organizationId: otherHost,
-      },
-      {
-        ...input,
-        id: unassignedProject,
-        name: "Unassigned workshop",
-        organizationId: host,
-      },
-    ]);
+    const seededOther = await db.query.organization.findFirst({
+      where: eq(organization.slug, "seed-partner-org"),
+    });
+    const seededForeign = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.name, "Seed Partner Project"),
+    });
+    const seededUnassigned = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.name, "Eco-Innovation Summit"),
+    });
+    if (
+      !seededActor ||
+      !seededHost ||
+      !seededOther ||
+      !seededForeign ||
+      !seededUnassigned
+    )
+      throw new Error(
+        "Canonical seed required: run the isolated seeded lifecycle.",
+      );
+    actor = seededActor.id;
+    host = seededHost.id;
+    otherHost = seededOther.id;
+    foreignProject = seededForeign.id;
+    unassignedProject = seededUnassigned.id;
+    baselineRole = (await role())!;
+    expect(await assignments()).toEqual([]);
   });
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -131,15 +127,19 @@ describe("projects.create", () => {
         ),
       );
   });
-  afterAll(async () => {
+  afterEach(async () => {
     await db
       .delete(projectsTable)
-      .where(inArray(projectsTable.organizationId, [host, otherHost]));
-    await db.delete(member).where(eq(member.userId, actor));
+      .where(
+        and(
+          eq(projectsTable.organizationId, host),
+          eq(projectsTable.name, input.name),
+        ),
+      );
     await db
-      .delete(organization)
-      .where(inArray(organization.id, [host, otherHost]));
-    await db.delete(user).where(eq(user.id, actor));
+      .update(member)
+      .set({ role: baselineRole })
+      .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
   });
 
   it("adds coordination to a Participant without removing roles and assigns only created Projects", async () => {
@@ -256,7 +256,7 @@ describe("projects.create", () => {
     await db
       .update(member)
       .set({ role: membershipRole })
-      .where(eq(member.userId, actor));
+      .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
     const result = await client.projects.create(input);
     expect(await role()).toBe(membershipRole);
     expect(await assignments()).toEqual([{ projectId: result.id }]);
