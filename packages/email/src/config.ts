@@ -12,6 +12,10 @@ export interface SmtpConfig {
   host: string;
   port: number;
   secure: boolean;
+  /** Optional millisecond bounds; omitted values preserve Nodemailer's defaults. */
+  connectionTimeout?: number;
+  greetingTimeout?: number;
+  socketTimeout?: number;
   auth: {
     user: string;
     pass: string;
@@ -27,6 +31,15 @@ export function createTransporter(config: SmtpConfig): Transporter {
     port: config.port,
     secure: config.secure,
     auth: config.auth,
+    ...(config.connectionTimeout === undefined
+      ? {}
+      : { connectionTimeout: config.connectionTimeout }),
+    ...(config.greetingTimeout === undefined
+      ? {}
+      : { greetingTimeout: config.greetingTimeout }),
+    ...(config.socketTimeout === undefined
+      ? {}
+      : { socketTimeout: config.socketTimeout }),
   });
 }
 
