@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -27,6 +28,24 @@ vi.mock("server-only", () => ({}));
 import { INVALID_ROLE_MESSAGE } from "@/features/organizations/roles";
 import { auth } from "@/lib/auth";
 import { router } from "@/lib/orpc/router";
+
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). Cost Tracker permits Organization
+ * creation only for membership-free callers (single-Organization flag), so
+ * the membership-free seed creator owns this file's creation lane (the
+ * Organization-country suite owns the seed outsider lane; sharing one
+ * memberless gate races under parallel files).
+ * Invitations, acceptances, and role changes go through the supported
+ * behavior as the action under test. Case Organizations, Memberships, and
+ * invitations are removed afterwards; canonical actors are never deleted.
+ * Case-only users (cancelled/expired invitees) still sign up through the
+ * supported signup behavior and are tracked for cleanup.
+ */
+const SEED_CREATOR_EMAIL = "seed-creator@example.org";
+const SEED_ADMIN_EMAIL = "seed-admin@example.org";
+const SEED_PARTICIPANT_EMAIL = "seed-participant@example.org";
+const SEED_ORG_SLUG = "seed-org";
 
 const createdEmails: string[] = [];
 const createdOrganizationIds: string[] = [];
@@ -61,6 +80,20 @@ async function signUpVerified(name: string, email: string) {
   return cookieHeaders(cookie);
 }
 
+async function seedSession(email: string) {
+  const stored = await db.query.user.findFirst({
+    where: eq(user.email, email),
+  });
+  if (!stored) throw new Error(`Seed user is missing: ${email}`);
+  const response = await auth.api.signInEmail({
+    body: { email, password: SEED_USER.password },
+    asResponse: true,
+  });
+  const cookie = response.headers.get("set-cookie")?.split(";")[0];
+  if (!cookie) throw new Error("Sign-in did not create a session cookie");
+  return cookieHeaders(cookie);
+}
+
 afterEach(async () => {
   for (const email of createdEmails.splice(0)) {
     await db.delete(user).where(eq(user.email, email));
@@ -79,15 +112,39 @@ afterEach(async () => {
     await db.delete(member).where(eq(member.userId, userId));
     await db.delete(user).where(eq(user.id, userId));
   }
+  // Canonical actors survive every case: fail loudly on accidental deletion,
+  // and the seed outsider stays membership-free for the next case creator.
+  expect(
+    await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    }),
+    "canonical seed Organization was deleted",
+  ).not.toBeUndefined();
+  for (const email of [
+    SEED_CREATOR_EMAIL,
+    SEED_ADMIN_EMAIL,
+    SEED_PARTICIPANT_EMAIL,
+  ]) {
+    expect(
+      await db.query.user.findFirst({ where: eq(user.email, email) }),
+      `canonical seed User was deleted: ${email}`,
+    ).not.toBeUndefined();
+  }
+  const creator = await db.query.user.findFirst({
+    where: eq(user.email, SEED_CREATOR_EMAIL),
+  });
+  expect(
+    await db.query.member.findMany({
+      where: eq(member.userId, creator!.id),
+    }),
+    "seed creator kept a case Membership",
+  ).toEqual([]);
   vi.clearAllMocks();
 });
 
 describe("organizations staff invites (Better Auth underneath)", () => {
   it("refuses fallback invitations, additions, and role updates without persisting or sending mail", async () => {
-    const ownerHeaders = await signUpVerified(
-      "Ban Owner",
-      uniqueEmail("ban-owner"),
-    );
+    const ownerHeaders = await seedSession(SEED_CREATOR_EMAIL);
     const created = await auth.api.createOrganization({
       body: {
         country: "DE" as const,
@@ -98,13 +155,10 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     });
     createdOrganizationIds.push(created.id);
     const owner = (await auth.api.getSession({ headers: ownerHeaders }))!.user;
-    const targetEmail = uniqueEmail("ban-target");
-    const targetHeaders = await signUpVerified("Ban Target", targetEmail);
+    const targetEmail = `staff-invite-ban-target-${randomUUID()}@example.com`;
+    const targetHeaders = await seedSession(SEED_PARTICIPANT_EMAIL);
     const target = (await auth.api.getSession({ headers: targetHeaders }))!.user;
-    const updateHeaders = await signUpVerified(
-      "Update Target",
-      uniqueEmail("ban-update"),
-    );
+    const updateHeaders = await seedSession(SEED_ADMIN_EMAIL);
     const updateTarget = (await auth.api.getSession({ headers: updateHeaders }))!
       .user;
     const updateMembership = await auth.api.addMember({
@@ -204,10 +258,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
   }, 30_000);
 
   it("refuses native resends before expiry updates or mail, including legacy pending roles", async () => {
-    const headers = await signUpVerified(
-      "Resend Owner",
-      uniqueEmail("resend-owner"),
-    );
+    const headers = await seedSession(SEED_CREATOR_EMAIL);
     const created = await auth.api.createOrganization({
       body: {
         country: "DE" as const,
@@ -307,8 +358,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
   }, 30_000);
 
   it("invites, accepts with the exact role, and cancels pending invites", async () => {
-    const ownerEmail = uniqueEmail(ORGANIZATION_ROLES.OrganizationOwner);
-    const ownerHeaders = await signUpVerified("Staff Owner", ownerEmail);
+    const ownerHeaders = await seedSession(SEED_CREATOR_EMAIL);
     const created = await auth.api.createOrganization({
       body: {
         country: "DE" as const,
@@ -326,7 +376,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       context: async () => ({ headers: ownerHeaders }),
     });
 
-    const memberEmail = uniqueEmail(ORGANIZATION_ROLES.OrganizationAdmin);
+    const memberEmail = SEED_ADMIN_EMAIL;
     const invited = await ownerClient.organizations.inviteMember({
       email: memberEmail,
       role: ORGANIZATION_ROLES.OrganizationAdmin,
@@ -355,7 +405,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       invited.invitationId,
     );
 
-    const memberHeaders = await signUpVerified("Staff Admin", memberEmail);
+    const memberHeaders = await seedSession(memberEmail);
     await expect(
       ownerClient.organizations.listMembers({}),
     ).resolves.toBeDefined();
@@ -456,8 +506,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
   }, 30_000);
 
   it("rejects Participant Invitations through the staff acceptance action", async () => {
-    const ownerEmail = uniqueEmail("bypass-owner");
-    const ownerHeaders = await signUpVerified("Bypass Owner", ownerEmail);
+    const ownerHeaders = await seedSession(SEED_CREATOR_EMAIL);
     const created = await auth.api.createOrganization({
       body: {
         country: "DE" as const,
@@ -468,7 +517,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     });
     createdOrganizationIds.push(created.id);
     const owner = await auth.api.getSession({ headers: ownerHeaders });
-    const inviteeEmail = uniqueEmail("invitee");
+    const inviteeEmail = SEED_PARTICIPANT_EMAIL;
     const [planted] = await db
       .insert(invitation)
       .values({
@@ -481,7 +530,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
         inviterId: owner!.user.id,
       })
       .returning({ id: invitation.id });
-    const inviteeHeaders = await signUpVerified("Invitee", inviteeEmail);
+    const inviteeHeaders = await seedSession(inviteeEmail);
     const inviteeClient = createRouterClient(router, {
       context: async () => ({ headers: inviteeHeaders }),
     });
@@ -496,8 +545,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
   });
 
   it("lets an admin invite admins but never owners", async () => {
-    const ownerEmail = uniqueEmail("admin-owner");
-    const ownerHeaders = await signUpVerified("Admin Owner", ownerEmail);
+    const ownerHeaders = await seedSession(SEED_CREATOR_EMAIL);
     const created = await auth.api.createOrganization({
       body: {
         country: "DE" as const,
@@ -508,7 +556,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     });
     createdOrganizationIds.push(created.id);
 
-    const adminEmail = uniqueEmail(ORGANIZATION_ROLES.OrganizationAdmin);
+    const adminEmail = SEED_ADMIN_EMAIL;
     const ownerClient = createRouterClient(router, {
       context: async () => ({ headers: ownerHeaders }),
     });
@@ -516,7 +564,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       email: adminEmail,
       role: ORGANIZATION_ROLES.OrganizationAdmin,
     });
-    const adminHeaders = await signUpVerified("Staff Admin", adminEmail);
+    const adminHeaders = await seedSession(adminEmail);
     await auth.api.acceptInvitation({
       body: { invitationId: adminInvite.invitationId },
       headers: adminHeaders,

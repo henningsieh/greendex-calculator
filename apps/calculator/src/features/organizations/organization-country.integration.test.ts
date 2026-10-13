@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -27,26 +28,32 @@ vi.mock("next/server", async (importOriginal) => ({
 
 import { auth } from "@/lib/better-auth";
 
-const userIds: string[] = [];
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). Setup signs in as these recognizable
+ * users; Organization creation, invitation, and role changes below go
+ * through the supported Better Auth behavior as the action under test.
+ * Case Organizations are removed afterwards; canonical actors are never
+ * deleted.
+ */
+const SEED_OWNER_EMAIL = SEED_USER.email;
+const SEED_PARTICIPANT_EMAIL = "seed-participant@example.org";
+const SEED_OUTSIDER_EMAIL = "seed-outsider@example.org";
+const SEED_ORG_SLUG = "seed-org";
+
 const organizationIds: string[] = [];
 
-async function account() {
-  const email = `organization-country-${randomUUID()}@example.org`;
-  const password = "organization-country-fixture-password";
-  const created = await auth.api.signUpEmail({
-    body: { email, password, name: "Country Owner" },
+async function seedSession(email: string) {
+  const stored = await db.query.user.findFirst({
+    where: eq(user.email, email),
   });
-  userIds.push(created.user.id);
-  await db
-    .update(user)
-    .set({ emailVerified: true })
-    .where(eq(user.id, created.user.id));
+  if (!stored) throw new Error(`Seed user is missing: ${email}`);
   const signedIn = await auth.api.signInEmail({
-    body: { email, password },
+    body: { email, password: SEED_USER.password },
     asResponse: true,
   });
   const cookie = signedIn.headers.get("set-cookie")!.split(";")[0]!;
-  return { userId: created.user.id, headers: new Headers({ cookie }) };
+  return { userId: stored.id, headers: new Headers({ cookie }) };
 }
 
 async function createOwnOrganization(headers: Headers) {
@@ -74,17 +81,36 @@ async function request(path: string, headers: Headers, body: unknown) {
 }
 
 afterEach(async () => {
-  if (organizationIds.length)
+  const caseOrgIds = organizationIds.splice(0);
+  if (caseOrgIds.length) {
+    await db.delete(member).where(inArray(member.organizationId, caseOrgIds));
     await db
-      .delete(organization)
-      .where(inArray(organization.id, organizationIds.splice(0)));
-  if (userIds.length)
-    await db.delete(user).where(inArray(user.id, userIds.splice(0)));
+      .delete(invitation)
+      .where(inArray(invitation.organizationId, caseOrgIds));
+    await db.delete(organization).where(inArray(organization.id, caseOrgIds));
+  }
+  // Canonical actors survive every case: fail loudly on accidental deletion.
+  expect(
+    await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    }),
+    "canonical seed Organization was deleted",
+  ).not.toBeUndefined();
+  for (const email of [
+    SEED_OWNER_EMAIL,
+    SEED_PARTICIPANT_EMAIL,
+    SEED_OUTSIDER_EMAIL,
+  ]) {
+    expect(
+      await db.query.user.findFirst({ where: eq(user.email, email) }),
+      `canonical seed User was deleted: ${email}`,
+    ).not.toBeUndefined();
+  }
 });
 
 describe("Organization country through Better Auth", () => {
   it("leaves Calculator multi-Organization creation enabled and uses the Owner creator role", async () => {
-    const owner = await account();
+    const owner = await seedSession(SEED_OWNER_EMAIL);
     const first = await createOwnOrganization(owner.headers);
     const second = await createOwnOrganization(owner.headers);
     expect(second.id).not.toBe(first.id);
@@ -95,7 +121,7 @@ describe("Organization country through Better Auth", () => {
   });
 
   it("rejects case-insensitive duplicate Organization names", async () => {
-    const owner = await account();
+    const owner = await seedSession(SEED_OWNER_EMAIL);
     const first = await createOwnOrganization(owner.headers);
     await expect(
       auth.api.createOrganization({
@@ -110,7 +136,7 @@ describe("Organization country through Better Auth", () => {
   });
 
   it("rejects unknown member roles before persistence", async () => {
-    const owner = await account();
+    const owner = await seedSession(SEED_OWNER_EMAIL);
     const organization = await createOwnOrganization(owner.headers);
     const email = `invited-${randomUUID()}@example.org`;
     const response = await request("invite-member", owner.headers, {
@@ -127,9 +153,9 @@ describe("Organization country through Better Auth", () => {
   });
 
   it("accepts native array role grants without replacing combined authority", async () => {
-    const owner = await account();
+    const owner = await seedSession(SEED_OWNER_EMAIL);
     const organization = await createOwnOrganization(owner.headers);
-    const target = await account();
+    const target = await seedSession(SEED_PARTICIPANT_EMAIL);
     const roles = [
       ORGANIZATION_ROLES.OrganizationOwner,
       ORGANIZATION_ROLES.Participant,
@@ -149,7 +175,7 @@ describe("Organization country through Better Auth", () => {
   });
 
   it("refuses missing, lowercase and non-EU country, then persists the selected EU country", async () => {
-    const owner = await account();
+    const owner = await seedSession(SEED_OWNER_EMAIL);
     for (const country of [undefined, null, "", "de", "US"]) {
       const id = randomUUID();
       const response = await request("create", owner.headers, {
@@ -171,7 +197,7 @@ describe("Organization country through Better Auth", () => {
   });
 
   it("lets an Owner correct their Organization country, refuses invalid corrections and denies an outsider", async () => {
-    const owner = await account();
+    const owner = await seedSession(SEED_OWNER_EMAIL);
     const created = await createOwnOrganization(owner.headers);
     const updated = await auth.api.updateOrganization({
       headers: owner.headers,
@@ -185,7 +211,7 @@ describe("Organization country through Better Auth", () => {
       });
       expect(response.status).toBe(400);
     }
-    const outsider = await account();
+    const outsider = await seedSession(SEED_OUTSIDER_EMAIL);
     const denied = await request("update", outsider.headers, {
       organizationId: created.id,
       data: { country: "IT" },
