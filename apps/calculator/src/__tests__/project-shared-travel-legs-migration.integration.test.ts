@@ -1,3 +1,8 @@
+/**
+ * Historical migration exception (#270): run-owned disposable empty databases.
+ * Exempt from the canonical seed rule; each case upgrades a historical fixture
+ * in a uniquely named database with target validation and cleanup.
+ */
 import { randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -10,15 +15,31 @@ const migrationsDirectory = resolve(
   "../../../../packages/database/src/migrations",
 );
 const priorMigrationPrefix = "0009_";
+const disposableNamePattern = /^[a-z_]+_[a-f0-9]{32}$/;
+
+function requireDatabaseUrl(): string {
+  const value = process.env.DATABASE_URL;
+  if (!value) throw new Error("DATABASE_URL is required for migration checks");
+  const protocol = new URL(value).protocol;
+  if (protocol !== "postgres:" && protocol !== "postgresql:")
+    throw new Error("DATABASE_URL must use postgres:");
+  return value;
+}
+
+function assertDisposableName(databaseName: string): void {
+  if (!disposableNamePattern.test(databaseName))
+    throw new Error("Invalid disposable database target");
+}
 
 function disposableDatabaseUrl(databaseName: string): string {
-  const url = new URL(process.env.DATABASE_URL!);
+  assertDisposableName(databaseName);
+  const url = new URL(requireDatabaseUrl());
   url.pathname = `/${databaseName}`;
   return url.toString();
 }
 
 function adminDatabaseUrl(): string {
-  const url = new URL(process.env.DATABASE_URL!);
+  const url = new URL(requireDatabaseUrl());
   url.pathname = "/postgres";
   return url.toString();
 }
@@ -74,8 +95,14 @@ async function createDisposableDatabase(): Promise<{
   pool: Pool;
 }> {
   const databaseName = `shared_travel_${randomUUID().replaceAll("-", "")}`;
+  assertDisposableName(databaseName);
   const adminPool = new Pool({ connectionString: adminDatabaseUrl(), max: 1 });
-  await adminPool.query(`CREATE DATABASE "${databaseName}"`);
+  try {
+    await adminPool.query(`CREATE DATABASE "${databaseName}"`);
+  } catch (error) {
+    await adminPool.end();
+    throw error;
+  }
 
   return {
     databaseName,
@@ -92,13 +119,17 @@ async function dropDisposableDatabase(
   adminPool: Pool,
   pool: Pool,
 ): Promise<void> {
-  await pool.end();
-  await adminPool.query(
-    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1",
-    [databaseName],
-  );
-  await adminPool.query(`DROP DATABASE IF EXISTS "${databaseName}"`);
-  await adminPool.end();
+  assertDisposableName(databaseName);
+  try {
+    await pool.end();
+    await adminPool.query(
+      "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1",
+      [databaseName],
+    );
+    await adminPool.query(`DROP DATABASE IF EXISTS "${databaseName}"`);
+  } finally {
+    await adminPool.end();
+  }
 }
 
 describe("Project Shared Travel Leg PostgreSQL cutover", () => {

@@ -1,9 +1,14 @@
-import { randomUUID } from "node:crypto";
+/**
+ * Historical migration exception (#270): run-owned disposable empty database.
+ * Exempt from the canonical seed rule; validates the disposable target and
+ * drops only the created database during cleanup. Preserves upgrade assertions.
+ */
 import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { Pool } from "pg";
 import { expect, it } from "vitest";
+
+import { withDisposableDatabase } from "@/__tests__/helpers/disposable-database";
 
 const migrations = resolve(
   import.meta.dirname,
@@ -11,14 +16,7 @@ const migrations = resolve(
 );
 
 it("backfills host assignments before dropping the legacy project column", async () => {
-  const name = `host_assignment_${randomUUID().replaceAll("-", "")}`;
-  const url = new URL(process.env.DATABASE_URL!);
-  url.pathname = "/postgres";
-  const admin = new Pool({ connectionString: url.toString(), max: 1 });
-  await admin.query(`CREATE DATABASE "${name}"`);
-  url.pathname = `/${name}`;
-  const pool = new Pool({ connectionString: url.toString(), max: 1 });
-  try {
+  await withDisposableDatabase("host_assignment", async (pool) => {
     const filenames = (await readdir(migrations))
       .filter((file) => /^\d{4}_.*\.sql$/.test(file))
       .sort();
@@ -46,13 +44,5 @@ it("backfills host assignments before dropping the legacy project column", async
       `SELECT column_name FROM information_schema.columns WHERE table_name = 'project' AND column_name = 'responsible_user_id'`,
     );
     expect(columns.rows).toEqual([]);
-  } finally {
-    await pool.end();
-    await admin.query(
-      "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1",
-      [name],
-    );
-    await admin.query(`DROP DATABASE IF EXISTS "${name}"`);
-    await admin.end();
-  }
+  });
 });
