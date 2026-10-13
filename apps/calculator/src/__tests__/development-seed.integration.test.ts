@@ -3,12 +3,114 @@ import { execFile } from "node:child_process";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
+import type { Pool } from "pg";
 import { expect, it } from "vitest";
 
 import { withDisposableDatabase } from "@/__tests__/helpers/disposable-database";
 
 const execute = promisify(execFile);
+
+/** Module path travels via environment, never interpolated into executed code. */
+const SEED_MODULE_ENV = "SEED_MODULE_PATH";
+
+interface CanonicalSeedIdentity {
+  email: string;
+  organizationSlugs: string[];
+  projectNames: string[];
+  scenarios: {
+    hostingOrganization: { slug: string };
+    partnerOrganization: { slug: string };
+    ownerUser: { email: string };
+    showcaseProject: { name: string };
+    showcaseJourney: { origin: string; destination: string };
+    showcaseClaim: { status: string };
+  };
+}
+
+/**
+ * Run the canonical seed module entrypoint in a fresh process, the same way
+ * test setup consumes it: import the shared implementation against an
+ * isolated database instead of shelling the development CLI.
+ */
+async function runSeedModule(
+  databaseUrl: string,
+  expression: string,
+): Promise<string> {
+  const calculatorDir = resolve(import.meta.dirname, "../..");
+  const script = `
+    (async () => {
+      const { drizzle } = await import("drizzle-orm/node-postgres");
+      const { Pool } = await import("pg");
+      const schema = await import("@greendex/database/schema");
+      const seedModule = await import(process.env.${SEED_MODULE_ENV});
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+      try {
+        const db = drizzle(pool, { schema });
+        ${expression}
+      } finally {
+        await pool.end();
+      }
+    })().catch((error) => { console.error(error); process.exitCode = 1; });
+  `;
+  const { stdout } = await execute("pnpm", ["exec", "tsx", "-e", script], {
+    cwd: calculatorDir,
+    env: {
+      ...process.env,
+      DATABASE_URL: databaseUrl,
+      [SEED_MODULE_ENV]: resolve(calculatorDir, "scripts/seed.ts"),
+    },
+  });
+  // Seed progress lines share stdout; the machine-readable payload is the last line.
+  const lines = String(stdout).trim().split("\n");
+  return lines[lines.length - 1] as string;
+}
+
+async function readSeedIdentities(
+  databaseUrl: string,
+): Promise<CanonicalSeedIdentity> {
+  const output = await runSeedModule(
+    databaseUrl,
+    `console.log(JSON.stringify({
+      email: seedModule.SEED_USER.email,
+      organizationSlugs: [seedModule.SEED_ORGANIZATION.slug, seedModule.SEED_PARTNER_ORGANIZATION.slug],
+      projectNames: seedModule.SEED_PROJECTS.map((project) => project.name),
+      scenarios: seedModule.SEED_SCENARIOS,
+    }));`,
+  );
+  return JSON.parse(output) as CanonicalSeedIdentity;
+}
+
+async function runModuleSeed(databaseUrl: string): Promise<{
+  projectCount: number;
+  travelLegsEnsured: number;
+  userId: string;
+  organizationId: string;
+  partnerOrganizationId: string;
+  projectIds: string[];
+}> {
+  const output = await runSeedModule(
+    databaseUrl,
+    `const summary = await seedModule.seedDatabase(db);
+    console.log(JSON.stringify({
+      projectCount: summary.projectIds.length,
+      travelLegsEnsured: summary.travelLegsEnsured,
+      userId: summary.userId,
+      organizationId: summary.organizationId,
+      partnerOrganizationId: summary.partnerOrganizationId,
+      projectIds: summary.projectIds,
+    }));`,
+  );
+  return JSON.parse(output) as {
+    projectCount: number;
+    travelLegsEnsured: number;
+    userId: string;
+    organizationId: string;
+    partnerOrganizationId: string;
+    projectIds: string[];
+  };
+}
 
 it("seeds a shared Project, Participant Journey and allocated editable Claim from zero", async () => {
   await withDisposableDatabase("development_seed", async (pool, databaseUrl) => {
@@ -71,3 +173,229 @@ it("seeds a shared Project, Participant Journey and allocated editable Claim fro
     ]);
   });
 }, 60_000);
+
+interface SeedCounts {
+  users: number;
+  organizations: number;
+  projects: number;
+  travelLegs: number;
+  partnerships: number;
+  participations: number;
+  journeys: number;
+  claims: number;
+}
+
+async function readSeedCounts(
+  pool: Pool,
+  identities: CanonicalSeedIdentity,
+): Promise<SeedCounts> {
+  const result = await pool.query(
+    `
+    SELECT
+      (SELECT count(*)::int FROM "user" WHERE email = $1) AS users,
+      (SELECT count(*)::int FROM organization WHERE slug = ANY ($2)) AS organizations,
+      (SELECT count(*)::int FROM project WHERE name = ANY ($3)) AS projects,
+      (SELECT count(*)::int FROM project_shared_travel_leg leg
+        JOIN project p ON p.id = leg.project_id WHERE p.name = ANY ($3)) AS travel_legs,
+      (SELECT count(*)::int FROM project_partner_organization partnership
+        JOIN project p ON p.id = partnership.project_id
+        JOIN organization o ON o.id = partnership.organization_id
+        WHERE p.name = ANY ($3) AND o.slug = ANY ($2)) AS partnerships,
+      (SELECT count(*)::int FROM project_participant participant
+        JOIN project p ON p.id = participant.project_id
+        WHERE p.name = ANY ($3) AND participant.email = $1) AS participations,
+      (SELECT count(*)::int FROM participant_journey journey
+        JOIN project_participant participant ON participant.id = journey.project_participant_id
+        JOIN project p ON p.id = participant.project_id
+        WHERE p.name = ANY ($3) AND participant.email = $1) AS journeys,
+      (SELECT count(*)::int FROM claim
+        JOIN project_partner_organization partnership ON partnership.id = claim.partnership_id
+        JOIN project p ON p.id = partnership.project_id
+        WHERE p.name = ANY ($3)) AS claims
+    `,
+    [identities.email, identities.organizationSlugs, identities.projectNames],
+  );
+  const row = result.rows[0] as Record<string, string | number>;
+  return {
+    users: Number(row.users),
+    organizations: Number(row.organizations),
+    projects: Number(row.projects),
+    travelLegs: Number(row.travel_legs),
+    partnerships: Number(row.partnerships),
+    participations: Number(row.participations),
+    journeys: Number(row.journeys),
+    claims: Number(row.claims),
+  };
+}
+
+it("reuses one canonical seed across CLI and module runs without duplicates", async () => {
+  await withDisposableDatabase("canonical_seed", async (pool, databaseUrl) => {
+    const options = {
+      cwd: resolve(import.meta.dirname, "../../../.."),
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+    };
+    await execute("pnpm", ["run", "db:migrate"], options);
+    // First run through the normal development command: no credential leak.
+    const cliResult = await execute("pnpm", ["run", "db:seed"], options);
+    expect(`${cliResult.stdout}\n${cliResult.stderr}`).not.toContain(
+      SEED_USER.password,
+    );
+    const identities = await readSeedIdentities(databaseUrl);
+    expect(identities.email).toBe(SEED_USER.email);
+    const countsAfterCliSeed = await readSeedCounts(pool, identities);
+    expect(countsAfterCliSeed).toEqual({
+      users: 1,
+      organizations: 2,
+      projects: identities.projectNames.length,
+      travelLegs: countsAfterCliSeed.travelLegs,
+      partnerships: 1,
+      participations: 1,
+      journeys: 1,
+      claims: 1,
+    });
+    expect(countsAfterCliSeed.travelLegs).toBeGreaterThan(0);
+
+    // Second run through the shared module entrypoint used by test setup.
+    // The same implementation must converge instead of adding duplicates.
+    const summary = await runModuleSeed(databaseUrl);
+    expect(summary.projectCount).toBe(identities.projectNames.length);
+    expect(await readSeedCounts(pool, identities)).toEqual(countsAfterCliSeed);
+
+    // Every discoverable scenario reference resolves to its stable identity.
+    const scenarios = await pool.query(
+      `
+      SELECT
+        (SELECT id FROM organization WHERE slug = $1) AS hosting_org_id,
+        (SELECT id FROM organization WHERE slug = $2) AS partner_org_id,
+        (SELECT id FROM "user" WHERE email = $3) AS owner_user_id,
+        (SELECT id FROM project WHERE name = $4) AS showcase_project_id,
+        (SELECT participant.id FROM project_participant participant
+          JOIN project p ON p.id = participant.project_id
+          WHERE p.name = $4 AND participant.email = $3) AS showcase_participation_id,
+        (SELECT journey.id FROM participant_journey journey
+          JOIN project_participant participant ON participant.id = journey.project_participant_id
+          JOIN project p ON p.id = participant.project_id
+          WHERE p.name = $4 AND journey.origin = $5 AND journey.destination = $6) AS showcase_journey_id,
+        (SELECT claim.id FROM claim
+          JOIN project_partner_organization partnership ON partnership.id = claim.partnership_id
+          JOIN project p ON p.id = partnership.project_id
+          WHERE p.name = $4 AND claim.status = $7) AS showcase_claim_id
+      `,
+      [
+        identities.scenarios.hostingOrganization.slug,
+        identities.scenarios.partnerOrganization.slug,
+        identities.scenarios.ownerUser.email,
+        identities.scenarios.showcaseProject.name,
+        identities.scenarios.showcaseJourney.origin,
+        identities.scenarios.showcaseJourney.destination,
+        identities.scenarios.showcaseClaim.status,
+      ],
+    );
+    const resolved = scenarios.rows[0] as Record<string, string | null>;
+    for (const [key, value] of Object.entries(resolved)) {
+      expect(value, `scenario reference ${key}`).not.toBeNull();
+    }
+    expect(summary.userId).toBe(resolved.owner_user_id);
+    expect(summary.organizationId).toBe(resolved.hosting_org_id);
+    expect(summary.partnerOrganizationId).toBe(resolved.partner_org_id);
+    expect(summary.projectIds).toContain(resolved.showcase_project_id);
+  });
+}, 120_000);
+
+it("requires explicit confirmation and resets only seed-owned rows", async () => {
+  await withDisposableDatabase("seed_reset", async (pool, databaseUrl) => {
+    const options = {
+      cwd: resolve(import.meta.dirname, "../../../.."),
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+    };
+    await execute("pnpm", ["run", "db:migrate"], options);
+    await runModuleSeed(databaseUrl);
+    const identities = await readSeedIdentities(databaseUrl);
+
+    // Reset without explicit confirmation is refused before deleting anything.
+    const refusal = await runSeedModule(
+      databaseUrl,
+      `await seedModule.resetSeedData(db, { confirmSeedReset: false });`,
+    ).then(
+      () => {
+        throw new Error("Seed reset without confirmation must fail");
+      },
+      (error: unknown) => String(error),
+    );
+    expect(refusal).toMatch(/explicit/i);
+    expect((await readSeedCounts(pool, identities)).projects).toBe(
+      identities.projectNames.length,
+    );
+
+    // Records outside the canonical seed survive a reset: an unrelated
+    // organization, a non-canonical project inside the seed organization
+    // (which also retains the seed organization itself instead of
+    // cascade-deleting the developer project), and a hand-added travel leg
+    // on that surviving project.
+    await pool.query(
+      `INSERT INTO organization (id, name, slug, country, created_at)
+       VALUES ('decoy-org-id', 'Decoy Organization', 'decoy-org', 'DE', now())`,
+    );
+    await pool.query(
+      `INSERT INTO project (id, name, start_date, end_date, location, country, organization_id, archived, created_at, updated_at)
+       VALUES ('decoy-project-id', 'Decoy Project', now(), now(), 'Hamburg', 'DE',
+         (SELECT id FROM organization WHERE slug = $1), false, now(), now())`,
+      [identities.scenarios.hostingOrganization.slug],
+    );
+    await pool.query(
+      `INSERT INTO project_shared_travel_leg
+         (id, project_id, transport_emission_profile, distance_km, description, created_at, updated_at)
+       VALUES ('decoy-leg-id', 'decoy-project-id', 'bus', '12.5',
+         'Hand-added review commute', now(), now())`,
+    );
+    const canonicalCounts = await readSeedCounts(pool, identities);
+
+    const report = JSON.parse(
+      await runSeedModule(
+        databaseUrl,
+        `const report = await seedModule.resetSeedData(db, { confirmSeedReset: true });
+        console.log(JSON.stringify(report));`,
+      ),
+    ) as {
+      users: number;
+      organizations: number;
+      projects: number;
+      travelLegs: number;
+      retainedOrganizationSlugs: string[];
+    };
+    expect(report.projects).toBe(identities.projectNames.length);
+    expect(report.travelLegs).toBe(canonicalCounts.travelLegs);
+    expect(report.retainedOrganizationSlugs).toEqual([
+      identities.scenarios.hostingOrganization.slug,
+    ]);
+    expect(await readSeedCounts(pool, identities)).toEqual({
+      users: 0,
+      organizations: 1,
+      projects: 0,
+      travelLegs: 0,
+      partnerships: 0,
+      participations: 0,
+      journeys: 0,
+      claims: 0,
+    });
+    const remainingOrgs = await pool.query(
+      `SELECT slug FROM organization WHERE slug = ANY ($1) ORDER BY slug`,
+      [identities.organizationSlugs],
+    );
+    expect(remainingOrgs.rows.map((row) => row.slug)).toEqual([
+      identities.scenarios.hostingOrganization.slug,
+    ]);
+
+    const survivors = await pool.query(
+      `SELECT
+        (SELECT count(*)::int FROM organization WHERE slug = 'decoy-org') AS decoy_orgs,
+        (SELECT count(*)::int FROM project WHERE id = 'decoy-project-id') AS decoy_projects,
+        (SELECT count(*)::int FROM project_shared_travel_leg WHERE id = 'decoy-leg-id') AS decoy_legs`,
+    );
+    expect(survivors.rows[0]).toEqual({
+      decoy_orgs: 1,
+      decoy_projects: 1,
+      decoy_legs: 1,
+    });
+  });
+}, 120_000);
