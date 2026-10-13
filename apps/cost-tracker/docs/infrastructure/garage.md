@@ -1,10 +1,10 @@
 # Garage S3 infrastructure
 
-Deployment-specific reference for the staging Garage service behind this project's S3 configuration. Follow the repository-wide [Coolify runbook](../../../../docs/agents/instructions/coolify.md) for persistent resource changes, deployment operations, and incident handling. Live container labels place this service in the `greendex` Coolify project as resource `greendex-staging-s3`; the older `ambitia-cost-tracker` project name below is stale and retained only for history. Development Garage provisioning is owned by #271 and is out of scope here.
+Deployment-specific reference for the staging and development Garage services behind this project's S3 configuration. Follow the repository-wide [Coolify runbook](../../../../docs/agents/instructions/coolify.md) for persistent resource changes, deployment operations, and incident handling. Live container labels place these services in the `greendex` Coolify project as resources `greendex-staging-s3` and `greendex-development-s3`; the older `ambitia-cost-tracker` project name below is stale and retained only for history.
 
 This document contains no credential values. Application configuration lives in `.env.example`; usable local secrets live only in the ignored `.env`.
 
-Snapshot verified: 2026-10-13 (staging alias verification; replaces the stale 2026-09-04 snapshot).
+Snapshot verified: 2026-10-13 (staging alias verification plus development service provisioning; replaces the stale 2026-09-04 snapshot).
 
 ## Coolify resources
 
@@ -136,7 +136,29 @@ One-time staging alias verification (2026-10-13, NOT a routine root-test target)
 
 Revisit this interim policy before introducing automated archive workflows or stronger security/retention requirements.
 
-To repeat that check using the application's local `.env`, run `pnpm --filter @greendex/cost-tracker test:garage-storage` from the repository root. This opt-in live test writes a random object under `smoke-tests/` in the existing bucket, compares downloaded bytes, and deletes it even if verification fails. It does not create a bucket and is not part of the default test suite. If the process is interrupted before cleanup, inspect and remove only the orphaned `smoke-tests/` key after confirming it belongs to this run; do not clear the entire prefix or bucket.
+To repeat the staging check using the application's local `.env`, run `pnpm --filter @greendex/cost-tracker test:garage-storage` from the repository root. This opt-in live test always executes against the network (never a cached result) and is not part of the default test suite. It writes a random object under a run-owned `smoke-tests/<run-id>/` key in the configured app bucket, compares downloaded bytes, deletes the owned key even if verification fails (cleanup failure is an explicit error naming the orphaned key), and then proves rejection of bogus credentials with a process-local invalid client that never touches app or staging credentials. It does not create a bucket. If the process is interrupted before cleanup, inspect and remove only the orphaned `smoke-tests/<run-id>/` key after confirming it belongs to this run; do not clear the entire prefix or bucket.
+
+## Development application bucket and key (#271)
+
+| Setting              | Current value                                                  |
+| -------------------- | -------------------------------------------------------------- |
+| Service              | `greendex-development-s3`                                      |
+| Service UUID         | `qvnaqod5vknlufojogo13l1j`                                     |
+| Container            | `garage-qvnaqod5vknlufojogo13l1j`                              |
+| Image                | `dxflrs/garage:v2.3.0`                                         |
+| S3 API endpoint      | `https://s3-eouwm5qfwrku92jfqdgxfubf.188.245.144.137.sslip.io` |
+| Bucket global alias  | `greendex-cost-tracker-development`                            |
+| Application key name | `greendex-cost-tracker-development`                            |
+| Bucket permissions   | Read/write                                                     |
+| May create buckets   | No                                                             |
+| Key expiration       | Never                                                          |
+| Current objects      | `0` at verification time                                       |
+
+The service lives in the Greendex Coolify project, development environment, with isolated persistent volumes `qvnaqod5vknlufojogo13l1j_garage-data` (`/var/lib/garage/data`) and `qvnaqod5vknlufojogo13l1j_garage-meta` (`/var/lib/garage/meta`) — separate from the staging volumes. Single node, replication factor 1, layout version 1 applied. Local Cost Tracker `.env` (ignored, never committed) points `S3_ENDPOINT`/`S3_BUCKET` at this service; `.env.example` carries the same non-secret endpoint and bucket with empty key placeholders.
+
+Adoption note (2026-10-13): the service was created through the Coolify API, but the start request queued during the host-disk outage (coolify-db down at 100% disk) and vanished without effect. The container was therefore started manually from Coolify's generated compose output (`cd /data/coolify/services/qvnaqod5vknlufojogo13l1j && docker compose up -d`) after approved disk recovery (`journalctl` vacuum, dangling then unused image prune; no volume/container/data destructive ops). No compose file was hand-edited. The Coolify API has since reconciled the service (`running:healthy`, matching container state), so the manual start is adopted as the service's initial start, not a fork.
+
+Owner follow-up: the Coolify application record declares custom FQDNs (`s3-dev-garage.apps.sieh.org`, `web-dev-garage.apps.sieh.org`, `admin-dev-garage.apps.sieh.org`), but live Traefik routes still serve the auto `sslip.io` endpoints above. Switching endpoints is a Coolify-managed restart/redeploy plus local `.env` update and re-verification; bucket, key, and permissions are unaffected. Verification for #271 used the auto endpoints.
 
 ## Health check
 

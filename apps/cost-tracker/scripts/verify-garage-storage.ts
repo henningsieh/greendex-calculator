@@ -20,35 +20,101 @@ const client = new S3Client({
   },
 });
 
-// Unique keys avoid collisions in the existing bucket; this key is not application data.
-const key = `smoke-tests/${randomUUID()}`;
+// Unique run-owned keys avoid collisions in the configured app bucket; these
+// keys are not application data. Only keys under this run prefix may be
+// removed by this script - never a bucket or a shared prefix.
+const runId = randomUUID();
+const key = `smoke-tests/${runId}/object`;
+const invalidCredentialKey = `smoke-tests/${runId}/invalid-credential-probe`;
 const payload = randomBytes(64);
-let uploaded = false;
 
 try {
-  await client.send(
-    new PutObjectCommand({ Bucket: env.S3_BUCKET, Key: key, Body: payload }),
-  );
-  uploaded = true;
-
-  const response = await client.send(
-    new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }),
-  );
-  assert(response.Body, "Garage returned no object body");
-  assert.deepEqual(
-    Buffer.from(await response.Body.transformToByteArray()),
-    payload,
-  );
-  console.log("Garage PUT/GET byte-for-byte check passed.");
-} finally {
+  let uploaded = false;
+  let checkError: unknown;
   try {
-    if (uploaded) {
+    await client.send(
+      new PutObjectCommand({ Bucket: env.S3_BUCKET, Key: key, Body: payload }),
+    );
+    uploaded = true;
+
+    const response = await client.send(
+      new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }),
+    );
+    assert(response.Body, "Garage returned no object body");
+    assert.deepEqual(
+      Buffer.from(await response.Body.transformToByteArray()),
+      payload,
+    );
+    console.log("Garage PUT/GET byte-for-byte check passed.");
+  } catch (error) {
+    checkError = error;
+  }
+
+  // Cleanup runs on success and failure and targets only the run-owned key.
+  let cleanupError: unknown;
+  if (uploaded) {
+    try {
       await client.send(
         new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: key }),
       );
       console.log("Garage smoke-test object deleted.");
+    } catch (error) {
+      cleanupError = error;
     }
-  } finally {
-    client.destroy();
   }
+  if (cleanupError !== undefined) {
+    throw new Error(
+      `Garage smoke-test cleanup failed for run-owned key; remove ${key} manually after confirming it belongs to this run.`,
+      { cause: cleanupError },
+    );
+  }
+  if (checkError !== undefined) {
+    throw checkError;
+  }
+
+  // Controlled invalid-credential check: an in-memory client with bogus
+  // credentials must be rejected. App and staging credentials are never
+  // touched; only this process-local client is invalid, so the valid check
+  // configuration is intact once this block finishes.
+  const invalidClient = new S3Client({
+    endpoint: env.S3_ENDPOINT,
+    region: env.S3_REGION,
+    forcePathStyle: env.S3_FORCE_PATH_STYLE,
+    credentials: {
+      accessKeyId: `INVALID-${runId}`,
+      secretAccessKey: "invalid-secret-key",
+    },
+  });
+  try {
+    await invalidClient.send(
+      new PutObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key: invalidCredentialKey,
+        Body: payload,
+      }),
+    );
+    // The bogus write unexpectedly succeeded: remove the run-owned probe with
+    // the valid client, then fail visibly.
+    await client.send(
+      new DeleteObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key: invalidCredentialKey,
+      }),
+    );
+    throw new Error(
+      "Garage accepted a request with invalid credentials; expected rejection.",
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Garage accepted a request with invalid credentials")
+    ) {
+      throw error;
+    }
+    console.log("Garage invalid-credential check passed (rejected as expected).");
+  } finally {
+    invalidClient.destroy();
+  }
+} finally {
+  client.destroy();
 }
