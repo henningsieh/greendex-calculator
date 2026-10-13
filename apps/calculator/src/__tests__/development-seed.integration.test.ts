@@ -15,12 +15,22 @@ const execute = promisify(execFile);
 /** Module path travels via environment, never interpolated into executed code. */
 const SEED_MODULE_ENV = "SEED_MODULE_PATH";
 
+interface CostTrackerSeedScenario {
+  userIds: string[];
+  userEmails: string[];
+  organizationIds: string[];
+  projectNames: string[];
+}
+
 interface CanonicalSeedIdentity {
   email: string;
   seedEmails: string[];
   organizationSlugs: string[];
   projectNames: string[];
   scenarios: {
+    costTrackerClaims: CostTrackerSeedScenario;
+    costTrackerCosts: CostTrackerSeedScenario;
+    costTrackerOnboardingProgress: CostTrackerSeedScenario;
     hostingOrganization: { slug: string };
     partnerOrganization: { slug: string };
     ownerUser: { email: string };
@@ -67,6 +77,7 @@ async function runSeedModule(
     })().catch((error) => { console.error(error); process.exitCode = 1; });
   `;
   const { stdout } = await execute("pnpm", ["exec", "tsx", "-e", script], {
+    timeout: 120_000,
     cwd: calculatorDir,
     env: {
       ...process.env,
@@ -184,7 +195,7 @@ it("seeds a shared Project, Participant Journey and allocated editable Claim fro
         ],
         funding_bands: TRAVEL_FUNDING_RULES.bands.length,
         partner_coordinators: 1,
-        partner_owners: 1,
+        partner_owners: 2,
       }),
     ]);
   });
@@ -457,9 +468,21 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
       retainedOrganizationSlugs: string[];
     };
     // Ten hosting Projects plus the Partner-owned scoping Project (#267).
-    expect(report.projects).toBe(identities.projectNames.length + 1);
+    const costTrackerScenarios = [
+      identities.scenarios.costTrackerClaims,
+      identities.scenarios.costTrackerCosts,
+      identities.scenarios.costTrackerOnboardingProgress,
+    ];
+    expect(report.projects).toBe(
+      identities.projectNames.length +
+        1 +
+        costTrackerScenarios.flatMap((scenario) => scenario.projectNames).length,
+    );
     expect(report.travelLegs).toBe(canonicalCounts.travelLegs);
-    expect(report.users).toBe(identities.seedEmails.length);
+    expect(report.users).toBe(
+      identities.seedEmails.length +
+        costTrackerScenarios.flatMap((scenario) => scenario.userEmails).length,
+    );
     expect(report.retainedOrganizationSlugs).toEqual([
       identities.scenarios.hostingOrganization.slug,
     ]);
@@ -494,3 +517,139 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
     });
   });
 }, 120_000);
+
+it("converges named Cost Tracker Claim, cost and onboarding scenarios without duplicates or secret leaks", async () => {
+  await withDisposableDatabase("cost_tracker_seed", async (pool, databaseUrl) => {
+    await execute("pnpm", ["run", "db:migrate"], {
+      cwd: resolve(import.meta.dirname, "../../../.."),
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+      timeout: 60_000,
+    });
+    const output = await runSeedModule(
+      databaseUrl,
+      `
+      await seedModule.seedDatabase(db);
+      console.log(JSON.stringify(seedModule.SEED_SCENARIOS));
+    `,
+    );
+    expect(output).not.toContain(SEED_USER.password);
+    expect(output).not.toMatch(/secretHash|passwordHash|verificationToken/);
+    const identities = await readSeedIdentities(databaseUrl);
+    const scenarios = [
+      identities.scenarios.costTrackerClaims,
+      identities.scenarios.costTrackerCosts,
+      identities.scenarios.costTrackerOnboardingProgress,
+    ];
+    const userIds = scenarios.flatMap((scenario) => scenario.userIds);
+    const orgIds = scenarios.flatMap((scenario) => scenario.organizationIds);
+    const projectNames = scenarios.flatMap((scenario) => scenario.projectNames);
+    const snapshot = async () => {
+      const result = await pool.query(
+        `
+        SELECT
+          (SELECT count(*)::int FROM "user" WHERE id = ANY ($1)) AS users,
+          (SELECT count(*)::int FROM account WHERE user_id = ANY ($1) AND provider_id = 'credential') AS logins,
+          (SELECT count(*)::int FROM member WHERE user_id = ANY ($1)) AS memberships,
+          (SELECT count(*)::int FROM organization WHERE id = ANY ($2)) AS organizations,
+          (SELECT count(*)::int FROM project WHERE name = ANY ($3)) AS projects,
+          (SELECT count(*)::int FROM project_partner_organization WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3))) AS partnerships,
+          (SELECT count(*)::int FROM project_participant WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3))) AS participations,
+          (SELECT count(*)::int FROM claim WHERE partnership_id IN (SELECT id FROM project_partner_organization WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3)))) AS claims,
+          (SELECT count(*)::int FROM payout_account WHERE organization_id = ANY ($2)) AS payout_accounts,
+          (SELECT count(*)::int FROM travel_cost_entry WHERE id = 'cost-locked-entry-canonical') AS entries,
+          (SELECT count(*)::int FROM cost_allocation WHERE travel_cost_entry_id = 'cost-locked-entry-canonical') AS allocations,
+          (SELECT count(*)::int FROM participant_profile WHERE user_id = ANY ($1)) AS profiles,
+          (SELECT count(*)::int FROM participant_agreement_acceptance WHERE user_id = ANY ($1)) AS agreements,
+          (SELECT count(*)::int FROM participant_entry_token WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3))) AS invitations,
+          (SELECT bool_and(length(secret_hash) = 64) FROM participant_entry_token WHERE project_id IN (SELECT id FROM project WHERE name = ANY ($3))) AS hashed_secrets
+      `,
+        [userIds, orgIds, projectNames],
+      );
+      return result.rows[0];
+    };
+    const first = await snapshot();
+    expect(first).toEqual({
+      users: 9,
+      logins: 9,
+      memberships: 10,
+      organizations: 9,
+      projects: 9,
+      partnerships: 12,
+      participations: 10,
+      claims: 6,
+      payout_accounts: 3,
+      entries: 1,
+      allocations: 1,
+      profiles: 3,
+      agreements: 3,
+      invitations: 6,
+      hashed_secrets: true,
+    });
+    // Normal reseeding fills missing canonical rows without overwriting development edits.
+    await pool.query(
+      "UPDATE payout_account SET account_holder = 'Developer edit' WHERE id = 'claim-account-canonical'",
+    );
+    const repeatOutput = await runSeedModule(
+      databaseUrl,
+      `
+      await seedModule.seedDatabase(db);
+      console.log(JSON.stringify(seedModule.SEED_SCENARIOS));
+    `,
+    );
+    expect(repeatOutput).not.toContain(SEED_USER.password);
+    expect(await snapshot()).toEqual(first);
+    expect(
+      (
+        await pool.query(
+          "SELECT account_holder FROM payout_account WHERE id = 'claim-account-canonical'",
+        )
+      ).rows,
+    ).toEqual([{ account_holder: "Developer edit" }]);
+    const refusal = await runSeedModule(
+      databaseUrl,
+      `
+      try { await seedModule.resetSeedData(db, { confirmSeedReset: false }); }
+      catch { console.log("explicit confirmation required"); }
+    `,
+    );
+    expect(refusal).toBe("explicit confirmation required");
+    expect(await snapshot()).toEqual(first);
+    await pool.query(
+      "INSERT INTO payout_account (id, organization_id, account_holder, iban) VALUES ('developer-payout', 'claim-partner-canonical', 'Developer Account', 'DE111')",
+    );
+    const resetOutput = await runSeedModule(
+      databaseUrl,
+      `
+      const report = await seedModule.resetSeedData(db, { confirmSeedReset: true });
+      console.log(JSON.stringify(report));
+    `,
+    );
+    expect(JSON.parse(resetOutput).retainedOrganizationSlugs).toEqual([
+      "claim-partner-canonical",
+    ]);
+    expect(
+      (
+        await pool.query(
+          "SELECT id FROM payout_account WHERE id = 'developer-payout'",
+        )
+      ).rows,
+    ).toEqual([{ id: "developer-payout" }]);
+    expect(await snapshot()).toEqual({
+      users: 0,
+      logins: 0,
+      memberships: 0,
+      organizations: 1,
+      projects: 0,
+      partnerships: 0,
+      participations: 0,
+      claims: 0,
+      payout_accounts: 1,
+      entries: 0,
+      allocations: 0,
+      profiles: 0,
+      agreements: 0,
+      invitations: 0,
+      hashed_secrets: null,
+    });
+  });
+}, 180_000);

@@ -51,6 +51,8 @@ import { Buffer } from "node:buffer";
  *    writes), and call it from {@link seedDatabase}.
  * 3. Register the scenario in `SEED_SCENARIOS` and cover it in
  *    `src/__tests__/development-seed.integration.test.ts`.
+ * Cost Tracker's co-located `seed-cost-tracker.ts` builders are called only by
+ * seedDatabase and share this registry and explicit-reset contract.
  * Accepted shared-auth, Organization/Project Participation, and Participant
  * Invitation decisions stay intact: Organization Invitations and Cost Tracker
  * Participant Invitations remain distinct, and participant entry stays
@@ -75,6 +77,9 @@ import {
   hostProjectAssignmentsTable,
   participantJourneysTable,
   participantProfilesTable,
+  participantEntryTokensTable,
+  payoutAccountsTable,
+  partnershipPayoutAccountsTable,
   partnerCoordinatorAssignmentsTable,
   projectFundingBandsTable,
   projectFundingSnapshotsTable,
@@ -91,6 +96,8 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, eq, inArray } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+
+import { ensureCostTrackerScenarios } from "./seed-cost-tracker";
 
 /** Database handle the canonical seed operates on. The caller owns the connection lifecycle. */
 export type SeedDatabase = NodePgDatabase<typeof schema>;
@@ -411,6 +418,110 @@ export const SEED_SHOWCASE = {
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
+  costTrackerOnboardingProgress: {
+    userIds: [
+      "progress-coordinator-canonical",
+      "progress-joined-canonical",
+      "progress-pending-canonical",
+      "progress-revoked-canonical",
+      "progress-outsider-canonical",
+    ],
+    userEmails: ["coordinator", "joined", "pending", "revoked", "outsider"].map(
+      (name) => `progress-${name}-canonical-canonical@example.org`,
+    ),
+    organizationIds: [
+      "progress-host-canonical",
+      "progress-partner-canonical",
+      "progress-other-canonical",
+    ],
+    projectNames: [
+      "Seed Onboarding Progress Project",
+      "Seed Expired Onboarding Progress Project",
+    ],
+    projectIds: [
+      "progress-project-canonical",
+      "progress-expired-project-canonical",
+    ],
+    participationIds: [
+      "progress-joined-participation-canonical",
+      "progress-outsider-participation-canonical",
+      "progress-unlinked-participation-canonical",
+      "progress-expired-joined-participation-canonical",
+    ],
+    projectId: "progress-project-canonical",
+    coordinatorId: "progress-coordinator-canonical",
+    partnershipId: "progress-own-canonical",
+    pendingInvitationId: "new-canonical",
+    invitationExpiresAt: null,
+    expiredPartnershipId: "progress-expired-partnership-canonical",
+    expiredInvitationId: "progress-expired-invitation-canonical",
+  },
+  costTrackerClaims: {
+    userIds: ["claim-coordinator-canonical", "claim-participant-canonical"],
+    payoutAccountIds: [
+      "claim-account-canonical",
+      "claim-second-account-canonical",
+      "claim-foreign-account-canonical",
+    ],
+    userEmails: [
+      "claim-coordinator-canonical@example.org",
+      "claim-participant-canonical@example.org",
+    ],
+    organizationIds: [
+      "claim-host-canonical",
+      "claim-partner-canonical",
+      "claim-other-canonical",
+    ],
+    projectNames: [
+      "Seed Claim Project",
+      "Seed Editable Claim Project",
+      "Seed Submitted Claim Project",
+      "Seed Submitted Selected Claim Project",
+    ],
+    projectId: "claim-project-canonical",
+    coordinatorId: "claim-coordinator-canonical",
+    participantId: "claim-participant-canonical",
+    partnershipId: "claim-own-canonical",
+    editablePartnershipId: "claim-editable-canonical",
+    submittedPartnershipId: "claim-submitted-canonical",
+    submittedSelectedPartnershipId: "claim-submitted-selected-canonical",
+  },
+  costTrackerCosts: {
+    userIds: ["cost-coordinator-canonical", "cost-user-canonical"],
+    userEmails: [
+      "cost-coordinator-canonical@example.org",
+      "cost-user-canonical@example.org",
+    ],
+    organizationIds: [
+      "cost-host-canonical",
+      "cost-partner-canonical",
+      "cost-other-canonical",
+    ],
+    projectNames: [
+      "Seed Cost Project",
+      "Seed Second Cost Project",
+      "Seed Submitted Cost Project",
+    ],
+    participationIds: [
+      "cost-first-canonical",
+      "cost-second-canonical",
+      "cost-third-canonical",
+      "cost-outside-canonical",
+      "cost-later-canonical",
+      "cost-locked-participant-canonical",
+    ],
+    projectId: "cost-project-canonical",
+    coordinatorId: "cost-coordinator-canonical",
+    participantId: "cost-user-canonical",
+    partnershipId: "cost-own-canonical",
+    claimId: "cost-claim-canonical",
+    proofDocumentId: "cost-proof-canonical",
+    submittedPartnershipId: "cost-locked-partnership-canonical",
+    submittedClaimId: "cost-locked-claim-canonical",
+    submittedEntryId: "cost-locked-entry-canonical",
+    submittedProofDocumentId: "cost-locked-proof-canonical",
+    submittedParticipantId: "cost-locked-participant-canonical",
+  },
   hostingOrganization: {
     kind: "organization",
     slug: SEED_ORGANIZATION.slug,
@@ -1397,6 +1508,10 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     "✅ Participant-entry Projects share seeded Partnerships; Invitees stay membership-free",
   );
 
+  for (const scenarioUserId of await ensureCostTrackerScenarios(db)) {
+    await ensurePasswordAccount(db, scenarioUserId);
+  }
+
   return {
     userId,
     organizationId: orgId,
@@ -1426,7 +1541,13 @@ async function findRemovableSeedOrgIds(
   const remainingMembers = await db.query.member.findMany({
     where: inArray(member.organizationId, seedOrgIds as string[]),
   });
+  const remainingPayoutAccounts = await db.query.payoutAccountsTable.findMany({
+    where: inArray(payoutAccountsTable.organizationId, seedOrgIds),
+  });
   const blockedOrgIds = new Set([
+    ...remainingPayoutAccounts.map(
+      (payoutAccount) => payoutAccount.organizationId,
+    ),
     ...remainingProjects.map((project) => project.organizationId),
     ...remainingMembers.map((membership) => membership.organizationId),
   ]);
@@ -1451,7 +1572,13 @@ export async function resetSeedData(
       "Refusing to reset seed data without explicit confirmation: pass { confirmSeedReset: true }.",
     );
   }
-  const seedEmails = [SEED_USER.email, ...SEED_ORG_ROLE_EMAILS];
+  const seedEmails = [
+    SEED_USER.email,
+    ...SEED_ORG_ROLE_EMAILS,
+    ...SEED_SCENARIOS.costTrackerClaims.userEmails,
+    ...SEED_SCENARIOS.costTrackerCosts.userEmails,
+    ...SEED_SCENARIOS.costTrackerOnboardingProgress.userEmails,
+  ];
   const seedUsers = await db.query.user.findMany({
     where: inArray(user.email, seedEmails),
   });
@@ -1463,12 +1590,18 @@ export async function resetSeedData(
       SEED_PARTNER_ORGANIZATION.slug,
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
+      ...SEED_SCENARIOS.costTrackerClaims.organizationIds,
+      ...SEED_SCENARIOS.costTrackerCosts.organizationIds,
+      ...SEED_SCENARIOS.costTrackerOnboardingProgress.organizationIds,
     ]),
   });
   const seedOrgIds = seedOrganizations.map((org) => org.id);
   const canonicalNames = [
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
+    ...SEED_SCENARIOS.costTrackerClaims.projectNames,
+    ...SEED_SCENARIOS.costTrackerCosts.projectNames,
+    ...SEED_SCENARIOS.costTrackerOnboardingProgress.projectNames,
   ];
   const seedProjects =
     seedOrgIds.length > 0
@@ -1491,6 +1624,13 @@ export async function resetSeedData(
 
   let travelLegs = 0;
   if (seedProjectIds.length > 0) {
+    await db
+      .delete(participantEntryTokensTable)
+      .where(
+        inArray(participantEntryTokensTable.projectId, [
+          ...SEED_SCENARIOS.costTrackerOnboardingProgress.projectIds,
+        ]),
+      );
     const legs = await db.query.projectSharedTravelLegsTable.findMany({
       where: inArray(projectSharedTravelLegsTable.projectId, seedProjectIds),
     });
@@ -1580,13 +1720,18 @@ export async function resetSeedData(
       "seed-onboarding-invitee@example.org",
       "seed-second-onboarding-invitee@example.org",
     ]);
+    const costTrackerScenarioParticipationIds = new Set<string>([
+      ...SEED_SCENARIOS.costTrackerCosts.participationIds,
+      ...SEED_SCENARIOS.costTrackerOnboardingProgress.participationIds,
+    ]);
     const seedParticipations = participations.filter(
       (participation) =>
-        participation.email !== null &&
-        seedParticipationEmails.has(participation.email) &&
-        (participation.email !== SEED_USER.email ||
-          !seedUser ||
-          participation.userId === seedUser.id),
+        costTrackerScenarioParticipationIds.has(participation.id) ||
+        (participation.email !== null &&
+          seedParticipationEmails.has(participation.email) &&
+          (participation.email !== SEED_USER.email ||
+            !seedUser ||
+            participation.userId === seedUser.id)),
     );
     for (const participation of seedParticipations) {
       await db
@@ -1648,6 +1793,27 @@ export async function resetSeedData(
         .delete(participantProfilesTable)
         .where(eq(participantProfilesTable.userId, seedUserId));
     }
+  }
+  // A canonical Payout Account can be reused by a developer Partnership.
+  // Preserve it when a surviving selection references it, just like other dependents.
+  const canonicalPayoutAccountIds =
+    SEED_SCENARIOS.costTrackerClaims.payoutAccountIds;
+  const survivingSelections =
+    await db.query.partnershipPayoutAccountsTable.findMany({
+      where: inArray(partnershipPayoutAccountsTable.payoutAccountId, [
+        ...canonicalPayoutAccountIds,
+      ]),
+    });
+  const referencedPayoutAccountIds = new Set(
+    survivingSelections.map((selection) => selection.payoutAccountId),
+  );
+  const removablePayoutAccountIds = canonicalPayoutAccountIds.filter(
+    (id) => !referencedPayoutAccountIds.has(id),
+  );
+  if (removablePayoutAccountIds.length > 0) {
+    await db
+      .delete(payoutAccountsTable)
+      .where(inArray(payoutAccountsTable.id, removablePayoutAccountIds));
   }
   // Never cascade-delete a seed Organization that still carries non-seed
   // rows (developer projects, other memberships). Those dependents survive

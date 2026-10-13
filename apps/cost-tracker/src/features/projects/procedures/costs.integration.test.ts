@@ -1,27 +1,17 @@
-import { randomUUID } from "node:crypto";
-
 // @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { db } from "@greendex/database";
 import {
-  hostProjectAssignmentsTable as hostAssignments,
-  claimsTable as claims,
   costAllocationsTable as allocations,
-  member,
-  organization,
-  partnerCoordinatorAssignmentsTable as assignments,
   proofDocumentsTable as documents,
-  projectPartnerOrganizationsTable as partnerships,
-  projectParticipantsTable as participants,
   projectsTable as projects,
   travelCostEntriesTable as entries,
-  user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import {
-  afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -45,15 +35,15 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 import { GET as download, POST as upload } from "@/app/api/proof-documents/route";
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
+// Stable identities registered in SEED_SCENARIOS.costTrackerCosts.
+const suffix = "canonical";
 const id = (part: string) => `cost-${part}-${suffix}`;
 const host = id("host"),
   partner = id("partner"),
   other = id("other");
 const coordinator = id(ORGANIZATION_ROLES.ProjectCoordinator),
   participantUser = id("user");
-const project = id("project"),
-  secondProject = id("second-project");
+const project = id("project");
 const own = id("own"),
   foreign = id("foreign"),
   next = id("next");
@@ -62,8 +52,7 @@ const first = id("first"),
   third = id("third");
 const outside = id("outside"),
   later = id("later");
-const ownClaim = id("claim"),
-  foreignClaim = id("foreign-claim");
+const ownClaim = id("claim");
 const proof = id("proof"),
   foreignProof = id("foreign-proof");
 let actor = coordinator;
@@ -82,106 +71,12 @@ const base = {
 };
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values([
-    {
-      id: coordinator,
-      name: "Coordinator",
-      email: `${coordinator}@example.org`,
-      emailVerified: true,
-    },
-    {
-      id: participantUser,
-      name: "Participant",
-      email: `${participantUser}@example.org`,
-      emailVerified: true,
-    },
-  ]);
-  await db.insert(organization).values([
-    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    {
-      country: "DE",
-      id: partner,
-      name: "Partner",
-      slug: partner,
-      createdAt: now,
-    },
-    { country: "DE", id: other, name: "Other", slug: other, createdAt: now },
-  ]);
-  await db.insert(member).values([
-    {
-      id: randomUUID(),
-      userId: coordinator,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: participantUser,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projects).values(
-    [project, secondProject].map((projectId) => ({
-      id: projectId,
-      name: "Project",
-      startDate: now,
-      endDate: now,
-      location: "Riga",
-      country: "LV" as const,
-      organizationId: host,
-    })),
-  );
-  await db
-    .insert(hostAssignments)
-    .values({ projectId: project, userId: coordinator });
-  await db.insert(partnerships).values([
-    { id: own, projectId: project, organizationId: partner },
-    { id: foreign, projectId: project, organizationId: other },
-    { id: next, projectId: secondProject, organizationId: partner },
-  ]);
-  await db.insert(assignments).values([
-    { partnershipId: own, userId: coordinator },
-    { partnershipId: next, userId: coordinator },
-  ]);
-  await db.insert(participants).values([
-    ...[first, second, third].map((participantId) => ({
-      id: participantId,
-      projectId: project,
-      representedOrganizationId: partner,
-      displayName: participantId,
-    })),
-    {
-      id: outside,
-      projectId: project,
-      representedOrganizationId: other,
-      displayName: "Outside",
-    },
-    {
-      id: later,
-      projectId: secondProject,
-      representedOrganizationId: partner,
-      displayName: "Later",
-    },
-  ]);
-  await db.insert(claims).values([
-    { id: ownClaim, partnershipId: own },
-    { id: foreignClaim, partnershipId: foreign },
-  ]);
-  await db.insert(documents).values(
-    [ownClaim, foreignClaim].map((claimId, index) => ({
-      id: index === 0 ? proof : foreignProof,
-      claimId,
-      fileReference: `test/${claimId}`,
-      originalFileName: "ticket.pdf",
-      mediaType: "application/pdf",
-      byteSize: 4,
-      checksum: "test-checksum",
-    })),
-  );
+  if (
+    !(await db.query.projectsTable.findFirst({ where: eq(projects.id, project) }))
+  )
+    throw new Error(
+      "Canonical seed required: run the isolated seeded lifecycle.",
+    );
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
@@ -204,22 +99,16 @@ beforeEach(async () => {
   authMocks.get.mockReset();
 });
 
-afterAll(async () => {
-  await db.delete(claims).where(eq(claims.id, ownClaim));
-  await db.delete(claims).where(eq(claims.id, foreignClaim));
-  await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(participants).where(eq(participants.projectId, secondProject));
-  await db.delete(assignments).where(eq(assignments.partnershipId, own));
-  await db.delete(assignments).where(eq(assignments.partnershipId, next));
-  await db.delete(partnerships).where(eq(partnerships.projectId, project));
-  await db.delete(partnerships).where(eq(partnerships.projectId, secondProject));
-  await db.delete(projects).where(eq(projects.id, project));
-  await db.delete(projects).where(eq(projects.id, secondProject));
-  await db.delete(member).where(eq(member.organizationId, partner));
-  for (const orgId of [other, partner, host])
-    await db.delete(organization).where(eq(organization.id, orgId));
-  for (const userId of [participantUser, coordinator])
-    await db.delete(user).where(eq(user.id, userId));
+afterEach(async () => {
+  await db.delete(entries).where(eq(entries.claimId, ownClaim));
+  await db
+    .delete(documents)
+    .where(
+      and(
+        eq(documents.claimId, ownClaim),
+        eq(documents.originalFileName, "uploaded.pdf"),
+      ),
+    );
 });
 
 describe("Claim cost procedures", () => {
@@ -290,25 +179,16 @@ describe("Claim cost procedures", () => {
     actor = participantUser;
     expect((await upload(request(own))).status).toBe(403);
     actor = coordinator;
-    await db
-      .update(claims)
-      .set({ status: "submitted" })
-      .where(eq(claims.id, ownClaim));
-    try {
-      const lockedClaim = await upload(request(own));
-      expect(lockedClaim.status).toBe(400);
-      expect(await lockedClaim.json()).toEqual({
-        error: "Claim is not editable.",
-        code: "BAD_REQUEST",
-        reason: "CLAIM_NOT_EDITABLE",
-      });
-      expect(authMocks.put).toHaveBeenCalledTimes(1);
-    } finally {
-      await db
-        .update(claims)
-        .set({ status: "editable" })
-        .where(eq(claims.id, ownClaim));
-    }
+    const lockedClaim = await upload(
+      request("cost-locked-partnership-canonical"),
+    );
+    expect(lockedClaim.status).toBe(400);
+    expect(await lockedClaim.json()).toEqual({
+      error: "Claim is not editable.",
+      code: "BAD_REQUEST",
+      reason: "CLAIM_NOT_EDITABLE",
+    });
+    expect(authMocks.put).toHaveBeenCalledTimes(1);
   });
   it("downloads identical uploaded bytes only for the authorized Claim Partnership", async () => {
     const bytes = new Uint8Array([0, 255, 37, 10, 128]);
@@ -555,27 +435,28 @@ describe("Claim cost procedures", () => {
         proofDocumentId: proof,
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await db
-      .update(claims)
-      .set({ status: "submitted" })
-      .where(eq(claims.id, ownClaim));
-    try {
-      await expect(client.costs.save(base)).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-      });
-      await expect(
-        client.costs.linkDocument({
-          partnershipId: own,
-          entryId: saved.id,
-          proofDocumentId: proof,
-        }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    } finally {
-      await db
-        .update(claims)
-        .set({ status: "editable" })
-        .where(eq(claims.id, ownClaim));
-    }
+    await expect(
+      client.costs.save({
+        ...base,
+        partnershipId: "cost-locked-partnership-canonical",
+        allocations: [
+          { projectParticipantId: "cost-locked-participant-canonical" },
+        ],
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { reason: "CLAIM_NOT_EDITABLE" },
+    });
+    await expect(
+      client.costs.linkDocument({
+        partnershipId: "cost-locked-partnership-canonical",
+        entryId: "cost-locked-entry-canonical",
+        proofDocumentId: "cost-locked-proof-canonical",
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { reason: "CLAIM_NOT_EDITABLE" },
+    });
     actor = participantUser;
     await expect(client.costs.save(base)).rejects.toMatchObject({
       code: "FORBIDDEN",
