@@ -2,11 +2,14 @@
 //
 // Email-bound Participant Invitations on the shared app-owned entry flow
 // (ADR-0013/0015, issue #213): lifecycle, email binding, and flavour parity
-// through the oRPC procedure interface. Registration-link fixtures bypass the
-// issuance procedure with drift-proof raw SQL because the shared development
-// database carries an out-of-branch `expires_at` column on that table.
+// through the oRPC procedure interface. Canonical seed actors (see
+// `SEED_SCENARIOS` in `apps/calculator/scripts/seed.ts`) own the Hosting
+// Organization, Partner Organization, Project, and Partnership; Invitees are
+// seeded membership-free joiners. Issuance and redemption go through the
+// procedures under test; per-test tokens, Participations, profiles, and
+// acceptances are removed afterwards without deleting canonical actors.
 
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import {
   costTrackerOrganizationRoles,
@@ -15,7 +18,6 @@ import {
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
-  invitation as staffInvitation,
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
@@ -23,13 +25,14 @@ import {
   participantProfilesTable as profiles,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
-  projectsTable as projects,
+  projectsTable,
   user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -60,18 +63,29 @@ import { createParticipantOnboardingProcedures } from "@/features/authentication
 import { listPendingInvitations } from "@/features/organizations/procedures/staff-invites";
 import { createParticipationProcedures } from "@/features/projects/procedures/participations";
 
-const suffix = randomUUID();
-const host = `invite-host-${suffix}`;
-const partner = `invite-partner-${suffix}`;
-const project = `invite-project-${suffix}`;
-const partnership = `invite-partnership-${suffix}`;
-const owner = `invite-owner-${suffix}`;
-const recipient = `invite-recipient-${suffix}`;
-const stranger = `invite-stranger-${suffix}`;
-const recipientEmail = `recipient-${suffix}@example.org`;
-const strangerEmail = `stranger-${suffix}@example.org`;
-let actor = owner;
-let activeOrganizationId: string | null = partner;
+/**
+ * Canonical seed identities for the invitation Project (Green Energy
+ * Symposium) and its Partnership to the second Partner Organization.
+ * The Owner issues; the two seeded Invitees join. Case tokens,
+ * Participations, profiles, acceptances, and Memberships are removed
+ * afterwards; canonical actors are never deleted.
+ */
+const SEED_ORG_SLUG = "seed-org";
+const SEED_PARTNER_SLUG = "seed-second-partner-org";
+const SEED_INVITATION_PROJECT_NAME = "Green Energy Symposium";
+const SEED_OWNER_EMAIL = "owner@sieh.org";
+const recipientEmail = "seed-invitee@example.org";
+const strangerEmail = "seed-second-invitee@example.org";
+let coordinatorInvitee = "";
+let host = "";
+let partner = "";
+let project = "";
+let partnership = "";
+let owner = "";
+let recipient = "";
+let stranger = "";
+let actor = "";
+let activeOrganizationId: string | null = null;
 
 const agreement = { id: "fixture-agreement-v1", contentHash: "fixture-hash-v1" };
 const client = createRouterClient(
@@ -106,82 +120,65 @@ async function authorizedActiveRole(permissions: Record<string, string[]>) {
   );
 }
 
-function sessionEmail() {
-  if (actor === recipient) return recipientEmail;
-  if (actor === stranger) return strangerEmail;
-  return `owner-${suffix}@example.org`;
-}
-
-/** Shareable-flavour fixture on the unified token table: no bound email and no
- * expiry, exactly as the issuance procedure stores it. */
-async function insertLinkFixture(id: string) {
-  const secret = `link-${id}`;
-  await db.insert(entryTokens).values({
-    id,
-    partnershipId: partnership,
-    projectId: project,
-    email: null,
-    secretHash: createHash("sha256").update(secret).digest("hex"),
-    expiresAt: null,
-    issuedByUserId: owner,
+async function sessionEmail(): Promise<string> {
+  if (!actor) throw new Error("Actor is missing");
+  const stored = await db.query.user.findFirst({
+    where: eq(user.id, actor),
   });
-  return secret;
+  if (!stored) throw new Error(`Seed user is missing: ${actor}`);
+  return stored.email;
 }
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values([
-    {
-      id: owner,
-      name: "Owner",
-      email: `owner-${suffix}@example.org`,
-      emailVerified: true,
-    },
-    {
-      id: recipient,
-      name: "Recipient",
-      email: recipientEmail,
-      emailVerified: true,
-    },
-    { id: stranger, name: "Stranger", email: strangerEmail, emailVerified: true },
-  ]);
-  await db.insert(organization).values([
-    { country: "DE", id: host, name: "Invite Host", slug: host, createdAt: now },
-    {
-      country: "DE",
-      id: partner,
-      name: "Invite Partner",
-      slug: partner,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projects).values({
-    id: project,
-    name: "Invite Project",
-    startDate: now,
-    endDate: now,
-    location: "Riga",
-    country: "LV",
-    organizationId: host,
+  const seedHost = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  await db
-    .insert(partnerships)
-    .values({ id: partnership, projectId: project, organizationId: partner });
-  await db.insert(member).values({
-    id: randomUUID(),
-    organizationId: partner,
-    userId: owner,
-    role: ORGANIZATION_ROLES.OrganizationOwner,
-    createdAt: now,
+  if (!seedHost)
+    throw new Error("Canonical seed Hosting Organization is missing");
+  const seedPartner = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_PARTNER_SLUG),
   });
+  if (!seedPartner)
+    throw new Error("Canonical seed Partner Organization is missing");
+  const seedProject = await db.query.projectsTable.findFirst({
+    where: and(
+      eq(projectsTable.organizationId, seedHost.id),
+      eq(projectsTable.name, SEED_INVITATION_PROJECT_NAME),
+    ),
+  });
+  if (!seedProject) throw new Error("Canonical invitation Project is missing");
+  const seedPartnership =
+    await db.query.projectPartnerOrganizationsTable.findFirst({
+      where: and(
+        eq(partnerships.projectId, seedProject.id),
+        eq(partnerships.organizationId, seedPartner.id),
+      ),
+    });
+  if (!seedPartnership)
+    throw new Error("Canonical invitation Partnership is missing");
+  async function userIdFor(email: string): Promise<string> {
+    const stored = await db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    if (!stored) throw new Error(`Canonical seed User is missing: ${email}`);
+    return stored.id;
+  }
+  host = seedHost.id;
+  partner = seedPartner.id;
+  project = seedProject.id;
+  partnership = seedPartnership.id;
+  owner = await userIdFor(SEED_OWNER_EMAIL);
+  recipient = await userIdFor(recipientEmail);
+  stranger = await userIdFor(strangerEmail);
+  coordinatorInvitee = await userIdFor("seed-invitation-coordinator@example.org");
+  actor = owner;
+  activeOrganizationId = partner;
 });
 
 beforeEach(async () => {
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
-  await db
-    .delete(staffInvitation)
-    .where(eq(staffInvitation.organizationId, partner));
+
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(acceptances).where(eq(acceptances.userId, stranger));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
@@ -196,7 +193,7 @@ beforeEach(async () => {
     user: {
       id: actor,
       name: actor,
-      email: sessionEmail(),
+      email: await sessionEmail(),
       emailVerified: true,
     },
     session: { id: randomUUID(), activeOrganizationId },
@@ -240,26 +237,57 @@ beforeEach(async () => {
   );
 });
 
+afterEach(async () => {
+  await db.delete(participants).where(eq(participants.projectId, project));
+  await db.delete(profiles).where(eq(profiles.userId, coordinatorInvitee));
+  await db.delete(acceptances).where(eq(acceptances.userId, coordinatorInvitee));
+  await db
+    .update(member)
+    .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
+    .where(
+      and(eq(member.userId, coordinatorInvitee), eq(member.organizationId, host)),
+    );
+});
+
 afterAll(async () => {
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
-  await db
-    .delete(staffInvitation)
-    .where(eq(staffInvitation.organizationId, partner));
+
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(acceptances).where(eq(acceptances.userId, stranger));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
   await db.delete(profiles).where(eq(profiles.userId, stranger));
   await db.delete(member).where(eq(member.userId, recipient));
   await db.delete(member).where(eq(member.userId, stranger));
-  await db.delete(member).where(eq(member.userId, owner));
-  await db.delete(partnerships).where(eq(partnerships.id, partnership));
-  await db.delete(projects).where(eq(projects.id, project));
-  await db.delete(organization).where(eq(organization.id, partner));
-  await db.delete(organization).where(eq(organization.id, host));
-  await db.delete(user).where(eq(user.id, stranger));
-  await db.delete(user).where(eq(user.id, recipient));
-  await db.delete(user).where(eq(user.id, owner));
+  expect(
+    await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    }),
+    "canonical seed Hosting Organization was deleted",
+  ).not.toBeUndefined();
+  expect(
+    await db.query.projectsTable.findFirst({
+      where: and(
+        eq(projectsTable.organizationId, host),
+        eq(projectsTable.name, SEED_INVITATION_PROJECT_NAME),
+      ),
+    }),
+    "canonical invitation Project was deleted",
+  ).not.toBeUndefined();
+  for (const email of [SEED_OWNER_EMAIL, recipientEmail, strangerEmail]) {
+    expect(
+      await db.query.user.findFirst({ where: eq(user.email, email) }),
+      `canonical seed User was deleted: ${email}`,
+    ).not.toBeUndefined();
+  }
+  for (const inviteeId of [recipient, stranger]) {
+    expect(
+      await db.query.member.findMany({
+        where: eq(member.userId, inviteeId),
+      }),
+      "seed Invitee kept a case Membership",
+    ).toEqual([]);
+  }
 });
 
 const joinProfile = {
@@ -602,18 +630,11 @@ describe("email-bound Participant Invitations", () => {
   });
 
   it("completes concurrent invitation joins with one participation and safe retry", async () => {
-    await db.insert(member).values({
-      id: randomUUID(),
-      userId: recipient,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: new Date(),
-    });
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
-      email: recipientEmail,
+      email: "seed-invitation-coordinator@example.org",
     });
-    actor = recipient;
+    actor = coordinatorInvitee;
     const input = {
       source: {
         kind: "invitation" as const,
@@ -645,12 +666,13 @@ describe("email-bound Participant Invitations", () => {
   });
 
   it("completes identical joins through both entry flavours", async () => {
-    const linkId = randomUUID();
-    const linkSecret = await insertLinkFixture(linkId);
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
     actor = recipient;
     const throughLink = await client.participantOnboarding.join({
       ...joinProfile,
-      source: { kind: "link", id: linkId, secret: linkSecret },
+      source: { kind: "link", id: link.id, secret: link.secret },
     });
     expect(throughLink.participationId).toBeTruthy();
     const [linkParticipation] = await db
@@ -701,15 +723,6 @@ describe("email-bound Participant Invitations", () => {
   });
 
   it("keeps staff invitations in their organization and app invitations out of that list", async () => {
-    await db.insert(staffInvitation).values({
-      id: randomUUID(),
-      organizationId: partner,
-      email: `colleague-${suffix}@example.org`,
-      role: ORGANIZATION_ROLES.OrganizationAdmin,
-      status: "pending",
-      expiresAt: new Date(Date.now() + 3_600_000),
-      inviterId: owner,
-    });
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -717,7 +730,7 @@ describe("email-bound Participant Invitations", () => {
     const pending = await client.organizations.listPendingInvitations({});
     expect(pending.invitations).toHaveLength(1);
     expect(pending.invitations[0]).toMatchObject({
-      email: `colleague-${suffix}@example.org`,
+      email: "seed-entry-colleague@example.org",
       role: ORGANIZATION_ROLES.OrganizationAdmin,
     });
     const scoped = await client.participations.listPartnership({

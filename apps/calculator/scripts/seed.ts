@@ -110,17 +110,39 @@ export const SEED_PARTNER_ORGANIZATION = {
   country: "FR",
 } as const;
 
+/** Second Partner Organization for participant-entry flows (#268).
+ * Owns no Projects; it carries the isolated entry, invitation, and onboarding
+ * Partnerships so the showcase single-row read keeps converging on one row.
+ * Only the showcase Partnership targets the primary Partner Organization. */
+export const SEED_SECOND_PARTNER_ORGANIZATION = {
+  name: "Seed Second Partner Organization",
+  slug: "seed-second-partner-org",
+  country: "IT",
+} as const;
+
+/** Third Partner Organization for second-join checks (#268).
+ * Assigned to the onboarding Project alongside the second Partner Organization
+ * so second-join and cross-Partnership scenarios resolve seeded rows. */
+export const SEED_THIRD_PARTNER_ORGANIZATION = {
+  name: "Seed Third Partner Organization",
+  slug: "seed-third-partner-org",
+  country: "ES",
+} as const;
+
 /**
  * Named Hosting Organization actors for auth/Organization/permission tests
- * (#266). Stable, recognizable identities so ordinary role, scope, and
- * negative-scenario checks resolve seeded rows instead of inventing private
- * User/Organization/Membership setup. Every entry shares the well-known
- * development password (`SEED_USER.password`); salts stay run-scoped
- * secrets per the deterministic reference policy above. The outsider and
- * the creator hold no Memberships anywhere: Cost Tracker permits
- * first-Organization creation only for membership-free callers, so each
+ * (#266) plus participant-entry Invitees (#268). Stable, recognizable identities
+ * so ordinary role, scope, and negative-scenario checks resolve seeded rows
+ * instead of inventing private User/Organization/Membership setup. Every entry
+ * shares the well-known development password (`SEED_USER.password`); salts stay
+ * run-scoped secrets per the deterministic reference policy above. The outsider,
+ * the creator, and the two Invitees hold no Memberships anywhere: Cost Tracker
+ * permits first-Organization creation only for membership-free callers, so each
  * parallel creator file owns one memberless gate and must restore it after
- * use (concurrent runs must never contend on shared rows).
+ * use (concurrent runs must never contend on shared rows). The Invitees are
+ * the canonical joiners for participant-entry/onboarding flows; case
+ * Participations, tokens, profiles, and acceptances for them are created
+ * through the procedures under test and removed afterwards.
  */
 export const SEED_ORG_ROLE_USERS = [
   {
@@ -164,6 +186,66 @@ export const SEED_ORG_ROLE_USERS = [
     name: "Seed Creator",
     email: "seed-creator@example.org",
     hostingRole: null,
+  },
+  {
+    key: "invitee",
+    name: "Seed Invitee",
+    email: "seed-invitee@example.org",
+    hostingRole: null,
+  },
+  {
+    key: "inviteeSecond",
+    name: "Seed Second Invitee",
+    email: "seed-second-invitee@example.org",
+    hostingRole: null,
+  },
+  {
+    key: "onboardingInvitee",
+    name: "Seed Onboarding Invitee",
+    email: "seed-onboarding-invitee@example.org",
+    hostingRole: null,
+  },
+  {
+    key: "onboardingInviteeSecond",
+    name: "Seed Second Onboarding Invitee",
+    email: "seed-second-onboarding-invitee@example.org",
+    hostingRole: null,
+  },
+  {
+    key: "invitationCoordinator",
+    name: "Seed Invitation Coordinator",
+    email: "seed-invitation-coordinator@example.org",
+    hostingRole: ORGANIZATION_ROLES.ProjectCoordinator,
+  },
+  {
+    key: "onboardingOwner",
+    name: "Seed Onboarding Owner",
+    email: "seed-onboarding-owner@example.org",
+    hostingRole: ORGANIZATION_ROLES.OrganizationOwner,
+  },
+  {
+    key: "onboardingAdmin",
+    name: "Seed Onboarding Admin",
+    email: "seed-onboarding-admin@example.org",
+    hostingRole: ORGANIZATION_ROLES.OrganizationAdmin,
+  },
+  {
+    key: "onboardingParticipant",
+    name: "Seed Onboarding Participant",
+    email: "seed-onboarding-participant@example.org",
+    hostingRole: ORGANIZATION_ROLES.Participant,
+  },
+  {
+    key: "onboardingCoordinator",
+    name: "Seed Onboarding Coordinator",
+    email: "seed-onboarding-coordinator@example.org",
+    hostingRole: ORGANIZATION_ROLES.ProjectCoordinator,
+  },
+  {
+    key: "onboardingCombined",
+    name: "Seed Onboarding Combined",
+    email: "seed-onboarding-combined@example.org",
+    hostingRole: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
   },
 ] as const;
 
@@ -264,6 +346,27 @@ export const SEED_PARTNER_PROJECT = {
   country: "FR",
   startDate: "2024-06-10",
   endDate: "2024-06-15",
+} as const;
+
+/** Dedicated participant-entry Projects reuse three empty hosting Projects (#268).
+ * Each file owns one Project plus its Partnership so per-test token,
+ * Participation, and assignment cleanup never touches the showcase slice or
+ * another file's rows. Names stay inside `SEED_PROJECTS` so hosting-Project
+ * counts keep converging. Entry-only preconditions target these Partnerships,
+ * so the showcase single-row read stays stable. */
+export const SEED_PARTICIPANT_ENTRY_PROJECT = {
+  name: "Sustainability Conference",
+  scenarioId: "seed-project-2",
+} as const;
+
+export const SEED_PARTICIPANT_INVITATION_PROJECT = {
+  name: "Green Energy Symposium",
+  scenarioId: "seed-project-3",
+} as const;
+
+export const SEED_PARTICIPANT_ONBOARDING_PROJECT = {
+  name: "Climate Action Workshop",
+  scenarioId: "seed-project-4",
 } as const;
 
 /** Stable identity for the seeded Participation without a login (Calculator #267). */
@@ -378,6 +481,55 @@ export const SEED_SCENARIOS = {
     description:
       "Second membership-free user so parallel creator files never contend on one memberless gate. Restore to memberless after use.",
   },
+  participantEntryPreconditions: {
+    kind: "participant-entry",
+    description:
+      "Assigned seed-coordinator on all entry Projects; login-free seed-entry-details@example.org Participation; pending seed-entry-colleague@example.org staff invitation (runtime ID, canonical expiry 9999-12-31). Dedicated seed-onboarding-{owner,admin,participant,coordinator,combined}@example.org and seed-invitation-coordinator@example.org Hosting role actors preserve Membership-grant coverage. Restore changed preconditions after every case.",
+  },
+  secondPartnerOrganization: {
+    kind: "organization",
+    slug: SEED_SECOND_PARTNER_ORGANIZATION.slug,
+    name: SEED_SECOND_PARTNER_ORGANIZATION.name,
+    country: SEED_SECOND_PARTNER_ORGANIZATION.country,
+    description:
+      "Second Partner Organization carrying the isolated entry, invitation, and onboarding Partnerships.",
+  },
+  thirdPartnerOrganization: {
+    kind: "organization",
+    slug: SEED_THIRD_PARTNER_ORGANIZATION.slug,
+    name: SEED_THIRD_PARTNER_ORGANIZATION.name,
+    country: SEED_THIRD_PARTNER_ORGANIZATION.country,
+    description:
+      "Third Partner Organization for second-join checks on the onboarding Project.",
+  },
+  inviteeUser: {
+    kind: "user",
+    email: "seed-invitee@example.org",
+    name: "Seed Invitee",
+    description:
+      "Canonical Participant Invitation recipient; joins through procedures under test. Restore to no Membership/Participation after use.",
+  },
+  secondInviteeUser: {
+    kind: "user",
+    email: "seed-second-invitee@example.org",
+    name: "Seed Second Invitee",
+    description:
+      "Second canonical joiner for wrong-account and multi-user link checks. Restore to no Membership/Participation after use.",
+  },
+  onboardingInviteeUser: {
+    kind: "user",
+    email: "seed-onboarding-invitee@example.org",
+    name: "Seed Onboarding Invitee",
+    description:
+      "Canonical joiner for the onboarding Project; isolated from the invitation Project Invitees so parallel files never contend on one host Membership. Restore to no Membership/Participation after use.",
+  },
+  secondOnboardingInviteeUser: {
+    kind: "user",
+    email: "seed-second-onboarding-invitee@example.org",
+    name: "Seed Second Onboarding Invitee",
+    description:
+      "Second canonical joiner for the onboarding Project multi-user link check. Restore to no Membership/Participation after use.",
+  },
   showcaseProject: {
     kind: "project",
     scenarioId: SEED_SHOWCASE.projectScenarioId,
@@ -430,12 +582,37 @@ export const SEED_SCENARIOS = {
     description:
       "Seed Partner Organization-owned Project for cross-Organization scoping checks.",
   },
+  participantEntryProject: {
+    kind: "project",
+    scenarioId: SEED_PARTICIPANT_ENTRY_PROJECT.scenarioId,
+    name: SEED_PARTICIPANT_ENTRY_PROJECT.name,
+    description:
+      "Isolated Project for participant-entry authorization checks; Partnership to the second Partner Organization.",
+  },
+  participantInvitationProject: {
+    kind: "project",
+    scenarioId: SEED_PARTICIPANT_INVITATION_PROJECT.scenarioId,
+    name: SEED_PARTICIPANT_INVITATION_PROJECT.name,
+    description:
+      "Isolated Project for Participant Invitation lifecycle checks; Partnership to the second Partner Organization.",
+  },
+  participantOnboardingProject: {
+    kind: "project",
+    scenarioId: SEED_PARTICIPANT_ONBOARDING_PROJECT.scenarioId,
+    name: SEED_PARTICIPANT_ONBOARDING_PROJECT.name,
+    description:
+      "Isolated Project for onboarding checks; Partnerships to the second and third Partner Organizations.",
+  },
 } as const;
 
 export interface SeedSummary {
   userId: string;
   organizationId: string;
   partnerOrganizationId: string;
+  /** Second Partner Organization for entry/invitation/onboarding flows (#268). */
+  secondPartnerOrganizationId: string;
+  /** Third Partner Organization for second-join checks (#268). */
+  thirdPartnerOrganizationId: string;
   projectIds: string[];
   /** Partner-owned Project for cross-Organization scoping checks (#267). */
   partnerProjectId: string;
@@ -665,6 +842,197 @@ async function ensureSeedProject(
     legsEnsured++;
   }
   return { projectId, legsEnsured };
+}
+
+/**
+ * Participant-entry preconditions (#268): isolated Partnerships plus Partner-side
+ * role Memberships. Each file owns one Project so per-test token,
+ * Participation, and assignment cleanup never touches the showcase slice or
+ * another file's rows. Partnerships target only the second/third Partner
+ * Organizations, never the primary one, so the showcase single-row read keeps
+ * converging on one row. Entry-only assignment, staff-invitation and details
+ * preconditions are named in SEED_SCENARIOS; no Participant entry tokens,
+ * Claims, profiles or acceptances are pre-created. Partner Memberships mirror
+ * the Hosting roles so the role matrix resolves fixed seeded users instead of
+ * mutating one Membership. All steps are find-or-create and never rewrite
+ * developer-modified rows.
+ */
+async function ensureParticipantEntryState(
+  db: SeedDatabase,
+  hostOrgId: string,
+  ownerId: string,
+  secondPartnerId: string,
+  thirdPartnerId: string,
+): Promise<void> {
+  const hostMembership = await db.query.member.findFirst({
+    where: (members, { and }) =>
+      and(eq(members.userId, ownerId), eq(members.organizationId, hostOrgId)),
+  });
+  const secondMembershipAt = hostMembership
+    ? new Date(hostMembership.createdAt.getTime() - 2000)
+    : new Date();
+  await ensureMembership(
+    db,
+    secondPartnerId,
+    ownerId,
+    ORGANIZATION_ROLES.OrganizationOwner,
+    secondMembershipAt,
+  );
+  await ensureMembership(
+    db,
+    thirdPartnerId,
+    ownerId,
+    ORGANIZATION_ROLES.OrganizationOwner,
+    secondMembershipAt,
+  );
+  const roleEntries = SEED_ORG_ROLE_USERS.filter(
+    (entry) =>
+      entry.hostingRole !== null &&
+      !entry.key.startsWith("onboarding") &&
+      !entry.key.startsWith("invitation"),
+  );
+  for (const entry of roleEntries) {
+    const stored = await db.query.user.findFirst({
+      where: eq(user.email, entry.email),
+    });
+    if (stored && entry.hostingRole !== null) {
+      const hostRoleMembership = await db.query.member.findFirst({
+        where: (members, { and }) =>
+          and(
+            eq(members.userId, stored.id),
+            eq(members.organizationId, hostOrgId),
+          ),
+      });
+      const secondAt = hostRoleMembership
+        ? new Date(hostRoleMembership.createdAt.getTime() - 2000)
+        : new Date();
+      await ensureMembership(
+        db,
+        secondPartnerId,
+        stored.id,
+        entry.hostingRole,
+        secondAt,
+      );
+    }
+  }
+  const pairs: { projectName: string; organizationId: string }[] = [
+    {
+      projectName: SEED_PARTICIPANT_ENTRY_PROJECT.name,
+      organizationId: secondPartnerId,
+    },
+    {
+      projectName: SEED_PARTICIPANT_INVITATION_PROJECT.name,
+      organizationId: secondPartnerId,
+    },
+    {
+      projectName: SEED_PARTICIPANT_ONBOARDING_PROJECT.name,
+      organizationId: secondPartnerId,
+    },
+    {
+      projectName: SEED_PARTICIPANT_ONBOARDING_PROJECT.name,
+      organizationId: thirdPartnerId,
+    },
+  ];
+  for (const pair of pairs) {
+    const project = await db.query.projectsTable.findFirst({
+      where: (projects, { and }) =>
+        and(
+          eq(projects.organizationId, hostOrgId),
+          eq(projects.name, pair.projectName),
+        ),
+    });
+    if (!project) continue;
+    const existing = await db.query.projectPartnerOrganizationsTable.findFirst({
+      where: (partnerships, { and }) =>
+        and(
+          eq(partnerships.projectId, project.id),
+          eq(partnerships.organizationId, pair.organizationId),
+        ),
+    });
+    if (!existing) {
+      await db.insert(projectPartnerOrganizationsTable).values({
+        id: createId(),
+        projectId: project.id,
+        organizationId: pair.organizationId,
+      });
+      console.log(
+        `  ✅ Partnership: ${pair.projectName} ↔ ${pair.organizationId.slice(0, 8)}`,
+      );
+    }
+    const partnership = await db.query.projectPartnerOrganizationsTable.findFirst(
+      {
+        where: and(
+          eq(projectPartnerOrganizationsTable.projectId, project.id),
+          eq(
+            projectPartnerOrganizationsTable.organizationId,
+            pair.organizationId,
+          ),
+        ),
+      },
+    );
+    const coordinator = await db.query.user.findFirst({
+      where: eq(user.email, "seed-coordinator@example.org"),
+    });
+    if (coordinator && partnership && pair.organizationId === secondPartnerId) {
+      const assignment =
+        await db.query.partnerCoordinatorAssignmentsTable.findFirst({
+          where: and(
+            eq(partnerCoordinatorAssignmentsTable.partnershipId, partnership.id),
+            eq(partnerCoordinatorAssignmentsTable.userId, coordinator.id),
+          ),
+        });
+      if (!assignment)
+        await db
+          .insert(partnerCoordinatorAssignmentsTable)
+          .values({ partnershipId: partnership.id, userId: coordinator.id });
+      const hostAssignment = await db.query.hostProjectAssignmentsTable.findFirst(
+        {
+          where: and(
+            eq(hostProjectAssignmentsTable.projectId, project.id),
+            eq(hostProjectAssignmentsTable.userId, coordinator.id),
+          ),
+        },
+      );
+      if (!hostAssignment)
+        await db
+          .insert(hostProjectAssignmentsTable)
+          .values({ projectId: project.id, userId: coordinator.id });
+    }
+    if (pair.projectName === SEED_PARTICIPANT_ENTRY_PROJECT.name) {
+      const participation = await db.query.projectParticipantsTable.findFirst({
+        where: and(
+          eq(projectParticipantsTable.projectId, project.id),
+          eq(projectParticipantsTable.email, "seed-entry-details@example.org"),
+        ),
+      });
+      if (!participation)
+        await db.insert(projectParticipantsTable).values({
+          projectId: project.id,
+          representedOrganizationId: secondPartnerId,
+          displayName: "Joining Participant",
+          email: "seed-entry-details@example.org",
+        });
+    }
+  }
+  // Staff invitation is a list precondition, never participant issuance. Its ID is
+  // generated at runtime. Pending-list checks do not redeem it; a far-future
+  // canonical expiry keeps this reference-calendar scenario independent of today.
+  const staffInvitation = await db.query.invitation.findFirst({
+    where: and(
+      eq(schema.invitation.organizationId, secondPartnerId),
+      eq(schema.invitation.email, "seed-entry-colleague@example.org"),
+    ),
+  });
+  if (!staffInvitation)
+    await db.insert(schema.invitation).values({
+      id: createId(),
+      organizationId: secondPartnerId,
+      email: "seed-entry-colleague@example.org",
+      role: ORGANIZATION_ROLES.OrganizationAdmin,
+      status: "pending",
+      expiresAt: new Date("9999-12-31T00:00:00Z"),
+      inviterId: ownerId,
+    });
 }
 
 /**
@@ -982,10 +1350,34 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     }
   }
 
+  console.log("🤝 Ensuring participant-entry Partnerships and Partner roles...");
+  const secondPartnerId = await ensureSeedOrganization(
+    db,
+    SEED_SECOND_PARTNER_ORGANIZATION,
+  );
+  const thirdPartnerId = await ensureSeedOrganization(
+    db,
+    SEED_THIRD_PARTNER_ORGANIZATION,
+  );
+  if (secondPartnerId && thirdPartnerId) {
+    await ensureParticipantEntryState(
+      db,
+      orgId,
+      userId,
+      secondPartnerId,
+      thirdPartnerId,
+    );
+  }
+  console.log(
+    "✅ Participant-entry Projects share seeded Partnerships; Invitees stay membership-free",
+  );
+
   return {
     userId,
     organizationId: orgId,
     partnerOrganizationId: partnerOrganization?.id ?? "",
+    secondPartnerOrganizationId: secondPartnerId,
+    thirdPartnerOrganizationId: thirdPartnerId,
     projectIds,
     partnerProjectId,
     travelLegsEnsured: totalTravelLegsEnsured,
@@ -1044,6 +1436,8 @@ export async function resetSeedData(
     where: inArray(organization.slug, [
       SEED_ORGANIZATION.slug,
       SEED_PARTNER_ORGANIZATION.slug,
+      SEED_SECOND_PARTNER_ORGANIZATION.slug,
+      SEED_THIRD_PARTNER_ORGANIZATION.slug,
     ]),
   });
   const seedOrgIds = seedOrganizations.map((org) => org.id);
@@ -1148,12 +1542,18 @@ export async function resetSeedData(
     });
     // Seed-owned Participations on canonical Projects: the showcase Owner
     // row plus the #267 journey-scenario rows (linked bare Participation,
-    // login-free Participation). Matched by stable seed email so developer
-    // Participations on the same Projects survive a reset.
+    // login-free Participation) plus #268 Invitee rows left by interrupted
+    // runs. Matched by stable seed email so developer Participations on the
+    // same Projects survive a reset.
     const seedParticipationEmails = new Set([
       SEED_USER.email,
       "seed-participant@example.org",
       SEED_UNLINKED_PARTICIPANT.email,
+      "seed-entry-details@example.org",
+      "seed-invitee@example.org",
+      "seed-second-invitee@example.org",
+      "seed-onboarding-invitee@example.org",
+      "seed-second-onboarding-invitee@example.org",
     ]);
     const seedParticipations = participations.filter(
       (participation) =>
