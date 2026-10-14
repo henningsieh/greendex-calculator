@@ -210,7 +210,15 @@ function reportBlockedWorkflows(results: Result[]): void {
   }
 }
 
-export async function verifyEmailWorkflows(): Promise<boolean> {
+export interface InjectedEmailRun {
+  handle: IsolatedRunHandle;
+  servers: ManagedAppServers;
+  seed: Awaited<ReturnType<typeof seedDatabase>>;
+}
+
+export async function verifyEmailWorkflows(
+  injected?: InjectedEmailRun,
+): Promise<boolean> {
   const results: Result[] = [];
   const cleanup = {
     servers: "not-started",
@@ -265,43 +273,59 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
           process.env.DELETE_TESTMAILS_DURING_TESTRUN;
       validateMailboxEnvironment(environment);
     }
-    const databaseEnvironment = await readLocalEnvironment(
-      resolve(root, "packages/database/.env"),
-    );
-    if (!databaseEnvironment.DATABASE_URL)
-      throw new Error("Missing database configuration.");
-    handle = await createIsolatedRunDatabase({
-      baseDatabaseUrl: databaseEnvironment.DATABASE_URL,
-      prefix: "email_check",
-    });
-    cleanup.database = "pending";
-    await execute("pnpm", ["run", "db:migrate"], {
-      cwd: resolve(root, "packages/database"),
-      env: { ...process.env, DATABASE_URL: handle.databaseUrl },
-      timeout: 120_000,
-    });
-    pool = new Pool({
-      connectionString: handle.databaseUrl,
-      max: 1,
-      connectionTimeoutMillis: 10_000,
-      statement_timeout: 30_000,
-    });
-    const db = drizzle(pool, { schema });
-    // Seed output includes private dataset details; do not relay it to reports.
-    const originalLog = console.log;
     let seed: Awaited<ReturnType<typeof seedDatabase>>;
-    try {
-      console.log = () => {};
-      seed = await seedDatabase(db);
-    } finally {
-      console.log = originalLog;
+    if (injected) {
+      handle = injected.handle;
+      servers = injected.servers;
+      seed = injected.seed;
+      cleanup.database = "root-owned";
+      cleanup.servers = "root-owned";
+    } else {
+      const databaseEnvironment = await readLocalEnvironment(
+        resolve(root, "packages/database/.env"),
+      );
+      if (!databaseEnvironment.DATABASE_URL)
+        throw new Error("Missing database configuration.");
+      handle = await createIsolatedRunDatabase({
+        baseDatabaseUrl: databaseEnvironment.DATABASE_URL,
+        prefix: "email_check",
+      });
+      cleanup.database = "pending";
+      await execute("pnpm", ["run", "db:migrate"], {
+        cwd: resolve(root, "packages/database"),
+        env: { ...process.env, DATABASE_URL: handle.databaseUrl },
+        timeout: 120_000,
+      });
+      pool = new Pool({
+        connectionString: handle.databaseUrl,
+        max: 1,
+        connectionTimeoutMillis: 10_000,
+        statement_timeout: 30_000,
+      });
+      const db = drizzle(pool, { schema });
+      // Seed output includes private dataset details; do not relay it to reports.
+      const originalLog = console.log;
+      try {
+        console.log = () => {};
+        seed = await seedDatabase(db);
+      } finally {
+        console.log = originalLog;
+      }
+      servers = await startManagedAppServers(
+        root,
+        { runId: handle.runId, databaseUrl: handle.databaseUrl },
+        environments,
+      );
+      cleanup.servers = "pending";
     }
-    servers = await startManagedAppServers(
-      root,
-      { runId: handle.runId, databaseUrl: handle.databaseUrl },
-      environments,
-    );
-    cleanup.servers = "pending";
+    if (!pool)
+      pool = new Pool({
+        connectionString: handle.databaseUrl,
+        max: 1,
+        connectionTimeoutMillis: 10_000,
+        statement_timeout: 30_000,
+      });
+    const db = drizzle(pool, { schema });
     results.push({
       workflow: "isolated-migrated-seeded-managed-servers",
       status: "passed",
@@ -590,13 +614,20 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
       durationMs: Date.now() - startedAt,
     });
   } finally {
-    await cleanupRun(inboxes, servers, pool, handle, cleanup, results);
+    await cleanupRun(
+      inboxes,
+      injected ? undefined : servers,
+      pool,
+      injected ? undefined : handle,
+      cleanup,
+      results,
+    );
   }
   reportBlockedWorkflows(results);
   const passed =
     results.every((result) => result.status === "passed") &&
-    cleanup.servers === "stopped" &&
-    cleanup.database === "disposed";
+    cleanup.servers === (injected ? "root-owned" : "stopped") &&
+    cleanup.database === (injected ? "root-owned" : "disposed");
   const report = {
     suite: "real-email-workflows",
     commit,

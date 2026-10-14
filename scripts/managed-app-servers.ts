@@ -90,6 +90,55 @@ export async function stopOwnedProcess(handle: OwnedProcess): Promise<void> {
   }
 }
 
+/** Bounded task subprocess; output remains private, and descendants are owned too. */
+export async function runManagedCommand(
+  command: string,
+  args: string[],
+  options: {
+    cwd: string;
+    env: NodeJS.ProcessEnv;
+    timeoutMs: number;
+    signal?: AbortSignal;
+    inspectOutput?: (output: string) => void;
+  },
+): Promise<void> {
+  const child = spawn(command, args, {
+    cwd: options.cwd,
+    env: options.env,
+    detached: true,
+    stdio: options.inspectOutput ? ["ignore", "pipe", "ignore"] : "ignore",
+  });
+  let output = "";
+  child.stdout?.on("data", (chunk: Buffer) => {
+    if (output.length < 16_000_000) output += chunk.toString();
+  });
+  const handle = { pid: child.pid, owned: true };
+  ownedProcesses.add(handle);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const fail = () =>
+        reject(new Error("Managed command timed out or interrupted."));
+      const timer = setTimeout(fail, options.timeoutMs);
+      options.signal?.addEventListener("abort", fail, { once: true });
+      child.once("error", () => {
+        clearTimeout(timer);
+        options.signal?.removeEventListener("abort", fail);
+        reject(new Error("Managed command could not start."));
+      });
+      child.once("exit", (code) => {
+        clearTimeout(timer);
+        options.signal?.removeEventListener("abort", fail);
+        if (code === 0) resolve();
+        else reject(new Error("Managed command failed."));
+      });
+      if (options.signal?.aborted) fail();
+    });
+  } finally {
+    if (handle.pid) await stopOwnedProcess(handle);
+    options.inspectOutput?.(output);
+  }
+}
+
 export async function isManagedAuthReady(
   response: Response,
   runId: string,
