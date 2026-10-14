@@ -302,8 +302,7 @@
         "better-tailwindcss/no-deprecated-classes": "off",
         "better-tailwindcss/no-duplicate-classes": "off",
         "better-tailwindcss/enforce-canonical-classes": "off"
-      },
-      "comment": "Owner-ordered scope: these packages ship zero Tailwind class strings (verified), so the Tailwind-resolving rules have nothing to check; enforcement runs in apps + auth + email where classes exist."
+      }
     }
   ],
   "jsPlugins": ["@shadcn/lint", "eslint-plugin-better-tailwindcss"]
