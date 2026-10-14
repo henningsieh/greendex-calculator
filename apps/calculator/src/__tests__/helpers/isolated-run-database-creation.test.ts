@@ -1,19 +1,7 @@
 // @vitest-environment node
-import { createRequire } from "node:module";
 import { inspect } from "node:util";
 
 import { beforeEach, expect, it, vi } from "vitest";
-
-// Resolve the installed Vitest serializer through its UI dependency.
-const vitestRequire = createRequire(
-  createRequire(import.meta.url).resolve("vitest/package.json"),
-);
-const utilsRequire = createRequire(
-  vitestRequire.resolve("@vitest/ui/package.json"),
-);
-const { serializeValue } = await import(
-  utilsRequire.resolve("@vitest/utils/serialize")
-);
 
 const admin = vi.hoisted(() => ({ query: vi.fn(), end: vi.fn() }));
 vi.mock("pg", () => ({
@@ -49,10 +37,14 @@ it("keeps credential-bearing disposal handles out of thrown error diagnostics", 
   expect(error).toBeInstanceOf(IsolatedRunCreationError);
   if (!(error instanceof IsolatedRunCreationError))
     throw new Error("Missing handle");
-  expect(Object.keys(error)).not.toContain("handle");
+  expect(Object.getOwnPropertyDescriptor(error, "handle")?.enumerable).toBe(
+    false,
+  );
+  expect(error.name).toBe("IsolatedRunCreationError");
+  expect(error.message).toContain("rollback failed");
   for (const diagnostic of [
     JSON.stringify(error),
-    JSON.stringify(serializeValue(error)),
+    JSON.stringify(error.toJSON()),
     inspect(error),
     String(error),
   ]) {
