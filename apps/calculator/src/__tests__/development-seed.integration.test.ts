@@ -290,6 +290,21 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
       SEED_USER.password,
     );
     const identities = await readSeedIdentities(databaseUrl);
+    const staffInvitationsBefore = await pool.query(
+      "SELECT id, email, status, organization_id FROM invitation WHERE email = ANY($1) ORDER BY email",
+      [
+        [
+          "staff-invitation-cause@example.org",
+          "leaving@example.org",
+          "elsewhere@example.org",
+          "accepted@example.org",
+        ],
+      ],
+    );
+    expect(staffInvitationsBefore.rows).toHaveLength(4);
+    // Better Auth invitation IDs are emailed bearer credentials, not scenario names.
+    for (const row of staffInvitationsBefore.rows)
+      expect(row.id).not.toMatch(/^staff-invitation-.*-canonical$/);
     expect(identities.email).toBe(SEED_USER.email);
     const countsAfterCliSeed = await readSeedCounts(pool, identities);
     expect(countsAfterCliSeed).toEqual({
@@ -344,6 +359,14 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     // The same implementation must converge instead of adding duplicates.
     const summary = await runModuleSeed(databaseUrl);
     expect(summary.projectCount).toBe(identities.projectNames.length);
+    expect(
+      (
+        await pool.query(
+          "SELECT id, email, status, organization_id FROM invitation WHERE email = ANY($1) ORDER BY email",
+          [staffInvitationsBefore.rows.map((row) => row.email)],
+        )
+      ).rows,
+    ).toEqual(staffInvitationsBefore.rows);
     expect(await readSeedCounts(pool, identities)).toEqual(countsAfterCliSeed);
     expect(
       (

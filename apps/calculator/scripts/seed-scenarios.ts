@@ -1,5 +1,5 @@
 /** Read-only Invitation preconditions use a fixed far-future reference expiry,
- * never a rolling wall-clock TTL. Runtime hashes are deliberately not redeemable. */
+ * never a rolling wall-clock TTL. Credential material is generated at runtime. */
 export const SEED_READ_ONLY_INVITATION_EXPIRY = "9999-12-31T00:00:00.000Z";
 
 export const SEED_ENTITY_SEARCH = {
@@ -25,10 +25,10 @@ export const SEED_REVIEW_SCENARIOS = {
   },
   staffInvitations: {
     organizationId: "seed-staff-invites-org",
-    causeId: "staff-invitation-cause-canonical",
-    pendingId: "staff-invitation-pending-canonical",
-    foreignId: "staff-invitation-foreign-canonical",
-    acceptedId: "staff-invitation-accepted-canonical",
+    causeEmail: "staff-invitation-cause@example.org",
+    pendingEmail: "leaving@example.org",
+    foreignEmail: "elsewhere@example.org",
+    acceptedEmail: "accepted@example.org",
   },
   restProjects: [
     { id: "rest-contract-project-canonical", name: "REST Contract Project" },

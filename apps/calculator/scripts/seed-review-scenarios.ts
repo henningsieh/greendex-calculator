@@ -113,37 +113,40 @@ export async function ensureReviewScenarios(
   const existing = await db.select().from(invitation);
   const rows = [
     {
-      id: ids.causeId,
       organizationId: ids.organizationId,
-      email: `${ownerId}@example.org`,
+      email: ids.causeEmail,
       status: "pending",
     },
     {
-      id: ids.pendingId,
       organizationId: ids.organizationId,
-      email: "leaving@example.org",
+      email: ids.pendingEmail,
       status: "pending",
     },
     {
-      id: ids.foreignId,
       organizationId: partnerId,
-      email: "elsewhere@example.org",
+      email: ids.foreignEmail,
       status: "pending",
     },
     {
-      id: ids.acceptedId,
       organizationId: ids.organizationId,
-      email: "accepted@example.org",
+      email: ids.acceptedEmail,
       status: "accepted",
     },
   ].map((row) => ({
     ...row,
+    id: createId(),
     role: ORGANIZATION_ROLES.OrganizationAdmin,
     inviterId: ownerId,
     expiresAt: new Date(SEED_READ_ONLY_INVITATION_EXPIRY),
   }));
   const missing = rows.filter(
-    (row) => !existing.some((saved) => saved.id === row.id),
+    (row) =>
+      !existing.some(
+        (saved) =>
+          saved.organizationId === row.organizationId &&
+          saved.email === row.email &&
+          saved.status === row.status,
+      ),
   );
   if (missing.length) await db.insert(invitation).values(missing);
   const travel = SEED_REVIEW_SCENARIOS.travelLegManagement;

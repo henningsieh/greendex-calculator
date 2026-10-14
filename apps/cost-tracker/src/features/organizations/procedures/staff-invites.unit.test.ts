@@ -12,7 +12,7 @@ import {
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { APIError } from "better-auth/api";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -53,20 +53,24 @@ let hybridAdminId = "";
 let hybridMemberId = "";
 let baselineInvitationIds: string[] = [];
 const seedInvitations = {
-  causeId: "staff-invitation-cause-canonical",
-  pendingId: "staff-invitation-pending-canonical",
-  foreignId: "staff-invitation-foreign-canonical",
-  acceptedId: "staff-invitation-accepted-canonical",
+  causeId: "",
+  pendingId: "",
+  foreignId: "",
+  acceptedId: "",
 };
 
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
 
-function session(userId: string, activeOrganizationId: string | null = orgId) {
+function session(
+  userId: string,
+  activeOrganizationId: string | null = orgId,
+  email = `${userId}@example.org`,
+) {
   authMocks.getSession.mockResolvedValue({
     session: { id: randomUUID(), userId, activeOrganizationId },
-    user: { id: userId, name: userId, email: `${userId}@example.org` },
+    user: { id: userId, name: userId, email },
   });
 }
 
@@ -110,6 +114,26 @@ describe("organizations staff invites", () => {
     outsiderId = ids[SEED_OUTSIDER_EMAIL] as string;
     hybridAdminId = ids[SEED_HYBRID_ADMIN_EMAIL] as string;
     hybridMemberId = ids[SEED_HYBRID_COORDINATOR_EMAIL] as string;
+    const partner = await db.query.organization.findFirst({
+      where: eq(organization.slug, "seed-partner-org"),
+    });
+    if (!partner) throw new Error("Seed Partner Organization is missing.");
+    for (const [key, organizationId, email, status] of [
+      ["causeId", orgId, "staff-invitation-cause@example.org", "pending"],
+      ["pendingId", orgId, "leaving@example.org", "pending"],
+      ["foreignId", partner.id, "elsewhere@example.org", "pending"],
+      ["acceptedId", orgId, "accepted@example.org", "accepted"],
+    ] as const) {
+      const stored = await db.query.invitation.findFirst({
+        where: and(
+          eq(invitation.organizationId, organizationId),
+          eq(invitation.email, email),
+          eq(invitation.status, status),
+        ),
+      });
+      if (!stored) throw new Error(`Seed staff Invitation is missing: ${key}`);
+      seedInvitations[key] = stored.id;
+    }
     // Fail fast when the canonical role matrix drifts from the seed.
     const memberships = await db
       .select({ userId: member.userId, role: member.role })
@@ -407,6 +431,7 @@ describe("organizations staff invites", () => {
       data: { reason: "INTERNAL_FAILURE" },
     });
     const id = seedInvitations.causeId;
+    session(ownerId, orgId, "staff-invitation-cause@example.org");
     expect(await invitationStatus(id)).toBe("pending");
     {
       authMocks.acceptInvitation.mockRejectedValueOnce(
