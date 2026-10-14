@@ -294,6 +294,8 @@ describe("isolated seeded cross-app lifecycle", () => {
   it("proves shared identities across both app contexts from the seeded baseline", async () => {
     if (!state) throw new Error("Lifecycle state is missing.");
     const checkedAt = Date.now();
+    const projectId = `${state.fixture}-project`;
+    const participationId = `${state.fixture}-participation`;
     const created = JSON.parse(
       runInApp(
         "calculator",
@@ -354,12 +356,9 @@ describe("isolated seeded cross-app lifecycle", () => {
     expect(created.partnerOrgId).toBeTruthy();
     state.timings.crossAppChecksMs = Date.now() - checkedAt;
     state.results.crossAppReadWrite = true;
-  });
+    // Cleanup verification belongs to this same multi-step cross-app workflow,
+    // not a later case that can pass merely because no rows were ever created.
 
-  it("cleans case interference without reseeding and keeps the baseline intact", async () => {
-    if (!state) throw new Error("Lifecycle state is missing.");
-    const projectId = `${state.fixture}-project`;
-    const participationId = `${state.fixture}-participation`;
     runInApp(
       "calculator",
       `
