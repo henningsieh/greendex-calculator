@@ -1,7 +1,7 @@
 /* eslint-disable import/no-relative-parent-imports -- Cross-app test orchestration reuses the canonical seed and owned lifecycle, not runtime app imports. */
 import { execFile, execFileSync } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -17,6 +17,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import { canonicalSeedVersion } from "../../../scripts/canonical-seed-version";
 import {
   readLocalEnvironment,
   startManagedAppServers,
@@ -682,9 +683,9 @@ export async function verifyEmailWorkflows(
     suite: "real-email-workflows",
     commit,
     runId: handle?.runId ?? null,
-    seedVersion: createHash("sha256")
-      .update(await readFile(resolve(root, "apps/calculator/scripts/seed.ts")))
-      .digest("hex"),
+    seedVersion: await canonicalSeedVersion(
+      resolve(root, "apps/calculator/scripts"),
+    ),
     seedRulesVersion: TRAVEL_FUNDING_RULES.version,
     workingTreeDirty:
       execFileSync("git", ["status", "--porcelain"], {
