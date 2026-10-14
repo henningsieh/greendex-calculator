@@ -30,6 +30,7 @@ import {
 import {
   createIsolatedRunDatabase,
   disposeIsolatedRunDatabase,
+  IsolatedRunCreationError,
   type IsolatedRunHandle,
 } from "../../calculator/src/__tests__/helpers/isolated-run-database";
 import type { Router } from "../src/lib/orpc/router";
@@ -652,7 +653,11 @@ export async function verifyEmailWorkflows(
         }
       }
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof IsolatedRunCreationError) {
+      handle = error.handle;
+      cleanup.database = error.rollback;
+    }
     results.push({
       workflow: "required-prerequisites",
       status: "blocked",

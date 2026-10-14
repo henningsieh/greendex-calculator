@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   createIsolatedRunDatabase,
   disposeIsolatedRunDatabase,
+  IsolatedRunCreationError,
   type IsolatedRunHandle,
 } from "@/__tests__/helpers/isolated-run-database";
 
@@ -256,6 +257,7 @@ beforeAll(async () => {
     state.results.seededOnce = true;
     state.timings.setupMs = Date.now() - startedAt;
   } catch (error) {
+    if (error instanceof IsolatedRunCreationError) handle = error.handle;
     if (state) {
       await state.pool.end().catch(() => {});
       try {
@@ -270,7 +272,14 @@ beforeAll(async () => {
         );
       }
     } else if (handle && !aggregate) {
-      await disposeIsolatedRunDatabase(handle).catch(() => {});
+      try {
+        await disposeIsolatedRunDatabase(handle);
+      } catch (cleanupError) {
+        throw new AggregateError(
+          [error, cleanupError],
+          "Setup failed and run database cleanup also failed.",
+        );
+      }
     }
     throw error;
   }

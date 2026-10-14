@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
 import { inspect } from "node:util";
 
 import { beforeEach, expect, it, vi } from "vitest";
@@ -62,6 +63,21 @@ it("keeps credential-bearing disposal handles out of thrown error diagnostics", 
   expect(admin.query.mock.lastCall?.[0]).toMatch(/^DROP DATABASE/);
 });
 
+it("captures preparation-error handles for focused lifecycle disposal", () => {
+  const source = readFileSync(
+    new URL("../isolated-lifecycle.integration.test.ts", import.meta.url),
+    "utf8",
+  );
+  const catchBlock = source.slice(
+    source.indexOf("  } catch (error) {", source.indexOf("beforeAll(async")),
+  );
+  expect(catchBlock).toMatch(
+    /if \(error instanceof IsolatedRunCreationError\)\s*handle = error\.handle;/,
+  );
+  expect(catchBlock).toContain("else if (handle && !aggregate)");
+  expect(catchBlock).toContain("await disposeIsolatedRunDatabase(handle)");
+});
+
 it("rolls back successful CREATE if writing the marker fails", async () => {
   admin.query
     .mockResolvedValueOnce({ rows: [] })
@@ -86,6 +102,30 @@ it("rolls back successful CREATE if marker readback fails", async () => {
   });
   expect(admin.query.mock.calls[3]![0]).toMatch(/^DROP DATABASE/);
 });
+it("retains a disposable handle when connection close fails after preparation", async () => {
+  admin.query.mockImplementation(async (sql: string) => {
+    if (sql.startsWith("SELECT")) {
+      const comment = admin.query.mock.calls.find(([statement]) =>
+        statement.startsWith("COMMENT"),
+      )![0] as string;
+      return {
+        rows: [{ marker: comment.match(/greendex-test-run:[a-f0-9]{32}/)![0] }],
+      };
+    }
+    return { rows: [] };
+  });
+  admin.end.mockRejectedValueOnce(new Error("connection close failed"));
+  const error = await createIsolatedRunDatabase(options).catch(
+    (caught: unknown) => caught,
+  );
+  expect(error).toBeInstanceOf(IsolatedRunCreationError);
+  if (!(error instanceof IsolatedRunCreationError))
+    throw new Error("Missing handle");
+  expect(error.rollback).toBe("failed");
+  await disposeIsolatedRunDatabase(error.handle);
+  expect(admin.query.mock.lastCall?.[0]).toMatch(/^DROP DATABASE/);
+});
+
 it("never drops a database whose CREATE failed", async () => {
   admin.query.mockRejectedValueOnce(new Error("creation failed"));
   await expect(createIsolatedRunDatabase(options)).rejects.toThrow(
