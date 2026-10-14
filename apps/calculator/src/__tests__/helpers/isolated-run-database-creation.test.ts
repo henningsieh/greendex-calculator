@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
 import { inspect } from "node:util";
 
 import { beforeEach, expect, it, vi } from "vitest";
@@ -63,19 +62,42 @@ it("keeps credential-bearing disposal handles out of thrown error diagnostics", 
   expect(admin.query.mock.lastCall?.[0]).toMatch(/^DROP DATABASE/);
 });
 
-it("captures preparation-error handles for focused lifecycle disposal", () => {
-  const source = readFileSync(
-    new URL("../isolated-lifecycle.integration.test.ts", import.meta.url),
-    "utf8",
-  );
-  const catchBlock = source.slice(
-    source.indexOf("  } catch (error) {", source.indexOf("beforeAll(async")),
-  );
-  expect(catchBlock).toMatch(
-    /if \(error instanceof IsolatedRunCreationError\)\s*handle = error\.handle;/,
-  );
-  expect(catchBlock).toContain("else if (handle && !aggregate)");
-  expect(catchBlock).toContain("await disposeIsolatedRunDatabase(handle)");
+it("completes marker-failure disposal while retaining a credential-safe error handle", async () => {
+  const password = "marker-failure-credential";
+  const dropped: string[] = [];
+  let closed = false;
+  admin.query.mockImplementation(async (sql: string) => {
+    if (sql.startsWith("COMMENT")) throw new Error("marker failed");
+    if (sql.startsWith("DROP")) dropped.push(sql);
+    return { rows: [] };
+  });
+  admin.end.mockImplementation(async () => {
+    closed = true;
+  });
+  const error = await createIsolatedRunDatabase({
+    ...options,
+    baseDatabaseUrl: `postgres://postgres:${password}@localhost/postgres`,
+  }).catch((caught: unknown) => caught);
+  expect(error).toBeInstanceOf(IsolatedRunCreationError);
+  if (!(error instanceof IsolatedRunCreationError))
+    throw new Error("Missing handle");
+  expect(error.rollback).toBe("disposed");
+  expect(dropped).toEqual([
+    `DROP DATABASE "${error.handle.databaseName}" WITH (FORCE)`,
+  ]);
+  expect(closed).toBe(true);
+  expect(error.handle.databaseUrl).toContain(password);
+  expect(error.handle.baseDatabaseUrl).toContain(password);
+  for (const diagnostic of [
+    JSON.stringify(error),
+    JSON.stringify(error.toJSON()),
+    inspect(error),
+    String(error),
+  ]) {
+    expect(diagnostic).not.toContain(password);
+    expect(diagnostic).not.toContain(error.handle.databaseUrl);
+    expect(diagnostic).not.toContain(error.handle.baseDatabaseUrl);
+  }
 });
 
 it("rolls back successful CREATE if writing the marker fails", async () => {
