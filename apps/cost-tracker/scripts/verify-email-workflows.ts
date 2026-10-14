@@ -41,7 +41,16 @@ const execute = promisify(execFile);
 const recipient = "greendex-testing@apps.sieh.org";
 const HTTP_TIMEOUT_MS = 60_000;
 
+type FailureStage =
+  | "assertion"
+  | "session"
+  | "send-accept"
+  | "inbox-receipt"
+  | "link-exercise"
+  | "acceptance";
+
 type Result = {
+  failureStage?: FailureStage;
   workflow: string;
   status: "passed" | "failed" | "blocked";
   durationMs: number;
@@ -235,11 +244,14 @@ export async function verifyEmailWorkflows(
     encoding: "utf8",
     timeout: 10_000,
   }).trim();
+  // Sequential workflows expose only a finite static stage, never caught error data.
+  let failureStage: FailureStage = "assertion";
   const check = async (
     workflow: string,
     action: () => Promise<void>,
   ): Promise<boolean> => {
     const started = Date.now();
+    failureStage = "assertion";
     try {
       await action();
       results.push({
@@ -251,6 +263,7 @@ export async function verifyEmailWorkflows(
     } catch {
       results.push({
         workflow,
+        failureStage,
         status: "failed",
         durationMs: Date.now() - started,
       });
@@ -353,7 +366,9 @@ export async function verifyEmailWorkflows(
           .where(eq(schema.user.email, recipient));
         if (existing.length)
           throw new Error("Run recipient identity was not clean.");
+        failureStage = "inbox-receipt";
         const boundary = await inbox.boundary();
+        failureStage = "send-accept";
         const response = await account.auth("sign-up/email", {
           name,
           email: recipient,
@@ -363,6 +378,7 @@ export async function verifyEmailWorkflows(
         const createdUser = response.user as { id?: string } | undefined;
         if (!createdUser?.id) throw new Error("Signup did not create a User.");
         userId = createdUser.id;
+        failureStage = "inbox-receipt";
         const link = await inbox.deliveredLink(
           boundary,
           "Verify Your Email Address",
@@ -370,9 +386,11 @@ export async function verifyEmailWorkflows(
           "/api/auth/verify-email",
           (_, html) => html.includes(name),
         );
+        failureStage = "link-exercise";
         const exercised = await account.request(link);
         if (exercised.status < 200 || exercised.status >= 400)
           throw new Error("Delivered verification link failed.");
+        failureStage = "session";
         await account.signIn(recipient, initialPassword);
       });
       try {
@@ -391,11 +409,14 @@ export async function verifyEmailWorkflows(
         }
         await check(`${app}/organization-invitation`, async () => {
           const owner = new HttpSession(base);
+          failureStage = "session";
           await owner.signIn(SEED_USER.email, SEED_USER.password);
           await owner.auth("organization/set-active", {
             organizationId: seed.organizationId,
           });
+          failureStage = "inbox-receipt";
           const boundary = await inbox.boundary();
+          failureStage = "send-accept";
           const invitationId =
             app === "calculator"
               ? (
@@ -413,6 +434,7 @@ export async function verifyEmailWorkflows(
                 ).invitationId;
           if (typeof invitationId !== "string")
             throw new Error("Invitation was not issued.");
+          failureStage = "inbox-receipt";
           const link = await inbox.deliveredLink(
             boundary,
             `You're invited to join ${SEED_ORGANIZATION.name}`,
@@ -421,9 +443,11 @@ export async function verifyEmailWorkflows(
             (url) => url.pathname.split("/").at(-1) === invitationId,
           );
           const deliveredId = new URL(link).pathname.split("/").at(-1)!;
+          failureStage = "link-exercise";
           const page = await account.request(link);
           if (page.status >= 400)
             throw new Error("Delivered invitation page failed.");
+          failureStage = "acceptance";
           if (app === "calculator")
             await account.auth("organization/accept-invitation", {
               invitationId: deliveredId,
@@ -432,6 +456,7 @@ export async function verifyEmailWorkflows(
             await account
               .rpc()
               .organizations.acceptInvitation({ invitationId: deliveredId });
+          failureStage = "assertion";
           const memberships = await account.auth("organization/list");
           if (
             !Array.isArray(memberships) ||
@@ -445,11 +470,14 @@ export async function verifyEmailWorkflows(
         });
         let currentPassword = initialPassword;
         await check(`${app}/password-reset`, async () => {
+          failureStage = "inbox-receipt";
           const boundary = await inbox.boundary();
+          failureStage = "send-accept";
           await account.auth("request-password-reset", {
             email: recipient,
             redirectTo: `${base}/reset-password?run=${handle!.runId}&workflow=reset`,
           });
+          failureStage = "inbox-receipt";
           const link = await inbox.deliveredLink(
             boundary,
             "Reset Your Password",
@@ -457,6 +485,7 @@ export async function verifyEmailWorkflows(
             "/api/auth/reset-password/",
             (_, html) => html.includes(name),
           );
+          failureStage = "link-exercise";
           const response = await account.request(link);
           const location = response.headers.get("location");
           if (response.status < 300 || response.status >= 400 || !location)
@@ -469,10 +498,12 @@ export async function verifyEmailWorkflows(
           )
             throw new Error("Reset link was not valid.");
           const nextPassword = `Reset-${randomUUID()}!`;
+          failureStage = "acceptance";
           await account.auth("reset-password", {
             token: redirect.searchParams.get("token"),
             newPassword: nextPassword,
           });
+          failureStage = "assertion";
           await new HttpSession(base).signIn(recipient, nextPassword);
           const oldSignIn = await new HttpSession(base).request(
             "/api/auth/sign-in/email",
@@ -487,11 +518,14 @@ export async function verifyEmailWorkflows(
         if (app === "calculator") {
           await check(`${app}/magic-link`, async () => {
             const fresh = new HttpSession(base);
+            failureStage = "inbox-receipt";
             const boundary = await inbox.boundary();
+            failureStage = "send-accept";
             await fresh.auth("sign-in/magic-link", {
               email: recipient,
               callbackURL: `${base}/?run=${handle!.runId}&workflow=magic`,
             });
+            failureStage = "inbox-receipt";
             const link = await inbox.deliveredLink(
               boundary,
               "Sign in to your account",
@@ -502,8 +536,10 @@ export async function verifyEmailWorkflows(
                   handle!.runId,
                 ),
             );
+            failureStage = "link-exercise";
             const response = await fresh.request(link);
             if (response.status >= 400) throw new Error("Magic link failed.");
+            failureStage = "assertion";
             const session = await fresh.auth("get-session");
             if (
               (session.user as { email?: string } | undefined)?.email !==
@@ -514,10 +550,12 @@ export async function verifyEmailWorkflows(
         } else {
           await check(`${app}/participant-invitation`, async () => {
             const owner = new HttpSession(base);
+            failureStage = "session";
             await owner.signIn(SEED_USER.email, SEED_USER.password);
             await owner.auth("organization/set-active", {
               organizationId: seed.secondPartnerOrganizationId,
             });
+            failureStage = "assertion";
             const [partnership] = await db
               .select({ id: schema.projectPartnerOrganizationsTable.id })
               .from(schema.projectPartnerOrganizationsTable)
@@ -544,7 +582,9 @@ export async function verifyEmailWorkflows(
               throw new Error(
                 "Canonical participant-invitation Partnership missing.",
               );
+            failureStage = "inbox-receipt";
             const boundary = await inbox.boundary();
+            failureStage = "send-accept";
             const issued = await owner
               .rpc()
               .participantOnboarding.issueInvitation({
@@ -553,6 +593,7 @@ export async function verifyEmailWorkflows(
               });
             if (issued.delivery !== "sent")
               throw new Error("Participant invitation was not sent.");
+            failureStage = "inbox-receipt";
             const link = await inbox.deliveredLink(
               boundary,
               "Your Participant Invitation",
@@ -566,10 +607,13 @@ export async function verifyEmailWorkflows(
             if (!secret)
               throw new Error("Delivered participant invitation has no secret.");
             const joiner = new HttpSession(base);
+            failureStage = "session";
             await joiner.signIn(recipient, currentPassword);
+            failureStage = "link-exercise";
             const page = await joiner.request(link);
             if (page.status >= 400)
               throw new Error("Delivered Participant Invitation page failed.");
+            failureStage = "acceptance";
             const joined = await joiner.rpc().participantOnboarding.join({
               source: { kind: "invitation", invitationId, secret },
               profile: { fullName: name, country: "DE" },
@@ -579,6 +623,7 @@ export async function verifyEmailWorkflows(
               throw new Error(
                 "Delivered Participant Invitation was not consumed.",
               );
+            failureStage = "assertion";
             const mine = await joiner
               .rpc()
               .participantOnboarding.listMyProjects();
@@ -649,7 +694,9 @@ export async function verifyEmailWorkflows(
   };
   console.log(`Real email workflows: ${report.status.toUpperCase()}`);
   for (const result of results)
-    console.log(`${result.status.toUpperCase()} ${result.workflow}`);
+    console.log(
+      `${result.status.toUpperCase()} ${result.workflow}${result.failureStage ? ` (${result.failureStage})` : ""}`,
+    );
   console.log(JSON.stringify(report));
   // Only the sanitized schema above is persisted; never subprocess output or errors.
   await mkdir(resolve(root, ".turbo/email-workflows"), { recursive: true });
