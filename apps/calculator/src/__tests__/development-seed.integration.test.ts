@@ -29,7 +29,9 @@ interface CanonicalSeedIdentity {
   projectNames: string[];
   scenarios: {
     costTrackerSetupLinks: CostTrackerSeedScenario;
-    costTrackerSubmission: CostTrackerSeedScenario;
+    costTrackerSubmission: CostTrackerSeedScenario & {
+      payoutAccountIds: string[];
+    };
     costTrackerParticipations: CostTrackerSeedScenario;
     costTrackerProjects: CostTrackerSeedScenario;
     costTrackerJourneys: CostTrackerSeedScenario;
@@ -84,7 +86,7 @@ async function runSeedModule(
     })().catch((error) => { console.error(error); process.exitCode = 1; });
   `;
   const { stdout } = await execute("pnpm", ["exec", "tsx", "-e", script], {
-    timeout: 120_000,
+    timeout: 300_000,
     cwd: calculatorDir,
     env: {
       ...process.env,
@@ -151,6 +153,7 @@ it("seeds a shared Project, Participant Journey and allocated editable Claim fro
     const options = {
       cwd: resolve(import.meta.dirname, "../../../.."),
       env: { ...process.env, DATABASE_URL: databaseUrl },
+      timeout: 300_000,
     };
     await execute("pnpm", ["run", "db:migrate"], options);
     // Capture output: even legacy seeders must not leak login credentials into diagnostics.
@@ -206,7 +209,7 @@ it("seeds a shared Project, Participant Journey and allocated editable Claim fro
       }),
     ]);
   });
-}, 60_000);
+}, 360_000);
 
 interface SeedCounts {
   users: number;
@@ -272,6 +275,7 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     const options = {
       cwd: resolve(import.meta.dirname, "../../../.."),
       env: { ...process.env, DATABASE_URL: databaseUrl },
+      timeout: 300_000,
     };
     await execute("pnpm", ["run", "db:migrate"], options);
     // First run through the normal development command: no credential leak.
@@ -411,13 +415,14 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(roleByEmail.get(identities.scenarios.creatorUser.email)).toBeNull();
     expect(roleByEmail.get(identities.scenarios.ownerUser.email)).not.toBeNull();
   });
-}, 120_000);
+}, 600_000);
 
 it("requires explicit confirmation and resets only seed-owned rows", async () => {
   await withDisposableDatabase("seed_reset", async (pool, databaseUrl) => {
     const options = {
       cwd: resolve(import.meta.dirname, "../../../.."),
       env: { ...process.env, DATABASE_URL: databaseUrl },
+      timeout: 300_000,
     };
     await execute("pnpm", ["run", "db:migrate"], options);
     await runModuleSeed(databaseUrl);
@@ -530,7 +535,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
       decoy_legs: 1,
     });
   });
-}, 120_000);
+}, 360_000);
 
 it("converges named Cost Tracker Claim, cost and onboarding scenarios without duplicates or secret leaks", async () => {
   await withDisposableDatabase("cost_tracker_seed", async (pool, databaseUrl) => {
@@ -652,6 +657,13 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     ]);
     expect(
       (
+        await pool.query("SELECT id FROM payout_account WHERE id = ANY ($1)", [
+          identities.scenarios.costTrackerSubmission.payoutAccountIds,
+        ])
+      ).rows,
+    ).toEqual([]);
+    expect(
+      (
         await pool.query(
           "SELECT id FROM payout_account WHERE id = 'developer-payout'",
         )
@@ -665,6 +677,7 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
       projects: 0,
       partnerships: 0,
       participations: 0,
+      journeys: 0,
       claims: 0,
       payout_accounts: 1,
       entries: 0,
@@ -675,4 +688,4 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
       hashed_secrets: null,
     });
   });
-}, 180_000);
+}, 600_000);

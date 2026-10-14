@@ -41,7 +41,16 @@ const execute = promisify(execFile);
 const recipient = "greendex-testing@apps.sieh.org";
 const HTTP_TIMEOUT_MS = 60_000;
 
+type FailureStage =
+  | "assertion"
+  | "session"
+  | "send-accept"
+  | "inbox-receipt"
+  | "link-exercise"
+  | "acceptance";
+
 type Result = {
+  failureStage?: FailureStage;
   workflow: string;
   status: "passed" | "failed" | "blocked";
   durationMs: number;
@@ -210,7 +219,15 @@ function reportBlockedWorkflows(results: Result[]): void {
   }
 }
 
-export async function verifyEmailWorkflows(): Promise<boolean> {
+export interface InjectedEmailRun {
+  handle: IsolatedRunHandle;
+  servers: ManagedAppServers;
+  seed: Awaited<ReturnType<typeof seedDatabase>>;
+}
+
+export async function verifyEmailWorkflows(
+  injected?: InjectedEmailRun,
+): Promise<boolean> {
   const results: Result[] = [];
   const cleanup = {
     servers: "not-started",
@@ -227,11 +244,14 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
     encoding: "utf8",
     timeout: 10_000,
   }).trim();
+  // Sequential workflows expose only a finite static stage, never caught error data.
+  let failureStage: FailureStage = "assertion";
   const check = async (
     workflow: string,
     action: () => Promise<void>,
   ): Promise<boolean> => {
     const started = Date.now();
+    failureStage = "assertion";
     try {
       await action();
       results.push({
@@ -243,6 +263,7 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
     } catch {
       results.push({
         workflow,
+        failureStage,
         status: "failed",
         durationMs: Date.now() - started,
       });
@@ -265,43 +286,59 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
           process.env.DELETE_TESTMAILS_DURING_TESTRUN;
       validateMailboxEnvironment(environment);
     }
-    const databaseEnvironment = await readLocalEnvironment(
-      resolve(root, "packages/database/.env"),
-    );
-    if (!databaseEnvironment.DATABASE_URL)
-      throw new Error("Missing database configuration.");
-    handle = await createIsolatedRunDatabase({
-      baseDatabaseUrl: databaseEnvironment.DATABASE_URL,
-      prefix: "email_check",
-    });
-    cleanup.database = "pending";
-    await execute("pnpm", ["run", "db:migrate"], {
-      cwd: resolve(root, "packages/database"),
-      env: { ...process.env, DATABASE_URL: handle.databaseUrl },
-      timeout: 120_000,
-    });
-    pool = new Pool({
-      connectionString: handle.databaseUrl,
-      max: 1,
-      connectionTimeoutMillis: 10_000,
-      statement_timeout: 30_000,
-    });
-    const db = drizzle(pool, { schema });
-    // Seed output includes private dataset details; do not relay it to reports.
-    const originalLog = console.log;
     let seed: Awaited<ReturnType<typeof seedDatabase>>;
-    try {
-      console.log = () => {};
-      seed = await seedDatabase(db);
-    } finally {
-      console.log = originalLog;
+    if (injected) {
+      handle = injected.handle;
+      servers = injected.servers;
+      seed = injected.seed;
+      cleanup.database = "root-owned";
+      cleanup.servers = "root-owned";
+    } else {
+      const databaseEnvironment = await readLocalEnvironment(
+        resolve(root, "packages/database/.env"),
+      );
+      if (!databaseEnvironment.DATABASE_URL)
+        throw new Error("Missing database configuration.");
+      handle = await createIsolatedRunDatabase({
+        baseDatabaseUrl: databaseEnvironment.DATABASE_URL,
+        prefix: "email_check",
+      });
+      cleanup.database = "pending";
+      await execute("pnpm", ["run", "db:migrate"], {
+        cwd: resolve(root, "packages/database"),
+        env: { ...process.env, DATABASE_URL: handle.databaseUrl },
+        timeout: 120_000,
+      });
+      pool = new Pool({
+        connectionString: handle.databaseUrl,
+        max: 1,
+        connectionTimeoutMillis: 10_000,
+        statement_timeout: 30_000,
+      });
+      const db = drizzle(pool, { schema });
+      // Seed output includes private dataset details; do not relay it to reports.
+      const originalLog = console.log;
+      try {
+        console.log = () => {};
+        seed = await seedDatabase(db);
+      } finally {
+        console.log = originalLog;
+      }
+      servers = await startManagedAppServers(
+        root,
+        { runId: handle.runId, databaseUrl: handle.databaseUrl },
+        environments,
+      );
+      cleanup.servers = "pending";
     }
-    servers = await startManagedAppServers(
-      root,
-      { runId: handle.runId, databaseUrl: handle.databaseUrl },
-      environments,
-    );
-    cleanup.servers = "pending";
+    if (!pool)
+      pool = new Pool({
+        connectionString: handle.databaseUrl,
+        max: 1,
+        connectionTimeoutMillis: 10_000,
+        statement_timeout: 30_000,
+      });
+    const db = drizzle(pool, { schema });
     results.push({
       workflow: "isolated-migrated-seeded-managed-servers",
       status: "passed",
@@ -329,7 +366,9 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
           .where(eq(schema.user.email, recipient));
         if (existing.length)
           throw new Error("Run recipient identity was not clean.");
+        failureStage = "inbox-receipt";
         const boundary = await inbox.boundary();
+        failureStage = "send-accept";
         const response = await account.auth("sign-up/email", {
           name,
           email: recipient,
@@ -339,6 +378,7 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
         const createdUser = response.user as { id?: string } | undefined;
         if (!createdUser?.id) throw new Error("Signup did not create a User.");
         userId = createdUser.id;
+        failureStage = "inbox-receipt";
         const link = await inbox.deliveredLink(
           boundary,
           "Verify Your Email Address",
@@ -346,9 +386,11 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
           "/api/auth/verify-email",
           (_, html) => html.includes(name),
         );
+        failureStage = "link-exercise";
         const exercised = await account.request(link);
         if (exercised.status < 200 || exercised.status >= 400)
           throw new Error("Delivered verification link failed.");
+        failureStage = "session";
         await account.signIn(recipient, initialPassword);
       });
       try {
@@ -367,11 +409,14 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
         }
         await check(`${app}/organization-invitation`, async () => {
           const owner = new HttpSession(base);
+          failureStage = "session";
           await owner.signIn(SEED_USER.email, SEED_USER.password);
           await owner.auth("organization/set-active", {
             organizationId: seed.organizationId,
           });
+          failureStage = "inbox-receipt";
           const boundary = await inbox.boundary();
+          failureStage = "send-accept";
           const invitationId =
             app === "calculator"
               ? (
@@ -389,6 +434,7 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
                 ).invitationId;
           if (typeof invitationId !== "string")
             throw new Error("Invitation was not issued.");
+          failureStage = "inbox-receipt";
           const link = await inbox.deliveredLink(
             boundary,
             `You're invited to join ${SEED_ORGANIZATION.name}`,
@@ -397,9 +443,11 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
             (url) => url.pathname.split("/").at(-1) === invitationId,
           );
           const deliveredId = new URL(link).pathname.split("/").at(-1)!;
+          failureStage = "link-exercise";
           const page = await account.request(link);
           if (page.status >= 400)
             throw new Error("Delivered invitation page failed.");
+          failureStage = "acceptance";
           if (app === "calculator")
             await account.auth("organization/accept-invitation", {
               invitationId: deliveredId,
@@ -408,6 +456,7 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
             await account
               .rpc()
               .organizations.acceptInvitation({ invitationId: deliveredId });
+          failureStage = "assertion";
           const memberships = await account.auth("organization/list");
           if (
             !Array.isArray(memberships) ||
@@ -421,11 +470,14 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
         });
         let currentPassword = initialPassword;
         await check(`${app}/password-reset`, async () => {
+          failureStage = "inbox-receipt";
           const boundary = await inbox.boundary();
+          failureStage = "send-accept";
           await account.auth("request-password-reset", {
             email: recipient,
             redirectTo: `${base}/reset-password?run=${handle!.runId}&workflow=reset`,
           });
+          failureStage = "inbox-receipt";
           const link = await inbox.deliveredLink(
             boundary,
             "Reset Your Password",
@@ -433,6 +485,7 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
             "/api/auth/reset-password/",
             (_, html) => html.includes(name),
           );
+          failureStage = "link-exercise";
           const response = await account.request(link);
           const location = response.headers.get("location");
           if (response.status < 300 || response.status >= 400 || !location)
@@ -445,10 +498,12 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
           )
             throw new Error("Reset link was not valid.");
           const nextPassword = `Reset-${randomUUID()}!`;
+          failureStage = "acceptance";
           await account.auth("reset-password", {
             token: redirect.searchParams.get("token"),
             newPassword: nextPassword,
           });
+          failureStage = "assertion";
           await new HttpSession(base).signIn(recipient, nextPassword);
           const oldSignIn = await new HttpSession(base).request(
             "/api/auth/sign-in/email",
@@ -463,11 +518,14 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
         if (app === "calculator") {
           await check(`${app}/magic-link`, async () => {
             const fresh = new HttpSession(base);
+            failureStage = "inbox-receipt";
             const boundary = await inbox.boundary();
+            failureStage = "send-accept";
             await fresh.auth("sign-in/magic-link", {
               email: recipient,
               callbackURL: `${base}/?run=${handle!.runId}&workflow=magic`,
             });
+            failureStage = "inbox-receipt";
             const link = await inbox.deliveredLink(
               boundary,
               "Sign in to your account",
@@ -478,8 +536,10 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
                   handle!.runId,
                 ),
             );
+            failureStage = "link-exercise";
             const response = await fresh.request(link);
             if (response.status >= 400) throw new Error("Magic link failed.");
+            failureStage = "assertion";
             const session = await fresh.auth("get-session");
             if (
               (session.user as { email?: string } | undefined)?.email !==
@@ -490,10 +550,12 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
         } else {
           await check(`${app}/participant-invitation`, async () => {
             const owner = new HttpSession(base);
+            failureStage = "session";
             await owner.signIn(SEED_USER.email, SEED_USER.password);
             await owner.auth("organization/set-active", {
               organizationId: seed.secondPartnerOrganizationId,
             });
+            failureStage = "assertion";
             const [partnership] = await db
               .select({ id: schema.projectPartnerOrganizationsTable.id })
               .from(schema.projectPartnerOrganizationsTable)
@@ -520,7 +582,9 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
               throw new Error(
                 "Canonical participant-invitation Partnership missing.",
               );
+            failureStage = "inbox-receipt";
             const boundary = await inbox.boundary();
+            failureStage = "send-accept";
             const issued = await owner
               .rpc()
               .participantOnboarding.issueInvitation({
@@ -529,6 +593,7 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
               });
             if (issued.delivery !== "sent")
               throw new Error("Participant invitation was not sent.");
+            failureStage = "inbox-receipt";
             const link = await inbox.deliveredLink(
               boundary,
               "Your Participant Invitation",
@@ -542,10 +607,13 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
             if (!secret)
               throw new Error("Delivered participant invitation has no secret.");
             const joiner = new HttpSession(base);
+            failureStage = "session";
             await joiner.signIn(recipient, currentPassword);
+            failureStage = "link-exercise";
             const page = await joiner.request(link);
             if (page.status >= 400)
               throw new Error("Delivered Participant Invitation page failed.");
+            failureStage = "acceptance";
             const joined = await joiner.rpc().participantOnboarding.join({
               source: { kind: "invitation", invitationId, secret },
               profile: { fullName: name, country: "DE" },
@@ -555,6 +623,7 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
               throw new Error(
                 "Delivered Participant Invitation was not consumed.",
               );
+            failureStage = "assertion";
             const mine = await joiner
               .rpc()
               .participantOnboarding.listMyProjects();
@@ -590,13 +659,20 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
       durationMs: Date.now() - startedAt,
     });
   } finally {
-    await cleanupRun(inboxes, servers, pool, handle, cleanup, results);
+    await cleanupRun(
+      inboxes,
+      injected ? undefined : servers,
+      pool,
+      injected ? undefined : handle,
+      cleanup,
+      results,
+    );
   }
   reportBlockedWorkflows(results);
   const passed =
     results.every((result) => result.status === "passed") &&
-    cleanup.servers === "stopped" &&
-    cleanup.database === "disposed";
+    cleanup.servers === (injected ? "root-owned" : "stopped") &&
+    cleanup.database === (injected ? "root-owned" : "disposed");
   const report = {
     suite: "real-email-workflows",
     commit,
@@ -618,7 +694,9 @@ export async function verifyEmailWorkflows(): Promise<boolean> {
   };
   console.log(`Real email workflows: ${report.status.toUpperCase()}`);
   for (const result of results)
-    console.log(`${result.status.toUpperCase()} ${result.workflow}`);
+    console.log(
+      `${result.status.toUpperCase()} ${result.workflow}${result.failureStage ? ` (${result.failureStage})` : ""}`,
+    );
   console.log(JSON.stringify(report));
   // Only the sanitized schema above is persisted; never subprocess output or errors.
   await mkdir(resolve(root, ".turbo/email-workflows"), { recursive: true });

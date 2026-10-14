@@ -31,6 +31,9 @@ import {
  * each run owns a unique name plus its ownership marker.
  */
 
+// Aggregate mode consumes the root's migrated/seeded database; root owns disposal.
+// Focused mode retains the standalone lifecycle, including disposal assertions.
+const aggregate = process.env.GREENDEX_AGGREGATE_TEST_RUN === "true";
 const execute = promisify(execFile);
 const repoRoot = resolve(import.meta.dirname, "../../../..");
 const databasePackage = resolve(repoRoot, "packages/database");
@@ -169,7 +172,9 @@ function emitReport(): void {
 
 beforeAll(async () => {
   const startedAt = Date.now();
-  const baseDatabaseUrl = process.env.DATABASE_URL;
+  const baseDatabaseUrl = aggregate
+    ? process.env.GREENDEX_TEST_SERVICE_DATABASE_URL
+    : process.env.DATABASE_URL;
   if (!baseDatabaseUrl) {
     throw new Error(
       "BLOCKED: DATABASE_URL is not configured, so no service can host the isolated run database. Refusing to fall back to any default database.",
@@ -177,10 +182,33 @@ beforeAll(async () => {
   }
   let handle: IsolatedRunHandle | null = null;
   try {
-    handle = await createIsolatedRunDatabase({
-      baseDatabaseUrl,
-      prefix: "lifecycle_check",
-    });
+    if (aggregate) {
+      const databaseUrl = process.env.DATABASE_URL;
+      const runId = process.env.TEST_RUN_ID;
+      if (
+        !databaseUrl ||
+        !runId ||
+        !/^[a-f0-9]{32}$/.test(runId) ||
+        !new URL(databaseUrl).pathname.endsWith(`_${runId}`)
+      )
+        throw new Error("Invalid injected lifecycle.");
+      const base = new URL(baseDatabaseUrl);
+      handle = {
+        runId,
+        databaseUrl,
+        databaseName: new URL(databaseUrl).pathname.slice(1),
+        baseDatabaseUrl,
+        baseDatabaseName: base.pathname.slice(1),
+        serviceHost: base.hostname,
+        servicePort: base.port || "5432",
+        createdAt: new Date().toISOString(),
+      };
+    } else {
+      handle = await createIsolatedRunDatabase({
+        baseDatabaseUrl,
+        prefix: "lifecycle_check",
+      });
+    }
     state = {
       handle,
       baseDatabaseUrl,
@@ -198,17 +226,30 @@ beforeAll(async () => {
       );
     }
     const migratedAt = Date.now();
-    await execute("pnpm", ["run", "db:migrate"], {
-      cwd: databasePackage,
-      env: { ...process.env, DATABASE_URL: handle.databaseUrl },
-    });
+    if (!aggregate)
+      await execute("pnpm", ["run", "db:migrate"], {
+        cwd: databasePackage,
+        env: { ...process.env, DATABASE_URL: handle.databaseUrl },
+        timeout: 120_000,
+      });
+    const ownership = await state.pool.query(
+      "SELECT shobj_description(oid, 'pg_database') AS marker FROM pg_database WHERE datname = $1",
+      [handle.databaseName],
+    );
+    expect(ownership.rows[0]?.marker).toBe(`greendex-test-run:${handle.runId}`);
     state.timings.migrateMs = Date.now() - migratedAt;
     state.results.migrated = true;
     const seededAt = Date.now();
-    const seedSummary = JSON.parse(await seedOnce(handle.databaseUrl)) as {
-      projectCount: number;
-      userId: string;
-    };
+    const seedSummary = aggregate
+      ? {
+          projectCount: (
+            await state.pool.query("SELECT count(*)::int AS count FROM project")
+          ).rows[0].count,
+        }
+      : (JSON.parse(await seedOnce(handle.databaseUrl)) as {
+          projectCount: number;
+          userId: string;
+        });
     state.timings.seedMs = Date.now() - seededAt;
     // The canonical seed runs exactly once per full run.
     expect(seedSummary.projectCount).toBeGreaterThan(0);
@@ -218,7 +259,7 @@ beforeAll(async () => {
     if (state) {
       await state.pool.end().catch(() => {});
       try {
-        await disposeIsolatedRunDatabase(state.handle);
+        if (!aggregate) await disposeIsolatedRunDatabase(state.handle);
         state.results.cleanedUp = true;
         emitReport();
         // Annulled: afterAll must not retry a completed disposal.
@@ -228,7 +269,7 @@ beforeAll(async () => {
           `Setup failed and run database cleanup also failed: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
         );
       }
-    } else if (handle) {
+    } else if (handle && !aggregate) {
       await disposeIsolatedRunDatabase(handle).catch(() => {});
     }
     throw error;
@@ -357,9 +398,11 @@ afterAll(async () => {
         [`${state.fixture}-participation`, `${state.fixture}-project`],
       )
       .catch(() => {});
+    if (aggregate)
+      expect((await state.pool.query("SELECT 1")).rows).toHaveLength(1);
     await state.pool.end();
     try {
-      await disposeIsolatedRunDatabase(state.handle);
+      if (!aggregate) await disposeIsolatedRunDatabase(state.handle);
       state.results.cleanedUp = true;
     } catch (error) {
       disposeError = error;
