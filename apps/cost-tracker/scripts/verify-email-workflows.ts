@@ -194,7 +194,7 @@ async function cleanupRun(
       results.push({ workflow: "pool-cleanup", status: "failed", durationMs: 0 });
     }
   }
-  if (handle) {
+  if (handle && cleanup.database !== "disposed") {
     try {
       await disposeIsolatedRunDatabase(handle);
       cleanup.database = "disposed";

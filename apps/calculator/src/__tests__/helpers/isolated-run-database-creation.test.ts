@@ -100,6 +100,53 @@ it("completes marker-failure disposal while retaining a credential-safe error ha
   }
 });
 
+it("focused lifecycle retries only failed creation rollback", async () => {
+  let prepare: (() => Promise<void>) | undefined;
+  vi.doMock("vitest", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("vitest")>()),
+    beforeAll: (hook: () => Promise<void>) => {
+      prepare = hook;
+    },
+    afterAll: vi.fn(),
+    describe: vi.fn(),
+  }));
+  vi.stubEnv("GREENDEX_AGGREGATE_TEST_RUN", "false");
+  try {
+    await import("@/__tests__/isolated-lifecycle.integration.test");
+    if (!prepare) throw new Error("Missing lifecycle preparation hook");
+    for (const rollback of ["failed", "disposed"] as const) {
+      let marker: string | undefined;
+      let attempts = 0;
+      let completed = 0;
+      admin.query.mockImplementation(async (sql: string) => {
+        if (sql.startsWith("COMMENT")) {
+          marker = sql.split("'")[1];
+          throw new Error("marker failed");
+        }
+        if (sql.startsWith("SELECT")) return { rows: [{ marker }] };
+        if (sql.startsWith("DROP")) {
+          attempts++;
+          if (rollback === "failed" && attempts === 1)
+            throw new Error("rollback failed");
+          completed++;
+          marker = undefined;
+        }
+        return { rows: [] };
+      });
+      const error = await prepare().catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(IsolatedRunCreationError);
+      if (!(error instanceof IsolatedRunCreationError))
+        throw new Error("Missing creation error");
+      expect(error.rollback).toBe(rollback);
+      expect(attempts).toBe(rollback === "failed" ? 2 : 1);
+      expect(completed).toBe(1);
+    }
+  } finally {
+    vi.doUnmock("vitest");
+    vi.unstubAllEnvs();
+  }
+});
+
 it("rolls back successful CREATE if writing the marker fails", async () => {
   admin.query
     .mockResolvedValueOnce({ rows: [] })

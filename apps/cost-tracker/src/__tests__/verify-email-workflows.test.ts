@@ -104,6 +104,30 @@ describe("verify-email-workflows creation failure cleanup", () => {
     },
   );
 
+  it("preserves completed rollback without retrying disposal", async () => {
+    const handle = {
+      runId: "a".repeat(32),
+      databaseName: "owned",
+    } as IsolatedRunHandle;
+    lifecycle.create.mockRejectedValueOnce(
+      new IsolatedRunCreationError(handle, "disposed", new Error("private")),
+    );
+    lifecycle.dispose.mockRejectedValueOnce(
+      new Error("already disposed; ownership marker absent"),
+    );
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      expect(await verifyEmailWorkflows()).toBe(false);
+      expect(lifecycle.dispose).not.toHaveBeenCalled();
+      const report = JSON.parse(lifecycle.write.mock.lastCall![1]);
+      expect(report.cleanup.database).toBe("disposed");
+      expect(report.runId).toBe(handle.runId);
+    } finally {
+      log.mockRestore();
+      lifecycle.dispose.mockReset().mockResolvedValue(undefined);
+    }
+  });
+
   it("reports failed disposal rather than not-created when recovery fails", async () => {
     const handle = {
       runId: "a".repeat(32),
