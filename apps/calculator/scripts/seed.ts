@@ -73,6 +73,7 @@ import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/tra
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import {
   claimsTable,
+  claimHistoryTable,
   duplicateReviewTasksTable,
   costAllocationsTable,
   hostProjectAssignmentsTable,
@@ -451,6 +452,61 @@ export const SEED_SCENARIOS = {
     ].map((name) => `setup-${name}-canonical`),
     projectNames: ["project", "other-project"].map(
       (name) => `Seed Setup Link Project setup-${name}-canonical`,
+    ),
+  },
+  costTrackerSubmission: {
+    userIds: [
+      "submit-actor-canonical",
+      "submit-participant-user-canonical",
+      ...["host", "partner"].flatMap((side) =>
+        ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
+          (side === "partner" && (role === "owner" || role === "admin")
+            ? ["unassigned"]
+            : ["assigned", "unassigned"]
+          ).map((scope) => `submit-matrix-${side}-${role}-${scope}-canonical`),
+        ),
+      ),
+    ],
+    userEmails: [
+      "submit-actor-canonical@example.org",
+      "submit-participant-user-canonical@example.org",
+      ...["host", "partner"].flatMap((side) =>
+        ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
+          (side === "partner" && (role === "owner" || role === "admin")
+            ? ["unassigned"]
+            : ["assigned", "unassigned"]
+          ).map(
+            (scope) =>
+              `submit-matrix-${side}-${role}-${scope}-canonical@example.org`,
+          ),
+        ),
+      ),
+    ],
+    organizationIds: ["host", "partner", "other"].map(
+      (name) => `submit-${name}-canonical`,
+    ),
+    projectNames: [
+      "editable",
+      "submitted",
+      "rejected",
+      "approved",
+      "paid",
+      "correction",
+    ].flatMap((name) => [
+      `Seed Submission Project ${name}`,
+      `Seed Other Submission Project ${name}`,
+    ]),
+    participationIds: [
+      "editable",
+      "submitted",
+      "rejected",
+      "approved",
+      "paid",
+      "correction",
+    ].flatMap((name) =>
+      ["robin", "sam", "outsider", "third"].map(
+        (part) => `submit-${name}-${part}-canonical`,
+      ),
     ),
   },
   costTrackerParticipations: {
@@ -1877,6 +1933,7 @@ export async function resetSeedData(
     SEED_USER.email,
     ...SEED_ORG_ROLE_EMAILS,
     ...SEED_SCENARIOS.costTrackerSetupLinks.userEmails,
+    ...SEED_SCENARIOS.costTrackerSubmission.userEmails,
     ...SEED_SCENARIOS.costTrackerParticipations.userEmails,
     ...SEED_SCENARIOS.costTrackerProjects.userEmails,
     ...SEED_SCENARIOS.costTrackerJourneys.userEmails,
@@ -1898,6 +1955,7 @@ export async function resetSeedData(
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
       ...SEED_SCENARIOS.costTrackerSetupLinks.organizationIds,
+      ...SEED_SCENARIOS.costTrackerSubmission.organizationIds,
       ...SEED_SCENARIOS.costTrackerParticipations.organizationIds,
       ...SEED_SCENARIOS.costTrackerProjects.organizationIds,
       ...SEED_SCENARIOS.costTrackerJourneys.organizationIds,
@@ -1913,6 +1971,7 @@ export async function resetSeedData(
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
     ...SEED_SCENARIOS.costTrackerSetupLinks.projectNames,
+    ...SEED_SCENARIOS.costTrackerSubmission.projectNames,
     ...SEED_SCENARIOS.costTrackerParticipations.projectNames,
     ...SEED_SCENARIOS.costTrackerProjects.projectNames,
     ...SEED_SCENARIOS.costTrackerJourneys.projectNames,
@@ -1994,6 +2053,9 @@ export async function resetSeedData(
       });
       const claimIds = claims.map((claim) => claim.id);
       if (claimIds.length > 0) {
+        await db
+          .delete(claimHistoryTable)
+          .where(inArray(claimHistoryTable.claimId, claimIds as string[]));
         const entries = await db.query.travelCostEntriesTable.findMany({
           where: inArray(travelCostEntriesTable.claimId, claimIds as string[]),
         });
@@ -2048,6 +2110,7 @@ export async function resetSeedData(
       "seed-second-onboarding-invitee@example.org",
     ]);
     const costTrackerScenarioParticipationIds = new Set<string>([
+      ...SEED_SCENARIOS.costTrackerSubmission.participationIds,
       ...SEED_SCENARIOS.costTrackerParticipations.participationIds,
       ...SEED_SCENARIOS.costTrackerProjects.participationIds,
       ...SEED_SCENARIOS.costTrackerJourneys.participationIds,
