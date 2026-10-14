@@ -352,6 +352,9 @@ importers:
       oxlint-tsgolint:
         specifier: ^7.0.2003
         version: 7.0.2003
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
       tsx:
         specifier: 'catalog:'
         version: 4.23.15

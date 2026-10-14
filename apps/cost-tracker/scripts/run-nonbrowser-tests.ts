@@ -25,6 +25,7 @@ import { seedDatabase } from "../../calculator/scripts/seed";
 import {
   createIsolatedRunDatabase,
   disposeIsolatedRunDatabase,
+  IsolatedRunCreationError,
   type IsolatedRunHandle,
 } from "../../calculator/src/__tests__/helpers/isolated-run-database";
 import { verifyEmailWorkflows } from "./verify-email-workflows";
@@ -36,6 +37,9 @@ const interrupt = () => interruption.abort();
 process.once("SIGINT", interrupt);
 process.once("SIGTERM", interrupt);
 let handle: IsolatedRunHandle | undefined;
+let databaseCreation:
+  | { databaseName: string; rollback: "disposed" | "failed" }
+  | undefined;
 let servers: ManagedAppServers | undefined;
 let seed: Awaited<ReturnType<typeof seedDatabase>> | undefined;
 let environments: Record<"calculator" | "cost-tracker", Record<string, string>>;
@@ -158,11 +162,23 @@ const groups: TestGroup[] = [
       const local = await readLocalEnvironment(
         resolve(root, "packages/database/.env"),
       );
-      handle = await createIsolatedRunDatabase({
-        baseDatabaseUrl: process.env.DATABASE_URL ?? local.DATABASE_URL,
-        prefix: "nonbrowser",
-      });
-      cleanup.database = "pending";
+      try {
+        handle = await createIsolatedRunDatabase({
+          baseDatabaseUrl: process.env.DATABASE_URL ?? local.DATABASE_URL,
+          prefix: "nonbrowser",
+        });
+        cleanup.database = "pending";
+      } catch (error) {
+        if (error instanceof IsolatedRunCreationError) {
+          databaseCreation = {
+            databaseName: error.handle.databaseName,
+            rollback: error.rollback,
+          };
+          cleanup.database = error.rollback;
+          if (error.rollback === "failed") handle = error.handle;
+        }
+        throw error;
+      }
     },
   },
   {
@@ -324,6 +340,7 @@ const report = {
   inventory: { ...inventory, calculatorExceptions },
   testEvidence,
   cleanup,
+  databaseCreation,
 };
 const reports = resolve(root, ".turbo/nonbrowser-tests");
 await mkdir(reports, { recursive: true });
