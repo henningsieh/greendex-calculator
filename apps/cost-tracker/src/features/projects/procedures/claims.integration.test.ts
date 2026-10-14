@@ -1,24 +1,18 @@
-import { randomUUID } from "node:crypto";
-
 // @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
-  hostProjectAssignmentsTable as hostAssignments,
   claimsTable as claims,
   member,
-  organization,
   partnerCoordinatorAssignmentsTable as assignments,
   partnershipPayoutAccountsTable as selections,
   payoutAccountsTable as accounts,
-  projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
-  user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import {
-  afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -33,120 +27,32 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
+// Stable identities registered in SEED_SCENARIOS.costTrackerClaims.
+const suffix = "canonical";
 const host = `claim-host-${suffix}`;
 const partner = `claim-partner-${suffix}`;
-const other = `claim-other-${suffix}`;
 const coordinator = `claim-coordinator-${suffix}`;
 const participant = `claim-participant-${suffix}`;
 const project = `claim-project-${suffix}`;
-const own = `claim-own-${suffix}`;
+let own = `claim-own-${suffix}`;
 const foreign = `claim-foreign-${suffix}`;
 const account = `claim-account-${suffix}`;
 const secondAccount = `claim-second-account-${suffix}`;
 const foreignAccount = `claim-foreign-account-${suffix}`;
 let actor = coordinator;
 let activeOrg = partner;
+const createdAccountIds = new Set<string>();
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values([
-    {
-      id: coordinator,
-      name: "Coordinator",
-      email: `${coordinator}@example.org`,
-      emailVerified: true,
-    },
-    {
-      id: participant,
-      name: "Participant",
-      email: `${participant}@example.org`,
-      emailVerified: true,
-    },
-  ]);
-  await db.insert(organization).values([
-    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    {
-      country: "DE",
-      id: partner,
-      name: "Partner",
-      slug: partner,
-      createdAt: now,
-    },
-    { country: "DE", id: other, name: "Other", slug: other, createdAt: now },
-  ]);
-  await db.insert(member).values([
-    {
-      id: randomUUID(),
-      userId: coordinator,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: coordinator,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: participant,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: participant,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projects).values({
-    id: project,
-    name: "Project",
-    startDate: now,
-    endDate: now,
-    location: "Riga",
-    country: "LV",
-    organizationId: host,
-  });
-  await db
-    .insert(hostAssignments)
-    .values({ projectId: project, userId: coordinator });
-  await db.insert(partnerships).values([
-    { id: own, projectId: project, organizationId: partner },
-    { id: foreign, projectId: project, organizationId: other },
-  ]);
-  await db
-    .insert(assignments)
-    .values({ partnershipId: own, userId: coordinator });
-  await db.insert(accounts).values([
-    {
-      id: account,
-      organizationId: partner,
-      accountHolder: "Partner",
-      iban: "DE111",
-    },
-    {
-      id: secondAccount,
-      organizationId: partner,
-      accountHolder: "Partner",
-      iban: "DE222",
-    },
-    {
-      id: foreignAccount,
-      organizationId: other,
-      accountHolder: "Other",
-      iban: "DE333",
-    },
-  ]);
+  if (
+    !(await db.query.projectsTable.findFirst({ where: eq(projects.id, project) }))
+  )
+    throw new Error(
+      "Canonical seed required: run the isolated seeded lifecycle.",
+    );
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
@@ -154,32 +60,26 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  own = `claim-own-${suffix}`;
   actor = coordinator;
   activeOrg = partner;
   await db.delete(claims).where(eq(claims.partnershipId, own));
   await db.delete(selections).where(eq(selections.partnershipId, own));
 });
 
-afterAll(async () => {
-  await db.delete(claims).where(eq(claims.partnershipId, own));
-  await db.delete(selections).where(eq(selections.partnershipId, own));
-  await db.delete(accounts).where(eq(accounts.organizationId, partner));
-  await db.delete(accounts).where(eq(accounts.organizationId, other));
-  await db.delete(assignments).where(eq(assignments.partnershipId, own));
-  await db.delete(partnerships).where(eq(partnerships.projectId, project));
-  await db.delete(projects).where(eq(projects.id, project));
-  await db.delete(member).where(eq(member.organizationId, partner));
-  await db.delete(member).where(eq(member.organizationId, host));
-  await db.delete(organization).where(eq(organization.id, other));
-  await db.delete(organization).where(eq(organization.id, partner));
-  await db.delete(organization).where(eq(organization.id, host));
-  await db.delete(user).where(eq(user.id, participant));
-  await db.delete(user).where(eq(user.id, coordinator));
+afterEach(async () => {
+  await db.delete(claims).where(eq(claims.partnershipId, `claim-own-${suffix}`));
+  await db
+    .delete(selections)
+    .where(eq(selections.partnershipId, `claim-own-${suffix}`));
+  for (const id of createdAccountIds)
+    await db.delete(accounts).where(eq(accounts.id, id));
+  createdAccountIds.clear();
 });
 
 describe("Claim drafts and Partnership payout selection", () => {
   it("does not expose unsubmitted drafts to Hosting review", async () => {
-    await db.insert(claims).values({ partnershipId: own, status: "editable" });
+    own = `claim-editable-${suffix}`;
     activeOrg = host;
     await expect(
       client.claims.getReviewDetails({ partnershipId: own }),
@@ -251,6 +151,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       iban: "de89 3704 0044 0532 0130 00",
       bic: " deutdeff ",
     });
+    createdAccountIds.add(created.id);
     expect(created).toMatchObject({
       accountHolder: "Example Partner",
       iban: "DE89370400440532013000",
@@ -277,6 +178,7 @@ describe("Claim drafts and Partnership payout selection", () => {
         iban: "DE89370400440532013000",
         bic,
       });
+      createdAccountIds.add(created.id);
       expect(created.bic).toBeNull();
       await db.delete(accounts).where(eq(accounts.id, created.id));
     }
@@ -285,6 +187,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       accountHolder: "Partner",
       iban: "DE89370400440532013000",
     });
+    createdAccountIds.add(omitted.id);
     expect(omitted.bic).toBeNull();
     await db.delete(accounts).where(eq(accounts.id, omitted.id));
   });
@@ -370,10 +273,8 @@ describe("Claim drafts and Partnership payout selection", () => {
     expect(
       await db.select().from(selections).where(eq(selections.partnershipId, own)),
     ).toMatchObject([{ payoutAccountId: secondAccount }]);
-    await db
-      .update(claims)
-      .set({ status: "submitted" })
-      .where(eq(claims.id, draft.id));
+    expect(draft.status).toBe("editable");
+    own = `claim-submitted-selected-${suffix}`;
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,
@@ -392,7 +293,7 @@ describe("Claim drafts and Partnership payout selection", () => {
   });
 
   it("locks payout selection for an already-submitted Claim", async () => {
-    await db.insert(claims).values({ partnershipId: own, status: "submitted" });
+    own = `claim-submitted-${suffix}`;
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,

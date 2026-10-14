@@ -2,38 +2,52 @@
 
 import { randomUUID } from "node:crypto";
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
-  account,
-  member,
   organization,
   projectsTable,
+  session,
   user,
 } from "@greendex/database/schema";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
-import { hashPassword } from "better-auth/crypto";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { env } from "@/env";
 import type { Router } from "@/lib/orpc/router";
 
-const baseURL = env.NEXT_PUBLIC_BASE_URL;
+/**
+ * #273/#274 managed-server handoff (not a dev-server suite).
+ * The runner MUST provide COST_TRACKER_TEST_BASE_URL and TEST_RUN_ID, start
+ * its own Cost Tracker process against the same DATABASE_URL, and seed once.
+ * Verify #265's database ownership marker before any sign-in or mutation.
+ * Missing configuration is a failure, never a fallback to the development URL.
+ */
+const baseURL = process.env.COST_TRACKER_TEST_BASE_URL ?? "";
 const suffix = randomUUID();
-const host = `http-host-${suffix}`;
-const other = `http-other-${suffix}`;
-const actors = ["owner", "participant", "outsider"].map(
-  (role) => `http-${role}-${suffix}`,
-);
-const password = `Http-test-${suffix}!`;
+let host = "";
+let other = "";
+const actorEmails = [
+  SEED_USER.email,
+  "seed-participant@example.org",
+  "seed-cost-tracker-partner-owner@example.org",
+];
+const password = SEED_USER.password;
+const sessionIds: string[] = [];
 const cookies: string[] = [];
 const projectIds: string[] = [];
 
+function fetchWithTimeout(url: string, init: RequestInit = {}) {
+  return fetch(url, {
+    ...init,
+    signal: init.signal ?? AbortSignal.timeout(10_000),
+  });
+}
+
 async function post(path: string, body: unknown, cookie?: string) {
-  return fetch(`${baseURL}/api/openapi/${path}`, {
+  return fetchWithTimeout(`${baseURL}/api/openapi/${path}`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -41,6 +55,7 @@ async function post(path: string, body: unknown, cookie?: string) {
       ...(cookie ? { cookie } : {}),
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
   });
 }
 
@@ -67,54 +82,55 @@ const projectInput = {
 
 describe("Cost Tracker OpenAPI over real HTTP", () => {
   beforeAll(async () => {
-    // A running server must use this same .env and database; never mock the transport or auth.
-    try {
-      await fetch(`${baseURL}/api/docs`, { signal: AbortSignal.timeout(5000) });
-    } catch (cause) {
+    if (!baseURL || !/^[0-9a-f]{32}$/.test(process.env.TEST_RUN_ID ?? ""))
       throw new Error(
-        `Start Cost Tracker at ${baseURL} before test:run (see docs/openapi.md).`,
-        { cause },
+        "Managed server required: COST_TRACKER_TEST_BASE_URL and TEST_RUN_ID must be supplied by #274.",
       );
-    }
-    const now = new Date();
-    await db.insert(organization).values(
-      [host, other].map((id) => ({
-        id,
-        slug: id,
-        name: id,
-        country: "DE" as const,
-        createdAt: now,
-      })),
-    );
-    const hashed = await hashPassword(password);
-    for (const [index, id] of actors.entries()) {
-      await db.insert(user).values({
-        id,
-        name: "HTTP fixture",
-        email: `${id}@example.org`,
-        emailVerified: true,
+    const ownership = await db.execute<{ marker: string | null }>(sql`
+      SELECT shobj_description(oid, 'pg_database') AS marker
+      FROM pg_database WHERE datname = current_database()
+    `);
+    if (
+      ownership.rows[0]?.marker !== `greendex-test-run:${process.env.TEST_RUN_ID}`
+    )
+      throw new Error(
+        "Refusing HTTP fixture setup: run database ownership mismatch.",
+      );
+    const seededHost = await db.query.organization.findFirst({
+      where: eq(organization.slug, "seed-org"),
+    });
+    const seededOther = await db.query.organization.findFirst({
+      where: eq(organization.slug, "seed-partner-org"),
+    });
+    if (!seededHost || !seededOther)
+      throw new Error("Canonical seed required before managed HTTP checks.");
+    host = seededHost.id;
+    other = seededOther.id;
+    await fetchWithTimeout(`${baseURL}/api/docs`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    for (const [index, email] of actorEmails.entries()) {
+      const actor = await db.query.user.findFirst({
+        where: eq(user.email, email),
       });
-      await db.insert(account).values({
-        id: randomUUID(),
-        userId: id,
-        accountId: id,
-        providerId: "credential",
-        password: hashed,
+      if (!actor) throw new Error("Canonical HTTP actor missing.");
+      const existingSessions = await db.query.session.findMany({
+        where: eq(session.userId, actor.id),
       });
-      await db.insert(member).values({
-        id: randomUUID(),
-        userId: id,
-        organizationId: index === 2 ? other : host,
-        role:
-          index === 1
-            ? ORGANIZATION_ROLES.Participant
-            : ORGANIZATION_ROLES.OrganizationOwner,
-        createdAt: now,
-      });
-      const response = await post("authentication/signIn", {
-        email: `${id}@example.org`,
-        password,
-      });
+      let response: Response;
+      try {
+        response = await post("authentication/signIn", { email, password });
+      } finally {
+        const previousIds = new Set(existingSessions.map(({ id }) => id));
+        const signedInSessions = await db.query.session.findMany({
+          where: eq(session.userId, actor.id),
+        });
+        sessionIds.push(
+          ...signedInSessions
+            .filter(({ id }) => !previousIds.has(id))
+            .map(({ id }) => id),
+        );
+      }
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ success: true });
       const cookie = response.headers
@@ -123,28 +139,42 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
         .join("; ");
       expect(cookie).toContain("session_token=");
       cookies.push(cookie);
+      const selected = await fetchWithTimeout(
+        `${baseURL}/api/auth/organization/set-active`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: baseURL,
+            cookie,
+          },
+          body: JSON.stringify({ organizationId: index === 2 ? other : host }),
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
+      expect(selected.status).toBe(200);
     }
   }, 30000);
 
   afterAll(async () => {
     if (projectIds.length)
       await db.delete(projectsTable).where(inArray(projectsTable.id, projectIds));
-    await db.delete(user).where(inArray(user.id, actors));
-    await db.delete(organization).where(inArray(organization.id, [host, other]));
+    if (sessionIds.length)
+      await db.delete(session).where(inArray(session.id, sessionIds));
   });
 
   it("gates both explicit docs paths as unmatched and serves pinned Scalar and the newest spec to sessions", async () => {
     for (const path of ["/api/docs", "/api/openapi-spec"]) {
-      expect((await fetch(`${baseURL}${path}`)).status).toBe(404);
+      expect((await fetchWithTimeout(`${baseURL}${path}`)).status).toBe(404);
       expect(
         (
-          await fetch(`${baseURL}${path}`, {
+          await fetchWithTimeout(`${baseURL}${path}`, {
             headers: { cookie: "better-auth.session_token=invalid" },
           })
         ).status,
       ).toBe(404);
     }
-    const docs = await fetch(`${baseURL}/api/docs`, {
+    const docs = await fetchWithTimeout(`${baseURL}/api/docs`, {
       headers: { cookie: cookies[0]! },
     });
     expect(docs.status).toBe(200);
@@ -155,7 +185,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     // The v2 plugin embeds the generated spec rather than fetching specPath in the viewer.
     expect(html).toContain("Cost Tracker API");
     expect(html).not.toContain("@latest");
-    const response = await fetch(`${baseURL}/api/openapi-spec`, {
+    const response = await fetchWithTimeout(`${baseURL}/api/openapi-spec`, {
       headers: { cookie: cookies[0]! },
     });
     expect(response.status).toBe(200);
@@ -179,7 +209,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     );
     await expectError(
       await post("authentication/signIn", {
-        email: `${actors[0]}@example.org`,
+        email: actorEmails[0],
         password: "incorrect-password",
       }),
       401,
@@ -199,7 +229,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     );
     const outsider = await post("organizations/getSettings", {}, cookies[2]);
     expect(outsider.status).toBe(200);
-    expect(await outsider.json()).toMatchObject({ id: other, country: "DE" });
+    expect(await outsider.json()).toMatchObject({ id: other, country: "FR" });
     expect(
       (
         await db.query.organization.findFirst({
@@ -279,6 +309,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
         new RPCLink({
           origin: baseURL,
           url: "/api/rpc",
+          fetch: fetchWithTimeout,
           headers: { ...(cookie ? { cookie } : {}), origin: baseURL },
         }),
       );
@@ -303,11 +334,14 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
       400,
       "BAD_REQUEST",
     );
-    const response = await fetch(`${baseURL}/api/openapi/projects/create`, {
-      method: "POST",
-      headers: { "content-type": "application/json", cookie: cookies[0]! },
-      body: "{",
-    });
+    const response = await fetchWithTimeout(
+      `${baseURL}/api/openapi/projects/create`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: cookies[0]! },
+        body: "{",
+      },
+    );
     await expectError(response, 400, "BAD_REQUEST");
     expect((await post("does-not-exist", {}, cookies[0])).status).toBe(404);
   });

@@ -1,28 +1,19 @@
 // @vitest-environment node
-import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
-  hostProjectAssignmentsTable as hostAssignments,
   claimHistoryTable as history,
   claimsTable as claims,
-  member,
-  organization,
-  partnerCoordinatorAssignmentsTable as assignments,
   participantJourneysTable as journeys,
   projectFundingBandsTable as bands,
   projectFundingSnapshotsTable as snapshots,
-  projectPartnerOrganizationsTable as partnerships,
-  projectParticipantsTable as participants,
-  projectsTable as projects,
-  user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import {
-  afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -37,39 +28,54 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
-const id = (part: string) => `journey-${part}-${suffix}`;
+// Stable identities registered in SEED_SCENARIOS.costTrackerJourneys.
+const id = (part: string) => `journey-${part}-canonical`;
 const host = id("host"),
-  partner = id("partner"),
-  other = id("other");
+  partner = id("partner");
 const coordinator = id(ORGANIZATION_ROLES.ProjectCoordinator),
   participantUser = id("user");
-const project = id("project"),
-  secondProject = id("second-project");
-const own = id("own"),
-  foreign = id("foreign"),
-  next = id("next");
-const first = id("first"),
-  second = id("second"),
-  outside = id("outside"),
-  later = id("later");
+const scenarioNames = [
+  "empty",
+  "editable",
+  "legacy",
+  "correction_requested",
+  "submitted",
+  "approved",
+  "rejected",
+  "paid",
+] as const;
+type JourneyScenario = (typeof scenarioNames)[number];
+let project: string,
+  secondProject: string,
+  own: string,
+  foreign: string,
+  next: string;
+let first: string, second: string, outside: string, later: string;
 let claimId: string | undefined;
+const baselineClaims = new Map<JourneyScenario, string>();
+function useScenario(name: JourneyScenario) {
+  const scenarioId = (part: string) => id(`${name}-${part}`);
+  project = scenarioId("project");
+  secondProject = scenarioId("second-project");
+  own = scenarioId("own");
+  foreign = scenarioId("foreign");
+  next = scenarioId("next");
+  first = scenarioId("first");
+  second = scenarioId("second");
+  outside = scenarioId("outside");
+  later = scenarioId("later");
+  claimId = baselineClaims.get(name);
+  journey.partnershipId = own;
+  journey.projectParticipantId = first;
+}
 let actor = coordinator;
 let activeOrg = partner;
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
-async function createEditableClaim() {
-  claimId = (
-    await db
-      .insert(claims)
-      .values({ partnershipId: own })
-      .returning({ id: claims.id })
-  )[0].id;
-}
 const journey = {
-  partnershipId: own,
-  projectParticipantId: first,
+  partnershipId: "",
+  projectParticipantId: "",
   origin: "Berlin",
   destination: "Riga",
   tripType: "round-trip" as const,
@@ -77,137 +83,53 @@ const journey = {
 };
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values([
-    {
-      id: coordinator,
-      name: "Coordinator",
-      email: `${coordinator}@example.org`,
-      emailVerified: true,
-    },
-    {
-      id: participantUser,
-      name: "Participant",
-      email: `${participantUser}@example.org`,
-      emailVerified: true,
-    },
-  ]);
-  await db.insert(organization).values([
-    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    {
-      country: "DE",
-      id: partner,
-      name: "Partner",
-      slug: partner,
-      createdAt: now,
-    },
-    { country: "DE", id: other, name: "Other", slug: other, createdAt: now },
-  ]);
-  await db.insert(member).values([
-    {
-      id: randomUUID(),
-      userId: coordinator,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: participantUser,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projects).values(
-    [project, secondProject].map((projectId) => ({
-      id: projectId,
-      name: "Project",
-      startDate: now,
-      endDate: now,
-      location: "Riga",
-      country: "LV" as const,
-      organizationId: host,
-    })),
-  );
-  await db
-    .insert(hostAssignments)
-    .values({ projectId: project, userId: coordinator });
-  await db.insert(partnerships).values([
-    { id: own, projectId: project, organizationId: partner },
-    { id: foreign, projectId: project, organizationId: other },
-    { id: next, projectId: secondProject, organizationId: partner },
-  ]);
-  await db.insert(assignments).values([
-    { partnershipId: own, userId: coordinator },
-    { partnershipId: next, userId: coordinator },
-  ]);
-  await db.insert(participants).values([
-    {
-      id: first,
-      projectId: project,
-      representedOrganizationId: partner,
-      displayName: "First",
-    },
-    {
-      id: second,
-      projectId: project,
-      representedOrganizationId: partner,
-      displayName: "Second",
-    },
-    {
-      id: outside,
-      projectId: project,
-      representedOrganizationId: other,
-      displayName: "Outside",
-    },
-    {
-      id: later,
-      projectId: secondProject,
-      representedOrganizationId: partner,
-      displayName: "Later",
-    },
-  ]);
+  for (const name of scenarioNames) {
+    const partnershipId = id(`${name}-own`);
+    const row = await db.query.projectsTable.findFirst({
+      where: (row, { eq }) => eq(row.id, id(`${name}-project`)),
+    });
+    if (!row)
+      throw new Error(
+        "Canonical seed required: run the isolated seeded lifecycle.",
+      );
+    const claim = await db.query.claimsTable.findFirst({
+      where: eq(claims.partnershipId, partnershipId),
+    });
+    if (claim) baselineClaims.set(name, claim.id);
+  }
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
   }));
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   actor = coordinator;
   activeOrg = partner;
-  if (claimId) await db.delete(history).where(eq(history.claimId, claimId));
-  await db.delete(claims).where(eq(claims.partnershipId, own));
-  claimId = undefined;
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, first));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, second));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, later));
-  await db.delete(snapshots).where(eq(snapshots.projectId, project));
-  await db.delete(snapshots).where(eq(snapshots.projectId, secondProject));
+  useScenario("empty");
 });
 
-afterAll(async () => {
-  if (claimId) await db.delete(history).where(eq(history.claimId, claimId));
-  await db.delete(claims).where(eq(claims.partnershipId, own));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, first));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, second));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, later));
-  await db.delete(snapshots).where(eq(snapshots.projectId, project));
-  await db.delete(snapshots).where(eq(snapshots.projectId, secondProject));
-  await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(participants).where(eq(participants.projectId, secondProject));
-  await db.delete(assignments).where(eq(assignments.partnershipId, own));
-  await db.delete(assignments).where(eq(assignments.partnershipId, next));
-  await db.delete(partnerships).where(eq(partnerships.projectId, project));
-  await db.delete(partnerships).where(eq(partnerships.projectId, secondProject));
-  await db.delete(projects).where(eq(projects.id, project));
-  await db.delete(projects).where(eq(projects.id, secondProject));
-  await db.delete(member).where(eq(member.organizationId, partner));
-  for (const orgId of [other, partner, host])
-    await db.delete(organization).where(eq(organization.id, orgId));
-  for (const userId of [participantUser, coordinator])
-    await db.delete(user).where(eq(user.id, userId));
+afterEach(async () => {
+  // Only procedure outputs are removed; canonical Claims and the legacy Journey remain.
+  for (const name of scenarioNames) {
+    const baselineClaimId = baselineClaims.get(name);
+    if (baselineClaimId)
+      await db.delete(history).where(eq(history.claimId, baselineClaimId));
+    for (const part of ["first", "second", "later"]) {
+      if (
+        ["legacy", "submitted", "approved", "rejected", "paid"].includes(name) &&
+        part === "first"
+      )
+        continue;
+      await db
+        .delete(journeys)
+        .where(eq(journeys.projectParticipantId, id(`${name}-${part}`)));
+    }
+    for (const part of ["project", "second-project"])
+      await db
+        .delete(snapshots)
+        .where(eq(snapshots.projectId, id(`${name}-${part}`)));
+  }
 });
 
 describe("Participant Journey procedures", () => {
@@ -341,13 +263,7 @@ describe("Participant Journey procedures", () => {
   });
 
   it("keeps earlier snapshots unchanged when config changes", async () => {
-    await db.insert(journeys).values({
-      projectParticipantId: first,
-      origin: "Old",
-      destination: "Riga",
-      tripType: "one-way",
-      erasmusDistanceKm: "500",
-    });
+    useScenario("legacy");
     await expect(client.journeys.save(journey)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
@@ -413,8 +329,8 @@ describe("Participant Journey procedures", () => {
   });
 
   it("updates each journey field in place without adding a second journey", async () => {
+    useScenario("editable");
     const saved = await client.journeys.save(journey);
-    await createEditableClaim();
     for (const [patch, expected] of [
       [{ origin: "Tallinn" }, { origin: "Tallinn" }],
       [{ destination: "Vilnius" }, { destination: "Vilnius" }],
@@ -433,8 +349,8 @@ describe("Participant Journey procedures", () => {
   });
 
   it("validates update fields with the same itemized errors as save", async () => {
+    useScenario("editable");
     const saved = await client.journeys.save(journey);
-    await createEditableClaim();
     await expect(
       client.journeys.update({
         partnershipId: own,
@@ -471,8 +387,8 @@ describe("Participant Journey procedures", () => {
   });
 
   it("rejects distances outside exactly one frozen band without changing the snapshot", async () => {
+    useScenario("editable");
     const saved = await client.journeys.save(journey);
-    await createEditableClaim();
     const originalSnapshot = await db
       .select()
       .from(snapshots)
@@ -511,8 +427,9 @@ describe("Participant Journey procedures", () => {
   });
 
   it("treats overlapping frozen bands as a server invariant without changing the Journey", async () => {
+    useScenario("editable");
     const saved = await client.journeys.save(journey);
-    await createEditableClaim();
+    // Deliberate frozen-band corruption is the invariant under test, restored below.
     const [overlap] = await db
       .insert(bands)
       .values({
@@ -553,13 +470,16 @@ describe("Participant Journey procedures", () => {
   ] as const)(
     "gates %s updates and audits correction edits only",
     async (status) => {
-      const saved = await client.journeys.save(journey);
-      claimId = (
-        await db
-          .insert(claims)
-          .values({ partnershipId: own, status })
-          .returning({ id: claims.id })
-      )[0].id;
+      useScenario(status);
+      const saved =
+        status === "editable" || status === "correction_requested"
+          ? await client.journeys.save(journey)
+          : (
+              await db
+                .select()
+                .from(journeys)
+                .where(eq(journeys.projectParticipantId, first))
+            )[0];
       const input = { ...journey, origin: "Tallinn" };
       if (status === "editable" || status === "correction_requested") {
         expect(await client.journeys.update(input)).toMatchObject({
@@ -578,7 +498,7 @@ describe("Participant Journey procedures", () => {
       const events = await db
         .select()
         .from(history)
-        .where(eq(history.claimId, claimId));
+        .where(eq(history.claimId, claimId!));
       expect(events).toHaveLength(status === "correction_requested" ? 1 : 0);
       if (status === "correction_requested")
         expect(events[0]).toMatchObject({
@@ -595,7 +515,8 @@ describe("Participant Journey procedures", () => {
     await expect(client.journeys.update(journey)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
-    await createEditableClaim();
+    useScenario("editable");
+    await client.journeys.save(journey);
     await expect(
       client.journeys.update({ ...journey, projectParticipantId: second }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });

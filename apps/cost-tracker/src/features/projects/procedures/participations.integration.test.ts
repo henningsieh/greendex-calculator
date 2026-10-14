@@ -1,28 +1,16 @@
 // @vitest-environment node
-import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
-  hostProjectAssignmentsTable as hostAssignments,
-  claimsTable as claims,
   member,
-  organization,
-  user,
-  projectsTable as projects,
-  projectPartnerOrganizationsTable as partnerships,
   partnerCoordinatorAssignmentsTable as assignments,
-  participantProfilesTable as profiles,
-  participantAgreementAcceptancesTable as acceptances,
   projectParticipantsTable as participants,
-  participantEntryTokensTable as entryTokens,
-  participantJourneysTable as journeys,
   duplicateReviewTasksTable as reviewTasks,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import {
-  afterAll,
   afterEach,
   beforeAll,
   beforeEach,
@@ -51,21 +39,38 @@ import {
 import { duplicateReviews } from "@/features/projects/procedures/duplicate-reviews";
 import { createParticipationProcedures } from "@/features/projects/procedures/participations";
 
-const s = randomUUID();
+// Stable identities registered in SEED_SCENARIOS.costTrackerParticipations.
+const s = "canonical";
 const host = `coord-host-${s}`;
 const partner = `coord-partner-${s}`;
 const other = `coord-other-${s}`;
-const project = `coord-project-${s}`;
-const own = `coord-own-${s}`;
-const foreign = `coord-foreign-${s}`;
+let project: string;
+let own: string;
+let foreign: string;
 const coordinator = `coord-actor-${s}`;
 const candidate = `coord-candidate-${s}`;
-const emptyProject = `coord-empty-project-${s}`;
+const emptyProject = `coord-report-empty-project-${s}`;
 const unassigned = `coord-unassigned-${s}`;
-const currentAcceptor = `coord-current-${s}`;
-const oldAcceptor = `coord-old-${s}`;
-const unjoined = `coord-unjoined-${s}`;
 const email = `candidate-${s}@example.org`;
+const scenarioNames = [
+  "empty",
+  "email",
+  "mixed",
+  "old-email",
+  "foreign-invitation",
+  "own-invitation",
+  "referenced",
+  "submitted",
+  "correction",
+  "report",
+  "report-empty",
+] as const;
+function useScenario(name: (typeof scenarioNames)[number]) {
+  project = `coord-${name}-project-${s}`;
+  own = `coord-${name}-own-${s}`;
+  foreign = `coord-${name}-foreign-${s}`;
+}
+let baselineCorrection: typeof participants.$inferSelect | undefined;
 let actor = coordinator;
 let activeOrg = partner;
 const version = { id: "fixture-v1", contentHash: "fixture-hash" };
@@ -82,114 +87,9 @@ const client = createRouterClient(
 );
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values([
-    {
-      id: coordinator,
-      name: "Coordinator",
-      email: `coordinator-${s}@example.org`,
-      emailVerified: true,
-    },
-    { id: candidate, name: "Candidate", email, emailVerified: true },
-    { id: unassigned, name: "Unassigned", email: `unassigned-${s}@x.org` },
-    { id: currentAcceptor, name: "Current", email: `current-${s}@x.org` },
-    { id: oldAcceptor, name: "Old", email: `old-${s}@x.org` },
-  ]);
-  await db.insert(organization).values([
-    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    {
-      country: "FR",
-      id: partner,
-      name: "Partner",
-      slug: partner,
-      createdAt: now,
-    },
-    { country: "IT", id: other, name: "Other", slug: other, createdAt: now },
-  ]);
-  await db.insert(member).values([
-    {
-      id: randomUUID(),
-      userId: coordinator,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: coordinator,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: candidate,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: unassigned,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projects).values([
-    {
-      id: project,
-      name: "Project",
-      startDate: now,
-      endDate: now,
-      location: "Riga",
-      country: "LV",
-      organizationId: host,
-    },
-    {
-      id: emptyProject,
-      name: "Empty Project",
-      startDate: now,
-      endDate: now,
-      location: "Vilnius",
-      country: "LT",
-      organizationId: host,
-    },
-  ]);
-  await db.insert(hostAssignments).values([
-    { projectId: project, userId: coordinator },
-    { projectId: emptyProject, userId: coordinator },
-  ]);
-  await db.insert(partnerships).values([
-    { id: own, projectId: project, organizationId: partner },
-    { id: foreign, projectId: project, organizationId: other },
-  ]);
-  await db
-    .insert(assignments)
-    .values({ partnershipId: own, userId: coordinator });
-  await db.insert(profiles).values({ userId: candidate, fullName: "Candidate" });
-  await db.insert(acceptances).values([
-    {
-      userId: candidate,
-      version: version.id,
-      contentHash: version.contentHash,
-      answers: '{"accepted":true}',
-    },
-    // Only the current required version completes the agreement; an older
-    // acceptance is historical evidence, not completion.
-    {
-      userId: currentAcceptor,
-      version: version.id,
-      contentHash: version.contentHash,
-      answers: '{"accepted":true}',
-    },
-    {
-      userId: oldAcceptor,
-      version: "fixture-v0",
-      contentHash: "fixture-old-hash",
-      answers: '{"accepted":true}',
-    },
-  ]);
+  baselineCorrection = await db.query.projectParticipantsTable.findFirst({
+    where: eq(participants.id, `coord-correction-row-${s}`),
+  });
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
@@ -199,6 +99,7 @@ beforeAll(async () => {
 beforeEach(() => {
   actor = coordinator;
   activeOrg = partner;
+  useScenario("empty");
   // Stands in for Better Auth's supported server check against the active Membership.
   authMocks.hasPermission.mockImplementation(
     async ({ body }: { body: { permissions: Record<string, string[]> } }) => {
@@ -225,34 +126,33 @@ beforeEach(() => {
   );
 });
 
-afterAll(async () => {
-  await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
-  await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
+afterEach(async () => {
+  // Only behavior outputs in the empty coordination scenario are removed.
+  await db.delete(reviewTasks).where(
+    inArray(
+      reviewTasks.partnershipId,
+      scenarioNames.map((name) => `coord-${name}-own-${s}`),
+    ),
+  );
   await db
-    .delete(acceptances)
+    .delete(participants)
+    .where(eq(participants.projectId, `coord-empty-project-${s}`));
+  await db
+    .delete(assignments)
     .where(
-      inArray(acceptances.userId, [candidate, currentAcceptor, oldAcceptor]),
+      and(
+        eq(assignments.partnershipId, `coord-empty-own-${s}`),
+        eq(assignments.userId, candidate),
+      ),
     );
-  await db.delete(profiles).where(eq(profiles.userId, candidate));
-  await db.delete(assignments).where(eq(assignments.partnershipId, own));
-  await db.delete(partnerships).where(eq(partnerships.projectId, project));
-  await db
-    .delete(hostAssignments)
-    .where(eq(hostAssignments.projectId, emptyProject));
-  await db.delete(projects).where(eq(projects.id, emptyProject));
-  await db.delete(projects).where(eq(projects.id, project));
-  await db.delete(member).where(eq(member.organizationId, partner));
-  await db.delete(member).where(eq(member.organizationId, host));
-  await db.delete(organization).where(eq(organization.id, other));
-  await db.delete(organization).where(eq(organization.id, partner));
-  await db.delete(organization).where(eq(organization.id, host));
-  await db
-    .delete(user)
-    .where(
-      inArray(user.id, [candidate, unassigned, currentAcceptor, oldAcceptor]),
-    );
-  await db.delete(user).where(eq(user.id, coordinator));
+  // Removal/update of the canonical correction Participation is behavior under test.
+  const row = baselineCorrection;
+  if (row) {
+    await db
+      .insert(participants)
+      .values(row)
+      .onConflictDoUpdate({ target: participants.id, set: row });
+  }
 });
 
 describe("assignment-scoped participation coordination", () => {
@@ -283,202 +183,60 @@ describe("assignment-scoped participation coordination", () => {
   });
 
   it("excludes unverified, missing-profile, stale-acceptance, wrong-role, and non-Host users", async () => {
-    const cases = [
-      {
-        key: "unverified",
-        verified: false,
-        profile: true,
-        accepted: true,
-        org: host,
-        role: ORGANIZATION_ROLES.Participant,
-      },
-      {
-        key: "no-profile",
-        verified: true,
-        profile: false,
-        accepted: true,
-        org: host,
-        role: ORGANIZATION_ROLES.Participant,
-      },
-      {
-        key: "stale",
-        verified: true,
-        profile: true,
-        accepted: false,
-        org: host,
-        role: ORGANIZATION_ROLES.Participant,
-      },
-      {
-        key: "wrong-role",
-        verified: true,
-        profile: true,
-        accepted: true,
-        org: host,
-        role: ORGANIZATION_ROLES.ProjectCoordinator,
-      },
-      {
-        key: "wrong-org",
-        verified: true,
-        profile: true,
-        accepted: true,
-        org: other,
-        role: ORGANIZATION_ROLES.Participant,
-      },
-    ];
-    const ids = cases.map(({ key }) => `directory-${key}-${s}`);
-    try {
-      await db.insert(user).values(
-        cases.map(({ key, verified }, index) => ({
-          id: ids[index]!,
-          name: "Directory Candidate",
-          email: `directory-${key}-${s}@example.org`,
-          emailVerified: verified,
-        })),
-      );
-      await db.insert(member).values(
-        cases.map(({ org, role }, index) => ({
-          id: randomUUID(),
-          organizationId: org,
-          userId: ids[index]!,
-          role,
-          createdAt: new Date(),
-        })),
-      );
-      await db
-        .insert(profiles)
-        .values(
-          cases.flatMap(({ profile }, index) =>
-            profile
-              ? [{ userId: ids[index]!, fullName: "Directory Candidate" }]
-              : [],
-          ),
-        );
-      await db.insert(acceptances).values(
-        cases.flatMap(({ accepted }, index) =>
-          accepted
-            ? [
-                {
-                  userId: ids[index]!,
-                  version: version.id,
-                  contentHash: version.contentHash,
-                  answers: '{"accepted":true}',
-                },
-              ]
-            : [],
-        ),
-      );
-      expect(
-        await client.participations.searchOnboarded({
-          partnershipId: own,
-          search: `directory-`,
-        }),
-      ).toEqual([]);
-      expect(
-        await client.participations.searchOnboarded({
-          partnershipId: own,
-          search: "Directory Candidate",
-        }),
-      ).toEqual([]);
-      for (const id of ids) {
-        await expect(
-          client.participations.create({ partnershipId: own, userId: id }),
-        ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-      }
-    } finally {
-      for (const id of ids) {
-        await db.delete(acceptances).where(eq(acceptances.userId, id));
-        await db.delete(profiles).where(eq(profiles.userId, id));
-        await db.delete(member).where(eq(member.userId, id));
-        await db.delete(user).where(eq(user.id, id));
-      }
+    const ids = [
+      "unverified",
+      "no-profile",
+      "stale",
+      "wrong-role",
+      "wrong-org",
+    ].map((key) => `directory-${key}-${s}`);
+    expect(
+      await client.participations.searchOnboarded({
+        partnershipId: own,
+        search: `directory-`,
+      }),
+    ).toEqual([]);
+    expect(
+      await client.participations.searchOnboarded({
+        partnershipId: own,
+        search: "Directory Candidate",
+      }),
+    ).toEqual([]);
+    for (const id of ids) {
+      await expect(
+        client.participations.create({ partnershipId: own, userId: id }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     }
   });
 
   it("caps directory results at 20 minimal rows", async () => {
-    const ids = Array.from(
-      { length: 22 },
-      (_, index) => `directory-cap-${index}-${s}`,
-    );
-    try {
-      await db.insert(user).values(
-        ids.map((id) => ({
-          id,
-          name: "Cap User",
-          email: `${id}@example.org`,
-          emailVerified: true,
-        })),
-      );
-      await db.insert(member).values(
-        ids.map((id) => ({
-          id: randomUUID(),
-          userId: id,
-          organizationId: host,
-          role: ORGANIZATION_ROLES.Participant,
-          createdAt: new Date(),
-        })),
-      );
-      await db
-        .insert(profiles)
-        .values(ids.map((id) => ({ userId: id, fullName: "Cap Candidate" })));
-      await db.insert(acceptances).values(
-        ids.map((id) => ({
-          userId: id,
-          version: version.id,
-          contentHash: version.contentHash,
-          answers: '{"accepted":true}',
-        })),
-      );
-      const result = await client.participations.searchOnboarded({
-        partnershipId: own,
-        search: "directory-cap-",
-      });
-      expect(result).toHaveLength(20);
-      expect(
-        result.every((row) => Object.keys(row).sort().join() === "id,name"),
-      ).toBe(true);
-    } finally {
-      for (const id of ids) {
-        await db.delete(acceptances).where(eq(acceptances.userId, id));
-        await db.delete(profiles).where(eq(profiles.userId, id));
-        await db.delete(member).where(eq(member.userId, id));
-        await db.delete(user).where(eq(user.id, id));
-      }
-    }
+    const result = await client.participations.searchOnboarded({
+      partnershipId: own,
+      search: "capacity-",
+    });
+    expect(result).toHaveLength(20);
+    expect(
+      result.every((row) => Object.keys(row).sort().join() === "id,name"),
+    ).toBe(true);
   });
 
   it("separates the actor's missing saved profile from current agreement acceptance", async () => {
     actor = candidate;
     activeOrg = host;
-    await db.delete(acceptances).where(eq(acceptances.userId, candidate));
-    try {
-      await expect(
-        client.participations.listMine({ projectId: project }),
-      ).rejects.toMatchObject({
-        code: "FORBIDDEN",
-        data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
-      });
-      await db.delete(profiles).where(eq(profiles.userId, candidate));
-      await expect(
-        client.participations.listMine({ projectId: project }),
-      ).rejects.toMatchObject({
-        code: "UNPROCESSABLE_CONTENT",
-        data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
-      });
-    } finally {
-      await db
-        .insert(profiles)
-        .values({ userId: candidate, fullName: "Candidate" })
-        .onConflictDoNothing();
-      await db
-        .insert(acceptances)
-        .values({
-          userId: candidate,
-          version: version.id,
-          contentHash: version.contentHash,
-          answers: '{"accepted":true}',
-        })
-        .onConflictDoNothing();
-    }
+    actor = `coord-missing-agreement-${s}`;
+    await expect(
+      client.participations.listMine({ projectId: project }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "PARTICIPANT_AGREEMENT_REQUIRED" },
+    });
+    actor = `coord-missing-profile-${s}`;
+    await expect(
+      client.participations.listMine({ projectId: project }),
+    ).rejects.toMatchObject({
+      code: "UNPROCESSABLE_CONTENT",
+      data: { reason: "PARTICIPANT_PROFILE_REQUIRED" },
+    });
   });
 
   it("does not search against an unpublished agreement", async () => {
@@ -516,7 +274,7 @@ describe("assignment-scoped participation coordination", () => {
     expect(
       (await client.participations.listPartnership({ partnershipId: own }))
         .projectName,
-    ).toBe("Project");
+    ).toBe("Seed Participation Project empty");
     actor = candidate;
     activeOrg = host;
     expect(
@@ -573,15 +331,8 @@ describe("assignment-scoped participation coordination", () => {
   });
 
   it("rejects a normalized email collision with merge review", async () => {
-    const [placeholder] = await db
-      .insert(participants)
-      .values({
-        projectId: project,
-        representedOrganizationId: other,
-        displayName: "Existing",
-        email,
-      })
-      .returning({ id: participants.id });
+    useScenario("email");
+    const placeholder = { id: `coord-email-row-${s}` };
     try {
       await expect(
         client.participations.create({ partnershipId: own, userId: candidate }),
@@ -598,42 +349,13 @@ describe("assignment-scoped participation coordination", () => {
       ]);
     } finally {
       await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
-      await db.delete(participants).where(eq(participants.id, placeholder!.id));
     }
   });
 
   it("detects the same email across case variants via normalization", async () => {
+    useScenario("mixed");
+    const placeholder = { id: `coord-mixed-row-${s}` };
     const mixedUser = `coord-mixed-${s}`;
-    const mixedEmail = `MIXED-${s}@EXAMPLE.ORG`;
-    await db.insert(user).values({
-      id: mixedUser,
-      name: "Mixed",
-      email: mixedEmail,
-      emailVerified: true,
-    });
-    await db.insert(member).values({
-      id: randomUUID(),
-      userId: mixedUser,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: new Date(),
-    });
-    await db.insert(profiles).values({ userId: mixedUser, fullName: "Mixed" });
-    await db.insert(acceptances).values({
-      userId: mixedUser,
-      version: version.id,
-      contentHash: version.contentHash,
-      answers: '{"accepted":true}',
-    });
-    const [placeholder] = await db
-      .insert(participants)
-      .values({
-        projectId: project,
-        representedOrganizationId: other,
-        displayName: "Existing",
-        email: mixedEmail.toLowerCase(),
-      })
-      .returning({ id: participants.id });
     try {
       await expect(
         client.participations.create({
@@ -653,11 +375,6 @@ describe("assignment-scoped participation coordination", () => {
       ]);
     } finally {
       await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
-      await db.delete(participants).where(eq(participants.id, placeholder!.id));
-      await db.delete(profiles).where(eq(profiles.userId, mixedUser));
-      await db.delete(acceptances).where(eq(acceptances.userId, mixedUser));
-      await db.delete(member).where(eq(member.userId, mixedUser));
-      await db.delete(user).where(eq(user.id, mixedUser));
     }
   });
 
@@ -711,35 +428,19 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.duplicateReviews.assign({ partnershipId: own, id: task!.id }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    const secondMembershipId = randomUUID();
-    await db.insert(member).values({
-      id: secondMembershipId,
-      userId: candidate,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: new Date(),
+    actor = `coord-second-assignee-${s}`;
+    await expect(
+      client.duplicateReviews.resolve({
+        partnershipId: own,
+        id: task!.id,
+        decision: "dismiss",
+        survivorParticipationId: existing.id,
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "REVIEW_TASK_ASSIGNEE_REQUIRED" },
     });
-    await db
-      .insert(assignments)
-      .values({ partnershipId: own, userId: candidate });
-    try {
-      actor = candidate;
-      await expect(
-        client.duplicateReviews.resolve({
-          partnershipId: own,
-          id: task!.id,
-          decision: "dismiss",
-          survivorParticipationId: existing.id,
-        }),
-      ).rejects.toMatchObject({
-        code: "FORBIDDEN",
-        data: { reason: "REVIEW_TASK_ASSIGNEE_REQUIRED" },
-      });
-    } finally {
-      actor = coordinator;
-      await db.delete(assignments).where(eq(assignments.userId, candidate));
-      await db.delete(member).where(eq(member.id, secondMembershipId));
-    }
+    actor = coordinator;
     await expect(
       client.duplicateReviews.resolve({
         partnershipId: own,
@@ -781,16 +482,8 @@ describe("assignment-scoped participation coordination", () => {
   });
 
   it("detects the same User even when stored email differs and records a distinct-persons decision", async () => {
-    const [existing] = await db
-      .insert(participants)
-      .values({
-        projectId: project,
-        representedOrganizationId: other,
-        displayName: "Earlier email",
-        userId: candidate,
-        email: `old-${s}@example.org`,
-      })
-      .returning({ id: participants.id });
+    useScenario("old-email");
+    const existing = { id: `coord-old-email-row-${s}` };
     try {
       await expect(
         client.participations.create({ partnershipId: own, userId: candidate }),
@@ -814,23 +507,13 @@ describe("assignment-scoped participation coordination", () => {
       });
     } finally {
       await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
-      await db.delete(participants).where(eq(participants.id, existing!.id));
     }
   });
 
   it("assigns and revokes coordinators without changing membership roles", async () => {
-    const id = randomUUID();
-    await db.insert(member).values({
-      id,
-      userId: candidate,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: new Date(),
-    });
-    await db
-      .update(member)
-      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
-      .where(eq(member.userId, coordinator));
+    actor = `coord-owner-${s}`;
+    const owner = actor;
+    const id = `coord-candidate-partner-membership-${s}`;
     try {
       await client.assignments.assign({ partnershipId: own, userId: candidate });
       actor = candidate;
@@ -842,7 +525,7 @@ describe("assignment-scoped participation coordination", () => {
       await expect(
         client.participations.listPartnership({ partnershipId: foreign }),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
-      actor = coordinator;
+      actor = owner;
       await client.assignments.remove({ partnershipId: own, userId: candidate });
       actor = candidate;
       await expect(
@@ -857,14 +540,9 @@ describe("assignment-scoped participation coordination", () => {
         )[0]?.role,
       ).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
     } finally {
-      actor = coordinator;
+      actor = owner;
       activeOrg = partner;
       await db.delete(assignments).where(eq(assignments.userId, candidate));
-      await db.delete(member).where(eq(member.id, id));
-      await db
-        .update(member)
-        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
-        .where(eq(member.userId, coordinator));
     }
   });
 
@@ -875,16 +553,8 @@ describe("assignment-scoped participation coordination", () => {
       code: "BAD_REQUEST",
       message: expect.stringMatching(/invitation/i),
     });
-    const inviteId = randomUUID();
-    await db.insert(entryTokens).values({
-      id: inviteId,
-      projectId: project,
-      partnershipId: foreign,
-      email,
-      secretHash: "fixture-secret-hash",
-      expiresAt: new Date(Date.now() + 86400000),
-      issuedByUserId: coordinator,
-    });
+    useScenario("foreign-invitation");
+    const inviteId = `coord-own-invitation-token-${s}`;
     expect(
       (await client.participations.listPartnership({ partnershipId: own }))
         .invitations,
@@ -892,46 +562,23 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.listPartnership({ partnershipId: foreign }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await db.delete(entryTokens).where(eq(entryTokens.id, inviteId));
-    await db.insert(entryTokens).values({
-      id: inviteId,
-      projectId: project,
-      partnershipId: own,
-      email,
-      secretHash: "fixture-secret-hash",
-      expiresAt: new Date(Date.now() + 86400000),
-      issuedByUserId: coordinator,
-    });
+    useScenario("own-invitation");
     expect(
       (await client.participations.listPartnership({ partnershipId: own }))
         .invitations,
     ).toEqual([{ invitationId: inviteId, email, status: "pending" }]);
-    await db.delete(entryTokens).where(eq(entryTokens.id, inviteId));
-    const created = await client.participations.create({
-      partnershipId: own,
-      userId: candidate,
-    });
-    await db.insert(journeys).values({
-      id: candidate,
-      projectParticipantId: created.id,
-      origin: "Riga",
-      destination: "Berlin",
-      tripType: "one-way",
-      erasmusDistanceKm: "100.00",
-    });
+    useScenario("referenced");
+    const created = { id: `coord-referenced-row-${s}` };
     await expect(
       client.participations.remove({ partnershipId: own, id: created.id }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: { reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED" },
     });
-    await db.delete(journeys).where(eq(journeys.id, candidate));
-    const [claim] = await db
-      .insert(claims)
-      .values({ partnershipId: own, status: "submitted" })
-      .returning({ id: claims.id });
+    useScenario("submitted");
+    const submitted = { id: `coord-submitted-row-${s}` };
     await expect(
-      client.participations.remove({ partnershipId: own, id: created.id }),
+      client.participations.remove({ partnershipId: own, id: submitted.id }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       client.participations.create({ partnershipId: own, userId: candidate }),
@@ -942,23 +589,15 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.update({
         partnershipId: own,
-        id: created.id,
+        id: submitted.id,
         country: "FR",
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    await db.delete(claims).where(eq(claims.id, claim!.id));
-    await client.participations.remove({ partnershipId: own, id: created.id });
   });
 
   it("allows Participation changes while the Claim is correction_requested", async () => {
-    const reopened = await client.participations.create({
-      partnershipId: own,
-      userId: candidate,
-    });
-    const [claim] = await db
-      .insert(claims)
-      .values({ partnershipId: own, status: "correction_requested" })
-      .returning({ id: claims.id });
+    useScenario("correction");
+    const reopened = { id: `coord-correction-row-${s}` };
     await expect(
       client.participations.update({
         partnershipId: own,
@@ -969,49 +608,13 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.remove({ partnershipId: own, id: reopened.id }),
     ).resolves.toEqual({ removed: true });
-    await db.delete(claims).where(eq(claims.id, claim!.id));
   });
 });
 
 describe("read-only Hosting Participant view", () => {
-  const reportRows = async () =>
-    db
-      .insert(participants)
-      .values([
-        {
-          id: unjoined,
-          projectId: project,
-          representedOrganizationId: partner,
-          displayName: "Amy Unlinked",
-          email: `amy-${s}@example.org`,
-        },
-        {
-          id: `coord-current-row-${s}`,
-          projectId: project,
-          representedOrganizationId: partner,
-          displayName: "Zoe Current",
-          userId: currentAcceptor,
-          email: `current-${s}@x.org`,
-          country: "PT",
-        },
-        {
-          id: `coord-old-row-${s}`,
-          projectId: project,
-          representedOrganizationId: other,
-          displayName: "Yan Outdated",
-          userId: oldAcceptor,
-          email: `old-${s}@x.org`,
-        },
-      ])
-      .returning({ id: participants.id });
-
-  beforeEach(async () => {
+  beforeEach(() => {
     activeOrg = host;
-    await reportRows();
-  });
-
-  afterEach(async () => {
-    await db.delete(participants).where(eq(participants.projectId, project));
+    useScenario("report");
   });
 
   it("groups Participations alphabetically by represented Organization with agreement counts", async () => {

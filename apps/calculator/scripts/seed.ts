@@ -51,6 +51,8 @@ import { Buffer } from "node:buffer";
  *    writes), and call it from {@link seedDatabase}.
  * 3. Register the scenario in `SEED_SCENARIOS` and cover it in
  *    `src/__tests__/development-seed.integration.test.ts`.
+ * Cost Tracker's co-located `seed-cost-tracker.ts` builders are called only by
+ * seedDatabase and share this registry and explicit-reset contract.
  * Accepted shared-auth, Organization/Project Participation, and Participant
  * Invitation decisions stay intact: Organization Invitations and Cost Tracker
  * Participant Invitations remain distinct, and participant entry stays
@@ -71,10 +73,15 @@ import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/tra
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import {
   claimsTable,
+  claimHistoryTable,
+  duplicateReviewTasksTable,
   costAllocationsTable,
   hostProjectAssignmentsTable,
   participantJourneysTable,
   participantProfilesTable,
+  participantEntryTokensTable,
+  payoutAccountsTable,
+  partnershipPayoutAccountsTable,
   partnerCoordinatorAssignmentsTable,
   projectFundingBandsTable,
   projectFundingSnapshotsTable,
@@ -91,6 +98,8 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, eq, inArray } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+
+import { ensureCostTrackerScenarios } from "./seed-cost-tracker";
 
 /** Database handle the canonical seed operates on. The caller owns the connection lifecycle. */
 export type SeedDatabase = NodePgDatabase<typeof schema>;
@@ -174,6 +183,12 @@ export const SEED_ORG_ROLE_USERS = [
     name: "Seed Hybrid Coordinator",
     email: "seed-hybrid-coordinator@example.org",
     hostingRole: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+  },
+  {
+    key: "costTrackerPartnerOwner",
+    name: "Seed Cost Tracker Partner Owner",
+    email: "seed-cost-tracker-partner-owner@example.org",
+    hostingRole: null,
   },
   {
     key: "outsider",
@@ -405,6 +420,461 @@ export const SEED_SHOWCASE = {
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
+  costTrackerSetupLinks: {
+    userIds: [
+      "user",
+      "host-coordinator",
+      "host-participant",
+      "host-admin",
+      "host-owner",
+      "assigned-coordinator",
+      "partner-participant",
+    ].map((name) => `setup-${name}-canonical`),
+    userEmails: [
+      "setup-canonical@example.com",
+      ...[
+        "host-coordinator",
+        "host-participant",
+        "host-admin",
+        "host-owner",
+        "assigned-coordinator",
+        "partner-participant",
+      ].map((name) => `setup-${name}-canonical@example.com`),
+    ],
+    organizationIds: [
+      "host",
+      "partner",
+      "combined-coordinator,owner",
+      "combined-owner,participant",
+      "bind",
+      "race",
+      "rival",
+    ].map((name) => `setup-${name}-canonical`),
+    projectNames: ["project", "other-project"].map(
+      (name) => `Seed Setup Link Project setup-${name}-canonical`,
+    ),
+  },
+  costTrackerSubmission: {
+    userIds: [
+      "submit-actor-canonical",
+      "submit-participant-user-canonical",
+      ...["host", "partner"].flatMap((side) =>
+        ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
+          (side === "partner" && (role === "owner" || role === "admin")
+            ? ["unassigned"]
+            : ["assigned", "unassigned"]
+          ).map((scope) => `submit-matrix-${side}-${role}-${scope}-canonical`),
+        ),
+      ),
+    ],
+    userEmails: [
+      "submit-actor-canonical@example.org",
+      "submit-participant-user-canonical@example.org",
+      ...["host", "partner"].flatMap((side) =>
+        ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
+          (side === "partner" && (role === "owner" || role === "admin")
+            ? ["unassigned"]
+            : ["assigned", "unassigned"]
+          ).map(
+            (scope) =>
+              `submit-matrix-${side}-${role}-${scope}-canonical@example.org`,
+          ),
+        ),
+      ),
+    ],
+    organizationIds: ["host", "partner", "other"].map(
+      (name) => `submit-${name}-canonical`,
+    ),
+    projectNames: [
+      "editable",
+      "submitted",
+      "rejected",
+      "approved",
+      "paid",
+      "correction",
+    ].flatMap((name) => [
+      `Seed Submission Project ${name}`,
+      `Seed Other Submission Project ${name}`,
+    ]),
+    participationIds: [
+      "editable",
+      "submitted",
+      "rejected",
+      "approved",
+      "paid",
+      "correction",
+    ].flatMap((name) =>
+      ["robin", "sam", "outsider", "third"].map(
+        (part) => `submit-${name}-${part}-canonical`,
+      ),
+    ),
+  },
+  costTrackerParticipations: {
+    userIds: [
+      ...[
+        "actor",
+        "candidate",
+        "unassigned",
+        "current",
+        "old",
+        "mixed",
+        "owner",
+        "second-assignee",
+        "missing-agreement",
+        "missing-profile",
+      ].map((name) => `coord-${name}-canonical`),
+      ...["unverified", "no-profile", "stale", "wrong-role", "wrong-org"].map(
+        (key) => `directory-${key}-canonical`,
+      ),
+      ...Array.from({ length: 22 }, (_, index) => `capacity-${index}-canonical`),
+    ],
+    userEmails: [
+      "coordinator-canonical@example.org",
+      "candidate-canonical@example.org",
+      "unassigned-canonical@x.org",
+      "current-canonical@x.org",
+      "old-canonical@x.org",
+      "MIXED-canonical@EXAMPLE.ORG",
+      ...["owner", "second-assignee", "missing-agreement", "missing-profile"].map(
+        (name) => `coord-${name}-canonical@example.org`,
+      ),
+      ...["unverified", "no-profile", "stale", "wrong-role", "wrong-org"].map(
+        (key) => `directory-${key}-canonical@example.org`,
+      ),
+      ...Array.from(
+        { length: 22 },
+        (_, index) => `capacity-${index}-canonical@example.org`,
+      ),
+    ],
+    organizationIds: ["host", "partner", "other"].map(
+      (name) => `coord-${name}-canonical`,
+    ),
+    projectNames: [
+      "empty",
+      "email",
+      "mixed",
+      "old-email",
+      "foreign-invitation",
+      "own-invitation",
+      "referenced",
+      "submitted",
+      "correction",
+      "report",
+      "report-empty",
+    ].map((name) => `Seed Participation Project ${name}`),
+    participationIds: [
+      ...[
+        "email",
+        "mixed",
+        "old-email",
+        "referenced",
+        "submitted",
+        "correction",
+      ].map((name) => `coord-${name}-row-canonical`),
+      "coord-unjoined-canonical",
+      "coord-current-row-canonical",
+      "coord-old-row-canonical",
+    ],
+  },
+  costTrackerProjects: {
+    userIds: [
+      "readiness-actor-canonical",
+      "readiness-other-user-canonical",
+      ...["owner", "admin", "coordinator", "participant"].flatMap((role) =>
+        ["assigned", "unassigned"].map(
+          (scope) => `readiness-${scope}-${role}-canonical`,
+        ),
+      ),
+      "detail-user-canonical",
+      "list-user-canonical",
+      ...["participant", "coordinator", "participant,coordinator"].map(
+        (role) => `list-${role}-canonical`,
+      ),
+      "relationship-user-canonical",
+      "discovery-coord-canonical",
+      "discovery-stranger-canonical",
+    ],
+    userEmails: [
+      "readiness-actor-canonical@example.org",
+      "readiness-other-user-canonical@example.org",
+      ...["owner", "admin", "coordinator", "participant"].flatMap((role) =>
+        ["assigned", "unassigned"].map(
+          (scope) => `readiness-${scope}-${role}-canonical@example.org`,
+        ),
+      ),
+      "detail-user-canonical@example.com",
+      "list-user-canonical@example.com",
+      ...["participant", "coordinator", "participant-coordinator"].map(
+        (role) => `list-${role}-canonical@example.org`,
+      ),
+      "relationship-user-canonical@example.com",
+      "discovery-coord-canonical@example.com",
+      "discovery-stranger-canonical@example.com",
+    ],
+    organizationIds: [
+      "readiness-host",
+      "readiness-partner-a",
+      "readiness-partner-b",
+      "readiness-partner-c",
+      "detail-host",
+      "detail-partner",
+      "detail-unrelated",
+      "list-host",
+      "list-foreign-host",
+      "list-partner",
+      "list-second-partner",
+      "list-unrelated",
+      "relationship-host",
+      "relationship-partner",
+      "relationship-unrelated",
+      "discovery-host",
+      "discovery-partner",
+    ].map((name) => `${name}-canonical`),
+    projectNames: [
+      ...[
+        "empty",
+        "mixed",
+        "claimless-partial",
+        "terminal",
+        "editable",
+        "submitted",
+        "correction_requested",
+        "approved",
+      ].flatMap((name) =>
+        ["project", "other-project"].map(
+          (part) => `readiness-${name}-${part}-canonical`,
+        ),
+      ),
+      "Detail Project",
+      "Alpha Open Workshop",
+      "Beta Closed Forum",
+      "Climate Assembly",
+      "Foreign Partner Project",
+      "Archived Project",
+      ...Array.from(
+        { length: 26 },
+        (_, index) => `Generated Project ${index.toString().padStart(2, "0")}`,
+      ),
+      "Relationship Project",
+      "Archived Relationship Project",
+      "discovery-assigned-canonical",
+      "discovery-foreign-canonical",
+    ],
+    participationIds: [],
+  },
+  costTrackerJourneys: {
+    userIds: ["journey-coordinator-canonical", "journey-user-canonical"],
+    userEmails: [
+      "journey-coordinator-canonical@example.org",
+      "journey-user-canonical@example.org",
+    ],
+    organizationIds: ["host", "partner", "other"].map(
+      (name) => `journey-${name}-canonical`,
+    ),
+    projectNames: [
+      "empty",
+      "editable",
+      "legacy",
+      "correction_requested",
+      "submitted",
+      "approved",
+      "rejected",
+      "paid",
+    ].flatMap((name) =>
+      ["project", "second-project"].map(
+        (part) => `Seed Journey Project journey-${name}-${part}-canonical`,
+      ),
+    ),
+    participationIds: [
+      "empty",
+      "editable",
+      "legacy",
+      "correction_requested",
+      "submitted",
+      "approved",
+      "rejected",
+      "paid",
+    ].flatMap((name) =>
+      ["first", "second", "outside", "later"].map(
+        (part) => `journey-${name}-${part}-canonical`,
+      ),
+    ),
+  },
+  costTrackerPartnerships: {
+    userIds: [
+      "partnership-user-canonical",
+      "partnership-visibility-coord-canonical",
+      "partnership-visibility-stranger-canonical",
+    ],
+    userEmails: [
+      "partnership-user-canonical",
+      "partnership-visibility-coord-canonical",
+      "partnership-visibility-stranger-canonical",
+    ].map((id) => `${id}@example.com`),
+    organizationIds: [
+      "host",
+      "foreign-host",
+      "assigned-org",
+      "removable-org",
+      "candidate-org",
+      "race-org",
+      "visibility-host",
+      "visibility-partner",
+    ].map((name) => `partnership-${name}-canonical`),
+    projectNames: [
+      "Managed Project",
+      "Foreign Managed Project",
+      "partnership-visibility-own-canonical",
+      "partnership-visibility-other-canonical",
+    ],
+    participationIds: ["partnership-participation-canonical"],
+  },
+  costTrackerEntitySearch: {
+    suffix: "canonical",
+    userIds: [
+      "picker-user-canonical",
+      "picker-coordinator-canonical",
+      "picker-unassigned-coordinator-canonical",
+      "picker-participant-canonical",
+    ],
+    userEmails: [
+      "user",
+      "coordinator",
+      "unassigned-coordinator",
+      "participant",
+    ].map((name) => `picker-${name}-canonical@example.com`),
+    coordinatorUserId: "picker-coordinator-canonical",
+    unassignedCoordinatorUserId: "picker-unassigned-coordinator-canonical",
+    participantUserId: "picker-participant-canonical",
+    organizationIds: [
+      "picker-host-canonical",
+      "picker-partner-canonical",
+      "picker-foreign-canonical",
+      ...Array.from({ length: 22 }, (_, i) => `picker-result-${i}-canonical`),
+      ...Array.from({ length: 55 }, (_, i) => `owned-result-${i}-canonical`),
+      ...Array.from(
+        { length: 1002 },
+        (_, i) => `picker-many-${i.toString().padStart(4, "0")}-canonical`,
+      ),
+    ],
+    projectNames: [
+      "picker-assigned-canonical",
+      "picker-unassigned-canonical",
+      "picker-foreign-project-canonical",
+    ].map((id) => `Project ${id}`),
+    ownedOrganizations: Array.from({ length: 55 }, (_, i) => ({
+      id: `owned-result-${i}-canonical`,
+      name: `Owned Search canonical ${i.toString().padStart(2, "0")}`,
+    })),
+    manyOrganizations: Array.from({ length: 1002 }, (_, i) => ({
+      id: `picker-many-${i.toString().padStart(4, "0")}-canonical`,
+      name: "Many Matches canonical",
+    })),
+  },
+  costTrackerOnboardingProgress: {
+    userIds: [
+      "progress-coordinator-canonical",
+      "progress-joined-canonical",
+      "progress-pending-canonical",
+      "progress-revoked-canonical",
+      "progress-outsider-canonical",
+    ],
+    userEmails: ["coordinator", "joined", "pending", "revoked", "outsider"].map(
+      (name) => `progress-${name}-canonical-canonical@example.org`,
+    ),
+    organizationIds: [
+      "progress-host-canonical",
+      "progress-partner-canonical",
+      "progress-other-canonical",
+    ],
+    projectNames: [
+      "Seed Onboarding Progress Project",
+      "Seed Expired Onboarding Progress Project",
+    ],
+    projectIds: [
+      "progress-project-canonical",
+      "progress-expired-project-canonical",
+    ],
+    participationIds: [
+      "progress-joined-participation-canonical",
+      "progress-outsider-participation-canonical",
+      "progress-unlinked-participation-canonical",
+      "progress-expired-joined-participation-canonical",
+    ],
+    projectId: "progress-project-canonical",
+    coordinatorId: "progress-coordinator-canonical",
+    partnershipId: "progress-own-canonical",
+    pendingInvitationId: "new-canonical",
+    invitationExpiresAt: null,
+    expiredPartnershipId: "progress-expired-partnership-canonical",
+    expiredInvitationId: "progress-expired-invitation-canonical",
+  },
+  costTrackerClaims: {
+    userIds: ["claim-coordinator-canonical", "claim-participant-canonical"],
+    payoutAccountIds: [
+      "claim-account-canonical",
+      "claim-second-account-canonical",
+      "claim-foreign-account-canonical",
+    ],
+    userEmails: [
+      "claim-coordinator-canonical@example.org",
+      "claim-participant-canonical@example.org",
+    ],
+    organizationIds: [
+      "claim-host-canonical",
+      "claim-partner-canonical",
+      "claim-other-canonical",
+    ],
+    projectNames: [
+      "Seed Claim Project",
+      "Seed Editable Claim Project",
+      "Seed Submitted Claim Project",
+      "Seed Submitted Selected Claim Project",
+    ],
+    projectId: "claim-project-canonical",
+    coordinatorId: "claim-coordinator-canonical",
+    participantId: "claim-participant-canonical",
+    partnershipId: "claim-own-canonical",
+    editablePartnershipId: "claim-editable-canonical",
+    submittedPartnershipId: "claim-submitted-canonical",
+    submittedSelectedPartnershipId: "claim-submitted-selected-canonical",
+  },
+  costTrackerCosts: {
+    userIds: ["cost-coordinator-canonical", "cost-user-canonical"],
+    userEmails: [
+      "cost-coordinator-canonical@example.org",
+      "cost-user-canonical@example.org",
+    ],
+    organizationIds: [
+      "cost-host-canonical",
+      "cost-partner-canonical",
+      "cost-other-canonical",
+    ],
+    projectNames: [
+      "Seed Cost Project",
+      "Seed Second Cost Project",
+      "Seed Submitted Cost Project",
+    ],
+    participationIds: [
+      "cost-first-canonical",
+      "cost-second-canonical",
+      "cost-third-canonical",
+      "cost-outside-canonical",
+      "cost-later-canonical",
+      "cost-locked-participant-canonical",
+    ],
+    projectId: "cost-project-canonical",
+    coordinatorId: "cost-coordinator-canonical",
+    participantId: "cost-user-canonical",
+    partnershipId: "cost-own-canonical",
+    claimId: "cost-claim-canonical",
+    proofDocumentId: "cost-proof-canonical",
+    submittedPartnershipId: "cost-locked-partnership-canonical",
+    submittedClaimId: "cost-locked-claim-canonical",
+    submittedEntryId: "cost-locked-entry-canonical",
+    submittedProofDocumentId: "cost-locked-proof-canonical",
+    submittedParticipantId: "cost-locked-participant-canonical",
+  },
   hostingOrganization: {
     kind: "organization",
     slug: SEED_ORGANIZATION.slug,
@@ -419,6 +889,12 @@ export const SEED_SCENARIOS = {
     name: SEED_PARTNER_ORGANIZATION.name,
     country: SEED_PARTNER_ORGANIZATION.country,
     description: "Seed Partner Organization for the cross-app showcase slice.",
+  },
+  costTrackerPartnerOwner: {
+    kind: "user",
+    email: "seed-cost-tracker-partner-owner@example.org",
+    description:
+      "Owner of the primary Partner Organization only; HTTP tenant-isolation actor with no Hosting Membership.",
   },
   ownerUser: {
     kind: "user",
@@ -689,7 +1165,11 @@ async function ensurePasswordAccount(db: SeedDatabase, userId: string) {
 
 async function ensureSeedOrganization(
   db: SeedDatabase,
-  definition: typeof SEED_ORGANIZATION | typeof SEED_PARTNER_ORGANIZATION,
+  definition:
+    | typeof SEED_ORGANIZATION
+    | typeof SEED_PARTNER_ORGANIZATION
+    | typeof SEED_SECOND_PARTNER_ORGANIZATION
+    | typeof SEED_THIRD_PARTNER_ORGANIZATION,
 ): Promise<string> {
   const existingOrg = await db.query.organization.findFirst({
     where: eq(organization.slug, definition.slug),
@@ -1317,6 +1797,19 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     where: eq(organization.slug, SEED_PARTNER_ORGANIZATION.slug),
   });
 
+  const costTrackerPartnerOwner = await db.query.user.findFirst({
+    where: eq(user.email, SEED_SCENARIOS.costTrackerPartnerOwner.email),
+  });
+  if (partnerOrganization && costTrackerPartnerOwner) {
+    await ensureMembership(
+      db,
+      partnerOrganization.id,
+      costTrackerPartnerOwner.id,
+      ORGANIZATION_ROLES.OrganizationOwner,
+      new Date(),
+    );
+  }
+
   // Partner-owned Project for cross-Organization scoping checks (#267).
   // Find-or-create by stable name inside the Partner Organization; it carries
   // no partnership, legs, or participations so showcase counts keep converging.
@@ -1372,6 +1865,10 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     "✅ Participant-entry Projects share seeded Partnerships; Invitees stay membership-free",
   );
 
+  for (const scenarioUserId of await ensureCostTrackerScenarios(db)) {
+    await ensurePasswordAccount(db, scenarioUserId);
+  }
+
   return {
     userId,
     organizationId: orgId,
@@ -1401,7 +1898,13 @@ async function findRemovableSeedOrgIds(
   const remainingMembers = await db.query.member.findMany({
     where: inArray(member.organizationId, seedOrgIds as string[]),
   });
+  const remainingPayoutAccounts = await db.query.payoutAccountsTable.findMany({
+    where: inArray(payoutAccountsTable.organizationId, seedOrgIds),
+  });
   const blockedOrgIds = new Set([
+    ...remainingPayoutAccounts.map(
+      (payoutAccount) => payoutAccount.organizationId,
+    ),
     ...remainingProjects.map((project) => project.organizationId),
     ...remainingMembers.map((membership) => membership.organizationId),
   ]);
@@ -1426,7 +1929,20 @@ export async function resetSeedData(
       "Refusing to reset seed data without explicit confirmation: pass { confirmSeedReset: true }.",
     );
   }
-  const seedEmails = [SEED_USER.email, ...SEED_ORG_ROLE_EMAILS];
+  const seedEmails = [
+    SEED_USER.email,
+    ...SEED_ORG_ROLE_EMAILS,
+    ...SEED_SCENARIOS.costTrackerSetupLinks.userEmails,
+    ...SEED_SCENARIOS.costTrackerSubmission.userEmails,
+    ...SEED_SCENARIOS.costTrackerParticipations.userEmails,
+    ...SEED_SCENARIOS.costTrackerProjects.userEmails,
+    ...SEED_SCENARIOS.costTrackerJourneys.userEmails,
+    ...SEED_SCENARIOS.costTrackerPartnerships.userEmails,
+    ...SEED_SCENARIOS.costTrackerEntitySearch.userEmails,
+    ...SEED_SCENARIOS.costTrackerClaims.userEmails,
+    ...SEED_SCENARIOS.costTrackerCosts.userEmails,
+    ...SEED_SCENARIOS.costTrackerOnboardingProgress.userEmails,
+  ];
   const seedUsers = await db.query.user.findMany({
     where: inArray(user.email, seedEmails),
   });
@@ -1438,12 +1954,32 @@ export async function resetSeedData(
       SEED_PARTNER_ORGANIZATION.slug,
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
+      ...SEED_SCENARIOS.costTrackerSetupLinks.organizationIds,
+      ...SEED_SCENARIOS.costTrackerSubmission.organizationIds,
+      ...SEED_SCENARIOS.costTrackerParticipations.organizationIds,
+      ...SEED_SCENARIOS.costTrackerProjects.organizationIds,
+      ...SEED_SCENARIOS.costTrackerJourneys.organizationIds,
+      ...SEED_SCENARIOS.costTrackerPartnerships.organizationIds,
+      ...SEED_SCENARIOS.costTrackerEntitySearch.organizationIds,
+      ...SEED_SCENARIOS.costTrackerClaims.organizationIds,
+      ...SEED_SCENARIOS.costTrackerCosts.organizationIds,
+      ...SEED_SCENARIOS.costTrackerOnboardingProgress.organizationIds,
     ]),
   });
   const seedOrgIds = seedOrganizations.map((org) => org.id);
   const canonicalNames = [
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
+    ...SEED_SCENARIOS.costTrackerSetupLinks.projectNames,
+    ...SEED_SCENARIOS.costTrackerSubmission.projectNames,
+    ...SEED_SCENARIOS.costTrackerParticipations.projectNames,
+    ...SEED_SCENARIOS.costTrackerProjects.projectNames,
+    ...SEED_SCENARIOS.costTrackerJourneys.projectNames,
+    ...SEED_SCENARIOS.costTrackerPartnerships.projectNames,
+    ...SEED_SCENARIOS.costTrackerEntitySearch.projectNames,
+    ...SEED_SCENARIOS.costTrackerClaims.projectNames,
+    ...SEED_SCENARIOS.costTrackerCosts.projectNames,
+    ...SEED_SCENARIOS.costTrackerOnboardingProgress.projectNames,
   ];
   const seedProjects =
     seedOrgIds.length > 0
@@ -1466,6 +2002,13 @@ export async function resetSeedData(
 
   let travelLegs = 0;
   if (seedProjectIds.length > 0) {
+    await db
+      .delete(participantEntryTokensTable)
+      .where(
+        inArray(participantEntryTokensTable.projectId, [
+          ...SEED_SCENARIOS.costTrackerOnboardingProgress.projectIds,
+        ]),
+      );
     const legs = await db.query.projectSharedTravelLegsTable.findMany({
       where: inArray(projectSharedTravelLegsTable.projectId, seedProjectIds),
     });
@@ -1497,11 +2040,22 @@ export async function resetSeedData(
     );
     const partnershipIds = partnerships.map((partnership) => partnership.id);
     if (partnershipIds.length > 0) {
+      await db
+        .delete(duplicateReviewTasksTable)
+        .where(
+          inArray(
+            duplicateReviewTasksTable.partnershipId,
+            partnershipIds as string[],
+          ),
+        );
       const claims = await db.query.claimsTable.findMany({
         where: inArray(claimsTable.partnershipId, partnershipIds as string[]),
       });
       const claimIds = claims.map((claim) => claim.id);
       if (claimIds.length > 0) {
+        await db
+          .delete(claimHistoryTable)
+          .where(inArray(claimHistoryTable.claimId, claimIds as string[]));
         const entries = await db.query.travelCostEntriesTable.findMany({
           where: inArray(travelCostEntriesTable.claimId, claimIds as string[]),
         });
@@ -1555,13 +2109,23 @@ export async function resetSeedData(
       "seed-onboarding-invitee@example.org",
       "seed-second-onboarding-invitee@example.org",
     ]);
+    const costTrackerScenarioParticipationIds = new Set<string>([
+      ...SEED_SCENARIOS.costTrackerSubmission.participationIds,
+      ...SEED_SCENARIOS.costTrackerParticipations.participationIds,
+      ...SEED_SCENARIOS.costTrackerProjects.participationIds,
+      ...SEED_SCENARIOS.costTrackerJourneys.participationIds,
+      ...SEED_SCENARIOS.costTrackerPartnerships.participationIds,
+      ...SEED_SCENARIOS.costTrackerCosts.participationIds,
+      ...SEED_SCENARIOS.costTrackerOnboardingProgress.participationIds,
+    ]);
     const seedParticipations = participations.filter(
       (participation) =>
-        participation.email !== null &&
-        seedParticipationEmails.has(participation.email) &&
-        (participation.email !== SEED_USER.email ||
-          !seedUser ||
-          participation.userId === seedUser.id),
+        costTrackerScenarioParticipationIds.has(participation.id) ||
+        (participation.email !== null &&
+          seedParticipationEmails.has(participation.email) &&
+          (participation.email !== SEED_USER.email ||
+            !seedUser ||
+            participation.userId === seedUser.id)),
     );
     for (const participation of seedParticipations) {
       await db
@@ -1623,6 +2187,27 @@ export async function resetSeedData(
         .delete(participantProfilesTable)
         .where(eq(participantProfilesTable.userId, seedUserId));
     }
+  }
+  // A canonical Payout Account can be reused by a developer Partnership.
+  // Preserve it when a surviving selection references it, just like other dependents.
+  const canonicalPayoutAccountIds =
+    SEED_SCENARIOS.costTrackerClaims.payoutAccountIds;
+  const survivingSelections =
+    await db.query.partnershipPayoutAccountsTable.findMany({
+      where: inArray(partnershipPayoutAccountsTable.payoutAccountId, [
+        ...canonicalPayoutAccountIds,
+      ]),
+    });
+  const referencedPayoutAccountIds = new Set(
+    survivingSelections.map((selection) => selection.payoutAccountId),
+  );
+  const removablePayoutAccountIds = canonicalPayoutAccountIds.filter(
+    (id) => !referencedPayoutAccountIds.has(id),
+  );
+  if (removablePayoutAccountIds.length > 0) {
+    await db
+      .delete(payoutAccountsTable)
+      .where(inArray(payoutAccountsTable.id, removablePayoutAccountIds));
   }
   // Never cascade-delete a seed Organization that still carries non-seed
   // rows (developer projects, other memberships). Those dependents survive

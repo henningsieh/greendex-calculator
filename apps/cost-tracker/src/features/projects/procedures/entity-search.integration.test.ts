@@ -1,27 +1,9 @@
 // @vitest-environment node
-import { randomUUID } from "node:crypto";
 
 import { hasOrganizationRole } from "@greendex/auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
-import { db } from "@greendex/database";
-import {
-  hostProjectAssignmentsTable as assignments,
-  member,
-  organization,
-  projectsTable as projects,
-  user,
-} from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq, inArray } from "drizzle-orm";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -32,107 +14,37 @@ vi.mock("server-only", () => ({}));
 
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
+// Stable identities registered in SEED_SCENARIOS.costTrackerEntitySearch.
+const suffix = "canonical";
+const scenario = {
+  coordinatorUserId: "picker-coordinator-canonical",
+  unassignedCoordinatorUserId: "picker-unassigned-coordinator-canonical",
+  participantUserId: "picker-participant-canonical",
+  ownedOrganizations: Array.from({ length: 55 }, (_, i) => ({
+    id: `owned-result-${i}-${suffix}`,
+    name: `Owned Search ${suffix} ${i.toString().padStart(2, "0")}`,
+  })),
+  manyOrganizations: Array.from({ length: 1002 }, (_, i) => ({
+    id: `picker-many-${i.toString().padStart(4, "0")}-${suffix}`,
+    name: `Many Matches ${suffix}`,
+  })),
+};
 const actor = `picker-user-${suffix}`;
 const host = `picker-host-${suffix}`;
 const partner = `picker-partner-${suffix}`;
 const foreign = `picker-foreign-${suffix}`;
 const assigned = `picker-assigned-${suffix}`;
 const unassigned = `picker-unassigned-${suffix}`;
-const foreignProject = `picker-foreign-project-${suffix}`;
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
 
-function session(activeOrganizationId: string | null = host) {
+function session(activeOrganizationId: string | null = host, userId = actor) {
   authMocks.getSession.mockResolvedValue({
-    session: { id: actor, userId: actor, activeOrganizationId },
-    user: { id: actor, email: `${actor}@example.com` },
+    session: { id: userId, userId, activeOrganizationId },
+    user: { id: userId, email: `${userId}@example.com` },
   });
 }
-
-beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values({
-    id: actor,
-    name: "Picker User",
-    email: `${actor}@example.com`,
-    emailVerified: true,
-    createdAt: now,
-    updatedAt: now,
-  });
-  await db.insert(organization).values([
-    {
-      country: "DE",
-      id: host,
-      name: `Host ${suffix}`,
-      slug: host,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: partner,
-      name: `Partner ${suffix}`,
-      slug: partner,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: foreign,
-      name: `Foreign ${suffix}`,
-      slug: foreign,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(member).values([
-    {
-      id: randomUUID(),
-      organizationId: host,
-      userId: actor,
-      role: ORGANIZATION_ROLES.OrganizationOwner,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      organizationId: partner,
-      userId: actor,
-      role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      organizationId: foreign,
-      userId: actor,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projects).values(
-    [assigned, unassigned, foreignProject].map((id) => ({
-      id,
-      name: `Project ${id}`,
-      organizationId: id === foreignProject ? foreign : host,
-      startDate: now,
-      endDate: now,
-      location: "Berlin",
-      country: "DE" as const,
-    })),
-  );
-  await db.insert(assignments).values({ projectId: assigned, userId: actor });
-});
-
-afterAll(async () => {
-  await db
-    .delete(projects)
-    .where(inArray(projects.id, [assigned, unassigned, foreignProject]));
-  await db
-    .delete(member)
-    .where(inArray(member.organizationId, [host, partner, foreign]));
-  await db
-    .delete(organization)
-    .where(inArray(organization.id, [host, partner, foreign]));
-  await db.delete(user).where(inArray(user.id, [actor]));
-});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -168,30 +80,13 @@ describe("entity picker procedures", () => {
   });
 
   it("caps Organization search at 20 id/name matches", async () => {
-    const matches = Array.from({ length: 22 }, (_, index) => ({
-      country: "DE" as const,
-      id: `picker-result-${index}-${suffix}`,
-      name: `Searchable ${suffix} ${index}`,
-      slug: `picker-result-${index}-${suffix}`,
-      createdAt: new Date(),
-    }));
-    await db.insert(organization).values(matches);
-    try {
-      const result = await client.organizations.search({
-        search: `Searchable ${suffix}`,
-      });
-      expect(result).toHaveLength(20);
-      expect(
-        result.every((item) => Object.keys(item).sort().join() === "id,name"),
-      ).toBe(true);
-    } finally {
-      await db.delete(organization).where(
-        inArray(
-          organization.id,
-          matches.map(({ id }) => id),
-        ),
-      );
-    }
+    const result = await client.organizations.search({
+      search: `Searchable ${suffix}`,
+    });
+    expect(result).toHaveLength(20);
+    expect(
+      result.every((item) => Object.keys(item).sort().join() === "id,name"),
+    ).toBe(true);
   });
 
   it("searches only owned Organizations by name or ID and enforces min 2", async () => {
@@ -217,108 +112,26 @@ describe("entity picker procedures", () => {
     expect(
       hasOrganizationRole(combinedRole, ORGANIZATION_ROLES.OrganizationOwner),
     ).toBe(true);
-    await db
-      .update(member)
-      .set({ role: combinedRole })
-      .where(inArray(member.organizationId, [partner]));
-    try {
-      expect(await client.organizations.listMine({ search: partner })).toEqual([
-        { id: partner, name: `Partner ${suffix}` },
-      ]);
-    } finally {
-      await db
-        .update(member)
-        .set({
-          role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`,
-        })
-        .where(inArray(member.organizationId, [partner]));
-    }
+    expect(await client.organizations.listMine({ search: partner })).toEqual([
+      { id: partner, name: `Partner ${suffix}` },
+    ]);
   });
 
   it("finds owned Organizations beyond the first 50 while capping each result at 20", async () => {
-    const owned = Array.from({ length: 55 }, (_, index) => ({
-      country: "DE" as const,
-      id: `owned-result-${index}-${suffix}`,
-      name: `Owned Search ${suffix} ${index.toString().padStart(2, "0")}`,
-      slug: `owned-result-${index}-${suffix}`,
-      createdAt: new Date(),
-    }));
-    await db.insert(organization).values(owned);
-    await db.insert(member).values(
-      owned.map(({ id }, index) => ({
-        id: randomUUID(),
-        userId: actor,
-        organizationId: id,
-        role:
-          index < 30
-            ? ORGANIZATION_ROLES.ProjectCoordinator
-            : ORGANIZATION_ROLES.OrganizationOwner,
-        createdAt: new Date(),
-      })),
-    );
-    try {
-      expect(
-        await client.organizations.listMine({ search: `Owned Search ${suffix}` }),
-      ).toHaveLength(20);
-      expect(
-        await client.organizations.listMine({ search: owned[54]!.id }),
-      ).toEqual([{ id: owned[54]!.id, name: owned[54]!.name }]);
-    } finally {
-      await db.delete(member).where(
-        inArray(
-          member.organizationId,
-          owned.map(({ id }) => id),
-        ),
-      );
-      await db.delete(organization).where(
-        inArray(
-          organization.id,
-          owned.map(({ id }) => id),
-        ),
-      );
-    }
+    const owned = scenario.ownedOrganizations;
+    expect(
+      await client.organizations.listMine({ search: `Owned Search ${suffix}` }),
+    ).toHaveLength(20);
+    expect(
+      await client.organizations.listMine({ search: owned[54]!.id }),
+    ).toEqual([{ id: owned[54]!.id, name: owned[54]!.name }]);
   });
 
   it("finds an owner after more than 1000 preceding non-owner matches", async () => {
-    const candidates = Array.from({ length: 1002 }, (_, index) => ({
-      country: "DE" as const,
-      id: `picker-many-${index.toString().padStart(4, "0")}-${suffix}`,
-      name: `Many Matches ${suffix}`,
-      slug: `picker-many-${index.toString().padStart(4, "0")}-${suffix}`,
-      createdAt: new Date(),
-    }));
-    const last = candidates[1001]!;
-    await db.insert(organization).values(candidates);
-    try {
-      await db.insert(member).values(
-        candidates.map(({ id }, index) => ({
-          id: randomUUID(),
-          userId: actor,
-          organizationId: id,
-          role:
-            index === 1001
-              ? `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`
-              : ORGANIZATION_ROLES.ProjectCoordinator,
-          createdAt: new Date(),
-        })),
-      );
-      expect(
-        await client.organizations.listMine({ search: `Many Matches ${suffix}` }),
-      ).toEqual([{ id: last.id, name: last.name }]);
-    } finally {
-      await db.delete(member).where(
-        inArray(
-          member.organizationId,
-          candidates.map(({ id }) => id),
-        ),
-      );
-      await db.delete(organization).where(
-        inArray(
-          organization.id,
-          candidates.map(({ id }) => id),
-        ),
-      );
-    }
+    const last = scenario.manyOrganizations[1001]!;
+    expect(
+      await client.organizations.listMine({ search: `Many Matches ${suffix}` }),
+    ).toEqual([{ id: last.id, name: last.name }]);
   }, 20_000);
 
   it("distinguishes Hosted search selection, Membership, and staff requirements", async () => {
@@ -339,26 +152,15 @@ describe("entity picker procedures", () => {
       message: "Membership in the active Organization is required.",
       data: { reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
     });
-    session(host);
-    await db
-      .update(member)
-      .set({ role: ORGANIZATION_ROLES.Participant })
-      .where(eq(member.organizationId, host));
-    try {
-      await expect(
-        client.projects.searchHosted({ search: "" }),
-      ).rejects.toMatchObject({
-        code: "FORBIDDEN",
-        message:
-          "You need Hosting Organization Owner, Admin, or Project Coordinator access.",
-        data: { reason: "HOSTING_STAFF_REQUIRED" },
-      });
-    } finally {
-      await db
-        .update(member)
-        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
-        .where(eq(member.organizationId, host));
-    }
+    session(host, scenario.participantUserId);
+    await expect(
+      client.projects.searchHosted({ search: "" }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message:
+        "You need Hosting Organization Owner, Admin, or Project Coordinator access.",
+      data: { reason: "HOSTING_STAFF_REQUIRED" },
+    });
   });
 
   it("scopes hosted search by active host membership and coordinator assignment", async () => {
@@ -370,34 +172,22 @@ describe("entity picker procedures", () => {
       { id: assigned, name: `Project ${assigned}` },
       { id: unassigned, name: `Project ${unassigned}` },
     ]);
-    await db
-      .update(member)
-      .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
-      .where(inArray(member.organizationId, [host]));
-    try {
-      expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
-        { id: assigned, name: `Project ${assigned}` },
-      ]);
-      expect(await client.projects.searchHosted({ search: "" })).toEqual([
-        { id: assigned, name: `Project ${assigned}` },
-      ]);
-      await db
-        .delete(assignments)
-        .where(inArray(assignments.projectId, [assigned]));
-      expect(await client.projects.searchHosted({ search: "" })).toEqual([]);
-      await db.insert(assignments).values({ projectId: assigned, userId: actor });
-      await expect(
-        client.projects.searchHosted({ search: "x" }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-      session(foreign);
-      await expect(
-        client.projects.searchHosted({ search: "picker-" }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    } finally {
-      await db
-        .update(member)
-        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
-        .where(inArray(member.organizationId, [host]));
-    }
+    session(host, scenario.coordinatorUserId);
+    expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
+      { id: assigned, name: `Project ${assigned}` },
+    ]);
+    expect(await client.projects.searchHosted({ search: "" })).toEqual([
+      { id: assigned, name: `Project ${assigned}` },
+    ]);
+    session(host, scenario.unassignedCoordinatorUserId);
+    expect(await client.projects.searchHosted({ search: "" })).toEqual([]);
+    session(host, scenario.coordinatorUserId);
+    await expect(
+      client.projects.searchHosted({ search: "x" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    session(foreign);
+    await expect(
+      client.projects.searchHosted({ search: "picker-" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
