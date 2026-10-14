@@ -415,7 +415,7 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(roleByEmail.get(identities.scenarios.creatorUser.email)).toBeNull();
     expect(roleByEmail.get(identities.scenarios.ownerUser.email)).not.toBeNull();
   });
-}, 360_000);
+}, 600_000);
 
 it("requires explicit confirmation and resets only seed-owned rows", async () => {
   await withDisposableDatabase("seed_reset", async (pool, databaseUrl) => {

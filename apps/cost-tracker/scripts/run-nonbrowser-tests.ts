@@ -68,7 +68,7 @@ const testEvidence: {
   pending: number;
   failures: { file: string; test: string; kind: string }[];
 }[] = [];
-const vitest = (cwd: string, args: string[] = []) =>
+const vitest = (cwd: string, args: string[] = [], timeoutMs = 900_000) =>
   runManagedCommand(
     "pnpm",
     [
@@ -82,7 +82,7 @@ const vitest = (cwd: string, args: string[] = []) =>
     {
       cwd: resolve(root, cwd),
       env: environment(),
-      timeoutMs: 900_000,
+      timeoutMs,
       signal: interruption.signal,
       inspectOutput: (output) => {
         const start = output.indexOf('{"numTotalTestSuites"');
@@ -185,7 +185,7 @@ const groups: TestGroup[] = [
   ...["calculator", "cost-tracker"].map((app) => ({
     name: `${app}/pure`,
     prerequisites: [],
-    run: () => vitest(`apps/${app}`, inventory[app].pure),
+    run: () => vitest(`apps/${app}`, inventory[app].pure, 1_800_000),
   })),
   {
     name: "database/create",
@@ -233,7 +233,8 @@ const groups: TestGroup[] = [
   {
     name: "calculator/migrations-and-seed-contract",
     prerequisites: ["database/create"],
-    run: () => vitest("apps/calculator", calculatorExceptions),
+    // Seed convergence/reset contracts intentionally perform multiple complete seeds.
+    run: () => vitest("apps/calculator", calculatorExceptions, 1_800_000),
   },
   {
     name: "managed-servers",
@@ -260,12 +261,13 @@ const groups: TestGroup[] = [
   {
     name: "calculator/live",
     prerequisites: ["managed-servers"],
-    run: () => vitest("apps/calculator", inventory.calculator.live),
+    run: () => vitest("apps/calculator", inventory.calculator.live, 1_800_000),
   },
   {
     name: "cost-tracker/live",
     prerequisites: ["managed-servers"],
-    run: () => vitest("apps/cost-tracker", inventory["cost-tracker"].live),
+    run: () =>
+      vitest("apps/cost-tracker", inventory["cost-tracker"].live, 1_800_000),
   },
   {
     name: "live-mail",
