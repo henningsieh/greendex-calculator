@@ -25,6 +25,7 @@
     "@greendex/email": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
+    "tailwindcss": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
