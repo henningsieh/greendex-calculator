@@ -290,12 +290,6 @@
       "rules": {
         "shadcn/no-restyle": "off"
       }
-    },
-    {
-      "files": ["packages/auth/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
-      "rules": {
-        "better-tailwindcss/enforce-canonical-classes": "off"
-      }
     }
   ],
   "jsPlugins": ["@shadcn/lint", "eslint-plugin-better-tailwindcss"]
