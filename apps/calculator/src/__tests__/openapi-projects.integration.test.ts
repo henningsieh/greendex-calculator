@@ -41,17 +41,17 @@ import * as routes from "@/app/api/openapi/[[...rest]]/route";
 /**
  * Canonical seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). Authentication resolves the seeded
- * Hosting Organization and Owner; case Projects below are persistence
- * scaffolding for the REST read/update/delete contract — creation through
- * REST is pinned as unsupported for date inputs (see the date-string test),
- * so direct inserts stand in and are removed afterwards. Canonical seed
- * rows are never deleted.
+ * Hosting Organization, Owner, and named REST Projects. Creation through
+ * REST is pinned as unsupported for date inputs (see the date-string test).
+ * REST mutation/deletion operates on those canonical scenario Projects;
+ * narrowly scoped cleanup restores their snapshots after each case.
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_OWNER_EMAIL = "owner@sieh.org";
 
-/** Case Project ids created below; removed after each case. */
+/** Canonical scenario Project ids touched by the case; restored in cleanup. */
 const caseProjectIds: string[] = [];
+const canonicalProjects: (typeof projectsTable.$inferSelect)[] = [];
 
 async function request(path: string, method = "GET", body?: unknown) {
   return routes[method as keyof typeof routes](
@@ -71,20 +71,11 @@ const dates = {
   startDate: "2026-01-01T00:00:00.000Z",
   endDate: "2026-12-31T00:00:00.000Z",
 };
-async function seedProject() {
-  const [created] = await db
-    .insert(projectsTable)
-    .values({
-      name: "REST Contract Project",
-      startDate: new Date(dates.startDate),
-      endDate: new Date(dates.endDate),
-      location: "Berlin",
-      country: "DE",
-      organizationId: fixture.organizationId,
-    })
-    .returning({ id: projectsTable.id });
-  caseProjectIds.push(created.id);
-  return created.id;
+async function resolveCanonicalRestProject() {
+  const seeded = canonicalProjects[caseProjectIds.length];
+  if (!seeded) throw new Error("Canonical REST scenario Project is missing");
+  caseProjectIds.push(seeded.id);
+  return seeded.id;
 }
 
 beforeAll(async () => {
@@ -101,11 +92,26 @@ beforeAll(async () => {
   const { randomUUID } = await import("node:crypto");
   fixture.sessionId = randomUUID();
   fixture.permitted = true;
+  for (const id of [
+    "rest-contract-project-canonical",
+    "rest-batch-project-canonical",
+  ]) {
+    const project = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, id),
+    });
+    if (!project) throw new Error("Canonical REST scenario Project is missing");
+    canonicalProjects.push(project);
+  }
 });
 afterEach(async () => {
   const ids = caseProjectIds.splice(0);
   if (ids.length) {
+    // Cleanup alone restores the exact canonical snapshots after REST
+    // deletion/archive/leg mutations. No private setup rows are inserted.
     await db.delete(projectsTable).where(inArray(projectsTable.id, ids));
+    await db
+      .insert(projectsTable)
+      .values(canonicalProjects.filter(({ id }) => ids.includes(id)));
   }
   fixture.permitted = true;
   // Canonical actors survive every case: fail loudly on accidental deletion.
@@ -147,7 +153,7 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
   const baselineIds = new Set(
     (baseline as { id: string }[]).map((project) => project.id),
   );
-  const id = await seedProject();
+  const id = await resolveCanonicalRestProject();
   const path = `/projects/${id}`;
   expect(await ok("/projects?sort_by=name")).toEqual(
     expect.arrayContaining([expect.objectContaining({ id, ...dates })]),
@@ -200,7 +206,7 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
     project: { id, archived: true },
   });
   expect(await ok(path, "DELETE", {})).toEqual({ success: true });
-  const second = await seedProject();
+  const second = await resolveCanonicalRestProject();
   expect(await ok("/projects/batch", "DELETE", { projectIds: [second] })).toEqual(
     { success: true, deletedCount: 1 },
   );
@@ -208,6 +214,8 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
   const remainingIds = new Set(
     (remaining as { id: string }[]).map((project) => project.id),
   );
+  baselineIds.delete(id);
+  baselineIds.delete(second);
   expect(remainingIds).toEqual(baselineIds);
   expect(
     await db.query.projectsTable.findFirst({
@@ -216,7 +224,7 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
         eq(projectsTable.organizationId, fixture.organizationId),
       ),
     }),
-    "canonical seed rows must not absorb case Project ids",
+    "REST deletion must remove the selected canonical scenario Project",
   ).toBeUndefined();
 });
 

@@ -10,6 +10,13 @@ import {
 
 import { env } from "@/env";
 
+import {
+  assertDevelopmentGarageTarget,
+  verifyInvalidGarageCredentials,
+} from "./garage-verification";
+
+assertDevelopmentGarageTarget(env.S3_BUCKET, env.S3_ENDPOINT);
+
 const client = new S3Client({
   endpoint: env.S3_ENDPOINT,
   region: env.S3_REGION,
@@ -86,31 +93,13 @@ try {
     },
   });
   try {
-    await invalidClient.send(
-      new PutObjectCommand({
-        Bucket: env.S3_BUCKET,
-        Key: invalidCredentialKey,
-        Body: payload,
-      }),
+    await verifyInvalidGarageCredentials(
+      invalidClient,
+      client,
+      env.S3_BUCKET,
+      invalidCredentialKey,
+      payload,
     );
-    // The bogus write unexpectedly succeeded: remove the run-owned probe with
-    // the valid client, then fail visibly.
-    await client.send(
-      new DeleteObjectCommand({
-        Bucket: env.S3_BUCKET,
-        Key: invalidCredentialKey,
-      }),
-    );
-    throw new Error(
-      "Garage accepted a request with invalid credentials; expected rejection.",
-    );
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes("Garage accepted a request with invalid credentials")
-    ) {
-      throw error;
-    }
     console.log("Garage invalid-credential check passed (rejected as expected).");
   } finally {
     invalidClient.destroy();

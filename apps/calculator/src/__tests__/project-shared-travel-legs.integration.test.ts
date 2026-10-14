@@ -8,7 +8,15 @@ import {
   projectsTable,
 } from "@greendex/database/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 
 import type { ProjectSharedTravelLeg } from "@/features/project-shared-travel-legs/types";
 import type { ProjectType } from "@/features/projects/types";
@@ -31,6 +39,9 @@ describe("Project Shared Travel Legs integration", () => {
   let sharedTravelLegId: string;
   let showcaseLegCount = 0;
   const caseProjectIds: string[] = [];
+  const managementProjectId = "travel-leg-management-project-canonical";
+  let baselineProject: typeof projectsTable.$inferSelect;
+  let baselineLegs: (typeof projectSharedTravelLegsTable.$inferSelect)[];
 
   function trackProject(id: string): string {
     caseProjectIds.push(id);
@@ -43,6 +54,19 @@ describe("Project Shared Travel Legs integration", () => {
     });
     if (!seedOrg) throw new Error("Canonical seed Organization is missing");
     orgId = seedOrg.id;
+    const seededProject = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, managementProjectId),
+    });
+    if (!seededProject)
+      throw new Error("Canonical Travel Leg Management Project is missing");
+    baselineProject = seededProject;
+    baselineLegs = await db
+      .select()
+      .from(projectSharedTravelLegsTable)
+      .where(eq(projectSharedTravelLegsTable.projectId, managementProjectId));
+    expect(baselineLegs.map(({ id }) => id)).toContain(
+      "travel-leg-management-bus-canonical",
+    );
     const showcase = await db.query.projectsTable.findFirst({
       where: and(
         eq(projectsTable.organizationId, orgId),
@@ -56,19 +80,27 @@ describe("Project Shared Travel Legs integration", () => {
     );
   });
 
+  beforeEach(() => {
+    // Every management case resolves the same canonical preconditions afresh;
+    // no id produced by another case is consumed.
+    projectId = managementProjectId;
+    sharedTravelLegId = "travel-leg-management-bus-canonical";
+  });
+  afterEach(async () => {
+    const ids = caseProjectIds.splice(0);
+    if (ids.length)
+      await db.delete(projectsTable).where(inArray(projectsTable.id, ids));
+    // Interference cleanup restores the canonical snapshot, not private setup.
+    await db
+      .update(projectsTable)
+      .set(baselineProject)
+      .where(eq(projectsTable.id, managementProjectId));
+    await db
+      .delete(projectSharedTravelLegsTable)
+      .where(eq(projectSharedTravelLegsTable.projectId, managementProjectId));
+    await db.insert(projectSharedTravelLegsTable).values(baselineLegs);
+  });
   afterAll(async () => {
-    // Scoped to case Projects: canonical seed rows are never deleted.
-    try {
-      const ids = caseProjectIds.splice(0);
-      if (ids.length) {
-        await db
-          .delete(projectSharedTravelLegsTable)
-          .where(inArray(projectSharedTravelLegsTable.projectId, ids));
-        await db.delete(projectsTable).where(inArray(projectsTable.id, ids));
-      }
-    } catch (error) {
-      console.warn("Cleanup failed:", error);
-    }
     const showcase = await db.query.projectsTable.findFirst({
       where: and(
         eq(projectsTable.organizationId, orgId),

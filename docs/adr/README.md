@@ -36,6 +36,9 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0020](0020-shared-auth-roles-and-factory.md) | Shared Auth Roles and Factory | accepted | 0019, Calculator coordinator Project grants only; 0022 |
 | [0021](0021-centralized-feature-flags.md) | Centralized Feature Flags | accepted | |
 | [0022](0022-shared-auth-roles-and-factory-original.md) | Original Shared Auth Roles and Factory | **superseded by 0020** | |
+| [0023](0023-keep-known-email-participant-entry-app-owned.md) | Keep Known-Email Participant Entry App-Owned | accepted | 0005, known-email delivery only |
+
+[ADR-0023](0023-keep-known-email-participant-entry-app-owned.md) supersedes ADR-0005's known-email delivery mechanism only, affirming ADR-0013's app-owned Participant Invitations and #263's test governance. All other ADR-0005 requirements remain accepted.
 
 ADR-0022 preserves the original shared-auth decision body from `1bd184f8` (formerly `0001-shared-auth-roles-and-factory.md`). Only accepted-status metadata was added; the collision-free identifier preserves its history without replacing the unrelated ADR-0001. ADR-0020 explicitly supersedes it.
 

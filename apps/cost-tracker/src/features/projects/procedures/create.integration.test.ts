@@ -40,7 +40,8 @@ let host = "";
 let otherHost = "";
 let foreignProject = "";
 let unassignedProject = "";
-let baselineRole = "";
+let participantActor = "";
+const roleActors = new Map<string, string>();
 const input = {
   name: `New Workshop ${randomUUID()}`,
   startDate: new Date("2027-04-01T00:00:00.000Z"),
@@ -103,21 +104,33 @@ describe("projects.create", () => {
         "Canonical seed required: run the isolated seeded lifecycle.",
       );
     actor = seededActor.id;
+    participantActor = actor;
+    for (const [role, email] of [
+      [ORGANIZATION_ROLES.OrganizationOwner, "seed-onboarding-owner@example.org"],
+      [ORGANIZATION_ROLES.OrganizationAdmin, "seed-onboarding-admin@example.org"],
+      [
+        ORGANIZATION_ROLES.ProjectCoordinator,
+        "seed-invitation-coordinator@example.org",
+      ],
+    ] as const) {
+      const seeded = await db.query.user.findFirst({
+        where: eq(user.email, email),
+      });
+      if (!seeded) throw new Error(`Canonical role actor missing: ${email}`);
+      roleActors.set(role, seeded.id);
+    }
     host = seededHost.id;
     otherHost = seededOther.id;
     foreignProject = seededForeign.id;
     unassignedProject = seededUnassigned.id;
-    baselineRole = (await role())!;
+    expect(await role()).toBe(ORGANIZATION_ROLES.Participant);
     expect(await assignments()).toEqual([]);
   });
   beforeEach(async () => {
     vi.clearAllMocks();
+    actor = participantActor;
     session(host);
     authMocks.hasPermission.mockResolvedValue({ success: false });
-    await db
-      .update(member)
-      .set({ role: ORGANIZATION_ROLES.Participant })
-      .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
     await db
       .delete(projectsTable)
       .where(
@@ -136,10 +149,21 @@ describe("projects.create", () => {
           eq(projectsTable.name, input.name),
         ),
       );
+    // Output cleanup only: undo the role added by this case's projects.create.
+    // Never rewrite seeded Owner/Admin roles or manufacture setup preconditions.
     await db
       .update(member)
-      .set({ role: baselineRole })
-      .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
+      .set({ role: ORGANIZATION_ROLES.Participant })
+      .where(
+        and(
+          eq(member.userId, participantActor),
+          eq(member.organizationId, host),
+          eq(
+            member.role,
+            `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
+          ),
+        ),
+      );
   });
 
   it("adds coordination to a Participant without removing roles and assigns only created Projects", async () => {
@@ -211,9 +235,10 @@ describe("projects.create", () => {
     expect(
       (await assignments()).map(({ projectId }) => projectId).sort(),
     ).toEqual([first.id, second.id].sort());
-    await db
-      .delete(hostProjectAssignmentsTable)
-      .where(eq(hostProjectAssignmentsTable.projectId, first.id));
+    // projects.create granted the creator assignment through supported
+    // behavior. The named seeded coordinator has no assignment to this new
+    // Project, so projects.get exercises refusal without removing any rows.
+    session(host, roleActors.get(ORGANIZATION_ROLES.ProjectCoordinator)!);
     await expect(
       client.projects.get({ projectId: first.id }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -253,10 +278,11 @@ describe("projects.create", () => {
     ORGANIZATION_ROLES.OrganizationOwner,
     ORGANIZATION_ROLES.OrganizationAdmin,
   ])("keeps %s role while assigning the creator", async (membershipRole) => {
-    await db
-      .update(member)
-      .set({ role: membershipRole })
-      .where(and(eq(member.userId, actor), eq(member.organizationId, host)));
+    // projects.create owns assignment creation; pre-existing canonical role
+    // actors prove it preserves Owner/Admin Memberships without setup writes.
+    actor = roleActors.get(membershipRole)!;
+    session(host);
+    expect(await assignments()).toEqual([]);
     const result = await client.projects.create(input);
     expect(await role()).toBe(membershipRole);
     expect(await assignments()).toEqual([{ projectId: result.id }]);

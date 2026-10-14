@@ -103,6 +103,8 @@ import {
   ensureCostTrackerScenarios,
   SUBMISSION_PAYOUT_ACCOUNT_IDS,
 } from "./seed-cost-tracker";
+import { ensureReviewScenarios } from "./seed-review-scenarios";
+import { SEED_ENTITY_SEARCH, SEED_REVIEW_SCENARIOS } from "./seed-scenarios";
 
 /** Database handle the canonical seed operates on. The caller owns the connection lifecycle. */
 export type SeedDatabase = NodePgDatabase<typeof schema>;
@@ -423,6 +425,7 @@ export const SEED_SHOWCASE = {
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
+  reviewFixes: SEED_REVIEW_SCENARIOS,
   costTrackerSetupLinks: {
     userIds: [
       "user",
@@ -756,24 +759,15 @@ export const SEED_SCENARIOS = {
       "picker-foreign-canonical",
       ...Array.from({ length: 22 }, (_, i) => `picker-result-${i}-canonical`),
       ...Array.from({ length: 55 }, (_, i) => `owned-result-${i}-canonical`),
-      ...Array.from(
-        { length: 1002 },
-        (_, i) => `picker-many-${i.toString().padStart(4, "0")}-canonical`,
-      ),
+      ...SEED_ENTITY_SEARCH.manyOrganizations.map(({ id }) => id),
     ],
     projectNames: [
       "picker-assigned-canonical",
       "picker-unassigned-canonical",
       "picker-foreign-project-canonical",
     ].map((id) => `Project ${id}`),
-    ownedOrganizations: Array.from({ length: 55 }, (_, i) => ({
-      id: `owned-result-${i}-canonical`,
-      name: `Owned Search canonical ${i.toString().padStart(2, "0")}`,
-    })),
-    manyOrganizations: Array.from({ length: 1002 }, (_, i) => ({
-      id: `picker-many-${i.toString().padStart(4, "0")}-canonical`,
-      name: "Many Matches canonical",
-    })),
+    ownedOrganizations: SEED_ENTITY_SEARCH.ownedOrganizations,
+    manyOrganizations: SEED_ENTITY_SEARCH.manyOrganizations,
   },
   costTrackerOnboardingProgress: {
     userIds: [
@@ -814,7 +808,11 @@ export const SEED_SCENARIOS = {
     expiredInvitationId: "progress-expired-invitation-canonical",
   },
   costTrackerClaims: {
-    userIds: ["claim-coordinator-canonical", "claim-participant-canonical"],
+    userIds: [
+      "claim-coordinator-canonical",
+      "claim-participant-canonical",
+      "claim-owner-canonical",
+    ],
     payoutAccountIds: [
       "claim-account-canonical",
       "claim-second-account-canonical",
@@ -823,6 +821,7 @@ export const SEED_SCENARIOS = {
     userEmails: [
       "claim-coordinator-canonical@example.org",
       "claim-participant-canonical@example.org",
+      "claim-owner-canonical@example.org",
     ],
     organizationIds: [
       "claim-host-canonical",
@@ -1147,8 +1146,19 @@ async function ensurePasswordAccount(db: SeedDatabase, userId: string) {
   // Refresh the credential login on every run so the well-known development
   // password keeps working. The random salt is runtime secret material, not
   // domain data, and is intentionally not stable across runs.
-  await db.delete(account).where(eq(account.userId, userId));
   const hashedPassword = await hashPassword(SEED_USER.password);
+  const existing = await db.query.account.findFirst({
+    where: and(eq(account.userId, userId), eq(account.providerId, "credential")),
+  });
+  if (existing) {
+    await db
+      .update(account)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(
+        and(eq(account.userId, userId), eq(account.providerId, "credential")),
+      );
+    return;
+  }
   await db.insert(account).values({
     id: createId(),
     userId,
@@ -1869,7 +1879,20 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     "✅ Participant-entry Projects share seeded Partnerships; Invitees stay membership-free",
   );
 
-  for (const scenarioUserId of await ensureCostTrackerScenarios(db)) {
+  const reviewUserId = await ensureReviewScenarios(
+    db,
+    orgId,
+    partnerOrganization!.id,
+    secondPartnerId,
+    userId,
+    SEED_ORG_ROLE_USERS.filter(({ hostingRole }) => hostingRole !== null).map(
+      ({ email }) => email,
+    ),
+  );
+  for (const scenarioUserId of [
+    reviewUserId,
+    ...(await ensureCostTrackerScenarios(db)),
+  ]) {
     await ensurePasswordAccount(db, scenarioUserId);
   }
 
@@ -1936,6 +1959,7 @@ export async function resetSeedData(
   const seedEmails = [
     SEED_USER.email,
     ...SEED_ORG_ROLE_EMAILS,
+    SEED_REVIEW_SCENARIOS.newestMembership.email,
     ...SEED_SCENARIOS.costTrackerSetupLinks.userEmails,
     ...SEED_SCENARIOS.costTrackerSubmission.userEmails,
     ...SEED_SCENARIOS.costTrackerParticipations.userEmails,
@@ -1958,6 +1982,9 @@ export async function resetSeedData(
       SEED_PARTNER_ORGANIZATION.slug,
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
+      SEED_REVIEW_SCENARIOS.staffInvitations.organizationId,
+      SEED_REVIEW_SCENARIOS.newestMembership.olderOrganizationId,
+      SEED_REVIEW_SCENARIOS.newestMembership.newestOrganizationId,
       ...SEED_SCENARIOS.costTrackerSetupLinks.organizationIds,
       ...SEED_SCENARIOS.costTrackerSubmission.organizationIds,
       ...SEED_SCENARIOS.costTrackerParticipations.organizationIds,
@@ -1974,6 +2001,9 @@ export async function resetSeedData(
   const canonicalNames = [
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
+    ...SEED_REVIEW_SCENARIOS.restProjects.map(({ name }) => name),
+    "Seed Submitted Registration Project",
+    "Seed Travel Leg Management Project",
     ...SEED_SCENARIOS.costTrackerSetupLinks.projectNames,
     ...SEED_SCENARIOS.costTrackerSubmission.projectNames,
     ...SEED_SCENARIOS.costTrackerParticipations.projectNames,

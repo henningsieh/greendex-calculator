@@ -59,6 +59,20 @@ export interface IsolatedRunHandle {
   createdAt: string;
 }
 
+export class IsolatedRunCreationError extends Error {
+  constructor(
+    readonly handle: IsolatedRunHandle,
+    readonly rollback: "disposed" | "failed",
+    cause: unknown,
+  ) {
+    super(
+      `Run database "${handle.databaseName}" preparation failed; rollback ${rollback}.`,
+      { cause },
+    );
+    this.name = "IsolatedRunCreationError";
+  }
+}
+
 export interface DropTargetAssertion {
   serviceHost: string;
   servicePort: string;
@@ -176,13 +190,33 @@ export async function createIsolatedRunDatabase(
       `Refusing to create "${databaseName}": run database "${activeRunDatabaseName}" is already active in this process; database runs stay serial.`,
     );
   }
-  activeRunDatabaseName = databaseName;
+  const base = new URL(options.baseDatabaseUrl);
+  const handle: IsolatedRunHandle = {
+    runId,
+    databaseName,
+    databaseUrl: serviceUrlFor(options.baseDatabaseUrl, databaseName),
+    baseDatabaseUrl: options.baseDatabaseUrl,
+    baseDatabaseName: base.pathname.replace(/^\//, ""),
+    serviceHost: base.hostname,
+    servicePort: base.port || "5432",
+    createdAt: new Date().toISOString(),
+  };
+  assertSafeDropTarget({
+    ...handle,
+    marker: ownershipMarkerFor(runId),
+    expectedRunId: runId,
+  });
+  let created = false;
   const admin = new Pool({
     connectionString: maintenanceUrlFor(options.baseDatabaseUrl),
     max: 1,
   });
+  activeRunDatabaseName = databaseName;
+  let preparationError: unknown;
+  let rollback: "disposed" | "failed" = "failed";
   try {
     await admin.query(`CREATE DATABASE "${databaseName}"`);
+    created = true;
     await admin.query(
       `COMMENT ON DATABASE "${databaseName}" IS '${ownershipMarkerFor(runId)}'`,
     );
@@ -195,21 +229,40 @@ export async function createIsolatedRunDatabase(
     }
   } catch (error) {
     activeRunDatabaseName = null;
-    throw error;
-  } finally {
-    await admin.end();
+    preparationError = error;
+    if (created) {
+      // Successful CREATE proves this exact fresh database belonged to this
+      // call. Only this same connection may roll back before marker persistence;
+      // later disposal still requires the persisted marker, never name alone.
+      try {
+        await admin.query(`DROP DATABASE "${databaseName}" WITH (FORCE)`);
+        rollback = "disposed";
+      } catch (rollbackError) {
+        preparationError = new AggregateError(
+          [error, rollbackError],
+          "Preparation and rollback failed",
+        );
+      }
+    }
   }
-  const base = new URL(options.baseDatabaseUrl);
-  return {
-    runId,
-    databaseName,
-    databaseUrl: serviceUrlFor(options.baseDatabaseUrl, databaseName),
-    baseDatabaseUrl: options.baseDatabaseUrl,
-    baseDatabaseName: base.pathname.replace(/^\//, ""),
-    serviceHost: base.hostname,
-    servicePort: base.port || "5432",
-    createdAt: new Date().toISOString(),
-  };
+  try {
+    await admin.end();
+  } catch (error) {
+    activeRunDatabaseName = null;
+    preparationError =
+      preparationError === undefined
+        ? error
+        : new AggregateError(
+            [preparationError, error],
+            "Preparation and connection cleanup failed",
+          );
+  }
+  if (preparationError !== undefined) {
+    if (created)
+      throw new IsolatedRunCreationError(handle, rollback, preparationError);
+    throw preparationError;
+  }
+  return handle;
 }
 
 export async function disposeIsolatedRunDatabase(

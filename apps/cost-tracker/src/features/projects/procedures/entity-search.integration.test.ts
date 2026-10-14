@@ -1,4 +1,5 @@
 // @vitest-environment node
+/* eslint-disable import/no-relative-parent-imports -- Consume canonical cross-app seed identities without loading the seed implementation. */
 
 import { hasOrganizationRole } from "@greendex/auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
@@ -14,21 +15,11 @@ vi.mock("server-only", () => ({}));
 
 import { router } from "@/lib/orpc/router";
 
+import { SEED_ENTITY_SEARCH } from "../../../../../calculator/scripts/seed-scenarios";
+
 // Stable identities registered in SEED_SCENARIOS.costTrackerEntitySearch.
 const suffix = "canonical";
-const scenario = {
-  coordinatorUserId: "picker-coordinator-canonical",
-  unassignedCoordinatorUserId: "picker-unassigned-coordinator-canonical",
-  participantUserId: "picker-participant-canonical",
-  ownedOrganizations: Array.from({ length: 55 }, (_, i) => ({
-    id: `owned-result-${i}-${suffix}`,
-    name: `Owned Search ${suffix} ${i.toString().padStart(2, "0")}`,
-  })),
-  manyOrganizations: Array.from({ length: 1002 }, (_, i) => ({
-    id: `picker-many-${i.toString().padStart(4, "0")}-${suffix}`,
-    name: `Many Matches ${suffix}`,
-  })),
-};
+const scenario = SEED_ENTITY_SEARCH;
 const actor = `picker-user-${suffix}`;
 const host = `picker-host-${suffix}`;
 const partner = `picker-partner-${suffix}`;
