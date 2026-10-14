@@ -21,7 +21,6 @@
     "next": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

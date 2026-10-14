@@ -32,7 +32,6 @@
     "drizzle-kit": "^0.31.11",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
