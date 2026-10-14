@@ -60,8 +60,10 @@ export interface IsolatedRunHandle {
 }
 
 export class IsolatedRunCreationError extends Error {
+  declare readonly handle: IsolatedRunHandle;
+
   constructor(
-    readonly handle: IsolatedRunHandle,
+    handle: IsolatedRunHandle,
     readonly rollback: "disposed" | "failed",
     cause: unknown,
   ) {
@@ -70,6 +72,21 @@ export class IsolatedRunCreationError extends Error {
       { cause },
     );
     this.name = "IsolatedRunCreationError";
+    Object.defineProperty(this, "handle", { value: handle, enumerable: false });
+  }
+
+  // Vitest traverses non-enumerable Error properties too: serialization must
+  // explicitly omit credential URLs while callers retain the disposal handle.
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      stack: this.stack,
+      rollback: this.rollback,
+      runId: this.handle.runId,
+      databaseName: this.handle.databaseName,
+      cause: "Database preparation or connection cleanup failed.",
+    };
   }
 }
 

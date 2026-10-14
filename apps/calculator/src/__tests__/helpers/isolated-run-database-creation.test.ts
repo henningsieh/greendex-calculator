@@ -1,5 +1,19 @@
 // @vitest-environment node
+import { createRequire } from "node:module";
+import { inspect } from "node:util";
+
 import { beforeEach, expect, it, vi } from "vitest";
+
+// Resolve the installed Vitest serializer through its UI dependency.
+const vitestRequire = createRequire(
+  createRequire(import.meta.url).resolve("vitest/package.json"),
+);
+const utilsRequire = createRequire(
+  vitestRequire.resolve("@vitest/ui/package.json"),
+);
+const { serializeValue } = await import(
+  utilsRequire.resolve("@vitest/utils/serialize")
+);
 
 const admin = vi.hoisted(() => ({ query: vi.fn(), end: vi.fn() }));
 vi.mock("pg", () => ({
@@ -8,7 +22,11 @@ vi.mock("pg", () => ({
     end = admin.end;
   },
 }));
-import { createIsolatedRunDatabase } from "@/__tests__/helpers/isolated-run-database";
+import {
+  createIsolatedRunDatabase,
+  disposeIsolatedRunDatabase,
+  IsolatedRunCreationError,
+} from "@/__tests__/helpers/isolated-run-database";
 
 const options = {
   baseDatabaseUrl: "postgres://postgres@localhost/postgres",
@@ -18,6 +36,40 @@ beforeEach(() => {
   vi.resetAllMocks();
   admin.end.mockResolvedValue(undefined);
 });
+it("keeps credential-bearing disposal handles out of thrown error diagnostics", async () => {
+  const password = "credential-leak-regression";
+  admin.query
+    .mockResolvedValueOnce({ rows: [] })
+    .mockRejectedValueOnce(new Error("marker failed"))
+    .mockRejectedValueOnce(new Error("rollback failed"));
+  const error = await createIsolatedRunDatabase({
+    ...options,
+    baseDatabaseUrl: `postgres://postgres:${password}@localhost/postgres`,
+  }).catch((caught: unknown) => caught);
+  expect(error).toBeInstanceOf(IsolatedRunCreationError);
+  if (!(error instanceof IsolatedRunCreationError))
+    throw new Error("Missing handle");
+  expect(Object.keys(error)).not.toContain("handle");
+  for (const diagnostic of [
+    JSON.stringify(error),
+    JSON.stringify(serializeValue(error)),
+    inspect(error),
+    String(error),
+  ]) {
+    expect(diagnostic).not.toContain(password);
+    expect(diagnostic).not.toContain(error.handle.databaseUrl);
+    expect(diagnostic).not.toContain(error.handle.baseDatabaseUrl);
+  }
+  expect(error.handle.databaseUrl).toContain(password);
+  admin.query
+    .mockResolvedValueOnce({
+      rows: [{ marker: `greendex-test-run:${error.handle.runId}` }],
+    })
+    .mockResolvedValueOnce({ rows: [] });
+  await disposeIsolatedRunDatabase(error.handle);
+  expect(admin.query.mock.lastCall?.[0]).toMatch(/^DROP DATABASE/);
+});
+
 it("rolls back successful CREATE if writing the marker fails", async () => {
   admin.query
     .mockResolvedValueOnce({ rows: [] })
