@@ -26,6 +26,11 @@ import { createId } from "@paralleldrive/cuid2";
 
 import type { SeedDatabase } from "./seed";
 
+export const SUBMISSION_PAYOUT_ACCOUNT_IDS = [
+  "submit-account-canonical",
+  "submit-alternate-canonical",
+] as const;
+
 /** Cost Tracker's canonical scenarios. Domain dates use the fixed 2024 reference
  * calendar; metadata is run-anchored. Inserts converge without overwriting
  * developer changes. Proof Documents are synthetic metadata for mocked storage
@@ -3493,8 +3498,7 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
     other = id("other");
   const actor = id("actor"),
     participantUser = id("participant-user");
-  const account = id("account"),
-    alternate = id("alternate");
+  const [account, alternate] = SUBMISSION_PAYOUT_ACCOUNT_IDS;
 
   const now = new Date();
   {

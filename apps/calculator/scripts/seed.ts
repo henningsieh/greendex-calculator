@@ -99,7 +99,10 @@ import { and, eq, inArray } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-import { ensureCostTrackerScenarios } from "./seed-cost-tracker";
+import {
+  ensureCostTrackerScenarios,
+  SUBMISSION_PAYOUT_ACCOUNT_IDS,
+} from "./seed-cost-tracker";
 
 /** Database handle the canonical seed operates on. The caller owns the connection lifecycle. */
 export type SeedDatabase = NodePgDatabase<typeof schema>;
@@ -455,6 +458,7 @@ export const SEED_SCENARIOS = {
     ),
   },
   costTrackerSubmission: {
+    payoutAccountIds: SUBMISSION_PAYOUT_ACCOUNT_IDS,
     userIds: [
       "submit-actor-canonical",
       "submit-participant-user-canonical",
@@ -2190,8 +2194,10 @@ export async function resetSeedData(
   }
   // A canonical Payout Account can be reused by a developer Partnership.
   // Preserve it when a surviving selection references it, just like other dependents.
-  const canonicalPayoutAccountIds =
-    SEED_SCENARIOS.costTrackerClaims.payoutAccountIds;
+  const canonicalPayoutAccountIds = [
+    ...SEED_SCENARIOS.costTrackerClaims.payoutAccountIds,
+    ...SEED_SCENARIOS.costTrackerSubmission.payoutAccountIds,
+  ];
   const survivingSelections =
     await db.query.partnershipPayoutAccountsTable.findMany({
       where: inArray(partnershipPayoutAccountsTable.payoutAccountId, [
