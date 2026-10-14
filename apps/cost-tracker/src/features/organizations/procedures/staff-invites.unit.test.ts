@@ -173,6 +173,13 @@ describe("organizations staff invites", () => {
         `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
         ORGANIZATION_ROLES.OrganizationOwner,
         ORGANIZATION_ROLES.Participant,
+        // Canonical onboarding/invitation actors also belong to the Hosting Organization.
+        ORGANIZATION_ROLES.ProjectCoordinator,
+        ORGANIZATION_ROLES.OrganizationAdmin,
+        `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+        ORGANIZATION_ROLES.ProjectCoordinator,
+        ORGANIZATION_ROLES.OrganizationOwner,
+        ORGANIZATION_ROLES.Participant,
       ].sort(),
     );
     // The canonical seed owner signs in from a real mailbox domain while
