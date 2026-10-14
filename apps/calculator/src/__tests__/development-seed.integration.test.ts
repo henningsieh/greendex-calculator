@@ -28,6 +28,12 @@ interface CanonicalSeedIdentity {
   organizationSlugs: string[];
   projectNames: string[];
   scenarios: {
+    reviewFixes: {
+      newestMembership: { email: string };
+      restProjects: { id: string; name: string }[];
+      submittedRegistration: { projectId: string };
+      travelLegManagement: { projectId: string };
+    };
     costTrackerSetupLinks: CostTrackerSeedScenario;
     costTrackerSubmission: CostTrackerSeedScenario & {
       payoutAccountIds: string[];
@@ -298,11 +304,77 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     });
     expect(countsAfterCliSeed.travelLegs).toBeGreaterThan(0);
 
+    // These are preservation probes for the seeder itself, not hidden app
+    // setup: refresh only credential password hashes, never OAuth identities.
+    const actors = [
+      "claim-coordinator-canonical",
+      (
+        await pool.query('SELECT id FROM "user" WHERE email = $1', [
+          SEED_USER.email,
+        ])
+      ).rows[0].id,
+    ];
+    const credentialBefore = await pool.query(
+      "SELECT id, user_id, created_at, password FROM account WHERE provider_id = 'credential' AND user_id = ANY($1) ORDER BY user_id",
+      [actors],
+    );
+    for (const actor of actors)
+      await pool.query(
+        "INSERT INTO account (id, user_id, account_id, provider_id, access_token, created_at, updated_at) VALUES ($1, $2, $2, 'google', 'preservation-probe', '2024-01-01', '2024-01-01')",
+        [`oauth-preservation-${actor}`, actor],
+      );
+    const oauthBefore = await pool.query(
+      "SELECT * FROM account WHERE provider_id = 'google' ORDER BY id",
+    );
+    const invitationsBefore = await pool.query(
+      "SELECT id, secret_hash, expires_at FROM participant_entry_token WHERE id IN ('coord-own-invitation-token-canonical', 'coord-foreign-invitation-token-canonical') ORDER BY id",
+    );
+    expect(invitationsBefore.rows).toHaveLength(2);
+    for (const row of invitationsBefore.rows)
+      expect(row.expires_at.getFullYear()).toBe(9999);
+    expect(
+      (
+        await pool.query(
+          "SELECT bool_and(expires_at = timestamp '9999-12-31 00:00:00') AS deterministic FROM participant_entry_token WHERE id IN ('coord-own-invitation-token-canonical', 'coord-foreign-invitation-token-canonical')",
+        )
+      ).rows,
+    ).toEqual([{ deterministic: true }]);
+
     // Second run through the shared module entrypoint used by test setup.
     // The same implementation must converge instead of adding duplicates.
     const summary = await runModuleSeed(databaseUrl);
     expect(summary.projectCount).toBe(identities.projectNames.length);
     expect(await readSeedCounts(pool, identities)).toEqual(countsAfterCliSeed);
+    expect(
+      (
+        await pool.query(
+          "SELECT * FROM account WHERE provider_id = 'google' ORDER BY id",
+        )
+      ).rows,
+    ).toEqual(oauthBefore.rows);
+    const credentialAfter = await pool.query(
+      "SELECT id, user_id, created_at, password FROM account WHERE provider_id = 'credential' AND user_id = ANY($1) ORDER BY user_id",
+      [actors],
+    );
+    expect(
+      credentialAfter.rows.map(
+        ({ password: _password, ...identity }) => identity,
+      ),
+    ).toEqual(
+      credentialBefore.rows.map(
+        ({ password: _password, ...identity }) => identity,
+      ),
+    );
+    credentialAfter.rows.forEach((row, index) =>
+      expect(row.password).not.toBe(credentialBefore.rows[index].password),
+    );
+    expect(
+      (
+        await pool.query(
+          "SELECT id, secret_hash, expires_at FROM participant_entry_token WHERE id IN ('coord-own-invitation-token-canonical', 'coord-foreign-invitation-token-canonical') ORDER BY id",
+        )
+      ).rows,
+    ).toEqual(invitationsBefore.rows);
 
     // Every discoverable scenario reference resolves to its stable identity.
     const scenarios = await pool.query(
@@ -495,11 +567,16 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
     expect(report.projects).toBe(
       identities.projectNames.length +
         1 +
+        identities.scenarios.reviewFixes.restProjects.length +
+        2 +
         costTrackerScenarios.flatMap((scenario) => scenario.projectNames).length,
     );
+    // The report counts the canonical template legs explicitly removed;
+    // scenario-specific legs are removed by their Project's cascade.
     expect(report.travelLegs).toBe(canonicalCounts.travelLegs);
     expect(report.users).toBe(
       identities.seedEmails.length +
+        1 +
         costTrackerScenarios.flatMap((scenario) => scenario.userEmails).length,
     );
     expect(report.retainedOrganizationSlugs).toEqual([
@@ -596,9 +673,9 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     };
     const first = await snapshot();
     expect(first).toEqual({
-      users: 96,
-      logins: 96,
-      memberships: 1167,
+      users: 97,
+      logins: 97,
+      memberships: 1169,
       organizations: 1132,
       projects: 109,
       partnerships: 146,

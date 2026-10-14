@@ -1,16 +1,13 @@
 // @vitest-environment node
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   claimsTable as claims,
-  member,
-  partnerCoordinatorAssignmentsTable as assignments,
   partnershipPayoutAccountsTable as selections,
   payoutAccountsTable as accounts,
   projectsTable as projects,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   afterEach,
   beforeAll,
@@ -33,6 +30,7 @@ const host = `claim-host-${suffix}`;
 const partner = `claim-partner-${suffix}`;
 const coordinator = `claim-coordinator-${suffix}`;
 const participant = `claim-participant-${suffix}`;
+const owner = `claim-owner-${suffix}`;
 const project = `claim-project-${suffix}`;
 let own = `claim-own-${suffix}`;
 const foreign = `claim-foreign-${suffix}`;
@@ -98,24 +96,12 @@ describe("Claim drafts and Partnership payout selection", () => {
     await expect(
       client.claims.reviewerAccess({ partnershipId: own }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await db
-      .update(member)
-      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
-      .where(
-        and(eq(member.userId, participant), eq(member.organizationId, host)),
-      );
-    try {
-      expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
-        canReview: true,
-      });
-    } finally {
-      await db
-        .update(member)
-        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
-        .where(
-          and(eq(member.userId, participant), eq(member.organizationId, host)),
-        );
-    }
+    // reviewerAccess exercises the seeded unassigned Hosting Owner; no role
+    // mutation is needed to test owner authority independently of assignment.
+    actor = owner;
+    expect(await client.claims.reviewerAccess({ partnershipId: own })).toEqual({
+      canReview: true,
+    });
   });
   it("reads only Partner payout options and the selected account without creating a Claim", async () => {
     expect(
@@ -339,28 +325,16 @@ describe("Claim drafts and Partnership payout selection", () => {
   });
 
   it("allows the Partner Organization owner without a coordinator assignment", async () => {
-    await db.delete(assignments).where(eq(assignments.partnershipId, own));
-    await db
-      .update(member)
-      .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
-      .where(eq(member.userId, coordinator));
-    try {
-      await client.claims.selectPayoutAccount({
-        partnershipId: own,
-        payoutAccountId: account,
-      });
-      expect(await client.claims.saveDraft({ partnershipId: own })).toMatchObject(
-        { status: "editable" },
-      );
-    } finally {
-      await db
-        .update(member)
-        .set({ role: ORGANIZATION_ROLES.ProjectCoordinator })
-        .where(eq(member.userId, coordinator));
-      await db
-        .insert(assignments)
-        .values({ partnershipId: own, userId: coordinator });
-    }
+    // selectPayoutAccount/saveDraft perform the mutations under test as the
+    // named seeded Partner Owner, who has no coordinator assignment.
+    actor = owner;
+    await client.claims.selectPayoutAccount({
+      partnershipId: own,
+      payoutAccountId: account,
+    });
+    expect(await client.claims.saveDraft({ partnershipId: own })).toMatchObject({
+      status: "editable",
+    });
   });
 
   it("denies Participant writes even with the active Partner Organization", async () => {

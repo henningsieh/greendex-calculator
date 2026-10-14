@@ -770,18 +770,22 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("blocks reopening registration after the Partnership's Claim is submitted", async () => {
-    const link = await client.participantOnboarding.createRegistrationLink({
-      partnershipId: partnership,
-    });
-    await client.participantOnboarding.setRegistrationLinkOpen({
-      id: link.id,
-      open: false,
-    });
-    // Scoped Claim state mutation: Claim submission is covered by its owning
-    // suite, not reimplemented here. Case cleanup removes this state.
-    await db
-      .insert(claimsTable)
-      .values({ partnershipId: partnership, status: "submitted" });
+    // SEED_SCENARIOS.reviewFixes.submittedRegistration supplies a revoked
+    // link on a submitted Claim; only the reopening behavior is under test.
+    const link = { id: "onboarding-submitted-link-canonical" };
+    expect(
+      (
+        await db
+          .select()
+          .from(claimsTable)
+          .where(
+            eq(
+              claimsTable.partnershipId,
+              "onboarding-submitted-partnership-canonical",
+            ),
+          )
+      )[0]?.status,
+    ).toBe("submitted");
     await expect(
       client.participantOnboarding.setRegistrationLinkOpen({
         id: link.id,
