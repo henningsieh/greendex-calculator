@@ -290,6 +290,17 @@ export async function startManagedAppServers(
         ownedApp.generatedDeclarations = declarations;
       if (!ready || child.exitCode !== null || child.signalCode !== null)
         throw new Error("Managed app did not become ready.");
+      // Auth proves run ownership; RPC's empty path compiles its route without
+      // invoking any procedure, before HTTP tests start their shorter timers.
+      const rpcResponse = await fetch(`${bases[index]}/api/rpc`, {
+        signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+        redirect: "manual",
+      });
+      if (
+        rpcResponse.status !== 404 ||
+        (await rpcResponse.text()) !== "Not found"
+      )
+        throw new Error("Managed RPC route did not become ready.");
     }
     return {
       calculatorBaseUrl: bases[0],
