@@ -15,6 +15,7 @@ import {
   startManagedAppServers,
   type ManagedAppServers,
 } from "../../../scripts/managed-app-servers";
+import { nonbrowserTestEvidence } from "../../../scripts/nonbrowser-test-evidence";
 import {
   fullRunPassed,
   runTestGroups,
@@ -60,14 +61,7 @@ const command = (cwd: string, args: string[], env = environment()) =>
     timeoutMs: 900_000,
     signal: interruption.signal,
   });
-const testEvidence: {
-  scope: string;
-  total: number;
-  passed: number;
-  failed: number;
-  pending: number;
-  failures: { file: string; test: string; kind: string }[];
-}[] = [];
+const testEvidence: ReturnType<typeof nonbrowserTestEvidence>[] = [];
 const vitest = (cwd: string, args: string[] = [], timeoutMs = 900_000) =>
   runManagedCommand(
     "pnpm",
@@ -90,37 +84,7 @@ const vitest = (cwd: string, args: string[] = [], timeoutMs = 900_000) =>
         let skipped = false;
         try {
           const data = JSON.parse(output.slice(start));
-          const failures = data.testResults.flatMap(
-            (file: {
-              name: string;
-              assertionResults: {
-                status: string;
-                fullName: string;
-                failureMessages: string[];
-              }[];
-            }) => {
-              const failed = file.assertionResults.filter(
-                (test) => test.status === "failed",
-              );
-              return failed.map((test) => ({
-                file: file.name.replace(`${root}/`, ""),
-                test: test.fullName,
-                kind: test.failureMessages.some((message) =>
-                  /timed out|timeout/i.test(message),
-                )
-                  ? "timeout"
-                  : "assertion-or-runtime-error",
-              }));
-            },
-          );
-          const evidence = {
-            scope: cwd,
-            total: data.numTotalTests,
-            passed: data.numPassedTests,
-            failed: data.numFailedTests,
-            pending: data.numPendingTests,
-            failures,
-          };
+          const evidence = nonbrowserTestEvidence(data, cwd, root);
           testEvidence.push(evidence);
           console.log(JSON.stringify(evidence));
           skipped = data.numPendingTests > 0 || data.numTodoTests > 0;
