@@ -29,6 +29,7 @@ interface CanonicalSeedIdentity {
   projectNames: string[];
   scenarios: {
     costTrackerSetupLinks: CostTrackerSeedScenario;
+    costTrackerParticipations: CostTrackerSeedScenario;
     costTrackerProjects: CostTrackerSeedScenario;
     costTrackerJourneys: CostTrackerSeedScenario;
     costTrackerPartnerships: CostTrackerSeedScenario;
@@ -475,6 +476,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
     // Ten hosting Projects plus the Partner-owned scoping Project (#267).
     const costTrackerScenarios = [
       identities.scenarios.costTrackerSetupLinks,
+      identities.scenarios.costTrackerParticipations,
       identities.scenarios.costTrackerProjects,
       identities.scenarios.costTrackerJourneys,
       identities.scenarios.costTrackerPartnerships,
@@ -547,6 +549,7 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     const identities = await readSeedIdentities(databaseUrl);
     const scenarios = [
       identities.scenarios.costTrackerSetupLinks,
+      identities.scenarios.costTrackerParticipations,
       identities.scenarios.costTrackerProjects,
       identities.scenarios.costTrackerJourneys,
       identities.scenarios.costTrackerPartnerships,
@@ -585,21 +588,21 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     };
     const first = await snapshot();
     expect(first).toEqual({
-      users: 43,
-      logins: 43,
-      memberships: 1111,
-      organizations: 1126,
-      projects: 86,
-      partnerships: 106,
-      participations: 43,
-      journeys: 5,
-      claims: 33,
+      users: 80,
+      logins: 80,
+      memberships: 1148,
+      organizations: 1129,
+      projects: 97,
+      partnerships: 128,
+      participations: 52,
+      journeys: 6,
+      claims: 35,
       payout_accounts: 3,
       entries: 1,
       allocations: 1,
-      profiles: 3,
-      agreements: 3,
-      invitations: 6,
+      profiles: 32,
+      agreements: 33,
+      invitations: 8,
       hashed_secrets: true,
     });
     // Normal reseeding fills missing canonical rows without overwriting development edits.

@@ -73,6 +73,7 @@ import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/tra
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import {
   claimsTable,
+  duplicateReviewTasksTable,
   costAllocationsTable,
   hostProjectAssignmentsTable,
   participantJourneysTable,
@@ -451,6 +452,73 @@ export const SEED_SCENARIOS = {
     projectNames: ["project", "other-project"].map(
       (name) => `Seed Setup Link Project setup-${name}-canonical`,
     ),
+  },
+  costTrackerParticipations: {
+    userIds: [
+      ...[
+        "actor",
+        "candidate",
+        "unassigned",
+        "current",
+        "old",
+        "mixed",
+        "owner",
+        "second-assignee",
+        "missing-agreement",
+        "missing-profile",
+      ].map((name) => `coord-${name}-canonical`),
+      ...["unverified", "no-profile", "stale", "wrong-role", "wrong-org"].map(
+        (key) => `directory-${key}-canonical`,
+      ),
+      ...Array.from({ length: 22 }, (_, index) => `capacity-${index}-canonical`),
+    ],
+    userEmails: [
+      "coordinator-canonical@example.org",
+      "candidate-canonical@example.org",
+      "unassigned-canonical@x.org",
+      "current-canonical@x.org",
+      "old-canonical@x.org",
+      "MIXED-canonical@EXAMPLE.ORG",
+      ...["owner", "second-assignee", "missing-agreement", "missing-profile"].map(
+        (name) => `coord-${name}-canonical@example.org`,
+      ),
+      ...["unverified", "no-profile", "stale", "wrong-role", "wrong-org"].map(
+        (key) => `directory-${key}-canonical@example.org`,
+      ),
+      ...Array.from(
+        { length: 22 },
+        (_, index) => `capacity-${index}-canonical@example.org`,
+      ),
+    ],
+    organizationIds: ["host", "partner", "other"].map(
+      (name) => `coord-${name}-canonical`,
+    ),
+    projectNames: [
+      "empty",
+      "email",
+      "mixed",
+      "old-email",
+      "foreign-invitation",
+      "own-invitation",
+      "referenced",
+      "submitted",
+      "correction",
+      "report",
+      "report-empty",
+    ].map((name) => `Seed Participation Project ${name}`),
+    participationIds: [
+      ...[
+        "email",
+        "mixed",
+        "old-email",
+        "referenced",
+        "submitted",
+        "correction",
+      ].map((name) => `coord-${name}-row-canonical`),
+      "coord-unjoined-canonical",
+      "coord-current-row-canonical",
+      "coord-old-row-canonical",
+    ],
   },
   costTrackerProjects: {
     userIds: [
@@ -1809,6 +1877,7 @@ export async function resetSeedData(
     SEED_USER.email,
     ...SEED_ORG_ROLE_EMAILS,
     ...SEED_SCENARIOS.costTrackerSetupLinks.userEmails,
+    ...SEED_SCENARIOS.costTrackerParticipations.userEmails,
     ...SEED_SCENARIOS.costTrackerProjects.userEmails,
     ...SEED_SCENARIOS.costTrackerJourneys.userEmails,
     ...SEED_SCENARIOS.costTrackerPartnerships.userEmails,
@@ -1829,6 +1898,7 @@ export async function resetSeedData(
       SEED_SECOND_PARTNER_ORGANIZATION.slug,
       SEED_THIRD_PARTNER_ORGANIZATION.slug,
       ...SEED_SCENARIOS.costTrackerSetupLinks.organizationIds,
+      ...SEED_SCENARIOS.costTrackerParticipations.organizationIds,
       ...SEED_SCENARIOS.costTrackerProjects.organizationIds,
       ...SEED_SCENARIOS.costTrackerJourneys.organizationIds,
       ...SEED_SCENARIOS.costTrackerPartnerships.organizationIds,
@@ -1843,6 +1913,7 @@ export async function resetSeedData(
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
     ...SEED_SCENARIOS.costTrackerSetupLinks.projectNames,
+    ...SEED_SCENARIOS.costTrackerParticipations.projectNames,
     ...SEED_SCENARIOS.costTrackerProjects.projectNames,
     ...SEED_SCENARIOS.costTrackerJourneys.projectNames,
     ...SEED_SCENARIOS.costTrackerPartnerships.projectNames,
@@ -1910,6 +1981,14 @@ export async function resetSeedData(
     );
     const partnershipIds = partnerships.map((partnership) => partnership.id);
     if (partnershipIds.length > 0) {
+      await db
+        .delete(duplicateReviewTasksTable)
+        .where(
+          inArray(
+            duplicateReviewTasksTable.partnershipId,
+            partnershipIds as string[],
+          ),
+        );
       const claims = await db.query.claimsTable.findMany({
         where: inArray(claimsTable.partnershipId, partnershipIds as string[]),
       });
@@ -1969,6 +2048,7 @@ export async function resetSeedData(
       "seed-second-onboarding-invitee@example.org",
     ]);
     const costTrackerScenarioParticipationIds = new Set<string>([
+      ...SEED_SCENARIOS.costTrackerParticipations.participationIds,
       ...SEED_SCENARIOS.costTrackerProjects.participationIds,
       ...SEED_SCENARIOS.costTrackerJourneys.participationIds,
       ...SEED_SCENARIOS.costTrackerPartnerships.participationIds,
