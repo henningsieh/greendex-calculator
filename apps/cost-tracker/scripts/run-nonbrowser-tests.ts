@@ -1,6 +1,6 @@
 /* eslint-disable import/no-relative-parent-imports -- Repository test orchestration, not app runtime. */
 import { execFileSync } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { globSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -9,6 +9,7 @@ import * as schema from "@greendex/database/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import { canonicalSeedVersion } from "../../../scripts/canonical-seed-version";
 import {
   readLocalEnvironment,
   runManagedCommand,
@@ -323,14 +324,9 @@ const report = {
       encoding: "utf8",
       timeout: 10_000,
     }).trim().length > 0,
-  seedVersion: createHash("sha256")
-    .update(await readFile(resolve(root, "apps/calculator/scripts/seed.ts")))
-    .update(
-      await readFile(
-        resolve(root, "apps/calculator/scripts/seed-cost-tracker.ts"),
-      ),
-    )
-    .digest("hex"),
+  seedVersion: await canonicalSeedVersion(
+    resolve(root, "apps/calculator/scripts"),
+  ),
   runId: handle?.runId ?? null,
   durationMs: Date.now() - started,
   interrupted: interruption.signal.aborted,
