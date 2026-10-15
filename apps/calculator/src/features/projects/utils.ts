@@ -1,5 +1,3 @@
-import { projectsTable } from "@greendex/database/schema";
-import { asc, desc, type SQL, sql } from "drizzle-orm";
 import type z from "zod";
 
 import { type AppRoute, PROJECT_DETAIL_PATH } from "@/app/routes";
@@ -250,42 +248,36 @@ export function computeSortDesc(input: ListProjectsInput) {
 }
 
 /**
- * Builds an SQL ORDER BY clause for the specified project sort field and direction.
+ * Builds a relational ORDER BY object for the specified project sort field and direction.
+ *
+ * NOTE (ORM 1.0): relational queries no longer accept SQL expressions here, so
+ * `name`/`location` sort case-sensitively (previously `lower()`).
  *
  * @param sortField - The project sort field to order by (e.g. `"name"`, `"startDate"`, `"createdAt"`, `"updatedAt"`).
- * @param sortDesc - If `true`, produce a descending order clause; otherwise produce an ascending clause.
- * @returns An SQL ordering expression targeting the chosen project column and direction.
+ * @param sortDesc - If `true`, sort descending; otherwise ascending.
+ * @returns A `{ column: "asc" | "desc" }` ordering object for `db.query`.
  */
 export function orderByClauseFor(
   sortField: z.infer<typeof ProjectSortFieldSchema>,
   sortDesc: boolean,
-): SQL<unknown> {
+): Record<string, "asc" | "desc"> {
+  const dir = sortDesc ? "desc" : ("asc" as const);
   switch (sortField) {
     case "name":
-      return sortDesc
-        ? desc(sql`lower(${projectsTable.name})`)
-        : asc(sql`lower(${projectsTable.name})`);
+      return { name: dir };
     case "country":
-      return sortDesc ? desc(projectsTable.country) : asc(projectsTable.country);
+      return { country: dir };
     case "location":
-      return sortDesc
-        ? desc(sql`lower(${projectsTable.location})`)
-        : asc(sql`lower(${projectsTable.location})`);
+      return { location: dir };
     case "startDate":
-      return sortDesc
-        ? desc(projectsTable.startDate)
-        : asc(projectsTable.startDate);
+      return { startDate: dir };
     case "createdAt":
-      return sortDesc
-        ? desc(projectsTable.createdAt)
-        : asc(projectsTable.createdAt);
+      return { createdAt: dir };
     case "updatedAt":
-      return sortDesc
-        ? desc(projectsTable.updatedAt)
-        : asc(projectsTable.updatedAt);
+      return { updatedAt: dir };
     default:
-      return DEFAULT_PROJECT_SORT.order === "desc"
-        ? desc(projectsTable.startDate)
-        : asc(projectsTable.startDate);
+      return {
+        startDate: DEFAULT_PROJECT_SORT.order === "desc" ? "desc" : "asc",
+      };
   }
 }

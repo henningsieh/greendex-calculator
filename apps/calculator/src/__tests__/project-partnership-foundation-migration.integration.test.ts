@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Pool } from "pg";
@@ -23,29 +23,34 @@ function adminDatabaseUrl(): string {
   return url.toString();
 }
 
-async function applyMigrationsThrough(pool: Pool, migrationIndex: number) {
-  const filenames = (await readdir(migrationsDirectory))
-    .filter((filename) => filename.endsWith(".sql"))
-    .filter((filename) => Number(filename.slice(0, 4)) <= migrationIndex)
-    .sort();
+async function v3MigrationDirs(): Promise<string[]> {
+  const names = await readdir(migrationsDirectory);
+  const dirs: string[] = [];
+  for (const name of names.sort()) {
+    if ((await stat(resolve(migrationsDirectory, name))).isDirectory()) {
+      dirs.push(name);
+    }
+  }
+  return dirs;
+}
 
-  for (const filename of filenames) {
+async function applyMigrationsThrough(pool: Pool, migrationIndex: number) {
+  const dirs = (await v3MigrationDirs()).slice(0, migrationIndex + 1);
+
+  for (const dir of dirs) {
     await pool.query(
-      await readFile(resolve(migrationsDirectory, filename), "utf8"),
+      await readFile(resolve(migrationsDirectory, dir, "migration.sql"), "utf8"),
     );
   }
 }
 
 async function applyMigration(pool: Pool, migrationIndex: number) {
-  const filename = (await readdir(migrationsDirectory)).find(
-    (entry) =>
-      entry.endsWith(".sql") && Number(entry.slice(0, 4)) === migrationIndex,
-  );
+  const dir = (await v3MigrationDirs())[migrationIndex];
 
-  if (!filename) throw new Error(`Migration ${migrationIndex} is missing`);
+  if (!dir) throw new Error(`Migration ${migrationIndex} is missing`);
 
   await pool.query(
-    await readFile(resolve(migrationsDirectory, filename), "utf8"),
+    await readFile(resolve(migrationsDirectory, dir, "migration.sql"), "utf8"),
   );
 }
 

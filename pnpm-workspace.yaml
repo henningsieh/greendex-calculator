@@ -34,7 +34,7 @@ catalog:
   country-flag-icons: ^1.6.20
   dotenv: ^18.0.6
   dotenv-cli: ^11.0.0
-  drizzle-orm: ^0.45.3
+  drizzle-orm: 1.0.0-rc.5-ab785fc
   drizzle-zod: ^0.8.3
   eslint-plugin-better-tailwindcss: ^4.9.0
   jsdom: ^30.1.2
@@ -79,6 +79,10 @@ allowBuilds:
   "@swc/core": true
   esbuild: true
   sharp: true
+
+skills:
+  dirs:
+    - .agents/skills
 
 minimumReleaseAgeExclude:
   - turbo@2.11.7
@@ -131,3 +135,14 @@ minimumReleaseAgeExclude:
   - "@next/swc-win32-arm64-msvc@16.4.0"
   - "@next/swc-win32-x64-msvc@16.4.0"
   - next@16.4.0
+permissions:
+  "@tanstack/react-table":
+    skills: true
+  drizzle-kit:
+    skills: true
+  greendex-skills:
+    build: true
+    skills: true
+patchedDependencies:
+  "@better-auth/drizzle-adapter": patches/@better-auth__drizzle-adapter.patch
+  drizzle-zod@0.8.3: patches/drizzle-zod@0.8.3.patch

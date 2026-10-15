@@ -2,10 +2,7 @@ import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { type FeatureFlags, resolveFlags } from "@greendex/config/feature-flags";
 import { organizationCountryFields } from "@greendex/config/organization-country";
 import { db } from "@greendex/database";
-import {
-  member,
-  organization as organizationTable,
-} from "@greendex/database/schema";
+import { organization as organizationTable } from "@greendex/database/schema";
 import * as schema from "@greendex/database/schema";
 import type { EmailSender } from "@greendex/email";
 import type { BetterAuthPlugin } from "better-auth";
@@ -15,7 +12,7 @@ import { betterAuth, type BetterAuthOptions } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import type { OrganizationOptions } from "better-auth/plugins/organization";
-import { desc, eq, ilike } from "drizzle-orm";
+import { ilike } from "drizzle-orm";
 
 import {
   isValidOrganizationRole,
@@ -150,7 +147,7 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
         allowUserToCreateOrganization: flags.singleOrganization
           ? async (user) => {
               const membership = await db.query.member.findFirst({
-                where: eq(member.userId, user.id),
+                where: { userId: user.id },
                 columns: { id: true },
               });
 
@@ -222,9 +219,9 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
         create: {
           before: async (userSession) => {
             const membership = await db.query.member.findFirst({
-              where: eq(member.userId, userSession.userId),
+              where: { userId: userSession.userId },
               // always get the most recent organization membership
-              orderBy: desc(member.createdAt),
+              orderBy: { createdAt: "desc" },
               columns: {
                 organizationId: true,
               },
@@ -264,10 +261,11 @@ async function requireUniqueOrganizationName(name: unknown): Promise<void> {
     });
   }
 
-  const existingOrganization = await db.query.organization.findFirst({
-    where: ilike(organizationTable.name, name),
-    columns: { id: true },
-  });
+  const [existingOrganization] = await db
+    .select({ id: organizationTable.id })
+    .from(organizationTable)
+    .where(ilike(organizationTable.name, name))
+    .limit(1);
 
   if (existingOrganization) {
     throw new APIError("BAD_REQUEST", {

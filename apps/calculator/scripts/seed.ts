@@ -17,6 +17,7 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { SEED_USER } from "@greendex/auth/seed-user";
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
+import { relations } from "@greendex/database/relations";
 import {
   claimsTable,
   costAllocationsTable,
@@ -32,7 +33,6 @@ import {
   projectSharedTravelLegsTable,
   projectsTable,
 } from "@greendex/database/schema";
-import * as schema from "@greendex/database/schema";
 import { account, member, organization, user } from "@greendex/database/schema";
 import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { createId } from "@paralleldrive/cuid2";
@@ -63,7 +63,7 @@ const seedPool = new Pool({
   max: 5,
 });
 
-const db = drizzle(seedPool, { schema });
+const db = drizzle({ client: seedPool, relations });
 
 const SEED_ORGANIZATION = {
   name: "Seed Organization",
@@ -146,7 +146,7 @@ async function seed() {
     // Step 1: Check if user already exists
     console.log("👤 Checking for existing user...");
     const existingUser = await db.query.user.findFirst({
-      where: eq(user.email, SEED_USER.email),
+      where: { email: SEED_USER.email },
     });
 
     let userId: string;
@@ -199,7 +199,7 @@ async function seed() {
     // Step 2: Create or find organization
     console.log("🏢 Checking for existing organization...");
     const existingOrg = await db.query.organization.findFirst({
-      where: eq(organization.slug, SEED_ORGANIZATION.slug),
+      where: { slug: SEED_ORGANIZATION.slug },
     });
 
     let orgId: string;
@@ -224,8 +224,7 @@ async function seed() {
     // Step 3: Create membership
     console.log("👥 Checking for existing membership...");
     const existingMembership = await db.query.member.findFirst({
-      where: (members, { and }) =>
-        and(eq(members.userId, userId), eq(members.organizationId, orgId)),
+      where: { userId, organizationId: orgId },
     });
 
     const hostingMembershipCreatedAt =
@@ -310,7 +309,7 @@ async function seed() {
     console.log("🤝 Creating shared Journey and Partner Claim demo...");
     await db.transaction(async (tx) => {
       const existingPartner = await tx.query.organization.findFirst({
-        where: eq(organization.slug, "seed-partner-org"),
+        where: { slug: "seed-partner-org" },
       });
       const partnerId = existingPartner?.id ?? createId();
       if (!existingPartner) {

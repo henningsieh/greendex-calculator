@@ -128,7 +128,7 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
   });
   expect(updated.success).toBe(true);
   const persisted = await db.query.projectsTable.findFirst({
-    where: eq(projectsTable.id, created.project.id),
+    where: { id: created.project.id },
   });
   expect(persisted).toMatchObject({
     name: "Legitimate rename",

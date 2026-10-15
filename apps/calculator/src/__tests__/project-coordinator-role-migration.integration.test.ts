@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Pool } from "pg";
@@ -19,13 +19,16 @@ it("appends coordinator only to assignment-holding admins and preserves every ot
   url.pathname = `/${name}`;
   const pool = new Pool({ connectionString: url.toString(), max: 1 });
   try {
-    const filenames = (await readdir(migrations))
-      .filter((file) => /^\d{4}_.*\.sql$/.test(file))
-      .sort();
-    for (const filename of filenames.filter(
-      (file) => Number(file.slice(0, 4)) <= 26,
-    )) {
-      await pool.query(await readFile(resolve(migrations, filename), "utf8"));
+    const coordinatorDirs: string[] = [];
+    for (const entry of (await readdir(migrations)).sort()) {
+      if ((await stat(resolve(migrations, entry))).isDirectory()) {
+        coordinatorDirs.push(entry);
+      }
+    }
+    for (const dir of coordinatorDirs.slice(0, 27)) {
+      await pool.query(
+        await readFile(resolve(migrations, dir, "migration.sql"), "utf8"),
+      );
     }
     await pool.query(`
       INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
@@ -52,7 +55,7 @@ it("appends coordinator only to assignment-holding admins and preserves every ot
       VALUES ('partnership','partner-admin');
     `);
     const sql = await readFile(
-      resolve(migrations, "0027_backfill_project_coordinator_role.sql"),
+      resolve(migrations, coordinatorDirs[27], "migration.sql"),
       "utf8",
     );
     await pool.query(sql);

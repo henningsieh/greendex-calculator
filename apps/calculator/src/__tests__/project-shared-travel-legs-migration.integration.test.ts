@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Pool } from "pg";
@@ -9,7 +9,8 @@ const migrationsDirectory = resolve(
   import.meta.dirname,
   "../../../../packages/database/src/migrations",
 );
-const priorMigrationPrefix = "0009_";
+const priorMigrationIndex = 9;
+const cutoverMigrationIndex = 10;
 
 function disposableDatabaseUrl(databaseName: string): string {
   const url = new URL(process.env.DATABASE_URL!);
@@ -23,32 +24,38 @@ function adminDatabaseUrl(): string {
   return url.toString();
 }
 
-async function applyPriorMigrations(pool: Pool): Promise<void> {
-  const filenames = (await readdir(migrationsDirectory))
-    .filter((filename) => filename.endsWith(".sql"))
-    .filter((filename) => filename <= `${priorMigrationPrefix}\uffff`)
-    .sort();
+async function v3MigrationDirs(): Promise<string[]> {
+  const names = await readdir(migrationsDirectory);
+  const dirs: string[] = [];
+  for (const name of names.sort()) {
+    if ((await stat(resolve(migrationsDirectory, name))).isDirectory()) {
+      dirs.push(name);
+    }
+  }
+  return dirs;
+}
 
-  for (const filename of filenames) {
+async function applyPriorMigrations(pool: Pool): Promise<void> {
+  const dirs = (await v3MigrationDirs()).slice(0, priorMigrationIndex + 1);
+
+  for (const dir of dirs) {
     await pool.query(
-      await readFile(resolve(migrationsDirectory, filename), "utf8"),
+      await readFile(resolve(migrationsDirectory, dir, "migration.sql"), "utf8"),
     );
   }
 }
 
 async function applyCutoverMigration(pool: Pool): Promise<void> {
-  const filename = (await readdir(migrationsDirectory)).find((entry) =>
-    entry.startsWith("0010_"),
-  );
+  const dir = (await v3MigrationDirs())[cutoverMigrationIndex];
 
-  if (!filename) {
+  if (!dir) {
     throw new Error("Project Shared Travel Leg cutover migration is missing");
   }
 
   await pool.query("BEGIN");
   try {
     await pool.query(
-      await readFile(resolve(migrationsDirectory, filename), "utf8"),
+      await readFile(resolve(migrationsDirectory, dir, "migration.sql"), "utf8"),
     );
     await pool.query("COMMIT");
   } catch (error) {

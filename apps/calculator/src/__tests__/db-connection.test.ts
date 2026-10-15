@@ -13,7 +13,7 @@ describe("configured shared PostgreSQL connection", () => {
   it("executes queries with the configured connection and Drizzle", async () => {
     const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
     try {
-      const result = await drizzle(pool).execute("SELECT 1 AS value");
+      const result = await drizzle({ client: pool }).execute("SELECT 1 AS value");
       expect(result.rows).toEqual([{ value: 1 }]);
     } finally {
       await pool.end();
