@@ -105,6 +105,7 @@ import {
 } from "./seed-cost-tracker";
 import { ensureReviewScenarios } from "./seed-review-scenarios";
 import { SEED_ENTITY_SEARCH, SEED_REVIEW_SCENARIOS } from "./seed-scenarios";
+import { ensureSeedHostAssignments } from "./seed-tables";
 
 /** Database handle the canonical seed operates on. The caller owns the connection lifecycle. */
 export type SeedDatabase = NodePgDatabase<typeof schema>;
@@ -1014,7 +1015,7 @@ export const SEED_SCENARIOS = {
     scenarioId: SEED_SHOWCASE.projectScenarioId,
     name: "Carbon Footprint Workshop",
     description:
-      "First seed Project; carries the shared Journey and Partner Claim demo slice.",
+      "First seed Project; Seed Owner and Seed Coordinator coordinate the shared Journey and Partner Claim demo slice.",
   },
   showcaseParticipation: {
     kind: "participation",
@@ -1573,6 +1574,15 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     totalTravelLegsEnsured += ensured.legsEnsured;
     console.log(`  ✅ Project ${index + 1}/10: ${project.name}`);
   }
+
+  const showcaseCoordinator = await db.query.user.findFirst({
+    where: eq(user.email, SEED_SCENARIOS.coordinatorUser.email),
+  });
+  if (!showcaseCoordinator)
+    throw new Error("Canonical Seed Coordinator is missing.");
+  await ensureSeedHostAssignments(db, [
+    { projectId: projectIds[0]!, userId: showcaseCoordinator.id },
+  ]);
 
   // One complete, mocked cross-app slice on the showcase Project. No proof
   // upload, invitation or mail is needed to inspect an editable Claim.
