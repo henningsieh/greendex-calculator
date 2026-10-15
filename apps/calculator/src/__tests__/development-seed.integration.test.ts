@@ -789,3 +789,74 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     });
   });
 }, 600_000);
+
+it("retains seed actors and their logins when developer Memberships or Project dependents survive reset", async () => {
+  await withDisposableDatabase(
+    "seed_actor_preservation",
+    async (pool, databaseUrl) => {
+      await execute("pnpm", ["run", "db:migrate"], {
+        cwd: resolve(import.meta.dirname, "../../../.."),
+        env: { ...process.env, DATABASE_URL: databaseUrl },
+        timeout: 120_000,
+      });
+      await runModuleSeed(databaseUrl);
+      await pool.query(`INSERT INTO organization (id, name, slug, country, created_at)
+      VALUES ('developer-org', 'Developer Organization', 'developer-org', 'DE', now())`);
+      await pool.query(
+        `INSERT INTO member (id, user_id, organization_id, role, created_at)
+      SELECT 'developer-owner', id, 'developer-org', 'owner', now() FROM "user" WHERE email = $1`,
+        [SEED_USER.email],
+      );
+      await pool.query(`INSERT INTO project (id, name, start_date, end_date, location, country, organization_id)
+      VALUES ('developer-project', 'Developer Project', now(), now(), 'Berlin', 'DE', 'developer-org')`);
+      await pool.query(`INSERT INTO host_project_assignment (project_id, user_id)
+      SELECT 'developer-project', id FROM "user" WHERE email = 'seed-coordinator@example.org'`);
+      const actorsBefore = (
+        await pool.query(
+          `SELECT id, email FROM "user" WHERE email = ANY($1) ORDER BY email`,
+          [[SEED_USER.email, "seed-coordinator@example.org"]],
+        )
+      ).rows;
+      const loginsBefore = (
+        await pool.query(
+          `SELECT * FROM account WHERE user_id = ANY($1) ORDER BY id`,
+          [actorsBefore.map((row) => row.id)],
+        )
+      ).rows;
+      await runSeedModule(
+        databaseUrl,
+        `await seedModule.resetSeedData(db, { confirmSeedReset: true }); console.log("reset");`,
+      );
+      expect(
+        (
+          await pool.query(
+            `SELECT id, email FROM "user" WHERE id = ANY($1) ORDER BY email`,
+            [actorsBefore.map((row) => row.id)],
+          )
+        ).rows,
+      ).toEqual(actorsBefore);
+      expect(
+        (
+          await pool.query(
+            `SELECT * FROM account WHERE user_id = ANY($1) ORDER BY id`,
+            [actorsBefore.map((row) => row.id)],
+          )
+        ).rows,
+      ).toEqual(loginsBefore);
+      expect(
+        (
+          await pool.query(
+            `SELECT id, role FROM member WHERE organization_id = 'developer-org'`,
+          )
+        ).rows,
+      ).toEqual([{ id: "developer-owner", role: "owner" }]);
+      expect(
+        (
+          await pool.query(
+            `SELECT project_id FROM host_project_assignment WHERE project_id = 'developer-project'`,
+          )
+        ).rows,
+      ).toEqual([{ project_id: "developer-project" }]);
+    },
+  );
+}, 360_000);

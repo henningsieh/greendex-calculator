@@ -95,7 +95,7 @@ import * as schema from "@greendex/database/schema";
 import { account, member, organization, user } from "@greendex/database/schema";
 import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne, notExists, or } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
@@ -2216,11 +2216,6 @@ export async function resetSeedData(
           inArray(member.organizationId, seedOrgIds as string[]),
         ),
       );
-    for (const seedUserId of seedUserIds) {
-      await db
-        .delete(participantProfilesTable)
-        .where(eq(participantProfilesTable.userId, seedUserId));
-    }
   }
   // A canonical Payout Account can be reused by a developer Partnership.
   // Preserve it when a surviving selection references it, just like other dependents.
@@ -2260,11 +2255,114 @@ export async function resetSeedData(
   }
   let users = 0;
   if (seedUserIds.length > 0) {
-    for (const seedUserId of seedUserIds) {
-      await db.delete(account).where(eq(account.userId, seedUserId));
-      await db.delete(user).where(eq(user.id, seedUserId));
+    // Canonical Project dependents and Memberships are gone. Remaining domain
+    // references belong to developer data: retain their actors, profiles and
+    // login credentials rather than allowing CASCADE/SET NULL to erase links.
+    const removableUsers = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(
+        and(
+          inArray(user.id, seedUserIds),
+          notExists(db.select().from(member).where(eq(member.userId, user.id))),
+          notExists(
+            db
+              .select()
+              .from(hostProjectAssignmentsTable)
+              .where(eq(hostProjectAssignmentsTable.userId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(partnerCoordinatorAssignmentsTable)
+              .where(eq(partnerCoordinatorAssignmentsTable.userId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(projectParticipantsTable)
+              .where(
+                or(
+                  eq(projectParticipantsTable.userId, user.id),
+                  eq(projectParticipantsTable.mergedByUserId, user.id),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(projectsTable)
+              .where(eq(projectsTable.completedByUserId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(schema.partnerOrganizationSetupLinksTable)
+              .where(
+                or(
+                  eq(
+                    schema.partnerOrganizationSetupLinksTable.createdByUserId,
+                    user.id,
+                  ),
+                  eq(
+                    schema.partnerOrganizationSetupLinksTable.consumedByUserId,
+                    user.id,
+                  ),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(participantEntryTokensTable)
+              .where(
+                or(
+                  eq(participantEntryTokensTable.issuedByUserId, user.id),
+                  eq(participantEntryTokensTable.closedByUserId, user.id),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(duplicateReviewTasksTable)
+              .where(
+                or(
+                  eq(duplicateReviewTasksTable.candidateUserId, user.id),
+                  eq(duplicateReviewTasksTable.assignedToUserId, user.id),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(claimHistoryTable)
+              .where(eq(claimHistoryTable.actorUserId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(schema.invitation)
+              .where(eq(schema.invitation.inviterId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(account)
+              .where(
+                and(
+                  eq(account.userId, user.id),
+                  ne(account.providerId, "credential"),
+                ),
+              ),
+          ),
+        ),
+      );
+    for (const { id } of removableUsers) {
+      await db.delete(account).where(eq(account.userId, id));
+      await db.delete(user).where(eq(user.id, id));
     }
-    users = seedUserIds.length;
+    users = removableUsers.length;
   }
   return {
     users,
