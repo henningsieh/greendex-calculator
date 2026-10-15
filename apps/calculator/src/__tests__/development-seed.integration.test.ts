@@ -826,10 +826,50 @@ it("retains seed actors and their logins when developer Memberships or Project d
       VALUES ('developer-project', 'Developer Project', now(), now(), 'Berlin', 'DE', 'developer-org')`);
       await pool.query(`INSERT INTO host_project_assignment (project_id, user_id)
       SELECT 'developer-project', id FROM "user" WHERE email = 'seed-coordinator@example.org'`);
+      // An incoming Partnership alone must retain its Partner Organization:
+      // this developer Project has no Participations or Claim history to pin it.
+      await pool.query(`INSERT INTO project_partner_organization (id, project_id, organization_id)
+      SELECT 'developer-partnership', 'developer-project', id FROM organization WHERE slug = 'seed-third-partner-org'`);
+      await pool.query(`INSERT INTO partner_coordinator_assignment (partnership_id, user_id)
+      SELECT 'developer-partnership', id FROM "user" WHERE email = 'seed-admin@example.org'`);
+      await pool.query(`INSERT INTO claim (id, partnership_id)
+      VALUES ('developer-draft-claim', 'developer-partnership')`);
+      await pool.query(`INSERT INTO proof_document (id, claim_id, file_reference, original_file_name, media_type, byte_size, checksum)
+      VALUES ('developer-document', 'developer-draft-claim', 'preservation-probe', 'receipt.pdf', 'application/pdf', 1, 'preservation-checksum')`);
+      const partnershipSnapshot = async () =>
+        (
+          await pool.query(`SELECT o.slug, partnership.*, claim.id AS claim_id, claim.status,
+          document.id AS document_id, document.file_reference, assignment.user_id AS coordinator_id
+          FROM project_partner_organization partnership
+          JOIN organization o ON o.id = partnership.organization_id
+          JOIN claim ON claim.partnership_id = partnership.id
+          JOIN proof_document document ON document.claim_id = claim.id
+          JOIN partner_coordinator_assignment assignment ON assignment.partnership_id = partnership.id
+          WHERE partnership.id = 'developer-partnership'`)
+        ).rows;
+      const partnershipBefore = await partnershipSnapshot();
+      expect(partnershipBefore).toHaveLength(1);
+      expect(partnershipBefore[0]).toMatchObject({
+        slug: "seed-third-partner-org",
+        status: "editable",
+      });
+      expect(
+        (
+          await pool.query(
+            `SELECT id FROM project_participant WHERE project_id = 'developer-project'`,
+          )
+        ).rows,
+      ).toEqual([]);
       const actorsBefore = (
         await pool.query(
           `SELECT id, email FROM "user" WHERE email = ANY($1) ORDER BY email`,
-          [[SEED_USER.email, "seed-coordinator@example.org"]],
+          [
+            [
+              SEED_USER.email,
+              "seed-coordinator@example.org",
+              "seed-admin@example.org",
+            ],
+          ],
         )
       ).rows;
       const loginsBefore = (
@@ -842,6 +882,7 @@ it("retains seed actors and their logins when developer Memberships or Project d
         databaseUrl,
         `await seedModule.resetSeedData(db, { confirmSeedReset: true }); console.log("reset");`,
       );
+      expect(await partnershipSnapshot()).toEqual(partnershipBefore);
       expect(
         (
           await pool.query(

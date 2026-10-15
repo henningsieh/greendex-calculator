@@ -1920,8 +1920,8 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
 }
 
 /**
- * A seed Organization is removable only when no projects and no memberships
- * outside the canonical seed still reference it. Canonical projects and the
+ * A seed Organization is removable only when no Projects, Memberships, incoming
+ * Partnerships or Payout Accounts outside the canonical seed still reference it. Canonical projects and the
  * seed User's memberships are already deleted by the time this runs, so any
  * remaining reference is developer data worth keeping.
  */
@@ -1938,7 +1938,12 @@ async function findRemovableSeedOrgIds(
   const remainingPayoutAccounts = await db.query.payoutAccountsTable.findMany({
     where: inArray(payoutAccountsTable.organizationId, seedOrgIds),
   });
+  const remainingPartnerships =
+    await db.query.projectPartnerOrganizationsTable.findMany({
+      where: inArray(projectPartnerOrganizationsTable.organizationId, seedOrgIds),
+    });
   const blockedOrgIds = new Set([
+    ...remainingPartnerships.map((partnership) => partnership.organizationId),
     ...remainingPayoutAccounts.map(
       (payoutAccount) => payoutAccount.organizationId,
     ),
