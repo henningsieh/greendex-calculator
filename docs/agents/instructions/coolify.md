@@ -89,13 +89,23 @@ Manual recovery remains root `pnpm run db:migrate`, with an explicit `DATABASE_U
 
 Preserve `"env": ["*"]` on Turbo `build` and `start`. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Authentication and mail settings may mirror development unless the task says otherwise.
 
+### Set the preview origin before a build
+
+Before any webhook-producing push or explicit preview trigger, complete this gate under the deployment mutex below. Preview environment records are shared by an application's PR previews, not scoped to one PR. Serialize origin updates with builds through deployment verification.
+
+1. Read the target application's domain and preview template from the live API. Substitute the target PR number into the template to resolve the HTTPS preview origin. Never reuse another PR's stored origin.
+2. Capture `GET /applications/{uuid}/envs`. Using the installed API schema's supported environment-update operation, update only the `NEXT_PUBLIC_BASE_URL` record with `is_preview=true`. Set its value to the resolved origin, with `is_buildtime=true` and `is_runtime=true`. Preserve all non-preview records and unrelated values.
+3. Repeat `GET /applications/{uuid}/envs`. Proceed only when the preview record has the exact resolved origin and all three flags are true, and non-preview values remain unchanged. A successful mutation response alone does not pass this gate.
+
+After an origin change, build a new image. A runtime restart cannot replace `NEXT_PUBLIC_*` values embedded in an existing image. After deployment, verify the running application's origin and the host of the OAuth authorization URL's decoded `redirect_uri` against the resolved preview host. Google's authorized redirect URI allowlist is a separate requirement. Report OAuth login as untested unless the login flow was completed.
+
 ## Sequential preview deployment runbook
 
 **Mutex:** at most one Greendex deployment may be `queued` or `in_progress` across Calculator, Cost Tracker, and Documentation. This is a controller-enforced rule, not a platform lock. One agent/session owns every trigger path: preview enablement, webhook-producing pushes, API deploy calls, cancellation, and handoff. A push can trigger preview-enabled apps even when ordinary auto-deploy is disabled. Use this procedure only for an authorized rollout; capture settings first and restore ordinary auto-deployment afterward.
 
 1. **Quiesce.** Disable `is_preview_deployments_enabled` and `is_auto_deploy_enabled` on all three apps before pushing a PR commit. Inspect complete `GET /deployments` results and cancel their `queued` or `in_progress` records. Completion: the global active set is empty.
 2. **Publish.** The same controller runs local format, lint, type-check, tests, and production builds; commits and pushes. Completion: the PR head SHA is the tested SHA and no Coolify deployment was created.
-3. **Select one app.** Enable previews only for the target app. Validate its commands, ports, health check, preview template, and preview environment. Reinspect complete `GET /deployments` results. Completion: only the target enabled, active set empty.
+3. **Select one app.** Enable previews only for the target app. Validate its commands, ports, and health check. Complete the [preview-origin gate](#set-the-preview-origin-before-a-build) through API readback before triggering. Reinspect complete `GET /deployments` results. Completion: only the target enabled, origin readback passes, active set empty.
 4. **Trigger.** The same controller requests only that application UUID with the PR number. Record the returned `deployment_uuid`; no webhook, UI, or second API caller may trigger another deployment. Completion: the global active set contains only that UUID.
 5. **Observe.** Poll the exact deployment record every 10 seconds and inspect log advancement at least every minute. One API timeout gets one retry; two consecutive timeouts or two minutes without new logs triggers host/log diagnosis. Completion: the record reaches a terminal state.
 6. **Verify.** A `finished` record is necessary but insufficient: request the preview URL and health endpoint, verify the expected commit, and check migrations for database-consuming apps. Completion: every app-specific check below passes.
