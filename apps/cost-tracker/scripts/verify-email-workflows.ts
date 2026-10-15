@@ -229,6 +229,7 @@ export interface InjectedEmailRun {
 
 export async function verifyEmailWorkflows(
   injected?: InjectedEmailRun,
+  signal?: AbortSignal,
 ): Promise<boolean> {
   const results: Result[] = [];
   const cleanup = {
@@ -330,6 +331,7 @@ export async function verifyEmailWorkflows(
         root,
         { runId: handle.runId, databaseUrl: handle.databaseUrl },
         environments,
+        { signal },
       );
       cleanup.servers = "pending";
     }

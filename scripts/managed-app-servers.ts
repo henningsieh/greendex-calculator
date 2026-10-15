@@ -188,7 +188,9 @@ async function acquireDeclarationOwnership(
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
       if (Date.now() >= deadline)
-        throw new Error("Managed declaration ownership acquisition timed out.");
+        throw new Error(
+          "Managed declaration ownership acquisition timed out. Check .turbo/managed-app-declarations.lock; remove it only after confirming no managed run still owns it.",
+        );
       await new Promise((resolve) => setTimeout(resolve, 50));
       continue;
     }

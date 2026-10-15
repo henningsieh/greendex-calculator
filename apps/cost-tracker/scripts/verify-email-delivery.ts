@@ -1,7 +1,11 @@
 import { verifyEmailWorkflows } from "./verify-email-workflows";
 
-// This focused entrypoint exercises both managed apps, not direct template sends.
-verifyEmailWorkflows()
+const interruption = new AbortController();
+const interrupt = () => interruption.abort();
+process.once("SIGINT", interrupt);
+process.once("SIGTERM", interrupt);
+
+verifyEmailWorkflows(undefined, interruption.signal)
   .then((passed) => {
     if (!passed) process.exitCode = 1;
   })
@@ -10,4 +14,8 @@ verifyEmailWorkflows()
       "Real email workflow verification failed (private details suppressed).",
     );
     process.exitCode = 1;
+  })
+  .finally(() => {
+    process.removeListener("SIGINT", interrupt);
+    process.removeListener("SIGTERM", interrupt);
   });
