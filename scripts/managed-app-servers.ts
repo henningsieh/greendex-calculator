@@ -1,5 +1,14 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { copyFile, readFile, rm, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import {
+  copyFile,
+  mkdir,
+  open,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 import { parseEnv } from "node:util";
@@ -150,6 +159,63 @@ export async function isManagedAuthReady(
   );
 }
 
+interface ManagedServerOptions {
+  signal?: AbortSignal;
+  ownershipTimeoutMs?: number;
+}
+
+/** No stale-lock takeover: an interrupted owner requires verified recovery,
+ * never guessing from a PID or removing another run's declaration ownership. */
+async function acquireDeclarationOwnership(
+  root: string,
+  runId: string,
+  options: ManagedServerOptions,
+): Promise<() => Promise<void>> {
+  const directory = resolve(root, ".turbo");
+  await mkdir(directory, { recursive: true });
+  const path = resolve(directory, "managed-app-declarations.lock");
+  const identity = JSON.stringify({
+    runId,
+    pid: process.pid,
+    nonce: randomUUID(),
+  });
+  const deadline = Date.now() + (options.ownershipTimeoutMs ?? 120_000);
+  while (true) {
+    options.signal?.throwIfAborted();
+    let file;
+    try {
+      file = await open(path, "wx", 0o600);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      if (Date.now() >= deadline)
+        throw new Error("Managed declaration ownership acquisition timed out.");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      continue;
+    }
+    const ownedStat = await file.stat();
+    try {
+      await file.writeFile(identity);
+    } catch (error) {
+      await file.close();
+      const current = await stat(path);
+      if (current.ino === ownedStat.ino && current.dev === ownedStat.dev)
+        await rm(path);
+      throw error;
+    }
+    await file.close();
+    return async () => {
+      const current = await stat(path);
+      if (
+        current.ino !== ownedStat.ino ||
+        current.dev !== ownedStat.dev ||
+        (await readFile(path, "utf8")) !== identity
+      )
+        throw new Error("Managed declaration ownership changed; lock preserved.");
+      await rm(path);
+    };
+  }
+}
+
 export interface ManagedAppServers {
   calculatorBaseUrl: string;
   costTrackerBaseUrl: string;
@@ -162,6 +228,7 @@ export async function startManagedAppServers(
   root: string,
   run: ManagedRun,
   environments: Record<"calculator" | "cost-tracker", Record<string, string>>,
+  options: ManagedServerOptions = {},
 ): Promise<ManagedAppServers> {
   assertManagedRun(run);
   const ports = [await freePort(), await freePort()];
@@ -180,39 +247,64 @@ export async function startManagedAppServers(
     originalDeclarations: string | undefined;
     generatedDeclarations: string | undefined;
   }[] = [];
-  const stop = async () => {
-    const failures: unknown[] = [];
-    for (const app of [...owned].reverse()) {
-      try {
-        await stopOwnedProcess(app.handle);
-        // Next always writes app-root next-env.d.ts, even with a separate tsconfig.
-        // Restore only our captured output; never overwrite a concurrent external write.
-        const declarationsPath = resolve(app.directory, "next-env.d.ts");
-        const current = await readOptionalFile(declarationsPath);
-        if (current !== app.originalDeclarations) {
-          if (current !== app.generatedDeclarations)
-            failures.push(
-              new Error("Generated declarations changed externally; preserved."),
-            );
-          else if (app.originalDeclarations === undefined)
-            await rm(declarationsPath, { force: true });
-          else await writeFile(declarationsPath, app.originalDeclarations);
+  const releaseOwnership = await acquireDeclarationOwnership(
+    root,
+    run.runId,
+    options,
+  );
+  let stopping: Promise<void> | undefined;
+  const stop = () =>
+    (stopping ??= (async () => {
+      const failures: unknown[] = [];
+      let processesStopped = true;
+      for (const app of [...owned].reverse()) {
+        try {
+          try {
+            if (app.handle.pid) await stopOwnedProcess(app.handle);
+          } catch (error) {
+            processesStopped = false;
+            throw error;
+          }
+          // Next always writes app-root next-env.d.ts, even with a separate tsconfig.
+          // Restore only our captured output; never overwrite a concurrent external write.
+          const declarationsPath = resolve(app.directory, "next-env.d.ts");
+          const current = await readOptionalFile(declarationsPath);
+          if (current !== app.originalDeclarations) {
+            if (current !== app.generatedDeclarations)
+              failures.push(
+                new Error(
+                  "Generated declarations changed externally; preserved.",
+                ),
+              );
+            else if (app.originalDeclarations === undefined)
+              await rm(declarationsPath, { force: true });
+            else await writeFile(declarationsPath, app.originalDeclarations);
+          }
+          await rm(app.tsconfig, { force: true });
+          await rm(resolve(app.directory, ".next/test-runs", run.runId), {
+            recursive: true,
+            force: true,
+          });
+        } catch (error) {
+          failures.push(error);
         }
-        await rm(app.tsconfig, { force: true });
-        await rm(resolve(app.directory, ".next/test-runs", run.runId), {
-          recursive: true,
-          force: true,
-        });
-      } catch (error) {
-        failures.push(error);
       }
-    }
-    if (failures.length) throw new Error("Managed server cleanup failed.");
-  };
+      if (processesStopped) {
+        try {
+          await releaseOwnership();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (failures.length)
+        throw new AggregateError(failures, "Managed server cleanup failed.");
+    })());
   try {
+    options.signal?.throwIfAborted();
     for (const [index, app] of (
       ["calculator", "cost-tracker"] as const
     ).entries()) {
+      options.signal?.throwIfAborted();
       const directory = resolve(root, "apps", app);
       const tsconfig = resolve(directory, `.tsconfig-test-${run.runId}.json`);
       const originalDeclarations = await readOptionalFile(
@@ -265,13 +357,17 @@ export async function startManagedAppServers(
       let ready = false;
       while (
         Date.now() < deadline &&
+        !options.signal?.aborted &&
         !failed &&
         child.exitCode === null &&
         child.signalCode === null
       ) {
         try {
           const response = await fetch(`${bases[index]}/api/auth/get-session`, {
-            signal: AbortSignal.timeout(5_000),
+            signal: AbortSignal.any([
+              AbortSignal.timeout(5_000),
+              ...(options.signal ? [options.signal] : []),
+            ]),
             redirect: "manual",
           });
           if (await isManagedAuthReady(response, run.runId)) {
@@ -288,12 +384,16 @@ export async function startManagedAppServers(
       );
       if (declarations?.includes(`.next/test-runs/${run.runId}/`))
         ownedApp.generatedDeclarations = declarations;
+      options.signal?.throwIfAborted();
       if (!ready || child.exitCode !== null || child.signalCode !== null)
         throw new Error("Managed app did not become ready.");
       // Auth proves run ownership; RPC's empty path compiles its route without
       // invoking any procedure, before HTTP tests start their shorter timers.
       const rpcResponse = await fetch(`${bases[index]}/api/rpc`, {
-        signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+        signal: AbortSignal.any([
+          AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+          ...(options.signal ? [options.signal] : []),
+        ]),
         redirect: "manual",
       });
       if (
@@ -308,8 +408,15 @@ export async function startManagedAppServers(
       environment,
       stop,
     };
-  } catch {
-    await stop();
-    throw new Error("Managed application startup failed.");
+  } catch (error) {
+    try {
+      await stop();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Managed application startup and cleanup failed.",
+      );
+    }
+    throw new Error("Managed application startup failed.", { cause: error });
   }
 }

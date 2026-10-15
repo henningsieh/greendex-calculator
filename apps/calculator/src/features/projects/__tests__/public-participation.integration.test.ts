@@ -89,7 +89,10 @@ describe("public participation contract", () => {
       ),
     );
     expect(project.sharedTravelLegs).toHaveLength(storedLegs.length);
-    expect(project.hostCoordinatorNames).toContain(SEED_USER.name);
+    expect(project.hostCoordinatorNames).toEqual([
+      "Seed Coordinator",
+      SEED_USER.name,
+    ]);
     expect(project).not.toHaveProperty("hostAssignments");
     expect(project).not.toHaveProperty("activities");
   });

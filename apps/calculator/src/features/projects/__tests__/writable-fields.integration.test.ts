@@ -30,6 +30,7 @@ let partnerOrgId = "";
 let coordinatorUserId = "";
 let ownerUserId = "";
 const sessionIds: string[] = [];
+const caseProjectIds: string[] = [];
 let headers: Headers;
 const client = createRouterClient(router, { context: async () => ({ headers }) });
 
@@ -84,6 +85,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  for (const id of caseProjectIds.splice(0)) {
+    await db.delete(projectsTable).where(eq(projectsTable.id, id));
+  }
   for (const id of sessionIds.splice(0)) {
     await db.delete(session).where(eq(session.id, id));
   }
@@ -116,6 +120,7 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
     ...form,
     ...attemptedLifecycle,
   });
+  caseProjectIds.push(created.project.id);
   expect(created.success).toBe(true);
   expect(created.project).toMatchObject({
     ...form,
@@ -174,6 +179,4 @@ it("keeps create/edit app-owned and leaves archive behind its dedicated permissi
     data: { ...form, archived: false } as typeof form,
   });
   expect(edited.project.archived).toBe(true);
-
-  await db.delete(projectsTable).where(eq(projectsTable.id, created.project.id));
 });

@@ -95,7 +95,7 @@ import * as schema from "@greendex/database/schema";
 import { account, member, organization, user } from "@greendex/database/schema";
 import { scryptAsync } from "@noble/hashes/scrypt.js";
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne, notExists, or } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
@@ -105,6 +105,7 @@ import {
 } from "./seed-cost-tracker";
 import { ensureReviewScenarios } from "./seed-review-scenarios";
 import { SEED_ENTITY_SEARCH, SEED_REVIEW_SCENARIOS } from "./seed-scenarios";
+import { ensureSeedHostAssignments } from "./seed-tables";
 
 /** Database handle the canonical seed operates on. The caller owns the connection lifecycle. */
 export type SeedDatabase = NodePgDatabase<typeof schema>;
@@ -1014,7 +1015,7 @@ export const SEED_SCENARIOS = {
     scenarioId: SEED_SHOWCASE.projectScenarioId,
     name: "Carbon Footprint Workshop",
     description:
-      "First seed Project; carries the shared Journey and Partner Claim demo slice.",
+      "First seed Project; Seed Owner and Seed Coordinator coordinate the shared Journey and Partner Claim demo slice.",
   },
   showcaseParticipation: {
     kind: "participation",
@@ -1574,6 +1575,15 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
     console.log(`  ✅ Project ${index + 1}/10: ${project.name}`);
   }
 
+  const showcaseCoordinator = await db.query.user.findFirst({
+    where: eq(user.email, SEED_SCENARIOS.coordinatorUser.email),
+  });
+  if (!showcaseCoordinator)
+    throw new Error("Canonical Seed Coordinator is missing.");
+  await ensureSeedHostAssignments(db, [
+    { projectId: projectIds[0]!, userId: showcaseCoordinator.id },
+  ]);
+
   // One complete, mocked cross-app slice on the showcase Project. No proof
   // upload, invitation or mail is needed to inspect an editable Claim.
   console.log("🤝 Creating shared Journey and Partner Claim demo...");
@@ -1910,8 +1920,8 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
 }
 
 /**
- * A seed Organization is removable only when no projects and no memberships
- * outside the canonical seed still reference it. Canonical projects and the
+ * A seed Organization is removable only when no Projects, Memberships, incoming
+ * Partnerships or Payout Accounts outside the canonical seed still reference it. Canonical projects and the
  * seed User's memberships are already deleted by the time this runs, so any
  * remaining reference is developer data worth keeping.
  */
@@ -1928,7 +1938,12 @@ async function findRemovableSeedOrgIds(
   const remainingPayoutAccounts = await db.query.payoutAccountsTable.findMany({
     where: inArray(payoutAccountsTable.organizationId, seedOrgIds),
   });
+  const remainingPartnerships =
+    await db.query.projectPartnerOrganizationsTable.findMany({
+      where: inArray(projectPartnerOrganizationsTable.organizationId, seedOrgIds),
+    });
   const blockedOrgIds = new Set([
+    ...remainingPartnerships.map((partnership) => partnership.organizationId),
     ...remainingPayoutAccounts.map(
       (payoutAccount) => payoutAccount.organizationId,
     ),
@@ -2004,6 +2019,7 @@ export async function resetSeedData(
     ...SEED_REVIEW_SCENARIOS.restProjects.map(({ name }) => name),
     "Seed Submitted Registration Project",
     "Seed Travel Leg Management Project",
+    SEED_REVIEW_SCENARIOS.sharedTravelLegProcedures.name,
     ...SEED_SCENARIOS.costTrackerSetupLinks.projectNames,
     ...SEED_SCENARIOS.costTrackerSubmission.projectNames,
     ...SEED_SCENARIOS.costTrackerParticipations.projectNames,
@@ -2216,11 +2232,6 @@ export async function resetSeedData(
           inArray(member.organizationId, seedOrgIds as string[]),
         ),
       );
-    for (const seedUserId of seedUserIds) {
-      await db
-        .delete(participantProfilesTable)
-        .where(eq(participantProfilesTable.userId, seedUserId));
-    }
   }
   // A canonical Payout Account can be reused by a developer Partnership.
   // Preserve it when a surviving selection references it, just like other dependents.
@@ -2260,11 +2271,114 @@ export async function resetSeedData(
   }
   let users = 0;
   if (seedUserIds.length > 0) {
-    for (const seedUserId of seedUserIds) {
-      await db.delete(account).where(eq(account.userId, seedUserId));
-      await db.delete(user).where(eq(user.id, seedUserId));
+    // Canonical Project dependents and Memberships are gone. Remaining domain
+    // references belong to developer data: retain their actors, profiles and
+    // login credentials rather than allowing CASCADE/SET NULL to erase links.
+    const removableUsers = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(
+        and(
+          inArray(user.id, seedUserIds),
+          notExists(db.select().from(member).where(eq(member.userId, user.id))),
+          notExists(
+            db
+              .select()
+              .from(hostProjectAssignmentsTable)
+              .where(eq(hostProjectAssignmentsTable.userId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(partnerCoordinatorAssignmentsTable)
+              .where(eq(partnerCoordinatorAssignmentsTable.userId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(projectParticipantsTable)
+              .where(
+                or(
+                  eq(projectParticipantsTable.userId, user.id),
+                  eq(projectParticipantsTable.mergedByUserId, user.id),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(projectsTable)
+              .where(eq(projectsTable.completedByUserId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(schema.partnerOrganizationSetupLinksTable)
+              .where(
+                or(
+                  eq(
+                    schema.partnerOrganizationSetupLinksTable.createdByUserId,
+                    user.id,
+                  ),
+                  eq(
+                    schema.partnerOrganizationSetupLinksTable.consumedByUserId,
+                    user.id,
+                  ),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(participantEntryTokensTable)
+              .where(
+                or(
+                  eq(participantEntryTokensTable.issuedByUserId, user.id),
+                  eq(participantEntryTokensTable.closedByUserId, user.id),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(duplicateReviewTasksTable)
+              .where(
+                or(
+                  eq(duplicateReviewTasksTable.candidateUserId, user.id),
+                  eq(duplicateReviewTasksTable.assignedToUserId, user.id),
+                ),
+              ),
+          ),
+          notExists(
+            db
+              .select()
+              .from(claimHistoryTable)
+              .where(eq(claimHistoryTable.actorUserId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(schema.invitation)
+              .where(eq(schema.invitation.inviterId, user.id)),
+          ),
+          notExists(
+            db
+              .select()
+              .from(account)
+              .where(
+                and(
+                  eq(account.userId, user.id),
+                  ne(account.providerId, "credential"),
+                ),
+              ),
+          ),
+        ),
+      );
+    for (const { id } of removableUsers) {
+      await db.delete(account).where(eq(account.userId, id));
+      await db.delete(user).where(eq(user.id, id));
     }
-    users = seedUserIds.length;
+    users = removableUsers.length;
   }
   return {
     users,

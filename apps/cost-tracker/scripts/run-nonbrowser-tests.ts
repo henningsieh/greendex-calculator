@@ -235,6 +235,7 @@ const groups: TestGroup[] = [
         root,
         { runId: handle.runId, databaseUrl: handle.databaseUrl },
         environments,
+        { signal: interruption.signal },
       );
       cleanup.servers = "pending";
     },

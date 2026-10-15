@@ -393,34 +393,90 @@ describe("isolated seeded cross-app lifecycle", () => {
     });
     state.results.caseCleanupWithoutReseed = true;
   });
+  it("recovers interrupted workflow fixtures without deleting canonical Projects", async () => {
+    if (!state) throw new Error("Lifecycle state is missing.");
+    const { pool, fixture } = state;
+    await pool.query(
+      `INSERT INTO project (id, name, start_date, end_date, location, country, organization_id)
+      SELECT $1, 'Interrupted lifecycle fixture', now(), now(), 'Berlin', 'DE', id FROM organization WHERE slug = $2`,
+      [`${fixture}-project`, SEED_HOSTING_SLUG],
+    );
+    await pool.query(
+      `INSERT INTO project_participant (id, project_id, represented_organization_id, display_name)
+      SELECT $1, $2, id, 'Interrupted lifecycle participant' FROM organization WHERE slug = $3`,
+      [`${fixture}-participation`, `${fixture}-project`, SEED_HOSTING_SLUG],
+    );
+    await cleanupLifecycleFixture(pool, fixture);
+    expect(
+      (
+        await pool.query("SELECT id FROM project WHERE id = $1", [
+          `${fixture}-project`,
+        ])
+      ).rows,
+    ).toEqual([]);
+    expect(
+      (
+        await pool.query("SELECT id FROM project_participant WHERE id = $1", [
+          `${fixture}-participation`,
+        ])
+      ).rows,
+    ).toEqual([]);
+    expect(
+      (
+        await pool.query(
+          "SELECT id FROM project WHERE name = 'Carbon Footprint Workshop'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+  });
+
+  it("propagates fixture cleanup errors instead of claiming recovery", async () => {
+    if (!state) throw new Error("Lifecycle state is missing.");
+    await state.pool.query("SET default_transaction_read_only = on");
+    try {
+      await expect(
+        cleanupLifecycleFixture(state.pool, state.fixture),
+      ).rejects.toThrow();
+    } finally {
+      await state.pool.query("SET default_transaction_read_only = off");
+    }
+  });
 });
+
+async function cleanupLifecycleFixture(
+  pool: Pool,
+  fixture: string,
+): Promise<void> {
+  await pool.query("DELETE FROM project_participant WHERE id = $1", [
+    `${fixture}-participation`,
+  ]);
+  await pool.query("DELETE FROM project WHERE id = $1", [`${fixture}-project`]);
+}
 
 afterAll(async () => {
   if (!state || state.results.cleanedUp) return;
+  const failures: unknown[] = [];
   try {
-    // Narrowly scoped case cleanup is idempotent: fixture ids are unique per
-    // run, so a retry after a mid-case failure cannot touch seeded rows.
-    await state.pool
-      .query(
-        `DELETE FROM project_participant WHERE id = $1;
-         DELETE FROM project WHERE id = $2;`,
-        [`${state.fixture}-participation`, `${state.fixture}-project`],
-      )
-      .catch(() => {});
+    // Unique fixture ids make interrupted workflow recovery safe and idempotent.
+    await cleanupLifecycleFixture(state.pool, state.fixture);
     if (aggregate)
       expect((await state.pool.query("SELECT 1")).rows).toHaveLength(1);
-    await state.pool.end();
-    try {
-      if (!aggregate) await disposeIsolatedRunDatabase(state.handle);
-      state.results.cleanedUp = true;
-    } catch (error) {
-      disposeError = error;
-      state.results.cleanedUp = false;
-      throw new Error(
-        `Run cleanup failed, so the run fails: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  } finally {
-    emitReport();
+  } catch (error) {
+    failures.push(error);
   }
+  try {
+    await state.pool.end();
+  } catch (error) {
+    failures.push(error);
+  }
+  try {
+    if (!aggregate) await disposeIsolatedRunDatabase(state.handle);
+  } catch (error) {
+    failures.push(error);
+  }
+  state.results.cleanedUp = failures.length === 0;
+  if (failures.length) disposeError = new Error("Lifecycle cleanup failed.");
+  emitReport();
+  if (failures.length)
+    throw new AggregateError(failures, "Lifecycle cleanup failed.");
 });

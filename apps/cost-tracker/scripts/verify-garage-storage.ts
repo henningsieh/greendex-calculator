@@ -1,18 +1,13 @@
-import { strict as assert } from "node:assert";
 import { randomBytes, randomUUID } from "node:crypto";
 
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { S3Client } from "@aws-sdk/client-s3";
 
 import { env } from "@/env";
 
 import {
   assertDevelopmentGarageTarget,
   verifyInvalidGarageCredentials,
+  verifyGarageObject,
 } from "./garage-verification";
 
 assertDevelopmentGarageTarget(env.S3_BUCKET, env.S3_ENDPOINT);
@@ -36,49 +31,7 @@ const invalidCredentialKey = `smoke-tests/${runId}/invalid-credential-probe`;
 const payload = randomBytes(64);
 
 try {
-  let uploaded = false;
-  let checkError: unknown;
-  try {
-    await client.send(
-      new PutObjectCommand({ Bucket: env.S3_BUCKET, Key: key, Body: payload }),
-    );
-    uploaded = true;
-
-    const response = await client.send(
-      new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }),
-    );
-    assert(response.Body, "Garage returned no object body");
-    assert.deepEqual(
-      Buffer.from(await response.Body.transformToByteArray()),
-      payload,
-    );
-    console.log("Garage PUT/GET byte-for-byte check passed.");
-  } catch (error) {
-    checkError = error;
-  }
-
-  // Cleanup runs on success and failure and targets only the run-owned key.
-  let cleanupError: unknown;
-  if (uploaded) {
-    try {
-      await client.send(
-        new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: key }),
-      );
-      console.log("Garage smoke-test object deleted.");
-    } catch (error) {
-      cleanupError = error;
-    }
-  }
-  if (cleanupError !== undefined) {
-    throw new Error(
-      `Garage smoke-test cleanup failed for run-owned key; remove ${key} manually after confirming it belongs to this run.`,
-      { cause: cleanupError },
-    );
-  }
-  if (checkError !== undefined) {
-    throw checkError;
-  }
-
+  await verifyGarageObject(client, env.S3_BUCKET, key, payload);
   // Controlled invalid-credential check: an in-memory client with bogus
   // credentials must be rejected. App and staging credentials are never
   // touched; only this process-local client is invalid, so the valid check

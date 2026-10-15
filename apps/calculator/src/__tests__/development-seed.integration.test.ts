@@ -33,6 +33,7 @@ interface CanonicalSeedIdentity {
       restProjects: { id: string; name: string }[];
       submittedRegistration: { projectId: string };
       travelLegManagement: { projectId: string };
+      sharedTravelLegProcedures: { projectId: string; name: string };
     };
     costTrackerSetupLinks: CostTrackerSeedScenario;
     costTrackerSubmission: CostTrackerSeedScenario & {
@@ -473,6 +474,20 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(resolved.partner_project_org_id).toBe(resolved.partner_org_id);
     expect(summary.partnerProjectId).toBe(resolved.partner_project_id);
 
+    expect(
+      (
+        await pool.query(
+          "SELECT name, organization_id FROM project WHERE id = $1",
+          [identities.scenarios.reviewFixes.sharedTravelLegProcedures.projectId],
+        )
+      ).rows,
+    ).toEqual([
+      {
+        name: "Seed Shared Travel Procedures Project",
+        organization_id: resolved.hosting_org_id,
+      },
+    ]);
+
     // Named Hosting Organization role actors resolve to seeded Memberships;
     // the outsider stays membership-free for denied/creation scenarios.
     const roleActors = await pool.query(
@@ -591,7 +606,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
       identities.projectNames.length +
         1 +
         identities.scenarios.reviewFixes.restProjects.length +
-        2 +
+        3 +
         costTrackerScenarios.flatMap((scenario) => scenario.projectNames).length,
     );
     // The report counts the canonical template legs explicitly removed;
@@ -789,3 +804,115 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
     });
   });
 }, 600_000);
+
+it("retains seed actors and their logins when developer Memberships or Project dependents survive reset", async () => {
+  await withDisposableDatabase(
+    "seed_actor_preservation",
+    async (pool, databaseUrl) => {
+      await execute("pnpm", ["run", "db:migrate"], {
+        cwd: resolve(import.meta.dirname, "../../../.."),
+        env: { ...process.env, DATABASE_URL: databaseUrl },
+        timeout: 120_000,
+      });
+      await runModuleSeed(databaseUrl);
+      await pool.query(`INSERT INTO organization (id, name, slug, country, created_at)
+      VALUES ('developer-org', 'Developer Organization', 'developer-org', 'DE', now())`);
+      await pool.query(
+        `INSERT INTO member (id, user_id, organization_id, role, created_at)
+      SELECT 'developer-owner', id, 'developer-org', 'owner', now() FROM "user" WHERE email = $1`,
+        [SEED_USER.email],
+      );
+      await pool.query(`INSERT INTO project (id, name, start_date, end_date, location, country, organization_id)
+      VALUES ('developer-project', 'Developer Project', now(), now(), 'Berlin', 'DE', 'developer-org')`);
+      await pool.query(`INSERT INTO host_project_assignment (project_id, user_id)
+      SELECT 'developer-project', id FROM "user" WHERE email = 'seed-coordinator@example.org'`);
+      // An incoming Partnership alone must retain its Partner Organization:
+      // this developer Project has no Participations or Claim history to pin it.
+      await pool.query(`INSERT INTO project_partner_organization (id, project_id, organization_id)
+      SELECT 'developer-partnership', 'developer-project', id FROM organization WHERE slug = 'seed-third-partner-org'`);
+      await pool.query(`INSERT INTO partner_coordinator_assignment (partnership_id, user_id)
+      SELECT 'developer-partnership', id FROM "user" WHERE email = 'seed-admin@example.org'`);
+      await pool.query(`INSERT INTO claim (id, partnership_id)
+      VALUES ('developer-draft-claim', 'developer-partnership')`);
+      await pool.query(`INSERT INTO proof_document (id, claim_id, file_reference, original_file_name, media_type, byte_size, checksum)
+      VALUES ('developer-document', 'developer-draft-claim', 'preservation-probe', 'receipt.pdf', 'application/pdf', 1, 'preservation-checksum')`);
+      const partnershipSnapshot = async () =>
+        (
+          await pool.query(`SELECT o.slug, partnership.*, claim.id AS claim_id, claim.status,
+          document.id AS document_id, document.file_reference, assignment.user_id AS coordinator_id
+          FROM project_partner_organization partnership
+          JOIN organization o ON o.id = partnership.organization_id
+          JOIN claim ON claim.partnership_id = partnership.id
+          JOIN proof_document document ON document.claim_id = claim.id
+          JOIN partner_coordinator_assignment assignment ON assignment.partnership_id = partnership.id
+          WHERE partnership.id = 'developer-partnership'`)
+        ).rows;
+      const partnershipBefore = await partnershipSnapshot();
+      expect(partnershipBefore).toHaveLength(1);
+      expect(partnershipBefore[0]).toMatchObject({
+        slug: "seed-third-partner-org",
+        status: "editable",
+      });
+      expect(
+        (
+          await pool.query(
+            `SELECT id FROM project_participant WHERE project_id = 'developer-project'`,
+          )
+        ).rows,
+      ).toEqual([]);
+      const actorsBefore = (
+        await pool.query(
+          `SELECT id, email FROM "user" WHERE email = ANY($1) ORDER BY email`,
+          [
+            [
+              SEED_USER.email,
+              "seed-coordinator@example.org",
+              "seed-admin@example.org",
+            ],
+          ],
+        )
+      ).rows;
+      const loginsBefore = (
+        await pool.query(
+          `SELECT * FROM account WHERE user_id = ANY($1) ORDER BY id`,
+          [actorsBefore.map((row) => row.id)],
+        )
+      ).rows;
+      await runSeedModule(
+        databaseUrl,
+        `await seedModule.resetSeedData(db, { confirmSeedReset: true }); console.log("reset");`,
+      );
+      expect(await partnershipSnapshot()).toEqual(partnershipBefore);
+      expect(
+        (
+          await pool.query(
+            `SELECT id, email FROM "user" WHERE id = ANY($1) ORDER BY email`,
+            [actorsBefore.map((row) => row.id)],
+          )
+        ).rows,
+      ).toEqual(actorsBefore);
+      expect(
+        (
+          await pool.query(
+            `SELECT * FROM account WHERE user_id = ANY($1) ORDER BY id`,
+            [actorsBefore.map((row) => row.id)],
+          )
+        ).rows,
+      ).toEqual(loginsBefore);
+      expect(
+        (
+          await pool.query(
+            `SELECT id, role FROM member WHERE organization_id = 'developer-org'`,
+          )
+        ).rows,
+      ).toEqual([{ id: "developer-owner", role: "owner" }]);
+      expect(
+        (
+          await pool.query(
+            `SELECT project_id FROM host_project_assignment WHERE project_id = 'developer-project'`,
+          )
+        ).rows,
+      ).toEqual([{ project_id: "developer-project" }]);
+    },
+  );
+}, 360_000);
