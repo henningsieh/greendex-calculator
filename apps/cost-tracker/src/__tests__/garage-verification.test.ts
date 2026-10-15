@@ -1,10 +1,16 @@
 // @vitest-environment node
 /* eslint-disable import/no-relative-parent-imports -- Tests the owning script's verification boundary. */
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { describe, expect, it, vi } from "vitest";
 
 import {
   assertDevelopmentGarageTarget,
   verifyInvalidGarageCredentials,
+  verifyGarageObject,
 } from "../../scripts/garage-verification";
 
 describe("Garage verification", () => {
@@ -78,6 +84,29 @@ describe("Garage verification", () => {
       Key: "run-key",
     });
   });
+  it("cleans an ambiguous invalid-credential PUT with the valid client", async () => {
+    const objects = new Set<string>();
+    await expect(
+      verifyInvalidGarageCredentials(
+        {
+          send: vi.fn(async () => {
+            objects.add("negative-probe");
+            throw new Error("response lost");
+          }),
+        },
+        {
+          send: vi.fn(async (command: DeleteObjectCommand) => {
+            objects.delete(command.input.Key!);
+            return {};
+          }),
+        },
+        "bucket",
+        "negative-probe",
+        Buffer.from("probe"),
+      ),
+    ).rejects.toThrow("credential rejection");
+    expect(objects.size).toBe(0);
+  });
   it("propagates cleanup failure after successful invalid PUT", async () => {
     const failure = new Error("cleanup failed");
     await expect(
@@ -90,4 +119,49 @@ describe("Garage verification", () => {
       ),
     ).rejects.toBe(failure);
   });
+});
+
+describe("Garage owned object verification", () => {
+  it.each([false, true])(
+    "cleans a committed PUT after response loss (DELETE failure: %s)",
+    async (deleteFails) => {
+      const objects = new Map<string, Buffer>();
+      const lostResponse = new Error("PUT response lost");
+      const deletionFailure = new Error("DELETE unavailable");
+      const client = {
+        send: vi.fn(
+          async (
+            command: PutObjectCommand | GetObjectCommand | DeleteObjectCommand,
+          ) => {
+            const key = command.input.Key!;
+            if (command instanceof PutObjectCommand) {
+              objects.set(key, Buffer.from("probe"));
+              throw lostResponse;
+            }
+            if (command instanceof DeleteObjectCommand) {
+              if (deleteFails) throw deletionFailure;
+              objects.delete(key);
+              return {};
+            }
+            throw new Error("GET should not follow a failed PUT");
+          },
+        ),
+      };
+      objects.set("developer-object", Buffer.from("preserved"));
+      const result = verifyGarageObject(
+        client,
+        "bucket",
+        "owned-run-key",
+        Buffer.from("probe"),
+      );
+      if (deleteFails) {
+        await expect(result).rejects.toThrow(/cleanup failed.*owned-run-key/);
+        expect(objects.has("owned-run-key")).toBe(true);
+      } else {
+        await expect(result).rejects.toBe(lostResponse);
+        expect(objects.has("owned-run-key")).toBe(false);
+      }
+      expect(objects.get("developer-object")).toEqual(Buffer.from("preserved"));
+    },
+  );
 });
