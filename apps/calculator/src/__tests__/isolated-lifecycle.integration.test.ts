@@ -257,7 +257,8 @@ beforeAll(async () => {
     state.results.seededOnce = true;
     state.timings.setupMs = Date.now() - startedAt;
   } catch (error) {
-    if (error instanceof IsolatedRunCreationError) handle = error.handle;
+    if (error instanceof IsolatedRunCreationError && error.rollback === "failed")
+      handle = error.handle;
     if (state) {
       await state.pool.end().catch(() => {});
       try {

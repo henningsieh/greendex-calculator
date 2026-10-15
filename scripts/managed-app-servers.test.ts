@@ -28,6 +28,12 @@ async function fixture() {
       if (process.env.FAIL_START === 'true') process.exit(1);
       const port = process.argv[process.argv.indexOf('--port') + 1];
       createServer((req,res) => {
+        if (req.url === '/api/rpc') {
+          writeFileSync('rpc-warmed', 'compiled');
+          res.statusCode = process.env.FAIL_RPC === 'true' ? 500 : 404;
+          res.end(process.env.INVALID_RPC_BODY === 'true' ? 'unexpected' : 'Not found');
+          return;
+        }
         res.setHeader('X-Greendex-Test-Run', process.env.TEST_RUN_ID);
         res.end('null');
       }).listen(port, '127.0.0.1');
@@ -126,6 +132,10 @@ describe("managed-app-servers", () => {
       );
       expect(servers.calculatorBaseUrl).not.toBe(servers.costTrackerBaseUrl);
       expect(servers.environment.TEST_RUN_ID).toBe("a".repeat(32));
+      for (const app of ["calculator", "cost-tracker"])
+        expect(
+          await readFile(join(root, "apps", app, "rpc-warmed"), "utf8"),
+        ).toBe("compiled");
       await servers.stop();
       await assertStopped(root);
     } finally {
@@ -151,6 +161,32 @@ describe("managed-app-servers", () => {
       await rm(root, { recursive: true, force: true });
     }
   }, 30_000);
+  it.each(["FAIL_RPC", "INVALID_RPC_BODY"])(
+    "fails closed and cleans owned servers when RPC warmup has %s",
+    async (failure) => {
+      const root = await fixture();
+      let servers: Awaited<ReturnType<typeof startManagedAppServers>> | undefined;
+      try {
+        await expect(
+          (async () => {
+            servers = await startManagedAppServers(
+              root,
+              {
+                runId: "a".repeat(32),
+                databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
+              },
+              { calculator: {}, "cost-tracker": { [failure]: "true" } },
+            );
+          })(),
+        ).rejects.toThrow("Managed application startup failed");
+        await assertStopped(root);
+      } finally {
+        await servers?.stop();
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
   it("preserves concurrent external declarations and reports cleanup failure", async () => {
     const root = await fixture();
     let servers: Awaited<ReturnType<typeof startManagedAppServers>> | undefined;

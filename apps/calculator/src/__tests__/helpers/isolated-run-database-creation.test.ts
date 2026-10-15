@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
 import { inspect } from "node:util";
 
 import { beforeEach, expect, it, vi } from "vitest";
@@ -63,19 +62,89 @@ it("keeps credential-bearing disposal handles out of thrown error diagnostics", 
   expect(admin.query.mock.lastCall?.[0]).toMatch(/^DROP DATABASE/);
 });
 
-it("captures preparation-error handles for focused lifecycle disposal", () => {
-  const source = readFileSync(
-    new URL("../isolated-lifecycle.integration.test.ts", import.meta.url),
-    "utf8",
-  );
-  const catchBlock = source.slice(
-    source.indexOf("  } catch (error) {", source.indexOf("beforeAll(async")),
-  );
-  expect(catchBlock).toMatch(
-    /if \(error instanceof IsolatedRunCreationError\)\s*handle = error\.handle;/,
-  );
-  expect(catchBlock).toContain("else if (handle && !aggregate)");
-  expect(catchBlock).toContain("await disposeIsolatedRunDatabase(handle)");
+it("completes marker-failure disposal while retaining a credential-safe error handle", async () => {
+  const password = "marker-failure-credential";
+  const dropped: string[] = [];
+  let closed = false;
+  admin.query.mockImplementation(async (sql: string) => {
+    if (sql.startsWith("COMMENT")) throw new Error("marker failed");
+    if (sql.startsWith("DROP")) dropped.push(sql);
+    return { rows: [] };
+  });
+  admin.end.mockImplementation(async () => {
+    closed = true;
+  });
+  const error = await createIsolatedRunDatabase({
+    ...options,
+    baseDatabaseUrl: `postgres://postgres:${password}@localhost/postgres`,
+  }).catch((caught: unknown) => caught);
+  expect(error).toBeInstanceOf(IsolatedRunCreationError);
+  if (!(error instanceof IsolatedRunCreationError))
+    throw new Error("Missing handle");
+  expect(error.rollback).toBe("disposed");
+  expect(dropped).toEqual([
+    `DROP DATABASE "${error.handle.databaseName}" WITH (FORCE)`,
+  ]);
+  expect(closed).toBe(true);
+  expect(error.handle.databaseUrl).toContain(password);
+  expect(error.handle.baseDatabaseUrl).toContain(password);
+  for (const diagnostic of [
+    JSON.stringify(error),
+    JSON.stringify(error.toJSON()),
+    inspect(error),
+    String(error),
+  ]) {
+    expect(diagnostic).not.toContain(password);
+    expect(diagnostic).not.toContain(error.handle.databaseUrl);
+    expect(diagnostic).not.toContain(error.handle.baseDatabaseUrl);
+  }
+});
+
+it("focused lifecycle retries only failed creation rollback", async () => {
+  let prepare: (() => Promise<void>) | undefined;
+  vi.doMock("vitest", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("vitest")>()),
+    beforeAll: (hook: () => Promise<void>) => {
+      prepare = hook;
+    },
+    afterAll: vi.fn(),
+    describe: vi.fn(),
+  }));
+  vi.stubEnv("GREENDEX_AGGREGATE_TEST_RUN", "false");
+  try {
+    await import("@/__tests__/isolated-lifecycle.integration.test");
+    if (!prepare) throw new Error("Missing lifecycle preparation hook");
+    for (const rollback of ["failed", "disposed"] as const) {
+      let marker: string | undefined;
+      let attempts = 0;
+      let completed = 0;
+      admin.query.mockImplementation(async (sql: string) => {
+        if (sql.startsWith("COMMENT")) {
+          marker = sql.split("'")[1];
+          throw new Error("marker failed");
+        }
+        if (sql.startsWith("SELECT")) return { rows: [{ marker }] };
+        if (sql.startsWith("DROP")) {
+          attempts++;
+          if (rollback === "failed" && attempts === 1)
+            throw new Error("rollback failed");
+          completed++;
+          marker = undefined;
+        }
+        return { rows: [] };
+      });
+      const error = await prepare().catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(IsolatedRunCreationError);
+      if (!(error instanceof IsolatedRunCreationError))
+        throw new Error("Missing creation error");
+      expect(error.rollback).toBe(rollback);
+      expect(attempts).toBe(rollback === "failed" ? 2 : 1);
+      expect(completed).toBe(1);
+    }
+  } finally {
+    vi.doUnmock("vitest");
+    vi.unstubAllEnvs();
+  }
 });
 
 it("rolls back successful CREATE if writing the marker fails", async () => {

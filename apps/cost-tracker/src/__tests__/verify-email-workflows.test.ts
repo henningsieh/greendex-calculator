@@ -1,6 +1,7 @@
 // @vitest-environment node
 /* eslint-disable import/no-relative-parent-imports -- Focused runner regression across app contexts. */
 import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,6 +9,7 @@ const lifecycle = vi.hoisted(() => ({
   create: vi.fn(),
   dispose: vi.fn(),
   write: vi.fn(),
+  seedModules: new Map<string, string>(),
 }));
 vi.mock(
   "../../../calculator/src/__tests__/helpers/isolated-run-database",
@@ -30,7 +32,8 @@ vi.mock("../../scripts/email-run-safety", () => ({
 }));
 vi.mock("node:fs/promises", () => ({
   mkdir: vi.fn(),
-  readFile: async () => "seed",
+  readFile: async (path: string) =>
+    lifecycle.seedModules.get(basename(path)) ?? "seed",
   writeFile: lifecycle.write,
 }));
 
@@ -42,7 +45,33 @@ import { verifyEmailWorkflows } from "../../scripts/verify-email-workflows";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  lifecycle.seedModules.clear();
   lifecycle.dispose.mockResolvedValue(undefined);
+});
+
+describe("verify-email-workflows seed provenance", () => {
+  it.each([
+    "seed.ts",
+    "seed-cost-tracker.ts",
+    "seed-scenarios.ts",
+    "seed-tables.ts",
+    "seed-review-scenarios.ts",
+  ])("changes the email report version when %s changes", async (name) => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const reportVersion = async () => {
+      lifecycle.create.mockRejectedValueOnce(new Error("preparation failed"));
+      expect(await verifyEmailWorkflows()).toBe(false);
+      return JSON.parse(lifecycle.write.mock.lastCall![1]).seedVersion;
+    };
+    try {
+      const version = await reportVersion();
+      expect(await reportVersion()).toBe(version);
+      lifecycle.seedModules.set(name, `changed ${name}`);
+      expect(await reportVersion()).not.toBe(version);
+    } finally {
+      log.mockRestore();
+    }
+  });
 });
 
 describe("verify-email-workflows creation failure cleanup", () => {
@@ -74,6 +103,30 @@ describe("verify-email-workflows creation failure cleanup", () => {
       }
     },
   );
+
+  it("preserves completed rollback without retrying disposal", async () => {
+    const handle = {
+      runId: "a".repeat(32),
+      databaseName: "owned",
+    } as IsolatedRunHandle;
+    lifecycle.create.mockRejectedValueOnce(
+      new IsolatedRunCreationError(handle, "disposed", new Error("private")),
+    );
+    lifecycle.dispose.mockRejectedValueOnce(
+      new Error("already disposed; ownership marker absent"),
+    );
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      expect(await verifyEmailWorkflows()).toBe(false);
+      expect(lifecycle.dispose).not.toHaveBeenCalled();
+      const report = JSON.parse(lifecycle.write.mock.lastCall![1]);
+      expect(report.cleanup.database).toBe("disposed");
+      expect(report.runId).toBe(handle.runId);
+    } finally {
+      log.mockRestore();
+      lifecycle.dispose.mockReset().mockResolvedValue(undefined);
+    }
+  });
 
   it("reports failed disposal rather than not-created when recovery fails", async () => {
     const handle = {
