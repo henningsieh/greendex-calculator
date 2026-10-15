@@ -34,6 +34,7 @@ async function fixture() {
           res.end(process.env.INVALID_RPC_BODY === 'true' ? 'unexpected' : 'Not found');
           return;
         }
+        if (process.env.NOT_READY === 'true') res.statusCode = 503;
         res.setHeader('X-Greendex-Test-Run', process.env.TEST_RUN_ID);
         res.end('null');
       }).listen(port, '127.0.0.1');
@@ -187,6 +188,162 @@ describe("managed-app-servers", () => {
     },
     30_000,
   );
+  it("serializes overlapping runs for the complete declaration lifetime", async () => {
+    const root = await fixture();
+    let first: Awaited<ReturnType<typeof startManagedAppServers>> | undefined;
+    let second: Awaited<ReturnType<typeof startManagedAppServers>> | undefined;
+    let pending:
+      | Promise<Awaited<ReturnType<typeof startManagedAppServers>>>
+      | undefined;
+    try {
+      first = await startManagedAppServers(
+        root,
+        {
+          runId: "a".repeat(32),
+          databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
+        },
+        { calculator: {}, "cost-tracker": {} },
+      );
+      pending = startManagedAppServers(
+        root,
+        {
+          runId: "b".repeat(32),
+          databaseUrl: `postgres://localhost/mail_check_${"b".repeat(32)}`,
+        },
+        { calculator: {}, "cost-tracker": {} },
+      ).then((value) => {
+        second = value;
+        return value;
+      });
+      expect(
+        await Promise.race([
+          pending.then(() => "started"),
+          new Promise((resolve) => setTimeout(() => resolve("waiting"), 1000)),
+        ]),
+      ).toBe("waiting");
+      for (const app of ["calculator", "cost-tracker"])
+        expect(
+          await readFile(join(root, "apps", app, "next-env.d.ts"), "utf8"),
+        ).toContain("a".repeat(32));
+      await first.stop();
+      second = await pending;
+      for (const app of ["calculator", "cost-tracker"])
+        expect(
+          await readFile(join(root, "apps", app, "next-env.d.ts"), "utf8"),
+        ).toContain("b".repeat(32));
+      await second.stop();
+      await assertStopped(root);
+    } finally {
+      await first?.stop().catch(() => {});
+      if (pending) await pending.then((value) => value.stop()).catch(() => {});
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30_000);
+  it.each(["timeout", "abort"])(
+    "bounds ownership acquisition on %s without releasing another run's lock",
+    async (mode) => {
+      const root = await fixture();
+      const controller = new AbortController();
+      const first = await startManagedAppServers(
+        root,
+        {
+          runId: "a".repeat(32),
+          databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
+        },
+        { calculator: {}, "cost-tracker": {} },
+      );
+      try {
+        const pending = startManagedAppServers(
+          root,
+          {
+            runId: "b".repeat(32),
+            databaseUrl: `postgres://localhost/mail_check_${"b".repeat(32)}`,
+          },
+          { calculator: {}, "cost-tracker": {} },
+          {
+            signal: controller.signal,
+            ownershipTimeoutMs: mode === "timeout" ? 100 : 5000,
+          },
+        );
+        const rejected = expect(pending).rejects.toThrow(
+          mode === "timeout" ? /acquisition timed out/ : /abort/i,
+        );
+        if (mode === "abort") controller.abort();
+        await rejected;
+        expect(
+          await readFile(join(root, "apps/calculator/next-env.d.ts"), "utf8"),
+        ).toContain("a".repeat(32));
+        await first.stop();
+        await assertStopped(root);
+      } finally {
+        await first.stop();
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
+  it("releases ownership and restores declarations after an aborted startup", async () => {
+    const root = await fixture();
+    const controller = new AbortController();
+    try {
+      const pending = startManagedAppServers(
+        root,
+        {
+          runId: "a".repeat(32),
+          databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
+        },
+        { calculator: { NOT_READY: "true" }, "cost-tracker": {} },
+        { signal: controller.signal },
+      );
+      const rejected = expect(pending).rejects.toThrow(/startup failed/);
+      await expect
+        .poll(async () =>
+          readFile(join(root, "apps/calculator/owned-pid"), "utf8"),
+        )
+        .toMatch(/^\d+$/);
+      controller.abort();
+      await rejected;
+      expect(
+        await readFile(join(root, "apps/calculator/next-env.d.ts"), "utf8"),
+      ).toBe("dev baseline");
+      await expect(
+        readFile(join(root, ".turbo/managed-app-declarations.lock")),
+      ).rejects.toThrow();
+      const recovered = await startManagedAppServers(
+        root,
+        {
+          runId: "a".repeat(32),
+          databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
+        },
+        { calculator: {}, "cost-tracker": {} },
+      );
+      await recovered.stop();
+      await assertStopped(root);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30_000);
+  it("refuses to release a replaced ownership record", async () => {
+    const root = await fixture();
+    const servers = await startManagedAppServers(
+      root,
+      {
+        runId: "a".repeat(32),
+        databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
+      },
+      { calculator: {}, "cost-tracker": {} },
+    );
+    try {
+      const lock = join(root, ".turbo/managed-app-declarations.lock");
+      await rm(lock);
+      await writeFile(lock, "external owner");
+      await expect(servers.stop()).rejects.toThrow("cleanup failed");
+      expect(await readFile(lock, "utf8")).toBe("external owner");
+      await assertStopped(root);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30_000);
   it("preserves concurrent external declarations and reports cleanup failure", async () => {
     const root = await fixture();
     let servers: Awaited<ReturnType<typeof startManagedAppServers>> | undefined;
