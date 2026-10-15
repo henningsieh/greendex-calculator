@@ -9,6 +9,7 @@ import {
   invitation,
   member,
   organization,
+  session as sessionsTable,
   user,
   verification,
 } from "@greendex/database/schema";
@@ -49,6 +50,7 @@ const SEED_ORG_SLUG = "seed-org";
 
 const createdEmails: string[] = [];
 const createdOrganizationIds: string[] = [];
+const caseSessionTokens: string[] = [];
 const createdUserIds: string[] = [];
 
 function uniqueEmail(prefix: string) {
@@ -87,14 +89,18 @@ async function seedSession(email: string) {
   if (!stored) throw new Error(`Seed user is missing: ${email}`);
   const response = await auth.api.signInEmail({
     body: { email, password: SEED_USER.password },
-    asResponse: true,
+    returnHeaders: true,
   });
+  caseSessionTokens.push(response.response.token);
   const cookie = response.headers.get("set-cookie")?.split(";")[0];
   if (!cookie) throw new Error("Sign-in did not create a session cookie");
   return cookieHeaders(cookie);
 }
 
 afterEach(async () => {
+  for (const token of caseSessionTokens.splice(0)) {
+    await db.delete(sessionsTable).where(eq(sessionsTable.token, token));
+  }
   for (const email of createdEmails.splice(0)) {
     await db.delete(user).where(eq(user.email, email));
     await db

@@ -144,6 +144,8 @@ describe("Project Shared Travel Legs integration", () => {
         completedByUserId: null,
       } satisfies ProjectType;
 
+      projectId = trackProject(projectData.id);
+
       // Insert project directly
       await db.insert(projectsTable).values(projectData);
 
@@ -156,8 +158,6 @@ describe("Project Shared Travel Legs integration", () => {
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe(projectData.name);
       expect(result[0].organizationId).toBe(orgId);
-
-      projectId = trackProject(projectData.id);
     });
 
     it("should create a project with sharedTravelLegs", async () => {
@@ -179,8 +179,8 @@ describe("Project Shared Travel Legs integration", () => {
       } satisfies ProjectType;
 
       // Insert project
-      await db.insert(projectsTable).values(projectData);
       trackProject(projectData.id);
+      await db.insert(projectsTable).values(projectData);
 
       // Insert Project Shared Travel Legs.
       const sharedTravelLeg1 = {
@@ -451,8 +451,8 @@ describe("Project Shared Travel Legs integration", () => {
       } satisfies ProjectType;
 
       // Create project
-      await db.insert(projectsTable).values(cascadeProject);
       trackProject(cascadeProjectId);
+      await db.insert(projectsTable).values(cascadeProject);
 
       // Create a Project Shared Travel Leg for the project.
       const cascadeSharedTravelLegId = randomUUID();
