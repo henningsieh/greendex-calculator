@@ -128,18 +128,17 @@ it("serves organization details, role, stats and member search shapes", async ()
     id: fixture.organizationId,
   });
   expect(await ok("/organizations/role")).toBe("owner");
-  // The seeded Hosting Organization carries the canonical Projects,
-  // Participations, and Shared Travel Legs; the contract pins shapes and
-  // baseline presence, not an empty Organization.
+  // Canonical seed: ten base Projects plus two REST and three review Projects;
+  // two linked showcase Users (login-free Participations do not add a User);
+  // 39 template Shared Travel Legs plus the travel-management scenario leg.
   const stats = await ok("/organizations/stats", "POST", {
     organizationId: fixture.organizationId,
   });
   expect(stats).toEqual({
-    totalProjects: expect.any(Number),
-    totalParticipants: expect.any(Number),
-    totalSharedTravelLegs: expect.any(Number),
+    totalProjects: 15,
+    totalParticipants: 2,
+    totalSharedTravelLegs: 40,
   });
-  expect(stats.totalProjects).toBeGreaterThanOrEqual(10);
   expect(
     await ok("/organizations/members/search", "POST", {
       organizationId: fixture.organizationId,
