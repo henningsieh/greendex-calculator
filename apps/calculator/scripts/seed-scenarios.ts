@@ -34,6 +34,10 @@ export const SEED_REVIEW_SCENARIOS = {
     { id: "rest-contract-project-canonical", name: "REST Contract Project" },
     { id: "rest-batch-project-canonical", name: "REST Batch Project" },
   ],
+  sharedTravelLegProcedures: {
+    projectId: "shared-travel-procedures-project-canonical",
+    name: "Seed Shared Travel Procedures Project",
+  },
   travelLegManagement: {
     projectId: "travel-leg-management-project-canonical",
     legId: "travel-leg-management-bus-canonical",

@@ -2014,6 +2014,7 @@ export async function resetSeedData(
     ...SEED_REVIEW_SCENARIOS.restProjects.map(({ name }) => name),
     "Seed Submitted Registration Project",
     "Seed Travel Leg Management Project",
+    SEED_REVIEW_SCENARIOS.sharedTravelLegProcedures.name,
     ...SEED_SCENARIOS.costTrackerSetupLinks.projectNames,
     ...SEED_SCENARIOS.costTrackerSubmission.projectNames,
     ...SEED_SCENARIOS.costTrackerParticipations.projectNames,

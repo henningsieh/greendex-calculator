@@ -33,6 +33,7 @@ interface CanonicalSeedIdentity {
       restProjects: { id: string; name: string }[];
       submittedRegistration: { projectId: string };
       travelLegManagement: { projectId: string };
+      sharedTravelLegProcedures: { projectId: string; name: string };
     };
     costTrackerSetupLinks: CostTrackerSeedScenario;
     costTrackerSubmission: CostTrackerSeedScenario & {
@@ -473,6 +474,20 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(resolved.partner_project_org_id).toBe(resolved.partner_org_id);
     expect(summary.partnerProjectId).toBe(resolved.partner_project_id);
 
+    expect(
+      (
+        await pool.query(
+          "SELECT name, organization_id FROM project WHERE id = $1",
+          [identities.scenarios.reviewFixes.sharedTravelLegProcedures.projectId],
+        )
+      ).rows,
+    ).toEqual([
+      {
+        name: "Seed Shared Travel Procedures Project",
+        organization_id: resolved.hosting_org_id,
+      },
+    ]);
+
     // Named Hosting Organization role actors resolve to seeded Memberships;
     // the outsider stays membership-free for denied/creation scenarios.
     const roleActors = await pool.query(
@@ -591,7 +606,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
       identities.projectNames.length +
         1 +
         identities.scenarios.reviewFixes.restProjects.length +
-        2 +
+        3 +
         costTrackerScenarios.flatMap((scenario) => scenario.projectNames).length,
     );
     // The report counts the canonical template legs explicitly removed;

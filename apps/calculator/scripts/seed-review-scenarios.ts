@@ -149,6 +149,18 @@ export async function ensureReviewScenarios(
       ),
   );
   if (missing.length) await db.insert(invitation).values(missing);
+  const sharedTravel = SEED_REVIEW_SCENARIOS.sharedTravelLegProcedures;
+  await ensureSeedProjects(db, [
+    {
+      id: sharedTravel.projectId,
+      name: sharedTravel.name,
+      organizationId: hostId,
+      location: "Berlin",
+      country: "DE",
+      startDate: new Date("2026-01-01T00:00:00Z"),
+      endDate: new Date("2026-12-31T00:00:00Z"),
+    },
+  ]);
   const travel = SEED_REVIEW_SCENARIOS.travelLegManagement;
   await ensureSeedProjects(db, [
     {
