@@ -8,6 +8,7 @@ import {
   invitation,
   member,
   organization,
+  session as sessionsTable,
   user,
 } from "@greendex/database/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -42,6 +43,7 @@ const SEED_OUTSIDER_EMAIL = "seed-outsider@example.org";
 const SEED_ORG_SLUG = "seed-org";
 
 const organizationIds: string[] = [];
+const caseSessionTokens: string[] = [];
 
 async function seedSession(email: string) {
   const stored = await db.query.user.findFirst({
@@ -50,8 +52,9 @@ async function seedSession(email: string) {
   if (!stored) throw new Error(`Seed user is missing: ${email}`);
   const signedIn = await auth.api.signInEmail({
     body: { email, password: SEED_USER.password },
-    asResponse: true,
+    returnHeaders: true,
   });
+  caseSessionTokens.push(signedIn.response.token);
   const cookie = signedIn.headers.get("set-cookie")!.split(";")[0]!;
   return { userId: stored.id, headers: new Headers({ cookie }) };
 }
@@ -81,6 +84,9 @@ async function request(path: string, headers: Headers, body: unknown) {
 }
 
 afterEach(async () => {
+  for (const token of caseSessionTokens.splice(0)) {
+    await db.delete(sessionsTable).where(eq(sessionsTable.token, token));
+  }
   const caseOrgIds = organizationIds.splice(0);
   if (caseOrgIds.length) {
     await db.delete(member).where(inArray(member.organizationId, caseOrgIds));
