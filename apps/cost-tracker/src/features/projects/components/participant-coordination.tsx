@@ -21,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Label } from "@/components/ui/label";
 import {
   participantEntryDenialMessage,
@@ -644,7 +645,13 @@ export function ParticipantCoordination({
         </CardHeader>
         <CardContent>
           {data.participations.length === 0 ? (
-            <p>No Participants have joined this Partnership yet.</p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>
+                  No Participants have joined this Partnership yet.
+                </EmptyTitle>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <ul className="divide-y">
               {data.participations.map((participant) => (

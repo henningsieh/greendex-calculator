@@ -4,6 +4,7 @@ import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { isClaimAwaitingReview } from "@/features/projects/claim-lifecycle";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
@@ -33,12 +34,19 @@ export function ClaimReviewQueue() {
       </CardHeader>
       <CardContent>
         {submitted.length === 0 ? (
-          <p>No submitted Claims available for review.</p>
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>No submitted Claims available for review.</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         ) : (
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-1">
             {submitted.map((item) => (
               <li key={item.id}>
-                <Link href={`/claims/review/${encodeURIComponent(item.id)}`}>
+                <Link
+                  className="block rounded-md px-3 py-2 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  href={`/claims/review/${encodeURIComponent(item.id)}`}
+                >
                   {item.projectName} · {item.organizationName}
                 </Link>
               </li>
