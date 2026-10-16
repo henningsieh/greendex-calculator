@@ -1,7 +1,7 @@
 import { globSync, readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, relative, resolve } from "node:path";
+import { basename, dirname, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -53,7 +53,8 @@ describe("nonbrowser test groups", () => {
         "**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}",
         {
           cwd: packageDirectory,
-          exclude: ["node_modules/**", "dist/**", "coverage/**"],
+          exclude: (path) =>
+            ["node_modules", "dist", "coverage"].includes(basename(path)),
         },
       );
       if (!testFiles.length) continue;
