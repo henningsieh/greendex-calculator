@@ -12,6 +12,7 @@ const results = {
   numPassedTests: 0,
   numFailedTests: 0,
   numPendingTests: 1,
+  numTodoTests: 0,
   testResults: [
     {
       name: "/repo/src/source.test.ts",
@@ -25,6 +26,13 @@ const results = {
 describe("nonbrowserTestEvidence", () => {
   it("names pending assertions and classifies hook errors without disclosing messages", () => {
     const evidence = nonbrowserTestEvidence(results, ".", "/repo");
+    expect({
+      total: evidence.total,
+      passed: evidence.passed,
+      failed: evidence.failed,
+      pending: evidence.pending,
+      todo: evidence.todo,
+    }).toEqual({ total: 1, passed: 0, failed: 0, pending: 1, todo: 0 });
     expect(evidence.pendingTests).toEqual([
       {
         file: "src/source.test.ts",
@@ -37,6 +45,24 @@ describe("nonbrowserTestEvidence", () => {
     ]);
     expect(JSON.stringify(evidence)).not.toContain("private-secret");
   });
+  it.each([
+    null,
+    [],
+    {},
+    { ...results, numTotalTests: "1" },
+    { ...results, numPendingTests: -1 },
+    { ...results, numTodoTests: undefined },
+    { ...results, testResults: [null] },
+    {
+      ...results,
+      testResults: [{ ...results.testResults[0], assertionResults: [{}] }],
+    },
+  ])("rejects malformed reporter data %#", (data) => {
+    expect(() => nonbrowserTestEvidence(data, ".", "/repo")).toThrow(
+      "Missing valid test evidence.",
+    );
+  });
+
   it("preserves assertion timeout classification and distinguishes runtime suite errors", () => {
     const evidence = nonbrowserTestEvidence(
       {

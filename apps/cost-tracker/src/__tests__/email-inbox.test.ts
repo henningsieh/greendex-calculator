@@ -71,6 +71,62 @@ describe("email-inbox", () => {
     expect(mocks.messageDelete).not.toHaveBeenCalled();
     expect(mocks.logout).toHaveBeenCalledOnce();
   });
+  it("stops delivery polling when the run is aborted", async () => {
+    const inbox = new EmailInbox(environment);
+    await inbox.connect();
+    const boundary = await inbox.boundary();
+    const interruption = new AbortController();
+    interruption.abort();
+    await expect(
+      inbox.deliveredLink(
+        boundary,
+        "workflow",
+        base,
+        "/verify",
+        () => true,
+        interruption.signal,
+      ),
+    ).rejects.toThrow();
+    expect(mocks.search).not.toHaveBeenCalled();
+  });
+  it("interrupts the polling delay without waiting for another mailbox query", async () => {
+    mocks.search.mockResolvedValue([]);
+    const inbox = new EmailInbox(environment);
+    await inbox.connect();
+    const interruption = new AbortController();
+    vi.useFakeTimers();
+    let outcome = "pending";
+    const pending = inbox
+      .deliveredLink(
+        await inbox.boundary(),
+        "workflow",
+        base,
+        "/verify",
+        () => true,
+        interruption.signal,
+      )
+      .then(
+        () => {
+          outcome = "delivered";
+        },
+        (error: unknown) => {
+          outcome = error instanceof Error ? error.name : "unknown";
+        },
+      );
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      interruption.abort();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(outcome).toBe("AbortError");
+      expect(mocks.search).toHaveBeenCalledOnce();
+      expect(await inbox.cleanup()).toEqual({ retained: 0, deleted: 0 });
+    } finally {
+      interruption.abort();
+      await vi.advanceTimersByTimeAsync(2_000);
+      await pending;
+      vi.useRealTimers();
+    }
+  });
   it("deletes and verifies only proven run-owned UIDs when opted in", async () => {
     const inbox = new EmailInbox({
       ...environment,

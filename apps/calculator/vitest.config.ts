@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     // Router/auth mocks must not leak between suites sharing the canonical database.
     isolate: true,
+    fileParallelism: false,
     environment: "jsdom",
     globals: true,
     experimental: {

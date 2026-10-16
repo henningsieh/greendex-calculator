@@ -1,4 +1,5 @@
 export type GroupStatus = "passed" | "failed" | "blocked";
+export type GroupExecution = "serial" | "parallel" | "cleanup";
 export interface GroupResult {
   group: string;
   status: GroupStatus;
@@ -7,30 +8,41 @@ export interface GroupResult {
 export interface TestGroup {
   name: string;
   prerequisites: string[];
+  execution: GroupExecution;
   run(): Promise<void>;
 }
 
-/** Serial execution protects the shared seed; failures only block dependents. */
+export const nonbrowserPackages = [
+  "auth",
+  "email",
+  "database",
+  "config",
+  "i18n",
+] as const;
+
 export async function runTestGroups(groups: TestGroup[]): Promise<GroupResult[]> {
-  const results: GroupResult[] = [];
-  const names = new Set<string>();
+  const results = new Map<string, GroupResult>();
+  const names = new Map<string, GroupExecution>();
   for (const group of groups) {
     if (
       names.has(group.name) ||
-      group.prerequisites.some((name) => !names.has(name))
+      group.prerequisites.some(
+        (name) =>
+          !names.has(name) ||
+          (group.execution !== "cleanup" && names.get(name) === "cleanup"),
+      )
     )
-      throw new Error("Duplicate group or unknown prerequisite.");
-    names.add(group.name);
+      throw new Error("Duplicate group or invalid prerequisite.");
+    names.set(group.name, group.execution);
   }
-  for (const group of groups) {
+  const pending = groups.filter(({ execution }) => execution !== "cleanup");
+  const cleanup = groups.filter(({ execution }) => execution === "cleanup");
+  const execute = async (group: TestGroup): Promise<void> => {
     const started = Date.now();
     let status: GroupStatus = "blocked";
     if (
-      group.prerequisites.every((name) =>
-        results.some(
-          (result) => result.group === name && result.status === "passed",
-        ),
-      )
+      group.execution === "cleanup" ||
+      group.prerequisites.every((name) => results.get(name)?.status === "passed")
     ) {
       try {
         await group.run();
@@ -45,10 +57,25 @@ export async function runTestGroups(groups: TestGroup[]): Promise<GroupResult[]>
       status,
       durationMs: Date.now() - started,
     };
-    results.push(result);
+    results.set(group.name, result);
     console.log(`${status.toUpperCase()} ${group.name} (${result.durationMs}ms)`);
+  };
+  while (pending.length) {
+    const ready = pending.filter(({ prerequisites }) =>
+      prerequisites.every((name) => results.has(name)),
+    );
+    if (!ready.length) throw new Error("Test group dependencies are unresolved.");
+    const parallel = ready.filter(({ execution }) => execution === "parallel");
+    const batch = parallel.length ? parallel : [ready[0]];
+    await Promise.all(batch.map(execute));
+    for (const group of batch) pending.splice(pending.indexOf(group), 1);
   }
-  return results;
+  for (const group of cleanup) await execute(group);
+  return groups.map(({ name }) => {
+    const result = results.get(name);
+    if (!result) throw new Error("Test group did not produce a result.");
+    return result;
+  });
 }
 
 export function fullRunPassed(results: GroupResult[]): boolean {

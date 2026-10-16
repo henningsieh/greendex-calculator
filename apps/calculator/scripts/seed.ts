@@ -209,6 +209,12 @@ export const SEED_ORG_ROLE_USERS = [
     hostingRole: null,
   },
   {
+    key: "setupLinksCreator",
+    name: "Seed Setup Links Creator",
+    email: "seed-setup-links-creator@example.org",
+    hostingRole: null,
+  },
+  {
     key: "invitee",
     name: "Seed Invitee",
     email: "seed-invitee@example.org",

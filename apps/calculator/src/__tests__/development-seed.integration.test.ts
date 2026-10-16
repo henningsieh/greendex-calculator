@@ -15,6 +15,10 @@ const execute = promisify(execFile);
 /** Module path travels via environment, never interpolated into executed code. */
 const SEED_MODULE_ENV = "SEED_MODULE_PATH";
 
+// Full-file evidence reached five minutes while still hashing credentials.
+// Test budgets allow two seed commands plus five minutes for migration and cleanup.
+const SEED_COMMAND_TIMEOUT_MS = 600_000;
+
 interface CostTrackerSeedScenario {
   userIds: string[];
   userEmails: string[];
@@ -93,7 +97,7 @@ async function runSeedModule(
     })().catch((error) => { console.error(error); process.exitCode = 1; });
   `;
   const { stdout } = await execute("pnpm", ["exec", "tsx", "-e", script], {
-    timeout: 300_000,
+    timeout: SEED_COMMAND_TIMEOUT_MS,
     cwd: calculatorDir,
     env: {
       ...process.env,
@@ -160,7 +164,7 @@ it("seeds a shared Project, Participant Journey and allocated editable Claim fro
     const options = {
       cwd: resolve(import.meta.dirname, "../../../.."),
       env: { ...process.env, DATABASE_URL: databaseUrl },
-      timeout: 300_000,
+      timeout: SEED_COMMAND_TIMEOUT_MS,
     };
     await execute("pnpm", ["run", "db:migrate"], options);
     // Capture output: even legacy seeders must not leak login credentials into diagnostics.
@@ -216,7 +220,7 @@ it("seeds a shared Project, Participant Journey and allocated editable Claim fro
       }),
     ]);
   });
-}, 360_000);
+}, 1_500_000);
 
 interface SeedCounts {
   users: number;
@@ -282,7 +286,7 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     const options = {
       cwd: resolve(import.meta.dirname, "../../../.."),
       env: { ...process.env, DATABASE_URL: databaseUrl },
-      timeout: 300_000,
+      timeout: SEED_COMMAND_TIMEOUT_MS,
     };
     await execute("pnpm", ["run", "db:migrate"], options);
     // First run through the normal development command: no credential leak.
@@ -525,14 +529,14 @@ it("reuses one canonical seed across CLI and module runs without duplicates", as
     expect(roleByEmail.get(identities.scenarios.creatorUser.email)).toBeNull();
     expect(roleByEmail.get(identities.scenarios.ownerUser.email)).not.toBeNull();
   });
-}, 600_000);
+}, 1_500_000);
 
 it("requires explicit confirmation and resets only seed-owned rows", async () => {
   await withDisposableDatabase("seed_reset", async (pool, databaseUrl) => {
     const options = {
       cwd: resolve(import.meta.dirname, "../../../.."),
       env: { ...process.env, DATABASE_URL: databaseUrl },
-      timeout: 300_000,
+      timeout: SEED_COMMAND_TIMEOUT_MS,
     };
     await execute("pnpm", ["run", "db:migrate"], options);
     await runModuleSeed(databaseUrl);
@@ -650,7 +654,7 @@ it("requires explicit confirmation and resets only seed-owned rows", async () =>
       decoy_legs: 1,
     });
   });
-}, 360_000);
+}, 1_500_000);
 
 it("converges named Cost Tracker Claim, cost and onboarding scenarios without duplicates or secret leaks", async () => {
   await withDisposableDatabase("cost_tracker_seed", async (pool, databaseUrl) => {
@@ -803,7 +807,7 @@ it("converges named Cost Tracker Claim, cost and onboarding scenarios without du
       hashed_secrets: null,
     });
   });
-}, 600_000);
+}, 1_500_000);
 
 it("retains seed actors and their logins when developer Memberships or Project dependents survive reset", async () => {
   await withDisposableDatabase(
@@ -915,4 +919,4 @@ it("retains seed actors and their logins when developer Memberships or Project d
       ).toEqual([{ project_id: "developer-project" }]);
     },
   );
-}, 360_000);
+}, 1_500_000);

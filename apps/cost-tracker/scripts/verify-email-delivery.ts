@@ -2,8 +2,8 @@ import { verifyEmailWorkflows } from "./verify-email-workflows";
 
 const interruption = new AbortController();
 const interrupt = () => interruption.abort();
-process.once("SIGINT", interrupt);
-process.once("SIGTERM", interrupt);
+process.on("SIGINT", interrupt);
+process.on("SIGTERM", interrupt);
 
 verifyEmailWorkflows(undefined, interruption.signal)
   .then((passed) => {

@@ -1,5 +1,9 @@
 // @vitest-environment node
 /* eslint-disable import/no-relative-parent-imports -- Tests the owning script's verification boundary. */
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+import { resolve } from "node:path";
+
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -117,7 +121,10 @@ describe("Garage verification", () => {
         "key",
         Buffer.from("probe"),
       ),
-    ).rejects.toBe(failure);
+    ).rejects.toMatchObject({
+      cause: failure,
+      message: expect.stringContaining("cleanup failed"),
+    });
   });
 });
 
@@ -155,7 +162,11 @@ describe("Garage owned object verification", () => {
         Buffer.from("probe"),
       );
       if (deleteFails) {
-        await expect(result).rejects.toThrow(/cleanup failed.*owned-run-key/);
+        await expect(result).rejects.toMatchObject({
+          key: "owned-run-key",
+          cause: deletionFailure,
+          message: expect.stringContaining("cleanup failed"),
+        });
         expect(objects.has("owned-run-key")).toBe(true);
       } else {
         await expect(result).rejects.toBe(lostResponse);
@@ -163,5 +174,127 @@ describe("Garage owned object verification", () => {
       }
       expect(objects.get("developer-object")).toEqual(Buffer.from("preserved"));
     },
+  );
+});
+
+describe("Garage interruption", () => {
+  it.each([
+    { probe: "object", deleteFails: false },
+    { probe: "object", deleteFails: true },
+    { probe: "invalid-credential-probe", deleteFails: false },
+    { probe: "invalid-credential-probe", deleteFails: true },
+  ])(
+    "SIGTERM cleans only owned keys and reports incomplete cleanup ($probe, $deleteFails)",
+    async ({ probe, deleteFails }) => {
+      const objects = new Set(["developer-object"]);
+      const put = Promise.withResolvers<string>();
+      let payload = Buffer.alloc(0);
+      const deleted: string[] = [];
+      const server = createServer((request, response) => {
+        const key = new URL(request.url!, "http://localhost").pathname
+          .split("/")
+          .slice(2)
+          .join("/");
+        if (request.method === "PUT") {
+          objects.add(key);
+          const chunks: Buffer[] = [];
+          request.on("data", (chunk: Buffer) => chunks.push(chunk));
+          request.on("end", () => {
+            payload = Buffer.concat(chunks);
+            if (key.endsWith(`/${probe}`)) put.resolve(key);
+            else response.end();
+          });
+        } else if (request.method === "DELETE") {
+          deleted.push(key);
+          const fail = deleteFails && key.endsWith(`/${probe}`);
+          if (!fail) objects.delete(key);
+          response.writeHead(fail ? 503 : 204);
+          response.end();
+        } else if (request.method === "GET") {
+          response.end(payload);
+        } else {
+          response.writeHead(400);
+          response.end();
+        }
+      });
+      await new Promise<void>((resolve) =>
+        server.listen(0, "127.0.0.1", resolve),
+      );
+      const address = server.address();
+      if (!address || typeof address === "string")
+        throw new Error("Expected TCP listener");
+      const child = spawn(
+        process.execPath,
+        ["--import", "tsx", "scripts/verify-garage-storage.ts"],
+        {
+          cwd: resolve(import.meta.dirname, "../.."),
+          env: {
+            PATH: process.env.PATH,
+            NODE_ENV: "test",
+            DATABASE_URL: "postgres://localhost/unused",
+            BETTER_AUTH_SECRET: "x".repeat(32),
+            GOOGLE_CLIENT_ID: "unused",
+            GOOGLE_CLIENT_SECRET: "unused",
+            SMTP_HOST: "localhost",
+            SMTP_PORT: "465",
+            SMTP_SENDER: "unused@example.test",
+            SMTP_USERNAME: "unused",
+            SMTP_PASSWORD: "unused",
+            SMTP_SECURE: "true",
+            NEXT_PUBLIC_BASE_URL: "http://localhost:3000",
+            S3_BUCKET: "greendex-cost-tracker-development",
+            S3_ENDPOINT: `http://127.0.0.1:${address.port}`,
+            S3_REGION: "garage",
+            S3_FORCE_PATH_STYLE: "true",
+            S3_ACCESS_KEY_ID: "unused",
+            S3_SECRET_ACCESS_KEY: "unused",
+          },
+          stdio: ["ignore", "pipe", "pipe"],
+        },
+      );
+      let output = "";
+      child.stdout.on("data", (chunk) => {
+        output += chunk;
+      });
+      child.stderr.on("data", (chunk) => {
+        output += chunk;
+      });
+      const exit = new Promise<number | null>((resolve, reject) => {
+        child.once("error", reject);
+        child.once("exit", (code) => resolve(code));
+      });
+      const timeout = setTimeout(() => {
+        put.reject(new Error(`Verifier did not PUT: ${output}`));
+        child.kill("SIGKILL");
+      }, 10_000);
+      try {
+        const ownedKey = await put.promise;
+        child.kill("SIGTERM");
+        expect(await exit).toBe(1);
+        const runPrefix = ownedKey.slice(0, ownedKey.lastIndexOf("/") + 1);
+        expect(runPrefix).toMatch(/^smoke-tests\/[a-f0-9-]+\/$/);
+        expect(deleted).toEqual(
+          probe === "object" ? [ownedKey] : [`${runPrefix}object`, ownedKey],
+        );
+        expect([...objects]).toEqual(
+          deleteFails ? ["developer-object", ownedKey] : ["developer-object"],
+        );
+        if (deleteFails) {
+          expect(output).toContain("cleanup failed for run-owned key");
+          expect(output).toContain(ownedKey);
+        } else {
+          expect(output).toContain("Garage smoke-test object deleted.");
+        }
+      } finally {
+        clearTimeout(timeout);
+        child.kill("SIGKILL");
+        await exit;
+        server.closeAllConnections();
+        await new Promise<void>((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve())),
+        );
+      }
+    },
+    15_000,
   );
 });

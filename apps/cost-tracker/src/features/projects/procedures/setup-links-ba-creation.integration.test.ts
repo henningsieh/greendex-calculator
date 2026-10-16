@@ -31,7 +31,7 @@ import { router } from "@/lib/orpc/router";
 const lane = randomUUID();
 const password = SEED_USER.password;
 const hostEmail = SEED_USER.email;
-const recipientEmail = "seed-invitee@example.org";
+const recipientEmail = "seed-setup-links-creator@example.org";
 const outsiderEmail = "seed-outsider@example.org";
 let projectId = "";
 const sessionIds: string[] = [];

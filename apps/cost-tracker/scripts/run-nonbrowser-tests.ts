@@ -19,6 +19,7 @@ import {
 import { nonbrowserTestEvidence } from "../../../scripts/nonbrowser-test-evidence";
 import {
   fullRunPassed,
+  nonbrowserPackages,
   runTestGroups,
   type TestGroup,
 } from "../../../scripts/nonbrowser-test-groups";
@@ -29,14 +30,19 @@ import {
   IsolatedRunCreationError,
   type IsolatedRunHandle,
 } from "../../calculator/src/__tests__/helpers/isolated-run-database";
+import {
+  developmentGarageEnvironmentSchema,
+  GarageCleanupError,
+  verifyDevelopmentGarage,
+} from "./garage-verification";
 import { verifyEmailWorkflows } from "./verify-email-workflows";
 
 const root = resolve(import.meta.dirname, "../../..");
 const started = Date.now();
 const interruption = new AbortController();
 const interrupt = () => interruption.abort();
-process.once("SIGINT", interrupt);
-process.once("SIGTERM", interrupt);
+process.on("SIGINT", interrupt);
+process.on("SIGTERM", interrupt);
 let handle: IsolatedRunHandle | undefined;
 let databaseCreation:
   | { databaseName: string; rollback: "disposed" | "failed" }
@@ -49,6 +55,8 @@ const cleanup = {
   servers: "not-started",
   database: "not-created",
   pool: "not-opened",
+  garage: "not-started",
+  garageKey: null as string | null,
 };
 const environment = (): NodeJS.ProcessEnv => ({
   ...process.env,
@@ -88,11 +96,11 @@ const vitest = (cwd: string, args: string[] = [], timeoutMs = 900_000) =>
         if (start < 0) throw new Error("Missing valid test evidence.");
         let skipped = false;
         try {
-          const data = JSON.parse(output.slice(start));
+          const data: unknown = JSON.parse(output.slice(start));
           const evidence = nonbrowserTestEvidence(data, cwd, root);
           testEvidence.push(evidence);
           console.log(JSON.stringify(evidence));
-          skipped = data.numPendingTests > 0 || data.numTodoTests > 0;
+          skipped = evidence.pending > 0 || evidence.todo > 0;
         } catch {
           throw new Error("Missing valid test evidence.");
         }
@@ -140,25 +148,29 @@ const groups: TestGroup[] = [
   {
     name: "repository",
     prerequisites: [],
+    execution: "parallel",
     run: async () => {
       await vitest(".", ["scripts"]);
       await command(".", ["exec", "tsx", "scripts/check-agent-instructions.ts"]);
       await command(".", ["run", "check:cost-tracker-persistence-seam"]);
     },
   },
-  ...["auth", "email", "database", "config", "i18n"].map((name) => ({
+  ...nonbrowserPackages.map((name) => ({
     name: `package/${name}`,
     prerequisites: [],
+    execution: "parallel" as const,
     run: () => vitest(`packages/${name}`, ["--passWithNoTests"]),
   })),
   ...["calculator", "cost-tracker"].map((app) => ({
     name: `${app}/pure`,
     prerequisites: [],
+    execution: "parallel" as const,
     run: () => vitest(`apps/${app}`, inventory[app].pure, 1_800_000),
   })),
   {
     name: "database/create",
     prerequisites: [],
+    execution: "parallel",
     run: async () => {
       const local = await readLocalEnvironment(
         resolve(root, "packages/database/.env"),
@@ -185,11 +197,13 @@ const groups: TestGroup[] = [
   {
     name: "database/migrate",
     prerequisites: ["database/create"],
+    execution: "serial",
     run: () => command("packages/database", ["run", "db:migrate"]),
   },
   {
     name: "database/seed",
     prerequisites: ["database/migrate"],
+    execution: "serial",
     run: async () => {
       if (!handle) throw new Error("Missing run database.");
       pool = new Pool({
@@ -214,12 +228,14 @@ const groups: TestGroup[] = [
   {
     name: "calculator/migrations-and-seed-contract",
     prerequisites: ["database/create"],
+    execution: "serial",
     // Seed convergence/reset contracts intentionally perform multiple complete seeds.
     run: () => vitest("apps/calculator", calculatorExceptions, 1_800_000),
   },
   {
     name: "managed-servers",
     prerequisites: ["database/seed"],
+    execution: "serial",
     run: async () => {
       if (interruption.signal.aborted) throw new Error("Run interrupted.");
       if (!handle) throw new Error("Missing run database.");
@@ -243,35 +259,60 @@ const groups: TestGroup[] = [
   {
     name: "calculator/live",
     prerequisites: ["managed-servers"],
+    execution: "serial",
     run: () => vitest("apps/calculator", inventory.calculator.live, 1_800_000),
   },
   {
     name: "cost-tracker/live",
     prerequisites: ["managed-servers"],
+    execution: "serial",
     run: () =>
       vitest("apps/cost-tracker", inventory["cost-tracker"].live, 1_800_000),
   },
   {
     name: "live-mail",
     prerequisites: ["managed-servers"],
+    execution: "serial",
     run: async () => {
       if (!handle || !servers || !seed)
         throw new Error("Missing email prerequisites.");
-      if (!(await verifyEmailWorkflows({ handle, servers, seed })))
+      if (
+        !(await verifyEmailWorkflows(
+          { handle, servers, seed },
+          interruption.signal,
+        ))
+      )
         throw new Error("Live email failed.");
     },
   },
   {
     name: "development-garage",
     prerequisites: [],
-    run: () =>
-      command("apps/cost-tracker", ["run", "test:garage-storage"], {
+    execution: "parallel",
+    run: async () => {
+      const garageEnvironment = developmentGarageEnvironmentSchema.parse({
+        ...(await readLocalEnvironment(resolve(root, "apps/cost-tracker/.env"))),
+        ...(await readLocalEnvironment(resolve(root, "packages/database/.env"))),
         ...process.env,
-      }),
+      });
+      cleanup.garage = "pending";
+      try {
+        await verifyDevelopmentGarage(garageEnvironment, interruption.signal);
+      } catch (error) {
+        if (error instanceof GarageCleanupError) {
+          cleanup.garage = "failed";
+          cleanup.garageKey = error.key;
+        }
+        throw error;
+      } finally {
+        if (cleanup.garage === "pending") cleanup.garage = "completed";
+      }
+    },
   },
   {
     name: "cleanup/servers",
     prerequisites: [],
+    execution: "cleanup",
     run: async () => {
       if (!servers) return;
       try {
@@ -286,6 +327,7 @@ const groups: TestGroup[] = [
   {
     name: "cleanup/database",
     prerequisites: [],
+    execution: "cleanup",
     run: async () => {
       let failed = false;
       if (pool) {

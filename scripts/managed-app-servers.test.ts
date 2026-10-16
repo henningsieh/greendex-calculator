@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   assertManagedRun,
@@ -282,10 +282,24 @@ describe("managed-app-servers", () => {
     },
     30_000,
   );
-  it("releases ownership and restores declarations after an aborted startup", async () => {
-    const root = await fixture();
-    const controller = new AbortController();
-    try {
+  it.each(["abort", "observation failure"])(
+    "releases ownership and restores declarations after an aborted startup (%s)",
+    async (mode) => {
+      const root = await fixture();
+      const controller = new AbortController();
+      const fetch = globalThis.fetch;
+      const readiness = vi.spyOn(globalThis, "fetch");
+      const observed = new Promise<void>((resolve) => {
+        readiness.mockImplementation(async (...args) => {
+          const response = await fetch(...args);
+          if (
+            response.status === 503 &&
+            response.headers.get("X-Greendex-Test-Run") === "a".repeat(32)
+          )
+            resolve();
+          return response;
+        });
+      });
       const pending = startManagedAppServers(
         root,
         {
@@ -295,34 +309,58 @@ describe("managed-app-servers", () => {
         { calculator: { NOT_READY: "true" }, "cost-tracker": {} },
         { signal: controller.signal },
       );
-      const rejected = expect(pending).rejects.toThrow(/startup failed/);
-      await expect
-        .poll(async () =>
-          readFile(join(root, "apps/calculator/owned-pid"), "utf8"),
-        )
-        .toMatch(/^\d+$/);
-      controller.abort();
-      await rejected;
-      expect(
-        await readFile(join(root, "apps/calculator/next-env.d.ts"), "utf8"),
-      ).toBe("dev baseline");
-      await expect(
-        readFile(join(root, ".turbo/managed-app-declarations.lock")),
-      ).rejects.toThrow();
-      const recovered = await startManagedAppServers(
-        root,
-        {
-          runId: "a".repeat(32),
-          databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
-        },
-        { calculator: {}, "cost-tracker": {} },
-      );
-      await recovered.stop();
-      await assertStopped(root);
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  }, 30_000);
+      let recovered:
+        | Awaited<ReturnType<typeof startManagedAppServers>>
+        | undefined;
+      let observationError: unknown;
+      try {
+        try {
+          await Promise.race([observed, pending]);
+          if (mode === "observation failure")
+            throw new Error("Readiness observation failed");
+        } catch (error) {
+          observationError = error;
+        } finally {
+          controller.abort();
+          await pending.then(
+            (servers) => servers.stop(),
+            () => {},
+          );
+        }
+        expect(observationError).toEqual(
+          mode === "observation failure"
+            ? new Error("Readiness observation failed")
+            : undefined,
+        );
+        await expect(pending).rejects.toThrow(/startup failed/);
+        const pid = Number(
+          await readFile(join(root, "apps/calculator/owned-pid"), "utf8"),
+        );
+        expect(() => process.kill(pid, 0)).toThrow();
+        expect(
+          await readFile(join(root, "apps/calculator/next-env.d.ts"), "utf8"),
+        ).toBe("dev baseline");
+        await expect(
+          readFile(join(root, ".turbo/managed-app-declarations.lock")),
+        ).rejects.toThrow();
+        recovered = await startManagedAppServers(
+          root,
+          {
+            runId: "a".repeat(32),
+            databaseUrl: `postgres://localhost/mail_check_${"a".repeat(32)}`,
+          },
+          { calculator: {}, "cost-tracker": {} },
+        );
+        await recovered.stop();
+        await assertStopped(root);
+      } finally {
+        await recovered?.stop();
+        readiness.mockRestore();
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
   it("refuses to release a replaced ownership record", async () => {
     const root = await fixture();
     const servers = await startManagedAppServers(

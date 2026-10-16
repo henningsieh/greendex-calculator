@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { ImapFlow } from "imapflow";
 import PostalMime from "postal-mime";
 
@@ -39,9 +41,11 @@ export class EmailInbox {
     base: string,
     path: string,
     belongsToWorkflow: (link: URL, html: string) => boolean,
+    signal?: AbortSignal,
   ): Promise<string> {
     const deadline = Date.now() + 60_000;
     while (Date.now() < deadline) {
+      signal?.throwIfAborted();
       await this.boundary();
       const uids = await this.client.search(
         { uid: `${boundary}:*`, subject },
@@ -76,10 +80,11 @@ export class EmailInbox {
           continue;
         }
         if (!belongsToWorkflow(new URL(link), html)) continue;
+        signal?.throwIfAborted();
         this.provenUids.add(uid);
         return link;
       }
-      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      await delay(2_000, undefined, { signal });
     }
     throw new Error("Current workflow email receipt timed out.");
   }

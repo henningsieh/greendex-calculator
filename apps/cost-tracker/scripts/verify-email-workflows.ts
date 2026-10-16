@@ -43,6 +43,10 @@ const execute = promisify(execFile);
 const recipient = "greendex-testing@apps.sieh.org";
 const HTTP_TIMEOUT_MS = 60_000;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 type FailureStage =
   | "assertion"
   | "session"
@@ -59,20 +63,27 @@ type Result = {
 };
 
 /** Cookies and parsed response/link data never enter diagnostics or reports. */
-class HttpSession {
+export class HttpSession {
   private cookies = new Map<string, string>();
-  constructor(readonly base: string) {}
+  constructor(
+    readonly base: string,
+    private readonly signal?: AbortSignal,
+  ) {}
   get cookie(): string {
     return [...this.cookies].map(([key, value]) => `${key}=${value}`).join("; ");
   }
   async request(path: string, body?: unknown): Promise<Response> {
+    this.signal?.throwIfAborted();
     const url = new URL(path, this.base);
     if (url.origin !== this.base)
       throw new Error("Refusing cross-origin workflow request.");
     const response = await fetch(url, {
       method: body === undefined ? "GET" : "POST",
       redirect: "manual",
-      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      signal: AbortSignal.any([
+        ...(this.signal ? [this.signal] : []),
+        AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      ]),
       headers: {
         origin: this.base,
         cookie: this.cookie,
@@ -87,10 +98,32 @@ class HttpSession {
     }
     return response;
   }
-  async auth(path: string, body?: unknown): Promise<Record<string, unknown>> {
+  auth(
+    path: "organization/list",
+    body?: unknown,
+  ): Promise<Record<string, unknown>[]>;
+  auth(path: string, body?: unknown): Promise<Record<string, unknown>>;
+  async auth(
+    path: string,
+    body?: unknown,
+  ): Promise<Record<string, unknown> | Record<string, unknown>[]> {
     const response = await this.request(`/api/auth/${path}`, body);
     if (!response.ok) throw new Error("Supported auth request failed.");
-    return (await response.json()) as Record<string, unknown>;
+    const payload: unknown = await response.json();
+    if (path === "organization/list") {
+      if (
+        !Array.isArray(payload) ||
+        !payload.every(
+          (organization) =>
+            isRecord(organization) && typeof organization.id === "string",
+        )
+      )
+        throw new Error("Supported auth response was invalid.");
+      return payload;
+    }
+    if (!isRecord(payload))
+      throw new Error("Supported auth response was invalid.");
+    return payload;
   }
   rpc(): RouterClient<Router> {
     return createORPCClient(
@@ -98,18 +131,25 @@ class HttpSession {
         origin: this.base,
         url: "/api/rpc",
         headers: () => ({ origin: this.base, cookie: this.cookie }),
-        fetch: (input, init) =>
-          fetch(input, { ...init, signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) }),
+        fetch: (input, init) => {
+          this.signal?.throwIfAborted();
+          return fetch(input, {
+            ...init,
+            signal: AbortSignal.any([
+              ...(this.signal ? [this.signal] : []),
+              ...(init.signal ? [init.signal] : []),
+              AbortSignal.timeout(HTTP_TIMEOUT_MS),
+            ]),
+          });
+        },
       }),
     );
   }
   async signIn(email: string, password: string): Promise<void> {
     await this.auth("sign-in/email", { email, password });
     const response = await this.auth("get-session");
-    const user = response.user as
-      | { email?: string; emailVerified?: boolean }
-      | undefined;
-    if (user?.email !== email || !user.emailVerified)
+    const user = response.user;
+    if (!isRecord(user) || user.email !== email || user.emailVerified !== true)
       throw new Error("Verified sign-in was not established.");
   }
 }
@@ -231,6 +271,7 @@ export async function verifyEmailWorkflows(
   injected?: InjectedEmailRun,
   signal?: AbortSignal,
 ): Promise<boolean> {
+  signal?.throwIfAborted();
   const results: Result[] = [];
   const cleanup = {
     servers: "not-started",
@@ -253,6 +294,7 @@ export async function verifyEmailWorkflows(
     workflow: string,
     action: () => Promise<void>,
   ): Promise<boolean> => {
+    signal?.throwIfAborted();
     const started = Date.now();
     failureStage = "assertion";
     try {
@@ -311,6 +353,7 @@ export async function verifyEmailWorkflows(
         cwd: resolve(root, "packages/database"),
         env: { ...process.env, DATABASE_URL: handle.databaseUrl },
         timeout: 120_000,
+        signal,
       });
       pool = new Pool({
         connectionString: handle.databaseUrl,
@@ -349,6 +392,7 @@ export async function verifyEmailWorkflows(
       durationMs: Date.now() - startedAt,
     });
     for (const app of ["calculator", "cost-tracker"] as const) {
+      signal?.throwIfAborted();
       const base =
         app === "calculator"
           ? servers.calculatorBaseUrl
@@ -362,7 +406,7 @@ export async function verifyEmailWorkflows(
       const name = `${handle.runId}-${app}`;
       const initialPassword = `Test-${randomUUID()}!`;
       let userId: string | undefined;
-      const account = new HttpSession(base);
+      const account = new HttpSession(base, signal);
       const verified = await check(`${app}/signup-verification`, async () => {
         const existing = await db
           .select({ id: schema.user.id })
@@ -379,8 +423,9 @@ export async function verifyEmailWorkflows(
           password: initialPassword,
           callbackURL: `${base}/?run=${handle!.runId}&workflow=signup`,
         });
-        const createdUser = response.user as { id?: string } | undefined;
-        if (!createdUser?.id) throw new Error("Signup did not create a User.");
+        const createdUser = response.user;
+        if (!isRecord(createdUser) || typeof createdUser.id !== "string")
+          throw new Error("Signup did not create a User.");
         userId = createdUser.id;
         failureStage = "inbox-receipt";
         const link = await inbox.deliveredLink(
@@ -389,6 +434,7 @@ export async function verifyEmailWorkflows(
           base,
           "/api/auth/verify-email",
           (_, html) => html.includes(name),
+          signal,
         );
         failureStage = "link-exercise";
         const exercised = await account.request(link);
@@ -412,7 +458,7 @@ export async function verifyEmailWorkflows(
           continue;
         }
         await check(`${app}/organization-invitation`, async () => {
-          const owner = new HttpSession(base);
+          const owner = new HttpSession(base, signal);
           failureStage = "session";
           await owner.signIn(SEED_USER.email, SEED_USER.password);
           await owner.auth("organization/set-active", {
@@ -445,6 +491,7 @@ export async function verifyEmailWorkflows(
             base,
             "/accept-invitation/",
             (url) => url.pathname.split("/").at(-1) === invitationId,
+            signal,
           );
           const deliveredId = new URL(link).pathname.split("/").at(-1)!;
           failureStage = "link-exercise";
@@ -462,12 +509,7 @@ export async function verifyEmailWorkflows(
               .organizations.acceptInvitation({ invitationId: deliveredId });
           failureStage = "assertion";
           const memberships = await account.auth("organization/list");
-          if (
-            !Array.isArray(memberships) ||
-            !memberships.some(
-              (org: { id: string }) => org.id === seed.organizationId,
-            )
-          )
+          if (!memberships.some((org) => org.id === seed.organizationId))
             throw new Error(
               "Invitation acceptance did not establish Membership.",
             );
@@ -488,6 +530,7 @@ export async function verifyEmailWorkflows(
             base,
             "/api/auth/reset-password/",
             (_, html) => html.includes(name),
+            signal,
           );
           failureStage = "link-exercise";
           const response = await account.request(link);
@@ -508,8 +551,8 @@ export async function verifyEmailWorkflows(
             newPassword: nextPassword,
           });
           failureStage = "assertion";
-          await new HttpSession(base).signIn(recipient, nextPassword);
-          const oldSignIn = await new HttpSession(base).request(
+          await new HttpSession(base, signal).signIn(recipient, nextPassword);
+          const oldSignIn = await new HttpSession(base, signal).request(
             "/api/auth/sign-in/email",
             { email: recipient, password: initialPassword },
           );
@@ -521,7 +564,7 @@ export async function verifyEmailWorkflows(
         });
         if (app === "calculator") {
           await check(`${app}/magic-link`, async () => {
-            const fresh = new HttpSession(base);
+            const fresh = new HttpSession(base, signal);
             failureStage = "inbox-receipt";
             const boundary = await inbox.boundary();
             failureStage = "send-accept";
@@ -539,21 +582,19 @@ export async function verifyEmailWorkflows(
                 (url.searchParams.get("callbackURL") || "").includes(
                   handle!.runId,
                 ),
+              signal,
             );
             failureStage = "link-exercise";
             const response = await fresh.request(link);
             if (response.status >= 400) throw new Error("Magic link failed.");
             failureStage = "assertion";
             const session = await fresh.auth("get-session");
-            if (
-              (session.user as { email?: string } | undefined)?.email !==
-              recipient
-            )
+            if (!isRecord(session.user) || session.user.email !== recipient)
               throw new Error("Magic link did not sign in.");
           });
         } else {
           await check(`${app}/participant-invitation`, async () => {
-            const owner = new HttpSession(base);
+            const owner = new HttpSession(base, signal);
             failureStage = "session";
             await owner.signIn(SEED_USER.email, SEED_USER.password);
             await owner.auth("organization/set-active", {
@@ -604,13 +645,14 @@ export async function verifyEmailWorkflows(
               base,
               "/participant-invitations/",
               (url) => url.pathname.split("/").at(-1) === issued.invitationId,
+              signal,
             );
             const url = new URL(link);
             const invitationId = url.pathname.split("/").at(-1)!;
             const secret = url.searchParams.get("secret");
             if (!secret)
               throw new Error("Delivered participant invitation has no secret.");
-            const joiner = new HttpSession(base);
+            const joiner = new HttpSession(base, signal);
             failureStage = "session";
             await joiner.signIn(recipient, currentPassword);
             failureStage = "link-exercise";

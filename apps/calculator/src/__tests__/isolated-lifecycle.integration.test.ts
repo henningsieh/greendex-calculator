@@ -14,6 +14,7 @@ import {
   IsolatedRunCreationError,
   type IsolatedRunHandle,
 } from "@/__tests__/helpers/isolated-run-database";
+import { cleanupLifecycleResources } from "@/__tests__/helpers/lifecycle-cleanup";
 
 /**
  * Isolated seeded cross-app lifecycle (#265).
@@ -65,6 +66,8 @@ interface LifecycleState {
   commit: string;
   fixture: string;
   pool: Pool;
+  poolClosed?: boolean;
+  databaseDisposed?: boolean;
   timings: Record<string, number>;
   results: Record<string, boolean>;
 }
@@ -260,16 +263,18 @@ beforeAll(async () => {
     if (error instanceof IsolatedRunCreationError && error.rollback === "failed")
       handle = error.handle;
     if (state) {
-      await state.pool.end().catch(() => {});
       try {
-        if (!aggregate) await disposeIsolatedRunDatabase(state.handle);
-        state.results.cleanedUp = true;
+        await cleanupLifecycleResources(state, async (ownedHandle) => {
+          if (!aggregate) await disposeIsolatedRunDatabase(ownedHandle);
+        });
         emitReport();
-        // Annulled: afterAll must not retry a completed disposal.
         state = null;
       } catch (cleanupError) {
-        console.error(
-          `Setup failed and run database cleanup also failed: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
+        disposeError = new Error("Lifecycle cleanup failed.");
+        emitReport();
+        throw new AggregateError(
+          [error, cleanupError],
+          "Setup and lifecycle cleanup failed.",
         );
       }
     } else if (handle && !aggregate) {
@@ -456,21 +461,19 @@ async function cleanupLifecycleFixture(
 afterAll(async () => {
   if (!state || state.results.cleanedUp) return;
   const failures: unknown[] = [];
-  try {
-    // Unique fixture ids make interrupted workflow recovery safe and idempotent.
-    await cleanupLifecycleFixture(state.pool, state.fixture);
-    if (aggregate)
-      expect((await state.pool.query("SELECT 1")).rows).toHaveLength(1);
-  } catch (error) {
-    failures.push(error);
+  if (!state.poolClosed && !state.databaseDisposed) {
+    try {
+      await cleanupLifecycleFixture(state.pool, state.fixture);
+      if (aggregate)
+        expect((await state.pool.query("SELECT 1")).rows).toHaveLength(1);
+    } catch (error) {
+      failures.push(error);
+    }
   }
   try {
-    await state.pool.end();
-  } catch (error) {
-    failures.push(error);
-  }
-  try {
-    if (!aggregate) await disposeIsolatedRunDatabase(state.handle);
+    await cleanupLifecycleResources(state, async (ownedHandle) => {
+      if (!aggregate) await disposeIsolatedRunDatabase(ownedHandle);
+    });
   } catch (error) {
     failures.push(error);
   }
