@@ -45,7 +45,7 @@ Environment: `rc04oc8sksggs48ggkwsgsg0`.
 | greendex-preview-postgres | `gcmwapuqoz45mjvtdwl3vgg4` | Preview database server; private `5432`, no public port |
 | greendex-documentation | `nz8kya4kzwatnmbrnxktjkog` | Database-free Next.js/Fumadocs application |
 | carbon-cycle-animation | `zg4ssg84cg48w48ko00sowc8` | Animation application |
-| garage-s3 | `ckhy5vfyielgwo87ha4zaksd` | Garage object storage |
+| greendex-development-s3 | `qvnaqod5vknlufojogo13l1j` | Isolated Garage object storage for local development (bucket `greendex-cost-tracker-development`) |
 
 The local development database uses `postgres:17-alpine`, logical database `greendex_development`, endpoint `188.245.144.137:5489`.
 

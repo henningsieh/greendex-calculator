@@ -2,11 +2,11 @@
 
 import { randomUUID } from "node:crypto";
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
-  member,
   organization,
+  session as sessionsTable,
   user,
   verification,
 } from "@greendex/database/schema";
@@ -15,7 +15,9 @@ import { eq, like } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const emailMocks = vi.hoisted(() => ({
-  sendEmailVerificationEmail: vi.fn().mockResolvedValue(undefined),
+  sendEmailVerificationEmail: vi
+    .fn<(input: { url: string }) => Promise<void>>()
+    .mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -28,6 +30,7 @@ import { router } from "@/lib/orpc/router";
 
 const createdEmails: string[] = [];
 const createdOrganizationIds: string[] = [];
+const caseSessionTokens: string[] = [];
 
 function uniqueEmail() {
   const email = `cost-tracker-auth-${randomUUID()}@example.com`;
@@ -36,6 +39,9 @@ function uniqueEmail() {
 }
 
 afterEach(async () => {
+  for (const token of caseSessionTokens.splice(0)) {
+    await db.delete(sessionsTable).where(eq(sessionsTable.token, token));
+  }
   for (const email of createdEmails.splice(0)) {
     await db.delete(user).where(eq(user.email, email));
     await db
@@ -69,10 +75,12 @@ describe("Cost Tracker Better Auth", () => {
       auth.api.signInEmail({ body: { email, password } }),
     ).rejects.toMatchObject({ statusCode: 403 });
 
-    await db
-      .update(user)
-      .set({ emailVerified: true })
-      .where(eq(user.email, email));
+    const delivered =
+      emailMocks.sendEmailVerificationEmail.mock.calls.at(-1)?.[0];
+    if (!delivered) throw new Error("Verification email was not delivered");
+    const token = new URL(delivered.url).searchParams.get("token");
+    if (!token) throw new Error("Verification email has no token");
+    await auth.api.verifyEmail({ query: { token } });
 
     const response = await auth.api.signInEmail({
       body: { email, password },
@@ -89,56 +97,17 @@ describe("Cost Tracker Better Auth", () => {
   });
 
   it("assigns the newest membership to a new session so dashboard reads are authorized", async () => {
-    const email = uniqueEmail();
-    const password = "correct-horse-battery-staple";
-    const olderOrganizationId = randomUUID();
-    const newestOrganizationId = randomUUID();
-    createdOrganizationIds.push(olderOrganizationId, newestOrganizationId);
-
-    const signUp = await auth.api.signUpEmail({
-      body: { email, name: "Project User", password },
-    });
-    await db
-      .update(user)
-      .set({ emailVerified: true })
-      .where(eq(user.id, signUp.user.id));
-    await db.insert(organization).values([
-      {
-        country: "DE",
-        id: olderOrganizationId,
-        name: "Earlier Organization",
-        slug: `earlier-${olderOrganizationId}`,
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      },
-      {
-        country: "DE",
-        id: newestOrganizationId,
-        name: "Latest Organization",
-        slug: `latest-${newestOrganizationId}`,
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      },
-    ]);
-    await db.insert(member).values([
-      {
-        id: randomUUID(),
-        organizationId: olderOrganizationId,
-        userId: signUp.user.id,
-        role: ORGANIZATION_ROLES.OrganizationAdmin,
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      },
-      {
-        id: randomUUID(),
-        organizationId: newestOrganizationId,
-        userId: signUp.user.id,
-        role: ORGANIZATION_ROLES.OrganizationAdmin,
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      },
-    ]);
+    // SEED_SCENARIOS.reviewFixes.newestMembership owns the ordered Membership
+    // precondition. Sign-in is the behavior that selects the newest one.
+    const email = "auth-newest-membership-canonical@example.org";
+    const password = SEED_USER.password;
+    const newestOrganizationId = "auth-newest-organization-canonical";
 
     const response = await auth.api.signInEmail({
       body: { email, password },
-      asResponse: true,
+      returnHeaders: true,
     });
+    caseSessionTokens.push(response.response.token);
     const cookie = response.headers.get("set-cookie")?.split(";")[0];
     if (!cookie) throw new Error("Sign-in did not create a session cookie");
 

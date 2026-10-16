@@ -1,0 +1,424 @@
+import { spawn, type ChildProcess } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import {
+  copyFile,
+  mkdir,
+  open,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { createServer } from "node:net";
+import { resolve } from "node:path";
+import { parseEnv } from "node:util";
+
+export interface ManagedRun {
+  runId: string;
+  databaseUrl: string;
+}
+
+export function assertManagedRun({ runId, databaseUrl }: ManagedRun): void {
+  if (!/^[a-f0-9]{32}$/.test(runId))
+    throw new Error("Managed server requires a run identity.");
+  const database = new URL(databaseUrl).pathname.slice(1);
+  if (
+    !/^[a-z_]+_[a-f0-9]{32}$/.test(database) ||
+    !database.endsWith(`_${runId}`)
+  ) {
+    throw new Error("Managed server requires the exact run-owned database.");
+  }
+}
+
+export async function readLocalEnvironment(
+  path: string,
+): Promise<Record<string, string>> {
+  const values = parseEnv(await readFile(path, "utf8"));
+  return Object.fromEntries(
+    Object.entries(values).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  );
+}
+
+async function freePort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  if (!address || typeof address === "string")
+    throw new Error("No managed port available.");
+  await new Promise<void>((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve())),
+  );
+  return address.port;
+}
+
+async function readOptionalFile(path: string): Promise<string | undefined> {
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+interface OwnedProcess {
+  pid?: number;
+  owned: boolean;
+}
+
+function groupAlive(pid: number): boolean {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ESRCH") return false;
+    throw error;
+  }
+}
+
+/** Only handles returned by this module may authorize group termination. */
+const ownedProcesses = new WeakSet<object>();
+export async function stopOwnedProcess(handle: OwnedProcess): Promise<void> {
+  if (!handle.owned || !handle.pid || !ownedProcesses.has(handle))
+    throw new Error("Refusing to stop an unowned process.");
+  if (!groupAlive(handle.pid)) return;
+  process.kill(-handle.pid, "SIGTERM");
+  const deadline = Date.now() + 10_000;
+  while (groupAlive(handle.pid) && Date.now() < deadline)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  if (groupAlive(handle.pid)) {
+    process.kill(-handle.pid, "SIGKILL");
+    const killDeadline = Date.now() + 5_000;
+    while (groupAlive(handle.pid) && Date.now() < killDeadline)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    if (groupAlive(handle.pid)) throw new Error("Owned process cleanup failed.");
+  }
+}
+
+/** Bounded task subprocess; output remains private, and descendants are owned too. */
+export async function runManagedCommand(
+  command: string,
+  args: string[],
+  options: {
+    cwd: string;
+    env: NodeJS.ProcessEnv;
+    timeoutMs: number;
+    signal?: AbortSignal;
+    inspectOutput?: (output: string) => void;
+  },
+): Promise<void> {
+  const child = spawn(command, args, {
+    cwd: options.cwd,
+    env: options.env,
+    detached: true,
+    stdio: options.inspectOutput ? ["ignore", "pipe", "ignore"] : "ignore",
+  });
+  let output = "";
+  child.stdout?.on("data", (chunk: Buffer) => {
+    if (output.length < 16_000_000) output += chunk.toString();
+  });
+  const handle = { pid: child.pid, owned: true };
+  ownedProcesses.add(handle);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const fail = () =>
+        reject(new Error("Managed command timed out or interrupted."));
+      const timer = setTimeout(fail, options.timeoutMs);
+      options.signal?.addEventListener("abort", fail, { once: true });
+      child.once("error", () => {
+        clearTimeout(timer);
+        options.signal?.removeEventListener("abort", fail);
+        reject(new Error("Managed command could not start."));
+      });
+      child.once("exit", (code) => {
+        clearTimeout(timer);
+        options.signal?.removeEventListener("abort", fail);
+        if (code === 0) resolve();
+        else reject(new Error("Managed command failed."));
+      });
+      if (options.signal?.aborted) fail();
+    });
+  } finally {
+    if (handle.pid) await stopOwnedProcess(handle);
+    options.inspectOutput?.(output);
+  }
+}
+
+export async function isManagedAuthReady(
+  response: Response,
+  runId: string,
+): Promise<boolean> {
+  return (
+    response.ok &&
+    response.headers.get("X-Greendex-Test-Run") === runId &&
+    (await response.text()) === "null"
+  );
+}
+
+interface ManagedServerOptions {
+  signal?: AbortSignal;
+  ownershipTimeoutMs?: number;
+}
+
+/** No stale-lock takeover: an interrupted owner requires verified recovery,
+ * never guessing from a PID or removing another run's declaration ownership. */
+async function acquireDeclarationOwnership(
+  root: string,
+  runId: string,
+  options: ManagedServerOptions,
+): Promise<() => Promise<void>> {
+  const directory = resolve(root, ".turbo");
+  await mkdir(directory, { recursive: true });
+  const path = resolve(directory, "managed-app-declarations.lock");
+  const identity = JSON.stringify({
+    runId,
+    pid: process.pid,
+    nonce: randomUUID(),
+  });
+  const deadline = Date.now() + (options.ownershipTimeoutMs ?? 120_000);
+  while (true) {
+    options.signal?.throwIfAborted();
+    let file;
+    try {
+      file = await open(path, "wx", 0o600);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      if (Date.now() >= deadline)
+        throw new Error(
+          "Managed declaration ownership acquisition timed out. Check .turbo/managed-app-declarations.lock; remove it only after confirming no managed run still owns it.",
+        );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      continue;
+    }
+    const ownedStat = await file.stat();
+    try {
+      await file.writeFile(identity);
+    } catch (error) {
+      await file.close();
+      const current = await stat(path);
+      if (current.ino === ownedStat.ino && current.dev === ownedStat.dev)
+        await rm(path);
+      throw error;
+    }
+    await file.close();
+    return async () => {
+      const current = await stat(path);
+      if (
+        current.ino !== ownedStat.ino ||
+        current.dev !== ownedStat.dev ||
+        (await readFile(path, "utf8")) !== identity
+      )
+        throw new Error("Managed declaration ownership changed; lock preserved.");
+      await rm(path);
+    };
+  }
+}
+
+export interface ManagedAppServers {
+  calculatorBaseUrl: string;
+  costTrackerBaseUrl: string;
+  environment: Record<string, string>;
+  stop(): Promise<void>;
+}
+
+/** Dedicated servers only: no discovery or attachment to ordinary dev processes. */
+export async function startManagedAppServers(
+  root: string,
+  run: ManagedRun,
+  environments: Record<"calculator" | "cost-tracker", Record<string, string>>,
+  options: ManagedServerOptions = {},
+): Promise<ManagedAppServers> {
+  assertManagedRun(run);
+  const ports = [await freePort(), await freePort()];
+  while (ports[0] === ports[1]) ports[1] = await freePort();
+  const bases = ports.map((port) => `http://127.0.0.1:${port}`);
+  const environment = {
+    TEST_RUN_ID: run.runId,
+    CALCULATOR_TEST_BASE_URL: bases[0],
+    COST_TRACKER_TEST_BASE_URL: bases[1],
+  };
+  const owned: {
+    child: ChildProcess;
+    handle: OwnedProcess;
+    directory: string;
+    tsconfig: string;
+    originalDeclarations: string | undefined;
+    generatedDeclarations: string | undefined;
+  }[] = [];
+  const releaseOwnership = await acquireDeclarationOwnership(
+    root,
+    run.runId,
+    options,
+  );
+  let stopping: Promise<void> | undefined;
+  const stop = () =>
+    (stopping ??= (async () => {
+      const failures: unknown[] = [];
+      let processesStopped = true;
+      for (const app of [...owned].reverse()) {
+        try {
+          try {
+            if (app.handle.pid) await stopOwnedProcess(app.handle);
+          } catch (error) {
+            processesStopped = false;
+            throw error;
+          }
+          // Next always writes app-root next-env.d.ts, even with a separate tsconfig.
+          // Restore only our captured output; never overwrite a concurrent external write.
+          const declarationsPath = resolve(app.directory, "next-env.d.ts");
+          const current = await readOptionalFile(declarationsPath);
+          if (current !== app.originalDeclarations) {
+            if (current !== app.generatedDeclarations)
+              failures.push(
+                new Error(
+                  "Generated declarations changed externally; preserved.",
+                ),
+              );
+            else if (app.originalDeclarations === undefined)
+              await rm(declarationsPath, { force: true });
+            else await writeFile(declarationsPath, app.originalDeclarations);
+          }
+          await rm(app.tsconfig, { force: true });
+          await rm(resolve(app.directory, ".next/test-runs", run.runId), {
+            recursive: true,
+            force: true,
+          });
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (processesStopped) {
+        try {
+          await releaseOwnership();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (failures.length)
+        throw new AggregateError(failures, "Managed server cleanup failed.");
+    })());
+  try {
+    options.signal?.throwIfAborted();
+    for (const [index, app] of (
+      ["calculator", "cost-tracker"] as const
+    ).entries()) {
+      options.signal?.throwIfAborted();
+      const directory = resolve(root, "apps", app);
+      const tsconfig = resolve(directory, `.tsconfig-test-${run.runId}.json`);
+      const originalDeclarations = await readOptionalFile(
+        resolve(directory, "next-env.d.ts"),
+      );
+      await copyFile(resolve(directory, "tsconfig.json"), tsconfig);
+      const child = spawn(
+        process.execPath,
+        [
+          resolve(directory, "node_modules/next/dist/bin/next"),
+          "dev",
+          "--port",
+          String(ports[index]),
+          "--hostname",
+          "127.0.0.1",
+        ],
+        {
+          cwd: directory,
+          detached: true,
+          stdio: "ignore",
+          env: {
+            ...process.env,
+            ...environments[app],
+            ...environment,
+            DATABASE_URL: run.databaseUrl,
+            NEXT_PUBLIC_BASE_URL: bases[index],
+            PORT: String(ports[index]),
+            COST_TRACKER_PORT: String(ports[index]),
+            NODE_ENV: "development",
+            NEXT_TELEMETRY_DISABLED: "1",
+          },
+        },
+      );
+      const handle = { pid: child.pid, owned: true };
+      ownedProcesses.add(handle);
+      const ownedApp = {
+        child,
+        handle,
+        directory,
+        tsconfig,
+        originalDeclarations,
+        generatedDeclarations: undefined as string | undefined,
+      };
+      owned.push(ownedApp);
+      let failed = false;
+      child.once("error", () => {
+        failed = true;
+      });
+      const deadline = Date.now() + 120_000;
+      let ready = false;
+      while (
+        Date.now() < deadline &&
+        !options.signal?.aborted &&
+        !failed &&
+        child.exitCode === null &&
+        child.signalCode === null
+      ) {
+        try {
+          const response = await fetch(`${bases[index]}/api/auth/get-session`, {
+            signal: AbortSignal.any([
+              AbortSignal.timeout(5_000),
+              ...(options.signal ? [options.signal] : []),
+            ]),
+            redirect: "manual",
+          });
+          if (await isManagedAuthReady(response, run.runId)) {
+            ready = true;
+            break;
+          }
+        } catch {
+          /* Readiness is bounded; no raw URLs/errors reach reports. */
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      const declarations = await readOptionalFile(
+        resolve(directory, "next-env.d.ts"),
+      );
+      if (declarations?.includes(`.next/test-runs/${run.runId}/`))
+        ownedApp.generatedDeclarations = declarations;
+      options.signal?.throwIfAborted();
+      if (!ready || child.exitCode !== null || child.signalCode !== null)
+        throw new Error("Managed app did not become ready.");
+      // Auth proves run ownership; RPC's empty path compiles its route without
+      // invoking any procedure, before HTTP tests start their shorter timers.
+      const rpcResponse = await fetch(`${bases[index]}/api/rpc`, {
+        signal: AbortSignal.any([
+          AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+          ...(options.signal ? [options.signal] : []),
+        ]),
+        redirect: "manual",
+      });
+      if (
+        rpcResponse.status !== 404 ||
+        (await rpcResponse.text()) !== "Not found"
+      )
+        throw new Error("Managed RPC route did not become ready.");
+    }
+    return {
+      calculatorBaseUrl: bases[0],
+      costTrackerBaseUrl: bases[1],
+      environment,
+      stop,
+    };
+  } catch (error) {
+    try {
+      await stop();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Managed application startup and cleanup failed.",
+      );
+    }
+    throw new Error("Managed application startup failed.", { cause: error });
+  }
+}

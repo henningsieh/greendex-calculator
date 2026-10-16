@@ -6,6 +6,10 @@ export const env = createEnv({
   skipValidation: process.env.NEXT_PHASE === "phase-production-build",
   server: {
     NODE_ENV: z.enum(["development", "production", "test"]),
+    TEST_RUN_ID: z
+      .string()
+      .regex(/^[a-f0-9]{32}$/)
+      .optional(),
     PORT: z.preprocess(
       (val) => (typeof val === "string" ? Number(val) : val),
       z.number().int().min(1).max(65_535),
@@ -81,6 +85,7 @@ export const env = createEnv({
     SMTP_PASSWORD: process.env.SMTP_PASSWORD,
     SMTP_SECURE: process.env.SMTP_SECURE,
     NODE_ENV: process.env.NODE_ENV,
+    TEST_RUN_ID: process.env.TEST_RUN_ID,
     PORT: process.env.PORT,
     ORPC_DEV_DELAY_MS: process.env.ORPC_DEV_DELAY_MS,
     SOCKET_PORT: process.env.SOCKET_PORT,

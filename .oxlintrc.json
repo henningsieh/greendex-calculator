@@ -292,8 +292,15 @@
       }
     },
     {
-      "files": ["packages/auth/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
+      "files": [
+        "packages/config/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
+        "packages/database/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
+        "packages/i18n/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
+      ],
       "rules": {
+        "better-tailwindcss/no-conflicting-classes": "off",
+        "better-tailwindcss/no-deprecated-classes": "off",
+        "better-tailwindcss/no-duplicate-classes": "off",
         "better-tailwindcss/enforce-canonical-classes": "off"
       }
     }

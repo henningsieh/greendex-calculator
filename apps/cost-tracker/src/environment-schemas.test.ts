@@ -18,7 +18,7 @@ const validServerEnvironment = {
   SMTP_SECURE: "false",
   S3_ENDPOINT: "https://s3-garage.apps.sieh.org",
   S3_REGION: "garage",
-  S3_BUCKET: "ambitia-cost-tracker-development",
+  S3_BUCKET: "greendex-cost-tracker-development",
   S3_ACCESS_KEY_ID: "access-key",
   S3_SECRET_ACCESS_KEY: "secret-key",
   S3_FORCE_PATH_STYLE: "true",

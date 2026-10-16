@@ -11,6 +11,7 @@ export const env = createEnv({
   client: CostTrackerClientEnvironmentSchema.shape,
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
+    TEST_RUN_ID: process.env.TEST_RUN_ID,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,

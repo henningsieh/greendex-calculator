@@ -1,27 +1,26 @@
 // @vitest-environment node
 
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   claimsTable,
-  hostProjectAssignmentsTable as hostAssignments,
   member,
   organization,
   participantAgreementAcceptancesTable as acceptances,
   participantProfilesTable as profiles,
   participantEntryTokensTable as entryTokens,
-  partnerCoordinatorAssignmentsTable as assignments,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
-  projectsTable as projects,
+  projectsTable,
   user,
 } from "@greendex/database/schema";
 import { ORPCError, createRouterClient } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -64,18 +63,37 @@ import {
 import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { createParticipationProcedures } from "@/features/projects/procedures/participations";
 
+/**
+ * Canonical seed identities for the onboarding Project (Climate Action
+ * Workshop) with Partnerships to the second and third Partner Organizations. The Owner
+ * issues; the seeded Invitee joins. Issuance and redemption go through the
+ * procedures under test; per-test tokens, Participations, claims, profiles,
+ * acceptances, and Memberships are removed afterwards without deleting
+ * canonical actors. See `SEED_SCENARIOS` in `apps/calculator/scripts/seed.ts`.
+ */
+const SEED_ORG_SLUG = "seed-org";
+const SEED_PARTNER_SLUG = "seed-second-partner-org";
+const SEED_SECOND_PARTNER_SLUG = "seed-third-partner-org";
+const SEED_ONBOARDING_PROJECT_NAME = "Climate Action Workshop";
+const SEED_OWNER_EMAIL = "owner@sieh.org";
+const recipientEmail = "seed-onboarding-invitee@example.org";
+const secondInviteeEmail = "seed-second-onboarding-invitee@example.org";
 const suffix = randomUUID();
-const host = `onboarding-host-${suffix}`;
-const partner = `onboarding-partner-${suffix}`;
-const otherPartner = `onboarding-other-${suffix}`;
-const project = `onboarding-project-${suffix}`;
-const partnership = `onboarding-partnership-${suffix}`;
-const otherPartnership = `onboarding-other-partnership-${suffix}`;
-const owner = `onboarding-owner-${suffix}`;
-const recipient = `onboarding-recipient-${suffix}`;
-const recipientEmail = `recipient-${suffix}@example.org`;
-let actor = owner;
-let activeOrganizationId = partner;
+let host = "";
+let partner = "";
+let otherPartner = "";
+let project = "";
+let partnership = "";
+let otherPartnership = "";
+let owner = "";
+let recipient = "";
+let secondInvitee = "";
+let coordinator = "";
+let partnerParticipant = "";
+const roleInvitees = new Map<string, string>();
+const baselineMemberships: (typeof member.$inferSelect)[] = [];
+let actor = "";
+let activeOrganizationId: string | null = null;
 let version = { id: "fixture-agreement-v1", contentHash: "fixture-hash-v1" };
 const client = createRouterClient(
   {
@@ -122,82 +140,126 @@ async function authorizedActiveRole(permissions: Record<string, string[]>) {
 }
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values([
-    {
-      id: owner,
-      name: "Owner",
-      email: `owner-${suffix}@example.org`,
-      emailVerified: true,
-    },
-    {
-      id: recipient,
-      name: "Recipient",
-      email: recipientEmail,
-      emailVerified: true,
-    },
-  ]);
-  await db.insert(organization).values([
-    { country: "DE", id: host, name: "Host", slug: host, createdAt: now },
-    {
-      country: "DE",
-      id: partner,
-      name: "Partner",
-      slug: partner,
-      createdAt: now,
-    },
-    {
-      country: "DE",
-      id: otherPartner,
-      name: "Other partner",
-      slug: otherPartner,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(member).values({
-    id: randomUUID(),
-    organizationId: partner,
-    userId: owner,
-    role: ORGANIZATION_ROLES.OrganizationOwner,
-    createdAt: now,
+  const seedHost = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  await db.insert(projects).values({
-    id: project,
-    name: "Project",
-    startDate: now,
-    endDate: now,
-    location: "Riga",
-    country: "LV" as const,
-    organizationId: host,
+  if (!seedHost)
+    throw new Error("Canonical seed Hosting Organization is missing");
+  const seedPartner = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_PARTNER_SLUG),
   });
-  await db.insert(hostAssignments).values({ projectId: project, userId: owner });
-  await db.insert(partnerships).values([
-    { id: partnership, projectId: project, organizationId: partner },
-    { id: otherPartnership, projectId: project, organizationId: otherPartner },
-  ]);
+  if (!seedPartner)
+    throw new Error("Canonical seed Partner Organization is missing");
+  const seedSecond = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_SECOND_PARTNER_SLUG),
+  });
+  if (!seedSecond)
+    throw new Error("Canonical second Partner Organization is missing");
+  const seedProject = await db.query.projectsTable.findFirst({
+    where: and(
+      eq(projectsTable.organizationId, seedHost.id),
+      eq(projectsTable.name, SEED_ONBOARDING_PROJECT_NAME),
+    ),
+  });
+  if (!seedProject) throw new Error("Canonical onboarding Project is missing");
+  const mainPartnership =
+    await db.query.projectPartnerOrganizationsTable.findFirst({
+      where: and(
+        eq(partnerships.projectId, seedProject.id),
+        eq(partnerships.organizationId, seedPartner.id),
+      ),
+    });
+  if (!mainPartnership)
+    throw new Error("Canonical onboarding Partnership is missing");
+  const secondPartnership =
+    await db.query.projectPartnerOrganizationsTable.findFirst({
+      where: and(
+        eq(partnerships.projectId, seedProject.id),
+        eq(partnerships.organizationId, seedSecond.id),
+      ),
+    });
+  if (!secondPartnership)
+    throw new Error("Canonical onboarding second Partnership is missing");
+  async function userIdFor(email: string): Promise<string> {
+    const stored = await db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    if (!stored) throw new Error(`Canonical seed User is missing: ${email}`);
+    return stored.id;
+  }
+  host = seedHost.id;
+  partner = seedPartner.id;
+  otherPartner = seedSecond.id;
+  project = seedProject.id;
+  partnership = mainPartnership.id;
+  otherPartnership = secondPartnership.id;
+  owner = await userIdFor(SEED_OWNER_EMAIL);
+  recipient = await userIdFor(recipientEmail);
+  secondInvitee = await userIdFor(secondInviteeEmail);
+  coordinator = await userIdFor("seed-coordinator@example.org");
+  partnerParticipant = await userIdFor("seed-participant@example.org");
+  for (const [name, role] of [
+    ["owner", "owner"],
+    ["admin", "admin"],
+    ["participant", "participant"],
+    ["coordinator", ORGANIZATION_ROLES.ProjectCoordinator],
+    [
+      "combined",
+      `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+    ],
+  ]) {
+    const id = await userIdFor(`seed-onboarding-${name}@example.org`);
+    roleInvitees.set(role!, id);
+    baselineMemberships.push(
+      ...(await db
+        .select()
+        .from(member)
+        .where(and(eq(member.userId, id), eq(member.organizationId, host)))),
+    );
+  }
+  expect(baselineMemberships).toHaveLength(5);
+  expect(
+    await db.query.member.findFirst({
+      where: and(eq(member.userId, owner), eq(member.organizationId, host)),
+    }),
+  ).toMatchObject({ role: ORGANIZATION_ROLES.OrganizationOwner });
+  actor = owner;
+  activeOrganizationId = partner;
 });
 
 beforeEach(async () => {
+  recipient = (await db.query.user.findFirst({
+    where: eq(user.email, recipientEmail),
+  }))!.id;
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
+  await db.delete(acceptances).where(eq(acceptances.userId, secondInvitee));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
+  await db.delete(profiles).where(eq(profiles.userId, secondInvitee));
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(claimsTable).where(eq(claimsTable.partnershipId, partnership));
   await db.delete(member).where(eq(member.userId, recipient));
+  await db.delete(member).where(eq(member.userId, secondInvitee));
   actor = owner;
   activeOrganizationId = partner;
   version = { id: "fixture-agreement-v1", contentHash: "fixture-hash-v1" };
   vi.clearAllMocks();
   delivery.sendParticipantInvitation.mockResolvedValue(undefined);
-  authMocks.getSession.mockImplementation(async () => ({
-    user: {
-      id: actor,
-      name: actor === recipient ? "Recipient" : "Owner",
-      email: actor === recipient ? recipientEmail : `owner-${suffix}@example.org`,
-      emailVerified: true,
-    },
-    session: { id: randomUUID(), activeOrganizationId },
-  }));
+  authMocks.getSession.mockImplementation(async () => {
+    const stored = await db.query.user.findFirst({
+      where: eq(user.id, actor),
+    });
+    if (!stored) throw new Error(`Seed user is missing: ${actor}`);
+    return {
+      user: {
+        id: actor,
+        name: stored.name,
+        email: stored.email,
+        emailVerified: true,
+      },
+      session: { id: randomUUID(), activeOrganizationId },
+    };
+  });
   // Faithful stand-in for the server-only participant-membership endpoint:
   // fresh read, idempotent resume, compare-and-swap on the expected role.
   authMocks.grantParticipantMembership.mockImplementation(
@@ -282,21 +344,77 @@ beforeEach(async () => {
   );
 });
 
+afterEach(async () => {
+  for (const baseline of baselineMemberships) {
+    await db.delete(acceptances).where(eq(acceptances.userId, baseline.userId));
+    await db.delete(profiles).where(eq(profiles.userId, baseline.userId));
+    await db
+      .delete(participants)
+      .where(
+        and(
+          eq(participants.projectId, project),
+          eq(participants.userId, baseline.userId),
+        ),
+      );
+    await db
+      .update(member)
+      .set({ role: baseline.role })
+      .where(eq(member.id, baseline.id));
+  }
+  recipient = (await db.query.user.findFirst({
+    where: eq(user.email, recipientEmail),
+  }))!.id;
+});
+
 afterAll(async () => {
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
+  await db.delete(acceptances).where(eq(acceptances.userId, secondInvitee));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
+  await db.delete(profiles).where(eq(profiles.userId, secondInvitee));
   await db.delete(participants).where(eq(participants.projectId, project));
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
   await db.delete(claimsTable).where(eq(claimsTable.partnershipId, partnership));
-  await db.delete(partnerships).where(eq(partnerships.projectId, project));
-  await db.delete(projects).where(eq(projects.id, project));
   await db.delete(member).where(eq(member.userId, recipient));
-  await db.delete(member).where(eq(member.userId, owner));
-  await db.delete(organization).where(eq(organization.id, otherPartner));
-  await db.delete(organization).where(eq(organization.id, partner));
-  await db.delete(organization).where(eq(organization.id, host));
-  await db.delete(user).where(eq(user.id, recipient));
-  await db.delete(user).where(eq(user.id, owner));
+  await db.delete(member).where(eq(member.userId, secondInvitee));
+  expect(
+    await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    }),
+    "canonical seed Hosting Organization was deleted",
+  ).not.toBeUndefined();
+  expect(
+    await db.query.projectsTable.findFirst({
+      where: and(
+        eq(projectsTable.organizationId, host),
+        eq(projectsTable.name, SEED_ONBOARDING_PROJECT_NAME),
+      ),
+    }),
+    "canonical onboarding Project was deleted",
+  ).not.toBeUndefined();
+  for (const email of [SEED_OWNER_EMAIL, recipientEmail, secondInviteeEmail]) {
+    expect(
+      await db.query.user.findFirst({ where: eq(user.email, email) }),
+      `canonical seed User was deleted: ${email}`,
+    ).not.toBeUndefined();
+  }
+  expect(
+    await db.query.member.findFirst({
+      where: and(eq(member.userId, owner), eq(member.organizationId, host)),
+    }),
+  ).toMatchObject({ role: ORGANIZATION_ROLES.OrganizationOwner });
+  for (const baseline of baselineMemberships) {
+    expect(
+      await db.query.member.findFirst({ where: eq(member.id, baseline.id) }),
+    ).toMatchObject({ role: baseline.role });
+  }
+  for (const inviteeId of [recipient, secondInvitee]) {
+    expect(
+      await db.query.member.findMany({
+        where: eq(member.userId, inviteeId),
+      }),
+      "seed Invitee kept a case Membership",
+    ).toEqual([]);
+  }
 });
 
 describe("Participant onboarding procedures", () => {
@@ -517,9 +635,9 @@ describe("Participant onboarding procedures", () => {
       {
         participationId: joined.participationId,
         projectId: project,
-        projectName: "Project",
-        representedOrganizationName: "Partner",
-        hostingOrganizationName: "Host",
+        projectName: "Climate Action Workshop",
+        representedOrganizationName: "Seed Second Partner Organization",
+        hostingOrganizationName: "Seed Organization",
       },
     ]);
     version = { id: "fixture-agreement-v2", contentHash: "fixture-hash-v2" };
@@ -571,32 +689,29 @@ describe("Participant onboarding procedures", () => {
       agreement: { accepted: true },
     });
     // A second partner's link is never authority to replace a previous Participation.
-    await db.insert(entryTokens).values({
+    // The canonical Owner also owns the third Partner Organization.
+    actor = owner;
+    activeOrganizationId = otherPartner;
+    const second = await client.participantOnboarding.createRegistrationLink({
       partnershipId: otherPartnership,
-      projectId: project,
-      email: null,
-      secretHash: createHash("sha256").update("other-secret").digest("hex"),
-      expiresAt: null,
-      issuedByUserId: owner,
     });
-    const second = (
-      await db
-        .select()
-        .from(entryTokens)
-        .where(eq(entryTokens.partnershipId, otherPartnership))
-    )[0]!;
     actor = recipient;
-    await expect(
-      client.participantOnboarding.join({
-        source: { kind: "link", id: second.id, secret: "other-secret" },
-        profile: { fullName: "Recipient", country: "LV" as const },
-        agreement: { accepted: true },
-      }),
-    ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-      message:
-        "You already joined this Project through another Partner Organization.",
-    });
+    activeOrganizationId = partner;
+    try {
+      await expect(
+        client.participantOnboarding.join({
+          source: { kind: "link", id: second.id, secret: second.secret },
+          profile: { fullName: "Recipient", country: "LV" as const },
+          agreement: { accepted: true },
+        }),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message:
+          "You already joined this Project through another Partner Organization.",
+      });
+    } finally {
+      activeOrganizationId = partner;
+    }
   });
 
   it("creates additional independent links and closes only the selected link", async () => {
@@ -655,16 +770,22 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("blocks reopening registration after the Partnership's Claim is submitted", async () => {
-    const link = await client.participantOnboarding.createRegistrationLink({
-      partnershipId: partnership,
-    });
-    await client.participantOnboarding.setRegistrationLinkOpen({
-      id: link.id,
-      open: false,
-    });
-    await db
-      .insert(claimsTable)
-      .values({ partnershipId: partnership, status: "submitted" });
+    // SEED_SCENARIOS.reviewFixes.submittedRegistration supplies a revoked
+    // link on a submitted Claim; only the reopening behavior is under test.
+    const link = { id: "onboarding-submitted-link-canonical" };
+    expect(
+      (
+        await db
+          .select()
+          .from(claimsTable)
+          .where(
+            eq(
+              claimsTable.partnershipId,
+              "onboarding-submitted-partnership-canonical",
+            ),
+          )
+      )[0]?.status,
+    ).toBe("submitted");
     await expect(
       client.participantOnboarding.setRegistrationLinkOpen({
         id: link.id,
@@ -696,14 +817,9 @@ describe("Participant onboarding procedures", () => {
       `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
     ]) {
       await db.delete(participants).where(eq(participants.projectId, project));
-      await db.delete(member).where(eq(member.userId, recipient));
-      await db.insert(member).values({
-        id: randomUUID(),
-        userId: recipient,
-        organizationId: host,
-        role,
-        createdAt: new Date(),
-      });
+      recipient = roleInvitees.get(role)!;
+      expect(recipient).toBeTruthy();
+      actor = recipient;
       await join();
       expect(await memberships()).toEqual([
         {
@@ -741,13 +857,7 @@ describe("Participant onboarding procedures", () => {
     const link = await client.participantOnboarding.createRegistrationLink({
       partnershipId: partnership,
     });
-    await db.insert(member).values({
-      id: randomUUID(),
-      userId: recipient,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: new Date(),
-    });
+    recipient = roleInvitees.get(ORGANIZATION_ROLES.ProjectCoordinator)!;
     actor = recipient;
     const input = {
       source: { kind: "link" as const, id: link.id, secret: link.secret },
@@ -785,13 +895,7 @@ describe("Participant onboarding procedures", () => {
     const link = await client.participantOnboarding.createRegistrationLink({
       partnershipId: partnership,
     });
-    await db.insert(member).values({
-      id: randomUUID(),
-      userId: recipient,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: new Date(),
-    });
+    recipient = roleInvitees.get(ORGANIZATION_ROLES.ProjectCoordinator)!;
     actor = recipient;
     const input = {
       source: { kind: "link" as const, id: link.id, secret: link.secret },
@@ -1010,14 +1114,6 @@ describe("Participant onboarding procedures", () => {
           .where(eq(entryTokens.id, first.invitationId))
       )[0]?.status,
     ).toBe("pending");
-    const otherMembershipId = randomUUID();
-    await db.insert(member).values({
-      id: otherMembershipId,
-      organizationId: otherPartner,
-      userId: owner,
-      role: ORGANIZATION_ROLES.OrganizationOwner,
-      createdAt: new Date(),
-    });
     activeOrganizationId = otherPartner;
     try {
       await expect(
@@ -1035,16 +1131,9 @@ describe("Participant onboarding procedures", () => {
         )[0]?.status,
       ).toBe("pending");
     } finally {
-      await db.delete(member).where(eq(member.id, otherMembershipId));
+      activeOrganizationId = partner;
     }
     activeOrganizationId = host;
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: host,
-      userId: owner,
-      role: ORGANIZATION_ROLES.OrganizationOwner,
-      createdAt: new Date(),
-    });
     try {
       // ADR-0015: the Hosting Organization issues no participant entry points,
       // so it can no longer take an invitation over from the Partner side.
@@ -1065,9 +1154,7 @@ describe("Participant onboarding procedures", () => {
         { id: first.invitationId, partnershipId: partnership },
       ]);
     } finally {
-      await db
-        .delete(member)
-        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
+      activeOrganizationId = partner;
     }
   });
 
@@ -1187,7 +1274,8 @@ describe("Participant onboarding procedures", () => {
       profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true as const },
     };
-    // Concurrent legacy email-only row forces the participation insert to fail after the grant.
+    // A legacy email-only collision cannot be created through authenticated
+    // onboarding. Inject it to exercise rollback after the supported grant.
     const [conflict] = await db
       .insert(participants)
       .values({
@@ -1227,13 +1315,16 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("blocks an invitation to an already participating email", async () => {
-    await db.insert(participants).values({
-      projectId: project,
-      representedOrganizationId: partner,
-      displayName: "Recipient",
-      userId: recipient,
-      email: recipientEmail,
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
     });
+    actor = recipient;
+    await client.participantOnboarding.join({
+      source: { kind: "link", id: link.id, secret: link.secret },
+      profile: { fullName: "Recipient", country: "LV" },
+      agreement: { accepted: true },
+    });
+    actor = owner;
     await expect(
       client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
@@ -1244,7 +1335,12 @@ describe("Participant onboarding procedures", () => {
       await db
         .select()
         .from(entryTokens)
-        .where(eq(entryTokens.projectId, project)),
+        .where(
+          and(
+            eq(entryTokens.projectId, project),
+            eq(entryTokens.email, recipientEmail),
+          ),
+        ),
     ).toHaveLength(0);
   });
 
@@ -1335,6 +1431,7 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("relies on the database to reject non-normalized participation emails", async () => {
+    // This DB-rejection path cannot be expressed by validated onboarding.
     // project_participant_email_normalized (since migration 0015) makes a
     // non-normalized legacy row impossible; the procedure's lower()
     // comparisons are defense-in-depth over this invariant.
@@ -1350,93 +1447,62 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("refuses Hosting Organization owners, so no invitation, link or email is issued", async () => {
+    actor = owner;
     activeOrganizationId = host;
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: host,
-      userId: owner,
-      role: ORGANIZATION_ROLES.OrganizationOwner,
-      createdAt: new Date(),
-    });
-    try {
-      for (const attempt of [
-        () =>
-          client.participantOnboarding.issueInvitation({
-            partnershipId: partnership,
-            email: recipientEmail,
-          }),
-        () =>
-          client.participantOnboarding.createRegistrationLink({
-            partnershipId: partnership,
-          }),
-      ])
-        await expect(attempt()).rejects.toMatchObject({
-          code: "FORBIDDEN",
-          data: { reason: "PARTNER_ENTRY_REQUIRED" },
-        });
-      expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
-      expect(
-        await db
-          .select()
-          .from(entryTokens)
-          .where(eq(entryTokens.projectId, project)),
-      ).toHaveLength(0);
-      expect(
-        await db
-          .select()
-          .from(entryTokens)
-          .where(eq(entryTokens.partnershipId, partnership)),
-      ).toHaveLength(0);
-    } finally {
-      await db
-        .delete(member)
-        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
-    }
-  });
-
-  it("refuses a Hosting Project coordinator even when assigned to the Project", async () => {
-    activeOrganizationId = host;
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: host,
-      userId: owner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: new Date(),
-    });
-    try {
-      await expect(
+    for (const attempt of [
+      () =>
         client.participantOnboarding.issueInvitation({
           partnershipId: partnership,
           email: recipientEmail,
         }),
-      ).rejects.toMatchObject({
+      () =>
+        client.participantOnboarding.createRegistrationLink({
+          partnershipId: partnership,
+        }),
+    ])
+      await expect(attempt()).rejects.toMatchObject({
         code: "FORBIDDEN",
         data: { reason: "PARTNER_ENTRY_REQUIRED" },
       });
-      expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
-      expect(
-        await db
-          .select()
-          .from(entryTokens)
-          .where(eq(entryTokens.projectId, project)),
-      ).toHaveLength(0);
-    } finally {
+    expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
+    expect(
       await db
-        .delete(member)
-        .where(and(eq(member.userId, owner), eq(member.organizationId, host)));
-    }
+        .select()
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
+    ).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(entryTokens)
+        .where(eq(entryTokens.partnershipId, partnership)),
+    ).toHaveLength(0);
+  });
+
+  it("refuses a Hosting Project coordinator even when assigned to the Project", async () => {
+    actor = coordinator;
+    activeOrganizationId = host;
+    await expect(
+      client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      }),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "PARTNER_ENTRY_REQUIRED" },
+    });
+    expect(delivery.sendParticipantInvitation).not.toHaveBeenCalled();
+    expect(
+      await db
+        .select()
+        .from(entryTokens)
+        .where(eq(entryTokens.projectId, project)),
+    ).toHaveLength(0);
   });
 
   it("denies a responsible User without the coordinator role", async () => {
-    actor = recipient;
+    actor = partnerParticipant;
     activeOrganizationId = partner;
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: partner,
-      userId: recipient,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: new Date(),
-    });
     await expect(
       client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
@@ -1446,7 +1512,6 @@ describe("Participant onboarding procedures", () => {
       code: "FORBIDDEN",
       data: { reason: "PARTNER_COORDINATION_REQUIRED" },
     });
-    await db.delete(member).where(eq(member.userId, recipient));
   });
 
   it("denies unassigned issuers and cross-Partnership owners with no invitation side effects", async () => {
@@ -1457,15 +1522,8 @@ describe("Participant onboarding procedures", () => {
         email: recipientEmail,
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    actor = recipient;
+    actor = partnerParticipant;
     activeOrganizationId = partner;
-    await db.insert(member).values({
-      id: randomUUID(),
-      organizationId: partner,
-      userId: recipient,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: new Date(),
-    });
     await expect(
       client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
@@ -1481,19 +1539,15 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("allows an assigned Partner coordinator to issue invitations without changing roles", async () => {
-    actor = recipient;
+    actor = coordinator;
     activeOrganizationId = partner;
-    const membershipId = randomUUID();
-    await db.insert(member).values({
-      id: membershipId,
-      organizationId: partner,
-      userId: recipient,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: new Date(),
+    const membership = await db.query.member.findFirst({
+      where: and(
+        eq(member.organizationId, partner),
+        eq(member.userId, coordinator),
+      ),
     });
-    await db
-      .insert(assignments)
-      .values({ partnershipId: partnership, userId: recipient });
+    expect(membership).toBeDefined();
     try {
       const issued = await client.participantOnboarding.issueInvitation({
         partnershipId: partnership,
@@ -1512,7 +1566,7 @@ describe("Participant onboarding procedures", () => {
           await db
             .select({ role: member.role })
             .from(member)
-            .where(eq(member.id, membershipId))
+            .where(eq(member.id, membership!.id))
         )[0]?.role,
       ).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
       await expect(
@@ -1523,10 +1577,6 @@ describe("Participant onboarding procedures", () => {
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
     } finally {
       await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
-      await db
-        .delete(assignments)
-        .where(eq(assignments.partnershipId, partnership));
-      await db.delete(member).where(eq(member.id, membershipId));
     }
   });
 
@@ -1645,14 +1695,7 @@ describe("Participant onboarding procedures", () => {
   });
 
   it("lets different Users redeem the same link without consuming it, and repeats idempotently", async () => {
-    const second = `onboarding-second-${suffix}`;
-    const secondEmail = `second-${suffix}@example.org`;
-    await db.insert(user).values({
-      id: second,
-      name: "Second",
-      email: secondEmail,
-      emailVerified: true,
-    });
+    const second = secondInvitee;
     try {
       const link = await client.participantOnboarding.createRegistrationLink({
         partnershipId: partnership,
@@ -1680,15 +1723,21 @@ describe("Participant onboarding procedures", () => {
         }),
       ).toEqual(first);
       // A second eligible User redeems the same link independently.
-      authMocks.getSession.mockImplementation(async () => ({
-        user: {
-          id: second,
-          name: "Second",
-          email: secondEmail,
-          emailVerified: true,
-        },
-        session: { id: randomUUID(), activeOrganizationId },
-      }));
+      authMocks.getSession.mockImplementation(async () => {
+        const stored = await db.query.user.findFirst({
+          where: eq(user.id, second),
+        });
+        if (!stored) throw new Error(`Seed user is missing: ${second}`);
+        return {
+          user: {
+            id: second,
+            name: stored.name,
+            email: stored.email,
+            emailVerified: true,
+          },
+          session: { id: randomUUID(), activeOrganizationId },
+        };
+      });
       authMocks.addMember.mockImplementationOnce(
         async ({
           body,
@@ -1730,7 +1779,6 @@ describe("Participant onboarding procedures", () => {
       await db.delete(profiles).where(eq(profiles.userId, second));
       await db.delete(participants).where(eq(participants.projectId, project));
       await db.delete(member).where(eq(member.userId, second));
-      await db.delete(user).where(eq(user.id, second));
     }
   });
 });

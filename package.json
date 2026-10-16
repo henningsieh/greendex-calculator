@@ -19,7 +19,7 @@
     "predev": "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     "prepare": "husky",
     "start": "turbo run start",
-    "test": "turbo run test:run --concurrency 1 -- && vitest run scripts/check-agent-instructions.policy.test.ts scripts/check-cost-tracker-persistence-seam.test.ts",
+    "test": "tsx apps/cost-tracker/scripts/run-nonbrowser-tests.ts",
     "test:agent-instruction-policy": "vitest run scripts/check-agent-instructions.policy.test.ts",
     "test:cost-tracker-persistence-seam": "vitest run scripts/check-cost-tracker-persistence-seam.test.ts",
     "test:e2e": "turbo run test:e2e --",
@@ -27,7 +27,8 @@
     "test:e2e:headed": "turbo run test:e2e:headed --",
     "test:e2e:report": "turbo run test:e2e:report --",
     "test:e2e:ui": "turbo run test:e2e:ui --",
-    "test:run": "turbo run test:run --concurrency 1 --",
+    "test:run": "pnpm test",
+    "test:runner": "vitest run scripts/nonbrowser-test-groups.test.ts scripts/managed-app-servers.test.ts",
     "type-check": "turbo run type-check && pnpm run type-check:cost-tracker-persistence-seam",
     "type-check:cost-tracker-persistence-seam": "tsc --project scripts/tsconfig.json"
   },
@@ -45,6 +46,7 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "^7.0.2003",
+    "tailwindcss": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

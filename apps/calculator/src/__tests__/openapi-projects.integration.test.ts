@@ -1,16 +1,9 @@
 // @vitest-environment node
 /** REST contract coverage with live migrated DB rows and fixture authentication. */
-import { randomUUID } from "node:crypto";
-
 import { db } from "@greendex/database";
-import {
-  organization,
-  projectsTable,
-  session,
-  user,
-} from "@greendex/database/schema";
-import { eq } from "drizzle-orm";
-import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
+import { organization, projectsTable } from "@greendex/database/schema";
+import { and, eq, inArray } from "drizzle-orm";
+import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
 const fixture = vi.hoisted(() => {
   vi.resetModules();
@@ -23,8 +16,8 @@ vi.mock("@/lib/better-auth", () => ({
       getSession: async () => ({
         user: {
           id: fixture.userId,
-          name: "REST Contract User",
-          email: "rest@example.com",
+          name: "Seed Owner",
+          email: "owner@sieh.org",
         },
         session: {
           id: fixture.sessionId,
@@ -35,7 +28,7 @@ vi.mock("@/lib/better-auth", () => ({
       getActiveMemberRole: async () => ({ role: "owner" }),
       getFullOrganization: async () => ({
         id: fixture.organizationId,
-        name: "REST Contract Organization",
+        name: "Seed Organization",
         members: [{ userId: fixture.userId, role: "owner" }],
       }),
       listMembers: async () => ({ members: [] }),
@@ -44,6 +37,21 @@ vi.mock("@/lib/better-auth", () => ({
 }));
 
 import * as routes from "@/app/api/openapi/[[...rest]]/route";
+
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). Authentication resolves the seeded
+ * Hosting Organization, Owner, and named REST Projects. Creation through
+ * REST is pinned as unsupported for date inputs (see the date-string test).
+ * REST mutation/deletion operates on those canonical scenario Projects;
+ * narrowly scoped cleanup restores their snapshots after each case.
+ */
+const SEED_ORG_SLUG = "seed-org";
+const SEED_OWNER_EMAIL = "owner@sieh.org";
+
+/** Canonical scenario Project ids touched by the case; restored in cleanup. */
+const caseProjectIds: string[] = [];
+const canonicalProjects: (typeof projectsTable.$inferSelect)[] = [];
 
 async function request(path: string, method = "GET", body?: unknown) {
   return routes[method as keyof typeof routes](
@@ -63,60 +71,56 @@ const dates = {
   startDate: "2026-01-01T00:00:00.000Z",
   endDate: "2026-12-31T00:00:00.000Z",
 };
-async function seedProject() {
-  const id = randomUUID();
-  await db.insert(projectsTable).values({
-    id,
-    name: "REST Contract Project",
-    startDate: new Date(dates.startDate),
-    endDate: new Date(dates.endDate),
-    location: "Berlin",
-    country: "DE",
-    organizationId: fixture.organizationId,
-  });
-  return id;
+async function resolveCanonicalRestProject() {
+  const seeded = canonicalProjects[caseProjectIds.length];
+  if (!seeded) throw new Error("Canonical REST scenario Project is missing");
+  caseProjectIds.push(seeded.id);
+  return seeded.id;
 }
 
-beforeEach(async () => {
-  fixture.userId = randomUUID();
-  fixture.organizationId = randomUUID();
+beforeAll(async () => {
+  const seedOrg = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_ORG_SLUG),
+  });
+  if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+  const owner = await db.query.user.findFirst({
+    where: (users, { eq: eqUser }) => eqUser(users.email, SEED_OWNER_EMAIL),
+  });
+  if (!owner) throw new Error("Canonical seed Owner is missing");
+  fixture.userId = owner.id;
+  fixture.organizationId = seedOrg.id;
+  const { randomUUID } = await import("node:crypto");
   fixture.sessionId = randomUUID();
   fixture.permitted = true;
-  await db.insert(user).values({
-    id: fixture.userId,
-    name: "REST Contract User",
-    email: `rest-${fixture.userId}@example.com`,
-    emailVerified: true,
-  });
-  await db.insert(organization).values({
-    id: fixture.organizationId,
-    name: "REST Contract Organization",
-    slug: `rest-${fixture.organizationId}`,
-    createdAt: new Date(),
-    country: "DE",
-  });
-  await db.insert(session).values({
-    id: fixture.sessionId,
-    userId: fixture.userId,
-    token: randomUUID(),
-    expiresAt: new Date("2030-01-01"),
-    activeOrganizationId: fixture.organizationId,
-  });
+  for (const id of [
+    "rest-contract-project-canonical",
+    "rest-batch-project-canonical",
+  ]) {
+    const project = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, id),
+    });
+    if (!project) throw new Error("Canonical REST scenario Project is missing");
+    canonicalProjects.push(project);
+  }
 });
 afterEach(async () => {
-  await db
-    .delete(projectsTable)
-    .where(eq(projectsTable.organizationId, fixture.organizationId));
-  await db.delete(session).where(eq(session.id, fixture.sessionId));
-  await db
-    .delete(organization)
-    .where(eq(organization.id, fixture.organizationId));
-  await db.delete(user).where(eq(user.id, fixture.userId));
-});
-afterAll(() => {
-  vi.doUnmock("@/lib/better-auth");
-  vi.doUnmock("next/headers");
-  vi.resetModules();
+  const ids = caseProjectIds.splice(0);
+  if (ids.length) {
+    // Cleanup alone restores the exact canonical snapshots after REST
+    // deletion/archive/leg mutations. No private setup rows are inserted.
+    await db.delete(projectsTable).where(inArray(projectsTable.id, ids));
+    await db
+      .insert(projectsTable)
+      .values(canonicalProjects.filter(({ id }) => ids.includes(id)));
+  }
+  fixture.permitted = true;
+  // Canonical actors survive every case: fail loudly on accidental deletion.
+  expect(
+    await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    }),
+    "canonical seed Organization was deleted",
+  ).not.toBeUndefined();
 });
 
 it("serves organization details, role, stats and member search shapes", async () => {
@@ -124,11 +128,17 @@ it("serves organization details, role, stats and member search shapes", async ()
     id: fixture.organizationId,
   });
   expect(await ok("/organizations/role")).toBe("owner");
-  expect(
-    await ok("/organizations/stats", "POST", {
-      organizationId: fixture.organizationId,
-    }),
-  ).toEqual({ totalProjects: 0, totalParticipants: 0, totalSharedTravelLegs: 0 });
+  // Canonical seed: ten base Projects plus two REST and three review Projects;
+  // two linked showcase Users (login-free Participations do not add a User);
+  // 39 template Shared Travel Legs plus the travel-management scenario leg.
+  const stats = await ok("/organizations/stats", "POST", {
+    organizationId: fixture.organizationId,
+  });
+  expect(stats).toEqual({
+    totalProjects: 15,
+    totalParticipants: 2,
+    totalSharedTravelLegs: 40,
+  });
   expect(
     await ok("/organizations/members/search", "POST", {
       organizationId: fixture.organizationId,
@@ -138,11 +148,15 @@ it("serves organization details, role, stats and member search shapes", async ()
 });
 
 it("round-trips date-free Project and Shared Travel Leg REST operations", async () => {
-  const id = await seedProject();
+  const baseline = await ok("/projects?sort_by=name");
+  const baselineIds = new Set(
+    (baseline as { id: string }[]).map((project) => project.id),
+  );
+  const id = await resolveCanonicalRestProject();
   const path = `/projects/${id}`;
-  expect(await ok("/projects?sort_by=name")).toEqual([
-    expect.objectContaining({ id, ...dates }),
-  ]);
+  expect(await ok("/projects?sort_by=name")).toEqual(
+    expect.arrayContaining([expect.objectContaining({ id, ...dates })]),
+  );
   expect(await ok(path)).toMatchObject({
     id,
     organization: { id: fixture.organizationId },
@@ -191,11 +205,26 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
     project: { id, archived: true },
   });
   expect(await ok(path, "DELETE", {})).toEqual({ success: true });
-  const second = await seedProject();
+  const second = await resolveCanonicalRestProject();
   expect(await ok("/projects/batch", "DELETE", { projectIds: [second] })).toEqual(
     { success: true, deletedCount: 1 },
   );
-  expect(await ok("/projects")).toEqual([]);
+  const remaining = await ok("/projects");
+  const remainingIds = new Set(
+    (remaining as { id: string }[]).map((project) => project.id),
+  );
+  baselineIds.delete(id);
+  baselineIds.delete(second);
+  expect(remainingIds).toEqual(baselineIds);
+  expect(
+    await db.query.projectsTable.findFirst({
+      where: and(
+        eq(projectsTable.id, id),
+        eq(projectsTable.organizationId, fixture.organizationId),
+      ),
+    }),
+    "REST deletion must remove the selected canonical scenario Project",
+  ).toBeUndefined();
 });
 
 it.each([

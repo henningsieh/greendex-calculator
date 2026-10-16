@@ -8,6 +8,7 @@ These documents describe behavior owned by the Cost Tracker application.
 - Other contexts: [Calculator](../../../apps/calculator/GLOSSARY.md) · [Documentation](../../../apps/documentation/GLOSSARY.md) — overview in [Glossary map](../../../GLOSSARY-MAP.md)
 - [Cost Tracker architecture](architecture.md)
 - [HTTP API and real-HTTP test prerequisites](openapi.md)
+- [Live email verification for both managed apps](live-email-verification.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
 - [Shared Greendex language](../../../GLOSSARY.md)
 - [Shared Projects documentation](../../../docs/projects/README.md)
@@ -59,8 +60,9 @@ Use this disposable shared-database account for local Cost Tracker authenticatio
 - **Status:** email verified; it has no Organization Membership and therefore no Project access.
 
 Do not grant this account roles or add it to an Organization. The IMAP-backed
-`pnpm --filter @greendex/cost-tracker test:email-delivery` check sends and then
-deletes its own verification-email fixture; it does not use this account.
+`pnpm --filter @greendex/cost-tracker test:email-delivery` check uses run-created
+mailbox Users on an isolated database, not this account. Messages are retained
+by default; see [live email verification](live-email-verification.md).
 
 ## Scope
 
