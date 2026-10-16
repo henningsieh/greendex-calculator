@@ -61,9 +61,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 
 ## Delegation
 
-For requested repo work, the main agent may delegate bounded implementation, research, and review when a child earns its overhead; do tiny tasks directly. The main agent owns scope, decisions, review sequencing, and final acceptance. Children execute their contract and escalate decisions; they do not launch other agents. Commits and external writes require explicit task permission.
-
-Use fresh child context with relevant paths, repo rules, and a short task contract. Routine results: at most 200 words plus evidence/artifact paths, not raw logs. Children read their matching app/scoped docs; the main agent reads deeper only to resolve a decision or verify evidence. Keep one writer per worktree, including formatting and lint fixes; the main agent does not edit an active child's worktree.
+Direct work and authorized delegation are both valid. Follow the [delegation guide](docs/agents/delegation.md) for repository constraints on assignments, handoffs, and acceptance. The main agent retains authority over scope, decisions, and final acceptance. Keep one writer per worktree, including formatting and lint fixes.
 
 ## Commit Conventions
 

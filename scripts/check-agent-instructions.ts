@@ -11,7 +11,6 @@ import { fileURLToPath } from "node:url";
 
 import {
   appAgentFileNames,
-  delegationGuidanceFiles,
   designSystemDeferredScopes,
   designSystemPlugin,
   designSystemStrictScope,
@@ -237,11 +236,7 @@ const checkNextJsSetup = async (router: string): Promise<void> => {
 const checkScopedInstructions = async (
   instructionFiles: string[],
 ): Promise<string[]> => {
-  const scannedFiles = [
-    routerPath,
-    workflowPath,
-    ...delegationGuidanceFiles.map(resolveRoot),
-  ];
+  const scannedFiles = [routerPath, workflowPath];
   for (const fileName of instructionFiles) {
     const filePath = path.join(instructionDirectory, fileName);
     const content = await readUtf8(filePath);

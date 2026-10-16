@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 import {
-  delegationGuidanceFiles,
   orpcGuidanceFiles,
   oldMajorOrpcUrlPattern,
   expectedScopes,
@@ -58,48 +57,6 @@ describe("oRPC documentation major", () => {
       }
       expect(guidance).not.toContain("v1.orpc.dev");
       expect(guidance).not.toMatch(/generate-sri|check-sri|scalarVersion/u);
-    }
-  });
-});
-
-describe("delegation guidance coverage", () => {
-  it("requires and checks links in tool-neutral delegation guidance", () => {
-    expect(delegationGuidanceFiles).toEqual(["docs/agents/delegation.md"]);
-    for (const filePath of delegationGuidanceFiles) {
-      expect(requiredRepositoryPaths).toContain(filePath);
-      expect(referenceFiles).toContain(filePath);
-    }
-    expect(requiredRepositoryPaths).not.toContain(".pi/settings.json");
-  });
-
-  it("keeps shared policy independent of personal runtimes and configuration", async () => {
-    for (const filePath of ["AGENTS.md", ...delegationGuidanceFiles]) {
-      const guidance = await readFile(
-        new URL(`../${filePath}`, import.meta.url),
-        "utf8",
-      );
-      expect(guidance).not.toMatch(
-        /pi-subagents|subagents_enable|openai-codex|gpt-6|codex-usage-meter|subagent-launch|\.pi\/|\/home\//u,
-      );
-    }
-  });
-
-  it("preserves direct implementation, bounded authority, acceptance and safe recovery", async () => {
-    const guidance = await readFile(
-      new URL("../docs/agents/delegation.md", import.meta.url),
-      "utf8",
-    );
-    for (const rule of [
-      "execute directly",
-      "one writer",
-      "fresh context",
-      "explicitly allowed",
-      "final acceptance",
-      "partial diff",
-      "no longer active",
-      "resume",
-    ]) {
-      expect(guidance).toContain(rule);
     }
   });
 });

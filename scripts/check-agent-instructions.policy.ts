@@ -14,8 +14,6 @@ export interface AgentGuidancePattern {
 
 export const instructionLineBudget = 180;
 
-export const delegationGuidanceFiles = ["docs/agents/delegation.md"];
-
 export const expectedScopes: Record<string, string> = {
   "architecture.md":
     "apps/*/src/**/*.ts,apps/*/src/**/*.tsx,packages/*/src/**/*.ts,packages/*/src/**/*.tsx",
@@ -105,7 +103,7 @@ export const requiredIntegrationAnchors = [
 ];
 
 export const requiredRepositoryPaths = [
-  ...delegationGuidanceFiles,
+  "docs/agents/delegation.md",
   ".node-version",
   "apps/documentation/GLOSSARY.md",
   "GLOSSARY.md",
@@ -161,7 +159,7 @@ export const requiredRepositoryPaths = [
 
 /** Extra files scanned for retired pointers (beyond the router and workflow). */
 export const referenceFiles = [
-  ...delegationGuidanceFiles,
+  "docs/agents/delegation.md",
   "README.md",
   "apps/documentation/GLOSSARY.md",
   "GLOSSARY.md",
