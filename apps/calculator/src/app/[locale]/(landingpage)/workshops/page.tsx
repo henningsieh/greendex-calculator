@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { WorkshopContent } from "@/features/landingpage/components/workshops/workshop-tab-select";
 import type { WorkshopType } from "@/features/landingpage/types";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 const typeParser = createParser({
   parse: (value: unknown) => {
@@ -38,9 +39,7 @@ export default function WorkshopsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
   searchParams:
     | Promise<{
         type?: string;
@@ -76,9 +75,7 @@ export default function WorkshopsPage({
 async function LocalizedWorkshopsHeader({
   params,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { DonateSection } from "@/features/landingpage/components/e+forest/donate-section";
 import { DreamSection } from "@/features/landingpage/components/e+forest/dream-section";
 import { HeroSection } from "@/features/landingpage/components/e+forest/hero-section";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 // ensureStatic = 'navigation': fully static marketing page (#246).
 export const ensureStatic = "navigation";
@@ -14,9 +15,7 @@ export const ensureStatic = "navigation";
 export default function EplusForestPage({
   params,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   return (
     <main className="min-h-screen">
@@ -36,32 +35,18 @@ export default function EplusForestPage({
 async function LocalizedEForestHero({
   params,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   const { locale } = await params;
   return <HeroSection locale={locale} />;
 }
 
-async function LocalizedDream({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+async function LocalizedDream({ params }: { params: Promise<LocaleParams> }) {
   const { locale } = await params;
   return <DreamSection locale={locale} />;
 }
 
-async function LocalizedDonate({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+async function LocalizedDonate({ params }: { params: Promise<LocaleParams> }) {
   const { locale } = await params;
   return <DonateSection locale={locale} />;
 }

@@ -6,11 +6,10 @@ import { AuthFormSkeleton } from "@/features/authentication/components/auth-form
 import { AuthPageSkeleton } from "@/features/authentication/components/auth-page-skeleton";
 import { ResetPasswordForm } from "@/features/authentication/components/reset-password-form";
 import { redirect } from "@/lib/i18n/routing";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 interface ResetPasswordPageProps {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
   searchParams: Promise<{
     [key: string]: string | string[] | undefined;
   }>;
