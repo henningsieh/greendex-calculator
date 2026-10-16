@@ -9,6 +9,7 @@ import { canonicalSeedVersion } from "./canonical-seed-version";
 import {
   fullRunPassed,
   nonbrowserPackages,
+  nonbrowserVitestScheduling,
   runTestGroups,
 } from "./nonbrowser-test-groups";
 
@@ -43,6 +44,18 @@ describe("canonical seed version", () => {
 });
 
 describe("nonbrowser test groups", () => {
+  it("bounds pure file workers and preserves isolated serial service execution", () => {
+    expect(nonbrowserVitestScheduling.pure).toEqual([
+      "--file-parallelism",
+      "--maxWorkers=2",
+      "--isolate",
+    ]);
+    expect(nonbrowserVitestScheduling.serial).toEqual([
+      "--no-file-parallelism",
+      "--isolate",
+    ]);
+  });
+
   it("registers a focused command and root group for every package with tests", () => {
     const root = resolve(import.meta.dirname, "..");
     const packagesRoot = resolve(root, "packages");

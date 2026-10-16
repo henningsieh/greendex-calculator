@@ -1,5 +1,10 @@
 export type GroupStatus = "passed" | "failed" | "blocked";
 export type GroupExecution = "serial" | "parallel" | "cleanup";
+export const nonbrowserVitestScheduling = {
+  serial: ["--no-file-parallelism", "--isolate"],
+  pure: ["--file-parallelism", "--maxWorkers=2", "--isolate"],
+} as const;
+
 export interface GroupResult {
   group: string;
   status: GroupStatus;
