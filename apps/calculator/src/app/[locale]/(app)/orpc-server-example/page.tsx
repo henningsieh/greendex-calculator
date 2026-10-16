@@ -12,9 +12,7 @@ import {
 } from "@/components/ui/card";
 import { router } from "@/lib/orpc/router";
 
-// instant = false: kept on purpose — this debug page exists to assert live
-// SSR procedure calls on every load; caching or streaming it would defeat
-// its purpose (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 /**

@@ -15,6 +15,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { isSupportedLocale } from "@/lib/i18n/locales";
 import { routing } from "@/lib/i18n/routing";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 const clashDisplay = localFont({
   src: "./../../../public/fonts/ClashDisplay_Complete/Fonts/TTF/ClashDisplay-Variable.ttf",
@@ -47,9 +48,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 interface Props {
   children: React.ReactNode;
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }
 
 export function generateStaticParams() {
@@ -105,9 +104,7 @@ async function LocalizedIntl({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   const { locale } = await params;
 

@@ -22,6 +22,7 @@ import {
   handleUnauthenticatedRedirect,
 } from "@/features/authentication/utils";
 import { redirect } from "@/lib/i18n/routing";
+import type { LocaleParams } from "@/lib/i18n/types";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import {
   getQueryClient,
@@ -29,12 +30,7 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
-// instant = false: kept on purpose — this layout is an authentication and
-// organization gate (redirects before paint) that also reads the sidebar
-// cookie and prefetches session-keyed queries. The descendant data pages
-// carry their own per-route decisions below; restructuring the gate into a
-// streaming AuthGate is a deliberate follow-up, not part of this adoption
-// (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 /**
@@ -58,9 +54,7 @@ export default async function AppLayout({
   params,
 }: Readonly<{
   children: React.ReactNode;
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }>) {
   const { locale } = await params;
   await connection();

@@ -21,8 +21,7 @@ import { auth } from "@/lib/better-auth";
  *
  * @returns A React element containing the page header and `CreateProjectForm` with the resolved `activeOrganizationId`.
  */
-// instant = false: kept on purpose — session-gated page resolving the
-// active organization for the creation form (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 export default async function CreateProjectPage() {

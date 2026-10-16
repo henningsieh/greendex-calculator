@@ -4,6 +4,7 @@ import { FooterSection } from "@/features/landingpage/components/footer";
 import { LandingHeader } from "@/features/landingpage/components/landing-header";
 import { LandingPageBackground } from "@/features/landingpage/components/landing-page-background";
 import { LandingPageGradients } from "@/features/landingpage/components/landing-page-gradients";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 // ensureStatic = 'prefetch': the marketing shell and per-link prefetches stay
 // static; only request-specific islands (workshops tab state, auth forms)
@@ -24,9 +25,7 @@ export default function LandingPageLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   return (
     <div className="relative min-h-screen">
@@ -43,13 +42,7 @@ export default function LandingPageLayout({
   );
 }
 
-async function LocalizedFooter({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+async function LocalizedFooter({ params }: { params: Promise<LocaleParams> }) {
   const { locale } = await params;
   return <FooterSection locale={locale} />;
 }

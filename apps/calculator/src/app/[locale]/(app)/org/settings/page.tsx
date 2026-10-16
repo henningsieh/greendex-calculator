@@ -15,8 +15,7 @@ import {
 } from "@/features/organizations/components/edit-organization-form";
 import { ORGANIZATION_ICONS } from "@/features/organizations/organization-icons";
 
-// instant = false: kept on purpose — session-gated page rendering the
-// organization edit form for the active organization (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 export default async function SettingsPage() {
