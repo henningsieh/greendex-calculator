@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import {
+  fullBrowserConfig,
+  fullBrowserUse,
+} from "../../scripts/browser-test-config";
+
 // Explicit two-app proof; the ordinary Calculator suite still needs only Calculator.
 export default defineConfig({
   testDir: "./src/__tests__/merge",
@@ -19,5 +24,7 @@ export default defineConfig({
     trace: "off",
     screenshot: "off",
     video: "off",
+    ...fullBrowserUse(),
   },
+  ...fullBrowserConfig(),
 });

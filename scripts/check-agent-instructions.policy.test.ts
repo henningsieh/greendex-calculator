@@ -274,12 +274,11 @@ const verificationPolicyClauses = [
     ],
   ],
   [
-    "honest planned command",
+    "implemented production command",
     [
-      "**PLANNED, unavailable until #284:** `pnpm run test:full`",
-      "#289 verifies final consistency",
-      "production acceptance is blocked",
-      "Current commands do not prove this planned gate",
+      "`pnpm run test:full` is the required final integrated entrypoint",
+      "#289 verifies final consistency and real production execution",
+      "implementing the command alone does not prove acceptance",
     ],
   ],
   [
@@ -379,7 +378,7 @@ describe("two-loop verification instruction policy", () => {
     for (const clause of clauses) expect(text).toContain(clause);
   });
 
-  it("keeps current aggregate commands distinct from planned production acceptance", async () => {
+  it("keeps the non-browser command distinct from full production acceptance", async () => {
     const manifest = JSON.parse(
       await readFile(new URL("../package.json", import.meta.url), "utf8"),
     );
@@ -387,10 +386,12 @@ describe("two-loop verification instruction policy", () => {
       "tsx apps/cost-tracker/scripts/run-nonbrowser-tests.ts",
     );
     expect(manifest.scripts["test:run"]).toBe("pnpm test");
-    expect(manifest.scripts["test:full"]).toBeUndefined();
+    expect(manifest.scripts["test:full"]).toBe(
+      "tsx apps/cost-tracker/scripts/run-nonbrowser-tests.ts --full-production",
+    );
   });
 
-  it("references all four existing browser configurations without claiming they implement final acceptance", async () => {
+  it("references all four existing browser configurations as the implemented production inventory", async () => {
     const text = await readFile(
       new URL("../docs/agents/instructions/conventions.md", import.meta.url),
       "utf8",

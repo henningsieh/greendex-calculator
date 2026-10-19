@@ -61,7 +61,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 
 ## Verification
 
-Follow the authoritative [two-loop testing policy](docs/agents/instructions/conventions.md#two-verification-loops). Use focused dev/MCP checks during implementation and centrally owned production verification after writers finish. `pnpm run test:full` is PLANNED until #284 implements it; current root `pnpm test` remains the full non-browser contract.
+Follow the authoritative [two-loop testing policy](docs/agents/instructions/conventions.md#two-verification-loops). Use focused dev/MCP checks during implementation and centrally owned production verification after writers finish. `pnpm run test:full` owns the full production matrix; root `pnpm test` remains the full non-browser contract.
 
 ## Delegation
 

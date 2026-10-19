@@ -313,6 +313,48 @@ describe("nonbrowser test groups", () => {
     ).rejects.toThrow();
     expect(ran).toBe(false);
   });
+  it("blocks unstarted work after interruption and still attempts every cleanup", async () => {
+    const abort = new AbortController();
+    const events: string[] = [];
+    const results = await runTestGroups(
+      [
+        {
+          name: "first",
+          prerequisites: [],
+          execution: "serial",
+          run: async () => {
+            events.push("first");
+            abort.abort();
+          },
+        },
+        {
+          name: "unstarted",
+          prerequisites: [],
+          execution: "serial",
+          run: async () => {
+            events.push("unstarted");
+          },
+        },
+        {
+          name: "cleanup",
+          prerequisites: [],
+          execution: "cleanup",
+          run: async () => {
+            events.push("cleanup");
+          },
+        },
+      ],
+      { signal: abort.signal },
+    );
+    expect(events).toEqual(["first", "cleanup"]);
+    expect(results.map(({ status }) => status)).toEqual([
+      "passed",
+      "blocked",
+      "passed",
+    ]);
+    expect(fullRunPassed(results)).toBe(false);
+  });
+
   it("fails empty runs and cleanup errors", async () => {
     expect(fullRunPassed([])).toBe(false);
     const results = await runTestGroups([

@@ -1,4 +1,5 @@
 import { mkdirSync } from "fs";
+import { dirname } from "node:path";
 
 import { SEED_USER } from "@greendex/auth/seed-user";
 import en from "@greendex/i18n/locales/en.json" with { type: "json" };
@@ -18,7 +19,9 @@ async function globalSetup(config: FullConfig) {
   });
   const page = await browser.newPage();
 
-  const storagePath = "src/__tests__/e2e/.auth/storageState.json";
+  const storagePath =
+    process.env.GREENDEX_PLAYWRIGHT_AUTH ??
+    "src/__tests__/e2e/.auth/storageState.json";
 
   try {
     const baseURL =
@@ -93,9 +96,7 @@ async function globalSetup(config: FullConfig) {
     }
 
     // Ensure auth dir exists and save storage state for the rest of the suite
-    if (!process.env.WSL_DISTRO_NAME) {
-      mkdirSync("src/__tests__/e2e/.auth", { recursive: true });
-    }
+    mkdirSync(dirname(storagePath), { recursive: true, mode: 0o700 });
     await page.context().storageState({ path: storagePath });
     console.log(`✅ Auth storage saved to ${storagePath}`);
   } catch (error) {

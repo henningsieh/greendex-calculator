@@ -25,7 +25,10 @@ export const nonbrowserPackages = [
   "i18n",
 ] as const;
 
-export async function runTestGroups(groups: TestGroup[]): Promise<GroupResult[]> {
+export async function runTestGroups(
+  groups: TestGroup[],
+  options: { signal?: AbortSignal } = {},
+): Promise<GroupResult[]> {
   const results = new Map<string, GroupResult>();
   const names = new Map<string, GroupExecution>();
   for (const group of groups) {
@@ -47,7 +50,10 @@ export async function runTestGroups(groups: TestGroup[]): Promise<GroupResult[]>
     let status: GroupStatus = "blocked";
     if (
       group.execution === "cleanup" ||
-      group.prerequisites.every((name) => results.get(name)?.status === "passed")
+      (!options.signal?.aborted &&
+        group.prerequisites.every(
+          (name) => results.get(name)?.status === "passed",
+        ))
     ) {
       try {
         await group.run();

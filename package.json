@@ -20,6 +20,7 @@
     "prepare": "husky",
     "start": "turbo run start",
     "test": "tsx apps/cost-tracker/scripts/run-nonbrowser-tests.ts",
+    "test:full": "tsx apps/cost-tracker/scripts/run-nonbrowser-tests.ts --full-production",
     "test:agent-instruction-policy": "vitest run scripts/check-agent-instructions.policy.test.ts",
     "test:cost-tracker-persistence-seam": "vitest run scripts/check-cost-tracker-persistence-seam.test.ts",
     "test:e2e": "turbo run test:e2e --",

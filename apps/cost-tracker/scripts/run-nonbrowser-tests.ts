@@ -1,16 +1,30 @@
 /* eslint-disable import/no-relative-parent-imports -- Repository test orchestration, not app runtime. */
-import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { globSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { relative, resolve } from "node:path";
 
 import * as schema from "@greendex/database/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-import { canonicalSeedVersion } from "../../../scripts/canonical-seed-version";
 import {
+  browserTestEvidence,
+  assertBrowserExecution,
+} from "../../../scripts/browser-test-evidence";
+import {
+  browserFiles,
+  browserSuites,
+  assertBrowserCoverage,
+  type BrowserSuite,
+} from "../../../scripts/browser-test-registry";
+import { canonicalSeedVersion } from "../../../scripts/canonical-seed-version";
+import { fullProductionGroups } from "../../../scripts/full-production-groups";
+import {
+  createManagedAppRun,
+  type ManagedAppRun,
+  type ManagedTarget,
+  type ReadyApp,
   readLocalEnvironment,
   runManagedCommand,
   startManagedAppServers,
@@ -24,6 +38,7 @@ import {
   runTestGroups,
   type TestGroup,
 } from "../../../scripts/nonbrowser-test-groups";
+import { testCandidate } from "../../../scripts/test-candidate";
 import { seedDatabase } from "../../calculator/scripts/seed";
 import {
   createIsolatedRunDatabase,
@@ -40,6 +55,32 @@ import { verifyEmailWorkflows } from "./verify-email-workflows";
 
 const root = resolve(import.meta.dirname, "../../..");
 const started = Date.now();
+const full = process.argv.includes("--full-production");
+if (process.argv.slice(2).some((arg) => arg !== "--full-production"))
+  throw new Error("Unknown runner argument.");
+process.umask(0o077);
+const candidate = testCandidate(root);
+const privateRoot = resolve(
+  root,
+  ".turbo",
+  full ? "full-tests" : "nonbrowser-tests",
+);
+await mkdir(privateRoot, { recursive: true, mode: 0o700 });
+const privateRun = await mkdtemp(resolve(privateRoot, "run-"));
+let managedRun: ManagedAppRun<"production"> | undefined;
+const ready = new Map<ManagedTarget, ReadyApp>();
+const environmentFailures = new Set<"calculator" | "cost-tracker">();
+const browserEvidence: {
+  suite: string;
+  discovery?: ReturnType<typeof browserTestEvidence>;
+  execution?: ReturnType<typeof browserTestEvidence>;
+}[] = [];
+const browserInventory = browserSuites.map((suite) => ({
+  suite: suite.name,
+  config: `apps/${suite.app}/${suite.config}`,
+  files: browserFiles(root, suite),
+  targets: suite.targets,
+}));
 const interruption = new AbortController();
 const interrupt = () => interruption.abort();
 process.on("SIGINT", interrupt);
@@ -58,6 +99,7 @@ const cleanup = {
   pool: "not-opened",
   garage: "not-started",
   garageKey: null as string | null,
+  browserArtifacts: "not-created",
 };
 const environment = (): NodeJS.ProcessEnv => ({
   ...process.env,
@@ -66,6 +108,14 @@ const environment = (): NodeJS.ProcessEnv => ({
   TEST_RUN_ID: handle?.runId,
   GREENDEX_TEST_SERVICE_DATABASE_URL: handle?.baseDatabaseUrl,
   ...servers?.environment,
+  ...(full
+    ? {
+        ...ready.get("calculator")?.environment,
+        ...ready.get("cost-tracker")?.environment,
+        GREENDEX_FULL_TEST_RUN: "true",
+        GREENDEX_TEST_SERVICE_DATABASE_URL: handle?.baseDatabaseUrl,
+      }
+    : {}),
   GREENDEX_AGGREGATE_TEST_RUN: "true",
 });
 const command = (cwd: string, args: string[], env = environment()) =>
@@ -88,13 +138,25 @@ const vitest = (
       "exec",
       "vitest",
       "run",
-      ...nonbrowserVitestScheduling[scheduling],
+      ...nonbrowserVitestScheduling[full ? "serial" : scheduling],
+      ...(full ? ["--maxWorkers=1", "--retry=0"] : []),
       `--reporter=${resolve(root, "scripts/nonbrowser-json-reporter.ts")}`,
       ...args,
     ],
     {
       cwd: resolve(root, cwd),
-      env: environment(),
+      env: {
+        ...environment(),
+        ...(full && cwd === "apps/calculator"
+          ? ready.get("calculator")?.environment
+          : {}),
+        ...(full && cwd === "apps/cost-tracker"
+          ? ready.get("cost-tracker")?.environment
+          : {}),
+        GREENDEX_AGGREGATE_TEST_RUN: "true",
+        GREENDEX_TEST_SERVICE_DATABASE_URL: handle?.baseDatabaseUrl,
+        NODE_ENV: "test",
+      },
       timeoutMs,
       signal: interruption.signal,
       inspectOutput: (output) => {
@@ -106,7 +168,14 @@ const vitest = (
           const evidence = nonbrowserTestEvidence(data, cwd, root);
           testEvidence.push(evidence);
           console.log(JSON.stringify(evidence));
-          skipped = evidence.pending > 0 || evidence.todo > 0;
+          skipped =
+            evidence.total === 0 ||
+            evidence.failed > 0 ||
+            evidence.suiteFailures.length > 0 ||
+            evidence.pending > 0 ||
+            evidence.todo > 0 ||
+            evidence.passed !== evidence.total ||
+            evidence.pendingTests.length > 0;
         } catch {
           throw new Error("Missing valid test evidence.");
         }
@@ -320,9 +389,10 @@ const groups: TestGroup[] = [
     prerequisites: [],
     execution: "cleanup",
     run: async () => {
-      if (!servers) return;
+      if (!servers && !managedRun) return;
       try {
-        await servers.stop();
+        if (managedRun) await managedRun.stop();
+        else await servers?.stop();
         cleanup.servers = "stopped";
       } catch {
         cleanup.servers = "failed";
@@ -359,20 +429,184 @@ const groups: TestGroup[] = [
   },
 ];
 
-const results = await runTestGroups(groups);
+const runBrowser = async (suite: BrowserSuite) => {
+  const app = ready.get(suite.targets[0]);
+  if (
+    !app ||
+    app.runtime.kind !== "production" ||
+    app.runtime.artifact.variant !== (suite.instant ? "instant" : "ordinary")
+  )
+    throw new Error("Missing production browser target.");
+  cleanup.browserArtifacts = "pending";
+  const directory = resolve(privateRun, suite.name);
+  await mkdir(directory, { mode: 0o700 });
+  const reportFile = resolve(directory, "raw.json");
+  const evidence: (typeof browserEvidence)[number] = { suite: suite.name };
+  browserEvidence.push(evidence);
+  const env = {
+    ...environment(),
+    ...app.environment,
+    GREENDEX_AGGREGATE_TEST_RUN: "true",
+    GREENDEX_TEST_SERVICE_DATABASE_URL: handle?.baseDatabaseUrl,
+    GREENDEX_FULL_TEST_RUN: "true",
+    GREENDEX_PLAYWRIGHT_REPORT: reportFile,
+    PLAYWRIGHT_JSON_OUTPUT_FILE: reportFile,
+    GREENDEX_PLAYWRIGHT_OUTPUT: resolve(directory, "output"),
+    GREENDEX_PLAYWRIGHT_AUTH: resolve(directory, "auth.json"),
+    COST_TRACKER_E2E_BASE_URL: ready.get("cost-tracker")?.baseUrl,
+  };
+  const invoke = async (discovery: boolean) => {
+    await rm(reportFile, { force: true });
+    try {
+      await runManagedCommand(
+        "pnpm",
+        [
+          "exec",
+          "playwright",
+          "test",
+          `--config=${suite.config}`,
+          "--workers=1",
+          "--retries=0",
+          ...(discovery ? ["--list"] : []),
+        ],
+        {
+          cwd: app.directory,
+          env,
+          timeoutMs: 3_600_000,
+          signal: interruption.signal,
+        },
+      );
+    } finally {
+      try {
+        const parsed = browserTestEvidence(
+          JSON.parse(await readFile(reportFile, "utf8")),
+          discovery,
+        );
+        if (discovery) evidence.discovery = parsed;
+        else evidence.execution = parsed;
+      } finally {
+        await rm(reportFile, { force: true });
+      }
+    }
+  };
+  await invoke(true);
+  if (!evidence.discovery || evidence.discovery.errors)
+    throw new Error("Missing browser discovery.");
+  assertBrowserCoverage(
+    browserFiles(root, suite),
+    [...new Set(evidence.discovery.tests.map(({ file }) => file))].sort(),
+  );
+  await invoke(false);
+  if (!evidence.execution) throw new Error("Missing browser execution.");
+  assertBrowserExecution(evidence.discovery, evidence.execution);
+};
+const selectedGroups = full
+  ? fullProductionGroups(groups, {
+      create: async () => {
+        if (!handle) throw new Error("Missing run database.");
+        environments = { calculator: {}, "cost-tracker": {} };
+        for (const app of ["calculator", "cost-tracker"] as const) {
+          try {
+            environments[app] = await readLocalEnvironment(
+              resolve(root, "apps", app, ".env"),
+            );
+          } catch {
+            environmentFailures.add(app);
+          }
+        }
+        managedRun = await createManagedAppRun(
+          root,
+          { runId: handle.runId, databaseUrl: handle.databaseUrl },
+          environments,
+          { profile: "production", signal: interruption.signal },
+        );
+        cleanup.servers = "pending";
+      },
+      start: async (target) => {
+        if (!managedRun) throw new Error("Missing managed run.");
+        if (
+          environmentFailures.has(
+            target === "calculator-instant" ? "calculator" : target,
+          )
+        )
+          throw new Error("Missing target environment prerequisite.");
+        const app = await managedRun.start(target);
+        if (
+          app.runtime.kind !== "production" ||
+          app.runtime.artifact.variant !==
+            (target === "calculator-instant" ? "instant" : "ordinary")
+        )
+          throw new Error("Missing required production artifact.");
+        ready.set(target, app);
+      },
+      pair: async () => {
+        const calculator = ready.get("calculator");
+        const cost = ready.get("cost-tracker");
+        const lifecycle = managedRun;
+        if (!calculator || !cost || !lifecycle)
+          throw new Error("Missing paired production targets.");
+        servers = {
+          calculatorBaseUrl: calculator.baseUrl,
+          costTrackerBaseUrl: cost.baseUrl,
+          environment: { ...calculator.environment, ...cost.environment },
+          stop: () => lifecycle.stop(),
+        };
+      },
+      browser: runBrowser,
+      releaseOrdinary: async () => {
+        if (!managedRun) return;
+        const outcomes = await Promise.allSettled([
+          managedRun.release("calculator"),
+          managedRun.release("cost-tracker"),
+        ]);
+        if (outcomes.some(({ status }) => status === "rejected"))
+          throw new Error("Ordinary production release failed.");
+      },
+    })
+  : groups;
+let results: Awaited<ReturnType<typeof runTestGroups>> = [];
+let runnerFailed = false;
+try {
+  results = await runTestGroups(selectedGroups, { signal: interruption.signal });
+} catch {
+  runnerFailed = true;
+} finally {
+  for (const group of selectedGroups.filter(
+    ({ name, execution }) =>
+      execution === "cleanup" && !results.some(({ group }) => group === name),
+  )) {
+    try {
+      await group.run();
+    } catch {
+      runnerFailed = true;
+    }
+  }
+  try {
+    await rm(privateRun, { recursive: true, force: true });
+    cleanup.browserArtifacts = "removed";
+  } catch {
+    cleanup.browserArtifacts = "failed";
+    runnerFailed = true;
+  }
+}
+const finalCandidate = testCandidate(root);
 const report = {
-  suite: "nonbrowser",
-  commit: execFileSync("git", ["rev-parse", "HEAD"], {
-    cwd: root,
-    encoding: "utf8",
-    timeout: 10_000,
-  }).trim(),
-  workingTreeDirty:
-    execFileSync("git", ["status", "--porcelain"], {
-      cwd: root,
-      encoding: "utf8",
-      timeout: 10_000,
-    }).trim().length > 0,
+  suite: full ? "full-production" : "nonbrowser",
+  ...candidate,
+  candidateUnchanged:
+    candidate.sourceDigest === finalCandidate.sourceDigest &&
+    candidate.commit === finalCandidate.commit,
+  runtime: full ? "production" : "development",
+  lifecycleEvidenceDirectory: managedRun
+    ? relative(root, managedRun.evidenceDirectory)
+    : null,
+  productionTargets: [...ready].map(([target, app]) => ({
+    target,
+    baseUrl: app.baseUrl,
+    runtime: app.runtime,
+  })),
+  browserInventory: full ? browserInventory : [],
+  browserEvidence,
   seedVersion: await canonicalSeedVersion(
     resolve(root, "apps/calculator/scripts"),
   ),
@@ -380,14 +614,31 @@ const report = {
   durationMs: Date.now() - started,
   interrupted: interruption.signal.aborted,
   status:
-    fullRunPassed(results) && !interruption.signal.aborted ? "passed" : "failed",
+    fullRunPassed(results) &&
+    !runnerFailed &&
+    candidate.sourceDigest === finalCandidate.sourceDigest &&
+    candidate.commit === finalCandidate.commit &&
+    !interruption.signal.aborted
+      ? "passed"
+      : "failed",
   results,
+  groupInventory: selectedGroups.map(({ name, prerequisites, execution }) => ({
+    name,
+    prerequisites,
+    execution,
+  })),
+  groupCounts: {
+    passed: results.filter(({ status }) => status === "passed").length,
+    failed: results.filter(({ status }) => status === "failed").length,
+    blocked: results.filter(({ status }) => status === "blocked").length,
+    missing: selectedGroups.length - results.length,
+  },
   inventory: { ...inventory, calculatorExceptions },
   testEvidence,
   cleanup,
   databaseCreation,
 };
-const reports = resolve(root, ".turbo/nonbrowser-tests");
+const reports = privateRoot;
 await mkdir(reports, { recursive: true });
 await writeFile(
   resolve(reports, `${handle?.runId ?? randomUUID()}.json`),
