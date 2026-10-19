@@ -29,6 +29,7 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -175,17 +176,6 @@ async function selectEntity(
 
 async function openOrganizationDialog(page: Page) {
   const dialog = page.getByRole("dialog", { name: "Create Organization" });
-  if (!(await dialog.isVisible())) {
-    // The portal may open on pointer-down, intercepting Playwright's final click.
-    // Only tolerate that click race if the requested dialog is visibly open.
-    await page
-      .locator("main button")
-      .filter({ hasText: "Create Organization" })
-      .click({ timeout: 3_000 })
-      .catch(async () => {
-        await expect(dialog).toBeVisible();
-      });
-  }
   await expect(dialog).toBeVisible();
   return dialog;
 }
@@ -364,9 +354,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
-    if (await page.getByText("No Organization access yet").isVisible())
-      await page.reload();
-    await expect(page.getByRole("button", { name: "New project" })).toBeVisible();
+    await expectFirstOrganizationProjects(page, fixture.organizationName);
     projectURLs = [];
     for (const name of fixture.projectNames)
       projectURLs.push(await createProject(page, name));
@@ -486,11 +474,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
-    if (await page.getByText("No Organization access yet").isVisible())
-      await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "Projects", exact: true }),
-    ).toBeVisible();
+    await expectFirstOrganizationProjects(page, names.E);
     const host = await fixture.actorContext(browser, "H", baseURL!);
     existingSetupURL = await issueThroughUI(
       await host.newPage(),

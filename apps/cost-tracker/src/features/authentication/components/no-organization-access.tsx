@@ -43,7 +43,7 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
         country: country,
       });
       setOpen(false);
-      router.replace("/projects");
+      router.refresh();
     } catch (error) {
       setError(getORPCRequestErrorMessage(error).text);
     } finally {
