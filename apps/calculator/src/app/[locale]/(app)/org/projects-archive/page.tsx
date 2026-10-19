@@ -21,8 +21,7 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
-// instant = false: kept on purpose — session-gated data page keyed on the
-// active organization (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 export default async function ProjectsArchivePage() {

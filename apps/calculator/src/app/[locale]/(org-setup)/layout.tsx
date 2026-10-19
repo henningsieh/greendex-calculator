@@ -4,11 +4,9 @@ import {
   handleUnauthenticatedRedirect,
 } from "@/features/authentication/utils";
 import { redirect } from "@/lib/i18n/routing";
+import type { LocaleParams } from "@/lib/i18n/types";
 
-// instant = false: kept on purpose — this layout is an authentication gate.
-// The membership check must resolve before first paint (visitors who do not
-// belong here must never see the setup form flash before the redirect), so
-// there is no useful static shell for the wrong audience (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 /**
@@ -27,9 +25,7 @@ export default async function OrgSetupLayout({
   params,
 }: Readonly<{
   children: React.ReactNode;
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }>) {
   const { locale } = await params;
   const { session, hasOrgs, rememberedPath } = await checkAuthAndOrgs();

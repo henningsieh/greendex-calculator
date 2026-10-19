@@ -5,8 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QuestionnaireForm } from "@/features/participate/components/participate-form";
 import { getProjectData } from "@/features/projects/utils";
 
-// instant = false: kept on purpose — same per-request project lookup as the
-// layout above; the questionnaire must render complete (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 interface ParticipatePageProps {

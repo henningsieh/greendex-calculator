@@ -24,9 +24,7 @@ import {
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
 
-// instant = false: kept on purpose — session- and permission-gated data
-// page (create-project permission resolves per request and keys the UI);
-// streaming it is a deliberate follow-up (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 /**

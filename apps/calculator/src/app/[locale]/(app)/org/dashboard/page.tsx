@@ -15,9 +15,7 @@ import {
   getQueryClient,
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
-// instant = false: kept on purpose — session-gated data page. The session
-// and active organization resolve per request and key every prefetch below;
-// restructuring into streamed halves is a deliberate follow-up (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 /**

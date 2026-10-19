@@ -4,6 +4,7 @@ import { GlobeSection } from "@/features/landingpage/components/globe-section";
 import { HeroSection } from "@/features/landingpage/components/hero-section";
 import { PreviewSection } from "@/features/landingpage/components/preview-section";
 import { WorkshopsHeroSection } from "@/features/landingpage/components/workshops/workshops-hero-section";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 // ensureStatic = 'navigation': fully static marketing page; the build fails
 // if request-time rendering creeps in (#246).
@@ -24,9 +25,7 @@ export const ensureStatic = "navigation";
 export default function LandingPage({
   params,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   return (
     <main className="relative overflow-hidden">
@@ -47,35 +46,17 @@ export default function LandingPage({
   );
 }
 
-async function LocalizedHero({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+async function LocalizedHero({ params }: { params: Promise<LocaleParams> }) {
   const { locale } = await params;
   return <HeroSection locale={locale} />;
 }
 
-async function LocalizedWorkshops({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+async function LocalizedWorkshops({ params }: { params: Promise<LocaleParams> }) {
   const { locale } = await params;
   return <WorkshopsHeroSection locale={locale} />;
 }
 
-async function LocalizedPreview({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+async function LocalizedPreview({ params }: { params: Promise<LocaleParams> }) {
   const { locale } = await params;
   return <PreviewSection locale={locale} />;
 }

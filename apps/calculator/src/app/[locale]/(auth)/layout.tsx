@@ -4,14 +4,9 @@ import { connection } from "next/server";
 import { CREATE_ORG_PATH, DASHBOARD_PATH } from "@/app/routes";
 import { auth } from "@/lib/better-auth";
 import { redirect } from "@/lib/i18n/routing";
+import type { LocaleParams } from "@/lib/i18n/types";
 
-// instant = false: kept on purpose — this layout is an authentication gate.
-// The signed-in check must resolve before first paint (a signed-in visitor
-// must never see the login form flash before the redirect), so there is no
-// useful static shell for the wrong audience. Page-level `ensureStatic` is
-// intentionally absent here: no navigation stage can stay static while the
-// gate reads request headers. Restructuring into a streaming AuthGate is a
-// deliberate follow-up, not part of this adoption (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 /**
@@ -30,9 +25,7 @@ export default async function AuthLayout({
   params,
 }: Readonly<{
   children: React.ReactNode;
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }>) {
   const { locale } = await params;
   await connection();

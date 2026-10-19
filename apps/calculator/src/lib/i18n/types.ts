@@ -8,6 +8,8 @@ import { ComponentType, SVGProps } from "react";
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 export type LanguageCode = SupportedLanguage["code"];
 
+export type LocaleParams = { locale: string };
+
 export type LocaleData = SupportedLanguage & {
   nativeName: string;
   englishName: string;

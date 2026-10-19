@@ -5,10 +5,9 @@
  */
 
 import { UserSettingsPage } from "@/features/user/components/user-settings-page";
+import type { LocaleParams } from "@/lib/i18n/types";
 
-// instant = false: kept on purpose — protected page: the (app) gate checks
-// the session before first paint, then renders the preferences form for the
-// signed-in user; streaming it is a deliberate follow-up (#246).
+// See apps/calculator/docs/README.md#instant-navigation-opt-outs.
 export const instant = false;
 
 /**
@@ -17,9 +16,7 @@ export const instant = false;
 export default async function UserSettings({
   params,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   const { locale } = await params;
   return <UserSettingsPage locale={locale} />;

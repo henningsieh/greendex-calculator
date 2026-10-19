@@ -5,11 +5,10 @@ import { LOGIN_PATH } from "@/app/routes";
 import AuthFlowLayout from "@/features/authentication/components/auth-flow-layout";
 import { AuthPageSkeleton } from "@/features/authentication/components/auth-page-skeleton";
 import { VerifyEmailContent } from "@/features/authentication/components/verify-email-content";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 interface VerifyEmailPageProps {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }
 
 /**
