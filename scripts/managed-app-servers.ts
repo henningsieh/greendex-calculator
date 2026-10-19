@@ -81,6 +81,8 @@ export async function stopOwnedProcess(handle: OwnedProcess): Promise<void> {
   }
 }
 
+export class ManagedCommandCleanupError extends Error {}
+
 /** Bounded task subprocess; output remains private, and descendants are owned too. */
 export async function runManagedCommand(
   command: string,
@@ -126,7 +128,12 @@ export async function runManagedCommand(
       if (options.signal?.aborted) fail();
     });
   } finally {
-    if (handle.pid) await stopOwnedProcess(handle);
+    if (handle.pid)
+      await stopOwnedProcess(handle).catch((error: unknown) => {
+        throw new ManagedCommandCleanupError("Managed command cleanup failed.", {
+          cause: error,
+        });
+      });
     options.inspectOutput?.(output);
   }
 }

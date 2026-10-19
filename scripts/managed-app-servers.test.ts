@@ -18,6 +18,7 @@ import {
   assertManagedRun,
   createManagedAppRun,
   isManagedAuthReady,
+  ManagedCommandCleanupError,
   runManagedCommand,
   startManagedAppServers,
   stopOwnedProcess,
@@ -121,6 +122,35 @@ async function withRun(
 }
 
 describe("managed app lifecycle", () => {
+  it("distinguishes unconfirmed command shutdown from an ordinary task failure", async () => {
+    const kill = process.kill.bind(process);
+    let group: number | undefined;
+    const termination = vi
+      .spyOn(process, "kill")
+      .mockImplementation((pid, signal) => {
+        if (signal === "SIGTERM") {
+          group = pid;
+          throw new Error("termination refused");
+        }
+        return kill(pid, signal);
+      });
+    try {
+      await expect(
+        runManagedCommand(
+          process.execPath,
+          ["-e", "setInterval(() => {}, 1000)"],
+          {
+            cwd: import.meta.dirname,
+            env: process.env,
+            timeoutMs: 50,
+          },
+        ),
+      ).rejects.toThrow(ManagedCommandCleanupError);
+    } finally {
+      termination.mockRestore();
+      if (group !== undefined) kill(group, "SIGKILL");
+    }
+  });
   it.each(["development", "production"] as const)(
     "maps route types to the %s artifact without modifying checkout configuration",
     async (profile) => {

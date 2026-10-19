@@ -22,12 +22,12 @@ import { canonicalSeedVersion } from "../../../scripts/canonical-seed-version";
 import { fullProductionGroups } from "../../../scripts/full-production-groups";
 import {
   createManagedAppRun,
+  ManagedCommandCleanupError,
   type ManagedAppRun,
   type ManagedTarget,
   type ReadyApp,
   readLocalEnvironment,
   runManagedCommand,
-  startManagedAppServers,
   type ManagedAppServers,
 } from "../../../scripts/managed-app-servers";
 import { nonbrowserTestEvidence } from "../../../scripts/nonbrowser-test-evidence";
@@ -68,6 +68,7 @@ const privateRoot = resolve(
 await mkdir(privateRoot, { recursive: true, mode: 0o700 });
 const privateRun = await mkdtemp(resolve(privateRoot, "run-"));
 let managedRun: ManagedAppRun<"production"> | undefined;
+let developmentRun: ManagedAppRun<"development"> | undefined;
 const ready = new Map<ManagedTarget, ReadyApp>();
 const environmentFailures = new Set<"calculator" | "cost-tracker">();
 const browserEvidence: {
@@ -95,6 +96,7 @@ let environments: Record<"calculator" | "cost-tracker", Record<string, string>>;
 let pool: Pool | undefined;
 const cleanup = {
   servers: "not-started",
+  commands: "not-failed",
   database: "not-created",
   pool: "not-opened",
   garage: "not-started",
@@ -118,8 +120,19 @@ const environment = (): NodeJS.ProcessEnv => ({
     : {}),
   GREENDEX_AGGREGATE_TEST_RUN: "true",
 });
+const managedCommand = async (...args: Parameters<typeof runManagedCommand>) => {
+  try {
+    await runManagedCommand(...args);
+  } catch (error) {
+    if (error instanceof ManagedCommandCleanupError) {
+      cleanup.commands = "failed";
+      interruption.abort();
+    }
+    throw error;
+  }
+};
 const command = (cwd: string, args: string[], env = environment()) =>
-  runManagedCommand("pnpm", args, {
+  managedCommand("pnpm", args, {
     cwd: resolve(root, cwd),
     env,
     timeoutMs: 900_000,
@@ -132,7 +145,7 @@ const vitest = (
   timeoutMs = 900_000,
   scheduling: keyof typeof nonbrowserVitestScheduling = "serial",
 ) =>
-  runManagedCommand(
+  managedCommand(
     "pnpm",
     [
       "exec",
@@ -322,13 +335,26 @@ const groups: TestGroup[] = [
           resolve(root, "apps/cost-tracker/.env"),
         ),
       };
-      servers = await startManagedAppServers(
+      cleanup.servers = "pending";
+      developmentRun = await createManagedAppRun(
         root,
         { runId: handle.runId, databaseUrl: handle.databaseUrl },
         environments,
-        { signal: interruption.signal },
+        { profile: "development", signal: interruption.signal },
       );
-      cleanup.servers = "pending";
+      const lifecycle = developmentRun;
+      const calculator = await lifecycle.start("calculator");
+      const costTracker = await lifecycle.start("cost-tracker");
+      servers = {
+        calculatorBaseUrl: calculator.baseUrl,
+        costTrackerBaseUrl: costTracker.baseUrl,
+        environment: {
+          TEST_RUN_ID: handle.runId,
+          CALCULATOR_TEST_BASE_URL: calculator.baseUrl,
+          COST_TRACKER_TEST_BASE_URL: costTracker.baseUrl,
+        },
+        stop: () => lifecycle.stop(),
+      };
     },
   },
   {
@@ -389,10 +415,11 @@ const groups: TestGroup[] = [
     prerequisites: [],
     execution: "cleanup",
     run: async () => {
-      if (!servers && !managedRun) return;
+      if (cleanup.servers === "not-started") return;
       try {
         if (managedRun) await managedRun.stop();
-        else await servers?.stop();
+        else if (developmentRun) await developmentRun.stop();
+        else throw new Error("Lifecycle acquisition cleanup is unconfirmed.");
         cleanup.servers = "stopped";
       } catch {
         cleanup.servers = "failed";
@@ -416,6 +443,17 @@ const groups: TestGroup[] = [
         }
       }
       if (handle) {
+        if (
+          cleanup.servers === "failed" ||
+          cleanup.servers === "pending" ||
+          cleanup.commands === "failed" ||
+          failed
+        ) {
+          cleanup.database = "retained";
+          throw new Error(
+            "Database retained until resource cleanup is verified.",
+          );
+        }
         try {
           await disposeIsolatedRunDatabase(handle);
           cleanup.database = "disposed";
@@ -458,7 +496,7 @@ const runBrowser = async (suite: BrowserSuite) => {
   const invoke = async (discovery: boolean) => {
     await rm(reportFile, { force: true });
     try {
-      await runManagedCommand(
+      await managedCommand(
         "pnpm",
         [
           "exec",
@@ -514,13 +552,13 @@ const selectedGroups = full
             environmentFailures.add(app);
           }
         }
+        cleanup.servers = "pending";
         managedRun = await createManagedAppRun(
           root,
           { runId: handle.runId, databaseUrl: handle.databaseUrl },
           environments,
           { profile: "production", signal: interruption.signal },
         );
-        cleanup.servers = "pending";
       },
       start: async (target) => {
         if (!managedRun) throw new Error("Missing managed run.");
@@ -543,12 +581,16 @@ const selectedGroups = full
         const calculator = ready.get("calculator");
         const cost = ready.get("cost-tracker");
         const lifecycle = managedRun;
-        if (!calculator || !cost || !lifecycle)
+        if (!calculator || !cost || !lifecycle || !handle)
           throw new Error("Missing paired production targets.");
         servers = {
           calculatorBaseUrl: calculator.baseUrl,
           costTrackerBaseUrl: cost.baseUrl,
-          environment: { ...calculator.environment, ...cost.environment },
+          environment: {
+            TEST_RUN_ID: handle.runId,
+            CALCULATOR_TEST_BASE_URL: calculator.baseUrl,
+            COST_TRACKER_TEST_BASE_URL: cost.baseUrl,
+          },
           stop: () => lifecycle.stop(),
         };
       },
@@ -581,15 +623,25 @@ try {
       runnerFailed = true;
     }
   }
-  try {
-    await rm(privateRun, { recursive: true, force: true });
-    cleanup.browserArtifacts = "removed";
-  } catch {
-    cleanup.browserArtifacts = "failed";
+  if (
+    cleanup.servers === "failed" ||
+    cleanup.servers === "pending" ||
+    cleanup.commands === "failed"
+  ) {
+    cleanup.browserArtifacts = "retained";
     runnerFailed = true;
+  } else {
+    try {
+      await rm(privateRun, { recursive: true, force: true });
+      cleanup.browserArtifacts = "removed";
+    } catch {
+      cleanup.browserArtifacts = "failed";
+      runnerFailed = true;
+    }
   }
 }
 const finalCandidate = testCandidate(root);
+const lifecycle = managedRun ?? developmentRun;
 const report = {
   suite: full ? "full-production" : "nonbrowser",
   ...candidate,
@@ -597,9 +649,11 @@ const report = {
     candidate.sourceDigest === finalCandidate.sourceDigest &&
     candidate.commit === finalCandidate.commit,
   runtime: full ? "production" : "development",
-  lifecycleEvidenceDirectory: managedRun
-    ? relative(root, managedRun.evidenceDirectory)
+  lifecycleEvidenceDirectory: lifecycle
+    ? relative(root, lifecycle.evidenceDirectory)
     : null,
+  retainedArtifactsDirectory:
+    cleanup.browserArtifacts === "retained" ? relative(root, privateRun) : null,
   productionTargets: [...ready].map(([target, app]) => ({
     target,
     baseUrl: app.baseUrl,
