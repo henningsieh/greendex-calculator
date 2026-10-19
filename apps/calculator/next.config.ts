@@ -7,6 +7,9 @@ if (testRunId && !/^[a-f0-9]{32}$/.test(testRunId)) {
 }
 
 const nextConfig = {
+  ...(process.env.MANAGED_WORKSPACE_ROOT
+    ? { turbopack: { root: process.env.MANAGED_WORKSPACE_ROOT } }
+    : {}),
   // #273: managed runs never share build output or rewrite the dev tsconfig.
   ...(testRunId
     ? {
