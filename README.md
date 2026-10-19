@@ -359,6 +359,13 @@ suites, live email workflows and development Garage verification directly,
 without Turbo caching or Playwright. Pure suites run independently of service
 prerequisites; service failures block dependent groups but not independent checks.
 
+Each pure app group uses at most two file workers. Both apps can run their pure
+groups concurrently, so up to four app file workers can overlap with repository
+and package checks. Each file retains Vitest isolation because pure suites also
+use module mocks, environment overrides, and fake timers. Database and live
+groups retain serial file execution. Standalone app commands retain their
+existing configuration. The runner does not enable a persistent transform cache.
+
 The root runner creates one uniquely owned database, migrates and seeds it once,
 and injects that same database and `TEST_RUN_ID` into dedicated managed app
 servers and live suites. It never attaches to ordinary development servers.

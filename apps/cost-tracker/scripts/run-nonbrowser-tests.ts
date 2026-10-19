@@ -20,6 +20,7 @@ import { nonbrowserTestEvidence } from "../../../scripts/nonbrowser-test-evidenc
 import {
   fullRunPassed,
   nonbrowserPackages,
+  nonbrowserVitestScheduling,
   runTestGroups,
   type TestGroup,
 } from "../../../scripts/nonbrowser-test-groups";
@@ -75,14 +76,19 @@ const command = (cwd: string, args: string[], env = environment()) =>
     signal: interruption.signal,
   });
 const testEvidence: ReturnType<typeof nonbrowserTestEvidence>[] = [];
-const vitest = (cwd: string, args: string[] = [], timeoutMs = 900_000) =>
+const vitest = (
+  cwd: string,
+  args: string[] = [],
+  timeoutMs = 900_000,
+  scheduling: keyof typeof nonbrowserVitestScheduling = "serial",
+) =>
   runManagedCommand(
     "pnpm",
     [
       "exec",
       "vitest",
       "run",
-      "--no-file-parallelism",
+      ...nonbrowserVitestScheduling[scheduling],
       `--reporter=${resolve(root, "scripts/nonbrowser-json-reporter.ts")}`,
       ...args,
     ],
@@ -165,7 +171,7 @@ const groups: TestGroup[] = [
     name: `${app}/pure`,
     prerequisites: [],
     execution: "parallel" as const,
-    run: () => vitest(`apps/${app}`, inventory[app].pure, 1_800_000),
+    run: () => vitest(`apps/${app}`, inventory[app].pure, 1_800_000, "pure"),
   })),
   {
     name: "database/create",
