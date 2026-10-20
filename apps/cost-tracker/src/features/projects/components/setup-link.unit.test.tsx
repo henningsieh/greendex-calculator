@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -278,6 +278,46 @@ describe("Setup Link UI", () => {
       screen.getByText(/does not grant Hosting Organization membership/i),
     ).toBeTruthy();
   });
+
+  it.each(["A", "A !!!", "!!!", "a".repeat(101)])(
+    "rejects normalized invalid name %s before saving intent and accepts correction",
+    async (name) => {
+      mocks.createOrganization.mockImplementation(async (input) => {
+        if (input.name !== "New Partner") throw new ORPCError("BAD_REQUEST");
+        return { organizationId: "partner-2" };
+      });
+      recipient();
+      const user = userEvent.setup({ delay: null });
+      await user.type(
+        await screen.findByLabelText("New Organization name"),
+        name,
+      );
+      await user.selectOptions(
+        screen.getByLabelText("Organization country"),
+        "DE",
+      );
+      fireEvent.submit(
+        screen.getByRole("button", { name: "Complete setup" }).closest("form")!,
+      );
+      await waitFor(() => expect(mocks.eligibility).toHaveBeenCalledTimes(2));
+      expect(localStorage.getItem("partner-setup:user-1:link-1")).toBeNull();
+      expect(mocks.createOrganization).not.toHaveBeenCalled();
+      await user.clear(screen.getByLabelText("New Organization name"));
+      await user.type(
+        screen.getByLabelText("New Organization name"),
+        "  New Partner  ",
+      );
+      await user.click(screen.getByRole("button", { name: "Complete setup" }));
+      expect(
+        await screen.findByText("Project Partnership created"),
+      ).toBeVisible();
+      expect(mocks.createOrganization).toHaveBeenCalledExactlyOnceWith({
+        country: "DE",
+        name: "New Partner",
+        slug: "new-partner",
+      });
+    },
+  );
 
   it("refuses clearly when Organization creation fails", async () => {
     mocks.createOrganization.mockRejectedValue(new Error("BA refused"));

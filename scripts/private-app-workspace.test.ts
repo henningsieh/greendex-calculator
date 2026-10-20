@@ -30,6 +30,14 @@ it("copies workspace dependencies without writable checkout source or local arti
       recursive: true,
     });
     await mkdir(join(checkout, "packages/config"), { recursive: true });
+    await mkdir(join(checkout, "node_modules/.bin"), { recursive: true });
+    await mkdir(join(checkout, "apps/calculator/node_modules/.bin"));
+    for (const workspace of [".", "apps/calculator"]) {
+      await writeFile(
+        join(checkout, workspace, "node_modules/.bin/next"),
+        "checkout shim",
+      );
+    }
     await mkdir(join(checkout, "apps/calculator/.next"));
     await writeFile(join(checkout, "packages/config/source.ts"), "original");
     await writeFile(
@@ -49,6 +57,21 @@ it("copies workspace dependencies without writable checkout source or local arti
     const before = await workspaceDigest(image);
     await linkWorkspaceDependencies(checkout, image);
     expect(await workspaceDigest(image)).toBe(before);
+    for (const workspace of [".", "apps/calculator"]) {
+      await writeFile(
+        join(image, workspace, "node_modules/.bin/next"),
+        "rewritten image shim",
+      );
+      expect(
+        await readFile(
+          join(checkout, workspace, "node_modules/.bin/next"),
+          "utf8",
+        ),
+      ).toBe("checkout shim");
+      expect(
+        await readFile(join(image, workspace, "node_modules/.bin/next"), "utf8"),
+      ).toBe("rewritten image shim");
+    }
     expect(
       await realpath(join(image, "apps/calculator/node_modules/@greendex/auth")),
     ).toBe(join(image, "packages/auth"));
