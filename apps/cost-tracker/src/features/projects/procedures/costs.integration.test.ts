@@ -33,6 +33,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
 import { GET as download, POST as upload } from "@/app/api/proof-documents/route";
+import { env } from "@/env";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerCosts.
@@ -60,6 +61,7 @@ let activeOrg = partner;
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
+const origin = new URL(env.NEXT_PUBLIC_BASE_URL).origin;
 const base = {
   partnershipId: own,
   transportProfile: "train" as const,
@@ -125,16 +127,16 @@ describe("Claim cost procedures", () => {
   });
 
   it("uploads only to an editable Claim with authenticated Partner scope", async () => {
-    function request(partnershipId: string, origin = "https://test.example") {
+    function request(partnershipId: string, requestOrigin = origin) {
       const data = new FormData();
       data.set("partnershipId", partnershipId);
       data.set(
         "file",
         new File(["test"], "uploaded.pdf", { type: "application/pdf" }),
       );
-      return new Request("https://test.example/api/proof-documents", {
+      return new Request(`${origin}/api/proof-documents`, {
         method: "POST",
-        headers: { origin },
+        headers: { origin: requestOrigin },
         body: data,
       });
     }
@@ -199,9 +201,9 @@ describe("Claim cost procedures", () => {
       new File([bytes], "uploaded.pdf", { type: "application/pdf" }),
     );
     const uploaded = await upload(
-      new Request("https://test.example/api/proof-documents", {
+      new Request(`${origin}/api/proof-documents`, {
         method: "POST",
-        headers: { origin: "https://test.example" },
+        headers: { origin },
         body: data,
       }),
     );
@@ -214,7 +216,7 @@ describe("Claim cost procedures", () => {
     });
     const request = (partnershipId: string, id = documentId) =>
       new Request(
-        `https://test.example/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: id })}`,
+        `${origin}/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: id })}`,
       );
     authMocks.getSession.mockResolvedValueOnce(null);
     expect((await download(request(own))).status).toBe(401);
