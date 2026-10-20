@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { orpcQuery } from "@/lib/orpc/orpc";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
@@ -108,6 +109,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
     },
     orpcQuery: {
       ...original.orpcQuery,
+      projects: original.orpcQuery.projects,
       claims: {
         ...original.orpcQuery.claims,
         getDraft: query(original.orpcQuery.claims.getDraft, () => mocks.draft),
@@ -186,9 +188,9 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
 
 import { ClaimWorkspace } from "@/features/projects/components/claim-workspace";
 
-function mount() {
+function mount(client = createQueryClient()) {
   render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <ClaimWorkspace partnershipId="own" />
     </QueryClientProvider>,
   );
@@ -838,7 +840,15 @@ describe("Claim workspace", () => {
       ].map((key) => ({ key, passed: true, gaps: [] })),
       calculatedPayableEur: "726.00",
     };
-    mount();
+    const client = createQueryClient();
+    const project = {
+      queryKey: orpcQuery.projects.get.queryKey({
+        input: { projectId: "project" },
+      }),
+      queryFn: async () => mocks.draft?.status,
+    };
+    expect(await client.fetchQuery(project)).toBe("editable");
+    mount(client);
     expect(await screen.findByText("726.00 EUR")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
     expect(mocks.submit).not.toHaveBeenCalled();
@@ -852,6 +862,7 @@ describe("Claim workspace", () => {
     expect(
       await screen.findByText(/Claim Submitted \/ saved/),
     ).toBeInTheDocument();
+    expect(await client.fetchQuery(project)).toBe("submitted");
     expect(screen.getByText(/locked for Partner editing/)).toBeInTheDocument();
     expect(screen.getByLabelText("Payout Account")).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();
