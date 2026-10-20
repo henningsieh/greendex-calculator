@@ -10,6 +10,7 @@ import {
   fullRunPassed,
   nonbrowserPackages,
   nonbrowserVitestScheduling,
+  nonbrowserTestNeedsServices,
   runTestGroups,
 } from "./nonbrowser-test-groups";
 
@@ -376,4 +377,28 @@ describe("nonbrowser test groups", () => {
     expect(fullRunPassed(results)).toBe(false);
     expect(fullRunPassed(results.slice(0, 1))).toBe(true);
   });
+});
+
+it("classifies the real proof-storage round trip as live while keeping pure tests server-free", async () => {
+  const file = "src/lib/proof-storage.test.ts";
+  const source = await readFile(
+    resolve(import.meta.dirname, "../apps/cost-tracker", file),
+    "utf8",
+  );
+  expect(nonbrowserTestNeedsServices(file, source)).toBe(true);
+  expect(
+    nonbrowserTestNeedsServices(
+      "src/features/organizations/slug.test.ts",
+      'import { slugifyOrganizationName } from "./slug";',
+    ),
+  ).toBe(false);
+  expect(nonbrowserTestNeedsServices("src/auth.integration.test.ts", "")).toBe(
+    true,
+  );
+  expect(
+    nonbrowserTestNeedsServices(
+      "src/example.test.ts",
+      'import { db } from "@greendex/database";',
+    ),
+  ).toBe(true);
 });

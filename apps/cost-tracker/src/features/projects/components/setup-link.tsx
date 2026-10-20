@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { authClient } from "@/lib/auth-client";
@@ -586,7 +587,15 @@ export function SetupLinkRecipient({
             ? choice.organizationId
             : "";
       if (!recovery && choice.kind === "new") {
-        if (!choice.country) return;
+        const input = CreateOrganizationInputSchema.safeParse({
+          country: choice.country,
+          name: choice.name.trim(),
+          slug: slugifyOrganizationName(choice.name.trim()),
+        });
+        if (!input.success) {
+          setState({ phase: "ready", error: "create" });
+          return;
+        }
         try {
           localStorage.setItem(
             recoveryKey,
@@ -599,11 +608,9 @@ export function SetupLinkRecipient({
         recovery = { phase: "creating" };
         setState({ phase: "ready", recovery });
         try {
-          const created = await orpc.authentication.createOrganization({
-            country: choice.country,
-            name: choice.name.trim(),
-            slug: slugifyOrganizationName(choice.name.trim()),
-          });
+          const created = await orpc.authentication.createOrganization(
+            input.data,
+          );
           targetId = created.organizationId;
           recovery = { phase: "created", organizationId: targetId };
           setState({ phase: "ready", recovery });

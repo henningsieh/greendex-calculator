@@ -109,7 +109,9 @@ export async function linkWorkspaceDependencies(
     for (const entry of entries) {
       const from = resolve(source, entry.name);
       const to = resolve(destination, entry.name);
-      if (entry.name.startsWith("@") && entry.isDirectory()) {
+      if (entry.name === ".bin") {
+        await cp(from, to, { recursive: true, dereference: true });
+      } else if (entry.name.startsWith("@") && entry.isDirectory()) {
         await linkTree(from, to);
       } else {
         const target = await realpath(from);

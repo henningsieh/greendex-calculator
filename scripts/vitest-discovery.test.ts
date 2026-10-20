@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, relative, resolve } from "node:path";
 
 import { expect, it } from "vitest";
-import { createVitest } from "vitest/node";
+import { createVitest, type Vitest } from "vitest/node";
 
 it("discovers repository tests once and excludes managed images and vendor copies", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "greendex-discovery-"));
@@ -14,7 +14,7 @@ it("discovers repository tests once and excludes managed images and vendor copie
     "apps/cost-tracker/.turbo/run/src/example.test.ts",
     "node_modules/vendor/example.test.ts",
   ];
-  let runner: Awaited<ReturnType<typeof createVitest>> | undefined;
+  let runner: Vitest | undefined;
   try {
     for (const file of files) {
       await mkdir(dirname(resolve(root, file)), { recursive: true });
@@ -22,7 +22,7 @@ it("discovers repository tests once and excludes managed images and vendor copie
     }
     runner = await createVitest({
       root,
-      config: resolve(import.meta.dirname, "../vitest.config.ts"),
+      config: resolve(import.meta.dirname, "../vitest.config.mts"),
       watch: false,
       maxWorkers: 1,
     });

@@ -1,6 +1,6 @@
-import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { z } from "zod";
 
+import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { auth } from "@/lib/auth";
 import {
@@ -19,12 +19,6 @@ const SignInInputSchema = z.object({
 
 const SignUpInputSchema = SignInInputSchema.extend({
   name: EditNameSchema.shape.name,
-});
-
-const CreateOrganizationInputSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  slug: z.string().trim().min(2).max(120),
-  country: z.enum(EU_COUNTRY_CODES),
 });
 
 const GoogleSignInInputSchema = z.object({

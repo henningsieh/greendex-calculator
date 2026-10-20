@@ -94,3 +94,17 @@ export function fullRunPassed(results: GroupResult[]): boolean {
     results.length > 0 && results.every((result) => result.status === "passed")
   );
 }
+
+export function nonbrowserTestNeedsServices(
+  file: string,
+  source: string,
+): boolean {
+  return (
+    /\.integration\.|openapi-(?:http|rest)|db-connection|(?:^|\/)proof-storage\.test\./.test(
+      file,
+    ) ||
+    /@greendex\/database|from ["']pg["']|from ["'][^"']*(?:router|procedures|http-client)[^"']*["']/.test(
+      source,
+    )
+  );
+}

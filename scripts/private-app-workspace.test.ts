@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import {
   mkdir,
   mkdtemp,
@@ -32,11 +33,10 @@ it("copies workspace dependencies without writable checkout source or local arti
     await mkdir(join(checkout, "packages/config"), { recursive: true });
     await mkdir(join(checkout, "node_modules/.bin"), { recursive: true });
     await mkdir(join(checkout, "apps/calculator/node_modules/.bin"));
+    const shim =
+      'require("node:fs").writeFileSync(__filename, "rewritten image shim");';
     for (const workspace of [".", "apps/calculator"]) {
-      await writeFile(
-        join(checkout, workspace, "node_modules/.bin/next"),
-        "checkout shim",
-      );
+      await writeFile(join(checkout, workspace, "node_modules/.bin/next"), shim);
     }
     await mkdir(join(checkout, "apps/calculator/.next"));
     await writeFile(join(checkout, "packages/config/source.ts"), "original");
@@ -58,16 +58,17 @@ it("copies workspace dependencies without writable checkout source or local arti
     await linkWorkspaceDependencies(checkout, image);
     expect(await workspaceDigest(image)).toBe(before);
     for (const workspace of [".", "apps/calculator"]) {
-      await writeFile(
-        join(image, workspace, "node_modules/.bin/next"),
-        "rewritten image shim",
+      execFileSync(
+        process.execPath,
+        [join(image, workspace, "node_modules/.bin/next")],
+        { timeout: 5_000 },
       );
       expect(
         await readFile(
           join(checkout, workspace, "node_modules/.bin/next"),
           "utf8",
         ),
-      ).toBe("checkout shim");
+      ).toBe(shim);
       expect(
         await readFile(join(image, workspace, "node_modules/.bin/next"), "utf8"),
       ).toBe("rewritten image shim");

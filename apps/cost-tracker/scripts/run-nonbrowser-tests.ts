@@ -40,6 +40,7 @@ import {
   fullRunPassed,
   nonbrowserPackages,
   nonbrowserVitestScheduling,
+  nonbrowserTestNeedsServices,
   runTestGroups,
   type TestGroup,
 } from "../../../scripts/nonbrowser-test-groups";
@@ -225,11 +226,7 @@ for (const app of ["calculator", "cost-tracker"]) {
   for (const file of files) {
     const source = await readFile(resolve(cwd, file), "utf8");
     // Conservative prerequisites: procedure/router tests may reach persistence transitively.
-    const needsServices =
-      /\.integration\.|openapi-(?:http|rest)|db-connection/.test(file) ||
-      /@greendex\/database|from ["']pg["']|from ["'][^"']*(?:router|procedures|http-client)[^"']*["']/.test(
-        source,
-      );
+    const needsServices = nonbrowserTestNeedsServices(file, source);
     (needsServices ? live : pure).push(file);
   }
   inventory[app] = { pure, live };
