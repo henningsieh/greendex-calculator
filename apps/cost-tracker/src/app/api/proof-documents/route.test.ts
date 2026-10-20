@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   download: vi.fn(),
   upload: vi.fn(),
 }));
+vi.mock("@/env", () => ({ env: { NEXT_PUBLIC_BASE_URL: "http://localhost" } }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
 vi.mock("@/features/projects/procedures/documents", () => ({
   downloadProofDocument: mocks.download,
@@ -18,14 +19,14 @@ import { GET, POST } from "@/app/api/proof-documents/route";
 import { situationCatalog } from "@/lib/orpc/error-contract";
 
 const url = "http://localhost/api/proof-documents";
-function multipart() {
+function multipart(requestURL = url) {
   const form = new FormData();
   form.set("partnershipId", "own");
   form.set(
     "file",
     new File(["proof bytes"], "receipt.pdf", { type: "application/pdf" }),
   );
-  return new Request(url, {
+  return new Request(requestURL, {
     method: "POST",
     headers: { origin: "http://localhost" },
     body: form,
@@ -106,6 +107,30 @@ describe("Proof transport semantic adapters", () => {
     mocks.session.mockRejectedValue(new Error("private auth config"));
     await expectSituation(await GET(new Request(url)), "proofDownloadFailed");
     await expectSituation(await POST(multipart()), "proofUploadFailed");
+  });
+  it("accepts the configured browser origin when the runtime reconstructs an internal URL", async () => {
+    const response = await POST(
+      multipart("http://internal:3002/api/proof-documents"),
+    );
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ id: "proof" });
+  });
+  it("rejects an internal origin even when it matches the reconstructed URL", async () => {
+    await expectSituation(
+      await POST(
+        new Request("http://internal:3002/api/proof-documents", {
+          method: "POST",
+          headers: {
+            origin: "http://internal:3002",
+            host: "localhost",
+            "x-forwarded-host": "localhost",
+          },
+        }),
+      ),
+      "proofOriginDenied",
+    );
+    expect(mocks.session).not.toHaveBeenCalled();
+    expect(mocks.upload).not.toHaveBeenCalled();
   });
   it("returns201 and only the document on success", async () => {
     const response = await POST(multipart());
