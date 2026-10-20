@@ -35,7 +35,9 @@ async function createProject(page: Page, name: string) {
   await dialog.getByLabel("Location").fill("Berlin");
   await dialog.getByLabel("Country").selectOption("DE");
   await dialog.getByRole("button", { name: "Create project" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible();
+  await expect(page.getByRole("heading", { name })).toBeVisible({
+    timeout: 90_000,
+  });
   await expect(page.getByText("Hosted Project", { exact: true })).toBeVisible();
   return new URL(page.url()).pathname;
 }

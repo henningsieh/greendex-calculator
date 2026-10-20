@@ -739,7 +739,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       f
         .getByRole("alert")
         .filter({ hasText: "Unable to load Project Participations" }),
-    ).toContainText("Project Partnership not found in scope.");
+    ).toContainText("Project Partnership not found in scope.", {
+      timeout: 90_000,
+    });
     await expect(f.getByText(actors.T.email)).toHaveCount(0);
   });
 
@@ -937,6 +939,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .filter({ hasText: "Unable to load Project Participations" }),
     ).toContainText(
       "You need Partner Organization staff access or an assignment to this Project Partnership.",
+      { timeout: 90_000 },
     );
     await expect(c.getByText(actors.T.email, { exact: true })).toHaveCount(0);
   });

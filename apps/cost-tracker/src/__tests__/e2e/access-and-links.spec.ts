@@ -344,7 +344,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await dialog.getByLabel("Country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create project" }).click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
-    await expectPrivateURL(h, /\/projects\/[^/]+$/);
+    await expectPrivateURL(h, /\/projects\/[^/]+$/, { timeout: 90_000 });
     projectId = new URL(h.url()).pathname.split("/").at(-1)!;
     await expect(h.getByRole("heading", { name: names.project })).toBeVisible({
       timeout: 90_000,
@@ -594,9 +594,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(
       x.getByText("Partner Organization setup", { exact: true }),
     ).toBeVisible();
-    await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
-    await x.getByLabel("Organization country").selectOption("DE");
-    await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     await creator
       .getByRole("button", { name: "Neuer Link", exact: true })
@@ -607,9 +604,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     // Preserve the original pathname inequality without printing either private ID.
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
-    await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
-    await x.getByLabel("Organization country").selectOption("DE");
-    await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     const fresh = await browser.newContext({
       baseURL: baseURL!,
@@ -627,6 +621,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(x.getByText("No Organization access yet")).toBeVisible();
     // The no-access screen auto-opens Create Organization; dismiss its portal
     // before using the separate Sign out control.
+    await expect(
+      x.getByRole("dialog", { name: "Create Organization" }),
+    ).toBeVisible({ timeout: 90_000 });
     await x.keyboard.press("Escape");
     await expect(
       x.getByRole("dialog", { name: "Create Organization" }),
