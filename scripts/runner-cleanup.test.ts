@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
+  lifecycleCleanupFails: false,
+  startedTargets: [] as string[],
   commandFails: false,
   stopFails: false,
   startFails: false,
@@ -12,6 +14,8 @@ const state = vi.hoisted(() => ({
   report: undefined as
     | undefined
     | {
+        interrupted: boolean;
+        results: { group: string; status: string }[];
         status: string;
         cleanup: Record<string, string>;
       },
@@ -57,8 +61,10 @@ vi.mock("./managed-app-servers", () => {
     if (state.stopFails) throw new Error("surviving child");
   };
   class ManagedCommandCleanupError extends Error {}
+  class ManagedAppCleanupError extends Error {}
   return {
     ManagedCommandCleanupError,
+    ManagedAppCleanupError,
     runManagedCommand: async () => {
       if (state.commandFails)
         throw new ManagedCommandCleanupError("surviving command");
@@ -68,7 +74,10 @@ vi.mock("./managed-app-servers", () => {
       if (state.acquisitionFails) throw new Error("acquisition cleanup failed");
       return {
         evidenceDirectory: "/private/lifecycle/evidence",
-        start: async () => {
+        start: async (target: string) => {
+          state.startedTargets.push(target);
+          if (state.lifecycleCleanupFails)
+            throw new ManagedAppCleanupError("startup cleanup unconfirmed");
           if (state.startFails) throw new Error("startup failed");
           return {
             baseUrl: "http://127.0.0.1:1234",
@@ -87,11 +96,14 @@ vi.mock("./nonbrowser-test-groups", async (importOriginal) => {
     ...actual,
     runTestGroups: async (
       groups: import("./nonbrowser-test-groups").TestGroup[],
+      options?: { signal?: AbortSignal },
     ) => {
       const selected = groups
         .filter(({ name }) =>
           [
-            ...(state.commandFails ? ["calculator/live"] : []),
+            ...(state.commandFails || state.lifecycleCleanupFails
+              ? ["calculator/live"]
+              : []),
             "database/create",
             "managed-run",
             "production/calculator",
@@ -109,7 +121,7 @@ vi.mock("./nonbrowser-test-groups", async (importOriginal) => {
           await group.run();
         throw new Error("runner interrupted before cleanup");
       }
-      return actual.runTestGroups(selected);
+      return actual.runTestGroups(selected, options);
     },
   };
 });
@@ -127,6 +139,8 @@ async function run(options: Partial<typeof state> = {}) {
   Object.assign(
     state,
     {
+      lifecycleCleanupFails: false,
+      startedTargets: [],
       commandFails: false,
       stopFails: false,
       startFails: false,
@@ -149,6 +163,55 @@ async function run(options: Partial<typeof state> = {}) {
 }
 
 describe("integrated runner cleanup", () => {
+  it("blocks later production and HTTP groups and retains resources after fatal startup cleanup", async () => {
+    const report = await run({
+      production: true,
+      lifecycleCleanupFails: true,
+      stopFails: true,
+    });
+    expect(report).toMatchObject({
+      status: "failed",
+      interrupted: true,
+      cleanup: {
+        servers: "failed",
+        database: "retained",
+        browserArtifacts: "retained",
+      },
+    });
+    expect(state.startedTargets).toEqual(["calculator"]);
+    expect(report?.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          group: "production/calculator",
+          status: "failed",
+        }),
+        expect.objectContaining({
+          group: "production/cost-tracker",
+          status: "blocked",
+        }),
+        expect.objectContaining({ group: "managed-servers", status: "blocked" }),
+        expect.objectContaining({ group: "calculator/live", status: "blocked" }),
+      ]),
+    );
+    expect(state.databaseExists).toBe(true);
+    expect(state.artifactsExist).toBe(true);
+    expect(process.exitCode).toBe(1);
+  }, 15_000);
+
+  it("continues independent production targets after a confirmed-clean startup failure", async () => {
+    const report = await run({ production: true, startFails: true });
+    expect(state.startedTargets).toEqual(["calculator", "cost-tracker"]);
+    expect(report).toMatchObject({
+      status: "failed",
+      interrupted: false,
+      cleanup: {
+        servers: "stopped",
+        database: "disposed",
+        browserArtifacts: "removed",
+      },
+    });
+  });
+
   it("retains resources and interrupts later work after command cleanup fails", async () => {
     const report = await run({ commandFails: true });
     expect(report).toMatchObject({

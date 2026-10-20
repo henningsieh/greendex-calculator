@@ -23,6 +23,7 @@ import { fullProductionGroups } from "../../../scripts/full-production-groups";
 import {
   createManagedAppRun,
   ManagedCommandCleanupError,
+  ManagedAppCleanupError,
   type ManagedAppRun,
   type ManagedTarget,
   type ReadyApp,
@@ -568,7 +569,16 @@ const selectedGroups = full
           )
         )
           throw new Error("Missing target environment prerequisite.");
-        const app = await managedRun.start(target);
+        let app: ReadyApp;
+        try {
+          app = await managedRun.start(target);
+        } catch (error) {
+          if (error instanceof ManagedAppCleanupError) {
+            cleanup.servers = "failed";
+            interruption.abort();
+          }
+          throw error;
+        }
         if (
           app.runtime.kind !== "production" ||
           app.runtime.artifact.variant !==

@@ -180,6 +180,10 @@ export class ManagedAppLifecycleError extends Error {
   }
 }
 
+export class ManagedAppCleanupError extends ManagedAppLifecycleError {
+  override name = "ManagedAppCleanupError";
+}
+
 export interface ManagedAppRun<P extends RuntimeProfile> {
   start(target: Target<P>): Promise<ReadyApp>;
   release(target: Target<P>): Promise<void>;
@@ -260,9 +264,7 @@ async function waitForSocket(
         (await response.text()) === String(child.pid)
       )
         return;
-    } catch {
-      /* The owned socket child must identify itself before the deadline. */
-    }
+    } catch {}
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error("Owned socket child did not become ready.");
@@ -289,9 +291,7 @@ async function waitForApp(
         ready = true;
         break;
       }
-    } catch {
-      /* No raw service errors reach reports. */
-    }
+    } catch {}
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   signal.throwIfAborted();
@@ -336,6 +336,7 @@ export async function createManagedAppRun<P extends RuntimeProfile>(
   let closed = false;
   let acquired = false;
   let stopping: Promise<void> | undefined;
+  let fatalCleanup: ManagedAppCleanupError | undefined;
   let queue: Promise<unknown> = Promise.resolve();
   const serial = <T>(task: () => Promise<T>): Promise<T> => {
     const pending = queue.then(task);
@@ -380,9 +381,10 @@ export async function createManagedAppRun<P extends RuntimeProfile>(
     record.ready = undefined;
     if (failures.length) {
       await persist(target, "cleanup-failed-resources-retained");
-      throw new AggregateError(
-        failures,
+      throw new ManagedAppCleanupError(
         "Managed target cleanup failed; workspace and ownership evidence retained.",
+        evidenceDirectory,
+        { cause: new AggregateError(failures) },
       );
     }
     record.children = [];
@@ -396,8 +398,10 @@ export async function createManagedAppRun<P extends RuntimeProfile>(
       for (const [target, record] of records) {
         try {
           await stopChildren(target);
-          await rm(record.image, { recursive: true, force: true });
-          await persist(target, "stopped");
+          if (!fatalCleanup) {
+            await rm(record.image, { recursive: true, force: true });
+            await persist(target, "stopped");
+          }
         } catch (error) {
           failures.push(error);
         }
@@ -409,6 +413,7 @@ export async function createManagedAppRun<P extends RuntimeProfile>(
           failures.push(error);
         }
       }
+      if (fatalCleanup) throw fatalCleanup;
       if (failures.length)
         throw new ManagedAppLifecycleError(
           "Managed app run cleanup failed; retain the database until verified recovery.",
@@ -559,6 +564,7 @@ export async function createManagedAppRun<P extends RuntimeProfile>(
     const start = (target: Target<P>) =>
       serial(async (): Promise<ReadyApp> => {
         if (closed) throw new Error("Managed app run is stopped.");
+        signal.throwIfAborted();
         const record = records.get(target);
         if (!record) throw new Error("Unsupported managed app target.");
         if (
@@ -694,10 +700,13 @@ export async function createManagedAppRun<P extends RuntimeProfile>(
             await stopChildren(target);
             await persist(target, "startup-failed");
           } catch (cleanupError) {
-            throw new AggregateError(
-              [error, cleanupError],
+            fatalCleanup = new ManagedAppCleanupError(
               "Managed startup and cleanup failed; resources retained.",
+              evidenceDirectory,
+              { cause: new AggregateError([error, cleanupError]) },
             );
+            controller.abort(fatalCleanup);
+            throw fatalCleanup;
           }
           throw new Error("Managed application startup failed.", {
             cause: error,

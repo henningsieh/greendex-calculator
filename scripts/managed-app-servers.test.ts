@@ -482,28 +482,53 @@ describe("managed app lifecycle", () => {
       { profile: "production", readinessTimeoutMs: 500 },
     );
     const kill = process.kill.bind(process);
-    const blocked = vi.spyOn(process, "kill").mockImplementation((pid, signal) => {
-      if (signal === "SIGTERM") throw new Error("termination refused");
-      return kill(pid, signal);
-    });
+    const blocked = vi
+      .spyOn(process, "kill")
+      .mockImplementation((pid, signal) => {
+        if (signal === "SIGTERM") throw new Error("termination refused");
+        return kill(pid, signal);
+      });
     try {
-      const failure = await apps.start("cost-tracker").catch((error: unknown) => error);
+      const startup = apps.start("cost-tracker").catch((error: unknown) => error);
+      const queued = apps.start("calculator").catch((error: unknown) => error);
+      const failure = await startup;
       expect(failure).toMatchObject({ name: "ManagedAppCleanupError" });
       expect(failure).toBeInstanceOf(ManagedAppCleanupError);
-      expect(failure).toMatchObject({ evidenceDirectory: apps.evidenceDirectory });
-      const evidence = JSON.parse(await readFile(join(apps.evidenceDirectory, "cost-tracker.json"), "utf8"));
+      expect(failure).toMatchObject({
+        evidenceDirectory: apps.evidenceDirectory,
+      });
+      const evidence = JSON.parse(
+        await readFile(join(apps.evidenceDirectory, "cost-tracker.json"), "utf8"),
+      );
       expect(evidence.state).toBe("cleanup-failed-resources-retained");
-      const pid = Number(await readFile(join(evidence.directory, "owned-pid"), "utf8"));
+      const pid = Number(
+        await readFile(join(evidence.directory, "owned-pid"), "utf8"),
+      );
       expect(evidence.pids).toEqual([pid]);
       expect(kill(pid, 0)).toBe(true);
+      expect(await queued).toBe(failure);
       await expect(apps.start("calculator")).rejects.toBe(failure);
-      await expect(readFile(join(dirname(apps.evidenceDirectory), "calculator/apps/calculator/build-environment.json"))).rejects.toThrow();
+      await expect(
+        readFile(
+          join(
+            dirname(apps.evidenceDirectory),
+            "calculator/apps/calculator/build-environment.json",
+          ),
+        ),
+      ).rejects.toThrow();
       await expect(apps.stop()).rejects.toBeInstanceOf(ManagedAppCleanupError);
-      expect(await readFile(join(evidence.directory, `.next/test-runs/${runId}/BUILD_ID`), "utf8")).toBe("fixture-0");
+      expect(
+        await readFile(
+          join(evidence.directory, `.next/test-runs/${runId}/BUILD_ID`),
+          "utf8",
+        ),
+      ).toBe("fixture-0");
       expect(kill(pid, 0)).toBe(true);
     } finally {
       blocked.mockRestore();
-      const evidence = JSON.parse(await readFile(join(apps.evidenceDirectory, "cost-tracker.json"), "utf8"));
+      const evidence = JSON.parse(
+        await readFile(join(apps.evidenceDirectory, "cost-tracker.json"), "utf8"),
+      );
       for (const pid of evidence.pids) kill(-pid, "SIGKILL");
       await rm(root, { recursive: true, force: true });
     }
