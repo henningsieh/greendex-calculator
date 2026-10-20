@@ -118,14 +118,9 @@ test("both apps expose the same seeded Project and Journey, and Cost Tracker ope
     name: "Project Participants",
     exact: true,
   });
-  // Streaming hydration can replace the initial tab after a switch/refresh.
-  // Verify the selected state, retrying this read-only interaction when needed.
-  await expect(async () => {
-    await participantsTab.click();
-    await expect(participantsTab).toHaveAttribute("aria-selected", "true", {
-      timeout: 1500,
-    });
-  }).toPass({ timeout: 20_000 });
+  await expect(participantsTab).toBeEnabled();
+  await participantsTab.click();
+  await expect(participantsTab).toHaveAttribute("aria-selected", "true");
   await expect(
     page.getByText(
       `Participant Journey: ${seed.origin} → ${seed.destination} · Round trip · ${Number(seed.distance)} km`,

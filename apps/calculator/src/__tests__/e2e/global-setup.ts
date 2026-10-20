@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 
 import { SEED_USER } from "@greendex/auth/seed-user";
 import en from "@greendex/i18n/locales/en.json" with { type: "json" };
-import { chromium, type FullConfig } from "@playwright/test";
+import { chromium, expect, type FullConfig } from "@playwright/test";
 
 /**
  * Global setup for Playwright tests
@@ -31,10 +31,6 @@ async function globalSetup(config: FullConfig) {
         "Base URL is not defined. Please set NEXT_PUBLIC_BASE_URL environment variable.",
       );
     }
-
-    // Sanity check server is running
-    await page.goto(baseURL, { waitUntil: "networkidle", timeout: 30_000 });
-    console.log("✅ Server is running and accessible");
 
     // Navigate to sign in page
     const loginUrl = new URL("/en/login", baseURL).toString();
@@ -78,22 +74,16 @@ async function globalSetup(config: FullConfig) {
     await page.fill('input[name="email"]', SEED_USER.email);
     await page.fill('input[name="password"]', SEED_USER.password);
 
-    // Wait a bit for any animations to settle
-    await page.waitForTimeout(500);
-
-    // Click with force to bypass animation stability check
     const submitButton = page.locator('button[type="submit"]');
-    await submitButton.waitFor({ state: "visible", timeout: 10_000 });
-    await submitButton.click({ force: true, timeout: 10_000 });
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
 
     // Wait for redirect to dashboard
     await page.waitForURL("**/org/dashboard", { timeout: 30_000 });
 
-    // Quick verification that dashboard is loaded
-    const h1Text = (await page.locator("h1").first().textContent()) ?? "";
-    if (!h1Text.includes("Dashboard")) {
-      throw new Error("Dashboard heading not found after login");
-    }
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Dashboard", exact: true }),
+    ).toBeVisible();
 
     // Ensure auth dir exists and save storage state for the rest of the suite
     mkdirSync(dirname(storagePath), { recursive: true, mode: 0o700 });

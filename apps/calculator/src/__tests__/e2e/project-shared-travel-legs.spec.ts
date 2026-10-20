@@ -122,6 +122,7 @@ test.describe("Project Shared Travel Legs", () => {
     const sharedTravelTab = page.getByRole("tab", {
       name: en.project.details.tabs["shared-travel"],
     });
+    await expect(sharedTravelTab).toBeEnabled();
     await sharedTravelTab.click();
     const sharedTravelLegRow = page
       .getByRole("row")
@@ -165,8 +166,6 @@ test.describe("Project Shared Travel Legs", () => {
     page,
   }) => {
     await page.goto(`/en/org/projects/${projectId}`);
-    // The route is server-rendered; wait for its client-side tab controls to hydrate.
-    await page.waitForTimeout(2_000);
 
     const detailsTab = page.getByRole("tab", {
       name: en.project.details.tabs.details,
@@ -180,6 +179,7 @@ test.describe("Project Shared Travel Legs", () => {
 
     await expect(detailsTab).toHaveAttribute("data-state", "active");
 
+    await expect(sharedTravelTab).toBeEnabled();
     await sharedTravelTab.click();
     await expect(sharedTravelTab).toHaveAttribute("data-state", "active");
     await expect(
@@ -188,6 +188,7 @@ test.describe("Project Shared Travel Legs", () => {
       }),
     ).toBeVisible();
 
+    await expect(participantsTab).toBeEnabled();
     await participantsTab.click();
     await expect(participantsTab).toHaveAttribute("data-state", "active");
     await expect(
@@ -204,11 +205,10 @@ test.describe("Project Shared Travel Legs", () => {
     page,
   }) => {
     await page.goto(`/en/org/projects/${projectId}`);
-    // The route is server-rendered; wait for its client-side tab controls to hydrate.
-    await page.waitForTimeout(2_000);
     const sharedTravelTab = page.getByRole("tab", {
       name: en.project.details.tabs["shared-travel"],
     });
+    await expect(sharedTravelTab).toBeEnabled();
     await sharedTravelTab.click();
     await expect(sharedTravelTab).toHaveAttribute("data-state", "active");
 
@@ -311,11 +311,10 @@ test.describe("Project Shared Travel Legs", () => {
       ["de", de],
     ] as const) {
       await page.goto(`/${locale}/org/projects/${projectId}`);
-      // The route is server-rendered; wait for its client-side tab controls to hydrate.
-      await page.waitForTimeout(2_000);
       const sharedTravelTab = page.getByRole("tab", {
         name: messages.project.details.tabs["shared-travel"],
       });
+      await expect(sharedTravelTab).toBeEnabled();
       await sharedTravelTab.click();
       await expect(sharedTravelTab).toHaveAttribute("data-state", "active");
 
