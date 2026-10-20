@@ -305,7 +305,14 @@ export async function verifyEmailWorkflows(
         durationMs: Date.now() - started,
       });
       return true;
-    } catch {
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : String(error);
+      const redacted = raw
+        .replace(/secret=[^&\s]*/g, "secret=[redacted]")
+        .replace(/token=[^&\s]*/g, "token=[redacted]");
+      console.error(
+        `[mail-diag] ${workflow} failed at ${failureStage} after ${Date.now() - started}ms: ${redacted}`,
+      );
       results.push({
         workflow,
         failureStage,
