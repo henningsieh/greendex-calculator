@@ -847,7 +847,7 @@ describe("Claim workspace", () => {
       }),
       queryFn: async () => mocks.draft?.status,
     };
-    expect(await client.fetchQuery(project)).toBe("editable");
+    expect(await client.query(project)).toBe("editable");
     mount(client);
     expect(await screen.findByText("726.00 EUR")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
@@ -862,7 +862,7 @@ describe("Claim workspace", () => {
     expect(
       await screen.findByText(/Claim Submitted \/ saved/),
     ).toBeInTheDocument();
-    expect(await client.fetchQuery(project)).toBe("submitted");
+    expect(await client.query(project)).toBe("submitted");
     expect(screen.getByText(/locked for Partner editing/)).toBeInTheDocument();
     expect(screen.getByLabelText("Payout Account")).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();

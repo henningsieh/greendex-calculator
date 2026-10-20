@@ -43,8 +43,7 @@ import { count, eq, inArray } from "drizzle-orm";
 // Project-list hydration wait is 15s (approved one-line slow-stream exception).
 // Server concurrency and denied
 // mutations: AUTOMATED-ONLY claims.integration.test.ts and submission.integration.test.ts.
-// UI GAP: no usable active-Organization switcher; wrong-active-Organization branch
-// cannot be credited as a browser PASS. No payment or Project completion performed.
+// No payment or Project completion performed.
 const suffix = randomUUID();
 const ids = {
   host: randomUUID(),
@@ -135,7 +134,7 @@ async function pageFor(browser: Browser, actor: "H" | "P", baseURL: string) {
 }
 
 async function submissionState(page: Page) {
-  await expect(page.getByText("Claim submitted · saved")).toBeVisible();
+  await expect(page.getByText("Claim Submitted / saved")).toBeVisible();
   await expect(
     page.getByText(/This Claim is locked for Partner editing/),
   ).toBeVisible();
@@ -144,11 +143,11 @@ async function submissionState(page: Page) {
       name: /Submit Claim|Save cost|Save journey|Save Claim draft/,
     }),
   ).toHaveCount(0);
-  const [claim] = await db
+  const persisted = await db
     .select({ id: claims.id, status: claims.status })
     .from(claims)
     .where(eq(claims.partnershipId, ids.partnership));
-  expect(claim).toEqual({ id: claimId, status: "submitted" });
+  expect(persisted).toEqual([{ id: claimId, status: "submitted" }]);
   const events = await db
     .select({ type: history.eventType })
     .from(history)
@@ -312,7 +311,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(save).toBeEnabled();
     await save.dblclick();
     // Inspect persisted state before any retry: never issue a blind second mutation.
-    await expect(p.getByText("Claim editable · saved")).toBeVisible();
+    await expect(p.getByText("Claim Editable draft / saved")).toBeVisible();
     const [saved] = await db
       .select({ id: claims.id })
       .from(claims)
@@ -321,7 +320,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     claimId = saved!.id;
     await expect(save).toHaveCount(0);
     await p.reload();
-    await expect(p.getByText("Claim editable · saved")).toBeVisible();
+    await expect(p.getByText("Claim Editable draft / saved")).toBeVisible();
     expect((await counts())[4]).toBe(1);
   });
 
@@ -330,7 +329,6 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     baseURL,
   }) => {
     const p = await pageFor(browser, "P", baseURL!);
-    await p.goto(claimURL);
     // These rows are test-only submission prerequisites, not browser evidence for cost entry/upload.
     await db.insert(entries).values({
       id: ids.entry,
@@ -355,7 +353,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await db
       .insert(entryDocuments)
       .values({ travelCostEntryId: ids.entry, proofDocumentId: ids.document });
-    await p.reload();
+    await p.goto(claimURL);
     const checklist = p.getByRole("list", { name: "Submission checklist" });
     await expect(checklist.getByText(/^Pass:/)).toHaveCount(7);
     await p.getByRole("button", { name: "Submit Claim" }).dblclick();
@@ -364,7 +362,15 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await confirm.dblclick();
     await submissionState(p); // inspect uncertain mutation result before any retry
     await p.goto("/projects");
+    await expect(p).toHaveURL("/projects");
+    await expect(
+      p.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await expect(
+      p.getByRole("link", { name: projectName, exact: true }),
+    ).toBeVisible();
     await p.goBack();
+    await expect(p).toHaveURL(claimURL);
     const [persisted] = await db
       .select({ status: claims.status })
       .from(claims)
@@ -377,7 +383,15 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     });
     await submissionState(p);
     await p.goForward();
+    await expect(p).toHaveURL("/projects");
+    await expect(
+      p.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await expect(
+      p.getByRole("link", { name: projectName, exact: true }),
+    ).toBeVisible();
     await p.goto(claimURL);
+    await submissionState(p);
     await p.reload();
     await submissionState(p);
     expect((await counts())[4]).toBe(1);
@@ -403,6 +417,28 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       h.getByRole("link", { name: new RegExp(projectName) }),
     ).toBeVisible();
     await h.goBack();
+    await expect(h).toHaveURL(reviewURL);
+    await expect(
+      review.getByText("Submitted · awaiting Hosting review"),
+    ).toBeVisible();
+    await expect(
+      review.getByRole("button", { name: "Approve Claim", exact: true }),
+    ).toBeEnabled();
+    await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
+      0,
+    );
+    expect((await counts())[4]).toBe(1);
+    expect((await counts())[5]).toBe(1);
+    await h.goForward();
+    await expect(h).toHaveURL("/claims/review");
+    await expect(
+      h.getByRole("link", { name: new RegExp(projectName) }),
+    ).toBeVisible();
+    await h.goBack();
+    await expect(h).toHaveURL(reviewURL);
+    await expect(
+      review.getByText("Submitted · awaiting Hosting review"),
+    ).toBeVisible();
     await h.reload();
     await expect(
       review.getByText("Submitted · awaiting Hosting review"),
@@ -411,5 +447,99 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
       0,
     );
+  });
+
+  test("N5 Hosting approval survives Back/Forward and reload without duplicate decisions or Partner editing", async ({
+    browser,
+    baseURL,
+  }) => {
+    const h = await pageFor(browser, "H", baseURL!);
+    await h.goto(`/projects/${ids.project}`);
+    await expect(
+      h.getByRole("heading", { name: projectName, exact: true }),
+    ).toBeVisible();
+    const readiness = h
+      .getByRole("listitem")
+      .filter({ hasText: `CT ${suffix} Partner` });
+    await expect(readiness.getByText("Submitted", { exact: true })).toBeVisible();
+    await h
+      .getByRole("link", { name: "Review submitted Claims", exact: true })
+      .click();
+    await expect(h).toHaveURL("/claims/review");
+    const queued = h.getByRole("link", { name: new RegExp(projectName) });
+    await expect(queued).toBeVisible();
+    await queued.click();
+    await expect(h).toHaveURL(reviewURL);
+    const review = h.getByRole("region", { name: "Claim review", exact: true });
+    await expect(
+      review.getByText("Submitted · awaiting Hosting review"),
+    ).toBeVisible();
+    await review
+      .getByRole("button", { name: "Approve Claim", exact: true })
+      .click();
+    await review
+      .getByRole("button", { name: "Confirm approval", exact: true })
+      .click();
+    const approved = async () => {
+      await expect(h).toHaveURL(reviewURL);
+      await expect(
+        review.getByText("Approved · unpaid", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        review.getByRole("button", { name: "Mark paid", exact: true }),
+      ).toBeEnabled();
+      await expect(
+        review.getByRole("button", { name: "Approve Claim", exact: true }),
+      ).toHaveCount(0);
+      expect(
+        await db
+          .select({ id: claims.id, status: claims.status })
+          .from(claims)
+          .where(eq(claims.partnershipId, ids.partnership)),
+      ).toEqual([{ id: claimId, status: "approved" }]);
+      expect(
+        await db
+          .select({ type: history.eventType })
+          .from(history)
+          .where(eq(history.claimId, claimId!))
+          .orderBy(history.occurredAt),
+      ).toEqual([{ type: "submitted" }, { type: "approved" }]);
+    };
+    await approved();
+    await h.goBack();
+    await expect(h).toHaveURL("/claims/review");
+    await expect(
+      h.getByText("No submitted Claims available for review.", { exact: true }),
+    ).toBeVisible();
+    await h.goBack();
+    await expect(h).toHaveURL(`/projects/${ids.project}`);
+    await expect(
+      h.getByRole("heading", { name: projectName, exact: true }),
+    ).toBeVisible();
+    await expect(
+      readiness.getByText("Approved · unpaid", { exact: true }),
+    ).toBeVisible();
+    await h.goForward();
+    await expect(h).toHaveURL("/claims/review");
+    await expect(
+      h.getByText("No submitted Claims available for review.", { exact: true }),
+    ).toBeVisible();
+    await h.goForward();
+    await approved();
+    await h.reload();
+    await approved();
+    const p = await pageFor(browser, "P", baseURL!);
+    await p.goto(claimURL);
+    await expect(
+      p.getByText("Claim Approved / saved", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      p.getByText(/This Claim is locked for Partner editing/),
+    ).toBeVisible();
+    await expect(
+      p.getByRole("button", {
+        name: /Save cost|Save journey|Save Claim draft|Submit Claim/,
+      }),
+    ).toHaveCount(0);
   });
 });

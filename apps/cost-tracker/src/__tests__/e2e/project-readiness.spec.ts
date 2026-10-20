@@ -252,6 +252,12 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     // E owns another Project with the same Partner Organization B. Its editable
     // Claim must not alter Main's B readiness or appear among H's Hosted Projects.
     await page.goto("/projects");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: names.main, exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: names.other })).toHaveCount(0);
     await openHostedProject(page, names.main, mainURL);
     await expect(partnerRow(page, names.partnerB)).toContainText("No Claim");

@@ -363,26 +363,13 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     ).toHaveLength(0);
   });
 
-  test("20 adds registered V via selector and edits country only", async ({
+  test("20 pasted search selects and adds registered V, then edits country only", async ({
     browser,
     baseURL,
   }) => {
     const actor = await coordinatorContext(browser, baseURL!);
     try {
       const page = await actor.newPage();
-      const searchResponses: Promise<{
-        status: number;
-        foundCandidate: boolean;
-      }>[] = [];
-      page.on("response", (response) => {
-        if (!response.url().includes("participations/searchOnboarded")) return;
-        searchResponses.push(
-          response.json().then((body: unknown) => ({
-            status: response.status(),
-            foundCandidate: JSON.stringify(body).includes(people[2]!.id),
-          })),
-        );
-      });
       await openPartnership(page, "participants");
       await expect(
         page.getByRole("heading", { name: "Project Participations" }),
@@ -403,38 +390,23 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       const search = page.getByRole("combobox", {
         name: /Search Registered User/,
       });
+      const response = page.waitForResponse((result) => {
+        const request = result.request();
+        return (
+          new URL(result.url()).pathname ===
+            "/api/rpc/participations/searchOnboarded" &&
+          decodeURIComponent(request.url() + (request.postData() ?? "")).includes(
+            people[2]!.name,
+          )
+        );
+      });
       await search.fill(people[2]!.name);
-      // Discriminator: a fill-triggered debounced search may be cancelled by a
-      // rerender; pressing keys individually exercises the same browser UI.
-      const fillResponse = await page
-        .waitForResponse(
-          (response) => response.url().includes("participations/searchOnboarded"),
-          { timeout: 2_000 },
-        )
-        .catch(() => null);
-      if (!fillResponse) {
-        await search.fill("");
-        await search.pressSequentially(people[2]!.name, { delay: 35 });
-      }
+      const found = await response;
+      expect(found.status()).toBe(200);
+      expect(JSON.stringify(await found.json())).toContain(people[2]!.id);
       await expect(
         page.getByRole("option", { name: new RegExp(people[2]!.name) }),
       ).toBeVisible();
-      expect(
-        searchResponses.length,
-        "selector must send a search request",
-      ).toBeGreaterThan(0);
-      const received = await Promise.all(searchResponses);
-      console.info("Case 20 selector evidence", {
-        fillReturnedResponse: fillResponse !== null,
-        sequentialTypingUsed: fillResponse === null,
-        responses: received,
-      });
-      expect(
-        received.some(
-          (response) => response.status === 200 && response.foundCandidate,
-        ),
-        `search response status and candidate presence: ${JSON.stringify(received)}`,
-      ).toBe(true);
       await page
         .getByRole("option", { name: new RegExp(people[2]!.name) })
         .click();
@@ -442,10 +414,26 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(page.getByText("Participation added")).toBeVisible();
       const row = page.getByRole("listitem").filter({ hasText: people[2]!.name });
       await expect(row).toBeVisible();
-      await row.getByLabel(`Country for ${people[2]!.name}`).selectOption("DE");
-      await row
+      const detailsLink = row.getByRole("link", {
+        name: `Participant details for ${people[2]!.name}`,
+      });
+      const detailsHref = await detailsLink.getAttribute("href");
+      expect(detailsHref).not.toBeNull();
+      await detailsLink.click();
+      await expectPrivateURL(page, detailsHref!);
+      await expect(
+        page.getByRole("region", { name: "Participant details", exact: true }),
+      ).toBeVisible();
+      await page.getByLabel(`Country for ${people[2]!.name}`).selectOption("DE");
+      await page
         .getByRole("button", { name: `Save country for ${people[2]!.name}` })
         .click();
+      await expect(
+        page.getByRole("alert").filter({ hasText: "Country saved" }),
+      ).toBeVisible();
+      await expect(page.getByLabel(`Country for ${people[2]!.name}`)).toHaveValue(
+        "DE",
+      );
       await page.reload();
       await expect(page.getByLabel(`Country for ${people[2]!.name}`)).toHaveValue(
         "DE",
@@ -456,6 +444,14 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .from(projectParticipantsTable)
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
+      await page
+        .getByRole("link", {
+          name: "Back to Project Participations",
+          exact: true,
+        })
+        .click();
+      await expectPrivateURL(page, participantsURL);
+      await expect(row).toContainText("DE");
       await expect(
         page.getByRole("button", { name: "Show Review Tasks", exact: true }),
       ).toBeVisible();
@@ -464,7 +460,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     }
   });
 
-  test("20 removes an unreferenced Project Participation and restores V through the selector", async ({
+  test("20 removes an unreferenced Participation, then typed search selects and adds V", async ({
     browser,
     baseURL,
   }) => {
@@ -506,9 +502,25 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page
         .getByRole("button", { name: "Registered User", exact: true })
         .click();
+      const response = page.waitForResponse((result) => {
+        const request = result.request();
+        return (
+          new URL(result.url()).pathname ===
+            "/api/rpc/participations/searchOnboarded" &&
+          decodeURIComponent(request.url() + (request.postData() ?? "")).includes(
+            people[2]!.name,
+          )
+        );
+      });
       await page
         .getByRole("combobox", { name: /Search Registered User/ })
         .pressSequentially(people[2]!.name, { delay: 35 });
+      const found = await response;
+      expect(found.status()).toBe(200);
+      expect(JSON.stringify(await found.json())).toContain(people[2]!.id);
+      await expect(
+        page.getByRole("option", { name: new RegExp(people[2]!.name) }),
+      ).toBeVisible();
       await page
         .getByRole("option", { name: new RegExp(people[2]!.name) })
         .click();
@@ -685,10 +697,10 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(page.getByText(/Selected Payout Account:/)).toBeVisible();
       expect(await claimCount()).toBe(0);
       await page.getByRole("button", { name: "Save Claim draft" }).click();
-      await expect(page.getByText("Claim editable · saved")).toBeVisible();
+      await expect(page.getByText("Claim Editable draft / saved")).toBeVisible();
       expect(await claimCount()).toBe(1);
       await page.reload();
-      await expect(page.getByText("Claim editable · saved")).toBeVisible();
+      await expect(page.getByText("Claim Editable draft / saved")).toBeVisible();
       await expect(
         page.getByRole("button", { name: "Save Claim draft" }),
       ).toHaveCount(0);
@@ -732,10 +744,16 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           })
           .fill(distance);
         await page.getByRole("button", { name: "Save journey" }).click();
+        const journey = page
+          .getByRole("listitem")
+          .filter({ has: page.getByText(person.name, { exact: true }) });
         await expect(
-          page
-            .getByRole("listitem")
-            .filter({ hasText: `${person.name}: Berlin → Riga` }),
+          journey.getByText("Berlin → Riga", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          journey.getByText("round-trip, 850.25 km (calculator distance)", {
+            exact: true,
+          }),
         ).toBeVisible();
         await expect(
           page
@@ -765,11 +783,19 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         ),
       ).toBeDefined();
       await page.reload();
-      await expect(
-        page
+      for (const person of people) {
+        const journey = page
           .getByRole("listitem")
-          .filter({ hasText: `${people[0]!.name}: Berlin → Riga` }),
-      ).toBeVisible();
+          .filter({ has: page.getByText(person.name, { exact: true }) });
+        await expect(
+          journey.getByText("Berlin → Riga", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          journey.getByText("round-trip, 850.25 km (calculator distance)", {
+            exact: true,
+          }),
+        ).toBeVisible();
+      }
       await expect(
         page.getByLabel("Participation", { exact: true }).locator("option"),
       ).toHaveCount(1);
@@ -846,7 +872,16 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(page.getByText("No costs saved yet.")).toBeVisible();
       await page.getByLabel("Allocation method").selectOption("equal");
       await page.getByRole("button", { name: "Save cost" }).click();
-      await expect(page.getByText(/100\.00 EUR · equal/)).toBeVisible();
+      const cost = page
+        .getByRole("table", {
+          name: "Exact totals, Cost Allocations and linked Proof Documents.",
+        })
+        .getByRole("row")
+        .filter({ has: page.getByRole("cell", { name: "100.00", exact: true }) });
+      await expect(
+        cost.getByRole("cell", { name: "100.00", exact: true }),
+      ).toBeVisible();
+      await expect(cost.getByText("Equal", { exact: true })).toBeVisible();
       const [claim] = await db
         .select({ id: claimsTable.id })
         .from(claimsTable)
@@ -940,7 +975,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         page.getByText(/Confirm submission: submission locks/),
       ).toBeVisible();
       await page.getByRole("button", { name: "Confirm submission" }).click();
-      await expect(page.getByText("Claim submitted · saved")).toBeVisible();
+      await expect(page.getByText("Claim Submitted / saved")).toBeVisible();
       await expect(
         page.getByText(/This Claim is locked for Partner editing/),
       ).toBeVisible();
@@ -960,9 +995,44 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .filter({ hasText: coordinatorId }),
       ).toContainText("Submitted");
       await page.goBack();
-      await page.goto(claimURL);
+      await expectPrivateURL(page, `/projects/${projectId}?returnTo=%2Fprojects`);
+      await expect(
+        page.getByRole("heading", { name: `CT ${suffix} Project`, exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Open Claim workspace", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .locator('[data-slot="card"]')
+          .filter({ has: page.getByText("Claim readiness:", { exact: true }) })
+          .getByText("Submitted", { exact: true }),
+      ).toBeVisible();
+      await page.goForward();
+      await expectPrivateURL(page, claimURL);
+      await expect(page.getByText("Claim Submitted / saved")).toBeVisible();
+      await expect(
+        page.getByText(/This Claim is locked for Partner editing/),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", {
+          name: /Save cost|Save journey|Submit Claim|Save Claim draft/,
+        }),
+      ).toHaveCount(0);
+      expect(await claimCount()).toBe(1);
+      const [submitted] = await db
+        .select({ id: claimsTable.id, status: claimsTable.status })
+        .from(claimsTable)
+        .where(eq(claimsTable.partnershipId, partnershipId));
+      expect(submitted!.status).toBe("submitted");
+      expect(
+        await db
+          .select({ type: claimHistoryTable.eventType })
+          .from(claimHistoryTable)
+          .where(eq(claimHistoryTable.claimId, submitted!.id)),
+      ).toEqual([{ type: "submitted" }]);
       await page.reload();
-      await expect(page.getByText("Claim submitted · saved")).toBeVisible();
+      await expect(page.getByText("Claim Submitted / saved")).toBeVisible();
       await expect(page.getByRole("button", { name: "Save cost" })).toHaveCount(
         0,
       );
