@@ -260,6 +260,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "ORGANIZATION_OWNER_REQUIRED",
     "status": 403,
   },
+  "organizationSlugTakenBeforeCreation": {
+    "code": "BAD_REQUEST",
+    "message": "This Organization name is already in use. Choose another name.",
+    "reason": "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION",
+    "status": 400,
+  },
   "participantAlreadyInvited": {
     "code": "BAD_REQUEST",
     "message": "This person already has an invitation to this Project.",

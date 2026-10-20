@@ -141,8 +141,8 @@ export const createOrganization = authorized
     z.object({ success: z.literal(true), organizationId: z.string().min(1) }),
   )
   .handler(async ({ context, errors, input }) => {
-    const response = await callBetterAuth(context, errors, () =>
-      auth.api.createOrganization({
+    const response = await callBetterAuth(context, errors, async () => {
+      const response = await auth.api.createOrganization({
         asResponse: true,
         body: {
           ...input,
@@ -151,8 +151,24 @@ export const createOrganization = authorized
           ),
         },
         headers: context.headers,
-      }),
-    );
+      });
+      if (response.status === 400) {
+        const body: unknown = await response
+          .clone()
+          .json()
+          .catch(() => undefined);
+        const refusal = z
+          .object({ code: z.literal("ORGANIZATION_ALREADY_EXISTS") })
+          .safeParse(body);
+        if (refusal.success) {
+          forwardCookies(response, context);
+          throw createSituationErrors(
+            errors,
+          ).organizationSlugTakenBeforeCreation();
+        }
+      }
+      return response;
+    });
     const organization = z
       .object({ id: z.string().min(1) })
       .parse(await response.json());

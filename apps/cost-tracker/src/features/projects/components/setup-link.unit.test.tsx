@@ -296,6 +296,51 @@ describe("Setup Link UI", () => {
     expect(mocks.consume).not.toHaveBeenCalled();
   });
 
+  it("allows a corrected name after confirmed duplicate rejection and completes on revisit", async () => {
+    mocks.createOrganization.mockRejectedValueOnce(
+      new ORPCError("BAD_REQUEST", {
+        data: { reason: "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION" },
+      }),
+    );
+    const view = recipient();
+    const user = userEvent.setup();
+    await user.type(
+      await screen.findByLabelText("New Organization name"),
+      "Taken Partner",
+    );
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
+    await user.click(screen.getByRole("button", { name: "Complete setup" }));
+    await screen.findByText("Could not create Organization");
+    expect(localStorage.getItem("partner-setup:user-1:link-1")).toBeNull();
+    await user.clear(await screen.findByLabelText("New Organization name"));
+    await user.type(
+      screen.getByLabelText("New Organization name"),
+      "Available Partner",
+    );
+    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
+    await user.click(screen.getByRole("button", { name: "Complete setup" }));
+    expect(await screen.findByText("Project Partnership created")).toBeVisible();
+    expect(
+      mocks.createOrganization.mock.calls.map(([input]) => input.slug),
+    ).toEqual(["taken-partner", "available-partner"]);
+    expect(mocks.consume).toHaveBeenCalledExactlyOnceWith({
+      id: "link-1",
+      secret: "private-secret",
+      organizationId: "partner-2",
+    });
+    view.unmount();
+    mocks.eligibility.mockResolvedValue({
+      status: "redeemed",
+      projectId: "project-1",
+      organizationId: "partner-2",
+      partnershipId: "partnership-1",
+    });
+    recipient();
+    expect(await screen.findByText("Project Partnership created")).toBeVisible();
+    expect(mocks.createOrganization).toHaveBeenCalledTimes(2);
+    expect(screen.queryByLabelText("New Organization name")).toBeNull();
+  });
+
   it("shows Owner verification on the existing path and sends the ID for server verification", async () => {
     recipient();
     const user = userEvent.setup();
@@ -405,31 +450,45 @@ describe("Setup Link UI", () => {
     expect(mocks.consume).not.toHaveBeenCalled();
   });
 
-  it("blocks repeat creation after a lost creation response, including a revisit", async () => {
-    mocks.createOrganization.mockRejectedValue(new Error("lost response"));
-    const view = recipient();
-    const user = userEvent.setup();
-    await user.type(
-      await screen.findByLabelText("New Organization name"),
-      "New Partner",
-    );
-    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
-    await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Could not create Organization");
-    view.unmount();
-    recipient();
-    await screen.findByText(/Organization creation may have completed/);
-    expect(screen.queryByLabelText("New Organization name")).toBeNull();
-    await selectOption(user, "Organization", "My Organization");
-    await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Project Partnership created");
-    expect(mocks.createOrganization).toHaveBeenCalledTimes(1);
-    expect(mocks.consume).toHaveBeenCalledExactlyOnceWith({
-      id: "link-1",
-      secret: "private-secret",
-      organizationId: "partner-1",
-    });
-  });
+  it.each([
+    new Error("lost response"),
+    new ORPCError("INTERNAL_SERVER_ERROR", {
+      data: { reason: "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION" },
+    }),
+    new ORPCError("BAD_REQUEST", {
+      message: "This Organization name is already in use. Choose another name.",
+    }),
+  ])(
+    "blocks repeat creation after an uncertain creation response, including a revisit (%s)",
+    async (error) => {
+      mocks.createOrganization.mockRejectedValue(error);
+      const view = recipient();
+      const user = userEvent.setup();
+      await user.type(
+        await screen.findByLabelText("New Organization name"),
+        "New Partner",
+      );
+      await user.selectOptions(
+        screen.getByLabelText("Organization country"),
+        "DE",
+      );
+      await user.click(screen.getByRole("button", { name: "Complete setup" }));
+      await screen.findByText("Could not create Organization");
+      view.unmount();
+      recipient();
+      await screen.findByText(/Organization creation may have completed/);
+      expect(screen.queryByLabelText("New Organization name")).toBeNull();
+      await selectOption(user, "Organization", "My Organization");
+      await user.click(screen.getByRole("button", { name: "Complete setup" }));
+      await screen.findByText("Project Partnership created");
+      expect(mocks.createOrganization).toHaveBeenCalledTimes(1);
+      expect(mocks.consume).toHaveBeenCalledExactlyOnceWith({
+        id: "link-1",
+        secret: "private-secret",
+        organizationId: "partner-1",
+      });
+    },
+  );
 
   it("revalidates eligibility before creating even when the initial check passed", async () => {
     recipient();

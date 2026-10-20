@@ -187,6 +187,59 @@ describe("Cost Tracker authentication procedures", () => {
     },
   );
 
+  it("confirms only the native pre-insertion duplicate-slug refusal as safe to retry", async () => {
+    mocks.createOrganization.mockResolvedValueOnce(
+      response(400, { code: "ORGANIZATION_ALREADY_EXISTS", message: "private" }),
+    );
+    const input = { name: "Taken", slug: "taken", country: "DE" as const };
+    const resHeaders = new Headers();
+    await expect(
+      createClient(resHeaders).authentication.createOrganization(input),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "This Organization name is already in use. Choose another name.",
+      data: { reason: "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION" },
+    });
+    expect(resHeaders.getSetCookie()).toEqual([
+      "session=updated; Path=/; HttpOnly",
+    ]);
+    await expect(
+      createClient().authentication.createOrganization({
+        ...input,
+        name: "Available",
+        slug: "available",
+      }),
+    ).resolves.toEqual({ success: true, organizationId: "created-org" });
+  });
+
+  it.each([
+    [
+      500,
+      { code: "ORGANIZATION_ALREADY_EXISTS" },
+      "INTERNAL_SERVER_ERROR",
+      "INTERNAL_FAILURE",
+    ],
+    [400, { code: "UNKNOWN_CREATION_FAILURE" }, "BAD_REQUEST", "INVALID_INPUT"],
+    [
+      400,
+      { message: "ORGANIZATION_ALREADY_EXISTS" },
+      "BAD_REQUEST",
+      "INVALID_INPUT",
+    ],
+  ])(
+    "does not confirm no creation from HTTP %s with unrelated metadata",
+    async (status, body, code, reason) => {
+      mocks.createOrganization.mockResolvedValueOnce(response(status, body));
+      await expect(
+        createClient().authentication.createOrganization({
+          name: "Taken",
+          slug: "taken",
+          country: "DE",
+        }),
+      ).rejects.toMatchObject({ code, data: { reason } });
+    },
+  );
+
   it("returns only the validated Google redirect URL", async () => {
     await expect(
       createClient().authentication.startGoogleSignIn(),

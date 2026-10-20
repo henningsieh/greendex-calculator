@@ -32,6 +32,7 @@ import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { authClient } from "@/lib/auth-client";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
@@ -358,7 +359,7 @@ function readRecovery(key: string): RecoveryCheckpoint | undefined {
   if (!raw) return undefined;
   const value: unknown = JSON.parse(raw);
   if (typeof value !== "object" || value === null || !("phase" in value))
-    throw new Error("Invalid recovery checkpoint");
+    throw createSituationErrors().internalFailure();
   if (value.phase === "creating") return { phase: "creating" };
   if (
     (value.phase === "created" || value.phase === "selected") &&
@@ -367,7 +368,7 @@ function readRecovery(key: string): RecoveryCheckpoint | undefined {
     value.organizationId
   )
     return { phase: value.phase, organizationId: value.organizationId };
-  throw new Error("Invalid recovery checkpoint");
+  throw createSituationErrors().internalFailure();
 }
 
 type SetupChoice =
@@ -540,7 +541,6 @@ export function SetupLinkRecipient({
       try {
         recovery = readRecovery(recoveryKey);
       } catch {
-        // A lost creation response must never authorize another creation.
         recovery = { phase: "creating" };
       }
       try {
@@ -588,7 +588,6 @@ export function SetupLinkRecipient({
       if (!recovery && choice.kind === "new") {
         if (!choice.country) return;
         try {
-          // Persist intent before the independent auth mutation, including lost responses.
           localStorage.setItem(
             recoveryKey,
             JSON.stringify({ phase: "creating" }),
@@ -609,13 +608,20 @@ export function SetupLinkRecipient({
           recovery = { phase: "created", organizationId: targetId };
           setState({ phase: "ready", recovery });
           localStorage.setItem(recoveryKey, JSON.stringify(recovery));
-        } catch {
+        } catch (cause) {
+          if (
+            cause instanceof ORPCError &&
+            getSafeErrorSituation(cause)?.reason ===
+              "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION"
+          ) {
+            localStorage.removeItem(recoveryKey);
+            recovery = undefined;
+          }
           setState({ phase: "ready", recovery, error: "create" });
           return;
         }
       }
       if (!targetId) return;
-      // Selection is a recovery hint only. Redemption independently verifies Ownership.
       recovery = {
         phase: recovery?.phase === "created" ? "created" : "selected",
         organizationId: targetId,
@@ -684,7 +690,7 @@ export function SetupLinkRecipient({
         const response = await authClient.organization.setActive({
           organizationId: result.organizationId,
         });
-        if (response.error) throw new Error("Organization selection refused");
+        if (response.error) throw createSituationErrors().selectOrganization();
         await queryClient.invalidateQueries();
         setSelected(true);
         router.refresh();

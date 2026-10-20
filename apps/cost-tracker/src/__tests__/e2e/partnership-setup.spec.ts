@@ -63,9 +63,10 @@ const names = {
   E: `CT ${suffix} Existing Organization`,
   R: `CT ${suffix} Retained Organization`,
   U: `CT ${suffix} Uncertain Organization`,
+  D: `CT ${suffix} Corrected Organization`,
 };
 const actors = Object.fromEntries(
-  (["P", "F", "E", "M", "R", "U"] as const).map((actor) => [
+  (["P", "F", "E", "M", "R", "U", "D"] as const).map((actor) => [
     actor,
     {
       id: randomUUID(),
@@ -75,7 +76,7 @@ const actors = Object.fromEntries(
     },
   ]),
 ) as Record<
-  "P" | "F" | "E" | "M" | "R" | "U",
+  "P" | "F" | "E" | "M" | "R" | "U" | "D",
   { id: string; name: string; email: string; password: string }
 >;
 registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
@@ -474,6 +475,55 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         ),
       );
     expect(hostingMembership).toBeUndefined();
+  });
+
+  test("06 duplicate slug refusal allows a corrected name, successful setup and revisit", async ({
+    browser,
+    baseURL,
+  }) => {
+    const url = await issueInSetup(fixture.projectNames[0]!, actors.D.email);
+    const context = await actorContext(browser, "D", baseURL!);
+    const page = await context.newPage();
+    await page.goto("/projects");
+    await expect(page.getByText("No Organization access yet")).toBeVisible();
+    await page.goto(url);
+    await page.getByLabel("New Organization name").fill(`${names.P}!`);
+    await page.getByLabel("Organization country").selectOption("DE");
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(
+      page.getByText("Could not create Organization", { exact: true }),
+    ).toBeVisible();
+    const [membership] = await db
+      .select({ value: count() })
+      .from(member)
+      .where(eq(member.userId, actors.D.id));
+    expect(membership!.value).toBe(0);
+    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(0);
+    await expect(page.getByLabel("New Organization name")).toBeVisible();
+    await page.getByLabel("New Organization name").fill(names.D);
+    await markSetupDocument(page);
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(
+      page.getByText("Project Partnership created", { exact: true }),
+    ).toBeVisible();
+    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
+    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.D);
+    const [created] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, names.D));
+    expect(created).toBeDefined();
+    await page.goto(url);
+    await expect(
+      page.getByText("Project Partnership created", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    const owned = await db
+      .select({ organizationId: member.organizationId })
+      .from(member)
+      .where(eq(member.userId, actors.D.id));
+    expect(owned).toEqual([{ organizationId: created!.id }]);
+    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
   });
 
   test("06a a real creation survives binding refusal and exact retry, revisit and reload", async ({
