@@ -34,6 +34,8 @@ import {
 import { hashPassword } from "better-auth/crypto";
 import { count, eq, inArray } from "drizzle-orm";
 
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
+
 // API-setup exceptions: verified disposable Users, memberships, Project Partnership,
 // payout selection, joined Participation/Journey, frozen funding rules, synthetic
 // Proof Document metadata and cost allocations are prerequisites inserted directly
@@ -126,9 +128,11 @@ async function pageFor(browser: Browser, actor: "H" | "P", baseURL: string) {
     storageState: { cookies: [], origins: [] },
   });
   contexts.push(context);
-  const response = await context.request.post("/api/auth/sign-in/email", {
-    data: { email: actors[actor].email, password: actors[actor].password },
-  });
+  const response = await postSignInWithRateLimitRetry(
+    context.request,
+    actors[actor].email,
+    actors[actor].password,
+  );
   expect(response.ok(), `${actor} setup sign-in`).toBe(true);
   return context.newPage();
 }

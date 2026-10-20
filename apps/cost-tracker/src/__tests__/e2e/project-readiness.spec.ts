@@ -22,6 +22,7 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
@@ -232,9 +233,11 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       baseURL,
       storageState: { cookies: [], origins: [] },
     });
-    const response = await hostContext.request.post("/api/auth/sign-in/email", {
-      data: { email: hostEmail, password },
-    });
+    const response = await postSignInWithRateLimitRetry(
+      hostContext.request,
+      hostEmail,
+      password,
+    );
     expect(response.ok(), "H setup sign-in failed").toBe(true);
   });
 

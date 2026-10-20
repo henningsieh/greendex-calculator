@@ -32,6 +32,7 @@ import {
 } from "./fixtures/artifact-privacy";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
@@ -155,9 +156,11 @@ async function actorContext(
     storageState: { cookies: [], origins: [] },
   });
   contexts.push(context);
-  const response = await context.request.post("/api/auth/sign-in/email", {
-    data: { email: actors[actor].email, password: actors[actor].password },
-  });
+  const response = await postSignInWithRateLimitRetry(
+    context.request,
+    actors[actor].email,
+    actors[actor].password,
+  );
   expect(response.ok(), `${actor} setup sign-in failed`).toBe(true);
   return context;
 }
@@ -849,12 +852,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .select({ id: session.id })
       .from(session)
       .where(eq(session.userId, "picker-user-canonical"));
-    const signedIn = await context.request.post("/api/auth/sign-in/email", {
-      data: {
-        email: "picker-user-canonical@example.com",
-        password: SEED_USER.password,
-      },
-    });
+    const signedIn = await postSignInWithRateLimitRetry(
+      context.request,
+      "picker-user-canonical@example.com",
+      SEED_USER.password,
+    );
     expect(signedIn.ok()).toBe(true);
     const afterSessions = await db
       .select({ id: session.id })
