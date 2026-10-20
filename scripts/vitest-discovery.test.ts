@@ -11,6 +11,7 @@ it("discovers repository tests once and excludes managed images and vendor copie
     "scripts/example.test.ts",
     ".turbo/test-runs/run/snapshot/scripts/example.test.ts",
     ".turbo/test-runs/run/calculator/apps/calculator/src/example.test.ts",
+    ".turbo/managed-app-runs/77cf527965d2471ea71428a44ef67a42-YaJApf/source/scripts/seed-tables.test.ts",
     "apps/cost-tracker/.turbo/run/src/example.test.ts",
     "node_modules/vendor/example.test.ts",
   ];
