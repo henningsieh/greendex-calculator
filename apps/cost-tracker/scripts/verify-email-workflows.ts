@@ -59,12 +59,20 @@ type FailureStage =
   | "link-exercise"
   | "acceptance";
 
+type MailDiagErrorCategory = "aborted" | "failed";
+
 type Result = {
+  errorCategory?: MailDiagErrorCategory;
   failureStage?: FailureStage;
   workflow: string;
   status: "passed" | "failed" | "blocked";
   durationMs: number;
 };
+
+function classifyMailDiagError(error: unknown): MailDiagErrorCategory {
+  if (error instanceof Error && error.name === "AbortError") return "aborted";
+  return "failed";
+}
 
 /** Cookies and parsed response/link data never enter diagnostics or reports. */
 export class HttpSession {
@@ -321,18 +329,20 @@ export async function verifyEmailWorkflows(
       });
       return true;
     } catch (error) {
-      const raw = error instanceof Error ? error.message : String(error);
-      const redacted = raw
-        .replace(/secret=[^&\s]*/g, "secret=[redacted]")
-        .replace(/token=[^&\s]*/g, "token=[redacted]");
+      const durationMs = Date.now() - started;
+      const errorCategory =
+        signal?.aborted === true
+          ? ("aborted" as const)
+          : classifyMailDiagError(error);
       console.error(
-        `[mail-diag] ${workflow} failed at ${failureStage} after ${Date.now() - started}ms: ${redacted}`,
+        `[mail-diag] ${workflow} failed at ${failureStage} after ${durationMs}ms: ${errorCategory}`,
       );
       results.push({
         workflow,
         failureStage,
         status: "failed",
-        durationMs: Date.now() - started,
+        durationMs,
+        errorCategory,
       });
       return false;
     }
