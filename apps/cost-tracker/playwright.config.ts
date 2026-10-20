@@ -1,4 +1,3 @@
-/* eslint-disable import/no-relative-parent-imports -- Repository test orchestration, not app runtime. */
 import { defineConfig, devices } from "@playwright/test";
 
 import {

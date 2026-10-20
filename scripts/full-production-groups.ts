@@ -21,13 +21,18 @@ export function fullProductionGroups(
       groups.push(
         {
           name: "managed-run",
-          prerequisites: group.prerequisites,
+          prerequisites: group.prerequisites.filter(
+            (name) => name !== "storage/target",
+          ),
           execution: "serial",
           run: () => operations.create(),
         },
         ...(["calculator", "cost-tracker"] as const).map((target) => ({
           name: `production/${target}`,
-          prerequisites: ["managed-run"],
+          prerequisites: [
+            "managed-run",
+            ...(target === "cost-tracker" ? ["storage/target"] : []),
+          ],
           execution: "serial" as const,
           run: () => operations.start(target),
         })),
@@ -46,7 +51,7 @@ export function fullProductionGroups(
           group.name === "calculator/live"
             ? ["production/calculator"]
             : group.name === "cost-tracker/live"
-              ? ["production/cost-tracker"]
+              ? ["production/cost-tracker", "storage/target"]
               : group.prerequisites,
       });
     }

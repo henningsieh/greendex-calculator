@@ -58,16 +58,25 @@ function isTestResults(value: unknown): value is TestResults {
   );
 }
 
+export type NonbrowserTestPolicy =
+  | { kind: "required" }
+  | { kind: "optional-package"; discoveredFiles: string[] };
+
 /** Emit identities and static error kinds only; Vitest messages may contain secrets. */
 export function nonbrowserTestEvidence(
   data: unknown,
   scope: string,
   root: string,
+  policy: NonbrowserTestPolicy = { kind: "required" },
 ) {
   if (!isTestResults(data)) throw new Error("Missing valid test evidence.");
   const relativeFile = (name: string) => name.replace(`${root}/`, "");
   return {
     scope,
+    emptyPolicy:
+      policy.kind === "optional-package" && policy.discoveredFiles.length === 0
+        ? "discovered-empty"
+        : "required",
     total: data.numTotalTests,
     passed: data.numPassedTests,
     failed: data.numFailedTests,
@@ -110,4 +119,19 @@ export function nonbrowserTestEvidence(
           : "suite-runtime-error",
       })),
   };
+}
+
+export function assertNonbrowserTestEvidence(
+  evidence: ReturnType<typeof nonbrowserTestEvidence>,
+): void {
+  if (
+    (evidence.total === 0 && evidence.emptyPolicy !== "discovered-empty") ||
+    evidence.failed > 0 ||
+    evidence.suiteFailures.length > 0 ||
+    evidence.pending > 0 ||
+    evidence.todo > 0 ||
+    evidence.passed !== evidence.total ||
+    evidence.pendingTests.length > 0
+  )
+    throw new Error("Required tests failed or were skipped.");
 }

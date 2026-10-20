@@ -31,7 +31,11 @@ import {
   runManagedCommand,
   type ManagedAppServers,
 } from "../../../scripts/managed-app-servers";
-import { nonbrowserTestEvidence } from "../../../scripts/nonbrowser-test-evidence";
+import {
+  nonbrowserTestEvidence,
+  assertNonbrowserTestEvidence,
+  type NonbrowserTestPolicy,
+} from "../../../scripts/nonbrowser-test-evidence";
 import {
   fullRunPassed,
   nonbrowserPackages,
@@ -51,6 +55,7 @@ import {
   developmentGarageEnvironmentSchema,
   GarageCleanupError,
   verifyDevelopmentGarage,
+  validatedDevelopmentGarageEnvironment,
 } from "./garage-verification";
 import { verifyEmailWorkflows } from "./verify-email-workflows";
 
@@ -95,6 +100,8 @@ let servers: ManagedAppServers | undefined;
 let seed: Awaited<ReturnType<typeof seedDatabase>> | undefined;
 let environments: Record<"calculator" | "cost-tracker", Record<string, string>>;
 let pool: Pool | undefined;
+let storageEnvironment: Record<string, string> | undefined;
+let costTrackerEnvironment: Record<string, string> | undefined;
 const cleanup = {
   servers: "not-started",
   commands: "not-failed",
@@ -119,6 +126,7 @@ const environment = (): NodeJS.ProcessEnv => ({
         GREENDEX_TEST_SERVICE_DATABASE_URL: handle?.baseDatabaseUrl,
       }
     : {}),
+  ...storageEnvironment,
   GREENDEX_AGGREGATE_TEST_RUN: "true",
 });
 const managedCommand = async (...args: Parameters<typeof runManagedCommand>) => {
@@ -145,6 +153,7 @@ const vitest = (
   args: string[] = [],
   timeoutMs = 900_000,
   scheduling: keyof typeof nonbrowserVitestScheduling = "serial",
+  policy: NonbrowserTestPolicy = { kind: "required" },
 ) =>
   managedCommand(
     "pnpm",
@@ -176,24 +185,16 @@ const vitest = (
       inspectOutput: (output) => {
         const start = output.indexOf('{"numTotalTestSuites"');
         if (start < 0) throw new Error("Missing valid test evidence.");
-        let skipped = false;
+        let evidence: ReturnType<typeof nonbrowserTestEvidence>;
         try {
           const data: unknown = JSON.parse(output.slice(start));
-          const evidence = nonbrowserTestEvidence(data, cwd, root);
-          testEvidence.push(evidence);
-          console.log(JSON.stringify(evidence));
-          skipped =
-            evidence.total === 0 ||
-            evidence.failed > 0 ||
-            evidence.suiteFailures.length > 0 ||
-            evidence.pending > 0 ||
-            evidence.todo > 0 ||
-            evidence.passed !== evidence.total ||
-            evidence.pendingTests.length > 0;
+          evidence = nonbrowserTestEvidence(data, cwd, root, policy);
         } catch {
           throw new Error("Missing valid test evidence.");
         }
-        if (skipped) throw new Error("Required tests were skipped.");
+        testEvidence.push(evidence);
+        console.log(JSON.stringify(evidence));
+        assertNonbrowserTestEvidence(evidence);
       },
     },
   );
@@ -248,7 +249,22 @@ const groups: TestGroup[] = [
     name: `package/${name}`,
     prerequisites: [],
     execution: "parallel" as const,
-    run: () => vitest(`packages/${name}`, ["--passWithNoTests"]),
+    run: () => {
+      const optional = ["database", "config", "i18n"].includes(name);
+      const discoveredFiles = globSync(
+        ["**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}"],
+        { cwd: resolve(root, "packages", name), exclude: ["node_modules/**"] },
+      );
+      return vitest(
+        `packages/${name}`,
+        optional ? ["--passWithNoTests"] : [],
+        900_000,
+        "serial",
+        optional
+          ? { kind: "optional-package", discoveredFiles }
+          : { kind: "required" },
+      );
+    },
   })),
   ...["calculator", "cost-tracker"].map((app) => ({
     name: `${app}/pure`,
@@ -256,6 +272,21 @@ const groups: TestGroup[] = [
     execution: "parallel" as const,
     run: () => vitest(`apps/${app}`, inventory[app].pure, 1_800_000, "pure"),
   })),
+  {
+    name: "storage/target",
+    prerequisites: [],
+    execution: "parallel",
+    run: async () => {
+      const local = await readLocalEnvironment(
+        resolve(root, "apps/cost-tracker/.env"),
+      );
+      storageEnvironment = validatedDevelopmentGarageEnvironment(
+        local,
+        process.env,
+      );
+      costTrackerEnvironment = { ...local, ...storageEnvironment };
+    },
+  },
   {
     name: "database/create",
     prerequisites: [],
@@ -323,7 +354,7 @@ const groups: TestGroup[] = [
   },
   {
     name: "managed-servers",
-    prerequisites: ["database/seed"],
+    prerequisites: ["database/seed", "storage/target"],
     execution: "serial",
     run: async () => {
       if (interruption.signal.aborted) throw new Error("Run interrupted.");
@@ -332,9 +363,7 @@ const groups: TestGroup[] = [
         calculator: await readLocalEnvironment(
           resolve(root, "apps/calculator/.env"),
         ),
-        "cost-tracker": await readLocalEnvironment(
-          resolve(root, "apps/cost-tracker/.env"),
-        ),
+        "cost-tracker": costTrackerEnvironment!,
       };
       cleanup.servers = "pending";
       developmentRun = await createManagedAppRun(
@@ -366,7 +395,7 @@ const groups: TestGroup[] = [
   },
   {
     name: "cost-tracker/live",
-    prerequisites: ["managed-servers"],
+    prerequisites: ["managed-servers", "storage/target"],
     execution: "serial",
     run: () =>
       vitest("apps/cost-tracker", inventory["cost-tracker"].live, 1_800_000),
@@ -389,14 +418,11 @@ const groups: TestGroup[] = [
   },
   {
     name: "development-garage",
-    prerequisites: [],
+    prerequisites: ["storage/target"],
     execution: "parallel",
     run: async () => {
-      const garageEnvironment = developmentGarageEnvironmentSchema.parse({
-        ...(await readLocalEnvironment(resolve(root, "apps/cost-tracker/.env"))),
-        ...(await readLocalEnvironment(resolve(root, "packages/database/.env"))),
-        ...process.env,
-      });
+      const garageEnvironment =
+        developmentGarageEnvironmentSchema.parse(storageEnvironment);
       cleanup.garage = "pending";
       try {
         await verifyDevelopmentGarage(garageEnvironment, interruption.signal);
@@ -546,9 +572,10 @@ const selectedGroups = full
         environments = { calculator: {}, "cost-tracker": {} };
         for (const app of ["calculator", "cost-tracker"] as const) {
           try {
-            environments[app] = await readLocalEnvironment(
-              resolve(root, "apps", app, ".env"),
-            );
+            environments[app] =
+              app === "cost-tracker" && costTrackerEnvironment
+                ? costTrackerEnvironment
+                : await readLocalEnvironment(resolve(root, "apps", app, ".env"));
           } catch {
             environmentFailures.add(app);
           }
