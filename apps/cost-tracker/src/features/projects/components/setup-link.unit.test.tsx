@@ -279,7 +279,7 @@ describe("Setup Link UI", () => {
     ).toBeTruthy();
   });
 
-  it.each(["A", "A !!!", "!!!", "éé"])(
+  it.each(["A", "A!", "A !!!", "!!!", "éé"])(
     "rejects normalized invalid name %s before saving intent and accepts correction",
     async (name) => {
       mocks.createOrganization.mockImplementation(async (input) => {
