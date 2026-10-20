@@ -128,86 +128,140 @@ export const disableSetupLink = authorized
     return { disabled: true as const };
   });
 
-export const consumeSetupLink = authorized
-  .input(
-    z.object({
-      id: identifier,
-      secret: z.string().min(1),
-      // Redemption binds an Organization the recipient already owns through
-      // the supported Better Auth creation flow. It never creates
-      // Organizations or Memberships: Better Auth's tables are not a writable
-      // extension point for Cost Tracker (ADR-0013).
-      organizationId: identifier,
-    }),
+const setupLinkInput = z.object({ id: identifier, secret: z.string().min(1) });
+const redemptionResult = z.object({
+  partnershipId: z.string(),
+  organizationId: z.string(),
+});
+type SetupTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type SetupErrors = ReturnType<typeof createSituationErrors>;
+
+async function requireOrganizationOwner(
+  tx: SetupTransaction,
+  userId: string,
+  organizationId: string,
+  errors: SetupErrors,
+) {
+  const [ownership] = await tx
+    .select({ role: member.role })
+    .from(member)
+    .where(
+      and(eq(member.userId, userId), eq(member.organizationId, organizationId)),
+    )
+    .limit(1);
+  if (
+    !ownership ||
+    !hasOrganizationRole(ownership.role, ORGANIZATION_ROLES.OrganizationOwner)
   )
-  .output(z.object({ partnershipId: z.string(), organizationId: z.string() }))
+    throw errors.organizationOwnerRequired();
+}
+
+async function validateSetupLink(
+  tx: SetupTransaction,
+  input: z.infer<typeof setupLinkInput>,
+  user: { id: string; email: string; emailVerified: boolean },
+  errors: SetupErrors,
+) {
+  const [link] = await tx
+    .select()
+    .from(links)
+    .where(eq(links.id, input.id))
+    .for("update")
+    .limit(1);
+  if (!link || link.secretHash !== hash(input.secret))
+    throw errors.setupLinkNotFound();
+  if (user.email.toLowerCase() !== link.recipientEmail)
+    throw errors.setupLinkWrongEmail();
+  if (!user.emailVerified) throw errors.verifyEmail();
+  if (!link.enabled) throw errors.setupLinkDisabled();
+  if (link.expiresAt <= new Date()) throw errors.setupLinkExpired();
+
+  const [project] = await tx
+    .select({ id: projectsTable.id, hostId: projectsTable.organizationId })
+    .from(projectsTable)
+    .where(
+      and(
+        eq(projectsTable.id, link.projectId),
+        eq(projectsTable.archived, false),
+      ),
+    )
+    .for("update")
+    .limit(1);
+  if (!project) throw errors.projectNotFound();
+
+  let redemption: z.infer<typeof redemptionResult> | null = null;
+  if (link.partnershipId) {
+    const [previous] = await tx
+      .select({
+        partnershipId: partnerships.id,
+        organizationId: partnerships.organizationId,
+      })
+      .from(partnerships)
+      .where(
+        and(
+          eq(partnerships.id, link.partnershipId),
+          eq(partnerships.projectId, project.id),
+        ),
+      )
+      .limit(1);
+    if (!previous || link.consumedByUserId !== user.id)
+      throw errors.setupLinkUsed();
+    await requireOrganizationOwner(tx, user.id, previous.organizationId, errors);
+    redemption = previous;
+  }
+  return { link, project, redemption };
+}
+
+/** Advisory only. Redemption rechecks authoritative state after Better Auth creation. */
+export const getSetupLinkEligibility = authorized
+  .input(setupLinkInput)
+  .output(
+    z.discriminatedUnion("status", [
+      z.object({ status: z.literal("eligible"), projectId: z.string() }),
+      redemptionResult.extend({
+        status: z.literal("redeemed"),
+        projectId: z.string(),
+      }),
+    ]),
+  )
+  .handler(async ({ input, context, errors }) =>
+    db.transaction(async (tx) => {
+      const { project, redemption } = await validateSetupLink(
+        tx,
+        input,
+        context.user,
+        createSituationErrors(errors),
+      );
+      return redemption
+        ? { status: "redeemed" as const, projectId: project.id, ...redemption }
+        : { status: "eligible" as const, projectId: project.id };
+    }),
+  );
+
+/** Binds only. Better Auth owns Organization creation and Memberships (ADR-0013). */
+export const consumeSetupLink = authorized
+  .input(setupLinkInput.extend({ organizationId: identifier }))
+  .output(redemptionResult)
   .handler(async ({ input, context, errors }) => {
     return db.transaction(async (tx) => {
-      const [link] = await tx
-        .select()
-        .from(links)
-        .where(eq(links.id, input.id))
-        .for("update")
-        .limit(1);
-      if (!link || link.secretHash !== hash(input.secret))
-        throw createSituationErrors(errors).setupLinkNotFound();
-      if (context.user.email.toLowerCase() !== link.recipientEmail)
-        throw createSituationErrors(errors).setupLinkWrongEmail();
-      if (!context.user.emailVerified)
-        throw createSituationErrors(errors).verifyEmail();
-      if (!link.enabled) throw createSituationErrors(errors).setupLinkDisabled();
-      if (link.expiresAt <= new Date())
-        throw createSituationErrors(errors).setupLinkExpired();
-
-      const [ownership] = await tx
-        .select({ role: member.role })
-        .from(member)
-        .where(
-          and(
-            eq(member.userId, context.user.id),
-            eq(member.organizationId, input.organizationId),
-          ),
-        )
-        .limit(1);
-      if (
-        !ownership ||
-        !hasOrganizationRole(ownership.role, ORGANIZATION_ROLES.OrganizationOwner)
-      )
-        throw createSituationErrors(errors).organizationOwnerRequired();
-      if (link.partnershipId) {
-        const [previous] = await tx
-          .select({
-            id: partnerships.id,
-            organizationId: partnerships.organizationId,
-          })
-          .from(partnerships)
-          .where(eq(partnerships.id, link.partnershipId))
-          .limit(1);
-        if (
-          previous &&
-          link.consumedByUserId === context.user.id &&
-          previous.organizationId === input.organizationId
-        ) {
-          return {
-            partnershipId: previous.id,
-            organizationId: previous.organizationId,
-          };
-        }
-        throw createSituationErrors(errors).setupLinkUsed();
+      const situations = createSituationErrors(errors);
+      const { link, project, redemption } = await validateSetupLink(
+        tx,
+        input,
+        context.user,
+        situations,
+      );
+      await requireOrganizationOwner(
+        tx,
+        context.user.id,
+        input.organizationId,
+        situations,
+      );
+      if (redemption) {
+        if (redemption.organizationId !== input.organizationId)
+          throw situations.setupLinkUsed();
+        return redemption;
       }
-
-      const [project] = await tx
-        .select({ id: projectsTable.id, hostId: projectsTable.organizationId })
-        .from(projectsTable)
-        .where(
-          and(
-            eq(projectsTable.id, link.projectId),
-            eq(projectsTable.archived, false),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!project) throw createSituationErrors(errors).projectNotFound();
 
       const organizationId = input.organizationId;
       if (organizationId === project.hostId)
