@@ -137,17 +137,26 @@ export const signOut = base
 
 export const createOrganization = authorized
   .input(CreateOrganizationInputSchema)
-  .output(SuccessSchema)
+  .output(
+    z.object({ success: z.literal(true), organizationId: z.string().min(1) }),
+  )
   .handler(async ({ context, errors, input }) => {
-    await callBetterAuth(context, errors, () =>
+    const response = await callBetterAuth(context, errors, () =>
       auth.api.createOrganization({
         asResponse: true,
-        body: input,
+        body: {
+          ...input,
+          keepCurrentActiveOrganization: Boolean(
+            context.session.activeOrganizationId,
+          ),
+        },
         headers: context.headers,
       }),
     );
-
-    return { success: true };
+    const organization = z
+      .object({ id: z.string().min(1) })
+      .parse(await response.json());
+    return { success: true, organizationId: organization.id };
   });
 
 export const updateUser = authorized

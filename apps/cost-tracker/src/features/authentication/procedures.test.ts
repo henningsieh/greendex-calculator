@@ -65,7 +65,9 @@ describe("Cost Tracker authentication procedures", () => {
       }),
     );
     mocks.signOut.mockResolvedValue(response());
-    mocks.createOrganization.mockResolvedValue(response());
+    mocks.createOrganization.mockResolvedValue(
+      response(200, { id: "created-org" }),
+    );
     mocks.updateUser.mockResolvedValue(response());
   });
 
@@ -154,6 +156,36 @@ describe("Cost Tracker authentication procedures", () => {
       data: { reason: "INTERNAL_FAILURE" },
     });
   });
+
+  it.each(["organization-id", null])(
+    "returns the exact created ID and preserves an existing acting Organization (%s)",
+    async (activeOrganizationId) => {
+      mocks.getSession.mockResolvedValue({
+        session: { id: "session-id", activeOrganizationId },
+        user: { id: "user-id" },
+      });
+      const resHeaders = new Headers();
+      const input = {
+        name: "New Organization",
+        slug: "new-organization",
+        country: "DE" as const,
+      };
+      await expect(
+        createClient(resHeaders).authentication.createOrganization(input),
+      ).resolves.toEqual({ success: true, organizationId: "created-org" });
+      expect(mocks.createOrganization).toHaveBeenCalledExactlyOnceWith({
+        asResponse: true,
+        headers: requestHeaders,
+        body: {
+          ...input,
+          keepCurrentActiveOrganization: Boolean(activeOrganizationId),
+        },
+      });
+      expect(resHeaders.getSetCookie()).toEqual([
+        "session=updated; Path=/; HttpOnly",
+      ]);
+    },
+  );
 
   it("returns only the validated Google redirect URL", async () => {
     await expect(
