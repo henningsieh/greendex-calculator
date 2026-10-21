@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertBrowserExecution,
   browserTestEvidence,
+  classifyBrowserFailure,
 } from "./browser-test-evidence";
 
 const report = () => ({
@@ -50,6 +51,58 @@ describe("browser evidence", () => {
       clean: true,
     });
     expect(JSON.stringify(evidence)).not.toContain("private-secret");
+  });
+  it("classifies timeout, assertion, navigation, and unknown failures", () => {
+    expect(classifyBrowserFailure("timedOut", []).category).toBe("timeout");
+    expect(
+      classifyBrowserFailure("failed", [
+        { message: "Timeout 15000ms exceeded while waiting for URL" },
+      ]),
+    ).toEqual({ category: "timeout", matcher: null });
+    expect(
+      classifyBrowserFailure("failed", [
+        {
+          message: "Error: expect(locator).toHaveCount: expected 0, received 1",
+        },
+      ]),
+    ).toEqual({ category: "assertion", matcher: "toHaveCount" });
+    expect(
+      classifyBrowserFailure("failed", [
+        { message: "page.goto: net::ERR_CONNECTION_REFUSED" },
+      ]).category,
+    ).toBe("navigation");
+    expect(classifyBrowserFailure("failed", [{ message: "boom" }])).toEqual({
+      category: "unknown",
+      matcher: null,
+    });
+  });
+  it("emits failure category metadata without raw error strings", () => {
+    const data = report();
+    const test = data.suites[0].specs[0].tests[0];
+    test.status = "unexpected";
+    test.results = [
+      {
+        status: "failed",
+        retry: 0,
+        duration: 15234,
+        errors: [
+          {
+            message:
+              "Timeout 15000ms exceeded waiting for private-secret user@example.com token=abc",
+          },
+        ],
+      },
+    ];
+    const evidence = browserTestEvidence(data);
+    expect(evidence.clean).toBe(false);
+    expect(evidence.tests[0].failure).toEqual({
+      category: "timeout",
+      matcher: null,
+      durationMs: 15234,
+    });
+    expect(JSON.stringify(evidence)).not.toContain("private-secret");
+    expect(JSON.stringify(evidence)).not.toContain("user@example.com");
+    expect(JSON.stringify(evidence)).not.toContain("token=abc");
   });
   it.each(["flaky", "skipped", "unexpected"])(
     "rejects %s acceptance",

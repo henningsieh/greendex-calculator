@@ -11,6 +11,57 @@ function count(value: unknown): number {
     return invalid();
   return value;
 }
+const failureMatchers = [
+  "toBeVisible",
+  "toBeHidden",
+  "toContainText",
+  "toHaveCount",
+  "toHaveURL",
+  "toHaveTitle",
+  "toBeTruthy",
+  "toContain",
+  "toEqual",
+  "toMatch",
+  "toPass",
+  "toBe",
+];
+export type BrowserFailureCategory =
+  | "timeout"
+  | "assertion"
+  | "navigation"
+  | "unknown";
+function failureText(errors: unknown[]): string {
+  const parts: string[] = [];
+  for (const error of errors.slice(0, 3)) {
+    if (!record(error)) continue;
+    for (const key of ["message", "stack", "value"]) {
+      if (typeof error[key] === "string")
+        parts.push((error[key] as string).slice(0, 2000));
+    }
+  }
+  return parts.join("\n");
+}
+export function classifyBrowserFailure(
+  status: string,
+  errors: unknown[],
+): { category: BrowserFailureCategory; matcher: string | null } {
+  if (status === "timedOut") return { category: "timeout", matcher: null };
+  const text = failureText(errors);
+  const matcher =
+    failureMatchers.find((name) => new RegExp(`\\.${name}\\b`).test(text)) ??
+    null;
+  if (
+    /net::[A-Z_]+|navigation failed|ERR_|ECONNREFUSED|ENOTFOUND|EAI_AGAIN/i.test(
+      text,
+    )
+  )
+    return { category: "navigation", matcher: null };
+  if (/test timeout of \d+\s*ms exceeded|timeout \d+\s*ms exceeded/i.test(text))
+    return { category: "timeout", matcher };
+  if (/expect\(|assertionerror|expected:|received:/i.test(text))
+    return { category: "assertion", matcher };
+  return { category: "unknown", matcher: null };
+}
 function browserAttempt(value: unknown) {
   if (
     !record(value) ||
@@ -20,10 +71,22 @@ function browserAttempt(value: unknown) {
     !Array.isArray(value.errors)
   )
     return invalid();
+  const duration =
+    typeof value.duration === "number" &&
+    Number.isFinite(value.duration) &&
+    value.duration >= 0
+      ? value.duration
+      : 0;
   return {
     status: value.status,
     retry: count(value.retry),
     errorCount: value.errors.length,
+    durationMs: duration,
+    failure:
+      value.errors.length > 0 ||
+      !["passed", "skipped"].includes(String(value.status))
+        ? classifyBrowserFailure(String(value.status), value.errors)
+        : null,
   };
 }
 function browserSpec(value: unknown) {
@@ -54,6 +117,11 @@ export interface BrowserTestEvidence {
   status: string;
   attempts: number;
   clean: boolean;
+  failure?: {
+    category: BrowserFailureCategory;
+    matcher: string | null;
+    durationMs: number;
+  };
 }
 export function browserTestEvidence(data: unknown, discovery = false) {
   if (
@@ -89,6 +157,9 @@ export function browserTestEvidence(data: unknown, discovery = false) {
             return invalid();
           const attempts = test.results.map(browserAttempt);
           const result = attempts[0];
+          const failure = attempts.find(
+            ({ failure }) => failure !== null,
+          )?.failure;
           tests.push({
             id: createHash("sha256")
               .update(`${spec.id}/${test.projectId}`)
@@ -97,6 +168,16 @@ export function browserTestEvidence(data: unknown, discovery = false) {
             line: count(spec.line),
             status: String(test.status),
             attempts: test.results.length,
+            ...(failure
+              ? {
+                  failure: {
+                    ...failure,
+                    durationMs: Math.max(
+                      ...attempts.map(({ durationMs }) => durationMs),
+                    ),
+                  },
+                }
+              : {}),
             clean:
               !discovery &&
               test.expectedStatus === "passed" &&
