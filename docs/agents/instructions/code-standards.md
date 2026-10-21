@@ -52,6 +52,8 @@ Oxfmt and Oxlint enforce mechanical style. This file records decisions tooling c
 
 ## Tests
 
+Follow the authoritative [two-loop testing policy](conventions.md#two-verification-loops) for focused selection, dev/MCP runtime checks, production-only exceptions, and coordinator-owned final acceptance. Report selected checks and rationale, runtime mode/target, evidence, and blockers. Shared-boundary changes require broader affected coverage, not an unrelated full suite per implementer.
+
 - Add regression coverage for bug fixes at the lowest level that reproduces the failure.
 - Use Vitest for units/integrations and Playwright for browser-visible routing and interaction.
 - Keep tests isolated and deterministic; clean up rows created by integration/E2E fixtures.

@@ -992,8 +992,8 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   const corrections = Boolean(draft) && editable;
   const refresh = useCallback(async () => {
     const input = { partnershipId };
-    await Promise.all(
-      [
+    await Promise.all([
+      ...[
         orpcQuery.claims.getDraft,
         orpcQuery.claims.getHistory,
         orpcQuery.claims.previewSubmission,
@@ -1004,7 +1004,10 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
       ].map((query) =>
         client.invalidateQueries({ queryKey: query.queryKey({ input }) }),
       ),
-    );
+      client.invalidateQueries({
+        queryKey: orpcQuery.projects.get.key({ type: "query" }),
+      }),
+    ]);
   }, [client, partnershipId]);
 
   useEffect(() => {

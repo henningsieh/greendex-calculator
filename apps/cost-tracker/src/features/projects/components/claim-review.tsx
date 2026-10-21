@@ -420,6 +420,7 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
         orpcQuery.claims.getHistory,
         orpcQuery.claims.getReviewDetails,
         orpcQuery.projectPartnerships.list,
+        orpcQuery.projects.get,
       ].map((query) =>
         client.invalidateQueries({ queryKey: query.key({ type: "query" }) }),
       ),

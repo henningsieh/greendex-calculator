@@ -46,30 +46,41 @@ test.describe("Cost Tracker Project production path", () => {
     await page.getByLabel("Project name").fill("Cost Tracker E2E");
     await rpcResponse;
     await expect(page).toHaveURL(/search=Cost\+Tracker\+E2E/);
-    await expect(page.getByText(fixture.name)).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: fixture.name, exact: true }),
+    ).toBeVisible();
     // Red if nuqs no longer writes list state to the URL or bypasses /api/rpc.
     expect(rpcRequests.length).toBeGreaterThan(0);
 
     const filteredListURL = listURL(page.url());
     await page.reload();
     await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
-    await expect(page.getByText(fixture.name)).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: fixture.name, exact: true }),
+    ).toBeVisible();
     // Red if reloading loses the URL-backed state or its matching Project data.
     expect(listURL(page.url())).toBe(filteredListURL);
 
     await page.getByRole("link", { name: fixture.name }).click();
     await expect(page.getByRole("heading", { name: fixture.name })).toBeVisible();
+    const detailURL = page.url();
     await page.getByRole("link", { name: "Back to Projects" }).click();
     await expect(page).toHaveURL(filteredListURL);
     // Red if Project detail no longer carries the exact local list URL home.
     await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
 
     await page.goBack();
+    await expect(page).toHaveURL(detailURL);
     await expect(page.getByRole("heading", { name: fixture.name })).toBeVisible();
     await page.goForward();
     await expect(page).toHaveURL(filteredListURL);
-    // Red if browser Back/Forward cannot restore the hydrated list state.
-    await expect(page.getByText(fixture.name)).toBeVisible();
+    await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
+    await expect(
+      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: fixture.name, exact: true }),
+    ).toBeVisible();
   });
 
   test("renders protected Project routes through the Cost Tracker router and refreshes Partnerships", async ({

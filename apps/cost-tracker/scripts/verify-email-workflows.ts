@@ -3,6 +3,7 @@ import { execFile, execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
@@ -42,6 +43,9 @@ const root = resolve(import.meta.dirname, "../../..");
 const execute = promisify(execFile);
 const recipient = "greendex-testing@apps.sieh.org";
 const HTTP_TIMEOUT_MS = 60_000;
+const MAX_WORKFLOW_RATE_LIMIT_RETRIES = 2;
+const MAX_WORKFLOW_RATE_LIMIT_WAIT_MS = 30_000;
+const DEFAULT_WORKFLOW_RATE_LIMIT_WAIT_MS = 11_000;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -55,12 +59,20 @@ type FailureStage =
   | "link-exercise"
   | "acceptance";
 
+type MailDiagErrorCategory = "aborted" | "failed";
+
 type Result = {
+  errorCategory?: MailDiagErrorCategory;
   failureStage?: FailureStage;
   workflow: string;
   status: "passed" | "failed" | "blocked";
   durationMs: number;
 };
+
+function classifyMailDiagError(error: unknown): MailDiagErrorCategory {
+  if (error instanceof Error && error.name === "AbortError") return "aborted";
+  return "failed";
+}
 
 /** Cookies and parsed response/link data never enter diagnostics or reports. */
 export class HttpSession {
@@ -77,26 +89,37 @@ export class HttpSession {
     const url = new URL(path, this.base);
     if (url.origin !== this.base)
       throw new Error("Refusing cross-origin workflow request.");
-    const response = await fetch(url, {
-      method: body === undefined ? "GET" : "POST",
-      redirect: "manual",
-      signal: AbortSignal.any([
-        ...(this.signal ? [this.signal] : []),
-        AbortSignal.timeout(HTTP_TIMEOUT_MS),
-      ]),
-      headers: {
-        origin: this.base,
-        cookie: this.cookie,
-        ...(body === undefined ? {} : { "content-type": "application/json" }),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    for (const header of response.headers.getSetCookie()) {
-      const pair = header.split(";", 1)[0];
-      const split = pair.indexOf("=");
-      this.cookies.set(pair.slice(0, split), pair.slice(split + 1));
+    for (let attempt = 0; ; attempt += 1) {
+      const response = await fetch(url, {
+        method: body === undefined ? "GET" : "POST",
+        redirect: "manual",
+        signal: AbortSignal.any([
+          ...(this.signal ? [this.signal] : []),
+          AbortSignal.timeout(HTTP_TIMEOUT_MS),
+        ]),
+        headers: {
+          origin: this.base,
+          cookie: this.cookie,
+          ...(body === undefined ? {} : { "content-type": "application/json" }),
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      if (response.status !== 429 || attempt >= MAX_WORKFLOW_RATE_LIMIT_RETRIES) {
+        for (const header of response.headers.getSetCookie()) {
+          const pair = header.split(";", 1)[0];
+          const split = pair.indexOf("=");
+          this.cookies.set(pair.slice(0, split), pair.slice(split + 1));
+        }
+        return response;
+      }
+      await response.arrayBuffer().catch(() => undefined);
+      const retryAfterSeconds = Number(response.headers.get("retry-after"));
+      const waitMs =
+        Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+          ? Math.min(retryAfterSeconds * 1000, MAX_WORKFLOW_RATE_LIMIT_WAIT_MS)
+          : DEFAULT_WORKFLOW_RATE_LIMIT_WAIT_MS;
+      await delay(waitMs, undefined, { signal: this.signal });
     }
-    return response;
   }
   auth(
     path: "organization/list",
@@ -305,12 +328,21 @@ export async function verifyEmailWorkflows(
         durationMs: Date.now() - started,
       });
       return true;
-    } catch {
+    } catch (error) {
+      const durationMs = Date.now() - started;
+      const errorCategory =
+        signal?.aborted === true
+          ? ("aborted" as const)
+          : classifyMailDiagError(error);
+      console.error(
+        `[mail-diag] ${workflow} failed at ${failureStage} after ${durationMs}ms: ${errorCategory}`,
+      );
       results.push({
         workflow,
         failureStage,
         status: "failed",
-        durationMs: Date.now() - started,
+        durationMs,
+        errorCategory,
       });
       return false;
     }

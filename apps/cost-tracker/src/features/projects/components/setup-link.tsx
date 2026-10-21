@@ -3,11 +3,20 @@
 import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type SyntheticEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type SyntheticEvent,
+} from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,10 +27,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
+import { authClient } from "@/lib/auth-client";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
@@ -329,79 +341,382 @@ export function SetupLinkCreator() {
   );
 }
 
-export function SetupLinkRecipient({
-  id,
-  secret,
+type RecoveryCheckpoint =
+  | { phase: "creating" }
+  | { phase: "created" | "selected"; organizationId: string };
+type Eligibility = Awaited<
+  ReturnType<typeof orpc.projectPartnerships.getSetupLinkEligibility>
+>;
+type CompletedSetup = Extract<Eligibility, { status: "redeemed" }>;
+type RecipientState =
+  | { phase: "checking" }
+  | { phase: "ready"; recovery?: RecoveryCheckpoint; error?: SetupError }
+  | { phase: "inspect"; recovery?: RecoveryCheckpoint }
+  | { phase: "refused"; error: SetupError; recovery?: RecoveryCheckpoint }
+  | { phase: "completed"; result: CompletedSetup };
+
+function readRecovery(key: string): RecoveryCheckpoint | undefined {
+  const raw = localStorage.getItem(key);
+  if (!raw) return undefined;
+  const value: unknown = JSON.parse(raw);
+  if (typeof value !== "object" || value === null || !("phase" in value))
+    throw createSituationErrors().internalFailure();
+  if (value.phase === "creating") return { phase: "creating" };
+  if (
+    (value.phase === "created" || value.phase === "selected") &&
+    "organizationId" in value &&
+    typeof value.organizationId === "string" &&
+    value.organizationId
+  )
+    return { phase: value.phase, organizationId: value.organizationId };
+  throw createSituationErrors().internalFailure();
+}
+
+type SetupChoice =
+  | { kind: "new"; name: string; country: EUCountryCode | "" }
+  | { kind: "existing"; organizationId: string };
+
+function SetupOrganizationForm({
+  recovery,
+  pending,
+  error,
+  onConsume,
 }: {
-  id: string;
-  secret?: string;
+  recovery?: RecoveryCheckpoint;
+  pending: boolean;
+  error?: SetupError;
+  onConsume: (choice: SetupChoice) => Promise<void>;
 }) {
   const [kind, setKind] = useState<"new" | "existing">("new");
   const [name, setName] = useState("");
   const [country, setCountry] = useState<EUCountryCode | "">("");
-  const [organizationId, setOrganizationId] = useState("");
-  const [error, setError] = useState<SetupError>();
-  const [completed, setCompleted] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  // A recipient without an Organization creates one through the normal
-  // supported flow (the same procedure as the protected-layout creation
-  // form), so Better Auth grants creator Ownership itself. Organization
-  // names are unique, so the created Organization resolves unambiguously.
-  async function createOwnedOrganization(displayName: string) {
-    if (!country) return undefined;
-    const trimmed = displayName.trim();
-    await orpc.authentication.createOrganization({
-      country,
-      name: trimmed,
-      slug: slugifyOrganizationName(trimmed),
-    });
-    const matches = await orpc.organizations.listMine({ search: trimmed });
-    const created = matches.find(
-      (organization) => organization.name.toLowerCase() === trimmed.toLowerCase(),
-    );
-    return created?.id;
-  }
-
-  async function consume(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!secret) return;
-    setError(undefined);
-    setPending(true);
-    try {
-      let targetId = organizationId;
-      if (kind === "new") {
-        try {
-          const createdId = await createOwnedOrganization(name);
-          if (!createdId) {
-            setError("create");
-            return;
+  const [organizationId, setOrganizationId] = useState(
+    recovery?.phase === "selected" ? recovery.organizationId : "",
+  );
+  const existing =
+    kind === "existing" ||
+    recovery?.phase === "creating" ||
+    recovery?.phase === "selected";
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onConsume(
+          existing
+            ? { kind: "existing", organizationId }
+            : { kind: "new", name, country },
+        );
+      }}
+    >
+      <FieldGroup>
+        {!recovery && (
+          <fieldset disabled={pending} className="flex flex-col gap-3">
+            <legend>Choose an Organization</legend>
+            <label className="flex items-center gap-2">
+              <input
+                checked={kind === "new"}
+                name="setup-kind"
+                onChange={() => setKind("new")}
+                type="radio"
+              />
+              New Organization
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                checked={kind === "existing"}
+                name="setup-kind"
+                onChange={() => setKind("existing")}
+                type="radio"
+              />
+              Existing Organization
+            </label>
+          </fieldset>
+        )}
+        {recovery?.phase === "created" ? null : existing ? (
+          <Field>
+            <span className="text-sm font-medium">Organization</span>
+            <EntityCombobox
+              label="Organization"
+              value={organizationId}
+              onChange={setOrganizationId}
+              search={searchOwnedOrganizations}
+            />
+            <p>
+              Only an Owner of this Organization can complete setup. Ownership is
+              verified by the server when you submit.
+            </p>
+          </Field>
+        ) : (
+          <>
+            <Field>
+              <FieldLabel htmlFor="setup-name">New Organization name</FieldLabel>
+              <Input
+                id="setup-name"
+                disabled={pending}
+                maxLength={100}
+                minLength={2}
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="setup-country">
+                Organization country
+              </FieldLabel>
+              <select
+                id="setup-country"
+                value={country}
+                required
+                disabled={pending}
+                onChange={(event) =>
+                  setCountry(event.target.value as EUCountryCode)
+                }
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                <option value="" disabled>
+                  Select an EU country
+                </option>
+                {EU_COUNTRIES.map(({ code }) => (
+                  <option key={code} value={code}>
+                    {new Intl.DisplayNames(["en"], {
+                      type: "region",
+                    }).of(code)}
+                  </option>
+                ))}
+              </select>
+              <p>
+                This creates your Organization through the normal setup flow and
+                makes you its Owner, then connects it to the Project.
+              </p>
+            </Field>
+          </>
+        )}
+        <Button
+          disabled={
+            pending ||
+            (recovery?.phase === "created"
+              ? false
+              : existing
+                ? !organizationId
+                : !slugifyOrganizationName(name) || !country)
           }
-          targetId = createdId;
+          type="submit"
+        >
+          {pending
+            ? "Completing…"
+            : recovery?.phase === "created"
+              ? "Retry setup with retained Organization"
+              : "Complete setup"}
+        </Button>
+      </FieldGroup>
+      {error && <SetupStatus state={error} />}
+    </form>
+  );
+}
+
+export function SetupLinkRecipient({
+  id,
+  secret,
+  userId,
+}: {
+  id: string;
+  secret?: string;
+  userId: string;
+}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [state, setState] = useState<RecipientState>({ phase: "checking" });
+  const [pending, setPending] = useState(false);
+  const busy = useRef(false);
+  const [selecting, startSelection] = useTransition();
+  const [selected, setSelected] = useState(false);
+  const [selectionError, setSelectionError] = useState(false);
+  const recoveryKey = `partner-setup:${userId}:${id}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function inspect() {
+      if (!secret) return;
+      let recovery: RecoveryCheckpoint | undefined;
+      try {
+        recovery = readRecovery(recoveryKey);
+      } catch {
+        recovery = { phase: "creating" };
+      }
+      try {
+        const result = await orpc.projectPartnerships.getSetupLinkEligibility({
+          id,
+          secret,
+        });
+        if (!cancelled)
+          setState(
+            result.status === "redeemed"
+              ? { phase: "completed", result }
+              : { phase: "ready", recovery },
+          );
+      } catch (cause) {
+        if (!cancelled)
+          setState({ phase: "refused", error: setupError(cause), recovery });
+      }
+    }
+    void inspect();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, secret, recoveryKey]);
+
+  async function consume(choice: SetupChoice) {
+    if (!secret || busy.current || state.phase !== "ready") return;
+    busy.current = true;
+    setPending(true);
+    let recovery = state.recovery;
+    try {
+      const result = await orpc.projectPartnerships.getSetupLinkEligibility({
+        id,
+        secret,
+      });
+      if (result.status === "redeemed") {
+        setState({ phase: "completed", result });
+        return;
+      }
+      let targetId =
+        recovery?.phase === "created"
+          ? recovery.organizationId
+          : choice.kind === "existing"
+            ? choice.organizationId
+            : "";
+      if (!recovery && choice.kind === "new") {
+        const input = CreateOrganizationInputSchema.safeParse({
+          country: choice.country,
+          name: choice.name.trim(),
+          slug: slugifyOrganizationName(choice.name.trim()),
+        });
+        if (!input.success) {
+          setState({ phase: "ready", error: "create" });
+          return;
+        }
+        try {
+          localStorage.setItem(
+            recoveryKey,
+            JSON.stringify({ phase: "creating" }),
+          );
         } catch {
-          setError("create");
+          setState({ phase: "ready", error: "create" });
+          return;
+        }
+        recovery = { phase: "creating" };
+        setState({ phase: "ready", recovery });
+        try {
+          const created = await orpc.authentication.createOrganization(
+            input.data,
+          );
+          targetId = created.organizationId;
+          recovery = { phase: "created", organizationId: targetId };
+          setState({ phase: "ready", recovery });
+          localStorage.setItem(recoveryKey, JSON.stringify(recovery));
+        } catch (cause) {
+          if (
+            cause instanceof ORPCError &&
+            getSafeErrorSituation(cause)?.reason ===
+              "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION"
+          ) {
+            localStorage.removeItem(recoveryKey);
+            recovery = undefined;
+          }
+          setState({ phase: "ready", recovery, error: "create" });
           return;
         }
       }
-      await orpc.projectPartnerships.consumeSetupLink({
-        id,
-        secret,
+      if (!targetId) return;
+      recovery = {
+        phase: recovery?.phase === "created" ? "created" : "selected",
         organizationId: targetId,
-      });
-      setCompleted(true);
+      };
+      localStorage.setItem(recoveryKey, JSON.stringify(recovery));
+      try {
+        const redeemed = await orpc.projectPartnerships.consumeSetupLink({
+          id,
+          secret,
+          organizationId: targetId,
+        });
+        setState({
+          phase: "completed",
+          result: {
+            status: "redeemed",
+            projectId: result.projectId,
+            ...redeemed,
+          },
+        });
+      } catch (cause) {
+        const error = setupError(cause);
+        setState(
+          error === "generic"
+            ? {
+                phase: "inspect",
+                recovery,
+              }
+            : { phase: "refused", error, recovery },
+        );
+      }
     } catch (cause) {
-      setError(setupError(cause));
+      setState({ phase: "refused", error: setupError(cause), recovery });
     } finally {
+      busy.current = false;
       setPending(false);
     }
   }
 
+  async function inspectResult() {
+    if (!secret || busy.current) return;
+    busy.current = true;
+    setPending(true);
+    const recovery = "recovery" in state ? state.recovery : undefined;
+    try {
+      const result = await orpc.projectPartnerships.getSetupLinkEligibility({
+        id,
+        secret,
+      });
+      setState(
+        result.status === "redeemed"
+          ? { phase: "completed", result }
+          : { phase: "ready", recovery },
+      );
+    } catch (cause) {
+      setState({ phase: "refused", error: setupError(cause), recovery });
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
+  }
+
+  function selectOrganization(result: CompletedSetup) {
+    setSelectionError(false);
+    startSelection(async () => {
+      try {
+        const response = await authClient.organization.setActive({
+          organizationId: result.organizationId,
+        });
+        if (response.error) throw createSituationErrors().selectOrganization();
+        await queryClient.invalidateQueries();
+        startSelection(() => {
+          router.refresh();
+          setSelected(true);
+        });
+      } catch {
+        setSelectionError(true);
+        setSelected(false);
+      }
+    });
+  }
+
+  const recovery = "recovery" in state ? state.recovery : undefined;
   return (
     <Card>
       <CardHeader>
         <CardTitle>Partner Organization setup</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="flex flex-col gap-5">
         <p>
           Sign in with the verified email address this link was sent to.
           Completing setup creates a Project Partnership; it does not grant
@@ -409,110 +724,81 @@ export function SetupLinkRecipient({
         </p>
         {!secret ? (
           <SetupStatus state="invalid" />
-        ) : completed ? (
-          <Alert>
-            <AlertTitle>Project Partnership created</AlertTitle>
-            <AlertDescription>
-              Your Organization is now connected to the Project. No Hosting
-              Organization membership was granted.
-            </AlertDescription>
-          </Alert>
+        ) : state.phase === "checking" ? (
+          <output>Checking setup link…</output>
+        ) : state.phase === "completed" ? (
+          <>
+            <Alert>
+              <AlertTitle>Project Partnership created</AlertTitle>
+              <AlertDescription>
+                Your Organization is now connected to the Project. No Hosting
+                Organization membership was granted. Choose this Organization
+                explicitly before opening its Project.
+              </AlertDescription>
+            </Alert>
+            {!selected || selecting ? (
+              <Button
+                disabled={selecting}
+                onClick={() => selectOrganization(state.result)}
+              >
+                {selecting ? "Selecting Organization…" : "Use this Organization"}
+              </Button>
+            ) : (
+              <Button
+                render={
+                  <Link
+                    prefetch={false}
+                    href={`/projects/${encodeURIComponent(state.result.projectId)}`}
+                  />
+                }
+              >
+                Open Partner Project
+              </Button>
+            )}
+            {selectionError && (
+              <p role="alert">
+                Could not confirm Organization selection. Select it again before
+                opening the Project.
+              </p>
+            )}
+          </>
         ) : (
           <>
-            <form className="space-y-5" onSubmit={consume}>
-              <fieldset className="space-y-3">
-                <legend>Choose an Organization</legend>
-                <label className="flex items-center gap-2">
-                  <input
-                    checked={kind === "new"}
-                    name="setup-kind"
-                    onChange={() => {
-                      setKind("new");
-                      setError(undefined);
-                    }}
-                    type="radio"
-                  />
-                  New Organization
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    checked={kind === "existing"}
-                    name="setup-kind"
-                    onChange={() => {
-                      setKind("existing");
-                      setError(undefined);
-                    }}
-                    type="radio"
-                  />
-                  Existing Organization
-                </label>
-              </fieldset>
-              {kind === "new" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="setup-name">New Organization name</Label>
-                  <Input
-                    id="setup-name"
-                    maxLength={100}
-                    minLength={2}
-                    required
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                  <Label htmlFor="setup-country">Organization country</Label>
-                  <select
-                    id="setup-country"
-                    value={country}
-                    required
-                    disabled={pending}
-                    onChange={(event) =>
-                      setCountry(event.target.value as EUCountryCode)
-                    }
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="" disabled>
-                      Select an EU country
-                    </option>
-                    {EU_COUNTRIES.map(({ code }) => (
-                      <option key={code} value={code}>
-                        {new Intl.DisplayNames(["en"], { type: "region" }).of(
-                          code,
-                        )}
-                      </option>
-                    ))}
-                  </select>
-                  <p>
-                    This creates your Organization through the normal setup flow
-                    and makes you its Owner, then connects it to the Project.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Organization</span>
-                  <EntityCombobox
-                    label="Organization"
-                    value={organizationId}
-                    onChange={setOrganizationId}
-                    search={searchOwnedOrganizations}
-                  />
-                  <p>
-                    Only an Owner of this Organization can complete setup.
-                    Ownership is verified by the server when you submit.
-                  </p>
-                </div>
-              )}
-              <Button
-                disabled={
-                  pending ||
-                  (kind === "existing"
-                    ? !organizationId
-                    : !slugifyOrganizationName(name))
-                }
-                type="submit"
-              >
-                {pending ? "Completing…" : "Complete setup"}
+            {recovery && (
+              <Alert>
+                <AlertTitle>Organization retained</AlertTitle>
+                <AlertDescription>
+                  {recovery.phase === "created"
+                    ? `Setup is incomplete. Continue with the exact Organization already selected (${recovery.organizationId}). No new Organization will be created.`
+                    : recovery.phase === "selected"
+                      ? "Continue with the existing Organization you selected, or choose another Organization you own."
+                      : "Organization creation may have completed. Inspect your existing Organizations and select the one you created. Do not create it again."}
+                </AlertDescription>
+              </Alert>
+            )}
+            {state.phase === "inspect" ? (
+              <Alert>
+                <AlertTitle>Setup result needs inspection</AlertTitle>
+                <AlertDescription>
+                  The binding response was not confirmed. Inspect the result
+                  before retrying. Your Organization will not be deleted.
+                </AlertDescription>
+              </Alert>
+            ) : state.phase === "refused" ? (
+              <SetupStatus state={state.error} />
+            ) : (
+              <SetupOrganizationForm
+                recovery={recovery}
+                pending={pending}
+                error={state.error}
+                onConsume={consume}
+              />
+            )}
+            {(state.phase === "inspect" || state.phase === "refused") && (
+              <Button disabled={pending} onClick={() => void inspectResult()}>
+                {pending ? "Inspecting…" : "Inspect setup result"}
               </Button>
-            </form>
-            {error && <SetupStatus state={error} />}
+            )}
           </>
         )}
       </CardContent>

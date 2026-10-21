@@ -1,17 +1,23 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import {
-  copyFile,
+  chmod,
+  mkdtemp,
   mkdir,
   open,
   readFile,
   rm,
-  stat,
   writeFile,
 } from "node:fs/promises";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 import { parseEnv } from "node:util";
+
+import {
+  copyWorkspaceSource,
+  linkWorkspaceDependencies,
+  workspaceDigest,
+} from "./private-app-workspace";
 
 export interface ManagedRun {
   runId: string;
@@ -39,30 +45,6 @@ export async function readLocalEnvironment(
       (entry): entry is [string, string] => entry[1] !== undefined,
     ),
   );
-}
-
-async function freePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-  const address = server.address();
-  if (!address || typeof address === "string")
-    throw new Error("No managed port available.");
-  await new Promise<void>((resolve, reject) =>
-    server.close((error) => (error ? reject(error) : resolve())),
-  );
-  return address.port;
-}
-
-async function readOptionalFile(path: string): Promise<string | undefined> {
-  try {
-    return await readFile(path, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
-    throw error;
-  }
 }
 
 interface OwnedProcess {
@@ -99,6 +81,8 @@ export async function stopOwnedProcess(handle: OwnedProcess): Promise<void> {
   }
 }
 
+export class ManagedCommandCleanupError extends Error {}
+
 /** Bounded task subprocess; output remains private, and descendants are owned too. */
 export async function runManagedCommand(
   command: string,
@@ -111,6 +95,7 @@ export async function runManagedCommand(
     inspectOutput?: (output: string) => void;
   },
 ): Promise<void> {
+  options.signal?.throwIfAborted();
   const child = spawn(command, args, {
     cwd: options.cwd,
     env: options.env,
@@ -143,7 +128,12 @@ export async function runManagedCommand(
       if (options.signal?.aborted) fail();
     });
   } finally {
-    if (handle.pid) await stopOwnedProcess(handle);
+    if (handle.pid)
+      await stopOwnedProcess(handle).catch((error: unknown) => {
+        throw new ManagedCommandCleanupError("Managed command cleanup failed.", {
+          cause: error,
+        });
+      });
     options.inspectOutput?.(output);
   }
 }
@@ -159,62 +149,592 @@ export async function isManagedAuthReady(
   );
 }
 
+export type AppTarget = "calculator" | "cost-tracker";
+export type RuntimeProfile = "development" | "production";
+export type ManagedTarget = AppTarget | "calculator-instant";
+type Target<P extends RuntimeProfile> = P extends "production"
+  ? ManagedTarget
+  : AppTarget;
+export interface ArtifactIdentity {
+  candidateDigest: string;
+  configurationDigest: string;
+  variant: "ordinary" | "instant";
+  buildId: string;
+}
+export interface ReadyApp {
+  directory: string;
+  baseUrl: string;
+  environment: NodeJS.ProcessEnv;
+  runtime:
+    | { kind: "development" }
+    | { kind: "production"; artifact: ArtifactIdentity };
+}
+export class ManagedAppLifecycleError extends Error {
+  constructor(
+    message: string,
+    readonly evidenceDirectory: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = "ManagedAppLifecycleError";
+  }
+}
+
+export class ManagedAppCleanupError extends ManagedAppLifecycleError {
+  override name = "ManagedAppCleanupError";
+}
+
+export interface ManagedAppRun<P extends RuntimeProfile> {
+  start(target: Target<P>): Promise<ReadyApp>;
+  release(target: Target<P>): Promise<void>;
+  stop(): Promise<void>;
+  evidenceDirectory: string;
+}
 interface ManagedServerOptions {
   signal?: AbortSignal;
   ownershipTimeoutMs?: number;
 }
+interface ManagedAppRunOptions<
+  P extends RuntimeProfile,
+> extends ManagedServerOptions {
+  profile: P;
+  buildTimeoutMs?: number;
+  readinessTimeoutMs?: number;
+}
 
-/** No stale-lock takeover: an interrupted owner requires verified recovery,
- * never guessing from a PID or removing another run's declaration ownership. */
-async function acquireDeclarationOwnership(
-  root: string,
-  runId: string,
-  options: ManagedServerOptions,
-): Promise<() => Promise<void>> {
-  const directory = resolve(root, ".turbo");
-  await mkdir(directory, { recursive: true });
-  const path = resolve(directory, "managed-app-declarations.lock");
-  const identity = JSON.stringify({
-    runId,
-    pid: process.pid,
-    nonce: randomUUID(),
+async function reservePort(port = 0) {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, "127.0.0.1", resolve);
   });
-  const deadline = Date.now() + (options.ownershipTimeoutMs ?? 120_000);
-  while (true) {
-    options.signal?.throwIfAborted();
-    let file;
+  const address = server.address();
+  if (!address || typeof address === "string")
+    throw new Error("No managed port available.");
+  let closed = false;
+  return {
+    port: address.port,
+    async release() {
+      if (closed) return;
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+      closed = true;
+    },
+  };
+}
+type Reservation = Awaited<ReturnType<typeof reservePort>>;
+interface TargetRecord {
+  app: AppTarget;
+  port: Reservation;
+  socket?: Reservation;
+  environment: NodeJS.ProcessEnv;
+  directory: string;
+  image: string;
+  children: { child: ChildProcess; handle: OwnedProcess; failed: boolean }[];
+  ready?: ReadyApp;
+  artifact?: ArtifactIdentity;
+  materialized: boolean;
+}
+
+const alive = (record: TargetRecord) =>
+  record.children.length > 0 &&
+  record.children.every(
+    ({ child, failed }) =>
+      !failed && child.exitCode === null && child.signalCode === null,
+  );
+
+async function waitForSocket(
+  record: TargetRecord,
+  child: ChildProcess,
+  runId: string,
+  signal: AbortSignal,
+  timeoutMs: number,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline && alive(record) && !signal.aborted) {
     try {
-      file = await open(path, "wx", 0o600);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      if (Date.now() >= deadline)
-        throw new Error(
-          "Managed declaration ownership acquisition timed out. Check .turbo/managed-app-declarations.lock; remove it only after confirming no managed run still owns it.",
-        );
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      continue;
-    }
-    const ownedStat = await file.stat();
-    try {
-      await file.writeFile(identity);
-    } catch (error) {
-      await file.close();
-      const current = await stat(path);
-      if (current.ino === ownedStat.ino && current.dev === ownedStat.dev)
-        await rm(path);
-      throw error;
-    }
-    await file.close();
-    return async () => {
-      const current = await stat(path);
+      const response = await fetch(
+        `http://127.0.0.1:${record.socket!.port}/__managed-ready`,
+        { signal: AbortSignal.any([signal, AbortSignal.timeout(1000)]) },
+      );
       if (
-        current.ino !== ownedStat.ino ||
-        current.dev !== ownedStat.dev ||
-        (await readFile(path, "utf8")) !== identity
+        response.ok &&
+        response.headers.get("X-Greendex-Test-Run") === runId &&
+        (await response.text()) === String(child.pid)
       )
-        throw new Error("Managed declaration ownership changed; lock preserved.");
-      await rm(path);
+        return;
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("Owned socket child did not become ready.");
+}
+
+async function waitForApp(
+  record: TargetRecord,
+  runId: string,
+  signal: AbortSignal,
+  timeoutMs: number,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  let ready = false;
+  while (Date.now() < deadline && alive(record) && !signal.aborted) {
+    try {
+      const response = await fetch(
+        `${record.environment.NEXT_PUBLIC_BASE_URL}/api/auth/get-session`,
+        {
+          signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
+          redirect: "manual",
+        },
+      );
+      if (await isManagedAuthReady(response, runId)) {
+        ready = true;
+        break;
+      }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  signal.throwIfAborted();
+  if (!ready || !alive(record))
+    throw new Error("Managed app did not become ready.");
+  const response = await fetch(
+    `${record.environment.NEXT_PUBLIC_BASE_URL}/api/rpc`,
+    {
+      signal: AbortSignal.any([
+        signal,
+        AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+      ]),
+      redirect: "manual",
+    },
+  );
+  if (
+    response.status !== 404 ||
+    (await response.text()) !== "Not found" ||
+    !alive(record)
+  )
+    throw new Error("Managed RPC route did not become ready.");
+}
+
+/** One source snapshot, three isolated targets, and only run-owned process handles. */
+export async function createManagedAppRun<P extends RuntimeProfile>(
+  root: string,
+  run: ManagedRun,
+  environments: Record<AppTarget, Record<string, string>>,
+  options: ManagedAppRunOptions<P>,
+): Promise<ManagedAppRun<P>> {
+  assertManagedRun(run);
+  options.signal?.throwIfAborted();
+  const runsDirectory = resolve(root, ".turbo/managed-app-runs");
+  await mkdir(runsDirectory, { recursive: true, mode: 0o700 });
+  const directory = await mkdtemp(resolve(runsDirectory, `${run.runId}-`));
+  await chmod(directory, 0o700);
+  const evidenceDirectory = resolve(directory, "evidence");
+  const snapshot = resolve(directory, "source");
+  const records = new Map<ManagedTarget, TargetRecord>();
+  const reservations: Reservation[] = [];
+  const controller = new AbortController();
+  let closed = false;
+  let acquired = false;
+  let stopping: Promise<void> | undefined;
+  let fatalCleanup: ManagedAppCleanupError | undefined;
+  let queue: Promise<unknown> = Promise.resolve();
+  const serial = <T>(task: () => Promise<T>): Promise<T> => {
+    const pending = queue.then(task);
+    queue = pending.catch(() => {});
+    return pending;
+  };
+  const signal = controller.signal;
+  const persist = async (target: ManagedTarget, state: string) => {
+    const record = records.get(target)!;
+    await writeFile(
+      resolve(evidenceDirectory, `${target}.json`),
+      JSON.stringify(
+        {
+          runId: run.runId,
+          target,
+          profile: options.profile,
+          state,
+          directory: record.directory,
+          ports: [
+            record.port.port,
+            ...(record.socket ? [record.socket.port] : []),
+          ],
+          pids: record.children.map(({ handle }) => handle.pid),
+          artifact: record.artifact,
+        },
+        null,
+        2,
+      ),
+      { mode: 0o600 },
+    );
+  };
+  const stopChildren = async (target: ManagedTarget) => {
+    const record = records.get(target)!;
+    const failures: unknown[] = [];
+    for (const { handle } of [...record.children].reverse()) {
+      try {
+        if (handle.pid) await stopOwnedProcess(handle);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    record.ready = undefined;
+    if (failures.length) {
+      await persist(target, "cleanup-failed-resources-retained");
+      throw new ManagedAppCleanupError(
+        "Managed target cleanup failed; workspace and ownership evidence retained.",
+        evidenceDirectory,
+        { cause: new AggregateError(failures) },
+      );
+    }
+    record.children = [];
+  };
+  const stop = () => {
+    if (stopping) return stopping;
+    closed = true;
+    controller.abort();
+    stopping = serial(async () => {
+      const failures: unknown[] = [];
+      for (const [target, record] of records) {
+        try {
+          await stopChildren(target);
+          if (!fatalCleanup) {
+            await rm(record.image, { recursive: true, force: true });
+            await persist(target, "stopped");
+          }
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      for (const reservation of reservations) {
+        try {
+          await reservation.release();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (fatalCleanup) throw fatalCleanup;
+      if (failures.length)
+        throw new ManagedAppLifecycleError(
+          "Managed app run cleanup failed; retain the database until verified recovery.",
+          evidenceDirectory,
+          { cause: new AggregateError(failures) },
+        );
+      await rm(snapshot, { recursive: true, force: true });
+      options.signal?.removeEventListener("abort", onAbort);
+    });
+    return stopping;
+  };
+  const onAbort = () => {
+    controller.abort();
+    if (acquired) void stop().catch(() => {});
+  };
+  options.signal?.addEventListener("abort", onAbort, { once: true });
+  if (options.signal?.aborted) onAbort();
+  try {
+    signal.throwIfAborted();
+    await mkdir(evidenceDirectory, { mode: 0o700 });
+    await copyWorkspaceSource(root, snapshot);
+    signal.throwIfAborted();
+    const candidateDigest = await workspaceDigest(snapshot);
+    for (const target of [
+      "calculator",
+      "cost-tracker",
+      ...(options.profile === "production"
+        ? (["calculator-instant"] as const)
+        : []),
+    ] as ManagedTarget[]) {
+      signal.throwIfAborted();
+      const app = target === "calculator-instant" ? "calculator" : target;
+      const port = await reservePort();
+      reservations.push(port);
+      const socket = app === "calculator" ? await reservePort() : undefined;
+      if (socket) reservations.push(socket);
+      const image = resolve(directory, target);
+      records.set(target, {
+        app,
+        port,
+        socket,
+        image,
+        directory: resolve(image, "apps", app),
+        environment: { NODE_ENV: options.profile },
+        children: [],
+        materialized: false,
+      });
+    }
+    const calculatorBase = `http://127.0.0.1:${records.get("calculator")!.port.port}`;
+    const costBase = `http://127.0.0.1:${records.get("cost-tracker")!.port.port}`;
+    for (const [target, record] of records) {
+      record.environment = Object.freeze({
+        ...process.env,
+        ...environments[record.app],
+        DATABASE_URL: run.databaseUrl,
+        TEST_RUN_ID: run.runId,
+        CALCULATOR_TEST_BASE_URL:
+          target === "calculator-instant"
+            ? `http://127.0.0.1:${record.port.port}`
+            : calculatorBase,
+        COST_TRACKER_TEST_BASE_URL: costBase,
+        NEXT_PUBLIC_BASE_URL: `http://127.0.0.1:${record.port.port}`,
+        ...(record.socket
+          ? {
+              SOCKET_PORT: String(record.socket.port),
+              NEXT_PUBLIC_SOCKET_URL: `http://127.0.0.1:${record.socket.port}`,
+            }
+          : {}),
+        PORT: String(record.port.port),
+        COST_TRACKER_PORT: String(record.port.port),
+        NODE_ENV: options.profile,
+        NEXT_TELEMETRY_DISABLED: "1",
+        EXPOSE_TESTING_API: target === "calculator-instant" ? "1" : "0",
+        MANAGED_WORKSPACE_ROOT: root,
+      });
+    }
+    acquired = true;
+    signal.throwIfAborted();
+    const launch = async (
+      target: ManagedTarget,
+      command: string,
+      args: string[],
+      name: string,
+    ) => {
+      signal.throwIfAborted();
+      const record = records.get(target)!;
+      const log = await open(
+        resolve(evidenceDirectory, `${target}-${name}.log`),
+        "a",
+        0o600,
+      );
+      try {
+        const child = spawn(command, args, {
+          cwd: record.directory,
+          env: record.environment,
+          detached: true,
+          stdio: ["ignore", log.fd, log.fd],
+        });
+        const handle = { pid: child.pid, owned: true };
+        ownedProcesses.add(handle);
+        const completion = new Promise<void>((resolve, reject) => {
+          child.once("error", () =>
+            reject(new Error("Managed child could not start.")),
+          );
+          child.once("exit", (code) =>
+            code === 0
+              ? resolve()
+              : reject(new Error("Managed child exited unsuccessfully.")),
+          );
+        });
+        void completion.catch(() => {});
+        const owned = { child, handle, failed: false, completion };
+        record.children.push(owned);
+        child.once("error", () => {
+          owned.failed = true;
+        });
+        await persist(target, "starting");
+        return owned;
+      } finally {
+        await log.close();
+      }
     };
+    const command = async (
+      target: ManagedTarget,
+      args: string[],
+      name: string,
+    ) => {
+      const owned = await launch(target, process.execPath, args, name);
+      await new Promise<void>((resolve, reject) => {
+        const fail = () =>
+          finish(new Error("Managed build failed or interrupted."));
+        const timer = setTimeout(fail, options.buildTimeoutMs ?? 900_000);
+        const finish = (error?: Error) => {
+          clearTimeout(timer);
+          signal.removeEventListener("abort", fail);
+          if (error) reject(error);
+          else resolve();
+        };
+        signal.addEventListener("abort", fail, { once: true });
+        void owned.completion.then(
+          () => finish(),
+          () => finish(new Error("Managed build failed.")),
+        );
+        if (signal.aborted) fail();
+      });
+      await stopChildren(target);
+    };
+    const start = (target: Target<P>) =>
+      serial(async (): Promise<ReadyApp> => {
+        if (closed) throw new Error("Managed app run is stopped.");
+        signal.throwIfAborted();
+        const record = records.get(target);
+        if (!record) throw new Error("Unsupported managed app target.");
+        if (
+          record.materialized &&
+          (await workspaceDigest(snapshot, record.image)) !== candidateDigest
+        )
+          throw new Error("Managed source changed; artifact reuse refused.");
+        if (record.ready) {
+          if (!alive(record))
+            throw new Error("Managed app lost its owned child.");
+          return record.ready;
+        }
+        try {
+          signal.throwIfAborted();
+          if (!record.materialized) {
+            await copyWorkspaceSource(snapshot, record.image);
+            await linkWorkspaceDependencies(root, record.image);
+            const configuration: {
+              compilerOptions?: { paths?: Record<string, string[]> };
+            } = JSON.parse(
+              await readFile(resolve(record.directory, "tsconfig.json"), "utf8"),
+            );
+            const types = `./.next/test-runs/${run.runId}/${options.profile === "development" ? "dev/" : ""}types/*`;
+            await writeFile(
+              resolve(record.directory, `.tsconfig-test-${run.runId}.json`),
+              JSON.stringify({
+                ...configuration,
+                compilerOptions: {
+                  ...configuration.compilerOptions,
+                  paths: {
+                    ...configuration.compilerOptions?.paths,
+                    "#next-routes/*": [types],
+                  },
+                },
+              }),
+            );
+            record.materialized = true;
+          }
+          const next = resolve(
+            record.directory,
+            "node_modules/next/dist/bin/next",
+          );
+          if (options.profile === "production" && !record.artifact) {
+            if (record.app === "calculator") {
+              const sri = resolve(record.directory, "src/lib/orpc/scalar-sri.ts");
+              const reviewed = await readFile(sri, "utf8").catch((error) => {
+                if ((error as NodeJS.ErrnoException).code === "ENOENT")
+                  return undefined;
+                throw error;
+              });
+              await command(target, ["scripts/generate-sri.js"], "sri");
+              if (
+                reviewed !== undefined &&
+                (await readFile(sri, "utf8")) !== reviewed
+              )
+                throw new Error(
+                  "Calculator SRI differs from reviewed source; rebuild requires a reviewed source update.",
+                );
+              await command(target, ["scripts/check-sri.js"], "sri-check");
+            }
+            await command(target, [next, "build"], "build");
+            const buildId = (
+              await readFile(
+                resolve(
+                  record.directory,
+                  `.next/test-runs/${run.runId}/BUILD_ID`,
+                ),
+                "utf8",
+              )
+            ).trim();
+            if (!buildId)
+              throw new Error("Missing production artifact identity.");
+            record.artifact = {
+              candidateDigest,
+              configurationDigest: createHash("sha256")
+                .update(JSON.stringify(record.environment))
+                .digest("hex"),
+              variant: target === "calculator-instant" ? "instant" : "ordinary",
+              buildId,
+            };
+            await persist(target, "built");
+          }
+          if (record.socket) {
+            await record.socket.release();
+            const { child } = await launch(
+              target,
+              process.execPath,
+              ["--import", "tsx", "src/socket-server.ts"],
+              "socket",
+            );
+            await waitForSocket(
+              record,
+              child,
+              run.runId,
+              signal,
+              options.readinessTimeoutMs ?? 120_000,
+            );
+          }
+          await record.port.release();
+          await launch(
+            target,
+            process.execPath,
+            [
+              next,
+              options.profile === "production" ? "start" : "dev",
+              "--port",
+              String(record.port.port),
+              "--hostname",
+              "127.0.0.1",
+            ],
+            "next",
+          );
+          await waitForApp(
+            record,
+            run.runId,
+            signal,
+            options.readinessTimeoutMs ?? 120_000,
+          );
+          if ((await workspaceDigest(snapshot, record.image)) !== candidateDigest)
+            throw new Error("Managed source changed during build or startup.");
+          record.ready = Object.freeze({
+            directory: record.directory,
+            baseUrl: record.environment.NEXT_PUBLIC_BASE_URL!,
+            environment: record.environment,
+            runtime: record.artifact
+              ? { kind: "production" as const, artifact: record.artifact }
+              : { kind: "development" as const },
+          });
+          await persist(target, "ready");
+          return record.ready;
+        } catch (error) {
+          try {
+            await stopChildren(target);
+            await persist(target, "startup-failed");
+          } catch (cleanupError) {
+            fatalCleanup = new ManagedAppCleanupError(
+              "Managed startup and cleanup failed; resources retained.",
+              evidenceDirectory,
+              { cause: new AggregateError([error, cleanupError]) },
+            );
+            controller.abort(fatalCleanup);
+            throw fatalCleanup;
+          }
+          throw new Error("Managed application startup failed.", {
+            cause: error,
+          });
+        }
+      });
+    return {
+      start,
+      stop,
+      evidenceDirectory,
+      release: (target) =>
+        serial(async () => {
+          const record = records.get(target);
+          if (!record) throw new Error("Unsupported managed app target.");
+          await stopChildren(target);
+          await persist(target, "released");
+        }),
+    };
+  } catch (error) {
+    try {
+      await stop();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Managed acquisition and cleanup failed; resources retained.",
+      );
+    }
+    throw error;
   }
 }
 
@@ -225,200 +745,39 @@ export interface ManagedAppServers {
   stop(): Promise<void>;
 }
 
-/** Dedicated servers only: no discovery or attachment to ordinary dev processes. */
+/** Compatibility operation for consumers that require both development apps. */
 export async function startManagedAppServers(
   root: string,
   run: ManagedRun,
-  environments: Record<"calculator" | "cost-tracker", Record<string, string>>,
+  environments: Record<AppTarget, Record<string, string>>,
   options: ManagedServerOptions = {},
 ): Promise<ManagedAppServers> {
-  assertManagedRun(run);
-  const ports = [await freePort(), await freePort()];
-  while (ports[0] === ports[1]) ports[1] = await freePort();
-  const bases = ports.map((port) => `http://127.0.0.1:${port}`);
-  const environment = {
-    TEST_RUN_ID: run.runId,
-    CALCULATOR_TEST_BASE_URL: bases[0],
-    COST_TRACKER_TEST_BASE_URL: bases[1],
-  };
-  const owned: {
-    child: ChildProcess;
-    handle: OwnedProcess;
-    directory: string;
-    tsconfig: string;
-    originalDeclarations: string | undefined;
-    generatedDeclarations: string | undefined;
-  }[] = [];
-  const releaseOwnership = await acquireDeclarationOwnership(
-    root,
-    run.runId,
-    options,
-  );
-  let stopping: Promise<void> | undefined;
-  const stop = () =>
-    (stopping ??= (async () => {
-      const failures: unknown[] = [];
-      let processesStopped = true;
-      for (const app of [...owned].reverse()) {
-        try {
-          try {
-            if (app.handle.pid) await stopOwnedProcess(app.handle);
-          } catch (error) {
-            processesStopped = false;
-            throw error;
-          }
-          // Next always writes app-root next-env.d.ts, even with a separate tsconfig.
-          // Restore only our captured output; never overwrite a concurrent external write.
-          const declarationsPath = resolve(app.directory, "next-env.d.ts");
-          const current = await readOptionalFile(declarationsPath);
-          if (current !== app.originalDeclarations) {
-            if (current !== app.generatedDeclarations)
-              failures.push(
-                new Error(
-                  "Generated declarations changed externally; preserved.",
-                ),
-              );
-            else if (app.originalDeclarations === undefined)
-              await rm(declarationsPath, { force: true });
-            else await writeFile(declarationsPath, app.originalDeclarations);
-          }
-          await rm(app.tsconfig, { force: true });
-          await rm(resolve(app.directory, ".next/test-runs", run.runId), {
-            recursive: true,
-            force: true,
-          });
-        } catch (error) {
-          failures.push(error);
-        }
-      }
-      if (processesStopped) {
-        try {
-          await releaseOwnership();
-        } catch (error) {
-          failures.push(error);
-        }
-      }
-      if (failures.length)
-        throw new AggregateError(failures, "Managed server cleanup failed.");
-    })());
+  const apps = await createManagedAppRun(root, run, environments, {
+    ...options,
+    profile: "development",
+  });
   try {
-    options.signal?.throwIfAborted();
-    for (const [index, app] of (
-      ["calculator", "cost-tracker"] as const
-    ).entries()) {
-      options.signal?.throwIfAborted();
-      const directory = resolve(root, "apps", app);
-      const tsconfig = resolve(directory, `.tsconfig-test-${run.runId}.json`);
-      const originalDeclarations = await readOptionalFile(
-        resolve(directory, "next-env.d.ts"),
-      );
-      await copyFile(resolve(directory, "tsconfig.json"), tsconfig);
-      const child = spawn(
-        process.execPath,
-        [
-          resolve(directory, "node_modules/next/dist/bin/next"),
-          "dev",
-          "--port",
-          String(ports[index]),
-          "--hostname",
-          "127.0.0.1",
-        ],
-        {
-          cwd: directory,
-          detached: true,
-          stdio: "ignore",
-          env: {
-            ...process.env,
-            ...environments[app],
-            ...environment,
-            DATABASE_URL: run.databaseUrl,
-            NEXT_PUBLIC_BASE_URL: bases[index],
-            PORT: String(ports[index]),
-            COST_TRACKER_PORT: String(ports[index]),
-            NODE_ENV: "development",
-            NEXT_TELEMETRY_DISABLED: "1",
-          },
-        },
-      );
-      const handle = { pid: child.pid, owned: true };
-      ownedProcesses.add(handle);
-      const ownedApp = {
-        child,
-        handle,
-        directory,
-        tsconfig,
-        originalDeclarations,
-        generatedDeclarations: undefined as string | undefined,
-      };
-      owned.push(ownedApp);
-      let failed = false;
-      child.once("error", () => {
-        failed = true;
-      });
-      const deadline = Date.now() + 120_000;
-      let ready = false;
-      while (
-        Date.now() < deadline &&
-        !options.signal?.aborted &&
-        !failed &&
-        child.exitCode === null &&
-        child.signalCode === null
-      ) {
-        try {
-          const response = await fetch(`${bases[index]}/api/auth/get-session`, {
-            signal: AbortSignal.any([
-              AbortSignal.timeout(5_000),
-              ...(options.signal ? [options.signal] : []),
-            ]),
-            redirect: "manual",
-          });
-          if (await isManagedAuthReady(response, run.runId)) {
-            ready = true;
-            break;
-          }
-        } catch {
-          /* Readiness is bounded; no raw URLs/errors reach reports. */
-        }
-        await new Promise((resolve) => setTimeout(resolve, 250));
-      }
-      const declarations = await readOptionalFile(
-        resolve(directory, "next-env.d.ts"),
-      );
-      if (declarations?.includes(`.next/test-runs/${run.runId}/`))
-        ownedApp.generatedDeclarations = declarations;
-      options.signal?.throwIfAborted();
-      if (!ready || child.exitCode !== null || child.signalCode !== null)
-        throw new Error("Managed app did not become ready.");
-      // Auth proves run ownership; RPC's empty path compiles its route without
-      // invoking any procedure, before HTTP tests start their shorter timers.
-      const rpcResponse = await fetch(`${bases[index]}/api/rpc`, {
-        signal: AbortSignal.any([
-          AbortSignal.timeout(Math.max(1, deadline - Date.now())),
-          ...(options.signal ? [options.signal] : []),
-        ]),
-        redirect: "manual",
-      });
-      if (
-        rpcResponse.status !== 404 ||
-        (await rpcResponse.text()) !== "Not found"
-      )
-        throw new Error("Managed RPC route did not become ready.");
-    }
+    const calculator = await apps.start("calculator");
+    const costTracker = await apps.start("cost-tracker");
     return {
-      calculatorBaseUrl: bases[0],
-      costTrackerBaseUrl: bases[1],
-      environment,
-      stop,
+      calculatorBaseUrl: calculator.baseUrl,
+      costTrackerBaseUrl: costTracker.baseUrl,
+      environment: {
+        TEST_RUN_ID: run.runId,
+        CALCULATOR_TEST_BASE_URL: calculator.baseUrl,
+        COST_TRACKER_TEST_BASE_URL: costTracker.baseUrl,
+      },
+      stop: () => apps.stop(),
     };
   } catch (error) {
     try {
-      await stop();
+      await apps.stop();
     } catch (cleanupError) {
       throw new AggregateError(
         [error, cleanupError],
         "Managed application startup and cleanup failed.",
       );
     }
-    throw new Error("Managed application startup failed.", { cause: error });
+    throw error;
   }
 }

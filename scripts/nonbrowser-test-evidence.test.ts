@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { nonbrowserTestEvidence } from "./nonbrowser-test-evidence";
+import {
+  nonbrowserTestEvidence,
+  assertNonbrowserTestEvidence,
+} from "./nonbrowser-test-evidence";
 
 const assertion = {
   status: "pending",
@@ -93,5 +96,22 @@ describe("nonbrowserTestEvidence", () => {
       { file: "src/source.test.ts", kind: "suite-runtime-error" },
     ]);
     expect(JSON.stringify(evidence)).not.toContain("private-secret");
+  });
+});
+
+describe("optional-empty package execution", () => {
+  it.each([
+    results,
+    { ...results, numPendingTests: 0, numTodoTests: 1 },
+    { ...results, numPendingTests: 0, numFailedTests: 1 },
+    { ...results, numTotalTests: 0, numPendingTests: 0 },
+  ])("does not permit failed, pending, todo, or hook failures %#", (data) => {
+    const evidence = nonbrowserTestEvidence(data, "packages/config", "/repo", {
+      kind: "optional-package",
+      discoveredFiles: [],
+    });
+    expect(() => assertNonbrowserTestEvidence(evidence)).toThrow(
+      "Required tests failed or were skipped.",
+    );
   });
 });

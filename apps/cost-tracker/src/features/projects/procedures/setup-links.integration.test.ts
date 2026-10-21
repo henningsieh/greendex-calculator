@@ -10,7 +10,7 @@ import {
   projectsTable,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   afterEach,
   beforeAll,
@@ -77,6 +77,211 @@ afterEach(async () => {
 });
 
 describe("Partner Organization setup links", () => {
+  it("prevalidates without active Organization context and recovers the exact redeemed Organization", async () => {
+    const hostingMembershipsBefore = await db
+      .select({ id: member.id })
+      .from(member)
+      .where(eq(member.organizationId, hostId))
+      .orderBy(member.id);
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    asUser(recipientEmail, "");
+    const input = { id: link.id, secret: link.secret };
+    expect(
+      await client.projectPartnerships.getSetupLinkEligibility(input),
+    ).toEqual({
+      status: "eligible",
+      projectId,
+    });
+    const result = await client.projectPartnerships.consumeSetupLink({
+      ...input,
+      organizationId: partnerId,
+    });
+    expect(
+      await client.projectPartnerships.getSetupLinkEligibility(input),
+    ).toEqual({
+      status: "redeemed",
+      projectId,
+      ...result,
+    });
+    expect(
+      await client.projectPartnerships.consumeSetupLink({
+        ...input,
+        organizationId: partnerId,
+      }),
+    ).toEqual(result);
+    const hostingMemberships = await db
+      .select({ id: member.id })
+      .from(member)
+      .where(eq(member.organizationId, hostId))
+      .orderBy(member.id);
+    expect(hostingMemberships).toEqual(hostingMembershipsBefore);
+  });
+
+  it.each([
+    ["secret", "SETUP_LINK_NOT_FOUND"],
+    ["missing", "SETUP_LINK_NOT_FOUND"],
+    ["recipient", "SETUP_LINK_WRONG_EMAIL"],
+    ["verification", "EMAIL_VERIFICATION_REQUIRED"],
+    ["disabled", "SETUP_LINK_DISABLED"],
+    ["expired", "SETUP_LINK_EXPIRED"],
+    ["archived", "PROJECT_NOT_FOUND"],
+    ["anonymous", "SESSION_REQUIRED"],
+  ])(
+    "refuses %s before creation and independently at redemption",
+    async (invalid, reason) => {
+      const link = await client.projectPartnerships.createSetupLink({
+        projectId,
+        recipientEmail,
+      });
+      const input = {
+        id: invalid === "missing" ? "missing-link" : link.id,
+        secret: invalid === "secret" ? "wrong" : link.secret,
+      };
+      if (invalid === "recipient") asUser("wrong@example.com");
+      if (invalid === "verification") {
+        authMocks.getSession.mockResolvedValue({
+          session: { id, userId, activeOrganizationId: null },
+          user: { id: userId, email: recipientEmail, emailVerified: false },
+        });
+      }
+      if (invalid === "anonymous") authMocks.getSession.mockResolvedValue(null);
+      if (invalid === "disabled")
+        await db
+          .update(links)
+          .set({ enabled: false })
+          .where(eq(links.id, link.id));
+      if (invalid === "expired")
+        await db
+          .update(links)
+          .set({ expiresAt: new Date(0) })
+          .where(eq(links.id, link.id));
+      if (invalid === "archived")
+        await db
+          .update(projectsTable)
+          .set({ archived: true })
+          .where(eq(projectsTable.id, projectId));
+      const organizationsBefore = await db
+        .select({ id: organization.id })
+        .from(organization)
+        .orderBy(organization.id);
+      try {
+        await expect(
+          client.projectPartnerships.getSetupLinkEligibility(input),
+        ).rejects.toMatchObject({ data: { reason } });
+        await expect(
+          client.projectPartnerships.consumeSetupLink({
+            ...input,
+            organizationId: partnerId,
+          }),
+        ).rejects.toMatchObject({ data: { reason } });
+        expect(
+          await db
+            .select({ id: organization.id })
+            .from(organization)
+            .orderBy(organization.id),
+        ).toEqual(organizationsBefore);
+        expect(
+          await db
+            .select({ partnershipId: links.partnershipId })
+            .from(links)
+            .where(eq(links.id, link.id)),
+        ).toEqual([{ partnershipId: null }]);
+      } finally {
+        if (invalid === "archived")
+          await db
+            .update(projectsTable)
+            .set({ archived: false })
+            .where(eq(projectsTable.id, projectId));
+      }
+    },
+  );
+
+  it("revalidates after precheck without destroying the independently owned Organization", async () => {
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const input = { id: link.id, secret: link.secret };
+    expect(
+      await client.projectPartnerships.getSetupLinkEligibility(input),
+    ).toEqual({ status: "eligible", projectId });
+    await client.projectPartnerships.disableSetupLink({ id: link.id });
+    await expect(
+      client.projectPartnerships.consumeSetupLink({
+        ...input,
+        organizationId: partnerId,
+      }),
+    ).rejects.toMatchObject({ data: { reason: "SETUP_LINK_DISABLED" } });
+    expect(
+      await db
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.id, partnerId)),
+    ).toEqual([{ id: partnerId }]);
+  });
+
+  it("does not disclose redeemed Organization recovery to another recipient identity", async () => {
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const input = { id: link.id, secret: link.secret };
+    const result = await client.projectPartnerships.consumeSetupLink({
+      ...input,
+      organizationId: partnerId,
+    });
+    userId = `setup-partner-participant-${id}`;
+    asUser();
+    await expect(
+      client.projectPartnerships.getSetupLinkEligibility(input),
+    ).rejects.toMatchObject({ data: { reason: "SETUP_LINK_USED" } });
+    userId = ownerId;
+    asUser();
+    expect(
+      await client.projectPartnerships.getSetupLinkEligibility(input),
+    ).toEqual({ status: "redeemed", projectId, ...result });
+  });
+
+  it("requires current Ownership for both recovery and replay, not administrative authority", async () => {
+    const link = await client.projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const input = { id: link.id, secret: link.secret, organizationId: partnerId };
+    const result = await client.projectPartnerships.consumeSetupLink(input);
+    const ownership = and(
+      eq(member.userId, ownerId),
+      eq(member.organizationId, partnerId),
+    );
+    try {
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.OrganizationAdmin })
+        .where(ownership);
+      await expect(
+        client.projectPartnerships.getSetupLinkEligibility(input),
+      ).rejects.toMatchObject({
+        data: { reason: "ORGANIZATION_OWNER_REQUIRED" },
+      });
+      await expect(
+        client.projectPartnerships.consumeSetupLink(input),
+      ).rejects.toMatchObject({
+        data: { reason: "ORGANIZATION_OWNER_REQUIRED" },
+      });
+    } finally {
+      await db
+        .update(member)
+        .set({ role: ORGANIZATION_ROLES.OrganizationOwner })
+        .where(ownership);
+    }
+    expect(await client.projectPartnerships.consumeSetupLink(input)).toEqual(
+      result,
+    );
+  });
+
   it("creates a Partnership for an Owner exactly once on replay", async () => {
     const link = await client.projectPartnerships.createSetupLink({
       projectId,

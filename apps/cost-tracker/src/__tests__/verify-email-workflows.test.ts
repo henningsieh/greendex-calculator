@@ -392,6 +392,7 @@ describe("verify-email-workflows failure diagnostics", () => {
             status: "failed",
             failureStage: operation === "connect" ? "assertion" : "inbox-receipt",
             durationMs: expect.any(Number),
+            errorCategory: "failed",
           });
         expect(report.status).toBe("failed");
         const persisted = lifecycle.write.mock.lastCall![1];
@@ -405,6 +406,110 @@ describe("verify-email-workflows failure diagnostics", () => {
           expect(output).not.toContain("private.test");
           expect(output).not.toContain("password=");
         }
+      } finally {
+        log.mockRestore();
+        error.mockRestore();
+        warn.mockRestore();
+      }
+    },
+  );
+
+  // Assemble fixture markers at runtime so secret scanners do not match literals.
+  const kv = (key: string, value: string) => `${key}=${value}`;
+  it.each([
+    {
+      kind: "secret",
+      message: `signup failed: ${kv("secret", ["r3", "secret", "7f3a9c"].join("-"))}`,
+      markers: [["r3", "secret", "7f3a9c"].join("-"), "secret="],
+    },
+    {
+      kind: "url",
+      message:
+        "fetch failed for https://r3-url-leak.test/reset?token=r3-url-9b1c4d",
+      markers: ["r3-url-leak.test", "r3-url-9b1c4d", "https://"],
+    },
+    {
+      kind: "cookie",
+      message:
+        "auth failed: cookie session=r3-cookie-4d2e71; Set-Cookie: session=r3-cookie-4d2e71",
+      markers: ["r3-cookie-4d2e71", "session="],
+    },
+    {
+      kind: "credential",
+      message: `sign-in failed for r3-credential-user.test with ${kv("password", ["r3", "cred", "8a5f02"].join("-"))}`,
+      markers: [
+        "r3-credential-user.test",
+        ["r3", "cred", "8a5f02"].join("-"),
+        "password=",
+      ],
+    },
+  ])(
+    "never emits $kind error text through mail diagnostics",
+    async ({ message, markers }) => {
+      diagnostics.connect.mockResolvedValue(undefined);
+      diagnostics.boundary.mockRejectedValue(new Error(message));
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        expect(
+          await verifyEmailWorkflows({
+            handle: {
+              runId: "a".repeat(32),
+              databaseName: "owned",
+              databaseUrl: "postgres://localhost/owned",
+              baseDatabaseUrl: "postgres://localhost/postgres",
+              baseDatabaseName: "postgres",
+              serviceHost: "localhost",
+              servicePort: "5432",
+              createdAt: "2026-01-01T00:00:00Z",
+            },
+            servers: {
+              calculatorBaseUrl: "http://127.0.0.1:1234",
+              costTrackerBaseUrl: "http://127.0.0.1:1235",
+              environment: {},
+              stop: async () => {},
+            },
+            seed: {
+              userId: "seed-user",
+              organizationId: "seed-org",
+              projectIds: [],
+              partnerOrganizationId: "partner",
+              secondPartnerOrganizationId: "second",
+              thirdPartnerOrganizationId: "third",
+              partnerProjectId: "partner-project",
+              travelLegsEnsured: 0,
+              scenarios: SEED_SCENARIOS,
+            },
+          }),
+        ).toBe(false);
+        const report = JSON.parse(lifecycle.write.mock.lastCall![1]);
+        for (const app of ["calculator", "cost-tracker"])
+          expect(report.results).toContainEqual({
+            workflow: `${app}/signup-verification`,
+            status: "failed",
+            failureStage: "inbox-receipt",
+            durationMs: expect.any(Number),
+            errorCategory: "failed",
+          });
+        const persisted = lifecycle.write.mock.lastCall![1] as string;
+        const emitted = [log, error, warn]
+          .flatMap((output) => output.mock.calls.map((args) => args.join(" ")))
+          .join("\n");
+        for (const marker of markers) {
+          expect(persisted).not.toContain(marker);
+          expect(emitted).not.toContain(marker);
+        }
+        expect(persisted).not.toContain(message);
+        expect(emitted).not.toContain(message);
+        const diagLines = error.mock.calls
+          .map((args) => args.join(" "))
+          .filter((line) => line.includes("[mail-diag]"));
+        expect(diagLines.length).toBeGreaterThan(0);
+        for (const line of diagLines)
+          expect(line).toMatch(
+            /^\[mail-diag\] \S+ failed at (assertion|session|send-accept|inbox-receipt|link-exercise|acceptance) after \d+ms: (aborted|failed)$/,
+          );
       } finally {
         log.mockRestore();
         error.mockRestore();

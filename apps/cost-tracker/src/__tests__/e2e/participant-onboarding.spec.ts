@@ -27,6 +27,7 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
@@ -191,9 +192,11 @@ async function contextFor(browser: Browser, actor: Actor, baseURL: string) {
     storageState: { cookies: [], origins: [] },
   });
   contexts.push(context);
-  const response = await context.request.post("/api/auth/sign-in/email", {
-    data: { email: actors[actor].email, password: actors[actor].password },
-  });
+  const response = await postSignInWithRateLimitRetry(
+    context.request,
+    actors[actor].email,
+    actors[actor].password,
+  );
   expect(response.ok(), `${actor} setup authentication`).toBe(true);
   return context;
 }
@@ -229,6 +232,7 @@ async function join(page: Page, url: string, actor: Actor) {
   ).toBeVisible();
   await expect(page.getByLabel("Participant agreement text")).not.toBeEmpty();
   await page.getByLabel("Full name").fill(actors[actor].name);
+  await page.getByLabel("Country", { exact: true }).selectOption("DE");
   await page.getByLabel("I accept the current Participant agreement").check();
   await page.getByRole("button", { name: "Join Project" }).click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
@@ -555,6 +559,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(invitationUrl(ids.oldInvitation));
     await t.getByLabel("Full name").fill(actors.T.name);
+    await t.getByLabel("Country", { exact: true }).selectOption("DE");
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
@@ -592,6 +597,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const u = await pageFor(browser, "U", baseURL!);
     await u.goto(sharedLink);
     await u.getByLabel("Full name").fill(actors.U.name);
+    await u.getByLabel("Country", { exact: true }).selectOption("DE");
     await u.getByLabel("I accept the current Participant agreement").check();
     await u.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
@@ -729,6 +735,13 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     for (const actor of ["T", "U", "V"] as const)
       await expect(f.getByText(actors[actor].email)).toHaveCount(0);
     await f.goto(participantsURL);
+    await expect(
+      f
+        .getByRole("alert")
+        .filter({ hasText: "Unable to load Project Participations" }),
+    ).toContainText("Project Partnership not found in scope.", {
+      timeout: 90_000,
+    });
     await expect(f.getByText(actors.T.email)).toHaveCount(0);
   });
 
@@ -749,6 +762,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(foreignLink);
     await t.getByLabel("Full name").fill(actors.T.name);
+    await t.getByLabel("Country", { exact: true }).selectOption("DE");
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the joinedOtherPartner factory copy.
@@ -791,6 +805,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .inputValue();
     await t.goto(otherLink);
     await t.getByLabel("Full name").fill(actors.T.name);
+    await t.getByLabel("Country", { exact: true }).selectOption("DE");
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
@@ -824,6 +839,11 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await target.selectOption(actors.C.id);
     const c = await pageFor(browser, "C", baseURL!);
     await c.goto("/projects");
+    await expect(
+      c
+        .getByRole("region", { name: "Assigned Projects", exact: true })
+        .getByText("No Projects assigned yet.", { exact: true }),
+    ).toBeVisible();
     await expect(
       c.getByRole("link", { name: names.main, exact: true }),
     ).toHaveCount(0);
@@ -905,6 +925,11 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ]);
     await c.goto("/projects");
     await expect(
+      c
+        .getByRole("region", { name: "Assigned Projects", exact: true })
+        .getByText("No Projects assigned yet.", { exact: true }),
+    ).toBeVisible();
+    await expect(
       c.getByRole("link", { name: names.main, exact: true }),
     ).toHaveCount(0);
     await c.goto(participantsURL);
@@ -914,6 +939,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .filter({ hasText: "Unable to load Project Participations" }),
     ).toContainText(
       "You need Partner Organization staff access or an assignment to this Project Partnership.",
+      { timeout: 90_000 },
     );
     await expect(c.getByText(actors.T.email, { exact: true })).toHaveCount(0);
   });

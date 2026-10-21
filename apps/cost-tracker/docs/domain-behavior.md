@@ -10,6 +10,15 @@ This reference owns Cost Tracker's behavioral and persistence rules; [the glossa
 - Organization Invitations use Better Auth roles `owner` or `admin` for colleagues. They carry no Project Partnership bridge and grant no Participant access. Better Auth's fallback role `member` must never be invited, assigned, or seeded in Cost Tracker ([ADR-0012](../../../docs/adr/0012-ban-fallback-member-role-in-cost-tracker.md)).
 - Review Tasks have open, assigned, and resolved states. Resolution feeds the merge-review flow that decides which duplicate Project Participation survives when the same User or email occurs twice in one Project.
 
+## Partner Organization setup
+
+- Setup links are recipient-bound. The authenticated User must have the verified recipient email address. The server validates the secret, enabled state, expiry, and Project availability before the UI offers Organization creation, and checks them again before binding.
+- Better Auth creates the Organization and grants creator Ownership. The creation procedure returns its exact Organization ID. It preserves an existing acting Organization; first creation makes the new Organization active.
+- Creation and Partnership binding are independent operations, not one atomic transaction. A later binding refusal or an uncertain response never deletes the User-owned Organization. The UI explains incomplete setup and inspects an uncertain binding result before permitting another binding attempt.
+- A same-browser checkpoint stores the exact returned Organization ID per authenticated User and setup link, without the secret. Retry, revisit, and reload reuse that ID through the existing-Organization redemption path. If the creation response itself is lost, the UI blocks repeat creation and asks the User to inspect and select an existing Organization. Unavailable browser storage blocks new creation rather than losing its recovery identity.
+- Eligibility inspection and replay remain server-authoritative. Only an Organization Owner can redeem or recover a completed setup. Replaying successful setup creates no duplicate Partnership or Membership. Setup never grants Hosting Organization Membership.
+- Completion does not silently change an unrelated acting Organization. The User explicitly selects the Partner Organization through Better Auth. One protected-context refresh completes before a separate Project navigation becomes available in the original session. Missing or refused context selection leaves Project navigation unavailable.
+
 ## Journeys and transport
 
 - Exactly one Participant Journey is permitted per Project Participation in the MVP. A Partner-side Project Coordinator records origin, destination, trip type (`one-way` or `round-trip`), and Erasmus Distance-Calculator distance for funding-band selection. The journey is shared with Calculator, not a cost record.

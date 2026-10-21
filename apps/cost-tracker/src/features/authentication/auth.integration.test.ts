@@ -96,6 +96,62 @@ describe("Cost Tracker Better Auth", () => {
     expect(session?.user).toMatchObject({ email, name: "Cost Tracker User" });
   });
 
+  it("returns the exact created Organization and makes the original procedure session usable", async () => {
+    const email = uniqueEmail();
+    const password = "correct-horse-battery-staple";
+    await auth.api.signUpEmail({
+      body: { email, name: "Setup recipient", password },
+    });
+    const delivered =
+      emailMocks.sendEmailVerificationEmail.mock.calls.at(-1)?.[0];
+    if (!delivered) throw new Error("Verification email was not delivered");
+    const token = new URL(delivered.url).searchParams.get("token");
+    if (!token) throw new Error("Verification email has no token");
+    await auth.api.verifyEmail({ query: { token } });
+    const signedIn = await auth.api.signInEmail({
+      body: { email, password },
+      asResponse: true,
+    });
+    const cookie = signedIn.headers.get("set-cookie")?.split(";")[0];
+    if (!cookie) throw new Error("Sign-in did not create a session cookie");
+    const headers = new Headers({ cookie });
+    const client = createRouterClient(router, {
+      context: async () => ({ headers, resHeaders: new Headers() }),
+    });
+    const name = `Procedure setup ${randomUUID()}`;
+    const result = await client.authentication.createOrganization({
+      name,
+      slug: `procedure-${randomUUID()}`,
+      country: "DE",
+    });
+    createdOrganizationIds.push(result.organizationId);
+    const originalSession = await auth.api.getSession({ headers });
+    expect(originalSession?.session.activeOrganizationId).toBe(
+      result.organizationId,
+    );
+    expect(
+      await db
+        .select({ id: organization.id, name: organization.name })
+        .from(organization)
+        .where(eq(organization.id, result.organizationId)),
+    ).toEqual([{ id: result.organizationId, name }]);
+    await expect(client.projects.scopes()).resolves.toEqual({
+      hosted: false,
+      partner: false,
+      canCreate: true,
+    });
+    await expect(
+      client.authentication.createOrganization({
+        name: `Second ${name}`,
+        slug: `second-${randomUUID()}`,
+        country: "DE",
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(
+      (await auth.api.getSession({ headers }))?.session.activeOrganizationId,
+    ).toBe(result.organizationId);
+  });
+
   it("assigns the newest membership to a new session so dashboard reads are authorized", async () => {
     // SEED_SCENARIOS.reviewFixes.newestMembership owns the ordered Membership
     // precondition. Sign-in is the behavior that selects the newest one.

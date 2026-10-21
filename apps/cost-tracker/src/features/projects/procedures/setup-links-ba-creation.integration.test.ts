@@ -14,7 +14,7 @@ import {
   session,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const emailMocks = vi.hoisted(() => ({
@@ -106,8 +106,19 @@ afterAll(async () => {
 
 describe("Partner setup links through supported Organization creation", () => {
   it("binds an Organization created through the Better Auth API", async () => {
-    // The recipient arrives with no Organization and creates one through the
-    // normal supported flow; Better Auth grants creator Ownership itself.
+    const link = await client(hostHeaders).projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const input = { id: link.id, secret: link.secret };
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({
+      status: "eligible",
+      projectId,
+    });
     const created = await auth.api.createOrganization({
       body: {
         country: "DE" as const,
@@ -125,10 +136,6 @@ describe("Partner setup links through supported Organization creation", () => {
       { userId: recipientUserId, role: ORGANIZATION_ROLES.OrganizationOwner },
     ]);
 
-    const link = await client(hostHeaders).projectPartnerships.createSetupLink({
-      projectId,
-      recipientEmail,
-    });
     const result = await client(
       recipientHeaders,
     ).projectPartnerships.consumeSetupLink({
@@ -137,6 +144,15 @@ describe("Partner setup links through supported Organization creation", () => {
       organizationId: created.id,
     });
     expect(result.organizationId).toBe(created.id);
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({
+      status: "redeemed",
+      projectId,
+      ...result,
+    });
     // Redemption binds only: no Membership was granted or altered.
     expect(
       await db
@@ -150,6 +166,89 @@ describe("Partner setup links through supported Organization creation", () => {
         .from(partnerships)
         .where(eq(partnerships.id, result.partnershipId)),
     ).toHaveLength(1);
+  }, 60_000);
+
+  it("keeps a legitimately created Organization after a binding failure and reuses its exact identity", async () => {
+    const link = await client(hostHeaders).projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const input = { id: link.id, secret: link.secret };
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({ status: "eligible", projectId });
+    const created = await auth.api.createOrganization({
+      body: {
+        country: "DE" as const,
+        name: `Recovery ${lane}`,
+        slug: `recovery-${lane}`,
+      },
+      headers: recipientHeaders,
+    });
+    recipientOrganizationId = created.id;
+    await client(hostHeaders).projectPartnerships.disableSetupLink({
+      id: link.id,
+    });
+    const consume = { ...input, organizationId: created.id };
+    await expect(
+      client(recipientHeaders).projectPartnerships.consumeSetupLink(consume),
+    ).rejects.toMatchObject({ data: { reason: "SETUP_LINK_DISABLED" } });
+    expect(
+      await db
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.id, created.id)),
+    ).toEqual([{ id: created.id }]);
+    expect(
+      await db
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, recipientUserId),
+            eq(member.organizationId, created.id),
+          ),
+        ),
+    ).toEqual([{ role: ORGANIZATION_ROLES.OrganizationOwner }]);
+    expect(
+      await db
+        .select({ partnershipId: links.partnershipId })
+        .from(links)
+        .where(eq(links.id, link.id)),
+    ).toEqual([{ partnershipId: null }]);
+
+    await db.update(links).set({ enabled: true }).where(eq(links.id, link.id));
+    const result =
+      await client(recipientHeaders).projectPartnerships.consumeSetupLink(
+        consume,
+      );
+    expect(result.organizationId).toBe(created.id);
+    expect(
+      await client(recipientHeaders).projectPartnerships.consumeSetupLink(
+        consume,
+      ),
+    ).toEqual(result);
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({ status: "redeemed", projectId, ...result });
+    const project = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, projectId),
+    });
+    expect(
+      await db
+        .select({ id: member.id })
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, recipientUserId),
+            eq(member.organizationId, project!.organizationId),
+          ),
+        ),
+    ).toEqual([]);
   }, 60_000);
 
   it("refuses a second Organization and an unrelated Organization", async () => {

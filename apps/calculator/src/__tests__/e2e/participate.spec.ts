@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { TestProjectFixture } from "./fixtures/test-project";
 
@@ -19,7 +19,6 @@ const BUTTON_REGEX = {
   continue: /continue/i,
   back: /back/i,
   complete: /complete/i,
-  gotIt: /got it|ok|close/i,
 } as const;
 
 const COUNTRY_REGEX = {
@@ -41,6 +40,16 @@ const OPTION_REGEX = {
   conventional: /conventional/i,
   electric: /electric/i,
 } as const;
+
+async function dismissImpactModal(page: Page) {
+  const title = page.getByRole("heading", { name: "Your Impact", exact: true });
+  await expect(title).toBeVisible();
+  await title
+    .locator("..")
+    .getByRole("button", { name: "Continue", exact: true })
+    .click();
+  await expect(title).toBeHidden();
+}
 
 let fixture: TestProjectFixture;
 let projectId: string;
@@ -88,8 +97,6 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
     // Step 2: Days
     await expect(page.locator("text=days").first()).toBeVisible();
-    // Wait for animation to complete
-    await page.waitForTimeout(500);
     let numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("7", { delay: 50 });
@@ -119,9 +126,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await expect(page.locator("text=impact").first()).toBeVisible({
       timeout: 3000,
     });
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Step 6: Food - should show impact modal
     await expect(page.locator("text=meat").first()).toBeVisible();
@@ -132,9 +137,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await expect(page.locator("text=impact").first()).toBeVisible({
       timeout: 3000,
     });
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Step 7: Flight km - should show impact modal if > 0
     await expect(page.locator("text=fly").first()).toBeVisible();
@@ -152,9 +155,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await expect(page.locator("text=impact").first()).toBeVisible({
       timeout: 3000,
     });
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Step 8: Boat km - entering 0 should NOT show impact
     await expect(page.locator("text=boat").first()).toBeVisible();
@@ -184,9 +185,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await expect(page.locator("text=impact").first()).toBeVisible({
       timeout: 3000,
     });
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Step 10: Bus km - entering 0 should NOT show impact
     await expect(page.locator("text=bus").first()).toBeVisible();
@@ -248,9 +247,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await expect(page.locator("text=impact").first()).toBeVisible({
       timeout: 3000,
     });
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Step 14: Age
     await expect(page.locator("text=old").first()).toBeVisible();
@@ -312,16 +309,12 @@ test.describe("Questionnaire Form E2E Tests", () => {
     // Electricity
     await page.getByRole("button", { name: OPTION_REGEX.conventional }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Food
     await page.getByRole("button", { name: "never" }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Flight - 0 km
     await page.locator('input[type="number"]').first().fill("0");
@@ -553,15 +546,11 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
     await page.getByRole("button", { name: OPTION_REGEX.green }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     await page.getByRole("button", { name: "never" }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Skip transport to car
     let transportInput = page.locator('input[type="number"]').first();
@@ -665,22 +654,16 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
     await page.getByRole("button", { name: OPTION_REGEX.green }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     await page.getByRole("button", { name: "sometimes" }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Add some transport
     await page.locator('input[type="number"]').first().fill("100");
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
-    await page
-      .getByRole("button", { name: BUTTON_REGEX.gotIt })
-      .click({ force: true });
+    await dismissImpactModal(page);
 
     // Skip rest of transport
     await page.locator('input[type="number"]').first().fill("0");

@@ -35,6 +35,7 @@ import { env } from "@/env";
 import { normalizeRedirectPath } from "@/features/authentication/components/auth-flow-layout";
 import { LastUsedBadge } from "@/features/authentication/components/last-used-badge";
 import { SocialButtons } from "@/features/authentication/components/social-buttons";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { authClient } from "@/lib/better-auth/auth-client";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export function LoginForm({
   nextPageUrl?: string | string[];
 }) {
   const [lastLoginMethod, setLastLoginMethod] = useState<string | null>(null);
+  const hydrated = useHydrated();
 
   const router = useRouter();
   const t = useTranslations("authentication");
@@ -181,7 +183,7 @@ export function LoginForm({
                     control={form.control}
                     id="email"
                     inputProps={{
-                      disabled: form.formState.isSubmitting,
+                      disabled: !hydrated || form.formState.isSubmitting,
                     }}
                     label={t("login.email")}
                     name="email"
@@ -192,7 +194,7 @@ export function LoginForm({
                     control={form.control}
                     id="password"
                     inputProps={{
-                      disabled: form.formState.isSubmitting,
+                      disabled: !hydrated || form.formState.isSubmitting,
                     }}
                     label={t("login.password")}
                     name="password"
@@ -211,7 +213,7 @@ export function LoginForm({
 
                   <Button
                     className="mt-2"
-                    disabled={form.formState.isSubmitting}
+                    disabled={!hydrated || form.formState.isSubmitting}
                     type="submit"
                     variant="default"
                   >
@@ -229,7 +231,7 @@ export function LoginForm({
                     control={magicLinkForm.control}
                     id="magic-email"
                     inputProps={{
-                      disabled: magicLinkForm.formState.isSubmitting,
+                      disabled: !hydrated || magicLinkForm.formState.isSubmitting,
                     }}
                     label={t("login.email")}
                     name="email"
@@ -239,7 +241,7 @@ export function LoginForm({
 
                   <Button
                     className="mt-2"
-                    disabled={magicLinkForm.formState.isSubmitting}
+                    disabled={!hydrated || magicLinkForm.formState.isSubmitting}
                     type="submit"
                     variant="default"
                   >

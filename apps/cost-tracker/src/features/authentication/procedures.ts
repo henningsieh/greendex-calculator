@@ -1,6 +1,6 @@
-import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import { z } from "zod";
 
+import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { auth } from "@/lib/auth";
 import {
@@ -19,12 +19,6 @@ const SignInInputSchema = z.object({
 
 const SignUpInputSchema = SignInInputSchema.extend({
   name: EditNameSchema.shape.name,
-});
-
-const CreateOrganizationInputSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  slug: z.string().trim().min(2).max(120),
-  country: z.enum(EU_COUNTRY_CODES),
 });
 
 const GoogleSignInInputSchema = z.object({
@@ -137,17 +131,42 @@ export const signOut = base
 
 export const createOrganization = authorized
   .input(CreateOrganizationInputSchema)
-  .output(SuccessSchema)
+  .output(
+    z.object({ success: z.literal(true), organizationId: z.string().min(1) }),
+  )
   .handler(async ({ context, errors, input }) => {
-    await callBetterAuth(context, errors, () =>
-      auth.api.createOrganization({
+    const response = await callBetterAuth(context, errors, async () => {
+      const response = await auth.api.createOrganization({
         asResponse: true,
-        body: input,
+        body: {
+          ...input,
+          keepCurrentActiveOrganization: Boolean(
+            context.session.activeOrganizationId,
+          ),
+        },
         headers: context.headers,
-      }),
-    );
-
-    return { success: true };
+      });
+      if (response.status === 400) {
+        const body: unknown = await response
+          .clone()
+          .json()
+          .catch(() => undefined);
+        const refusal = z
+          .object({ code: z.literal("ORGANIZATION_ALREADY_EXISTS") })
+          .safeParse(body);
+        if (refusal.success) {
+          forwardCookies(response, context);
+          throw createSituationErrors(
+            errors,
+          ).organizationSlugTakenBeforeCreation();
+        }
+      }
+      return response;
+    });
+    const organization = z
+      .object({ id: z.string().min(1) })
+      .parse(await response.json());
+    return { success: true, organizationId: organization.id };
   });
 
 export const updateUser = authorized

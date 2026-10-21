@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
   account,
@@ -29,15 +30,16 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
 // deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
-// API-setup exceptions: beforeAll seeds verified P/F/E/M Users and credential
+// API-setup exceptions: beforeAll seeds verified recipient Users and credential
 // accounts, then signs each into its own browser context through the auth API.
-// Reauthentication after new-Organization setup picks the new active Membership.
 // The nested beforeAll hooks issue fresh 07/11 setup links directly in the DB;
 // these are redemption preconditions, not evidence of UI issuance. Case 10's
 // Organization Invitation is likewise DB-issued after E creates its Organization.
@@ -60,9 +62,12 @@ const names = {
   P: `CT ${suffix} Partner A`,
   F: `CT ${suffix} Partner B`,
   E: `CT ${suffix} Existing Organization`,
+  R: `CT ${suffix} Retained Organization`,
+  U: `CT ${suffix} Uncertain Organization`,
+  D: `CT ${suffix} Corrected Organization`,
 };
 const actors = Object.fromEntries(
-  (["P", "F", "E", "M"] as const).map((actor) => [
+  (["P", "F", "E", "M", "R", "U", "D"] as const).map((actor) => [
     actor,
     {
       id: randomUUID(),
@@ -72,7 +77,7 @@ const actors = Object.fromEntries(
     },
   ]),
 ) as Record<
-  "P" | "F" | "E" | "M",
+  "P" | "F" | "E" | "M" | "R" | "U" | "D",
   { id: string; name: string; email: string; password: string }
 >;
 registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
@@ -81,6 +86,7 @@ const ownedProjectNames = [...fixture.projectNames, adminProjectName];
 const invitationId = randomUUID();
 const contexts: BrowserContext[] = [];
 const issuedLinks: string[] = [];
+const canonicalSessionIds: string[] = [];
 let projectURLs: string[] = [];
 let setupURL = "";
 let existingSetupURL = "";
@@ -109,7 +115,7 @@ async function counts() {
     db
       .select({ value: count() })
       .from(organization)
-      .where(inArray(organization.name, [names.P, names.F, names.E])),
+      .where(inArray(organization.name, Object.values(names))),
     db
       .select({ value: count() })
       .from(projectsTable)
@@ -150,9 +156,11 @@ async function actorContext(
     storageState: { cookies: [], origins: [] },
   });
   contexts.push(context);
-  const response = await context.request.post("/api/auth/sign-in/email", {
-    data: { email: actors[actor].email, password: actors[actor].password },
-  });
+  const response = await postSignInWithRateLimitRetry(
+    context.request,
+    actors[actor].email,
+    actors[actor].password,
+  );
   expect(response.ok(), `${actor} setup sign-in failed`).toBe(true);
   return context;
 }
@@ -175,17 +183,6 @@ async function selectEntity(
 
 async function openOrganizationDialog(page: Page) {
   const dialog = page.getByRole("dialog", { name: "Create Organization" });
-  if (!(await dialog.isVisible())) {
-    // The portal may open on pointer-down, intercepting Playwright's final click.
-    // Only tolerate that click race if the requested dialog is visibly open.
-    await page
-      .locator("main button")
-      .filter({ hasText: "Create Organization" })
-      .click({ timeout: 3_000 })
-      .catch(async () => {
-        await expect(dialog).toBeVisible();
-      });
-  }
   await expect(dialog).toBeVisible();
   return dialog;
 }
@@ -271,6 +268,73 @@ async function openPartnerProject(page: Page, name: string) {
   await expect(page.getByText("Partner Project", { exact: true })).toBeVisible();
 }
 
+async function markSetupDocument(page: Page) {
+  await page.evaluate((value) => {
+    (
+      window as Window & { setupDocumentIdentity?: string }
+    ).setupDocumentIdentity = value;
+  }, randomUUID());
+}
+
+async function selectAndOpenPartnerProject(
+  page: Page,
+  projectName: string,
+  organizationName: string,
+) {
+  const documentIdentity = await page.evaluate(
+    () =>
+      (window as Window & { setupDocumentIdentity?: string })
+        .setupDocumentIdentity,
+  );
+  expect(typeof documentIdentity).toBe("string");
+  await page
+    .getByRole("button", { name: "Use this Organization", exact: true })
+    .click();
+  await page
+    .getByRole("link", { name: "Open Partner Project", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: projectName, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Partner Project", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: new RegExp(`Acting Organization: ${organizationName}`),
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Open Claim workspace", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Claim workspace", level: 1, exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Create Payout Account", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as Window & { setupDocumentIdentity?: string })
+          .setupDocumentIdentity,
+    ),
+  ).toBe(documentIdentity);
+}
+
+async function assertRecipientPersistence(
+  actor: "R" | "U",
+  organizationId: string,
+  projectName: string,
+) {
+  const memberships = await db
+    .select({ organizationId: member.organizationId, role: member.role })
+    .from(member)
+    .where(eq(member.userId, actors[actor].id));
+  expect(memberships).toEqual([
+    { organizationId, role: ORGANIZATION_ROLES.OrganizationOwner },
+  ]);
+  expect(await partnershipCount(projectName, names[actor])).toBe(1);
+}
+
 async function completeNew(page: Page, url: string, name: string) {
   await page.goto(url);
   await expect(
@@ -278,6 +342,7 @@ async function completeNew(page: Page, url: string, name: string) {
   ).toBeVisible();
   await page.getByLabel("New Organization name").fill(name);
   await page.getByLabel("Organization country").selectOption("DE");
+  await markSetupDocument(page);
   await page.getByRole("button", { name: "Complete setup" }).click();
   await expect(page.getByText("Project Partnership created")).toBeVisible();
 }
@@ -327,13 +392,15 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
   });
   test.afterAll(async () => {
     await Promise.all(contexts.map((context) => context.close()));
+    if (canonicalSessionIds.length)
+      await db.delete(session).where(inArray(session.id, canonicalSessionIds));
     // Remove link references before deleting the UI-created Projects/Partnerships.
     if (issuedLinks.length)
       await db.delete(setupLinks).where(inArray(setupLinks.id, issuedLinks));
     await db.delete(invitation).where(eq(invitation.id, invitationId));
     for (const name of ownedProjectNames)
       await db.delete(projectsTable).where(eq(projectsTable.name, name));
-    for (const name of [names.P, names.F, names.E]) {
+    for (const name of Object.values(names)) {
       const [org] = await db
         .select({ id: organization.id })
         .from(organization)
@@ -364,9 +431,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
-    if (await page.getByText("No Organization access yet").isVisible())
-      await page.reload();
-    await expect(page.getByRole("button", { name: "New project" })).toBeVisible();
+    await expectFirstOrganizationProjects(page, fixture.organizationName);
     projectURLs = [];
     for (const name of fixture.projectNames)
       projectURLs.push(await createProject(page, name));
@@ -397,12 +462,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(page.getByText("No Organization access yet")).toBeVisible();
     await completeNew(page, setupURL, names.P);
     expect(await partnershipCount(fixture.projectNames[0]!, names.P)).toBe(1);
+    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.P);
     await page.goto(setupURL);
-    await expect(page.getByLabel("New Organization name")).toBeVisible();
-    await page.getByLabel("New Organization name").fill(names.P);
-    await page.getByLabel("Organization country").selectOption("DE");
-    await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(page.getByText("Project Partnership created")).toBeVisible();
+    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
     expect(await partnershipCount(fixture.projectNames[0]!, names.P)).toBe(1);
     const [hostingMembership] = await db
       .select({ id: member.id })
@@ -415,6 +478,285 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         ),
       );
     expect(hostingMembership).toBeUndefined();
+  });
+
+  test("06 duplicate slug refusal allows a corrected name, successful setup and revisit", async ({
+    browser,
+    baseURL,
+  }) => {
+    const url = await issueInSetup(fixture.projectNames[0]!, actors.D.email);
+    const context = await actorContext(browser, "D", baseURL!);
+    const page = await context.newPage();
+    await page.goto("/projects");
+    await expect(page.getByText("No Organization access yet")).toBeVisible();
+    await page.goto(url);
+    await page.getByLabel("New Organization name").fill(`${names.P}!`);
+    await page.getByLabel("Organization country").selectOption("DE");
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(
+      page.getByText("Could not create Organization", { exact: true }),
+    ).toBeVisible();
+    const [membership] = await db
+      .select({ value: count() })
+      .from(member)
+      .where(eq(member.userId, actors.D.id));
+    expect(membership!.value).toBe(0);
+    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(0);
+    await expect(page.getByLabel("New Organization name")).toBeVisible();
+    await page.getByLabel("New Organization name").fill(names.D);
+    await markSetupDocument(page);
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(
+      page.getByText("Project Partnership created", { exact: true }),
+    ).toBeVisible();
+    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
+    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.D);
+    const [created] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, names.D));
+    expect(created).toBeDefined();
+    await page.goto(url);
+    await expect(
+      page.getByText("Project Partnership created", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    const owned = await db
+      .select({ organizationId: member.organizationId })
+      .from(member)
+      .where(eq(member.userId, actors.D.id));
+    expect(owned).toEqual([{ organizationId: created!.id }]);
+    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
+  });
+
+  test("06a a real creation survives binding refusal and exact retry, revisit and reload", async ({
+    browser,
+    baseURL,
+  }) => {
+    const url = await issueInSetup(fixture.projectNames[0]!, actors.R.email);
+    const id = new URL(url, baseURL).pathname.split("/").at(-1)!;
+    const context = await actorContext(browser, "R", baseURL!);
+    const page = await context.newPage();
+    let attempts = 0;
+    await page.route(
+      "**/api/rpc/projectPartnerships/consumeSetupLink**",
+      async (route) => {
+        attempts++;
+        if (attempts === 1)
+          await db
+            .update(setupLinks)
+            .set({ enabled: false })
+            .where(eq(setupLinks.id, id));
+        await route.continue();
+      },
+    );
+    await page.goto(url);
+    await page.getByLabel("New Organization name").fill(names.R);
+    await page.getByLabel("Organization country").selectOption("DE");
+    await markSetupDocument(page);
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(
+      page.getByText("Disabled setup link", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Organization retained", { exact: true }),
+    ).toBeVisible();
+    const [created] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, names.R));
+    expect(created).toBeDefined();
+    const organizationId = created!.id;
+    expect(await partnershipCount(fixture.projectNames[0]!, names.R)).toBe(0);
+    await db
+      .update(setupLinks)
+      .set({ enabled: true })
+      .where(eq(setupLinks.id, id));
+    await page.getByRole("button", { name: "Inspect setup result" }).click();
+    await expect(
+      page.getByRole("button", {
+        name: "Retry setup with retained Organization",
+      }),
+    ).toBeVisible();
+    expect(attempts).toBe(1);
+    await page.goto("/projects");
+    await expect(
+      page.getByRole("heading", { name: "Projects", exact: true }),
+    ).toBeVisible();
+    await page.goto(url);
+    await expect(
+      page.getByText(
+        `Setup is incomplete. Continue with the exact Organization already selected (${organizationId}). No new Organization will be created.`,
+      ),
+    ).toBeVisible();
+    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    await page.reload();
+    await expect(
+      page.getByText(
+        `Setup is incomplete. Continue with the exact Organization already selected (${organizationId}). No new Organization will be created.`,
+      ),
+    ).toBeVisible();
+    expect(attempts).toBe(1);
+    await markSetupDocument(page);
+    await page
+      .getByRole("button", { name: "Retry setup with retained Organization" })
+      .click();
+    await expect(page.getByText("Project Partnership created")).toBeVisible();
+    expect(attempts).toBe(2);
+    const retained = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, names.R));
+    expect(retained).toEqual([{ id: organizationId }]);
+    await assertRecipientPersistence(
+      "R",
+      organizationId,
+      fixture.projectNames[0]!,
+    );
+    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.R);
+    await page.goto(url);
+    await expect(page.getByText("Project Partnership created")).toBeVisible();
+    expect(attempts).toBe(2);
+    await assertRecipientPersistence(
+      "R",
+      organizationId,
+      fixture.projectNames[0]!,
+    );
+  });
+
+  test("06b an uncertain successful redemption is inspected instead of repeated", async ({
+    browser,
+    baseURL,
+  }) => {
+    const url = await issueInSetup(fixture.projectNames[0]!, actors.U.email);
+    const context = await actorContext(browser, "U", baseURL!);
+    const page = await context.newPage();
+    let attempts = 0;
+    await page.route(
+      "**/api/rpc/projectPartnerships/consumeSetupLink**",
+      async (route) => {
+        attempts++;
+        const response = await route.fetch();
+        expect(response.ok()).toBe(true);
+        await route.abort("failed");
+      },
+    );
+    await page.goto(url);
+    await page.getByLabel("New Organization name").fill(names.U);
+    await page.getByLabel("Organization country").selectOption("DE");
+    await markSetupDocument(page);
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(page.getByText("Setup result needs inspection")).toBeVisible();
+    expect(await partnershipCount(fixture.projectNames[0]!, names.U)).toBe(1);
+    await expect(
+      page.getByRole("button", { name: "Complete setup" }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Inspect setup result" }).click();
+    await expect(page.getByText("Project Partnership created")).toBeVisible();
+    expect(attempts).toBe(1);
+    const [created] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.name, names.U));
+    await assertRecipientPersistence("U", created!.id, fixture.projectNames[0]!);
+    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.U);
+    await page.goto(url);
+    await expect(page.getByText("Project Partnership created")).toBeVisible();
+    expect(attempts).toBe(1);
+    await assertRecipientPersistence("U", created!.id, fixture.projectNames[0]!);
+  });
+
+  test("known-invalid links refuse before any Organization or Partnership mutation", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await fixture.actorContext(browser, "X", baseURL!);
+    const page = await context.newPage();
+    const x = fixture.actors.X;
+    const before = await db
+      .select({ id: member.id })
+      .from(member)
+      .where(eq(member.userId, x.id));
+    const [[organizationsBefore], [partnershipsBefore]] = await Promise.all([
+      db.select({ value: count() }).from(organization),
+      db.select({ value: count() }).from(partnerships),
+    ]);
+    const scenarios = [
+      { name: "missing", heading: "Invalid setup link" },
+      { name: "secret", heading: "Invalid setup link" },
+      { name: "disabled", heading: "Disabled setup link" },
+      { name: "expired", heading: "Expired setup link" },
+      { name: "project", heading: "Project unavailable" },
+      { name: "verification", heading: "Verify your email" },
+    ];
+    for (const scenario of scenarios) {
+      const url = await issueInSetup(fixture.projectNames[2]!, x.email);
+      const parsed = new URL(url, baseURL);
+      const id = parsed.pathname.split("/").at(-1)!;
+      const [link] = await db
+        .select({ projectId: setupLinks.projectId })
+        .from(setupLinks)
+        .where(eq(setupLinks.id, id));
+      if (scenario.name === "missing")
+        parsed.pathname = `/setup-links/${randomUUID()}`;
+      if (scenario.name === "secret")
+        parsed.searchParams.set("secret", "incorrect-secret");
+      if (scenario.name === "disabled")
+        await db
+          .update(setupLinks)
+          .set({ enabled: false })
+          .where(eq(setupLinks.id, id));
+      if (scenario.name === "expired")
+        await db
+          .update(setupLinks)
+          .set({ expiresAt: new Date(0) })
+          .where(eq(setupLinks.id, id));
+      if (scenario.name === "project")
+        await db
+          .update(projectsTable)
+          .set({ archived: true })
+          .where(eq(projectsTable.id, link!.projectId));
+      if (scenario.name === "verification")
+        await db
+          .update(user)
+          .set({ emailVerified: false })
+          .where(eq(user.id, x.id));
+      try {
+        await page.goto(parsed.toString());
+        await expect(
+          page.getByText(scenario.heading, { exact: true }),
+        ).toBeVisible();
+        await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+        const [stored] = await db
+          .select({ partnershipId: setupLinks.partnershipId })
+          .from(setupLinks)
+          .where(eq(setupLinks.id, id));
+        expect(stored?.partnershipId).toBeNull();
+        expect(await db.select({ value: count() }).from(organization)).toEqual([
+          organizationsBefore,
+        ]);
+        expect(await db.select({ value: count() }).from(partnerships)).toEqual([
+          partnershipsBefore,
+        ]);
+        expect(
+          await db
+            .select({ id: member.id })
+            .from(member)
+            .where(eq(member.userId, x.id)),
+        ).toEqual(before);
+      } finally {
+        if (scenario.name === "project")
+          await db
+            .update(projectsTable)
+            .set({ archived: false })
+            .where(eq(projectsTable.id, link!.projectId));
+        if (scenario.name === "verification")
+          await db
+            .update(user)
+            .set({ emailVerified: true })
+            .where(eq(user.id, x.id));
+      }
+    }
   });
 
   test.describe("fresh wrong-email setup precondition", () => {
@@ -436,10 +778,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         page.getByText("Partner Organization setup", { exact: true }),
       ).toBeVisible();
       const attemptedName = `CT ${suffix} Wrong Email`;
-      await page.getByLabel("New Organization name").fill(attemptedName);
-      await page.getByLabel("Organization country").selectOption("DE");
-      await page.getByRole("button", { name: "Complete setup" }).click();
       await expect(page.getByText("Wrong email address")).toBeVisible();
+      await expect(page.getByLabel("New Organization name")).toHaveCount(0);
       expect(
         await partnershipCount(fixture.projectNames[0]!, attemptedName),
       ).toBe(0);
@@ -466,11 +806,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const page = await partner.newPage();
     await completeNew(page, url, names.F);
     expect(await partnershipCount(fixture.projectNames[0]!, names.F)).toBe(1);
-    // Reauthenticate after setup: the pre-setup session had no active Organization.
-    const refreshed = await actorContext(browser, "F", baseURL!);
-    const workspace = await refreshed.newPage();
-    await openPartnerProject(workspace, fixture.projectNames[0]!);
-    await expect(workspace.getByText(names.P)).toHaveCount(0);
+    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.F);
+    await expect(page.getByText(names.P)).toHaveCount(0);
   });
 
   test("09 E creates an Organization and selects it on the Existing Project link", async ({
@@ -486,11 +823,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
-    if (await page.getByText("No Organization access yet").isVisible())
-      await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "Projects", exact: true }),
-    ).toBeVisible();
+    await expectFirstOrganizationProjects(page, names.E);
     const host = await fixture.actorContext(browser, "H", baseURL!);
     existingSetupURL = await issueThroughUI(
       await host.newPage(),
@@ -500,9 +833,121 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.goto(existingSetupURL);
     await page.getByRole("radio", { name: "Existing Organization" }).check();
     await selectEntity(page, "Organization", names.E);
+    await markSetupDocument(page);
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(page.getByText("Project Partnership created")).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[1]!, names.E)).toBe(1);
+  });
+
+  test("09a existing ownership preserves an unrelated acting Organization until explicit choice", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      storageState: { cookies: [], origins: [] },
+    });
+    contexts.push(context);
+    const beforeSessions = await db
+      .select({ id: session.id })
+      .from(session)
+      .where(eq(session.userId, "picker-user-canonical"));
+    const signedIn = await postSignInWithRateLimitRetry(
+      context.request,
+      "picker-user-canonical@example.com",
+      SEED_USER.password,
+    );
+    expect(signedIn.ok()).toBe(true);
+    const afterSessions = await db
+      .select({ id: session.id })
+      .from(session)
+      .where(eq(session.userId, "picker-user-canonical"));
+    canonicalSessionIds.push(
+      ...afterSessions
+        .filter(
+          ({ id }) => !beforeSessions.some((previous) => previous.id === id),
+        )
+        .map(({ id }) => id),
+    );
+    const unrelatedId = "owned-result-30-canonical";
+    const targetId = "owned-result-31-canonical";
+    const targetName = "Owned Search canonical 31";
+    const selected = await context.request.post(
+      "/api/auth/organization/set-active",
+      {
+        headers: { Origin: baseURL! },
+        data: { organizationId: unrelatedId },
+      },
+    );
+    expect(selected.ok()).toBe(true);
+    const membershipsBefore = await db
+      .select({ id: member.id })
+      .from(member)
+      .where(eq(member.userId, "picker-user-canonical"));
+    const url = await issueInSetup(
+      fixture.projectNames[0]!,
+      "picker-user-canonical@example.com",
+    );
+    const page = await context.newPage();
+    const linkId = new URL(url, baseURL).pathname.split("/").at(-1)!;
+    let bindingAttempts = 0;
+    await page.route(
+      "**/api/rpc/projectPartnerships/consumeSetupLink**",
+      async (route) => {
+        bindingAttempts++;
+        if (bindingAttempts === 1)
+          await db
+            .update(setupLinks)
+            .set({ enabled: false })
+            .where(eq(setupLinks.id, linkId));
+        await route.continue();
+      },
+    );
+    await page.goto("/projects");
+    await expect(
+      page.getByRole("button", {
+        name: /Acting Organization: Owned Search canonical 30/,
+      }),
+    ).toBeVisible();
+    await page.goto(url);
+    await page.getByRole("radio", { name: "Existing Organization" }).check();
+    await selectEntity(page, "Organization", targetName);
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(
+      page.getByText("Disabled setup link", { exact: true }),
+    ).toBeVisible();
+    expect(bindingAttempts).toBe(1);
+    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(0);
+    await db
+      .update(setupLinks)
+      .set({ enabled: true })
+      .where(eq(setupLinks.id, linkId));
+    await page.reload();
+    await expect(
+      page.getByText(
+        "Continue with the existing Organization you selected, or choose another Organization you own.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    await markSetupDocument(page);
+    await page.getByRole("button", { name: "Complete setup" }).click();
+    await expect(page.getByText("Project Partnership created")).toBeVisible();
+    expect(bindingAttempts).toBe(2);
+    const unchanged = await context.request.get("/api/auth/get-session");
+    expect((await unchanged.json()).session.activeOrganizationId).toBe(
+      unrelatedId,
+    );
+    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(1);
+    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, targetName);
+    const acting = await context.request.get("/api/auth/get-session");
+    expect((await acting.json()).session.activeOrganizationId).toBe(targetId);
+    const membershipsAfter = await db
+      .select({ id: member.id })
+      .from(member)
+      .where(eq(member.userId, "picker-user-canonical"));
+    expect(membershipsAfter.map(({ id }) => id).sort()).toEqual(
+      membershipsBefore.map(({ id }) => id).sort(),
+    );
   });
 
   test.describe("admin invitation precondition", () => {
@@ -710,9 +1155,6 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const partner = await actorContext(browser, "P", baseURL!);
     const recipient = await partner.newPage();
     await recipient.goto(closedSetupURL);
-    await recipient.getByRole("radio", { name: "Existing Organization" }).check();
-    await selectEntity(recipient, "Organization", names.P);
-    await recipient.getByRole("button", { name: "Complete setup" }).click();
     await expect(
       recipient.getByText("Disabled setup link", { exact: true }),
     ).toBeVisible();

@@ -34,6 +34,20 @@ export const developmentGarageEnvironmentSchema =
     S3_FORCE_PATH_STYLE: true,
   });
 
+export function validatedDevelopmentGarageEnvironment(
+  local: Record<string, string>,
+  injected: NodeJS.ProcessEnv,
+): Record<string, string> {
+  const config = developmentGarageEnvironmentSchema.parse({
+    ...injected,
+    ...local,
+  });
+  assertDevelopmentGarageTarget(config.S3_BUCKET, config.S3_ENDPOINT);
+  return Object.fromEntries(
+    Object.entries(config).map(([key, value]) => [key, String(value)]),
+  );
+}
+
 function requestSignal(signal?: AbortSignal): AbortSignal {
   return AbortSignal.any([
     ...(signal ? [signal] : []),
