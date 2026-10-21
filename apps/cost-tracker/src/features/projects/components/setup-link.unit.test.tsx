@@ -490,7 +490,7 @@ describe("Setup Link UI", () => {
     expect(mocks.consume).not.toHaveBeenCalled();
   });
 
-  it("keeps the Partner Project link gated until selection and refresh commit", async () => {
+  it("holds the Partner Project link while selection and invalidation stay pending", async () => {
     mocks.eligibility.mockResolvedValue({
       status: "redeemed",
       projectId: "project-1",
