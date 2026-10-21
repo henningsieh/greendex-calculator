@@ -31,7 +31,7 @@ describe("NoOrganizationAccess", () => {
     mocks.replace.mockReset();
   });
 
-  it("navigates once after creating an Organization", async () => {
+  it("refreshes the current protected route once after creating an Organization", async () => {
     mocks.createOrganization.mockResolvedValue({});
     // No inter-keystroke delay: keystroke timing must not eat the timeout.
     const user = userEvent.setup({ delay: null });
@@ -46,8 +46,11 @@ describe("NoOrganizationAccess", () => {
       slug: "northwind",
       country: "DE",
     });
-    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
-    expect(mocks.refresh).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("dialog", { name: "Create Organization" }),
+    ).not.toBeInTheDocument();
+    expect(mocks.refresh).toHaveBeenCalledExactlyOnceWith();
+    expect(mocks.replace).not.toHaveBeenCalled();
   });
 
   it("clears pending state and gives safe feedback when Organization creation rejects", async () => {
@@ -68,6 +71,10 @@ describe("NoOrganizationAccess", () => {
     expect(
       screen.getByRole("button", { name: "Create Organization" }),
     ).not.toBeDisabled();
+    expect(
+      screen.getByRole("dialog", { name: "Create Organization" }),
+    ).toBeVisible();
+    expect(mocks.refresh).not.toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AboutFooter } from "@/features/landingpage/components/about/about-footer";
 import { AboutHeader } from "@/features/landingpage/components/about/about-header";
 import { PartnersSection } from "@/features/landingpage/components/about/partners-section";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 // ensureStatic = 'navigation': fully static marketing page (#246).
 export const ensureStatic = "navigation";
@@ -13,13 +14,7 @@ export const ensureStatic = "navigation";
  *
  * @returns The About page JSX element
  */
-export default function AboutPage({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+export default function AboutPage({ params }: { params: Promise<LocaleParams> }) {
   return (
     <main className="min-h-screen">
       <Suspense fallback={<AboutHeaderSkeleton />}>
@@ -38,21 +33,13 @@ export default function AboutPage({
 async function LocalizedAboutHeader({
   params,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   const { locale } = await params;
   return <AboutHeader locale={locale} />;
 }
 
-async function LocalizedPartners({
-  params,
-}: {
-  params: Promise<{
-    locale: string;
-  }>;
-}) {
+async function LocalizedPartners({ params }: { params: Promise<LocaleParams> }) {
   const { locale } = await params;
   return <PartnersSection locale={locale} />;
 }
@@ -60,9 +47,7 @@ async function LocalizedPartners({
 async function LocalizedAboutFooter({
   params,
 }: {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }) {
   const { locale } = await params;
   return <AboutFooter locale={locale} />;

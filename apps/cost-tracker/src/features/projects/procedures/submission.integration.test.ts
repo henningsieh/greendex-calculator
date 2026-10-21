@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
@@ -7,27 +6,18 @@ import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
   claimHistoryTable as history,
-  hostProjectAssignmentsTable as hostAssignments,
   claimsTable as claims,
   costAllocationsTable as allocations,
-  member,
-  organization,
-  partnerCoordinatorAssignmentsTable as assignments,
   partnershipPayoutAccountsTable as selections,
-  payoutAccountsTable as accounts,
   participantJourneysTable as journeys,
   projectFundingSnapshotsTable as snapshots,
-  projectPartnerOrganizationsTable as partnerships,
-  projectParticipantsTable as participants,
-  projectsTable as projects,
   proofDocumentsTable as documents,
   travelCostEntriesTable as entries,
-  user,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { and, asc, eq } from "drizzle-orm";
 import {
-  afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -42,25 +32,75 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
+// Stable identities registered in SEED_SCENARIOS.costTrackerSubmission.
+const suffix = "canonical";
 const id = (part: string) => `submit-${part}-${suffix}`;
 const host = id("host"),
   partner = id("partner"),
   other = id("other");
 const actor = id("actor"),
   participantUser = id("participant-user");
-const project = id("project"),
-  secondProject = id("second-project"),
-  own = id("own"),
-  foreign = id("foreign"),
-  elsewhere = id("elsewhere");
-const robin = id("robin"),
-  sam = id("sam"),
-  outsider = id("outsider"),
-  third = id("third");
+let project: string, own: string, foreign: string;
+let robin: string, sam: string, outsider: string, third: string, proof: string;
 const account = id("account"),
-  alternate = id("alternate"),
-  proof = id("proof");
+  alternate = id("alternate");
+const scenarioNames = [
+  "editable",
+  "submitted",
+  "rejected",
+  "approved",
+  "paid",
+  "correction",
+] as const;
+type SubmissionScenario = (typeof scenarioNames)[number];
+const baselines = new Map<
+  SubmissionScenario,
+  {
+    claim: typeof claims.$inferSelect;
+    doc: typeof documents.$inferSelect;
+    selection: typeof selections.$inferSelect;
+  }
+>();
+const touchedScenarios = new Set<SubmissionScenario>();
+function useScenario(name: SubmissionScenario) {
+  touchedScenarios.add(name);
+  const scenarioId = (part: string) => id(`${name}-${part}`);
+  project = scenarioId("project");
+  own = scenarioId("own");
+  foreign = scenarioId("foreign");
+  robin = scenarioId("robin");
+  sam = scenarioId("sam");
+  outsider = scenarioId("outsider");
+  third = scenarioId("third");
+  proof = scenarioId("proof");
+  claimId = scenarioId("claim");
+}
+async function restoreScenario(name: SubmissionScenario) {
+  const baseline = baselines.get(name);
+  if (!baseline) throw new Error("Canonical Submission baseline missing.");
+  const scenarioId = (part: string) => id(`${name}-${part}`);
+  // Exact baseline restoration removes procedure outputs and deliberate corruptions.
+  await db.delete(history).where(eq(history.claimId, baseline.claim.id));
+  await db.delete(claims).where(eq(claims.id, baseline.claim.id));
+  await db.insert(claims).values(baseline.claim);
+  await db.insert(documents).values(baseline.doc);
+  await db
+    .delete(selections)
+    .where(eq(selections.partnershipId, baseline.selection.partnershipId));
+  await db.insert(selections).values(baseline.selection);
+  for (const part of ["robin", "sam", "third"])
+    await db
+      .delete(journeys)
+      .where(eq(journeys.projectParticipantId, scenarioId(part)));
+  await db
+    .delete(snapshots)
+    .where(eq(snapshots.projectId, scenarioId("project")));
+  if (name === "correction") {
+    const event = baselineCorrectionEvent;
+    if (event) await db.insert(history).values(event);
+  }
+}
+let baselineCorrectionEvent: typeof history.$inferSelect | undefined;
 let claimId: string;
 let activeOrg = partner;
 let activeActor = actor;
@@ -70,178 +110,38 @@ const client = createRouterClient(router, {
 const submit = () => client.claims.submit({ partnershipId: own });
 
 beforeAll(async () => {
-  const now = new Date();
-  await db.insert(user).values([
-    {
-      id: actor,
-      name: "Coordinator",
-      email: `${actor}@example.org`,
-      emailVerified: true,
-    },
-    {
-      id: participantUser,
-      name: "Participant",
-      email: `${participantUser}@example.org`,
-      emailVerified: true,
-    },
-  ]);
-  await db.insert(organization).values(
-    [host, partner, other].map((org) => ({
-      country: "DE" as const,
-      id: org,
-      name: org,
-      slug: org,
-      createdAt: now,
-    })),
-  );
-  await db.insert(member).values([
-    {
-      id: randomUUID(),
-      userId: actor,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: participantUser,
-      organizationId: host,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: actor,
-      organizationId: other,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: actor,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.ProjectCoordinator,
-      createdAt: now,
-    },
-    {
-      id: randomUUID(),
-      userId: participantUser,
-      organizationId: partner,
-      role: ORGANIZATION_ROLES.Participant,
-      createdAt: now,
-    },
-  ]);
-  await db.insert(projects).values({
-    id: project,
-    name: "Project",
-    startDate: now,
-    endDate: now,
-    location: "Riga",
-    country: "LV",
-    organizationId: host,
+  baselineCorrectionEvent = await db.query.claimHistoryTable.findFirst({
+    where: eq(history.id, id("correction-submitted-event")),
   });
-  await db.insert(projects).values({
-    id: secondProject,
-    name: "Other hosted Project",
-    startDate: now,
-    endDate: now,
-    location: "Riga",
-    country: "LV",
-    organizationId: host,
-  });
-  await db.insert(hostAssignments).values([
-    { projectId: project, userId: actor },
-    { projectId: secondProject, userId: actor },
-  ]);
-  await db.insert(partnerships).values([
-    { id: own, projectId: project, organizationId: partner },
-    { id: foreign, projectId: project, organizationId: other },
-    { id: elsewhere, projectId: secondProject, organizationId: partner },
-  ]);
-  await db.insert(assignments).values([
-    { partnershipId: own, userId: actor },
-    { partnershipId: elsewhere, userId: actor },
-    { partnershipId: own, userId: participantUser },
-  ]);
-  await db.insert(accounts).values(
-    [account, alternate].map((accountId) => ({
-      id: accountId,
-      organizationId: partner,
-      accountHolder: "Partner",
-      iban: accountId,
-    })),
-  );
-  await db.insert(participants).values([
-    {
-      id: robin,
-      projectId: project,
-      representedOrganizationId: partner,
-      displayName: "Robin",
-    },
-    {
-      id: sam,
-      projectId: project,
-      representedOrganizationId: partner,
-      displayName: "Sam",
-    },
-    {
-      id: outsider,
-      projectId: project,
-      representedOrganizationId: other,
-      displayName: "Outsider",
-    },
-    {
-      id: third,
-      projectId: project,
-      representedOrganizationId: partner,
-      displayName: "Third",
-    },
-  ]);
+  for (const name of scenarioNames) {
+    useScenario(name);
+    const claim = await db.query.claimsTable.findFirst({
+      where: eq(claims.partnershipId, own),
+    });
+    const doc = await db.query.proofDocumentsTable.findFirst({
+      where: eq(documents.id, proof),
+    });
+    const selection = await db.query.partnershipPayoutAccountsTable.findFirst({
+      where: eq(selections.partnershipId, own),
+    });
+    if (!claim || !doc || !selection)
+      throw new Error("Canonical Submission seed required.");
+    baselines.set(name, { claim, doc, selection });
+  }
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: activeActor },
     session: { activeOrganizationId: activeOrg },
   }));
 });
 
-beforeEach(async () => {
+beforeEach(() => {
+  touchedScenarios.clear();
   activeOrg = partner;
   activeActor = actor;
-  if (claimId) await db.delete(history).where(eq(history.claimId, claimId));
-  await db.delete(claims).where(eq(claims.partnershipId, own));
-  await db.delete(selections).where(eq(selections.partnershipId, own));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, robin));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, sam));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, third));
-  await db.delete(snapshots).where(eq(snapshots.projectId, project));
-  await client.claims.selectPayoutAccount({
-    partnershipId: own,
-    payoutAccountId: account,
-  });
-  claimId = (await client.claims.saveDraft({ partnershipId: own })).id;
+  useScenario("editable");
 });
-
-afterAll(async () => {
-  await db.delete(history).where(eq(history.claimId, claimId));
-  await db.delete(claims).where(eq(claims.partnershipId, own));
-  await db.delete(selections).where(eq(selections.partnershipId, own));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, robin));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, sam));
-  await db.delete(journeys).where(eq(journeys.projectParticipantId, third));
-  await db.delete(snapshots).where(eq(snapshots.projectId, project));
-  await db.delete(participants).where(eq(participants.projectId, project));
-  await db.delete(accounts).where(eq(accounts.organizationId, partner));
-  await db.delete(assignments).where(eq(assignments.partnershipId, own));
-  await db.delete(assignments).where(eq(assignments.partnershipId, elsewhere));
-  await db.delete(partnerships).where(eq(partnerships.projectId, project));
-  await db.delete(partnerships).where(eq(partnerships.projectId, secondProject));
-  await db.delete(projects).where(eq(projects.id, project));
-  await db.delete(projects).where(eq(projects.id, secondProject));
-  for (const org of [other, partner, host])
-    await db.delete(member).where(eq(member.organizationId, org));
-  for (const org of [other, partner, host])
-    await db.delete(organization).where(eq(organization.id, org));
-  for (const person of [participantUser, actor])
-    await db.delete(user).where(eq(user.id, person));
+afterEach(async () => {
+  for (const name of touchedScenarios) await restoreScenario(name);
 });
 
 async function prepare(amountEur = "1000.01") {
@@ -274,15 +174,6 @@ async function prepare(amountEur = "1000.01") {
     amountEur: "1.00",
     allocationMethod: "amount",
     allocations: [{ projectParticipantId: sam, amountEur: "1.00" }],
-  });
-  await db.insert(documents).values({
-    id: proof,
-    claimId: claimId,
-    fileReference: "test/proof",
-    originalFileName: "proof.pdf",
-    mediaType: "application/pdf",
-    byteSize: 1,
-    checksum: "test",
   });
   await client.costs.linkDocument({
     partnershipId: own,
@@ -507,10 +398,20 @@ describe("Claim authorization matrix", () => {
       (role.side === "host" ? hostProcedures : partnerProcedures).includes(
         procedure,
       );
+    const statuses: Partial<Record<ClaimProcedure, SubmissionScenario>> = {
+      "claims.requestCorrection": "submitted",
+      "claims.approve": "submitted",
+      "claims.reject": "submitted",
+      "claims.reopen": "rejected",
+      "claims.markPaid": "approved",
+      "claims.correctPayment": "paid",
+    };
+    useScenario(statuses[procedure] ?? "editable");
     let entryId = "missing-entry";
     if (expected && procedure === "claims.submit") await prepare("100.00");
     if (procedure === "journeys.update") {
-      await db.insert(journeys).values({
+      await client.journeys.save({
+        partnershipId: own,
         projectParticipantId: robin,
         origin: "Berlin",
         destination: "Riga",
@@ -537,56 +438,11 @@ describe("Claim authorization matrix", () => {
           allocations: [{ projectParticipantId: robin }],
         })
       ).id;
-      await db.insert(documents).values({
-        id: proof,
-        claimId,
-        fileReference: "test/matrix",
-        originalFileName: "proof.pdf",
-        mediaType: "application/pdf",
-        byteSize: 1,
-        checksum: "matrix",
-      });
     }
-    const statuses: Partial<
-      Record<ClaimProcedure, "submitted" | "rejected" | "approved" | "paid">
-    > = {
-      "claims.requestCorrection": "submitted",
-      "claims.approve": "submitted",
-      "claims.reject": "submitted",
-      "claims.reopen": "rejected",
-      "claims.markPaid": "approved",
-      "claims.correctPayment": "paid",
-    };
-    if (statuses[procedure])
-      await db
-        .update(claims)
-        .set({ status: statuses[procedure], approvedAmountEur: "100.00" })
-        .where(eq(claims.id, claimId));
     const orgId = role.side === "host" ? host : partner;
-    const person =
-      role.role === ORGANIZATION_ROLES.Participant ? participantUser : actor;
-    if (role.side === "partner" && !role.assigned)
-      await db
-        .delete(assignments)
-        .where(
-          and(eq(assignments.partnershipId, own), eq(assignments.userId, actor)),
-        );
-    if (
-      role.side === "host" &&
-      (!role.assigned || role.role === ORGANIZATION_ROLES.Participant)
-    )
-      await db
-        .delete(hostAssignments)
-        .where(
-          and(
-            eq(hostAssignments.projectId, project),
-            eq(hostAssignments.userId, actor),
-          ),
-        );
-    await db
-      .update(member)
-      .set({ role: role.role })
-      .where(and(eq(member.organizationId, orgId), eq(member.userId, person)));
+    const person = id(
+      `matrix-${role.side}-${role.role}-${role.assigned ? "assigned" : "unassigned"}`,
+    );
     activeOrg = orgId;
     activeActor = person;
     try {
@@ -599,28 +455,6 @@ describe("Claim authorization matrix", () => {
     } finally {
       activeOrg = partner;
       activeActor = actor;
-      await db
-        .update(member)
-        .set({
-          role:
-            person === participantUser && orgId === partner
-              ? ORGANIZATION_ROLES.Participant
-              : ORGANIZATION_ROLES.ProjectCoordinator,
-        })
-        .where(and(eq(member.organizationId, orgId), eq(member.userId, person)));
-      if (role.side === "partner" && !role.assigned)
-        await db
-          .insert(assignments)
-          .values({ partnershipId: own, userId: actor })
-          .onConflictDoNothing();
-      if (
-        role.side === "host" &&
-        (!role.assigned || role.role === ORGANIZATION_ROLES.Participant)
-      )
-        await db
-          .insert(hostAssignments)
-          .values({ projectId: project, userId: actor })
-          .onConflictDoNothing();
     }
   });
 });
@@ -893,6 +727,7 @@ describe("Claim submission", () => {
   it("reports invalid frozen transport, missing evidence, journeys and relationship separately", async () => {
     const { train } = await prepare("100.00");
     await db.delete(journeys).where(eq(journeys.projectParticipantId, sam));
+    // Deliberate invalid persisted state is under test; exact baseline/output cleanup runs afterEach.
     await db
       .update(snapshots)
       .set({ participantTransportProfiles: ["plane"] })
@@ -930,6 +765,7 @@ describe("Claim submission", () => {
     await db
       .delete(allocations)
       .where(eq(allocations.travelCostEntryId, train.id));
+    // Deliberate invalid persisted state is under test; exact baseline/output cleanup runs afterEach.
     await db
       .update(journeys)
       .set({ origin: "", destination: "", erasmusDistanceKm: "4000.00" })
@@ -955,6 +791,7 @@ describe("Claim submission", () => {
 
   it("reports invalid allocation totals and cross-Partnership participation without a transition", async () => {
     const { train } = await prepare("100.00");
+    // Deliberate invalid persisted state is under test; exact baseline/output cleanup runs afterEach.
     await db
       .update(allocations)
       .set({ projectParticipantId: outsider })
@@ -964,10 +801,12 @@ describe("Claim submission", () => {
           eq(allocations.projectParticipantId, robin),
         ),
       );
+    // Deliberate invalid persisted state is under test; exact baseline/output cleanup runs afterEach.
     await db
       .update(entries)
       .set({ allocationMethod: "amount" })
       .where(eq(entries.id, train.id));
+    // Deliberate invalid persisted state is under test; exact baseline/output cleanup runs afterEach.
     await db
       .update(allocations)
       .set({ amountEur: "1.00" })
@@ -989,10 +828,8 @@ describe("Claim submission", () => {
   it("pays exact costs below cap and reopens all Partner edits on correction requested", async () => {
     await prepare("100.01");
     expect(await submit()).toMatchObject({ approvedAmountEur: "101.01" });
-    await db
-      .update(claims)
-      .set({ status: "correction_requested" })
-      .where(eq(claims.id, claimId));
+    useScenario("correction");
+    await prepare("100.01");
     expect(await client.claims.saveDraft({ partnershipId: own })).toMatchObject({
       status: "correction_requested",
     });
@@ -1063,11 +900,10 @@ async function asHost(
   userId = actor,
 ) {
   activeOrg = host;
-  activeActor = userId;
-  await db
-    .update(member)
-    .set({ role })
-    .where(and(eq(member.organizationId, host), eq(member.userId, userId)));
+  activeActor =
+    role === ORGANIZATION_ROLES.ProjectCoordinator && userId === actor
+      ? actor
+      : id(`matrix-host-${role}-${userId === actor ? "assigned" : "unassigned"}`);
 }
 
 async function submittedClaim() {
@@ -1079,6 +915,7 @@ async function submittedClaim() {
 describe("Claim lock abuse", () => {
   it("does not hide a submitted retry's missing saved payable amount as an edit lock", async () => {
     await submittedClaim();
+    // Deliberate missing payable corruption is under test, restored by afterEach.
     await db
       .update(claims)
       .set({ approvedAmountEur: null })
@@ -1400,6 +1237,7 @@ describe("Host Claim review", () => {
     await expect(review("approve")).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
+    // Deliberate saved-payable corruption is under test; restored before the supported submission below.
     await db
       .update(claims)
       .set({ status: "submitted", approvedAmountEur: null })
@@ -1456,7 +1294,7 @@ describe("Host Claim review", () => {
     await submittedClaim();
     await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await review("reject");
-    await db.update(claims).set({ status: "paid" }).where(eq(claims.id, claimId));
+    useScenario("paid");
     await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
@@ -1473,13 +1311,9 @@ describe("Host Claim review", () => {
     ]) {
       await asHost(role);
       for (const action of actions) {
-        await db
-          .update(claims)
-          .set({
-            status: action === "reopen" ? "rejected" : "submitted",
-            approvedAmountEur: "101.01",
-          })
-          .where(eq(claims.id, claimId));
+        const name = action === "reopen" ? "rejected" : "submitted";
+        await restoreScenario(name);
+        useScenario(name);
         expect(await review(action)).toMatchObject({
           status:
             action === "requestCorrection"
@@ -1494,10 +1328,7 @@ describe("Host Claim review", () => {
     }
     await asHost(ORGANIZATION_ROLES.Participant);
     for (const action of actions) {
-      await db
-        .update(claims)
-        .set({ status: action === "reopen" ? "rejected" : "submitted" })
-        .where(eq(claims.id, claimId));
+      useScenario(action === "reopen" ? "rejected" : "submitted");
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
     for (const role of [
@@ -1506,19 +1337,13 @@ describe("Host Claim review", () => {
     ]) {
       await asHost(role, participantUser);
       for (const action of actions) {
-        await db
-          .update(claims)
-          .set({ status: action === "reopen" ? "rejected" : "submitted" })
-          .where(eq(claims.id, claimId));
+        useScenario(action === "reopen" ? "rejected" : "submitted");
         await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
       }
     }
     await asHost(ORGANIZATION_ROLES.Participant, participantUser);
     for (const action of actions) {
-      await db
-        .update(claims)
-        .set({ status: action === "reopen" ? "rejected" : "submitted" })
-        .where(eq(claims.id, claimId));
+      useScenario(action === "reopen" ? "rejected" : "submitted");
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
     for (const org of [partner, other]) {
@@ -1802,7 +1627,7 @@ describe("Claim payment recording", () => {
     }
     await asHost(ORGANIZATION_ROLES.Participant, participantUser);
     await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await db.update(claims).set({ status: "paid" }).where(eq(claims.id, claimId));
+    useScenario("paid");
     await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({
       code: "FORBIDDEN",
     });

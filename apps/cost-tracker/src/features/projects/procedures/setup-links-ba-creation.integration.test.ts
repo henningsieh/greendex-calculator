@@ -2,20 +2,20 @@ import { randomUUID } from "node:crypto";
 
 // @vitest-environment node
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
-  hostProjectAssignmentsTable as hostAssignments,
   member,
   organization,
   partnerOrganizationSetupLinksTable as links,
   projectPartnerOrganizationsTable as partnerships,
   projectsTable,
   user,
-  verification,
+  session,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq, like } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { and, eq, inArray } from "drizzle-orm";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const emailMocks = vi.hoisted(() => ({
   sendEmailVerificationEmail: vi.fn().mockResolvedValue(undefined),
@@ -29,11 +29,12 @@ import { auth } from "@/lib/auth";
 import { router } from "@/lib/orpc/router";
 
 const lane = randomUUID();
-const password = "correct-horse-battery-staple";
-const hostEmail = `setup-host-${lane}@example.com`;
-const recipientEmail = `setup-recipient-${lane}@example.com`;
-const outsiderEmail = `setup-outsider-${lane}@example.com`;
-const projectId = `setup-ba-project-${lane}`;
+const password = SEED_USER.password;
+const hostEmail = SEED_USER.email;
+const recipientEmail = "seed-setup-links-creator@example.org";
+const outsiderEmail = "seed-outsider@example.org";
+let projectId = "";
+const sessionIds: string[] = [];
 
 let hostHeaders: Headers;
 let recipientHeaders: Headers;
@@ -41,24 +42,25 @@ let recipientUserId: string;
 let recipientOrganizationId: string;
 
 async function signInHeaders(email: string) {
+  const actor = await db.query.user.findFirst({ where: eq(user.email, email) });
+  if (!actor) throw new Error("Canonical seed actor missing.");
+  const existing = await db.query.session.findMany({
+    where: eq(session.userId, actor.id),
+  });
   const response = await auth.api.signInEmail({
     body: { email, password },
     asResponse: true,
   });
+  const previous = new Set(existing.map(({ id }) => id));
+  const signedIn = await db.query.session.findMany({
+    where: eq(session.userId, actor.id),
+  });
+  sessionIds.push(
+    ...signedIn.filter(({ id }) => !previous.has(id)).map(({ id }) => id),
+  );
   const cookie = response.headers.get("set-cookie")?.split(";")[0];
   if (!cookie) throw new Error(`Sign-in created no session for ${email}`);
   return new Headers({ cookie });
-}
-
-async function signUpVerified(email: string) {
-  const signUp = await auth.api.signUpEmail({
-    body: { email, name: "Setup User", password },
-  });
-  await db
-    .update(user)
-    .set({ emailVerified: true })
-    .where(eq(user.id, signUp.user.id));
-  return signUp.user.id;
 }
 
 function client(headers: Headers) {
@@ -68,64 +70,55 @@ function client(headers: Headers) {
 }
 
 beforeAll(async () => {
-  await signUpVerified(hostEmail);
-  recipientUserId = await signUpVerified(recipientEmail);
-  await signUpVerified(outsiderEmail);
+  const seededProject = await db.query.projectsTable.findFirst({
+    where: eq(projectsTable.name, "Renewable Energy Conference"),
+  });
+  const recipient = await db.query.user.findFirst({
+    where: eq(user.email, recipientEmail),
+  });
+  if (!seededProject || !recipient)
+    throw new Error(
+      "Canonical seed required: run the isolated seeded lifecycle.",
+    );
+  projectId = seededProject.id;
+  recipientUserId = recipient.id;
   hostHeaders = await signInHeaders(hostEmail);
   recipientHeaders = await signInHeaders(recipientEmail);
+}, 60_000);
 
-  const hostOrganization = await auth.api.createOrganization({
-    body: { country: "DE" as const, name: `Host ${lane}`, slug: `host-${lane}` },
-    headers: hostHeaders,
-  });
-  // Refresh the host session so issuance sees the Hosting Organization.
-  hostHeaders = await signInHeaders(hostEmail);
-  const now = new Date();
-  await db.insert(projectsTable).values({
-    id: projectId,
-    name: "Project",
-    startDate: now,
-    endDate: now,
-    location: "Riga",
-    country: "LV",
-    organizationId: hostOrganization.id,
-  });
-  const [hostUser] = await db
-    .select({ id: user.id })
-    .from(user)
-    .where(eq(user.email, hostEmail));
-  await db.insert(hostAssignments).values({ projectId, userId: hostUser!.id });
+afterEach(async () => {
+  await db.delete(links).where(eq(links.projectId, projectId));
+  if (recipientOrganizationId) {
+    await db
+      .delete(partnerships)
+      .where(eq(partnerships.organizationId, recipientOrganizationId));
+    await db
+      .delete(organization)
+      .where(eq(organization.id, recipientOrganizationId));
+    recipientOrganizationId = "";
+  }
 }, 60_000);
 
 afterAll(async () => {
-  await db.delete(links).where(eq(links.projectId, projectId));
-  await db.delete(partnerships).where(eq(partnerships.projectId, projectId));
-  await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
-  for (const email of [hostEmail, recipientEmail, outsiderEmail]) {
-    const [row] = await db
-      .select({ id: user.id })
-      .from(user)
-      .where(eq(user.email, email));
-    if (row) {
-      const memberships = await db
-        .select({ organizationId: member.organizationId })
-        .from(member)
-        .where(eq(member.userId, row.id));
-      await db.delete(member).where(eq(member.userId, row.id));
-      for (const { organizationId } of memberships)
-        await db.delete(organization).where(eq(organization.id, organizationId));
-      await db.delete(user).where(eq(user.id, row.id));
-    }
-    await db
-      .delete(verification)
-      .where(like(verification.identifier, `%${email}%`));
-  }
+  if (sessionIds.length)
+    await db.delete(session).where(inArray(session.id, sessionIds));
 }, 60_000);
 
 describe("Partner setup links through supported Organization creation", () => {
   it("binds an Organization created through the Better Auth API", async () => {
-    // The recipient arrives with no Organization and creates one through the
-    // normal supported flow; Better Auth grants creator Ownership itself.
+    const link = await client(hostHeaders).projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const input = { id: link.id, secret: link.secret };
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({
+      status: "eligible",
+      projectId,
+    });
     const created = await auth.api.createOrganization({
       body: {
         country: "DE" as const,
@@ -143,10 +136,6 @@ describe("Partner setup links through supported Organization creation", () => {
       { userId: recipientUserId, role: ORGANIZATION_ROLES.OrganizationOwner },
     ]);
 
-    const link = await client(hostHeaders).projectPartnerships.createSetupLink({
-      projectId,
-      recipientEmail,
-    });
     const result = await client(
       recipientHeaders,
     ).projectPartnerships.consumeSetupLink({
@@ -155,6 +144,15 @@ describe("Partner setup links through supported Organization creation", () => {
       organizationId: created.id,
     });
     expect(result.organizationId).toBe(created.id);
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({
+      status: "redeemed",
+      projectId,
+      ...result,
+    });
     // Redemption binds only: no Membership was granted or altered.
     expect(
       await db
@@ -170,7 +168,101 @@ describe("Partner setup links through supported Organization creation", () => {
     ).toHaveLength(1);
   }, 60_000);
 
+  it("keeps a legitimately created Organization after a binding failure and reuses its exact identity", async () => {
+    const link = await client(hostHeaders).projectPartnerships.createSetupLink({
+      projectId,
+      recipientEmail,
+    });
+    const input = { id: link.id, secret: link.secret };
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({ status: "eligible", projectId });
+    const created = await auth.api.createOrganization({
+      body: {
+        country: "DE" as const,
+        name: `Recovery ${lane}`,
+        slug: `recovery-${lane}`,
+      },
+      headers: recipientHeaders,
+    });
+    recipientOrganizationId = created.id;
+    await client(hostHeaders).projectPartnerships.disableSetupLink({
+      id: link.id,
+    });
+    const consume = { ...input, organizationId: created.id };
+    await expect(
+      client(recipientHeaders).projectPartnerships.consumeSetupLink(consume),
+    ).rejects.toMatchObject({ data: { reason: "SETUP_LINK_DISABLED" } });
+    expect(
+      await db
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.id, created.id)),
+    ).toEqual([{ id: created.id }]);
+    expect(
+      await db
+        .select({ role: member.role })
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, recipientUserId),
+            eq(member.organizationId, created.id),
+          ),
+        ),
+    ).toEqual([{ role: ORGANIZATION_ROLES.OrganizationOwner }]);
+    expect(
+      await db
+        .select({ partnershipId: links.partnershipId })
+        .from(links)
+        .where(eq(links.id, link.id)),
+    ).toEqual([{ partnershipId: null }]);
+
+    await db.update(links).set({ enabled: true }).where(eq(links.id, link.id));
+    const result =
+      await client(recipientHeaders).projectPartnerships.consumeSetupLink(
+        consume,
+      );
+    expect(result.organizationId).toBe(created.id);
+    expect(
+      await client(recipientHeaders).projectPartnerships.consumeSetupLink(
+        consume,
+      ),
+    ).toEqual(result);
+    expect(
+      await client(recipientHeaders).projectPartnerships.getSetupLinkEligibility(
+        input,
+      ),
+    ).toEqual({ status: "redeemed", projectId, ...result });
+    const project = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, projectId),
+    });
+    expect(
+      await db
+        .select({ id: member.id })
+        .from(member)
+        .where(
+          and(
+            eq(member.userId, recipientUserId),
+            eq(member.organizationId, project!.organizationId),
+          ),
+        ),
+    ).toEqual([]);
+  }, 60_000);
+
   it("refuses a second Organization and an unrelated Organization", async () => {
+    // Each case creates its own Organization through the behavior under test;
+    // no dependence on the previous binding case.
+    const created = await auth.api.createOrganization({
+      body: {
+        country: "DE" as const,
+        name: `Partner ${lane}`,
+        slug: `partner-${lane}`,
+      },
+      headers: recipientHeaders,
+    });
+    recipientOrganizationId = created.id;
     // Better Auth allows exactly one Organization creation per User without
     // Membership, so a recipient that already owns one cannot mint another.
     await expect(

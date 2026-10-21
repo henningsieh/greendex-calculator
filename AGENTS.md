@@ -59,11 +59,13 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 - Issue-tracked work → [issue tracker](docs/agents/issue-tracker.md), [triage labels](docs/agents/triage-labels.md).
 - Delegation or child recovery → [delegation policy](docs/agents/delegation.md).
 
+## Verification
+
+Follow the authoritative [two-loop testing policy](docs/agents/instructions/conventions.md#two-verification-loops). Use focused dev/MCP checks during implementation and centrally owned production verification after writers finish. `pnpm run test:full` owns the full production matrix; root `pnpm test` remains the full non-browser contract.
+
 ## Delegation
 
-For requested repo work, the main agent may delegate bounded implementation, research, and review when a child earns its overhead; do tiny tasks directly. The main agent owns scope, decisions, review sequencing, and final acceptance. Children execute their contract and escalate decisions; they do not launch other agents. Commits and external writes require explicit task permission.
-
-Use fresh child context with relevant paths, repo rules, and a short task contract. Routine results: at most 200 words plus evidence/artifact paths, not raw logs. Children read their matching app/scoped docs; the main agent reads deeper only to resolve a decision or verify evidence. Keep one writer per worktree, including formatting and lint fixes; the main agent does not edit an active child's worktree.
+Direct work and authorized delegation are both valid. Follow the [delegation guide](docs/agents/delegation.md) for repository constraints on assignments, handoffs, and acceptance. The main agent retains authority over scope, decisions, and final acceptance. Keep one writer per worktree, including formatting and lint fixes.
 
 ## Commit Conventions
 
@@ -101,7 +103,8 @@ Before final delivery (the main agent owns these gates after shared-worktree chi
 
 - [ ] No forbidden commands were executed
 - [ ] Only the matching scoped instruction(s) were read — no speculative pre-reading
-- [ ] Tests updated for changed functionality
+- [ ] Tests updated for changed functionality; focused selection, rationale, runtime target, evidence, and blockers reported
+- [ ] Coordinator-owned final production matrix and independent Standards/Spec review completed under the two-loop policy; planned tooling is not a passed gate
 - [ ] `pnpm run format && pnpm run lint` executed and passing
 - [ ] `pnpm run check:agent-instructions` passes after instruction changes
 

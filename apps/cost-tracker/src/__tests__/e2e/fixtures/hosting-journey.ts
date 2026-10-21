@@ -16,6 +16,7 @@ import { hashPassword } from "better-auth/crypto";
 import { count, eq, inArray } from "drizzle-orm";
 
 import { registerPrivateValues } from "./artifact-privacy";
+import { postSignInWithRateLimitRetry } from "./rate-limit-retry";
 
 // Only setup-only auth operations live here. Browser actions remain in the specs.
 export class HostingJourneyFixture {
@@ -129,12 +130,11 @@ export class HostingJourneyFixture {
     });
     this.contexts.push(context);
     // API authentication does not send mail or submit any browser form with a synthetic address.
-    const response = await context.request.post("/api/auth/sign-in/email", {
-      data: {
-        email: this.actors[actor].email,
-        password: this.actors[actor].password,
-      },
-    });
+    const response = await postSignInWithRateLimitRetry(
+      context.request,
+      this.actors[actor].email,
+      this.actors[actor].password,
+    );
     expect(response.ok(), `${actor} setup sign-in failed`).toBe(true);
     return context;
   }

@@ -7,5 +7,5 @@ test("renders accessible API documentation UI", async ({ page }) => {
   await expect(page.locator("h1.section-header-label")).toContainText(
     "Greendex Calculator API",
   );
-  await expect(page).toHaveTitle(/API Reference/);
+  await expect(page).toHaveTitle("Greendex Calculator API");
 });

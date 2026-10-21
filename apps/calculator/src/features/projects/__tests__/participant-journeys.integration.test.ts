@@ -1,121 +1,69 @@
 import { createHmac, randomUUID } from "node:crypto";
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
-import {
-  member,
-  organization,
-  participantJourneysTable,
-  projectParticipantsTable,
-  projectsTable,
-  session,
-  user,
-} from "@greendex/database/schema";
+import { organization, projectsTable, session } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 import { auth } from "@/lib/better-auth";
 import { router } from "@/lib/orpc/router";
 
-const id = randomUUID();
-const otherOrganizationId = randomUUID();
-const otherProjectId = randomUUID();
-const withoutJourneyId = randomUUID();
-const unlinkedProjectId = randomUUID();
-const unlinkedParticipationId = randomUUID();
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). Reads resolve the seeded showcase
+ * slice — the Owner Participation with its Paris journey, the linked
+ * Participation without a journey, and the login-free Participation with
+ * its Prague journey — instead of inventing a private Project dataset.
+ * The only case-owned row is the sign-in session, removed afterwards;
+ * canonical actors are never deleted.
+ */
+const SEED_ORG_SLUG = "seed-org";
+const SEED_PARTNER_ORG_SLUG = "seed-partner-org";
+const SEED_SHOWCASE_PROJECT_NAME = "Carbon Footprint Workshop";
+const SEED_BARE_PARTICIPANT_EMAIL = "seed-participant@example.org";
+const SEED_UNLINKED_PARTICIPANT_EMAIL = "seed-unlinked-participant@example.org";
+
+let seedOrgId = "";
+let partnerOrgId = "";
+let showcaseProjectId = "";
+let sessionId = "";
 let headers: Headers;
 const client = createRouterClient(router, { context: () => ({ headers }) });
 
 beforeAll(async () => {
-  await db
-    .insert(user)
-    .values({ id, name: "Shared Participant", email: `${id}@example.com` });
-  await db.insert(organization).values({
-    id,
-    name: "Journey Organization",
-    slug: id,
-    country: "DE",
-    createdAt: new Date(),
+  const seedOrg = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  await db.insert(organization).values({
-    id: otherOrganizationId,
-    name: "Another Organization",
-    slug: otherOrganizationId,
-    country: "FR",
-    createdAt: new Date(),
+  if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+  const partnerOrg = await db.query.organization.findFirst({
+    where: eq(organization.slug, SEED_PARTNER_ORG_SLUG),
   });
-  await db.insert(member).values({
-    id,
-    userId: id,
-    organizationId: id,
-    role: ORGANIZATION_ROLES.OrganizationOwner,
-    createdAt: new Date(),
+  if (!partnerOrg)
+    throw new Error("Canonical seed Partner Organization is missing");
+  const ownerUser = await db.query.user.findFirst({
+    where: (users, { eq: eqUser }) => eqUser(users.email, SEED_USER.email),
   });
-  await db.insert(member).values({
-    id: randomUUID(),
-    userId: id,
-    organizationId: otherOrganizationId,
-    role: ORGANIZATION_ROLES.OrganizationOwner,
-    createdAt: new Date(),
+  if (!ownerUser) throw new Error("Canonical seed Owner is missing");
+  const showcase = await db.query.projectsTable.findFirst({
+    where: and(
+      eq(projectsTable.organizationId, seedOrg.id),
+      eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
+    ),
   });
-  await db.insert(projectsTable).values(
-    [id, otherProjectId, unlinkedProjectId].map((projectId) => ({
-      id: projectId,
-      organizationId: id,
-      name: "Journey Project",
-      startDate: new Date(),
-      endDate: new Date(),
-      location: "Berlin",
-      country: "DE" as const,
-    })),
-  );
-  await db.insert(projectParticipantsTable).values([
-    {
-      id,
-      projectId: id,
-      representedOrganizationId: id,
-      displayName: "Shared Participant",
-      userId: id,
-    },
-    {
-      id: withoutJourneyId,
-      projectId: otherProjectId,
-      representedOrganizationId: id,
-      displayName: "Shared Participant",
-      userId: id,
-    },
-    {
-      id: unlinkedParticipationId,
-      projectId: unlinkedProjectId,
-      representedOrganizationId: id,
-      displayName: "Participation without a login",
-      email: "unlinked-participant@example.com",
-      userId: null,
-    },
-  ]);
-  await db.insert(participantJourneysTable).values({
-    id,
-    projectParticipantId: id,
-    origin: "Paris",
-    destination: "Berlin",
-    tripType: "round-trip",
-    erasmusDistanceKm: "878.00",
-  });
-  await db.insert(participantJourneysTable).values({
-    id: unlinkedParticipationId,
-    projectParticipantId: unlinkedParticipationId,
-    origin: "Prague",
-    destination: "Berlin",
-    tripType: "one-way",
-    erasmusDistanceKm: "350.00",
-  });
+  if (!showcase) throw new Error("Canonical showcase Project is missing");
+  seedOrgId = seedOrg.id;
+  partnerOrgId = partnerOrg.id;
+  showcaseProjectId = showcase.id;
+
   const token = randomUUID();
+  sessionId = randomUUID();
   await db.insert(session).values({
-    id,
-    userId: id,
+    id: sessionId,
+    userId: ownerUser.id,
     token,
-    activeOrganizationId: id,
+    activeOrganizationId: seedOrg.id,
     expiresAt: new Date(Date.now() + 60_000),
   });
   const context = await auth.$context;
@@ -128,58 +76,91 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(projectsTable).where(eq(projectsTable.organizationId, id));
-  await db.delete(organization).where(eq(organization.id, id));
-  await db.delete(organization).where(eq(organization.id, otherOrganizationId));
-  await db.delete(user).where(eq(user.id, id));
+  if (sessionId) {
+    await db.delete(session).where(eq(session.id, sessionId));
+    sessionId = "";
+  }
+  // Canonical actors survive every case: fail loudly on accidental deletion.
+  expect(
+    await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    }),
+    "canonical seed Organization was deleted",
+  ).not.toBeUndefined();
+  expect(
+    await db.query.projectsTable.findFirst({
+      where: and(
+        eq(projectsTable.organizationId, seedOrgId),
+        eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
+      ),
+    }),
+    "canonical showcase Project was deleted",
+  ).not.toBeUndefined();
 });
 
 it("reads the canonical Participant Journey on the Calculator Project without losing participants without journeys", async () => {
-  const participants = await client.projects.getParticipants({ projectId: id });
-  expect(participants).toEqual([
-    expect.objectContaining({
-      id,
-      journey: expect.objectContaining({
-        id,
-        projectParticipantId: id,
-        origin: "Paris",
-        destination: "Berlin",
-        tripType: "round-trip",
-        erasmusDistanceKm: "878.00",
+  const participants = await client.projects.getParticipants({
+    projectId: showcaseProjectId,
+  });
+  expect(participants).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        email: SEED_USER.email,
+        journey: expect.objectContaining({
+          projectParticipantId: expect.any(String),
+          origin: "Paris",
+          destination: "Berlin",
+          tripType: "round-trip",
+          erasmusDistanceKm: "878.00",
+        }),
       }),
-    }),
-  ]);
-  expect(
-    await client.projects.getParticipants({ projectId: otherProjectId }),
-  ).toEqual([expect.objectContaining({ id: withoutJourneyId, journey: null })]);
+      expect.objectContaining({
+        email: SEED_BARE_PARTICIPANT_EMAIL,
+        journey: null,
+      }),
+    ]),
+  );
+  const bare = participants.find(
+    (participant) => participant.email === SEED_BARE_PARTICIPANT_EMAIL,
+  );
+  expect(bare?.journey).toBeNull();
 });
 
 it("returns Participation-owned display fields and the Journey when no User is linked", async () => {
-  expect(
-    await client.projects.getParticipants({ projectId: unlinkedProjectId }),
-  ).toEqual([
+  const participants = await client.projects.getParticipants({
+    projectId: showcaseProjectId,
+  });
+  const unlinked = participants.find(
+    (participant) => participant.email === SEED_UNLINKED_PARTICIPANT_EMAIL,
+  );
+  expect(unlinked).toEqual(
     expect.objectContaining({
-      id: unlinkedParticipationId,
-      displayName: "Participation without a login",
-      email: "unlinked-participant@example.com",
+      displayName: "Seed Participation without login",
+      email: SEED_UNLINKED_PARTICIPANT_EMAIL,
       userId: null,
       user: null,
       journey: expect.objectContaining({
-        id: unlinkedParticipationId,
-        projectParticipantId: unlinkedParticipationId,
+        projectParticipantId: unlinked?.id,
         origin: "Prague",
         destination: "Berlin",
       }),
     }),
-  ]);
+  );
 });
 
 it("does not expose Participant Journeys from another active Organization", async () => {
   await db
     .update(session)
-    .set({ activeOrganizationId: otherOrganizationId })
-    .where(eq(session.id, id));
-  await expect(
-    client.projects.getParticipants({ projectId: id }),
-  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    .set({ activeOrganizationId: partnerOrgId })
+    .where(eq(session.id, sessionId));
+  try {
+    await expect(
+      client.projects.getParticipants({ projectId: showcaseProjectId }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  } finally {
+    await db
+      .update(session)
+      .set({ activeOrganizationId: seedOrgId })
+      .where(eq(session.id, sessionId));
+  }
 });

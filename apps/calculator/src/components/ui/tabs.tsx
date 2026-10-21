@@ -4,6 +4,7 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
+import { useHydrated } from "@/hooks/use-hydrated";
 import { cn } from "@/lib/utils";
 
 /**
@@ -80,13 +81,17 @@ const tabsTriggerVariants = cva(
 function TabsTrigger({
   className,
   variant,
+  disabled,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Trigger> &
   VariantProps<typeof tabsTriggerVariants>) {
+  const hydrated = useHydrated();
+
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(tabsTriggerVariants({ variant }), className)}
+      disabled={!hydrated || disabled}
       {...props}
     />
   );

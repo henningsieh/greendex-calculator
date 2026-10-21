@@ -1,5 +1,6 @@
 import { ORPCError } from "@orpc/server";
 
+import { env } from "@/env";
 import {
   downloadProofDocument,
   uploadProofDocument,
@@ -67,7 +68,9 @@ export async function POST(request: Request) {
   // typed oRPC procedures cannot stream upload progress, so this route only
   // enforces transport-level gates (origin, session, size caps) and delegates
   // all authorization plus persistence to the owning feature procedure.
-  if (request.headers.get("origin") !== new URL(request.url).origin) {
+  if (
+    request.headers.get("origin") !== new URL(env.NEXT_PUBLIC_BASE_URL).origin
+  ) {
     return proofErrorResponse(proofErrors.proofOriginDenied(), "upload");
   }
   try {

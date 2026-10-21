@@ -4,11 +4,10 @@ import AuthFlowLayout from "@/features/authentication/components/auth-flow-layou
 import { AuthFormSkeleton } from "@/features/authentication/components/auth-form-skeleton";
 import { AuthPageSkeleton } from "@/features/authentication/components/auth-page-skeleton";
 import { LoginForm } from "@/features/authentication/components/login-form";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 interface LoginPageProps {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
   searchParams: Promise<{
     [key: string]: string | string[] | undefined;
   }>;

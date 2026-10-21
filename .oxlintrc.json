@@ -290,6 +290,40 @@
       "rules": {
         "shadcn/no-restyle": "off"
       }
+    },
+    {
+      "files": [
+        "packages/config/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
+        "packages/database/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
+        "packages/i18n/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
+      ],
+      "rules": {
+        "better-tailwindcss/no-conflicting-classes": "off",
+        "better-tailwindcss/no-deprecated-classes": "off",
+        "better-tailwindcss/no-duplicate-classes": "off",
+        "better-tailwindcss/enforce-canonical-classes": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/calculator/playwright.config.ts",
+        "apps/calculator/playwright.merge.config.ts",
+        "apps/calculator/playwright.instant.config.ts",
+        "apps/cost-tracker/playwright.config.ts"
+      ],
+      "rules": {
+        "import/no-relative-parent-imports": "off"
+      },
+      "plugins": [
+        "eslint",
+        "typescript",
+        "unicorn",
+        "oxc",
+        "react",
+        "import",
+        "jsx-a11y",
+        "nextjs"
+      ]
     }
   ],
   "jsPlugins": ["@shadcn/lint", "eslint-plugin-better-tailwindcss"]

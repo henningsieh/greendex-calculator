@@ -1,164 +1,128 @@
 import { randomUUID } from "node:crypto";
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import {
-  member,
   organization,
   projectSharedTravelLegsTable,
   projectsTable,
-  user,
 } from "@greendex/database/schema";
-import { eq, like, sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 
 import type { ProjectSharedTravelLeg } from "@/features/project-shared-travel-legs/types";
 import type { ProjectType } from "@/features/projects/types";
 
-// Test data constants
-const TEST_USER = {
-  id: randomUUID(),
-  email: `test-user-${Date.now()}@sieh.org`,
-  name: "Test User",
-  password: "testpassword123",
-};
-
-const TEST_ORG = {
-  country: "DE" as const,
-  id: randomUUID(),
-  name: "Test Organization",
-  slug: `test-org-${Date.now()}`,
-};
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). Persistence checks run against the
+ * seeded Hosting Organization; Projects and Shared Travel Legs below are
+ * the rows under test, created directly because persistence is the
+ * behavior under test here, and removed afterwards. Canonical seed rows
+ * are never deleted: cleanup is scoped to case Project ids, and the
+ * showcase leg count is pinned across the suite.
+ */
+const SEED_ORG_SLUG = "seed-org";
+const SEED_SHOWCASE_PROJECT_NAME = "Carbon Footprint Workshop";
 
 describe("Project Shared Travel Legs integration", () => {
-  let userId: string;
   let orgId: string;
   let projectId: string;
   let sharedTravelLegId: string;
+  let showcaseLegCount = 0;
+  const caseProjectIds: string[] = [];
+  const managementProjectId = "travel-leg-management-project-canonical";
+  let baselineProject: typeof projectsTable.$inferSelect;
+  let baselineLegs: (typeof projectSharedTravelLegsTable.$inferSelect)[];
+
+  function trackProject(id: string): string {
+    caseProjectIds.push(id);
+    return id;
+  }
 
   beforeAll(async () => {
-    // Clean up any existing test data that might conflict
-    await db.delete(projectSharedTravelLegsTable).where(
-      sql`${projectSharedTravelLegsTable.projectId} IN (
-        SELECT ${projectsTable.id} FROM ${projectsTable}
-        WHERE ${projectsTable.organizationId} IN (
-          SELECT ${organization.id} FROM ${organization}
-          WHERE ${organization.slug} LIKE ${"test-org-%"}
-        )
-      )`,
+    const seedOrg = await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
+    });
+    if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+    orgId = seedOrg.id;
+    const seededProject = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, managementProjectId),
+    });
+    if (!seededProject)
+      throw new Error("Canonical Travel Leg Management Project is missing");
+    baselineProject = seededProject;
+    baselineLegs = await db
+      .select()
+      .from(projectSharedTravelLegsTable)
+      .where(eq(projectSharedTravelLegsTable.projectId, managementProjectId));
+    expect(baselineLegs.map(({ id }) => id)).toContain(
+      "travel-leg-management-bus-canonical",
     );
-
-    await db.delete(projectsTable).where(
-      sql`${projectsTable.organizationId} IN (
-        SELECT ${organization.id} FROM ${organization}
-        WHERE ${organization.slug} LIKE ${"test-org-%"}
-      )`,
+    const showcase = await db.query.projectsTable.findFirst({
+      where: and(
+        eq(projectsTable.organizationId, orgId),
+        eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
+      ),
+    });
+    if (!showcase) throw new Error("Canonical showcase Project is missing");
+    showcaseLegCount = await db.$count(
+      projectSharedTravelLegsTable,
+      eq(projectSharedTravelLegsTable.projectId, showcase.id),
     );
-
-    await db.delete(member).where(
-      sql`${member.organizationId} IN (
-        SELECT ${organization.id} FROM ${organization}
-        WHERE ${organization.slug} LIKE ${"test-org-%"}
-      )`,
-    );
-
-    await db.delete(organization).where(like(organization.slug, "test-org-%"));
-    await db.delete(user).where(like(user.email, "test-user-%@sieh.org"));
   });
 
+  beforeEach(() => {
+    // Every management case resolves the same canonical preconditions afresh;
+    // no id produced by another case is consumed.
+    projectId = managementProjectId;
+    sharedTravelLegId = "travel-leg-management-bus-canonical";
+  });
+  afterEach(async () => {
+    const ids = caseProjectIds.splice(0);
+    if (ids.length)
+      await db.delete(projectsTable).where(inArray(projectsTable.id, ids));
+    // Interference cleanup restores the canonical snapshot, not private setup.
+    await db
+      .update(projectsTable)
+      .set(baselineProject)
+      .where(eq(projectsTable.id, managementProjectId));
+    await db
+      .delete(projectSharedTravelLegsTable)
+      .where(eq(projectSharedTravelLegsTable.projectId, managementProjectId));
+    await db.insert(projectSharedTravelLegsTable).values(baselineLegs);
+  });
   afterAll(async () => {
-    // Clean up all test data
-    try {
-      await db.delete(projectSharedTravelLegsTable).where(
-        sql`${projectSharedTravelLegsTable.projectId} IN (
-          SELECT ${projectsTable.id} FROM ${projectsTable}
-          WHERE ${projectsTable.organizationId} = ${orgId}
-        )`,
-      );
-
-      await db
-        .delete(projectsTable)
-        .where(eq(projectsTable.organizationId, orgId));
-      await db.delete(member).where(eq(member.organizationId, orgId));
-      await db.delete(organization).where(eq(organization.id, orgId));
-      await db.delete(user).where(eq(user.id, userId));
-    } catch (error) {
-      console.warn("Cleanup failed:", error);
+    const showcase = await db.query.projectsTable.findFirst({
+      where: and(
+        eq(projectsTable.organizationId, orgId),
+        eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
+      ),
+    });
+    expect(showcase, "canonical showcase Project was deleted").toBeDefined();
+    if (showcase) {
+      await expect(
+        db.$count(
+          projectSharedTravelLegsTable,
+          eq(projectSharedTravelLegsTable.projectId, showcase.id),
+        ),
+        "canonical showcase legs changed during the suite",
+      ).resolves.toBe(showcaseLegCount);
     }
-  });
-
-  describe("Database Setup & Verification", () => {
-    it("should create test user in database", async () => {
-      // Insert test user directly into database (no country field anymore)
-      await db.insert(user).values({
-        id: TEST_USER.id,
-        name: TEST_USER.name,
-        email: TEST_USER.email,
-        emailVerified: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      // Verify user was created
-      const result = await db
-        .select()
-        .from(user)
-        .where(eq(user.id, TEST_USER.id));
-
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(TEST_USER.id);
-      expect(result[0].email).toBe(TEST_USER.email);
-      expect(result[0].emailVerified).toBe(true);
-
-      userId = TEST_USER.id;
-    });
-
-    it("should create test organization in database", async () => {
-      // Insert test organization
-      await db.insert(organization).values({
-        country: "DE",
-        id: TEST_ORG.id,
-        name: TEST_ORG.name,
-        slug: TEST_ORG.slug,
-        createdAt: new Date(),
-      });
-
-      // Verify organization was created
-      const result = await db
-        .select()
-        .from(organization)
-        .where(eq(organization.id, TEST_ORG.id));
-
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe(TEST_ORG.name);
-      expect(result[0].slug).toBe(TEST_ORG.slug);
-      expect(result[0].country).toBe("DE");
-
-      orgId = TEST_ORG.id;
-    });
-
-    it("should add user as member of organization", async () => {
-      // Insert member relationship
-      await db.insert(member).values({
-        id: randomUUID(),
-        organizationId: orgId,
-        userId,
-        role: ORGANIZATION_ROLES.OrganizationOwner,
-        createdAt: new Date(),
-      });
-
-      // Verify membership
-      const result = await db
-        .select()
-        .from(member)
-        .where(
-          sql`${member.organizationId} = ${orgId} AND ${member.userId} = ${userId}`,
-        );
-
-      expect(result).toHaveLength(1);
-      expect(result[0].role).toBe(ORGANIZATION_ROLES.OrganizationOwner);
-    });
+    expect(
+      await db.query.organization.findFirst({
+        where: eq(organization.slug, SEED_ORG_SLUG),
+      }),
+      "canonical seed Organization was deleted",
+    ).not.toBeUndefined();
   });
 
   describe("Project Creation", () => {
@@ -180,6 +144,8 @@ describe("Project Shared Travel Legs integration", () => {
         completedByUserId: null,
       } satisfies ProjectType;
 
+      projectId = trackProject(projectData.id);
+
       // Insert project directly
       await db.insert(projectsTable).values(projectData);
 
@@ -192,8 +158,6 @@ describe("Project Shared Travel Legs integration", () => {
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe(projectData.name);
       expect(result[0].organizationId).toBe(orgId);
-
-      projectId = projectData.id;
     });
 
     it("should create a project with sharedTravelLegs", async () => {
@@ -215,6 +179,7 @@ describe("Project Shared Travel Legs integration", () => {
       } satisfies ProjectType;
 
       // Insert project
+      trackProject(projectData.id);
       await db.insert(projectsTable).values(projectData);
 
       // Insert Project Shared Travel Legs.
@@ -486,6 +451,7 @@ describe("Project Shared Travel Legs integration", () => {
       } satisfies ProjectType;
 
       // Create project
+      trackProject(cascadeProjectId);
       await db.insert(projectsTable).values(cascadeProject);
 
       // Create a Project Shared Travel Leg for the project.

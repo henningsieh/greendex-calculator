@@ -1,10 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import {
+  fullBrowserConfig,
+  fullBrowserUse,
+} from "../../scripts/browser-test-config";
+
 /**
  * Playwright configuration for end-to-end tests
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
+  testIgnore: "instant-shells.spec.ts",
   testDir: "./src/__tests__/e2e",
   fullyParallel: false, // Sequential execution to prevent database conflicts
   forbidOnly: !!process.env.CI,
@@ -19,13 +25,16 @@ export default defineConfig({
   },
   use: {
     baseURL: process.env.NEXT_PUBLIC_BASE_URL,
-    storageState: "src/__tests__/e2e/.auth/storageState.json",
+    storageState:
+      process.env.GREENDEX_PLAYWRIGHT_AUTH ??
+      "src/__tests__/e2e/.auth/storageState.json",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     headless: true,
     video: "retain-on-failure",
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
+    ...fullBrowserUse(),
   },
 
   projects: [
@@ -34,4 +43,5 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
+  ...fullBrowserConfig(),
 });

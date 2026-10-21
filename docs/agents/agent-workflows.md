@@ -21,7 +21,7 @@ This opt-in router complements `AGENTS.md` for unfamiliar or cross-cutting imple
 | Change documentation-app behavior | [Documentation application](instructions/documentation-app.md) | [Fumadocs route](integrations.md#fumadocs) | `apps/documentation/` |
 | Change dependencies or Turbo tasks | [Workspace](instructions/workspace.md) | Owning manifest and lockfile | Owning workspace plus lockfile |
 | Fix or extend questionnaire calculations | [Code standards](instructions/code-standards.md) | [Participation docs](../../apps/calculator/docs/participate/) | `apps/calculator/src/features/participate/` |
-| Add tests | [Code standards](instructions/code-standards.md) | Relevant feature documentation | Unit/integration or E2E test directory |
+| Add or select tests | [Two-loop testing policy](instructions/conventions.md#two-verification-loops), [code standards](instructions/code-standards.md) | Relevant feature documentation | Unit/integration or E2E test directory |
 
 ## Cross-cutting sequence
 
@@ -29,7 +29,7 @@ This opt-in router complements `AGENTS.md` for unfamiliar or cross-cutting imple
 2. Inspect the named source-of-truth files and installed declarations.
 3. Implement the smallest coherent change at the owning layer.
 4. Add regression coverage at the lowest seam that reproduces the behavior.
-5. Run formatting, linting, type checking, and affected tests allowed by `AGENTS.md`.
+5. Select focused checks under the [two-loop testing policy](instructions/conventions.md#two-verification-loops). Report the rationale, runtime target, evidence, and blockers. The coordinator owns final quality gates and production acceptance after writers finish.
 6. Review the final diff for unrelated files, generated output, and leaked configuration.
 
 ## Next.js work
@@ -38,4 +38,4 @@ For any Next.js task, read the version-matched docs bundled in the single catalo
 
 ## Delegated implementation
 
-The main agent passes the matching route, relevant paths, and acceptance criteria; the child reads the owning app context and scoped instructions. Return changed files, check results, blockers, and evidence paths rather than copying documentation or logs into the main chat. The main agent verifies the affected diff and evidence, reading deeper only where needed. Contributor contracts and safe recovery live in [delegation policy](delegation.md).
+The main agent passes the matching route, relevant paths, and acceptance criteria; the child reads the owning app context and scoped instructions. Return changed behavior, selected focused checks and rationale, runtime mode/target, check results, blockers, and evidence paths rather than copying documentation or logs into the main chat. Do not launch a full gate per child. The main agent verifies the affected diff and evidence, reading deeper only where needed. Contributor contracts and safe recovery live in [delegation policy](delegation.md).

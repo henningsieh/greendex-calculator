@@ -12,7 +12,15 @@ const { env } = await import("@/env");
 const socketPort = env.SOCKET_PORT;
 const corsOrigin = env.NEXT_PUBLIC_BASE_URL;
 
-const httpServer = createServer();
+const httpServer = createServer((request, response) => {
+  if (env.TEST_RUN_ID && request.url === "/__managed-ready") {
+    response.setHeader("X-Greendex-Test-Run", env.TEST_RUN_ID);
+    response.end(String(process.pid));
+    return;
+  }
+  response.statusCode = 404;
+  response.end();
+});
 
 const io = new Server(httpServer, {
   cors: {
@@ -49,9 +57,12 @@ io.on("connection", (socket) => {
 });
 
 httpServer
-  .listen(socketPort, () => {
-    console.log(`Socket.IO server listening on port ${socketPort}`);
-  })
+  .listen(
+    { port: socketPort, ...(env.TEST_RUN_ID ? { host: "127.0.0.1" } : {}) },
+    () => {
+      console.log(`Socket.IO server listening on port ${socketPort}`);
+    },
+  )
   .on("error", (error: NodeJS.ErrnoException) => {
     console.error(
       `Failed to start Socket.IO server on port ${socketPort}:`,

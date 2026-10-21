@@ -212,7 +212,7 @@ Run these from the repository root:
 | `pnpm run lint`                                    | Run Oxlint and agent-instruction drift checks |
 | `pnpm run format`                                  | Format workspaces with Oxfmt                  |
 | `pnpm run check:agent-instructions`                | Validate scoped agent instructions            |
-| `pnpm run test:run`                                | Run Vitest once                               |
+| `pnpm test` / `pnpm run test:run`                  | Run all non-browser checks uncached           |
 | `pnpm --filter @greendex/calculator test:coverage` | Run calculator coverage                       |
 | `pnpm run test:e2e`                                | Run Playwright tests                          |
 | `pnpm run db:generate`                             | Generate Drizzle migrations                   |
@@ -354,11 +354,34 @@ oRPC routing fix: an authenticated user can open an existing internal Project
 page, and a public participation page loads for an existing Project instead of
 returning 404.
 
-> **Current test-suite caveat:** `openapi-rest.test.ts` is an integration suite
-> that expects a running Calculator server. Its no-server branch does not
-> reliably skip the suite. Run the remaining tests without a server with
-> `pnpm --filter @greendex/calculator exec vitest run --exclude
-> src/__tests__/openapi-rest.test.ts`.
+`pnpm test` runs repository policies, shared-package tests, both apps' Vitest
+suites, live email workflows and development Garage verification directly,
+without Turbo caching or Playwright. Pure suites run independently of service
+prerequisites; service failures block dependent groups but not independent checks.
+
+Each pure app group uses at most two file workers. Both apps can run their pure
+groups concurrently, so up to four app file workers can overlap with repository
+and package checks. Each file retains Vitest isolation because pure suites also
+use module mocks, environment overrides, and fake timers. Database and live
+groups retain serial file execution. Standalone app commands retain their
+existing configuration. The runner does not enable a persistent transform cache.
+
+The root runner creates one uniquely owned database, migrates and seeds it once,
+and injects that same database and `TEST_RUN_ID` into dedicated managed app
+servers and live suites. It never attaches to ordinary development servers.
+Calculator's migration-chain and individual migration-contract suites, plus
+`development-seed.integration.test.ts`, are explicit exceptions: they execute on
+separate disposable databases because they must prove migrations or seed/reset
+behavior from zero. The standalone lifecycle and email commands retain their own
+isolated setup; aggregate execution reuses the root-owned setup instead.
+
+Configure the shared database and each app's ignored local environment files,
+including live mailbox and development Garage settings, before running. Missing
+prerequisites, skipped required tests, failed checks and cleanup failures produce
+a nonzero exit. Sanitized group/test counts, failures, run identity, commit,
+seed-version hash and cleanup results are saved in `.turbo/nonbrowser-tests/`.
+The root owns server shutdown and database disposal even after failed checks.
+Playwright remains available separately through `pnpm run test:e2e`.
 
 ---
 
@@ -417,9 +440,6 @@ For each vendor integration, use the [online reference registry](docs/agents/int
 - `docs/agents/instructions/shadcn.md` — UI patterns
 - `docs/agents/instructions/conventions.md` — linting and formatting
 
-`PROJECT_STATE_REPORT.md` contains the detailed August 20–23 commit ledger,
-current branch/PR state, deployment model, and remaining cleanup decisions.
-
 ---
 
 ## Known follow-ups
@@ -427,11 +447,7 @@ current branch/PR state, deployment model, and remaining cleanup decisions.
 - Close or resolve stale PR #11, which targets an old Copilot branch.
 - Remove merged/orphaned dependency branches after review.
 - Decide whether to delete the old `bun-runtime` branch.
-- Merge or further review open PR #57 (`migrate-email-to-package`), which
-  centralizes transactional email in `@greendex/email`.
-- Make the OpenAPI integration suite select/skip tests correctly when no server
-  is running.
-- Select and add a project license.
+- Select and add a project license (tracked in #262).
 
 ---
 

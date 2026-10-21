@@ -40,19 +40,23 @@ The pre-release `/dashboard` route is intentionally absent. Authentication, bran
 
 ## Cache Components and request-bound loading
 
-Cost Tracker enables Cache Components while retaining the previous link-prefetch
-behavior (`partialPrefetching: false`). This intentionally differs from
-Calculator's separate Partial Prefetching adoption. Neither authenticated reads
-nor Claim data use `"use cache"`.
+Cost Tracker enables Cache Components and `partialPrefetching: true`. Default
+Links prefetch shared App Shells rather than per-link private content. Neither
+authenticated reads nor Claim/Participant Journey data adopt `"use cache"` or
+`"use cache: private"`; per-session data stays request-bound through oRPC and the
+existing request-scoped QueryClient/hydration seam.
 
-The protected layout follows Calculator's deliberate blocking gate: `instant =
-false` preserves authentication and active Organization recovery before shell
-paint, and `connection()` waits for a real request before session and Membership
-reads. Page Membership and permission checks still precede their shells. The
-seven sign-in, registration, invitation, and onboarding pages outside that layout
-also keep documented `instant = false` gates; their existing headers, params, and
-searchParams already make them request-bound. This export disables instant
-navigation validation, not authentication or request handling.
+The protected layout is synchronous: a neutral brand and Skeleton fallback can
+paint before the async protected shell calls `connection()`, resolves the session,
+Memberships, active Organization recovery, and permission-dependent navigation.
+The fallback contains no private data or staff actions. A brief neutral-shell
+flash before a login redirect or Organization recovery is accepted. All gates
+remain server-side, and pages/procedures still authorize each request. This
+layout no longer exports `instant = false`. Seven pages outside it retain that
+exception: login/register avoid a signed-in form flash; the five invitation,
+setup, and Participant entry pages preserve request-time secret handling and
+onboarding/recipient state-machine order. That state machine is outside this
+adoption scope. The export opts out of validation, not request handling.
 
 After the gate, initial data and URL promises resolve in async children behind
 inner Suspense boundaries. Feature-owned skeletons match Claim document bands,

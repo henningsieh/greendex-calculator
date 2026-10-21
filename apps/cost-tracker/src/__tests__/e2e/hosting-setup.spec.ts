@@ -7,6 +7,7 @@ import { type Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 
 import { expectPrivateURL, expect, test } from "./fixtures/artifact-privacy";
+import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -19,8 +20,6 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 // per browser context. Browser registration, verification, and sending staff
 // invitations are excluded: the dev server has real SMTP and no mail sink.
 // Mail delivery/verification remain covered by Vitest and the manual journey.
-// UI GAP (01): after Create Organization, the no-access page can remain stale;
-// one explicit user reload is permitted, never a weakened post-reload assertion.
 // Case 04 server denial is AUTOMATED-ONLY in projects.integration.test.ts.
 // Checkpoint: assignment of a different Hosting Project Coordinator has no UI.
 const fixture = new HostingJourneyFixture();
@@ -36,7 +35,9 @@ async function createProject(page: Page, name: string) {
   await dialog.getByLabel("Location").fill("Berlin");
   await dialog.getByLabel("Country").selectOption("DE");
   await dialog.getByRole("button", { name: "Create project" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible();
+  await expect(page.getByRole("heading", { name })).toBeVisible({
+    timeout: 90_000,
+  });
   await expect(page.getByText("Hosted Project", { exact: true })).toBeVisible();
   return new URL(page.url()).pathname;
 }
@@ -63,28 +64,14 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await page.goto("/projects");
     await expect(page.getByText("No Organization access yet")).toBeVisible();
     const dialog = page.getByRole("dialog", { name: "Create Organization" });
-    if (!(await dialog.isVisible())) {
-      // The no-access screen can open the portal during pointer-down; it then
-      // intercepts the final click on the button beneath it.
-      await page
-        .getByRole("button", { name: "Create Organization" })
-        .click({ timeout: 3_000 })
-        .catch(async () => {
-          await expect(dialog).toBeVisible();
-        });
-    }
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
-    // Ordinary reload after observed stale no-access screen (UI GAP).
-    if (await page.getByText("No Organization access yet").isVisible())
-      await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "Projects", exact: true }),
-    ).toBeVisible();
-    await expect(page.getByRole("button", { name: "New project" })).toBeVisible();
+    await expectFirstOrganizationProjects(page, fixture.organizationName);
+    await page.reload();
+    await expectFirstOrganizationProjects(page, fixture.organizationName);
     await page.goto("/organization");
     const row = page.getByRole("row").filter({ hasText: fixture.actors.H.email });
     await expect(row).toContainText(ORGANIZATION_ROLES.OrganizationOwner);
@@ -238,4 +225,37 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       ).toBeVisible();
     }
   });
+});
+
+test("creation refreshes Organization management before navigating to Projects", async ({
+  browser,
+  baseURL,
+}) => {
+  const recovery = new HostingJourneyFixture();
+  await recovery.setup();
+  try {
+    const context = await recovery.actorContext(browser, "H", baseURL!);
+    const page = await context.newPage();
+    await page.goto("/organization");
+    const dialog = page.getByRole("dialog", { name: "Create Organization" });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel("Organization name").fill(recovery.organizationName);
+    await dialog.getByLabel("Organization country").selectOption("DE");
+    await dialog.getByRole("button", { name: "Create Organization" }).click();
+    await expect(dialog).toBeHidden();
+    await expectPrivateURL(page, /\/organization$/);
+    await expect(
+      page.getByRole("heading", { name: "Organization", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("row").filter({ hasText: recovery.actors.H.email }),
+    ).toContainText(ORGANIZATION_ROLES.OrganizationOwner);
+    await page
+      .getByRole("navigation", { name: "Primary navigation" })
+      .getByRole("link", { name: "Projects", exact: true })
+      .click();
+    await expectFirstOrganizationProjects(page, recovery.organizationName);
+  } finally {
+    await recovery.teardown();
+  }
 });

@@ -2,6 +2,10 @@ import { z } from "zod";
 
 export const CostTrackerServerEnvironmentSchema = z.object({
   DATABASE_URL: z.url(),
+  TEST_RUN_ID: z
+    .string()
+    .regex(/^[a-f0-9]{32}$/)
+    .optional(),
   BETTER_AUTH_SECRET: z.string().min(32),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),

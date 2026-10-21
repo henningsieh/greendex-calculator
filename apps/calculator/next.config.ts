@@ -1,7 +1,22 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
+const testRunId = process.env.TEST_RUN_ID;
+if (testRunId && !/^[a-f0-9]{32}$/.test(testRunId)) {
+  throw new Error("Invalid managed test run identity.");
+}
+
 const nextConfig = {
+  ...(process.env.MANAGED_WORKSPACE_ROOT
+    ? { turbopack: { root: process.env.MANAGED_WORKSPACE_ROOT } }
+    : {}),
+  // #273: managed runs never share build output or rewrite the dev tsconfig.
+  ...(testRunId
+    ? {
+        distDir: `.next/test-runs/${testRunId}`,
+        typescript: { tsconfigPath: `.tsconfig-test-${testRunId}.json` },
+      }
+    : {}),
   // This repository keeps a single root AGENTS.md: Next.js must not write its
   // agent-rules block into this project directory.
   agentRules: false,

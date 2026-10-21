@@ -9,7 +9,7 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Join Project" };
 
-// Keep the session and link-source gates before the onboarding state machine paints.
+// Link id plus secret source gate precedes the onboarding state machine.
 export const instant = false;
 
 export default async function ParticipantLinkPage({

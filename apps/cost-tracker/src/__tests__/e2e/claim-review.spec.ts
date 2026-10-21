@@ -46,6 +46,7 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
@@ -216,9 +217,11 @@ async function pageFor(
     storageState: { cookies: [], origins: [] },
   });
   contexts.push(context);
-  const response = await context.request.post("/api/auth/sign-in/email", {
-    data: { email: actors[actor].email, password: actors[actor].password },
-  });
+  const response = await postSignInWithRateLimitRetry(
+    context.request,
+    actors[actor].email,
+    actors[actor].password,
+  );
   expect(response.ok(), `${actor} setup sign-in`).toBe(true);
   return context.newPage();
 }
@@ -583,23 +586,42 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(
       review.getByText(`Calculated payable: 100.00 EUR (server-approved amount)`),
     ).toBeVisible();
-    await expect(review.getByText(`train · 100.00 EUR · equal`)).toBeVisible();
+    const cost = review
+      .getByRole("table", {
+        name: "Exact totals, Cost Allocations and linked Proof Documents.",
+      })
+      .getByRole("row")
+      .filter({ has: host.getByRole("cell", { name: "train", exact: true }) });
+    await expect(
+      cost.getByRole("cell", { name: "100.00", exact: true }),
+    ).toBeVisible();
+    await expect(cost.getByText("Equal", { exact: true })).toBeVisible();
     await expect(
       review.getByText(`${personNames[0]}: Equal share (computed on submission)`),
     ).toBeVisible();
     await expect(
-      review.getByText(
-        new RegExp(
-          `^Proof Document: ${proofNames[0]!.replaceAll(".", "\\.")} \\(`,
-        ),
-      ),
+      cost.getByText(`Proof Document: ${proofNames[0]}`, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      cost.getByText(`application/pdf, ${proofBytes.length} bytes`, {
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       review.getByText(
         `${personNames[0]}: Berlin → Riga · round-trip · 850.25 km`,
       ),
     ).toBeVisible();
-    await expect(review.getByText(/Selected payout: CT/)).toBeVisible();
+    await expect(
+      review
+        .getByRole("definition")
+        .filter({ hasText: `CT ${suffix} test-only reference` }),
+    ).toBeVisible();
+    await expect(
+      review
+        .getByRole("definition")
+        .filter({ hasText: `NOT-A-BANK-ACCOUNT-${suffix}` }),
+    ).toBeVisible();
     await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
       0,
     );
@@ -641,6 +663,9 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBeVisible();
     expect((await claimState(0))!.status).toBe("correction_requested");
     await host.goto("/claims/review");
+    await expect(
+      host.getByRole("link", { name: `${projectName} · ${partnerNames[1]}` }),
+    ).toBeVisible();
     await expect(first).toHaveCount(0);
 
     const partner = await pageFor(browser, "P", baseURL!);
@@ -654,7 +679,10 @@ test.describe.serial("Claim review journey 25–26", () => {
     await partner.getByLabel(`Origin for ${personNames[0]}`).fill("Tallinn");
     await partner.getByRole("button", { name: "Save correction" }).click();
     await expect(
-      partner.getByText(new RegExp(`${personNames[0]}: Tallinn → Riga`)),
+      partner
+        .getByRole("listitem")
+        .filter({ has: partner.getByText(personNames[0], { exact: true }) })
+        .getByText("Tallinn → Riga", { exact: true }),
     ).toBeVisible();
     const checklist = partner.getByRole("list", { name: "Submission checklist" });
     await expect(checklist.getByText(/^Pass:/)).toHaveCount(7);
@@ -663,7 +691,7 @@ test.describe.serial("Claim review journey 25–26", () => {
       partner.getByText(/Confirm submission: submission locks/),
     ).toBeVisible();
     await partner.getByRole("button", { name: "Confirm submission" }).click();
-    await expect(partner.getByText("Claim submitted · saved")).toBeVisible();
+    await expect(partner.getByText("Claim Submitted / saved")).toBeVisible();
     await expect(
       partner.getByRole("button", { name: "Save correction" }),
     ).toHaveCount(0);
@@ -818,7 +846,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect((await claimState(1))!.status).toBe("submitted");
     const partner = await pageFor(browser, "F", baseURL!);
     await partner.goto(`/partnerships/${ids.partnerships[1]}/claim`);
-    await expect(partner.getByText("Claim submitted · saved")).toBeVisible();
+    await expect(partner.getByText("Claim Submitted / saved")).toBeVisible();
     await expect(
       partner.getByText(/This Claim is locked for Partner editing/),
     ).toBeVisible();

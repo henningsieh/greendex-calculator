@@ -8,9 +8,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
-    // Reuse workers across files to avoid jsdom startup for every test file.
-    // Tests must reset shared state in their hooks.
-    isolate: false,
+    // Router/auth mocks must not leak between suites sharing the canonical database.
+    isolate: true,
+    fileParallelism: false,
     environment: "jsdom",
     globals: true,
     experimental: {

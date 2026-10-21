@@ -8,6 +8,11 @@ export const situationCatalog = {
     reason: "SESSION_REQUIRED",
     message: "Your session is missing or has expired. Sign in to continue.",
   },
+  organizationSlugTakenBeforeCreation: {
+    code: "BAD_REQUEST",
+    reason: "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION",
+    message: "This Organization name is already in use. Choose another name.",
+  },
   invalidCredentials: {
     code: "UNAUTHORIZED",
     reason: "INVALID_CREDENTIALS",

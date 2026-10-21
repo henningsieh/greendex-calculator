@@ -3,11 +3,10 @@ import { Suspense } from "react";
 import AuthFlowLayout from "@/features/authentication/components/auth-flow-layout";
 import { AuthPageSkeleton } from "@/features/authentication/components/auth-page-skeleton";
 import { ForgotPasswordForm } from "@/features/authentication/components/forgot-password-form";
+import type { LocaleParams } from "@/lib/i18n/types";
 
 interface ForgotPasswordPageProps {
-  params: Promise<{
-    locale: string;
-  }>;
+  params: Promise<LocaleParams>;
 }
 
 /**

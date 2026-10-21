@@ -12,7 +12,7 @@ import {
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
 import { APIError } from "better-auth/api";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -26,24 +26,51 @@ vi.mock("server-only", () => ({}));
 
 import { router } from "@/lib/orpc/router";
 
-const suffix = randomUUID();
-const orgId = `staff-org-${suffix}`;
-const ownerId = `staff-owner-${suffix}`;
-const adminId = `staff-admin-${suffix}`;
-const memberId = `staff-member-${suffix}`;
-const participantId = `staff-participant-${suffix}`;
-const outsiderId = `staff-outsider-${suffix}`;
-const hybridAdminId = `staff-hybrid-admin-${suffix}`;
-const hybridMemberId = `staff-hybrid-member-${suffix}`;
+/**
+ * Canonical seed actors (see `SEED_SCENARIOS` in
+ * `apps/calculator/scripts/seed.ts`). The permission matrix resolves the
+ * seeded Hosting Organization and its named Memberships instead of
+ * inserting a private Organization/User/Membership dataset. Case
+ * invitations created below are removed in their own test; canonical rows
+ * are never deleted. Auth stays mocked: only the database is real.
+ */
+const SEED_ORG_SLUG = "seed-staff-invites-org";
+const SEED_OWNER_EMAIL = "owner@sieh.org";
+const SEED_ADMIN_EMAIL = "seed-admin@example.org";
+const SEED_COORDINATOR_EMAIL = "seed-coordinator@example.org";
+const SEED_PARTICIPANT_EMAIL = "seed-participant@example.org";
+const SEED_OUTSIDER_EMAIL = "seed-outsider@example.org";
+const SEED_HYBRID_ADMIN_EMAIL = "seed-hybrid-admin@example.org";
+const SEED_HYBRID_COORDINATOR_EMAIL = "seed-hybrid-coordinator@example.org";
+
+let orgId = "";
+let ownerId = "";
+let adminId = "";
+let memberId = "";
+let participantId = "";
+let outsiderId = "";
+let hybridAdminId = "";
+let hybridMemberId = "";
+let baselineInvitationIds: string[] = [];
+const seedInvitations = {
+  causeId: "",
+  pendingId: "",
+  foreignId: "",
+  acceptedId: "",
+};
 
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
 
-function session(userId: string, activeOrganizationId: string | null = orgId) {
+function session(
+  userId: string,
+  activeOrganizationId: string | null = orgId,
+  email = `${userId}@example.org`,
+) {
   authMocks.getSession.mockResolvedValue({
     session: { id: randomUUID(), userId, activeOrganizationId },
-    user: { id: userId, name: userId, email: `${userId}@example.org` },
+    user: { id: userId, name: userId, email },
   });
 }
 
@@ -58,72 +85,103 @@ async function invitationStatus(id: string) {
 
 describe("organizations staff invites", () => {
   beforeAll(async () => {
-    const now = new Date();
-    await db.insert(organization).values({
-      country: "DE",
-      id: orgId,
-      name: orgId,
-      slug: orgId,
-      createdAt: now,
+    const seedOrg = await db.query.organization.findFirst({
+      where: eq(organization.slug, SEED_ORG_SLUG),
     });
-    const users = [
-      ownerId,
-      adminId,
-      memberId,
-      participantId,
-      outsiderId,
-      hybridAdminId,
-      hybridMemberId,
+    if (!seedOrg) throw new Error("Seed Hosting Organization is missing.");
+    orgId = seedOrg.id;
+    const emails = [
+      SEED_OWNER_EMAIL,
+      SEED_ADMIN_EMAIL,
+      SEED_COORDINATOR_EMAIL,
+      SEED_PARTICIPANT_EMAIL,
+      SEED_OUTSIDER_EMAIL,
+      SEED_HYBRID_ADMIN_EMAIL,
+      SEED_HYBRID_COORDINATOR_EMAIL,
     ];
-    for (const id of users) {
-      await db.insert(user).values({
-        id,
-        name: id,
-        email: `${id}@example.org`,
-        emailVerified: true,
+    const ids: Record<string, string> = {};
+    for (const email of emails) {
+      const stored = await db.query.user.findFirst({
+        where: eq(user.email, email),
       });
+      if (!stored) throw new Error(`Seed user is missing: ${email}`);
+      ids[email] = stored.id;
     }
-    const memberships: [string, string][] = [
-      [ownerId, ORGANIZATION_ROLES.OrganizationOwner],
-      [adminId, ORGANIZATION_ROLES.OrganizationAdmin],
-      [memberId, ORGANIZATION_ROLES.ProjectCoordinator],
-      [participantId, ORGANIZATION_ROLES.Participant],
-      [
-        hybridAdminId,
-        `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
-      ],
-      [
-        hybridMemberId,
-        `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
-      ],
-    ];
-    for (const [userId, role] of memberships) {
-      await db.insert(member).values({
-        id: randomUUID(),
-        userId,
-        organizationId: orgId,
-        role,
-        createdAt: now,
+    ownerId = ids[SEED_OWNER_EMAIL] as string;
+    adminId = ids[SEED_ADMIN_EMAIL] as string;
+    memberId = ids[SEED_COORDINATOR_EMAIL] as string;
+    participantId = ids[SEED_PARTICIPANT_EMAIL] as string;
+    outsiderId = ids[SEED_OUTSIDER_EMAIL] as string;
+    hybridAdminId = ids[SEED_HYBRID_ADMIN_EMAIL] as string;
+    hybridMemberId = ids[SEED_HYBRID_COORDINATOR_EMAIL] as string;
+    const partner = await db.query.organization.findFirst({
+      where: eq(organization.slug, "seed-partner-org"),
+    });
+    if (!partner) throw new Error("Seed Partner Organization is missing.");
+    for (const [key, organizationId, email, status] of [
+      ["causeId", orgId, "staff-invitation-cause@example.org", "pending"],
+      ["pendingId", orgId, "leaving@example.org", "pending"],
+      ["foreignId", partner.id, "elsewhere@example.org", "pending"],
+      ["acceptedId", orgId, "accepted@example.org", "accepted"],
+    ] as const) {
+      const stored = await db.query.invitation.findFirst({
+        where: and(
+          eq(invitation.organizationId, organizationId),
+          eq(invitation.email, email),
+          eq(invitation.status, status),
+        ),
       });
+      if (!stored) throw new Error(`Seed staff Invitation is missing: ${key}`);
+      seedInvitations[key] = stored.id;
     }
+    // Fail fast when the canonical role matrix drifts from the seed.
+    const memberships = await db
+      .select({ userId: member.userId, role: member.role })
+      .from(member)
+      .where(eq(member.organizationId, orgId));
+    const roleByUser = new Map(
+      memberships.map((entry) => [entry.userId, entry.role]),
+    );
+    expect(roleByUser.get(ownerId)).toBe(ORGANIZATION_ROLES.OrganizationOwner);
+    expect(roleByUser.get(adminId)).toBe(ORGANIZATION_ROLES.OrganizationAdmin);
+    expect(roleByUser.get(memberId)).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
+    expect(roleByUser.get(participantId)).toBe(ORGANIZATION_ROLES.Participant);
+    expect(roleByUser.get(hybridAdminId)).toBe(
+      `${ORGANIZATION_ROLES.OrganizationAdmin},${ORGANIZATION_ROLES.Participant}`,
+    );
+    expect(roleByUser.get(hybridMemberId)).toBe(
+      `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+    );
+    expect(roleByUser.has(outsiderId)).toBe(false);
+    baselineInvitationIds = (
+      await db
+        .select({ id: invitation.id })
+        .from(invitation)
+        .where(eq(invitation.organizationId, orgId))
+    )
+      .map(({ id }) => id)
+      .sort();
     vi.clearAllMocks();
   });
 
   afterAll(async () => {
-    await db.delete(invitation).where(eq(invitation.organizationId, orgId));
-    await db.delete(member).where(eq(member.organizationId, orgId));
-    await db.delete(organization).where(eq(organization.id, orgId));
-    for (const id of [
-      ownerId,
-      adminId,
-      memberId,
-      participantId,
-      outsiderId,
-      hybridAdminId,
-      hybridMemberId,
-    ]) {
-      await db.delete(user).where(eq(user.id, id));
-    }
+    // Case invitations are removed in their own tests; canonical
+    // Organizations, Memberships, and Users are never deleted. Fail loudly
+    // when a case leaked a row onto the seeded Organization.
+    const leftovers = await db
+      .select({ id: invitation.id })
+      .from(invitation)
+      .where(eq(invitation.organizationId, orgId));
+    expect(
+      leftovers.sort((a, b) => a.id.localeCompare(b.id)),
+      "case invitations changed the seed Organization baseline",
+    ).toEqual(baselineInvitationIds.map((id) => ({ id })));
+    expect(
+      await db.query.organization.findFirst({
+        where: eq(organization.slug, SEED_ORG_SLUG),
+      }),
+      "canonical seed Organization was deleted",
+    ).not.toBeUndefined();
   });
 
   it("denies the member list to members, participants, and outsiders", async () => {
@@ -153,10 +211,19 @@ describe("organizations staff invites", () => {
         `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
         ORGANIZATION_ROLES.OrganizationOwner,
         ORGANIZATION_ROLES.Participant,
+        // Canonical onboarding/invitation actors also belong to the Hosting Organization.
+        ORGANIZATION_ROLES.ProjectCoordinator,
+        ORGANIZATION_ROLES.OrganizationAdmin,
+        `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+        ORGANIZATION_ROLES.ProjectCoordinator,
+        ORGANIZATION_ROLES.OrganizationOwner,
+        ORGANIZATION_ROLES.Participant,
       ].sort(),
     );
+    // The canonical seed owner signs in from a real mailbox domain while
+    // role actors use the example domain: assert email shape, not domain.
     expect(asOwner.members[0]).toMatchObject({
-      email: expect.stringContaining("@example.org"),
+      email: expect.stringContaining("@"),
       name: expect.any(String),
     });
 
@@ -363,17 +430,10 @@ describe("organizations staff invites", () => {
       message: "Internal server error",
       data: { reason: "INTERNAL_FAILURE" },
     });
-    const id = randomUUID();
-    await db.insert(invitation).values({
-      id,
-      organizationId: orgId,
-      email: `${ownerId}@example.org`,
-      role: ORGANIZATION_ROLES.OrganizationAdmin,
-      status: "pending",
-      expiresAt: new Date(Date.now() + 3600_000),
-      inviterId: ownerId,
-    });
-    try {
+    const id = seedInvitations.causeId;
+    session(ownerId, orgId, "staff-invitation-cause@example.org");
+    expect(await invitationStatus(id)).toBe("pending");
+    {
       authMocks.acceptInvitation.mockRejectedValueOnce(
         new APIError("FORBIDDEN", {
           code: "EMAIL_NOT_VERIFIED",
@@ -396,46 +456,13 @@ describe("organizations staff invites", () => {
         data: { reason: "INTERNAL_FAILURE" },
       });
       expect(await invitationStatus(id)).toBe("pending");
-    } finally {
-      await db.delete(invitation).where(eq(invitation.id, id));
     }
   });
 
   it("cancels a pending invitation and rejects unknown or settled rows", async () => {
-    const pendingId = randomUUID();
-    const otherOrgId = `staff-other-org-${suffix}`;
-    const otherInvitationId = randomUUID();
-    const now = new Date();
-    await db.insert(organization).values({
-      country: "DE",
-      id: otherOrgId,
-      name: otherOrgId,
-      slug: otherOrgId,
-      createdAt: now,
-    });
-    await db.insert(invitation).values([
-      {
-        id: pendingId,
-        organizationId: orgId,
-        email: "leaving@example.org",
-        role: ORGANIZATION_ROLES.OrganizationAdmin,
-        status: "pending",
-        expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
-        createdAt: now,
-        inviterId: ownerId,
-      },
-      {
-        id: otherInvitationId,
-        organizationId: otherOrgId,
-        email: "elsewhere@example.org",
-        role: ORGANIZATION_ROLES.OrganizationAdmin,
-        status: "pending",
-        expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
-        createdAt: now,
-        inviterId: ownerId,
-      },
-    ]);
-    try {
+    const pendingId = seedInvitations.pendingId;
+    const otherInvitationId = seedInvitations.foreignId;
+    {
       session(ownerId);
       const pending = await client.organizations.listPendingInvitations({});
       expect(pending.invitations.map((entry) => entry.id)).toContain(pendingId);
@@ -459,13 +486,11 @@ describe("organizations staff invites", () => {
         }),
       );
 
-      await db
-        .update(invitation)
-        .set({ status: "accepted" })
-        .where(eq(invitation.id, pendingId));
-      expect(await invitationStatus(pendingId)).toBe("accepted");
+      expect(await invitationStatus(seedInvitations.acceptedId)).toBe("accepted");
       await expect(
-        client.organizations.cancelInvitation({ invitationId: pendingId }),
+        client.organizations.cancelInvitation({
+          invitationId: seedInvitations.acceptedId,
+        }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
 
       await expect(
@@ -473,10 +498,6 @@ describe("organizations staff invites", () => {
           invitationId: randomUUID(),
         }),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    } finally {
-      await db.delete(invitation).where(eq(invitation.id, pendingId));
-      await db.delete(invitation).where(eq(invitation.id, otherInvitationId));
-      await db.delete(organization).where(eq(organization.id, otherOrgId));
     }
   });
 });

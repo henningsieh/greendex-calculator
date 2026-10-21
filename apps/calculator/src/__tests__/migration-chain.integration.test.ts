@@ -1,3 +1,8 @@
+/**
+ * Historical migration exception (#270): run-owned disposable empty databases.
+ * Exempt from the canonical seed rule; empty-installation and historical-upgrade
+ * checks migrate disposable databases and drop only the created database.
+ */
 import { execFile } from "node:child_process";
 import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

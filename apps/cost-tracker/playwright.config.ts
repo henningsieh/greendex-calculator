@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import {
+  fullBrowserConfig,
+  fullBrowserUse,
+} from "../../scripts/browser-test-config";
+
 const baseURL =
   process.env.COST_TRACKER_E2E_BASE_URL ?? process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -22,8 +27,12 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     baseURL,
-    storageState: "src/__tests__/e2e/.auth/storage-state.json",
+    storageState:
+      process.env.GREENDEX_PLAYWRIGHT_AUTH ??
+      "src/__tests__/e2e/.auth/storage-state.json",
     trace: "on-first-retry",
+    ...fullBrowserUse(),
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  ...fullBrowserConfig(),
 });

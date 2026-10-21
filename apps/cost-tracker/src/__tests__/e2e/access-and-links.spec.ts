@@ -28,6 +28,7 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
@@ -167,9 +168,11 @@ async function pageFor(browser: Browser, actor: Actor, baseURL: string) {
     storageState: { cookies: [], origins: [] },
   });
   contexts.push(context);
-  const response = await context.request.post("/api/auth/sign-in/email", {
-    data: { email: actors[actor].email, password: actors[actor].password },
-  });
+  const response = await postSignInWithRateLimitRetry(
+    context.request,
+    actors[actor].email,
+    actors[actor].password,
+  );
   expect(response.ok(), `${actor} setup sign-in`).toBe(true);
   return context.newPage();
 }
@@ -341,7 +344,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await dialog.getByLabel("Country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create project" }).click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
-    await expectPrivateURL(h, /\/projects\/[^/]+$/);
+    await expectPrivateURL(h, /\/projects\/[^/]+$/, { timeout: 90_000 });
     projectId = new URL(h.url()).pathname.split("/").at(-1)!;
     await expect(h.getByRole("heading", { name: names.project })).toBeVisible({
       timeout: 90_000,
@@ -404,6 +407,17 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       `/claims/review/${ids.partnership}`,
     ]) {
       await x.goto(route);
+      await expect(
+        x.getByText("No Organization access yet", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        x.getByRole("dialog", { name: "Create Organization" }),
+      ).toBeVisible();
+      await expect(
+        x
+          .getByRole("dialog", { name: "Create Organization" })
+          .getByRole("textbox", { name: "Organization name", exact: true }),
+      ).toBeEditable();
       await expect(x.getByText(names.project)).toHaveCount(0);
       await expect(x.getByText(names.partner)).toHaveCount(0);
       await expect(
@@ -422,6 +436,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ]) {
       await f.goto(route);
       await denied(f, resource);
+      await expect(
+        f.getByRole("alert").filter({ hasText: `Unable to load ${resource}` }),
+      ).toContainText("Project Partnership not found in scope.");
       await expect(f.getByText(names.partner)).toHaveCount(0);
       await expect(
         f.getByRole("button", { name: /Save cost|Approve Claim/ }),
@@ -437,7 +454,31 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       const page = await pageFor(browser, actor, baseURL!);
       await page.goto(`/claims/review/${ids.partnership}`);
       await denied(page, "Claim review");
-      await expect(page.getByText(names.partner)).toHaveCount(0);
+      await expect(
+        page
+          .getByRole("alert")
+          .filter({ hasText: "Unable to load Claim review" }),
+      ).toContainText(
+        actor === "F"
+          ? "Project Partnership not found in scope."
+          : "Only Hosting staff may review Claims.",
+      );
+      if (actor === "P") {
+        await expect(
+          page.getByRole("button", {
+            name: `Acting Organization: ${names.partner}. Switch Organization`,
+            exact: true,
+          }),
+        ).toBeVisible();
+      }
+      await expect(page.getByRole("main").getByText(names.partner)).toHaveCount(
+        0,
+      );
+      await expect(
+        page.getByRole("button", {
+          name: /Approve Claim|Confirm approval|Reject Claim/,
+        }),
+      ).toHaveCount(0);
     });
   }
 
@@ -482,6 +523,13 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       const t = await pageFor(browser, "T", baseURL!);
       await t.goto(`/partnerships/${ids.partnership}/claim`);
       await denied(t, "Claim workspace");
+      await expect(
+        t
+          .getByRole("alert")
+          .filter({ hasText: "Unable to load Claim workspace" }),
+      ).toContainText(
+        "You need Partner Organization staff access or an assignment to this Project Partnership.",
+      );
       await expect(t.getByText("No Organization access yet")).toHaveCount(0);
       await expect(
         t.getByRole("button", {
@@ -491,6 +539,11 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       const h = await pageFor(browser, "H", baseURL!);
       await h.goto(`/partnerships/${ids.partnership}/claim`);
       await denied(h, "Claim workspace");
+      await expect(
+        h
+          .getByRole("alert")
+          .filter({ hasText: "Unable to load Claim workspace" }),
+      ).toContainText("Only the Partner Organization may edit its Claim.");
       await expect(
         h.getByRole("button", { name: /Save cost|Save Claim draft/ }),
       ).toHaveCount(0);
@@ -541,9 +594,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(
       x.getByText("Partner Organization setup", { exact: true }),
     ).toBeVisible();
-    await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
-    await x.getByLabel("Organization country").selectOption("DE");
-    await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     await creator
       .getByRole("button", { name: "Neuer Link", exact: true })
@@ -554,9 +604,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     // Preserve the original pathname inequality without printing either private ID.
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
-    await x.getByLabel("New Organization name").fill(`CT ${suffix} unused`);
-    await x.getByLabel("Organization country").selectOption("DE");
-    await x.getByRole("button", { name: "Complete setup" }).click();
     await expect(x.getByText("Disabled setup link")).toBeVisible();
     const fresh = await browser.newContext({
       baseURL: baseURL!,
@@ -574,6 +621,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(x.getByText("No Organization access yet")).toBeVisible();
     // The no-access screen auto-opens Create Organization; dismiss its portal
     // before using the separate Sign out control.
+    await expect(
+      x.getByRole("dialog", { name: "Create Organization" }),
+    ).toBeVisible({ timeout: 90_000 });
     await x.keyboard.press("Escape");
     await expect(
       x.getByRole("dialog", { name: "Create Organization" }),
@@ -632,6 +682,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       `/participant-invitations/${ids.oldParticipantInvitation}?secret=${encodeURIComponent(oldSecret)}`,
     );
     await t.getByLabel("Full name").fill(actors.T.name);
+    await t.getByLabel("Country", { exact: true }).selectOption("DE");
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
@@ -676,6 +727,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.goto(link);
     await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
     await t.getByLabel("Full name").fill(actors.T.name);
+    await t.getByLabel("Country", { exact: true }).selectOption("DE");
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the registrationLinkClosed factory copy.

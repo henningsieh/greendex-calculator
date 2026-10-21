@@ -1,9 +1,12 @@
 import { mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 
 import { SEED_USER } from "@greendex/auth/seed-user";
 import { chromium, expect, type FullConfig } from "@playwright/test";
 
-const storageStatePath = "src/__tests__/e2e/.auth/storage-state.json";
+const storageStatePath =
+  process.env.GREENDEX_PLAYWRIGHT_AUTH ??
+  "src/__tests__/e2e/.auth/storage-state.json";
 
 export default async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0]?.use.baseURL;
@@ -26,7 +29,7 @@ export default async function globalSetup(config: FullConfig) {
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible({ timeout: 15_000 });
 
-    await mkdir("src/__tests__/e2e/.auth", { recursive: true });
+    await mkdir(dirname(storageStatePath), { recursive: true, mode: 0o700 });
     await page.context().storageState({ path: storageStatePath });
   } finally {
     await browser.close();
