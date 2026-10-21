@@ -699,8 +699,10 @@ export function SetupLinkRecipient({
         });
         if (response.error) throw createSituationErrors().selectOrganization();
         await queryClient.invalidateQueries();
-        setSelected(true);
-        router.refresh();
+        startSelection(() => {
+          router.refresh();
+          setSelected(true);
+        });
       } catch {
         setSelectionError(true);
         setSelected(false);

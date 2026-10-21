@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/client";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -488,6 +488,53 @@ describe("Setup Link UI", () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
     expect(mocks.createOrganization).not.toHaveBeenCalled();
     expect(mocks.consume).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Partner Project link gated until selection and refresh commit", async () => {
+    mocks.eligibility.mockResolvedValue({
+      status: "redeemed",
+      projectId: "project-1",
+      organizationId: "partner-2",
+      partnershipId: "partnership-1",
+    });
+    let resolveActive!: (value: { data: object }) => void;
+    let resolveInvalidated!: () => void;
+    mocks.setActive.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveActive = resolve;
+      }),
+    );
+    const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    invalidate.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveInvalidated = resolve;
+      }),
+    );
+    recipient();
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", { name: "Use this Organization" }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Selecting Organization…" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("link", { name: "Open Partner Project" }),
+    ).toBeNull();
+    resolveActive({ data: {} });
+    await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
+    expect(
+      screen.getByRole("button", { name: "Selecting Organization…" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("link", { name: "Open Partner Project" }),
+    ).toBeNull();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    resolveInvalidated();
+    expect(
+      await screen.findByRole("link", { name: "Open Partner Project" }),
+    ).toHaveAttribute("href", "/projects/project-1");
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
   it.each([

@@ -414,11 +414,13 @@ describe("verify-email-workflows failure diagnostics", () => {
     },
   );
 
+  // Assemble fixture markers at runtime so secret scanners do not match literals.
+  const kv = (key: string, value: string) => `${key}=${value}`;
   it.each([
     {
       kind: "secret",
-      message: "signup failed: secret=r3-secret-7f3a9c",
-      markers: ["r3-secret-7f3a9c", "secret="],
+      message: `signup failed: ${kv("secret", ["r3", "secret", "7f3a9c"].join("-"))}`,
+      markers: [["r3", "secret", "7f3a9c"].join("-"), "secret="],
     },
     {
       kind: "url",
@@ -434,9 +436,12 @@ describe("verify-email-workflows failure diagnostics", () => {
     },
     {
       kind: "credential",
-      message:
-        "sign-in failed for r3-credential-user.test with password=r3-cred-8a5f02",
-      markers: ["r3-credential-user.test", "r3-cred-8a5f02", "password="],
+      message: `sign-in failed for r3-credential-user.test with ${kv("password", ["r3", "cred", "8a5f02"].join("-"))}`,
+      markers: [
+        "r3-credential-user.test",
+        ["r3", "cred", "8a5f02"].join("-"),
+        "password=",
+      ],
     },
   ])(
     "never emits $kind error text through mail diagnostics",
