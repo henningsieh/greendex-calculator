@@ -7,8 +7,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { Aura } from "@/components/brand/aura";
+import {
+  StatCell,
+  StatDetail,
+  StatGrid,
+  StatLabel,
+  StatNumber,
+} from "@/components/brand/stat-grid";
+import {
+  TerminalCard,
+  TerminalDots,
+  TerminalStatus,
+} from "@/components/brand/terminal-card";
 import { SiteBrand } from "@/components/site-brand";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 const journeySteps = [
@@ -37,7 +53,8 @@ export default function LandingPage() {
     <main className="min-h-svh overflow-hidden">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between p-5 sm:px-8 lg:px-10">
         <SiteBrand />
-        <nav aria-label="Account" className="flex items-center gap-2">
+        <nav aria-label="Account" className="flex items-center gap-2 sm:gap-3">
+          <ThemeSwitcher />
           <Link
             className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
             href="/login"
@@ -56,30 +73,129 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <section className="mx-auto grid w-full max-w-7xl items-center gap-16 px-5 pt-14 pb-20 sm:px-8 sm:pt-20 lg:grid-cols-[1.04fr_0.96fr] lg:px-10 lg:pt-24 lg:pb-28">
-        <div className="max-w-2xl">
-          <h1 className="max-w-xl font-heading text-5xl font-semibold tracking-[-0.045em] text-balance sm:text-6xl lg:text-7xl">
-            Every journey cost, accounted for.
+      <section className="relative mx-auto grid w-full max-w-7xl items-center gap-16 px-5 pt-10 pb-20 sm:px-8 sm:pt-14 lg:grid-cols-[1.04fr_0.96fr] lg:px-10 lg:pt-16 lg:pb-28">
+        <Aura className="absolute -top-32 left-1/2 h-72 w-[720px] -translate-x-1/2" />
+        <div className="relative max-w-2xl">
+          <Badge variant="ember-pill">
+            <span
+              aria-hidden="true"
+              className="size-1.5 rounded-full bg-primary"
+            />
+            GreenEx Cost Tracker · Erasmus Edition
+          </Badge>
+          <h1 className="mt-6 type-ember-display">
+            Receipts in.{" "}
+            <span className="ember-headline-accent text-primary">Money out.</span>
           </h1>
           <p className="mt-7 max-w-xl text-lg/8 text-muted-foreground sm:text-xl">
-            Collect travel receipts, allocate shared costs, and keep every Project
-            Participant working from the same clear record.
+            Settle Erasmus travel costs without the spreadsheet struggle. Snap a
+            photo of the ticket, share the cost, file the claim — every number
+            stays traceable to its receipt.
           </p>
           <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
-              className={cn(buttonVariants({ size: "lg" }), "group")}
+              className={cn(buttonVariants({ size: "lg" }), "ember-cta group")}
               href="/register"
             >
               Start tracking costs
               <ArrowRightIcon data-icon="inline-end" />
             </Link>
-            <p className="text-sm text-muted-foreground">
-              Built for shared Project travel.
-            </p>
+            <Link
+              className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
+              href="#how-it-works"
+            >
+              See how it works
+            </Link>
           </div>
+          <p className="mt-5 font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase">
+            Free to start · No credit card · Demo data below
+          </p>
         </div>
 
         <JourneyLedger />
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
+        <StatGrid>
+          <StatCell hero>
+            <StatNumber>
+              515<span className="text-[32px] text-primary">€</span>
+            </StatNumber>
+            <StatLabel>Disbursed</StatLabel>
+            <StatDetail>calculated · not editable</StatDetail>
+          </StatCell>
+          <StatCell>
+            <StatNumber>
+              100<span className="text-[32px] text-primary">%</span>
+            </StatNumber>
+            <StatLabel>Documented</StatLabel>
+            <StatDetail>zero open gaps</StatDetail>
+          </StatCell>
+          <StatCell>
+            <StatNumber>
+              48<span className="text-[32px] text-primary">h</span>
+            </StatNumber>
+            <StatLabel>Avg. review time</StatLabel>
+            <StatDetail>hosting review</StatDetail>
+          </StatCell>
+        </StatGrid>
+      </section>
+
+      <section
+        className="mx-auto grid w-full max-w-7xl items-start gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:px-10 lg:py-28"
+        id="how-it-works"
+      >
+        <div>
+          <p className="type-ember-eyebrow">The process</p>
+          <h2 className="mt-4 max-w-md font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+            One claim. Zero follow-up questions.
+          </h2>
+          <p className="mt-5 max-w-prose leading-7 text-muted-foreground">
+            The workspace checks everything before you submit: payout account,
+            cost entries, receipt links, frozen funding rates. What is missing
+            shows up as a checklist — not as an email three weeks later.
+          </p>
+          <ol className="mt-8 grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-3">
+            <ProcessStep
+              description="Choose the project and enter the exact journey cost."
+              number="1"
+              title="Record"
+            />
+            <ProcessStep
+              description="Add receipts, invoices, or tickets as proof documents."
+              number="2"
+              title="Support"
+            />
+            <ProcessStep
+              description="Assign the cost to the participants it covered."
+              number="3"
+              title="Allocate"
+            />
+          </ol>
+        </div>
+        <TerminalCard className="p-5 lg:sticky lg:top-24">
+          <TerminalDots />
+          <div className="mt-4 flex flex-col gap-1">
+            <p>
+              <span className="text-primary">✓</span> Payout account · Green
+              Routes e.V.
+            </p>
+            <p>
+              <span className="text-primary">✓</span> Train · €428.60 · receipt
+              linked
+            </p>
+            <p>
+              <span className="text-primary">✓</span> Bus · €86.40 · receipt
+              linked
+            </p>
+            <p>
+              <span className="text-muted-foreground/70">◌</span> Local bus
+              tickets · upload open
+            </p>
+          </div>
+          <Separator className="my-4" />
+          <TerminalStatus>€515.00 ready for submission</TerminalStatus>
+        </TerminalCard>
       </section>
 
       <section className="border-y bg-card/60">
@@ -93,35 +209,29 @@ export default function LandingPage() {
             title="Group travel stays legible"
           />
           <ValuePoint
-            description="Hosting and Partner Organizations see one Project-specific record."
+            description="Hosting and Partner Organizations see one project-specific record."
             title="Partners stay aligned"
           />
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-7xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:px-10 lg:py-28">
-        <div>
-          <h2 className="max-w-md font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-            A straightforward path from ticket to total.
-          </h2>
+      <section className="mx-auto w-full max-w-7xl px-5 py-20 text-center sm:px-8 lg:px-10 lg:py-28">
+        <p className="type-ember-eyebrow">Free to start</p>
+        <h2 className="mx-auto mt-4 max-w-2xl font-heading text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+          Ready for your next claim?
+        </h2>
+        <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
+          Upload the photo. Share the cost. Get the money back.
+        </p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link
+            className={cn(buttonVariants({ size: "lg" }), "ember-cta group")}
+            href="/register"
+          >
+            Start tracking costs
+            <ArrowRightIcon data-icon="inline-end" />
+          </Link>
         </div>
-        <ol className="grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-3">
-          <ProcessStep
-            description="Choose the Project and enter the exact journey cost."
-            number="1"
-            title="Record"
-          />
-          <ProcessStep
-            description="Add receipts, invoices, or tickets as Proof Documents."
-            number="2"
-            title="Support"
-          />
-          <ProcessStep
-            description="Assign the cost to the Participants it covered."
-            number="3"
-            title="Allocate"
-          />
-        </ol>
       </section>
 
       <footer className="border-t">
