@@ -323,10 +323,10 @@ test.describe("Project Shared Travel Legs", () => {
           hasText: messages.project["shared-travel"].title,
         }),
       ).toBeVisible();
-    // Text-free: empty-state hook instead of i18n copy (title + description subsumed).
-    await expect(
-      page.locator('[data-testid="shared-travel-empty"]'),
-    ).toBeVisible();
+      // Text-free: empty-state hook instead of i18n copy (title + description subsumed).
+      await expect(
+        page.locator('[data-testid="shared-travel-empty"]'),
+      ).toBeVisible();
 
       await page.getByLabel(messages.project["shared-travel"].form.title).click();
       const dialog = page.getByRole("dialog");

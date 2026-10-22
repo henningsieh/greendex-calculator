@@ -413,6 +413,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       ).toBeVisible();
       await expect(
         x.getByRole("dialog", { name: "Create Organization" }),
+      ).toBeHidden();
+      await x.getByRole("button", { name: "Create Organization" }).click();
+      await expect(
+        x.getByRole("dialog", { name: "Create Organization" }),
       ).toBeVisible();
       await expect(
         x
@@ -628,12 +632,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(
       x.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
-    // The no-access screen auto-opens Create Organization; dismiss its portal
-    // before using the separate Sign out control.
-    await expect(
-      x.getByRole("dialog", { name: "Create Organization" }),
-    ).toBeVisible({ timeout: 90_000 });
-    await x.keyboard.press("Escape");
     await expect(
       x.getByRole("dialog", { name: "Create Organization" }),
     ).toBeHidden();
@@ -735,9 +733,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       .getByRole("button", { name: `Close registration link ${registrationId}` })
       .click();
     // Text-free: closing clears the transient link input (functional proof).
-    await expect(
-      p.getByLabel("New registration link (copy now)"),
-    ).toHaveCount(0);
+    await expect(p.getByLabel("New registration link (copy now)")).toHaveCount(0);
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(link);
     await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();

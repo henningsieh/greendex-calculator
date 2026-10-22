@@ -562,9 +562,7 @@ test.describe.serial("Claim review journey 25–26", () => {
   }) => {
     const host = await pageFor(browser, "H", baseURL!);
     await host.goto("/claims/review");
-    await expect(
-      host.locator('[data-testid="review-queue"]'),
-    ).toBeVisible();
+    await expect(host.locator('[data-testid="review-queue"]')).toBeVisible();
     const first = host.getByRole("link", {
       name: `${projectName} · ${partnerNames[0]}`,
     });
@@ -584,7 +582,9 @@ test.describe.serial("Claim review journey 25–26", () => {
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
     // Text-free: server-approved amount section renders (value proven by DB claimState below).
-    await expect(review.locator('[data-testid="approved-payable"]')).toBeVisible();
+    await expect(
+      review.locator('[data-testid="approved-payable"]'),
+    ).toBeVisible();
     const cost = review
       .getByRole("table", {
         name: "Exact totals, Cost Allocations and linked Proof Documents.",
@@ -597,14 +597,10 @@ test.describe.serial("Claim review journey 25–26", () => {
     // Text-free: the allocation share row for the participant renders in the
     // cost row pinned above by train + 100.00 cells (method detail subsumed).
     await expect(
-      cost.locator(
-        `[data-testid="allocation-share-${ids.participants[0]}"]`,
-      ),
+      cost.locator(`[data-testid="allocation-share-${ids.participants[0]}"]`),
     ).toBeVisible();
     // Text-free: proof document linked by stable document id (download proven below).
-    await expect(
-      review.locator(`a[href*="${ids.documents[0]}"]`),
-    ).toBeVisible();
+    await expect(review.locator(`a[href*="${ids.documents[0]}"]`)).toBeVisible();
     // Text-free: journey row for the participant renders (route detail subsumed by DB-seeded legs + allocation proof above).
     await expect(
       review.locator(`[data-testid="review-journey-${ids.participants[0]}"]`),
@@ -702,7 +698,9 @@ test.describe.serial("Claim review journey 25–26", () => {
       partner.getByRole("button", { name: "Confirm submission" }),
     ).toBeEnabled();
     await partner.getByRole("button", { name: "Confirm submission" }).click();
-    await expect(partner.locator('[data-draft-status="submitted"]')).toBeVisible();
+    await expect(
+      partner.locator('[data-draft-status="submitted"]'),
+    ).toBeVisible();
     await expect(
       partner.getByRole("button", { name: "Save correction" }),
     ).toHaveCount(0);
@@ -867,10 +865,10 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect((await claimState(1))!.status).toBe("submitted");
     const partner = await pageFor(browser, "F", baseURL!);
     await partner.goto(`/partnerships/${ids.partnerships[1]}/claim`);
-    await expect(partner.locator('[data-draft-status="submitted"]')).toBeVisible();
     await expect(
-      partner.locator('[data-testid="claim-locked"]'),
+      partner.locator('[data-draft-status="submitted"]'),
     ).toBeVisible();
+    await expect(partner.locator('[data-testid="claim-locked"]')).toBeVisible();
     await expect(partner.getByRole("button", { name: "Save cost" })).toHaveCount(
       0,
     );

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
+  listOrganizations: vi.fn(),
   redirect: vi.fn(() => {
     throw new Error("NEXT_REDIRECT:/login");
   }),
@@ -15,7 +16,12 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/lib/auth", () => ({
-  auth: { api: { getSession: mocks.getSession } },
+  auth: {
+    api: {
+      getSession: mocks.getSession,
+      listOrganizations: mocks.listOrganizations,
+    },
+  },
 }));
 
 import {
@@ -23,12 +29,38 @@ import {
   safeSignInReturnTo,
   setupLinkReturnTo,
   requireSession,
+  hasOrganizationMembership,
 } from "@/lib/session";
 
 describe("Cost Tracker protected session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  it("enforces the page-level login redirect before reading Organizations", async () => {
+    mocks.getSession.mockResolvedValue(null);
+    await expect(hasOrganizationMembership()).rejects.toThrow(
+      "NEXT_REDIRECT:/login",
+    );
+    expect(mocks.listOrganizations).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [null, [], false],
+    [null, [{ id: "org-a" }], false],
+    ["org-deleted", [{ id: "org-a" }], false],
+    ["org-a", [{ id: "org-a" }], true],
+  ])(
+    "allows page content only for a current active Membership (%s)",
+    async (activeOrganizationId, organizations, expected) => {
+      mocks.getSession.mockResolvedValue({
+        session: { activeOrganizationId },
+        user: { id: "user-1" },
+      });
+      mocks.listOrganizations.mockResolvedValue(organizations);
+      await expect(hasOrganizationMembership()).resolves.toBe(expected);
+    },
+  );
 
   it("redirects an unauthenticated request to login", async () => {
     mocks.getSession.mockResolvedValue(null);

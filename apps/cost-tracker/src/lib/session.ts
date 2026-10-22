@@ -55,9 +55,13 @@ export async function requireSession(returnTo?: string) {
 }
 
 export const hasOrganizationMembership = cache(async () => {
+  const session = await requireSession();
+  const activeOrganizationId = session.session.activeOrganizationId;
+  if (!activeOrganizationId) return false;
+
   const organizations = await auth.api.listOrganizations({
     headers: await headers(),
   });
 
-  return organizations.length > 0;
+  return organizations.some(({ id }) => id === activeOrganizationId);
 });

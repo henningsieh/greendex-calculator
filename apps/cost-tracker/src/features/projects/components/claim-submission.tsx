@@ -76,7 +76,11 @@ export function ClaimSubmission({
         <CardTitle as="h2">Submission</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ul aria-label="Submission checklist" data-testid="submission-checklist" className="space-y-3">
+        <ul
+          aria-label="Submission checklist"
+          data-testid="submission-checklist"
+          className="space-y-3"
+        >
           {preview.items.map((item) => (
             <li key={item.key}>
               <p>

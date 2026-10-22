@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   connection: vi.fn().mockResolvedValue(undefined),
-  requireSession: vi.fn(),
+  getSession: vi.fn(),
   listMemberships: vi.fn(),
   canManageOrganization: vi.fn(),
   canViewPartnerNetwork: vi.fn(),
@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next/server", () => ({ connection: mocks.connection }));
 
 vi.mock("@/lib/session", () => ({
-  requireSession: mocks.requireSession,
+  getSession: mocks.getSession,
 }));
 
 vi.mock("@/lib/orpc/orpc", () => ({
@@ -93,7 +93,7 @@ describe("ProtectedLayout Organization context", () => {
   });
 
   it("offers creation recovery without Memberships", async () => {
-    mocks.requireSession.mockResolvedValue(session(null));
+    mocks.getSession.mockResolvedValue(session(null));
     mocks.listMemberships.mockResolvedValue([]);
 
     const html = renderToStaticMarkup(
@@ -102,14 +102,14 @@ describe("ProtectedLayout Organization context", () => {
 
     expect(mocks.connection).toHaveBeenCalledOnce();
     expect(mocks.connection.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.requireSession.mock.invocationCallOrder[0],
+      mocks.getSession.mock.invocationCallOrder[0],
     );
     expect(html).toContain("Create Organization recovery");
-    expect(html).not.toContain("child");
+    expect(html).toContain("child");
   });
 
   it("offers selection recovery for stale active context", async () => {
-    mocks.requireSession.mockResolvedValue(session("org-deleted"));
+    mocks.getSession.mockResolvedValue(session("org-deleted"));
     mocks.listMemberships.mockResolvedValue([ownerMembership]);
 
     const html = renderToStaticMarkup(
@@ -117,11 +117,11 @@ describe("ProtectedLayout Organization context", () => {
     );
 
     expect(html).toContain("Select Organization recovery");
-    expect(html).not.toContain("child");
+    expect(html).toContain("child");
   });
 
   it("renders the staff shell with a switcher for staff Memberships", async () => {
-    mocks.requireSession.mockResolvedValue(session("org-a"));
+    mocks.getSession.mockResolvedValue(session("org-a"));
     mocks.listMemberships.mockResolvedValue([
       ownerMembership,
       participantMembership,
@@ -138,7 +138,7 @@ describe("ProtectedLayout Organization context", () => {
   });
 
   it("renders the staff shell without a switcher for pure Participants", async () => {
-    mocks.requireSession.mockResolvedValue(session("org-b"));
+    mocks.getSession.mockResolvedValue(session("org-b"));
     mocks.listMemberships.mockResolvedValue([participantMembership]);
 
     const html = renderToStaticMarkup(
@@ -152,7 +152,7 @@ describe("ProtectedLayout Organization context", () => {
 it("streams neutral chrome before the session gate resolves", async () => {
   vi.clearAllMocks();
   let resolveSession!: (value: ReturnType<typeof session>) => void;
-  mocks.requireSession.mockReturnValue(
+  mocks.getSession.mockReturnValue(
     new Promise((resolve) => {
       resolveSession = resolve;
     }),
@@ -193,12 +193,12 @@ it("streams neutral chrome before the session gate resolves", async () => {
   expect(html).toContain('data-partner-network="false"');
 });
 
-it("preserves the server-side session redirect without reading Memberships", async () => {
+it("renders the signed-out child segment so its page can enforce authentication", async () => {
   vi.clearAllMocks();
-  const redirect = new Error("NEXT_REDIRECT");
-  mocks.requireSession.mockRejectedValue(redirect);
-  await expect(ProtectedShell({ children: <p>Private child</p> })).rejects.toBe(
-    redirect,
+  mocks.getSession.mockResolvedValue(null);
+  const html = renderToStaticMarkup(
+    await ProtectedShell({ children: <p>Page guard</p> }),
   );
+  expect(html).toContain("Page guard");
   expect(mocks.listMemberships).not.toHaveBeenCalled();
 });

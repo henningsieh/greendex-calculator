@@ -45,12 +45,12 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
       if (isSignIn) {
         await orpc.authentication.signIn({ email, password });
       } else {
-        await orpc.authentication.signUp({ name, email, password });
+        await orpc.authentication.signUp({ name, email, password, returnTo });
       }
 
       if (!isSignIn) {
         setVerificationMessage(
-          "Check your inbox to verify your email, then return here to sign in.",
+          "Check your inbox. The verification link will sign you in and take you back to Cost Tracker.",
         );
         return;
       }
@@ -138,7 +138,9 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
             )}
           </Field>
 
-          {error && <FieldError data-testid="auth-form-error">{error}</FieldError>}
+          {error && (
+            <FieldError data-testid="auth-form-error">{error}</FieldError>
+          )}
           {verificationMessage && (
             <output
               className="rounded-xl bg-secondary px-4 py-3 text-sm/6 text-secondary-foreground"

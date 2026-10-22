@@ -139,9 +139,7 @@ async function pageFor(browser: Browser, actor: "H" | "P", baseURL: string) {
 
 async function submissionState(page: Page) {
   await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
-  await expect(
-    page.locator('[data-testid="claim-locked"]'),
-  ).toBeVisible();
+  await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
   await expect(
     page.getByRole("button", {
       name: /Submit Claim|Save cost|Save journey|Save Claim draft/,
@@ -471,7 +469,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     const readiness = h
       .getByRole("listitem")
       .filter({ hasText: `CT ${suffix} Partner` });
-    await expect(readiness.locator('[data-claim-status="submitted"]')).toBeVisible();
+    await expect(
+      readiness.locator('[data-claim-status="submitted"]'),
+    ).toBeVisible();
     await h
       .getByRole("link", { name: "Review submitted Claims", exact: true })
       .click();
@@ -518,9 +518,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await approved();
     await h.goBack();
     await expect(h).toHaveURL("/claims/review");
-    await expect(
-      h.locator('[data-testid="review-queue-empty"]'),
-    ).toBeVisible();
+    await expect(h.locator('[data-testid="review-queue-empty"]')).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(`/projects/${ids.project}`);
     await expect(
@@ -531,21 +529,15 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     ).toBeVisible();
     await h.goForward();
     await expect(h).toHaveURL("/claims/review");
-    await expect(
-      h.locator('[data-testid="review-queue-empty"]'),
-    ).toBeVisible();
+    await expect(h.locator('[data-testid="review-queue-empty"]')).toBeVisible();
     await h.goForward();
     await approved();
     await h.reload();
     await approved();
     const p = await pageFor(browser, "P", baseURL!);
     await p.goto(claimURL);
-    await expect(
-      p.locator('[data-draft-status="approved"]'),
-    ).toBeVisible();
-    await expect(
-      p.locator('[data-testid="claim-locked"]'),
-    ).toBeVisible();
+    await expect(p.locator('[data-draft-status="approved"]')).toBeVisible();
+    await expect(p.locator('[data-testid="claim-locked"]')).toBeVisible();
     await expect(
       p.getByRole("button", {
         name: /Save cost|Save journey|Save Claim draft|Submit Claim/,

@@ -1,260 +1,980 @@
 <!doctype html>
 <html lang="de">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Claim prüfen — GreenEx Cost Tracker</title>
-<meta name="description" content="Hosting-Review: Claim prüfen, Belege sichten, freigeben." />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<style>
-:root{
-  --bg:#0e0a14;--ink:#f7f2e9;--muted:#b3a8c4;--faint:#7c7192;
-  --fire:#ffb800;--fire-hot:#ffcc33;--line:rgba(255,255,255,.1);
-  --card:rgba(255,255,255,.02);--band:#080510;--on-fire:#1c1200;
-  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
-  --sans:"Inter",system-ui,-apple-system,sans-serif;
-  --ease-out:cubic-bezier(0.23,1,0.32,1);
-}
-body[data-vibe=midnight]{--bg:#0a1230;--muted:#9dacc9;--faint:#6b7a99;--line:rgba(147,180,255,.13)}
-body[data-vibe=violet]{--bg:#130b26;--muted:#b8a9d4;--faint:#7e6f9c;--line:rgba(200,170,255,.12)}
-body[data-vibe=abyss]{--bg:#070a16;--muted:#98a0b8;--faint:#5d6478;--line:rgba(255,255,255,.09)}
-body[data-vibe=royal]{--bg:#0b1642;--muted:#a3b2d8;--faint:#6f7ea8;--line:rgba(147,180,255,.15)}
-*{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;transition:background 300ms var(--ease-out);font-size:15px}
-::selection{background:var(--fire);color:var(--on-fire)}
-.wrap{max-width:1180px;margin:0 auto;padding:0 48px 40px}
-/* header */
-.top{position:sticky;top:0;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:14px 0;
-  background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.logo{display:flex;align-items:center;gap:12px}
-.logo .word{font-size:19px;font-weight:800;letter-spacing:-.01em}
-.logo .word em{display:block;font-style:normal;font-family:var(--mono);font-weight:500;font-size:11px;letter-spacing:.18em;color:var(--muted);margin-top:3px}
-.hact{display:flex;align-items:center;gap:10px}
-.orgbadge{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:999px;padding:9px 16px;
-  font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
-.orgbadge i{width:9px;height:9px;border-radius:50%;background:var(--fire)}
-.avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.05);color:var(--ink);font-weight:700;font-size:13px;
-  display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
-.theme-drop{position:relative}
-.theme-btn{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink);
-  background:transparent;border:1px solid var(--line);border-radius:999px;padding:10px 16px;cursor:pointer;text-transform:uppercase}
-.theme-btn:hover{border-color:rgba(255,184,0,.4)}
-.theme-btn .pal{width:12px;height:12px;border-radius:50%;background:var(--fire);box-shadow:0 0 8px var(--fire)}
-.theme-btn .chev{color:var(--muted);font-size:10px}
-.theme-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:248px;background:color-mix(in srgb,var(--bg) 94%,#000);
-  border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:0 24px 70px rgba(0,0,0,.55);z-index:60}
-.theme-cap{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);padding:10px 12px 6px;text-transform:uppercase}
-.theme-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-size:14px;font-weight:500;color:var(--ink);
-  background:transparent;border:none;border-radius:9px;padding:10px 12px;cursor:pointer}
-.theme-menu button:hover{background:rgba(255,255,255,.06)}
-.theme-menu button i{width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.25);flex-shrink:0}
-.theme-menu button .tk{margin-left:auto;color:var(--fire);font-family:var(--mono);font-weight:600;visibility:hidden}
-.theme-menu button[aria-checked="true"] .tk{visibility:visible}
-/* claim band */
-.band{margin:22px 0 0;border:1px solid var(--line);border-left:3px solid var(--fire);border-radius:16px;background:var(--band);
-  padding:26px 30px;display:flex;flex-wrap:wrap;gap:18px 34px;align-items:center;justify-content:space-between}
-.band .id{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--fire)}
-.band h1{font-size:clamp(24px,3vw,32px);font-weight:800;letter-spacing:-.02em;margin-top:8px}
-.band .meta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px}
-.status{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
-  border:1px solid rgba(255,184,0,.45);color:var(--fire);border-radius:999px;padding:9px 18px}
-.status i{width:8px;height:8px;border-radius:50%;background:var(--fire)}
-.amt{text-align:right}
-.amt .n{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.amt small{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;margin-top:4px}
-/* layout */
-.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:16px;align-items:start}
-.card{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
-.card-h{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
-.card-h h2{font-size:15px;font-weight:700}
-.card-h .mono{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.1em}
-/* table */
-table{width:100%;border-collapse:collapse;font-size:14px}
-th{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--faint);text-align:left;padding:12px 22px;border-bottom:1px solid var(--line);font-weight:500}
-td{padding:15px 22px;border-bottom:1px solid var(--line);vertical-align:top}
-tr:last-child td{border-bottom:none}
-td .t{font-weight:600}
-td small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
-td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;border:1px solid var(--line);
-  border-radius:999px;padding:4px 12px;color:var(--muted);margin-top:8px}
-.pill.ok{border-color:rgba(255,184,0,.4);color:var(--fire)}
-.pill.warn{border-color:rgba(255,120,80,.5);color:#ff9d7a}
-/* docs */
-.doc{display:flex;gap:14px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);font-size:14px}
-.doc:last-child{border-bottom:none}
-.doc .fi{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.doc small{display:block;color:var(--muted);font-size:12px;font-family:var(--mono);margin-top:2px}
-.doc a{margin-left:auto;font-size:13px;color:var(--fire);text-decoration:none;white-space:nowrap}
-.doc a:hover{text-decoration:underline}
-/* checklist */
-.chk{display:flex;gap:12px;align-items:flex-start;padding:13px 22px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
-.chk:last-child{border-bottom:none}
-.chk input{accent-color:var(--fire);width:16px;height:16px;margin-top:2px;flex-shrink:0}
-.chk small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
-.chk.done .t{color:var(--muted);text-decoration:line-through}
-/* payout */
-.pay{padding:18px 22px;font-size:14px}
-.pay .row{display:flex;justify-content:space-between;padding:7px 0}
-.pay .row span:first-child{color:var(--muted)}
-.pay .row span:last-child{font-variant-numeric:tabular-nums}
-/* decision */
-.dec{padding:20px 22px}
-.dec label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--faint);display:block;margin-bottom:10px}
-.dec textarea{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;color:var(--ink);
-  font-family:var(--sans);font-size:14px;padding:12px 14px;min-height:76px;resize:vertical}
-.dec textarea:focus{outline:2px solid var(--fire);outline-offset:1px}
-.btnrow{display:flex;gap:10px;margin-top:14px}
-.btn{flex:1;border:none;border-radius:999px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:transform 150ms var(--ease-out)}
-.btn:active{transform:scale(.98)}
-.btn.primary{background:var(--fire);color:var(--on-fire)}
-.btn.primary:hover{background:var(--fire-hot)}
-.btn.primary:disabled{opacity:.45;cursor:not-allowed}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.btn.ghost:hover{border-color:rgba(255,184,0,.4)}
-.note{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:12px;letter-spacing:.06em}
-.toast{display:none;margin-top:14px;border:1px solid rgba(255,184,0,.45);border-radius:12px;padding:13px 16px;font-size:13.5px;color:var(--fire)}
-.toast.show{display:block}
-/* footer */
-.meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--faint);margin-top:34px;border-top:1px solid var(--line);padding:18px 0 26px}
-/* switcher */
-.switcher{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;
-  background:color-mix(in srgb,var(--bg) 88%,#000);border:1px solid var(--line);border-radius:999px;padding:8px 10px;z-index:50}
-.sw-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);padding:0 8px 0 10px}
-.switcher button{font-family:var(--mono);font-size:11px;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:8px 14px;cursor:pointer}
-.switcher button.on{color:var(--on-fire);background:var(--fire);font-weight:600}
-.notrans *{transition:none!important}
-@media(max-width:900px){.grid{grid-template-columns:1fr}.orgbadge{display:none}}
-@media(max-width:760px){.wrap{padding:0 18px 100px}.band{padding:20px}.amt{text-align:left}}
-</style>
-</head>
-<body>
-<div class="switcher" role="group" aria-label="Hintergrund-Variante">
-  <span class="sw-label">VIBE</span>
-  <button data-vibe="plum" class="on">Plum</button>
-  <button data-vibe="midnight">Midnight</button>
-  <button data-vibe="violet">Violet</button>
-  <button data-vibe="abyss">Abyss</button>
-  <button data-vibe="royal">Royal</button>
-</div>
-<div class="wrap">
-  <header class="top">
-    <div class="logo"><svg width="34" height="34" viewBox="0 0 80 80" aria-hidden="true"><circle cx="66" cy="40" r="5" fill="#FFB800"/><circle cx="62.5" cy="53" r="5" fill="#FFB800"/><circle cx="53" cy="62.5" r="5" fill="#FFB800"/><circle cx="40" cy="66" r="5" fill="#FFB800"/><circle cx="27" cy="62.5" r="5" fill="#FFB800"/><circle cx="17.5" cy="53" r="5" fill="#FFB800"/><circle cx="14" cy="40" r="5" fill="#FFB800"/><circle cx="17.5" cy="27" r="5" fill="#FFB800"/><circle cx="27" cy="17.5" r="5" fill="#FFB800"/><circle cx="40" cy="14" r="5" fill="#FFB800"/><circle cx="53" cy="17.5" r="5" fill="#FFB800"/><circle cx="62.5" cy="27" r="5" fill="#FFB800"/></svg><span class="word">GreenEx<em>COST TRACKER</em></span></div>
-    <div class="hact">
-      <span class="orgbadge"><i></i>Hosting · Green Routes e.V.</span>
-      <div class="theme-drop">
-        <button class="theme-btn" id="themeBtn" aria-haspopup="true" aria-expanded="false"><span class="pal" aria-hidden="true"></span><span id="themeLabel">Violet</span><span class="chev" aria-hidden="true">▾</span></button>
-        <div class="theme-menu" id="themeMenu" role="menu" hidden>
-          <div class="theme-cap">Farbvariante</div>
-          <button data-vibe-h="plum" role="menuitemradio"><i style="background:#0E0A14"></i>Plum<span class="tk">✓</span></button>
-          <button data-vibe-h="midnight" role="menuitemradio"><i style="background:#0A1230"></i>Midnight<span class="tk">✓</span></button>
-          <button data-vibe-h="violet" role="menuitemradio"><i style="background:#130B26"></i>Violet<span class="tk">✓</span></button>
-          <button data-vibe-h="abyss" role="menuitemradio"><i style="background:#070A16"></i>Abyss<span class="tk">✓</span></button>
-          <button data-vibe-h="royal" role="menuitemradio"><i style="background:#0B1642"></i>Royal<span class="tk">✓</span></button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claim prüfen — GreenEx Cost Tracker</title>
+    <meta
+      name="description"
+      content="Hosting-Review: Claim prüfen, Belege sichten, freigeben."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0e0a14;
+        --ink: #f7f2e9;
+        --muted: #b3a8c4;
+        --faint: #7c7192;
+        --fire: #ffb800;
+        --fire-hot: #ffcc33;
+        --line: rgba(255, 255, 255, 0.1);
+        --card: rgba(255, 255, 255, 0.02);
+        --band: #080510;
+        --on-fire: #1c1200;
+        --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+        --sans: "Inter", system-ui, -apple-system, sans-serif;
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      body[data-vibe="midnight"] {
+        --bg: #0a1230;
+        --muted: #9dacc9;
+        --faint: #6b7a99;
+        --line: rgba(147, 180, 255, 0.13);
+      }
+      body[data-vibe="violet"] {
+        --bg: #130b26;
+        --muted: #b8a9d4;
+        --faint: #7e6f9c;
+        --line: rgba(200, 170, 255, 0.12);
+      }
+      body[data-vibe="abyss"] {
+        --bg: #070a16;
+        --muted: #98a0b8;
+        --faint: #5d6478;
+        --line: rgba(255, 255, 255, 0.09);
+      }
+      body[data-vibe="royal"] {
+        --bg: #0b1642;
+        --muted: #a3b2d8;
+        --faint: #6f7ea8;
+        --line: rgba(147, 180, 255, 0.15);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        transition: background 300ms var(--ease-out);
+        font-size: 15px;
+      }
+      ::selection {
+        background: var(--fire);
+        color: var(--on-fire);
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 48px 40px;
+      }
+      /* header */
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 0;
+        background: color-mix(in srgb, var(--bg) 86%, transparent);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo .word {
+        font-size: 19px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .logo .word em {
+        display: block;
+        font-style: normal;
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .hact {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .orgbadge {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 9px 16px;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .orgbadge i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--fire);
+      }
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--ink);
+        font-weight: 700;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+      }
+      .theme-drop {
+        position: relative;
+      }
+      .theme-btn {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        color: var(--ink);
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 10px 16px;
+        cursor: pointer;
+        text-transform: uppercase;
+      }
+      .theme-btn:hover {
+        border-color: rgba(255, 184, 0, 0.4);
+      }
+      .theme-btn .pal {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--fire);
+        box-shadow: 0 0 8px var(--fire);
+      }
+      .theme-btn .chev {
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .theme-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 248px;
+        background: color-mix(in srgb, var(--bg) 94%, #000);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 8px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+        z-index: 60;
+      }
+      .theme-cap {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        color: var(--faint);
+        padding: 10px 12px 6px;
+        text-transform: uppercase;
+      }
+      .theme-menu button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        text-align: left;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink);
+        background: transparent;
+        border: none;
+        border-radius: 9px;
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+      .theme-menu button:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .theme-menu button i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        flex-shrink: 0;
+      }
+      .theme-menu button .tk {
+        margin-left: auto;
+        color: var(--fire);
+        font-family: var(--mono);
+        font-weight: 600;
+        visibility: hidden;
+      }
+      .theme-menu button[aria-checked="true"] .tk {
+        visibility: visible;
+      }
+      /* claim band */
+      .band {
+        margin: 22px 0 0;
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--fire);
+        border-radius: 16px;
+        background: var(--band);
+        padding: 26px 30px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px 34px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .band .id {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--fire);
+      }
+      .band h1 {
+        font-size: clamp(24px, 3vw, 32px);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-top: 8px;
+      }
+      .band .meta {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        border: 1px solid rgba(255, 184, 0, 0.45);
+        color: var(--fire);
+        border-radius: 999px;
+        padding: 9px 18px;
+      }
+      .status i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--fire);
+      }
+      .amt {
+        text-align: right;
+      }
+      .amt .n {
+        font-size: 34px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+      }
+      .amt small {
+        display: block;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        margin-top: 4px;
+      }
+      /* layout */
+      .grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+        align-items: start;
+      }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        overflow: hidden;
+      }
+      .card-h {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--line);
+      }
+      .card-h h2 {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .card-h .mono {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--faint);
+        letter-spacing: 0.1em;
+      }
+      /* table */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.14em;
+        color: var(--faint);
+        text-align: left;
+        padding: 12px 22px;
+        border-bottom: 1px solid var(--line);
+        font-weight: 500;
+      }
+      td {
+        padding: 15px 22px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      td .t {
+        font-weight: 600;
+      }
+      td small {
+        display: block;
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 3px;
+      }
+      td.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .pill {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .pill.ok {
+        border-color: rgba(255, 184, 0, 0.4);
+        color: var(--fire);
+      }
+      .pill.warn {
+        border-color: rgba(255, 120, 80, 0.5);
+        color: #ff9d7a;
+      }
+      /* docs */
+      .doc {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        padding: 14px 22px;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+      }
+      .doc:last-child {
+        border-bottom: none;
+      }
+      .doc .fi {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .doc small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-family: var(--mono);
+        margin-top: 2px;
+      }
+      .doc a {
+        margin-left: auto;
+        font-size: 13px;
+        color: var(--fire);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .doc a:hover {
+        text-decoration: underline;
+      }
+      /* checklist */
+      .chk {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 13px 22px;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .chk:last-child {
+        border-bottom: none;
+      }
+      .chk input {
+        accent-color: var(--fire);
+        width: 16px;
+        height: 16px;
+        margin-top: 2px;
+        flex-shrink: 0;
+      }
+      .chk small {
+        display: block;
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 2px;
+      }
+      .chk.done .t {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+      /* payout */
+      .pay {
+        padding: 18px 22px;
+        font-size: 14px;
+      }
+      .pay .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 7px 0;
+      }
+      .pay .row span:first-child {
+        color: var(--muted);
+      }
+      .pay .row span:last-child {
+        font-variant-numeric: tabular-nums;
+      }
+      /* decision */
+      .dec {
+        padding: 20px 22px;
+      }
+      .dec label {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        color: var(--faint);
+        display: block;
+        margin-bottom: 10px;
+      }
+      .dec textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 14px;
+        padding: 12px 14px;
+        min-height: 76px;
+        resize: vertical;
+      }
+      .dec textarea:focus {
+        outline: 2px solid var(--fire);
+        outline-offset: 1px;
+      }
+      .btnrow {
+        display: flex;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .btn {
+        flex: 1;
+        border: none;
+        border-radius: 999px;
+        padding: 14px 20px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: var(--sans);
+        transition: transform 150ms var(--ease-out);
+      }
+      .btn:active {
+        transform: scale(0.98);
+      }
+      .btn.primary {
+        background: var(--fire);
+        color: var(--on-fire);
+      }
+      .btn.primary:hover {
+        background: var(--fire-hot);
+      }
+      .btn.primary:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .btn.ghost:hover {
+        border-color: rgba(255, 184, 0, 0.4);
+      }
+      .note {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--faint);
+        margin-top: 12px;
+        letter-spacing: 0.06em;
+      }
+      .toast {
+        display: none;
+        margin-top: 14px;
+        border: 1px solid rgba(255, 184, 0, 0.45);
+        border-radius: 12px;
+        padding: 13px 16px;
+        font-size: 13.5px;
+        color: var(--fire);
+      }
+      .toast.show {
+        display: block;
+      }
+      /* footer */
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        color: var(--faint);
+        margin-top: 34px;
+        border-top: 1px solid var(--line);
+        padding: 18px 0 26px;
+      }
+      /* switcher */
+      .switcher {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        background: color-mix(in srgb, var(--bg) 88%, #000);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 10px;
+        z-index: 50;
+      }
+      .sw-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        color: var(--faint);
+        padding: 0 8px 0 10px;
+      }
+      .switcher button {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+      .switcher button.on {
+        color: var(--on-fire);
+        background: var(--fire);
+        font-weight: 600;
+      }
+      .notrans * {
+        transition: none !important;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .orgbadge {
+          display: none;
+        }
+      }
+      @media (max-width: 760px) {
+        .wrap {
+          padding: 0 18px 100px;
+        }
+        .band {
+          padding: 20px;
+        }
+        .amt {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="switcher" role="group" aria-label="Hintergrund-Variante">
+      <span class="sw-label">VIBE</span>
+      <button data-vibe="plum" class="on">Plum</button>
+      <button data-vibe="midnight">Midnight</button>
+      <button data-vibe="violet">Violet</button>
+      <button data-vibe="abyss">Abyss</button>
+      <button data-vibe="royal">Royal</button>
+    </div>
+    <div class="wrap">
+      <header class="top">
+        <div class="logo">
+          <svg width="34" height="34" viewBox="0 0 80 80" aria-hidden="true">
+            <circle cx="66" cy="40" r="5" fill="#FFB800" />
+            <circle cx="62.5" cy="53" r="5" fill="#FFB800" />
+            <circle cx="53" cy="62.5" r="5" fill="#FFB800" />
+            <circle cx="40" cy="66" r="5" fill="#FFB800" />
+            <circle cx="27" cy="62.5" r="5" fill="#FFB800" />
+            <circle cx="17.5" cy="53" r="5" fill="#FFB800" />
+            <circle cx="14" cy="40" r="5" fill="#FFB800" />
+            <circle cx="17.5" cy="27" r="5" fill="#FFB800" />
+            <circle cx="27" cy="17.5" r="5" fill="#FFB800" />
+            <circle cx="40" cy="14" r="5" fill="#FFB800" />
+            <circle cx="53" cy="17.5" r="5" fill="#FFB800" />
+            <circle cx="62.5" cy="27" r="5" fill="#FFB800" /></svg
+          ><span class="word">GreenEx<em>COST TRACKER</em></span>
+        </div>
+        <div class="hact">
+          <span class="orgbadge"><i></i>Hosting · Green Routes e.V.</span>
+          <div class="theme-drop">
+            <button
+              class="theme-btn"
+              id="themeBtn"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              <span class="pal" aria-hidden="true"></span
+              ><span id="themeLabel">Violet</span
+              ><span class="chev" aria-hidden="true">▾</span>
+            </button>
+            <div class="theme-menu" id="themeMenu" role="menu" hidden>
+              <div class="theme-cap">Farbvariante</div>
+              <button data-vibe-h="plum" role="menuitemradio">
+                <i style="background: #0e0a14"></i>Plum<span class="tk">✓</span>
+              </button>
+              <button data-vibe-h="midnight" role="menuitemradio">
+                <i style="background: #0a1230"></i>Midnight<span class="tk"
+                  >✓</span
+                >
+              </button>
+              <button data-vibe-h="violet" role="menuitemradio">
+                <i style="background: #130b26"></i>Violet<span class="tk">✓</span>
+              </button>
+              <button data-vibe-h="abyss" role="menuitemradio">
+                <i style="background: #070a16"></i>Abyss<span class="tk">✓</span>
+              </button>
+              <button data-vibe-h="royal" role="menuitemradio">
+                <i style="background: #0b1642"></i>Royal<span class="tk">✓</span>
+              </button>
+            </div>
+          </div>
+          <span class="avatar" title="M. Weber · Hosting-Review">MW</span>
+        </div>
+      </header>
+
+      <section class="band">
+        <div>
+          <div class="id">CLAIM #CT-2026-041 · SPRING WORKSHOP</div>
+          <h1>Zug &amp; Bus · Berlin → Brüssel</h1>
+          <div class="meta">
+            Eingereicht von Projekt Nordlicht · 14.10.2026 · 2 Teilnahmen
+          </div>
+        </div>
+        <div
+          style="display: flex; gap: 22px; align-items: center; flex-wrap: wrap"
+        >
+          <span class="status"><i></i>Zur Prüfung</span>
+          <div class="amt">
+            <div class="n">515,00&nbsp;€</div>
+            <small>BEANTRAGTE SUMME</small>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid">
+        <div
+          style="display: flex; flex-direction: column; gap: 18px; min-width: 0"
+        >
+          <section class="card">
+            <div class="card-h">
+              <h2>Kostenposten</h2>
+              <span class="mono">3 POSTEN · 2 BELEGT</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Posten</th>
+                  <th>Aufteilung</th>
+                  <th style="text-align: right">Betrag</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <span class="t">Zug · BER → BRU</span
+                    ><small>428,60 € · bahn-ticket.pdf</small
+                    ><span class="pill ok">✓ Belegt</span>
+                  </td>
+                  <td>Equal Share · 2 Pers.<small>je 214,30 €</small></td>
+                  <td class="num">428,60&nbsp;€</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="t">Bus · Stadtverkehr</span
+                    ><small>86,40 € · bus-qrcode.png</small
+                    ><span class="pill ok">✓ Belegt</span>
+                  </td>
+                  <td>Equal Share · 2 Pers.<small>je 43,20 €</small></td>
+                  <td class="num">86,40&nbsp;€</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="t">Bustickets lokal</span
+                    ><small>Noch kein Beleg verknüpft</small
+                    ><span class="pill warn">◌ Offen</span>
+                  </td>
+                  <td>—</td>
+                  <td class="num">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="card">
+            <div class="card-h">
+              <h2>Belege</h2>
+              <span class="mono">3 DOKUMENTE</span>
+            </div>
+            <div class="doc">
+              <span class="fi">🎫</span>
+              <div>
+                bahn-ticket.pdf<small>PDF · 214 KB · HOCHGELADEN 12.10.</small>
+              </div>
+              <a href="#">Ansehen</a>
+            </div>
+            <div class="doc">
+              <span class="fi">📱</span>
+              <div>
+                bus-qrcode.png<small>PNG · 88 KB · HOCHGELADEN 12.10.</small>
+              </div>
+              <a href="#">Ansehen</a>
+            </div>
+            <div class="doc">
+              <span class="fi">🧾</span>
+              <div>Bustickets lokal<small>FEHLT · FOTO GENÜGT</small></div>
+              <a href="#">Anfordern</a>
+            </div>
+          </section>
+        </div>
+        <div
+          style="display: flex; flex-direction: column; gap: 18px; min-width: 0"
+        >
+          <section class="card">
+            <div class="card-h">
+              <h2>Prüf-Checkliste</h2>
+              <span class="mono" id="chkCount">3 / 4</span>
+            </div>
+            <label class="chk done"
+              ><input type="checkbox" checked disabled />
+              <div>
+                <span class="t">Auszahlungskonto verknüpft</span
+                ><small>Green Routes e.V. · IBAN •••• 4412</small>
+              </div></label
+            >
+            <label class="chk done"
+              ><input type="checkbox" checked disabled />
+              <div>
+                <span class="t">Fördersätze eingefroren</span
+                ><small>Entfernungspauschale 2026 · Stand 14.10.</small>
+              </div></label
+            >
+            <label class="chk" data-open
+              ><input type="checkbox" />
+              <div>
+                <span class="t">Alle Posten belegt</span
+                ><small>Bustickets lokal fehlt — Foto genügt.</small>
+              </div></label
+            >
+            <label class="chk done"
+              ><input type="checkbox" checked disabled />
+              <div>
+                <span class="t">Aufteilung plausibel</span
+                ><small>Equal Share · 2 Teilnahmen bestätigt</small>
+              </div></label
+            >
+          </section>
+          <section class="card">
+            <div class="card-h"><h2>Auszahlung</h2></div>
+            <div class="pay">
+              <div class="row">
+                <span>Empfänger</span><span>Projekt Nordlicht</span>
+              </div>
+              <div class="row"><span>Konto</span><span>•••• 4412</span></div>
+              <div class="row">
+                <span>Summe</span><span><b>515,00&nbsp;€</b></span>
+              </div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-h">
+              <h2>Entscheidung</h2>
+              <span class="mono">HOSTING-REVIEW</span>
+            </div>
+            <div class="dec">
+              <label for="note">ANMERKUNG (OPTIONAL)</label>
+              <textarea
+                id="note"
+                placeholder="z. B. Bustickets bitte nachreichen …"
+              ></textarea>
+              <div class="btnrow">
+                <button class="btn primary" id="approve" disabled>
+                  Freigeben
+                </button>
+                <button class="btn ghost" id="askback">Rückfrage</button>
+              </div>
+              <p class="note" id="decNote">
+                FREIGABE AKTIV SOBALD ALLE PUNKTE GEPRÜFT SIND.
+              </p>
+              <div class="toast" id="toast"></div>
+            </div>
+          </section>
         </div>
       </div>
-      <span class="avatar" title="M. Weber · Hosting-Review">MW</span>
-    </div>
-  </header>
 
-  <section class="band">
-    <div>
-      <div class="id">CLAIM #CT-2026-041 · SPRING WORKSHOP</div>
-      <h1>Zug &amp; Bus · Berlin → Brüssel</h1>
-      <div class="meta">Eingereicht von Projekt Nordlicht · 14.10.2026 · 2 Teilnahmen</div>
+      <div class="meta">
+        <span>GREENEX COST TRACKER · HOSTING-REVIEW</span
+        ><span>DEMO MIT BEISPIELDATEN</span>
+      </div>
     </div>
-    <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap">
-      <span class="status"><i></i>Zur Prüfung</span>
-      <div class="amt"><div class="n">515,00&nbsp;€</div><small>BEANTRAGTE SUMME</small></div>
-    </div>
-  </section>
-
-  <div class="grid">
-    <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
-      <section class="card">
-        <div class="card-h"><h2>Kostenposten</h2><span class="mono">3 POSTEN · 2 BELEGT</span></div>
-        <table>
-          <thead><tr><th>Posten</th><th>Aufteilung</th><th style="text-align:right">Betrag</th></tr></thead>
-          <tbody>
-            <tr><td><span class="t">Zug · BER → BRU</span><small>428,60 € · bahn-ticket.pdf</small><span class="pill ok">✓ Belegt</span></td><td>Equal Share · 2 Pers.<small>je 214,30 €</small></td><td class="num">428,60&nbsp;€</td></tr>
-            <tr><td><span class="t">Bus · Stadtverkehr</span><small>86,40 € · bus-qrcode.png</small><span class="pill ok">✓ Belegt</span></td><td>Equal Share · 2 Pers.<small>je 43,20 €</small></td><td class="num">86,40&nbsp;€</td></tr>
-            <tr><td><span class="t">Bustickets lokal</span><small>Noch kein Beleg verknüpft</small><span class="pill warn">◌ Offen</span></td><td>—</td><td class="num">—</td></tr>
-          </tbody>
-        </table>
-      </section>
-      <section class="card">
-        <div class="card-h"><h2>Belege</h2><span class="mono">3 DOKUMENTE</span></div>
-        <div class="doc"><span class="fi">🎫</span><div>bahn-ticket.pdf<small>PDF · 214 KB · HOCHGELADEN 12.10.</small></div><a href="#">Ansehen</a></div>
-        <div class="doc"><span class="fi">📱</span><div>bus-qrcode.png<small>PNG · 88 KB · HOCHGELADEN 12.10.</small></div><a href="#">Ansehen</a></div>
-        <div class="doc"><span class="fi">🧾</span><div>Bustickets lokal<small>FEHLT · FOTO GENÜGT</small></div><a href="#">Anfordern</a></div>
-      </section>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
-      <section class="card">
-        <div class="card-h"><h2>Prüf-Checkliste</h2><span class="mono" id="chkCount">3 / 4</span></div>
-        <label class="chk done"><input type="checkbox" checked disabled /><div><span class="t">Auszahlungskonto verknüpft</span><small>Green Routes e.V. · IBAN •••• 4412</small></div></label>
-        <label class="chk done"><input type="checkbox" checked disabled /><div><span class="t">Fördersätze eingefroren</span><small>Entfernungspauschale 2026 · Stand 14.10.</small></div></label>
-        <label class="chk" data-open><input type="checkbox" /><div><span class="t">Alle Posten belegt</span><small>Bustickets lokal fehlt — Foto genügt.</small></div></label>
-        <label class="chk done"><input type="checkbox" checked disabled /><div><span class="t">Aufteilung plausibel</span><small>Equal Share · 2 Teilnahmen bestätigt</small></div></label>
-      </section>
-      <section class="card">
-        <div class="card-h"><h2>Auszahlung</h2></div>
-        <div class="pay">
-          <div class="row"><span>Empfänger</span><span>Projekt Nordlicht</span></div>
-          <div class="row"><span>Konto</span><span>•••• 4412</span></div>
-          <div class="row"><span>Summe</span><span><b>515,00&nbsp;€</b></span></div>
-        </div>
-      </section>
-      <section class="card">
-        <div class="card-h"><h2>Entscheidung</h2><span class="mono">HOSTING-REVIEW</span></div>
-        <div class="dec">
-          <label for="note">ANMERKUNG (OPTIONAL)</label>
-          <textarea id="note" placeholder="z. B. Bustickets bitte nachreichen …"></textarea>
-          <div class="btnrow">
-            <button class="btn primary" id="approve" disabled>Freigeben</button>
-            <button class="btn ghost" id="askback">Rückfrage</button>
-          </div>
-          <p class="note" id="decNote">FREIGABE AKTIV SOBALD ALLE PUNKTE GEPRÜFT SIND.</p>
-          <div class="toast" id="toast"></div>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <div class="meta"><span>GREENEX COST TRACKER · HOSTING-REVIEW</span><span>DEMO MIT BEISPIELDATEN</span></div>
-</div>
-<script>
-const vibes=[...document.querySelectorAll('.switcher button')];
-const hVibes=[...document.querySelectorAll('#themeMenu button')];
-const themeLabel=document.getElementById('themeLabel');
-const themeBtn=document.getElementById('themeBtn');
-const themeMenu=document.getElementById('themeMenu');
-const vibeNames={plum:'Plum',midnight:'Midnight',violet:'Violet',abyss:'Abyss',royal:'Royal'};
-function setVibe(v){document.documentElement.classList.add('notrans');void document.body.offsetHeight;document.body.dataset.vibe=v==='plum'?'':v;requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('notrans')));vibes.forEach(x=>x.classList.toggle('on',x.dataset.vibe===v));hVibes.forEach(x=>x.setAttribute('aria-checked',String(x.dataset.vibeH===v)));if(themeLabel)themeLabel.textContent=vibeNames[v]||v;try{localStorage.setItem('ember-vibe',v)}catch(e){}const u=new URL(location.href);u.searchParams.set('theme',v);history.replaceState(null,'',u);}
-vibes.forEach(x=>x.addEventListener('click',()=>setVibe(x.dataset.vibe)));
-hVibes.forEach(x=>x.addEventListener('click',()=>{setVibe(x.dataset.vibeH);closeMenu();}));
-function closeMenu(){if(themeMenu)themeMenu.hidden=true;if(themeBtn)themeBtn.setAttribute('aria-expanded','false');}
-if(themeBtn)themeBtn.addEventListener('click',e=>{e.stopPropagation();const open=themeMenu.hidden;closeMenu();if(open){themeMenu.hidden=false;themeBtn.setAttribute('aria-expanded','true');}});
-document.addEventListener('click',e=>{if(!e.target.closest('.theme-drop'))closeMenu();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
-const start=(new URL(location.href).searchParams.get('theme'))||(function(){try{return localStorage.getItem('ember-vibe')}catch(e){return null}})()||'plum';
-setVibe(['plum','midnight','violet','abyss','royal'].includes(start)?start:'plum');
-// review logic
-const openBox=document.querySelector('.chk[data-open] input');
-const approve=document.getElementById('approve');
-const toast=document.getElementById('toast');
-const decNote=document.getElementById('decNote');
-const chkCount=document.getElementById('chkCount');
-function refresh(){const done=!openBox||openBox.checked;approve.disabled=!done;
-  document.querySelector('.chk[data-open]').classList.toggle('done',done);
-  chkCount.textContent=done?'4 / 4':'3 / 4';
-  decNote.textContent=done?'BEREIT — FREIGABE GIBT 515,00 € ZUR AUSZAHLUNG FREI.':'FREIGABE AKTIV SOBALD ALLE PUNKTE GEPRÜFT SIND.';}
-if(openBox)openBox.addEventListener('change',refresh);
-refresh();
-approve.addEventListener('click',()=>{toast.textContent='✓ Claim #CT-2026-041 freigegeben — 515,00 € zur Auszahlung.';toast.classList.add('show');});
-document.getElementById('askback').addEventListener('click',()=>{toast.textContent='◌ Rückfrage an Projekt Nordlicht gesendet — Beleg „Bustickets lokal“ angefordert.';toast.classList.add('show');});
-</script>
-</body>
+    <script>
+      const vibes = [...document.querySelectorAll(".switcher button")];
+      const hVibes = [...document.querySelectorAll("#themeMenu button")];
+      const themeLabel = document.getElementById("themeLabel");
+      const themeBtn = document.getElementById("themeBtn");
+      const themeMenu = document.getElementById("themeMenu");
+      const vibeNames = {
+        plum: "Plum",
+        midnight: "Midnight",
+        violet: "Violet",
+        abyss: "Abyss",
+        royal: "Royal",
+      };
+      function setVibe(v) {
+        document.documentElement.classList.add("notrans");
+        void document.body.offsetHeight;
+        document.body.dataset.vibe = v === "plum" ? "" : v;
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            document.documentElement.classList.remove("notrans"),
+          ),
+        );
+        vibes.forEach((x) => x.classList.toggle("on", x.dataset.vibe === v));
+        hVibes.forEach((x) =>
+          x.setAttribute("aria-checked", String(x.dataset.vibeH === v)),
+        );
+        if (themeLabel) themeLabel.textContent = vibeNames[v] || v;
+        try {
+          localStorage.setItem("ember-vibe", v);
+        } catch (e) {}
+        const u = new URL(location.href);
+        u.searchParams.set("theme", v);
+        history.replaceState(null, "", u);
+      }
+      vibes.forEach((x) =>
+        x.addEventListener("click", () => setVibe(x.dataset.vibe)),
+      );
+      hVibes.forEach((x) =>
+        x.addEventListener("click", () => {
+          setVibe(x.dataset.vibeH);
+          closeMenu();
+        }),
+      );
+      function closeMenu() {
+        if (themeMenu) themeMenu.hidden = true;
+        if (themeBtn) themeBtn.setAttribute("aria-expanded", "false");
+      }
+      if (themeBtn)
+        themeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const open = themeMenu.hidden;
+          closeMenu();
+          if (open) {
+            themeMenu.hidden = false;
+            themeBtn.setAttribute("aria-expanded", "true");
+          }
+        });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".theme-drop")) closeMenu();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeMenu();
+      });
+      const start =
+        new URL(location.href).searchParams.get("theme") ||
+        (function () {
+          try {
+            return localStorage.getItem("ember-vibe");
+          } catch (e) {
+            return null;
+          }
+        })() ||
+        "plum";
+      setVibe(
+        ["plum", "midnight", "violet", "abyss", "royal"].includes(start)
+          ? start
+          : "plum",
+      );
+      // review logic
+      const openBox = document.querySelector(".chk[data-open] input");
+      const approve = document.getElementById("approve");
+      const toast = document.getElementById("toast");
+      const decNote = document.getElementById("decNote");
+      const chkCount = document.getElementById("chkCount");
+      function refresh() {
+        const done = !openBox || openBox.checked;
+        approve.disabled = !done;
+        document.querySelector(".chk[data-open]").classList.toggle("done", done);
+        chkCount.textContent = done ? "4 / 4" : "3 / 4";
+        decNote.textContent = done
+          ? "BEREIT — FREIGABE GIBT 515,00 € ZUR AUSZAHLUNG FREI."
+          : "FREIGABE AKTIV SOBALD ALLE PUNKTE GEPRÜFT SIND.";
+      }
+      if (openBox) openBox.addEventListener("change", refresh);
+      refresh();
+      approve.addEventListener("click", () => {
+        toast.textContent =
+          "✓ Claim #CT-2026-041 freigegeben — 515,00 € zur Auszahlung.";
+        toast.classList.add("show");
+      });
+      document.getElementById("askback").addEventListener("click", () => {
+        toast.textContent =
+          "◌ Rückfrage an Projekt Nordlicht gesendet — Beleg „Bustickets lokal“ angefordert.";
+        toast.classList.add("show");
+      });
+    </script>
+  </body>
 </html>

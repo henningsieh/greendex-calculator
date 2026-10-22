@@ -6,6 +6,7 @@ import {
   Building2Icon,
   ChevronDownIcon,
   FolderKanbanIcon,
+  LogOutIcon,
   UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -23,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignOutButton } from "@/features/authentication/components/sign-out-button";
+import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { cn } from "@/lib/utils";
 
@@ -150,6 +151,7 @@ function AccountMenu({
   pathname,
 }: AccountMenuProps) {
   const active = pathname === "/user-settings";
+  const { pending, signOut } = useSignOut();
 
   return (
     <DropdownMenu>
@@ -210,13 +212,13 @@ function AccountMenu({
             Account settings
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="rounded-md p-0 text-sm tracking-normal normal-case"
-            nativeButton
-            render={
-              <SignOutButton className="h-9 w-full justify-start rounded-md px-3 text-sm tracking-normal text-destructive normal-case hover:bg-destructive/10 hover:text-destructive" />
-            }
+            disabled={pending}
+            onClick={() => void signOut()}
             variant="destructive"
-          />
+          >
+            <LogOutIcon />
+            Sign out
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

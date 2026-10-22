@@ -67,6 +67,8 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
     const dialog = page.getByRole("dialog", { name: "Create Organization" });
+    await expect(dialog).toBeHidden();
+    await page.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
     await dialog.getByLabel("Organization country").selectOption("DE");
@@ -227,9 +229,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await expect(
         page.getByRole("heading", { name: fixture.projectNames[0]! }),
       ).toBeVisible();
-      await expect(
-        page.locator('[data-relationship="hosted"]'),
-      ).toBeVisible();
+      await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
       await expect(
         page.getByRole("link", { name: "Review submitted Claims" }),
       ).toBeVisible();
@@ -248,6 +248,8 @@ test("creation refreshes Organization management before navigating to Projects",
     const page = await context.newPage();
     await page.goto("/organization");
     const dialog = page.getByRole("dialog", { name: "Create Organization" });
+    await expect(dialog).toBeHidden();
+    await page.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(recovery.organizationName);
     await dialog.getByLabel("Organization country").selectOption("DE");

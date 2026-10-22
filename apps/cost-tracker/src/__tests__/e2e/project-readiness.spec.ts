@@ -268,9 +268,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await openHostedProject(page, names.main, mainURL);
     await expect(partnerRow(page, names.partnerB)).toContainText("No Claim");
     // Text-free: no partner row carries the editable-claim state.
-    await expect(page.locator('[data-claim-status="editable"]')).toHaveCount(
-      0,
-    );
+    await expect(page.locator('[data-claim-status="editable"]')).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Complete Project" }),
     ).toHaveCount(0);

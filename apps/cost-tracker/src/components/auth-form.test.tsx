@@ -50,23 +50,36 @@ describe("AuthForm", () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
-  it("keeps successful sign-up verification instructions inline without navigating", async () => {
-    mocks.signUp.mockResolvedValue({});
-    const user = userEvent.setup();
-    render(<AuthForm mode="sign-up" />);
+  it.each([
+    undefined,
+    "/accept-invitation/invite_123",
+    "/setup-links/setup_123?secret=abc_DEF-123",
+  ])(
+    "preserves signup destination %s and shows verification instructions without navigating",
+    async (returnTo) => {
+      mocks.signUp.mockResolvedValue({});
+      const user = userEvent.setup();
+      render(<AuthForm mode="sign-up" returnTo={returnTo} />);
 
-    await user.type(screen.getByLabelText("Name"), "Alex Morgan");
-    await user.type(screen.getByLabelText("Email address"), "user@example.org");
-    await user.type(screen.getByLabelText("Password"), "example-password");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+      await user.type(screen.getByLabelText("Name"), "Alex Morgan");
+      await user.type(screen.getByLabelText("Email address"), "user@example.org");
+      await user.type(screen.getByLabelText("Password"), "example-password");
+      await user.click(screen.getByRole("button", { name: "Create account" }));
 
-    expect(
-      await screen.findByText(
-        "Check your inbox to verify your email, then return here to sign in.",
-      ),
-    ).toBeTruthy();
-    expect(mocks.replace).not.toHaveBeenCalled();
-  });
+      expect(
+        await screen.findByText(
+          "Check your inbox. The verification link will sign you in and take you back to Cost Tracker.",
+        ),
+      ).toBeTruthy();
+      expect(mocks.signUp).toHaveBeenCalledExactlyOnceWith({
+        name: "Alex Morgan",
+        email: "user@example.org",
+        password: "example-password",
+        returnTo,
+      });
+      expect(mocks.replace).not.toHaveBeenCalled();
+    },
+  );
 
   it("shows the safe rate-limit message returned by its oRPC command", async () => {
     mocks.signIn.mockRejectedValue(new ORPCError("TOO_MANY_REQUESTS"));

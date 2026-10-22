@@ -486,6 +486,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
   }) => {
     const page = await pageFor(browser, "T", baseURL!);
     await page.goto("/participant");
+    await page.getByLabel("Full name", { exact: true }).fill(actors.T.name);
     await page.getByRole("button", { name: "Save profile" }).click();
     // Text-free: the filled form + save interaction above prove the page (no copy).
     await expect(
@@ -588,7 +589,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .click();
     // Text-free: link row carries the closed state (stable id, not copy).
     await expect(
-      p.locator(`[data-testid="registration-link-${id}"][data-link-open="false"]`),
+      p.locator(
+        `[data-testid="registration-link-${id}"][data-link-open="false"]`,
+      ),
     ).toBeVisible();
     const u = await pageFor(browser, "U", baseURL!);
     await u.goto(sharedLink);
@@ -653,7 +656,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .click();
     // Text-free: link row carries the closed state (DB revoked-check below covers value).
     await expect(
-      p.locator(`[data-testid="registration-link-${id}"][data-link-open="false"]`),
+      p.locator(
+        `[data-testid="registration-link-${id}"][data-link-open="false"]`,
+      ),
     ).toBeVisible();
     // API-setup exception: the unrelated Partnership's Claim lock is a refusal precondition.
     await db
@@ -668,10 +673,12 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
           .getByRole("alert")
           .filter({ hasText: "Registration link cannot be reopened" }),
       ).toContainText("A non-editable Claim prevents reopening registration.");
-    // Text-free: link row carries the closed state (stable id + DB proof below).
-    await expect(
-      p.locator(`[data-testid="registration-link-${id}"][data-link-open="false"]`),
-    ).toBeVisible();
+      // Text-free: link row carries the closed state (stable id + DB proof below).
+      await expect(
+        p.locator(
+          `[data-testid="registration-link-${id}"][data-link-open="false"]`,
+        ),
+      ).toBeVisible();
       expect(
         (await db.select().from(entryTokens).where(eq(entryTokens.id, id)))[0]
           ?.status,

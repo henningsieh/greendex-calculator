@@ -7,7 +7,7 @@ import { OrganizationSettings } from "@/features/organizations/components/organi
 import { OrganizationTeam } from "@/features/organizations/components/organization-team";
 import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
-import { requireSession } from "@/lib/session";
+import { hasOrganizationMembership, requireSession } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -57,6 +57,7 @@ async function OrganizationTeamSection({ email }: { email: string }) {
 }
 
 export default async function OrganizationPage() {
+  if (!(await hasOrganizationMembership())) return null;
   const session = await requireSession();
 
   // Presentation-only gating; every procedure re-enforces owner/admin access.

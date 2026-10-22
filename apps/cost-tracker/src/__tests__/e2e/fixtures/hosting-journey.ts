@@ -140,6 +140,12 @@ export class HostingJourneyFixture {
   }
 
   async teardown() {
+    // Let prefetched pages finish before removing the Memberships they authorize against.
+    await Promise.all(
+      this.contexts.flatMap((context) =>
+        context.pages().map((page) => page.waitForLoadState("networkidle")),
+      ),
+    );
     await Promise.all(this.contexts.map((context) => context.close()));
     // Project-owned assignments cascade with Projects; remove child records first.
     const [host] = await db

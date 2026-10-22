@@ -19,6 +19,7 @@ const SignInInputSchema = z.object({
 
 const SignUpInputSchema = SignInInputSchema.extend({
   name: EditNameSchema.shape.name,
+  returnTo: z.string().optional(),
 });
 
 const GoogleSignInInputSchema = z.object({
@@ -93,7 +94,12 @@ export const signUp = base
     await callBetterAuth(context, errors, () =>
       auth.api.signUpEmail({
         asResponse: true,
-        body: input,
+        body: {
+          name: input.name,
+          email: input.email,
+          password: input.password,
+          callbackURL: safeSignInReturnTo(input.returnTo) ?? "/projects",
+        },
         headers: context.headers,
       }),
     );

@@ -35,7 +35,13 @@ describe("NoOrganizationAccess", () => {
     mocks.createOrganization.mockResolvedValue({});
     // No inter-keystroke delay: keystroke timing must not eat the timeout.
     const user = userEvent.setup({ delay: null });
-    render(<NoOrganizationAccess autoOpen />);
+    render(<NoOrganizationAccess />);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+    expect(
+      screen.getByRole("dialog", { name: "Create Organization" }),
+    ).toBeVisible();
 
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
@@ -57,7 +63,8 @@ describe("NoOrganizationAccess", () => {
     mocks.createOrganization.mockRejectedValue(new Error("network unavailable"));
     // No inter-keystroke delay: keystroke timing must not eat the timeout.
     const user = userEvent.setup({ delay: null });
-    render(<NoOrganizationAccess autoOpen />);
+    render(<NoOrganizationAccess />);
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
 
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");

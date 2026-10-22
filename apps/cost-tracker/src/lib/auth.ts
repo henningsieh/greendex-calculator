@@ -24,6 +24,9 @@ export const auth = createServerAuth({
     },
   },
   emailSender,
+  emailVerification: {
+    autoSignInAfterVerification: true,
+  },
   organization: {
     async sendInvitationEmail(data) {
       // Participant entry never flows through Better Auth invitations

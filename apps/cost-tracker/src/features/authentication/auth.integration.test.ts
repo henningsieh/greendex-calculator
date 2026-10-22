@@ -54,46 +54,98 @@ afterEach(async () => {
   vi.clearAllMocks();
 });
 
+function sessionHeaders(response: Response) {
+  return new Headers({
+    cookie: response.headers
+      .getSetCookie()
+      .map((cookie) => cookie.split(";")[0])
+      .join("; "),
+  });
+}
+
 describe("Cost Tracker Better Auth", () => {
-  it("signs up with email verification and signs in only after verification", async () => {
-    const email = uniqueEmail();
+  it.each([
+    "/projects",
+    "/accept-invitation/invite_123",
+    "/setup-links/setup_123?secret=abc_DEF-123",
+  ])(
+    "signs in on first verification and redirects to %s without replay login",
+    async (callbackURL) => {
+      const email = uniqueEmail();
+      const password = "correct-horse-battery-staple";
+
+      const signUp = await auth.api.signUpEmail({
+        body: { email, name: "Cost Tracker User", password, callbackURL },
+        asResponse: true,
+      });
+
+      expect(signUp.status).toBe(200);
+      expect(
+        await auth.api.getSession({ headers: sessionHeaders(signUp) }),
+      ).toBeNull();
+      expect(emailMocks.sendEmailVerificationEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user: expect.objectContaining({ email }),
+          url: expect.stringContaining("/api/auth/verify-email"),
+        }),
+      );
+
+      await expect(
+        auth.api.signInEmail({ body: { email, password } }),
+      ).rejects.toMatchObject({ statusCode: 403 });
+
+      const delivered =
+        emailMocks.sendEmailVerificationEmail.mock.calls.at(-1)?.[0];
+      if (!delivered) throw new Error("Verification email was not delivered");
+      const response = await auth.handler(new Request(delivered.url));
+      expect(response.status).toBe(302);
+      const location = response.headers.get("location");
+      if (!location) throw new Error("Verification did not redirect");
+      const destination = new URL(location, env.NEXT_PUBLIC_BASE_URL);
+      expect(destination.pathname + destination.search).toBe(callbackURL);
+      expect(response.headers.get("set-cookie")).toContain("session_token");
+      const session = await auth.api.getSession({
+        headers: sessionHeaders(response),
+      });
+      expect(session?.user).toMatchObject({ email, name: "Cost Tracker User" });
+
+      const replay = await auth.handler(new Request(delivered.url));
+      expect(replay.status).toBe(302);
+      expect(
+        await auth.api.getSession({ headers: sessionHeaders(replay) }),
+      ).toBeNull();
+    },
+  );
+
+  it("signs in the verified account even when a different account is signed in", async () => {
     const password = "correct-horse-battery-staple";
+    const email = uniqueEmail();
+    const otherEmail = uniqueEmail();
+    const signUp = async (email: string) => {
+      await auth.api.signUpEmail({
+        body: { email, name: "New User", password, callbackURL: "/projects" },
+      });
+      const delivered =
+        emailMocks.sendEmailVerificationEmail.mock.calls.at(-1)?.[0];
+      if (!delivered) throw new Error("Verification email was not delivered");
+      return delivered.url;
+    };
+    const otherVerificationURL = await signUp(otherEmail);
+    const otherResponse = await auth.handler(new Request(otherVerificationURL));
+    expect(
+      (await auth.api.getSession({ headers: sessionHeaders(otherResponse) }))
+        ?.user.email,
+    ).toBe(otherEmail);
 
-    const signUp = await auth.api.signUpEmail({
-      body: { email, name: "Cost Tracker User", password },
-    });
-
-    expect(signUp.user.email).toBe(email);
-    expect(emailMocks.sendEmailVerificationEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user: expect.objectContaining({ email }),
-        url: expect.stringContaining("/api/auth/verify-email"),
-      }),
+    const verificationURL = await signUp(email);
+    const response = await auth.handler(
+      new Request(verificationURL, { headers: sessionHeaders(otherResponse) }),
     );
-
-    await expect(
-      auth.api.signInEmail({ body: { email, password } }),
-    ).rejects.toMatchObject({ statusCode: 403 });
-
-    const delivered =
-      emailMocks.sendEmailVerificationEmail.mock.calls.at(-1)?.[0];
-    if (!delivered) throw new Error("Verification email was not delivered");
-    const token = new URL(delivered.url).searchParams.get("token");
-    if (!token) throw new Error("Verification email has no token");
-    await auth.api.verifyEmail({ query: { token } });
-
-    const response = await auth.api.signInEmail({
-      body: { email, password },
-      asResponse: true,
-    });
-    expect(response.status).toBe(200);
-
-    const setCookie = response.headers.get("set-cookie");
-    expect(setCookie).toContain("session");
-    const session = await auth.api.getSession({
-      headers: new Headers({ cookie: setCookie!.split(";")[0]! }),
-    });
-    expect(session?.user).toMatchObject({ email, name: "Cost Tracker User" });
+    expect(response.status).toBe(302);
+    expect(
+      (await auth.api.getSession({ headers: sessionHeaders(response) }))?.user
+        .email,
+    ).toBe(email);
   });
 
   it("returns the exact created Organization and makes the original procedure session usable", async () => {

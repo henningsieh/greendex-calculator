@@ -702,10 +702,9 @@ test.describe("Questionnaire Form E2E Tests", () => {
     // contribution seeded by the unauthenticated fixture.
     await expect(page.locator("text=Your travel").first()).toBeVisible();
     // Text-free: shared-travel metric with exact computed value (reword-proof attribute).
-    await expect(page.locator('[data-testid="shared-travel-metric"]')).toHaveAttribute(
-      "data-co2-kg",
-      "5.3",
-    );
+    await expect(
+      page.locator('[data-testid="shared-travel-metric"]'),
+    ).toHaveAttribute("data-co2-kg", "5.3");
 
     // Should show CO2 values (numbers with "kg CO₂")
     const co2Values = await page.locator("text=/\\d+\\.\\d+.*kg.*CO₂/i").all();

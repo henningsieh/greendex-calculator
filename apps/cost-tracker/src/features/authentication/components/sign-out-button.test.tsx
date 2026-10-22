@@ -21,7 +21,9 @@ vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { authentication: { signOut: mocks.signOut } },
 }));
 
+import { buttonVariants } from "@/components/ui/button";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
+import { cn } from "@/lib/utils";
 
 describe("SignOutButton", () => {
   beforeEach(() => {
@@ -29,6 +31,15 @@ describe("SignOutButton", () => {
     mocks.replace.mockReset();
     mocks.signOut.mockReset();
     mocks.toastAdd.mockReset();
+  });
+
+  it("uses the shared ghost button design and default size without overrides", () => {
+    render(<SignOutButton />);
+    const button = screen.getByRole("button", { name: "Sign out" });
+    expect(button.className).toBe(
+      cn(buttonVariants({ variant: "ghost", size: "default" })),
+    );
+    expect(button).not.toHaveClass("rounded-none");
   });
 
   it("navigates once after sign-out", async () => {

@@ -35,7 +35,7 @@ function StatGrid({
 const statCellVariants = cva("p-9 max-sm:p-5", {
   variants: {
     hero: {
-      true: "bg-[var(--hero-wash)]",
+      true: "bg-(--hero-wash)",
       false: "",
     },
   },
@@ -52,7 +52,7 @@ function StatCell({
       data-slot="stat-cell"
       data-hero={hero ? "true" : undefined}
       className={cn(
-        "border-r border-b border-border [&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r md:[&:nth-child(3n)]:border-r-0",
+        "border-r border-b border-border nth-[2n]:border-r-0 md:nth-[2n]:border-r md:nth-[3n]:border-r-0",
         statCellVariants({ hero }),
         className,
       )}

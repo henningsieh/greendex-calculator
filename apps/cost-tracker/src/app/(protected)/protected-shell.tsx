@@ -9,13 +9,14 @@ import {
 import { SelectOrganization } from "@/features/organizations/components/select-organization";
 import { resolveStaffOrganizationContext } from "@/features/organizations/staff-eligibility";
 import { orpc } from "@/lib/orpc/orpc";
-import { requireSession } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
 export async function ProtectedShell({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   await connection();
-  const session = await requireSession();
+  const session = await getSession();
+  if (!session) return children;
   // Shell context, not policy: the caller's Memberships bootstrap the
   // active-Membership gate and the switcher list. Procedures re-authorize
   // every request, so this gate only decides which shell renders.
@@ -26,16 +27,23 @@ export async function ProtectedShell({
   });
 
   if (context.status === "no-membership") {
-    const newlyRegistered =
-      Date.now() - session.user.createdAt.getTime() < 10 * 60 * 1000;
-
-    return <NoOrganizationAccess autoOpen={newlyRegistered} />;
+    return (
+      <>
+        <NoOrganizationAccess />
+        {children}
+      </>
+    );
   }
 
   // Missing, stale, or revoked active context: inline selection recovery.
   // No staff actions render and nothing redirects, so this cannot loop.
   if (context.status === "select") {
-    return <SelectOrganization organizations={context.memberships} />;
+    return (
+      <>
+        <SelectOrganization organizations={context.memberships} />
+        {children}
+      </>
+    );
   }
 
   const canViewOrganization = await canManageOrganization();

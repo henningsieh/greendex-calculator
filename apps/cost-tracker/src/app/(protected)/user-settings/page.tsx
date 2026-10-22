@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 
 import { UserSettingsTabs } from "@/features/user-settings/components/user-settings-tabs";
-import { requireSession } from "@/lib/session";
+import { hasOrganizationMembership, requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "User settings" };
 
 export default async function UserSettingsPage() {
+  if (!(await hasOrganizationMembership())) return null;
   const session = await requireSession();
 
   return (

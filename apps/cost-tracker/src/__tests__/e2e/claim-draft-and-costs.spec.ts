@@ -615,9 +615,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         .getByRole("button", { name: "Show Review Tasks", exact: true })
         .click();
       // Text-free: all resolved rows carry the resolved state (DB proof below covers values).
-      await expect(
-        tasks.locator('li[data-task-status="resolved"]'),
-      ).toHaveCount(3);
+      await expect(tasks.locator('li[data-task-status="resolved"]')).toHaveCount(
+        3,
+      );
       // Resolved Review Tasks retain their survivor references; the removal
       // control must surface that refusal rather than deleting the survivor.
       const survivor = page
@@ -939,9 +939,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       ).toBeEnabled();
       await page.getByRole("button", { name: "Confirm submission" }).click();
       await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
-      await expect(
-        page.locator('[data-testid="claim-locked"]'),
-      ).toBeVisible();
+      await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
       await expect(page.getByRole("button", { name: "Save cost" })).toHaveCount(
         0,
       );
@@ -967,18 +965,14 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       ).toBeVisible();
       // Text-free: readiness card carries the submitted claim state (no copy).
       await expect(
-        page
-          .locator('[data-slot="card"]')
-          .filter({
-            has: page.locator('[data-claim-status="submitted"]'),
-          }),
+        page.locator('[data-slot="card"]').filter({
+          has: page.locator('[data-claim-status="submitted"]'),
+        }),
       ).toBeVisible();
       await page.goForward();
       await expectPrivateURL(page, claimURL);
       await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
-      await expect(
-        page.locator('[data-testid="claim-locked"]'),
-      ).toBeVisible();
+      await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
       await expect(
         page.getByRole("button", {
           name: /Save cost|Save journey|Submit Claim|Save Claim draft/,

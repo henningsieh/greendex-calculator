@@ -73,6 +73,33 @@ describe("Cost Tracker authentication procedures", () => {
 
   afterEach(() => vi.restoreAllMocks());
 
+  it.each([
+    [undefined, "/projects"],
+    ["/accept-invitation/invite_123", "/accept-invitation/invite_123"],
+    [
+      "/setup-links/setup_123?secret=abc_DEF-123",
+      "/setup-links/setup_123?secret=abc_DEF-123",
+    ],
+    ["https://example.org", "/projects"],
+    ["//example.org", "/projects"],
+    ["/projects?next=https://example.org", "/projects"],
+  ])(
+    "uses a safe verification callback for signup returnTo %s",
+    async (returnTo, callbackURL) => {
+      const input = {
+        name: "Alex Morgan",
+        email: "user@example.org",
+        password: "correct-horse-battery-staple",
+      };
+      await createClient().authentication.signUp({ ...input, returnTo });
+      expect(mocks.signUpEmail).toHaveBeenCalledExactlyOnceWith({
+        asResponse: true,
+        body: { ...input, callbackURL },
+        headers: requestHeaders,
+      });
+    },
+  );
+
   it("uses request-specific headers and forwards sign-in cookies through the oRPC response seam", async () => {
     const resHeaders = new Headers();
 

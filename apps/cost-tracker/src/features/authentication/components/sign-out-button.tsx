@@ -6,22 +6,21 @@ import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 
-/* eslint-disable shadcn/no-restyle -- SignOutButton owns its prominent square header treatment. */
-
 type ButtonClickEvent = Parameters<
   NonNullable<ComponentProps<typeof Button>["onClick"]>
 >[0];
 
 type SignOutButtonProps = Omit<
   ComponentProps<typeof Button>,
-  "children" | "disabled" | "size" | "variant"
+  "children" | "disabled" | "className" | "style"
 > & {
   compact?: boolean;
 };
 
 export function SignOutButton({
-  className,
   compact = false,
+  size = "default",
+  variant = "ghost",
   ...props
 }: SignOutButtonProps) {
   const { pending, signOut: signOutAction } = useSignOut();
@@ -35,11 +34,10 @@ export function SignOutButton({
     <Button
       {...props}
       aria-label={compact ? "Sign out" : undefined}
-      className={className ?? (compact ? undefined : "h-11 rounded-none px-4")}
       disabled={pending}
       onClick={signOut}
-      size={compact ? "icon-sm" : "sm"}
-      variant="ghost"
+      size={compact ? "icon-sm" : size}
+      variant={variant}
     >
       {pending ? (
         <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
