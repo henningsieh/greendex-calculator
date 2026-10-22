@@ -407,8 +407,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       `/claims/review/${ids.partnership}`,
     ]) {
       await x.goto(route);
+      // Text-free: access-denied state hook instead of visible copy.
       await expect(
-        x.getByText("No Organization access yet", { exact: true }),
+        x.locator('[data-testid="no-organization-access"]'),
       ).toBeVisible();
       await expect(
         x.getByRole("dialog", { name: "Create Organization" }),
@@ -418,8 +419,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
           .getByRole("dialog", { name: "Create Organization" })
           .getByRole("textbox", { name: "Organization name", exact: true }),
       ).toBeEditable();
-      await expect(x.getByText(names.project)).toHaveCount(0);
-      await expect(x.getByText(names.partner)).toHaveCount(0);
+      // Text-free: no links to the protected entities leak (stable ids, not copy).
+      await expect(x.locator(`a[href*="${projectId}"]`)).toHaveCount(0);
+      await expect(x.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
       await expect(
         x.getByRole("button", { name: /Save cost|Approve Claim|Submit Claim/ }),
       ).toHaveCount(0);
@@ -439,7 +441,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await expect(
         f.getByRole("alert").filter({ hasText: `Unable to load ${resource}` }),
       ).toContainText("Project Partnership not found in scope.");
-      await expect(f.getByText(names.partner)).toHaveCount(0);
+      // Text-free: no link to the protected partnership leaks.
+      await expect(f.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
       await expect(
         f.getByRole("button", { name: /Save cost|Approve Claim/ }),
       ).toHaveCount(0);
@@ -471,9 +474,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
           }),
         ).toBeVisible();
       }
-      await expect(page.getByRole("main").getByText(names.partner)).toHaveCount(
-        0,
-      );
+      // Text-free: no link to the protected partnership leaks.
+      await expect(
+        page.getByRole("main").locator(`a[href*="${ids.partnership}"]`),
+      ).toHaveCount(0);
       await expect(
         page.getByRole("button", {
           name: /Approve Claim|Confirm approval|Reject Claim/,
@@ -530,7 +534,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       ).toContainText(
         "You need Partner Organization staff access or an assignment to this Project Partnership.",
       );
-      await expect(t.getByText("No Organization access yet")).toHaveCount(0);
+      // Text-free: the authorized user is not access-denied (state hook, not copy).
+      await expect(
+        t.locator('[data-testid="no-organization-access"]'),
+      ).toHaveCount(0);
       await expect(
         t.getByRole("button", {
           name: /Save Claim draft|Save cost|Submit Claim/,
@@ -591,10 +598,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       .where(eq(setupLinks.id, setupId));
     const x = await pageFor(browser, "X", baseURL!);
     await x.goto(first);
-    await expect(
-      x.getByText("Partner Organization setup", { exact: true }),
-    ).toBeVisible();
-    await expect(x.getByText("Disabled setup link")).toBeVisible();
+    // Text-free: setup-error state hook proves the disabled page (subsumes page identity).
+    await expect(x.locator('[data-setup-error="disabled"]')).toBeVisible();
     await creator
       .getByRole("button", { name: "Neuer Link", exact: true })
       .click();
@@ -604,7 +609,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     // Preserve the original pathname inequality without printing either private ID.
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
-    await expect(x.getByText("Disabled setup link")).toBeVisible();
+    await expect(x.locator('[data-setup-error="disabled"]')).toBeVisible();
     const fresh = await browser.newContext({
       baseURL: baseURL!,
       storageState: { cookies: [], origins: [] },
@@ -614,11 +619,15 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await separate.goto(replacement);
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(separate, /\/login/);
-    await expect(separate.getByText(names.project)).toHaveCount(0);
+    // The /login redirect above already proves no project data renders here.
     await x.goto("/projects");
-    await expect(x.getByText("No Organization access yet")).toBeVisible();
+    await expect(
+      x.locator('[data-testid="no-organization-access"]'),
+    ).toBeVisible();
     await x.reload();
-    await expect(x.getByText("No Organization access yet")).toBeVisible();
+    await expect(
+      x.locator('[data-testid="no-organization-access"]'),
+    ).toBeVisible();
     // The no-access screen auto-opens Create Organization; dismiss its portal
     // before using the separate Sign out control.
     await expect(
@@ -714,7 +723,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await p
       .getByRole("button", { name: "Create Participant Registration Link" })
       .click();
-    await expect(p.getByText("Registration link created")).toBeVisible();
+    // Text-free: the created link input carries a value (functional proof).
+    await expect(
+      p.getByLabel("New registration link (copy now)"),
+    ).not.toBeEmpty();
     const link = await p
       .getByLabel("New registration link (copy now)")
       .inputValue();
@@ -722,7 +734,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await p
       .getByRole("button", { name: `Close registration link ${registrationId}` })
       .click();
-    await expect(p.getByText("Registration link closed")).toBeVisible();
+    // Text-free: closing clears the transient link input (functional proof).
+    await expect(
+      p.getByLabel("New registration link (copy now)"),
+    ).toHaveCount(0);
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(link);
     await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();

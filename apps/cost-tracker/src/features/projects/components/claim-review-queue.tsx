@@ -28,13 +28,13 @@ export function ClaimReviewQueue() {
     isClaimAwaitingReview(claims[index].data?.status),
   );
   return (
-    <Card>
+    <Card data-testid="review-queue">
       <CardHeader>
         <CardTitle>Submitted Claims awaiting review</CardTitle>
       </CardHeader>
       <CardContent>
         {submitted.length === 0 ? (
-          <Empty>
+          <Empty data-testid="review-queue-empty">
             <EmptyHeader>
               <EmptyTitle>No submitted Claims available for review.</EmptyTitle>
             </EmptyHeader>

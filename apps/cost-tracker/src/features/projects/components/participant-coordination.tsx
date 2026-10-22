@@ -111,7 +111,11 @@ function ReviewTaskControls({
     onError,
   });
   return (
-    <li className="space-y-3 py-4">
+    <li
+      className="space-y-3 py-4"
+      data-task-status={task.status}
+      data-task-decision={task.decision ?? "none"}
+    >
       <p>Registered User: {task.candidateEmail}</p>
       <Badge variant="secondary">Review Task {task.status}</Badge>
       <p className="text-sm">
@@ -632,7 +636,7 @@ export function ParticipantCoordination({
           </CardContent>
         </Card>
       )}
-      <Card>
+      <Card data-testid="joined-participants">
         <CardHeader>
           <CardTitle>Joined Participants</CardTitle>
           {data.participations.length > 0 && (
@@ -645,7 +649,7 @@ export function ParticipantCoordination({
         </CardHeader>
         <CardContent>
           {data.participations.length === 0 ? (
-            <Empty>
+            <Empty data-testid="joined-participants-empty">
               <EmptyHeader>
                 <EmptyTitle>
                   No Participants have joined this Partnership yet.
@@ -655,7 +659,11 @@ export function ParticipantCoordination({
           ) : (
             <ul className="divide-y">
               {data.participations.map((participant) => (
-                <li className="space-y-3 py-4" key={participant.id}>
+                <li
+                  className="space-y-3 py-4"
+                  data-testid={`joined-participant-${participant.id}`}
+                  key={participant.id}
+                >
                   <div className="flex flex-wrap items-center gap-3">
                     <strong>{participant.displayName}</strong>
                     <Badge variant="secondary">Joined</Badge>
@@ -901,6 +909,8 @@ export function ParticipantCoordination({
             <ul className="divide-y">
               {data.registrationLinks.map((link) => (
                 <li
+                  data-link-open={String(link.enabled)}
+                  data-testid={`registration-link-${link.id}`}
                   key={link.id}
                   className="flex flex-wrap items-center gap-3 py-3"
                 >

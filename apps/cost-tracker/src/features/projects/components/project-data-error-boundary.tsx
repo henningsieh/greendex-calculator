@@ -30,7 +30,7 @@ function ProjectDataErrorFallback({
   const errorMessage = getORPCRequestErrorMessage(error);
 
   return (
-    <Alert variant="destructive">
+    <Alert data-testid="data-error-fallback" variant="destructive">
       <AlertTitle>Unable to load {resource}</AlertTitle>
       <AlertDescription>{errorMessage.text}</AlertDescription>
       <AlertAction>

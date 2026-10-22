@@ -516,6 +516,9 @@ const runBrowser = async (suite: BrowserSuite) => {
     GREENDEX_PLAYWRIGHT_OUTPUT: resolve(directory, "output"),
     GREENDEX_PLAYWRIGHT_AUTH: resolve(directory, "auth.json"),
     COST_TRACKER_E2E_BASE_URL: ready.get("cost-tracker")?.baseUrl,
+    // The managed target above is verified production-only; hand this proof
+    // to the suite so ad-hoc runs without it are refused in globalSetup.
+    GREENDEX_E2E_PRODUCTION_OK: "1",
   };
   const invoke = async (discovery: boolean) => {
     await rm(reportFile, { force: true });
@@ -562,8 +565,18 @@ const runBrowser = async (suite: BrowserSuite) => {
   if (!evidence.execution) throw new Error("Missing browser execution.");
   assertBrowserExecution(evidence.discovery, evidence.execution);
 };
+// Fast daily loop: GREENDEX_SKIP_SEED_CONTRACTS=1 drops the migration/seed
+// contract group (multiple full seeds, ~9 min). It is a leaf validation — no
+// other group depends on it — so skipping only narrows coverage, never order.
+// Default stays full: the gate always runs everything.
+const skipSeedContracts = process.env.GREENDEX_SKIP_SEED_CONTRACTS === "1";
+const runnableGroups = skipSeedContracts
+  ? groups.filter(
+      ({ name }) => name !== "calculator/migrations-and-seed-contract",
+    )
+  : groups;
 const selectedGroups = full
-  ? fullProductionGroups(groups, {
+  ? fullProductionGroups(runnableGroups, {
       create: async () => {
         if (!handle) throw new Error("Missing run database.");
         environments = { calculator: {}, "cost-tracker": {} };

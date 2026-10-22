@@ -130,7 +130,7 @@ function setupError(error: unknown): SetupError {
 
 function SetupStatus({ state }: { state: SetupError }) {
   return (
-    <Alert variant="destructive">
+    <Alert data-setup-error={state} variant="destructive">
       <AlertTitle>{errorCopy[state].title}</AlertTitle>
       <AlertDescription>{errorCopy[state].description}</AlertDescription>
     </Alert>
@@ -279,7 +279,17 @@ export function SetupLinkCreator() {
                   <TableRow key={existing.id} data-setup-link-id={existing.id}>
                     <TableCell>{existing.projectName}</TableCell>
                     <TableCell>{existing.recipientEmail}</TableCell>
-                    <TableCell>
+                    <TableCell
+                      data-link-status={
+                        !existing.enabled
+                          ? "closed"
+                          : existing.consumedAt
+                            ? "used"
+                            : existing.expired
+                              ? "expired"
+                              : "open"
+                      }
+                    >
                       {!existing.enabled
                         ? "Closed"
                         : existing.consumedAt

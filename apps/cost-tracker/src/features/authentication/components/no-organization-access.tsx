@@ -53,7 +53,7 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-2xl items-center px-5 py-10 sm:px-8">
-      <Empty variant="outlined">
+      <Empty data-testid="no-organization-access" variant="outlined">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <Building2Icon />
@@ -99,7 +99,11 @@ export function NoOrganizationAccess({ autoOpen }: { autoOpen: boolean }) {
                       required
                       value={name}
                     />
-                    {error && <FieldError>{error}</FieldError>}
+                    {error && (
+                      <FieldError data-testid="organization-error">
+                        {error}
+                      </FieldError>
+                    )}
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="organization-country">

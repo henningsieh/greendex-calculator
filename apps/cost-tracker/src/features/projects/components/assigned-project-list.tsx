@@ -19,7 +19,7 @@ export function AssignedProjectList() {
     <section aria-label="Assigned Projects" className="mt-10 space-y-4">
       <h2 className="font-heading text-2xl font-semibold">Your Projects</h2>
       {projects.length === 0 ? (
-        <Empty>
+        <Empty data-testid="assigned-projects-empty">
           <EmptyHeader>
             <EmptyTitle>No Projects assigned yet.</EmptyTitle>
           </EmptyHeader>

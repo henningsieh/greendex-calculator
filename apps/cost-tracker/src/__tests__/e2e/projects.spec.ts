@@ -94,9 +94,8 @@ test.describe("Cost Tracker Project production path", () => {
       page.getByRole("heading", { name: "Partner Organizations" }),
     ).toBeVisible();
 
-    const assignment = page.locator("section").filter({
-      has: page.getByText("Assign an existing Organization", { exact: true }),
-    });
+    // Text-free hook: the assignment card carries a stable test id.
+    const assignment = page.locator('[data-testid="organization-assignment"]');
     await assignment.getByRole("button", { name: "Hosted Project" }).click();
     await page
       .getByRole("combobox", { name: "Search Hosted Project by name or ID" })
@@ -124,7 +123,12 @@ test.describe("Cost Tracker Project production path", () => {
     await assignment.getByRole("button", { name: "Assign" }).click();
     expect((await rpcResponse).ok()).toBe(true);
     // Red if the mutation does not refresh the real Partnership query after a successful assignment.
-    await expect(page.getByText(fixture.partnerOrganizationName)).toBeVisible();
+    // Text-free: the refreshed row is identified by stable organization id, not copy.
+    await expect(
+      page.locator(
+        `[data-testid="partnership-row-${fixture.partnerOrganizationId}"]`,
+      ),
+    ).toBeVisible();
 
     const dashboardResponse = await page.goto("/dashboard");
     // Red if the intentionally absent pre-release dashboard route is restored.
@@ -138,6 +142,7 @@ test("renders Organization staff controls without importing server auth into the
   const response = await page.goto("/organization");
   expect(response?.ok()).toBe(true);
   await expect(page.getByRole("heading", { name: "Organization" })).toBeVisible();
-  await expect(page.getByText("Members", { exact: true })).toBeVisible();
-  await expect(page.getByText("Invite staff", { exact: true })).toBeVisible();
+  // Text-free: staff controls are identified by stable test ids, not copy.
+  await expect(page.locator('[data-testid="staff-members"]')).toBeVisible();
+  await expect(page.locator('[data-testid="staff-invite"]')).toBeVisible();
 });

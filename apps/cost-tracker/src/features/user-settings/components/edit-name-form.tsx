@@ -85,7 +85,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
           </FieldDescription>
         </Field>
 
-        {error && <FieldError>{error}</FieldError>}
+        {error && <FieldError data-testid="name-form-error">{error}</FieldError>}
 
         <Button
           className="w-fit"

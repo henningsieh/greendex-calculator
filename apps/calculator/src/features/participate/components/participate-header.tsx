@@ -83,6 +83,8 @@ export function ParticipateHeader({ project }: ParticipateHeaderProps) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      data-co2-kg={projectSharedTravelCO2.toFixed(1)}
+                      data-testid="shared-travel-metric"
                       className="group flex w-full flex-col gap-2 rounded-md border border-border/40 bg-background/80 p-3 text-left shadow-xs transition-all hover:border-primary/20 hover:shadow-sm"
                       type="button"
                     >

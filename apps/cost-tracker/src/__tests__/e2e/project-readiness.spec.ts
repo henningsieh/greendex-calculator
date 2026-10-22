@@ -109,8 +109,11 @@ async function openHostedProject(page: Page, name: string, url: string) {
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
   await expectPrivateURL(page, new RegExp(`${url}(?:\\?.*)?$`));
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-  await expect(page.getByText("Hosted Project", { exact: true })).toBeVisible();
-  await expect(page.getByText("Assigned Partner Organizations")).toBeVisible();
+  // Text-free: relationship state hook instead of visible copy.
+  await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
+  await expect(
+    page.locator('[data-testid="assigned-partner-organizations"]'),
+  ).toBeVisible();
 }
 
 function partnerRow(page: Page, name: string) {
@@ -264,7 +267,10 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(page.getByRole("link", { name: names.other })).toHaveCount(0);
     await openHostedProject(page, names.main, mainURL);
     await expect(partnerRow(page, names.partnerB)).toContainText("No Claim");
-    await expect(page.getByText("Active Claim · editable")).toHaveCount(0);
+    // Text-free: no partner row carries the editable-claim state.
+    await expect(page.locator('[data-claim-status="editable"]')).toHaveCount(
+      0,
+    );
     await expect(
       page.getByRole("button", { name: "Complete Project" }),
     ).toHaveCount(0);
@@ -279,8 +285,9 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     ).toHaveCount(0);
 
     await openHostedProject(page, names.zero, zeroURL);
+    // Text-free: empty-state hook instead of visible copy.
     await expect(
-      page.getByText("No Partner Organizations are assigned."),
+      page.locator('[data-testid="assigned-partnerships-empty"]'),
     ).toBeVisible();
     await expect(partnerRow(page, names.partnerA)).toHaveCount(0);
     // Observation only: current UI offers an enabled button for zero Partnerships.

@@ -105,7 +105,11 @@ export function ClaimSubmission({
           {preview.calculatedPayableEur === null ? (
             "Not available until the checklist passes"
           ) : (
-            <span className="block font-mono tabular-nums">
+            <span
+              className="block font-mono tabular-nums"
+              data-testid="calculated-payable"
+              data-payable={String(preview.calculatedPayableEur)}
+            >
               {preview.calculatedPayableEur} EUR
             </span>
           )}{" "}
