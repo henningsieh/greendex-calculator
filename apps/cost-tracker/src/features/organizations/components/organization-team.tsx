@@ -153,7 +153,7 @@ export function OrganizationTeam({
         </Alert>
       )}
 
-      <Card>
+      <Card data-testid="staff-members">
         <CardHeader>
           <CardTitle>Members</CardTitle>
           <CardDescription>
@@ -192,7 +192,7 @@ export function OrganizationTeam({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-testid="staff-invite">
         <CardHeader>
           <CardTitle>Invite staff</CardTitle>
           <CardDescription>

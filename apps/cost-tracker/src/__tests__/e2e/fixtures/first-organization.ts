@@ -16,8 +16,9 @@ export async function expectFirstOrganizationProjects(
     }),
   ).toBeVisible();
   const assigned = page.getByRole("region", { name: "Assigned Projects" });
+  // Text-free: empty-state hook instead of visible copy.
   await expect(
-    assigned.getByText("No Projects assigned yet.", { exact: true }),
+    assigned.locator('[data-testid="assigned-projects-empty"]'),
   ).toBeVisible();
   const newProject = page.getByRole("button", {
     name: "New project",

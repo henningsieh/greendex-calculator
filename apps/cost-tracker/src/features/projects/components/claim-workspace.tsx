@@ -503,7 +503,7 @@ function CostEditor({
       </CardHeader>
       <CardContent className="space-y-5" id="claim-costs">
         {entries.length === 0 ? (
-          <Empty>
+          <Empty data-testid="costs-empty">
             <EmptyHeader>
               <EmptyTitle>No costs saved yet.</EmptyTitle>
             </EmptyHeader>
@@ -907,7 +907,7 @@ function ClaimStateNotice({
   if (!draft) return null;
   if (draft.status === "correction_requested")
     return (
-      <Alert>
+      <Alert data-testid="claim-correction-notice">
         <AlertDescription>
           Correction requested:{" "}
           {history.findLast((event) => event.eventType === "correction_requested")
@@ -1121,7 +1121,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                 <CardTitle as="h2">Claim draft</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p>
+                <p data-draft-status={draft?.status ?? "none"}>
                   {draft
                     ? `Claim ${claimStatusLabel(draft.status)} / saved`
                     : "No Claim has been created. Opening this workspace saves nothing."}
@@ -1223,7 +1223,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
             </Card>
             <ClaimStateNotice draft={draft} history={history} />
             {draft && !editable && (
-              <Alert>
+              <Alert data-testid="claim-locked">
                 <AlertDescription>
                   This Claim is locked for Partner editing. Only a Hosting-side
                   correction request can reopen it.

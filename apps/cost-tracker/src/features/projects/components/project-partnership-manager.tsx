@@ -86,7 +86,7 @@ export function ProjectPartnershipManager({
   return (
     <section className="mt-10 space-y-8">
       {canAssign && (
-        <Card>
+        <Card data-testid="organization-assignment">
           <CardHeader>
             <CardTitle>Assign an existing Organization</CardTitle>
           </CardHeader>
@@ -158,6 +158,7 @@ export function ProjectPartnershipManager({
             {partnerships.map((partnership) => (
               <li
                 className="flex flex-col justify-between gap-5 rounded-xl border p-5 sm:flex-row sm:items-center"
+                data-testid={`partnership-row-${partnership.organizationId}`}
                 key={partnership.id}
               >
                 <div className="flex gap-3">

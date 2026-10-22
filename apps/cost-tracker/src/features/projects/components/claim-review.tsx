@@ -94,6 +94,7 @@ export function ClaimHistory({ events }: { events: History }) {
         <ol className="divide-y">
           {events.map((event, index) => (
             <li
+              data-history-event={event.eventType}
               key={`${event.actorUserId}-${event.occurredAt.toISOString()}-${index}`}
               className="grid gap-x-5 gap-y-2 py-4 min-[961px]:grid-cols-[180px_200px_minmax(0,1fr)]"
             >
@@ -173,7 +174,7 @@ export function ClaimDecisionPanel({
         <CardTitle as="h2">Review decision</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p>
+        <p data-review-status={status}>
           {status === "approved"
             ? "Approved · unpaid"
             : status === "paid"
@@ -187,7 +188,7 @@ export function ClaimDecisionPanel({
                     : "Editable draft"}
         </p>
         {approvedAmountEur && (
-          <p>
+          <p data-testid="approved-payable">
             Calculated payable:{" "}
             <span className="block font-mono tabular-nums">
               {approvedAmountEur} EUR
@@ -307,7 +308,10 @@ export function ClaimReviewDetails({
               allocations: (
                 <ul className="space-y-2">
                   {entry.allocations.map((share) => (
-                    <li key={share.participantId}>
+                    <li
+                      data-testid={`allocation-share-${share.participantId}`}
+                      key={share.participantId}
+                    >
                       {share.participantName}:{" "}
                       <span className="font-mono tabular-nums">
                         {share.amountEur
@@ -351,7 +355,10 @@ export function ClaimReviewDetails({
         ) : (
           <ul>
             {details.journeys.map((journey) => (
-              <li key={journey.participantId}>
+              <li
+                data-testid={`review-journey-${journey.participantId}`}
+                key={journey.participantId}
+              >
                 {journey.participantName}: {journey.origin} →{" "}
                 {journey.destination} · {journey.tripType} ·{" "}
                 {journey.erasmusDistanceKm} km

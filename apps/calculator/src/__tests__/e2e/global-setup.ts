@@ -13,6 +13,15 @@ import { chromium, expect, type FullConfig } from "@playwright/test";
  * Don't import from @/env here to avoid validation errors during type-checking.
  */
 async function globalSetup(config: FullConfig) {
+  // Policy: e2e runs against production builds only — never next dev.
+  // The managed runner sets this once its production target is verified;
+  // set it by hand only after `next build` + `next start`, never for dev.
+  if (process.env.GREENDEX_E2E_PRODUCTION_OK !== "1") {
+    throw new Error(
+      "Refusing e2e: target must be a production build (next build + next start) or a managed test-runner server — never next dev. " +
+        "Set GREENDEX_E2E_PRODUCTION_OK=1 only after starting a production artifact.",
+    );
+  }
   // Launch browser for setup checks
   const browser = await chromium.launch({
     headless: process.env.HEADED !== "true",
@@ -44,24 +53,7 @@ async function globalSetup(config: FullConfig) {
     await page
       .getByRole("heading", { level: 1, name: titleRegex })
       .waitFor({ timeout: 30_000 });
-    try {
-      // Sometimes the full description can be rendered with subtle whitespace/newlines — match a stable prefix instead
-      const descShort = en.authentication.login.description
-        .split(" ")
-        .slice(0, 4)
-        .join(" ");
-      const descShortRegex = new RegExp(escapeRegExp(descShort), "i");
-      await page
-        .getByText(descShortRegex, { exact: false })
-        .waitFor({ timeout: 30_000 });
-    } catch (err) {
-      const bodyText = (await page.locator("body").textContent()) ?? "";
-      console.error(
-        "❌ Failed to find sign-in description. Body snippet:",
-        bodyText.slice(0, 1000),
-      );
-      throw err;
-    }
+    // Text-free: heading above + form inputs below prove full page render (no copy).
 
     console.log("✅ Sign-in page loaded with expected content");
 

@@ -39,7 +39,7 @@ const readinessLabels: Record<NonNullable<ClaimStatus>, string> = {
 
 function ClaimReadiness({ status }: { status: ClaimStatus }) {
   return (
-    <Badge variant="secondary">
+    <Badge data-claim-status={status ?? "none"} variant="secondary">
       {status ? readinessLabels[status] : "No Claim"}
     </Badge>
   );
@@ -98,7 +98,10 @@ export function ProjectWorkspace({
           Back to Projects
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm font-medium text-primary">
+          <p
+            className="text-sm font-medium text-primary"
+            data-relationship={project.relationship}
+          >
             {project.relationship === "hosted"
               ? "Hosted Project"
               : "Partner Project"}
@@ -162,13 +165,16 @@ export function ProjectWorkspace({
       </div>
 
       {project.relationship === "hosted" ? (
-        <Card>
+        <Card data-testid="assigned-partner-organizations">
           <CardHeader>
             <CardTitle>Assigned Partner Organizations</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             {project.partnerOrganizations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="assigned-partnerships-empty"
+              >
                 No Partner Organizations are assigned.
               </p>
             ) : (

@@ -138,9 +138,12 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
             )}
           </Field>
 
-          {error && <FieldError>{error}</FieldError>}
+          {error && <FieldError data-testid="auth-form-error">{error}</FieldError>}
           {verificationMessage && (
-            <output className="rounded-xl bg-secondary px-4 py-3 text-sm/6 text-secondary-foreground">
+            <output
+              className="rounded-xl bg-secondary px-4 py-3 text-sm/6 text-secondary-foreground"
+              data-testid="auth-verification-message"
+            >
               {verificationMessage}
             </output>
           )}

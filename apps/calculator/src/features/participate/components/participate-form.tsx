@@ -451,7 +451,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                 {t("results.co2-footprint")}
               </span>
             </div>
-            <span className="font-mono text-base font-bold text-red-400 tabular-nums sm:text-lg">
+            <span
+              className="font-mono text-base font-bold text-red-400 tabular-nums sm:text-lg"
+              data-testid="stat-co2"
+              data-value={(confirmedEmissions?.totalCO2 ?? 0).toFixed(1)}
+            >
               {(confirmedEmissions?.totalCO2 ?? 0).toFixed(1)} kg
             </span>
           </Card>
@@ -465,7 +469,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                 {t("results.trees-needed")}
               </span>
             </div>
-            <span className="font-mono text-base font-bold text-green-400 tabular-nums sm:text-lg">
+            <span
+              className="font-mono text-base font-bold text-green-400 tabular-nums sm:text-lg"
+              data-testid="stat-trees"
+              data-value={String(confirmedEmissions?.treesNeeded ?? 0)}
+            >
               {confirmedEmissions?.treesNeeded ?? 0}
             </span>
           </Card>

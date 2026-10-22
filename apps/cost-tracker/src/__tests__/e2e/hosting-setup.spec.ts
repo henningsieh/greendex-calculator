@@ -38,7 +38,7 @@ async function createProject(page: Page, name: string) {
   await expect(page.getByRole("heading", { name })).toBeVisible({
     timeout: 90_000,
   });
-  await expect(page.getByText("Hosted Project", { exact: true })).toBeVisible();
+  await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
   return new URL(page.url()).pathname;
 }
 
@@ -62,7 +62,10 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     const context = await fixture.actorContext(browser, "H", baseURL!);
     const page = await context.newPage();
     await page.goto("/projects");
-    await expect(page.getByText("No Organization access yet")).toBeVisible();
+    // Text-free: access-denied state hook instead of visible copy.
+    await expect(
+      page.locator('[data-testid="no-organization-access"]'),
+    ).toBeVisible();
     const dialog = page.getByRole("dialog", { name: "Create Organization" });
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
@@ -112,7 +115,10 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await expect(
         page.getByRole("heading", { name: "Organization Invitation" }),
       ).toBeVisible();
-      await expect(page.getByText(fixture.organizationName)).toBeVisible();
+      // Text-free: the invitation loaded (accept available) instead of org-name copy.
+      await expect(
+        page.getByRole("button", { name: "Accept Organization Invitation" }),
+      ).toBeEnabled();
       await page
         .getByRole("button", { name: "Accept Organization Invitation" })
         .click();
@@ -136,11 +142,15 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     const context = await fixture.actorContext(browser, "X", baseURL!);
     const page = await context.newPage();
     await page.goto("/projects");
-    await expect(page.getByText("No Organization access yet")).toBeVisible();
+    await expect(
+      page.locator('[data-testid="no-organization-access"]'),
+    ).toBeVisible();
     await page.goto(mainProjectURL);
-    await expect(page.getByText("No Organization access yet")).toBeVisible();
-    await expect(page.getByText(fixture.projectNames[0]!)).toHaveCount(0);
-    await expect(page.getByText(fixture.organizationName)).toHaveCount(0);
+    await expect(
+      page.locator('[data-testid="no-organization-access"]'),
+    ).toBeVisible();
+    // Text-free: no project-detail links leak to the unauthorized user.
+    await expect(page.locator('a[href^="/projects/"]')).toHaveCount(0);
     // Server authorization is separately covered by projects.integration.test.ts.
   });
 
@@ -218,7 +228,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
         page.getByRole("heading", { name: fixture.projectNames[0]! }),
       ).toBeVisible();
       await expect(
-        page.getByText("Hosted Project", { exact: true }),
+        page.locator('[data-relationship="hosted"]'),
       ).toBeVisible();
       await expect(
         page.getByRole("link", { name: "Review submitted Claims" }),

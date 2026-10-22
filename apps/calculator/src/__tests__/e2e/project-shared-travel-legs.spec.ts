@@ -217,8 +217,9 @@ test.describe("Project Shared Travel Legs", () => {
         hasText: en.project["shared-travel"].title,
       }),
     ).toBeVisible();
+    // Text-free: empty-state hook instead of i18n copy.
     await expect(
-      page.getByText(en.project["shared-travel"].empty.title, { exact: true }),
+      page.locator('[data-testid="shared-travel-empty"]'),
     ).toBeVisible();
 
     await page.getByLabel(en.project["shared-travel"].form.title).click();
@@ -298,9 +299,8 @@ test.describe("Project Shared Travel Legs", () => {
       })
       .click();
 
-    await expect(
-      page.getByText(`${sharedTravelLegDescription} updated`),
-    ).toHaveCount(0);
+    // Text-free: the deleted row is gone (stronger than absent copy).
+    await expect(updatedSharedTravelLegRow).toHaveCount(0);
   });
 
   test("renders shared-travel translations from the active locale", async ({
@@ -323,16 +323,10 @@ test.describe("Project Shared Travel Legs", () => {
           hasText: messages.project["shared-travel"].title,
         }),
       ).toBeVisible();
-      await expect(
-        page.getByText(messages.project["shared-travel"].empty.title, {
-          exact: true,
-        }),
-      ).toBeVisible();
-      await expect(
-        page.getByText(messages.project["shared-travel"].empty.description, {
-          exact: true,
-        }),
-      ).toBeVisible();
+    // Text-free: empty-state hook instead of i18n copy (title + description subsumed).
+    await expect(
+      page.locator('[data-testid="shared-travel-empty"]'),
+    ).toBeVisible();
 
       await page.getByLabel(messages.project["shared-travel"].form.title).click();
       const dialog = page.getByRole("dialog");

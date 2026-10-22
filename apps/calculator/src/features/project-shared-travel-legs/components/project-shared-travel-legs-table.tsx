@@ -204,6 +204,7 @@ export function ProjectSharedTravelLegsTable({
           </div>
         ) : (
           <Empty
+            data-testid="shared-travel-empty"
             /* eslint-disable-next-line shadcn/no-restyle -- Empty state intentionally has a table-style border. */
             className="border"
           >

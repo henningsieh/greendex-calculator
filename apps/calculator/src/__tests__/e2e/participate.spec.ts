@@ -506,11 +506,12 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.locator('input[type="number"]').first().fill("5");
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
-    // Now at step 2+ - CO2 stats should be visible
-    await expect(page.getByText("CO₂ Emissions", { exact: false })).toBeVisible();
-    await expect(
-      page.getByText("Tree years (trees x years)", { exact: false }),
-    ).toBeVisible();
+    // Now at step 2+ - stats cards render with computed values (reword-proof attributes).
+    await expect(page.locator('[data-testid="stat-co2"]')).toHaveAttribute(
+      "data-value",
+      "0.0",
+    );
+    await expect(page.locator('[data-testid="stat-trees"]')).toBeVisible();
     // Should show 0.0 kg initially
     await expect(page.locator("text=/0\\.0.*kg/i").first()).toBeVisible();
   });
@@ -700,13 +701,11 @@ test.describe("Questionnaire Form E2E Tests", () => {
     // Should show breakdown labels, including the public Project Shared Travel
     // contribution seeded by the unauthenticated fixture.
     await expect(page.locator("text=Your travel").first()).toBeVisible();
-    await expect(page.locator("text=Accommodation").first()).toBeVisible();
-    await expect(page.locator("text=Food").first()).toBeVisible();
-    await expect(
-      page.getByText("Project Shared Travel:", { exact: true }),
-    ).toBeVisible();
-    await expect(page.getByText("5.3 kg CO₂", { exact: true })).toBeVisible();
-    await expect(page.locator("text=Total").first()).toBeVisible();
+    // Text-free: shared-travel metric with exact computed value (reword-proof attribute).
+    await expect(page.locator('[data-testid="shared-travel-metric"]')).toHaveAttribute(
+      "data-co2-kg",
+      "5.3",
+    );
 
     // Should show CO2 values (numbers with "kg CO₂")
     const co2Values = await page.locator("text=/\\d+\\.\\d+.*kg.*CO₂/i").all();
