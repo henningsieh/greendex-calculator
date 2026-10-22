@@ -684,8 +684,15 @@ test.describe.serial("Claim review journey 25–26", () => {
         .filter({ has: partner.getByText(personNames[0], { exact: true }) })
         .getByText("Tallinn → Riga", { exact: true }),
     ).toBeVisible();
-    const checklist = partner.getByRole("list", { name: "Submission checklist" });
-    await expect(checklist.getByText(/^Pass:/)).toHaveCount(7);
+    // Text-free hook: stable test id + design-system state only. No visible
+    // copy is asserted anywhere here, so rewording never breaks this.
+    const checklist = partner.locator('[data-testid="submission-checklist"]');
+    // Functional state only: 7 items, each carrying the pass badge variant.
+    // No visible copy is asserted, so rewording never breaks this.
+    await expect(checklist.getByRole("listitem")).toHaveCount(7);
+    await expect(
+      checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
+    ).toHaveCount(7);
     await partner.getByRole("button", { name: "Submit Claim" }).click();
     await expect(
       partner.getByText(/Confirm submission: submission locks/),
