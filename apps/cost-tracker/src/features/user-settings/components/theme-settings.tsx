@@ -8,8 +8,21 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FieldDescription, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Kbd } from "@/components/ui/kbd";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { THEMES, isThemeValue } from "@/lib/themes";
 
 const subscribeToHydration = () => () => undefined;
+
+function themeIcon(value: string) {
+  if (value === "light") {
+    return <SunIcon data-icon="inline-start" />;
+  }
+
+  if (value === "dark") {
+    return <MoonIcon data-icon="inline-start" />;
+  }
+
+  return <span aria-hidden="true" className="size-3 rounded-full bg-primary" />;
+}
 
 export function ThemeSettings() {
   const mounted = React.useSyncExternalStore(
@@ -17,14 +30,16 @@ export function ThemeSettings() {
     () => true,
     () => false,
   );
-  const { resolvedTheme, setTheme } = useTheme();
-  const selectedTheme = mounted && resolvedTheme === "dark" ? "dark" : "light";
+  const { setTheme, theme } = useTheme();
+  const selectedValues = mounted && theme && isThemeValue(theme) ? [theme] : [];
 
   function changeTheme(values: string[]) {
-    const nextTheme = values.at(-1);
+    changeFullTheme(values.at(-1) ?? null);
+  }
 
-    if (nextTheme === "light" || nextTheme === "dark") {
-      setTheme(nextTheme);
+  function changeFullTheme(value: string | null) {
+    if (value && isThemeValue(value)) {
+      setTheme(value);
     }
   }
 
@@ -33,23 +48,27 @@ export function ThemeSettings() {
       <FieldSet>
         <FieldLegend variant="label">Color theme</FieldLegend>
         <FieldDescription>
-          Choose the appearance used throughout Cost Tracker.
+          All seven themes side by side — EU Erasmus light, five Ember vibes, and
+          legacy dark.
         </FieldDescription>
         <ToggleGroup
           aria-label="Color theme"
+          className="flex-wrap justify-start"
           disabled={!mounted}
           onValueChange={changeTheme}
-          value={[selectedTheme]}
+          value={selectedValues}
           variant="outline"
         >
-          <ToggleGroupItem aria-label="Use light theme" value="light">
-            <SunIcon data-icon="inline-start" />
-            Light
-          </ToggleGroupItem>
-          <ToggleGroupItem aria-label="Use dark theme" value="dark">
-            <MoonIcon data-icon="inline-start" />
-            Dark
-          </ToggleGroupItem>
+          {THEMES.map((entry) => (
+            <ToggleGroupItem
+              key={entry.value}
+              aria-label={`Use ${entry.label}`}
+              value={entry.value}
+            >
+              {themeIcon(entry.value)}
+              {entry.label}
+            </ToggleGroupItem>
+          ))}
         </ToggleGroup>
       </FieldSet>
 

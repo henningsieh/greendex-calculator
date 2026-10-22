@@ -3,6 +3,8 @@
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import * as React from "react";
 
+import { THEME_VALUES } from "@/lib/themes";
+
 function ThemeProvider({
   children,
   ...props
@@ -13,6 +15,7 @@ function ThemeProvider({
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
+      themes={[...THEME_VALUES]}
       {...props}
     >
       <ThemeHotkey />

@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useParticipantEntryAccess } from "@/features/authentication/participant-entry-access";
@@ -283,7 +284,11 @@ function JourneyEditor({
       </CardHeader>
       <CardContent className="space-y-5" id="claim-journeys">
         {saved.length === 0 ? (
-          <p>No journeys saved yet.</p>
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>No journeys saved yet.</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <ul className="space-y-4">
             {saved.map((journey) => (
@@ -498,7 +503,11 @@ function CostEditor({
       </CardHeader>
       <CardContent className="space-y-5" id="claim-costs">
         {entries.length === 0 ? (
-          <p>No costs saved yet.</p>
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>No costs saved yet.</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <ClaimCostTable
             actions={editable}
@@ -1135,7 +1144,13 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                       ))}
                     </select>
                   ) : (
-                    <p>No Payout Accounts available. Create one below.</p>
+                    <Empty>
+                      <EmptyHeader>
+                        <EmptyTitle>
+                          No Payout Accounts available. Create one below.
+                        </EmptyTitle>
+                      </EmptyHeader>
+                    </Empty>
                   )}
                   <SelectedClaimPayout payout={payout} editable={editable} />
                   {editable && (

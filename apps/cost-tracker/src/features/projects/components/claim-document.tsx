@@ -41,6 +41,9 @@ export function ClaimBand({
   return (
     <header>
       <Card variant="claim-band">
+        <p className="w-full type-ember-eyebrow">
+          GreenEx Cost Tracker · Erasmus Edition
+        </p>
         <CardTitle as="h2">{title}</CardTitle>
         {status && (
           <Badge variant="claim-status">{claimStatusLabel(status)}</Badge>

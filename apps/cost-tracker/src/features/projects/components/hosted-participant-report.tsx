@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -46,7 +47,13 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
         </p>
       )}
       {data.organizations.length === 0 ? (
-        <p>No Project Participations have joined this Project yet.</p>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>
+              No Project Participations have joined this Project yet.
+            </EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       ) : (
         data.organizations.map((group) => (
           <PartnerOrganizationParticipants group={group} key={group.id} />

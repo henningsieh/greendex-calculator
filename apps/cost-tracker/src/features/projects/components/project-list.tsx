@@ -24,6 +24,12 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -217,17 +223,14 @@ export function ProjectList() {
       );
     }
     return (
-      <section
-        aria-label="Project list"
-        className="mt-10 rounded-xl border p-8 text-center"
-      >
-        <h2 className="font-heading text-2xl font-semibold">
-          No Projects available
-        </h2>
-        <p className="mt-2 text-muted-foreground">
-          No Projects are hosted by or assigned to your active Organization.
-        </p>
-      </section>
+      <Empty variant="outlined" aria-label="Project list" className="mt-10">
+        <EmptyHeader>
+          <EmptyTitle>No Projects available</EmptyTitle>
+          <EmptyDescription>
+            No Projects are hosted by or assigned to your active Organization.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 

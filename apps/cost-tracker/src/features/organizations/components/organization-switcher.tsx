@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable shadcn/no-restyle -- Header-dropdown bespoke treatment, shared with AccountMenu + ThemeSwitcher: same w-64 rounded-xl p-2 content + normal-case items for identical header look. Extract a ui variant post-MVP. */
+
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Building2Icon,
@@ -84,7 +86,7 @@ export function OrganizationSwitcher({
             <ChevronDownIcon aria-hidden="true" />
           )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
           <DropdownMenuGroup>
             <DropdownMenuLabel>Acting Organization</DropdownMenuLabel>
             {organizations.map((organization) => {
@@ -93,6 +95,7 @@ export function OrganizationSwitcher({
               return (
                 <DropdownMenuItem
                   aria-current={current ? "true" : undefined}
+                  className="rounded-md text-sm tracking-normal normal-case"
                   key={organization.id}
                   onClick={() => void switchOrganization(organization.id)}
                 >

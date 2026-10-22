@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { SiteBrand } from "@/components/site-brand";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -75,6 +76,7 @@ export function AppNavigation({
       <div className="flex h-18 items-center justify-between">
         <SiteBrand href="/projects" />
         <div className="flex items-center gap-2">
+          <ThemeSwitcher />
           {showOrganizationSwitcher && activeOrganizationId ? (
             <OrganizationSwitcher
               activeOrganizationId={activeOrganizationId}
@@ -162,7 +164,7 @@ function AccountMenu({
                 "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
             )}
             size={compact ? "icon-sm" : "sm"}
-            variant="ghost"
+            variant="outline"
           />
         }
       >

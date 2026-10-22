@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -75,11 +76,16 @@ export function ClaimSubmission({
         <CardTitle as="h2">Submission</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ul aria-label="Submission checklist" className="space-y-3">
+        <ul aria-label="Submission checklist" data-testid="submission-checklist" className="space-y-3">
           {preview.items.map((item) => (
             <li key={item.key}>
               <p>
-                {item.passed ? "Pass" : "Fail"}: {labels[item.key]}
+                {item.passed ? (
+                  <Badge variant="status-pass">Pass</Badge>
+                ) : (
+                  <Badge variant="destructive">Fail</Badge>
+                )}{" "}
+                {labels[item.key]}
               </p>
               {item.gaps.map((gap) => (
                 <p key={`${gap.path.join(".")}-${gap.message}`}>

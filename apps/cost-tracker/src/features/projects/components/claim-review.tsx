@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Label } from "@/components/ui/label";
 import {
   claimPanelActions,
@@ -84,7 +85,11 @@ export function ClaimHistory({ events }: { events: History }) {
     >
       <h2 className="font-heading text-xl font-semibold">Claim history</h2>
       {events.length === 0 ? (
-        <p>No review events yet.</p>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>No review events yet.</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <ol className="divide-y">
           {events.map((event, index) => (
@@ -93,7 +98,10 @@ export function ClaimHistory({ events }: { events: History }) {
               className="grid gap-x-5 gap-y-2 py-4 min-[961px]:grid-cols-[180px_200px_minmax(0,1fr)]"
             >
               <strong>{historyLabels[event.eventType]}</strong>
-              <time dateTime={event.occurredAt.toISOString()}>
+              <time
+                dateTime={event.occurredAt.toISOString()}
+                className="font-mono text-xs text-muted-foreground"
+              >
                 {event.occurredAt.toLocaleString()}
               </time>
               <span className="min-w-0 wrap-anywhere">

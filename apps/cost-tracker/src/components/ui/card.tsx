@@ -2,6 +2,16 @@ import { cva, type VariantProps } from "class-variance-authority"
 import * as React from "react"
 import { cn } from "cn"
 
+/* Ember card states (LOCKED 2026-10-11), shadcn-idiomatic:
+   hover = -2px lift + fire border, 220ms strong ease-out, hover-gated;
+   active = permanent fire border + amber wash from top.
+   Cells carrying data-disabled (pending/disabled buttons inside) and
+   .calm zones are exempt — data-attribute, never :has(). */
+const emberHover =
+  "relative fine-hover:not-data-[disabled]:-translate-y-0.5 fine-hover:not-data-[disabled]:border-primary-border motion-reduce:fine-hover:translate-y-0 transition-[translate,scale,background-color,border-color] duration-220 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:bg-[radial-gradient(120%_90%_at_50%_0%,var(--amber-wash-strong),transparent_70%)] before:opacity-0 before:transition-opacity before:duration-220 fine-hover:not-data-[disabled]:before:opacity-100";
+const emberActive =
+  "border-primary-border bg-[var(--ember-active-wash)]";
+
 const documentAppearance = "gap-5 overflow-visible border-b border-border py-7 text-base shadow-none ring-0 [--card-spacing:--spacing(8)] max-sm:[--card-spacing:--spacing(4)]"
 
 const cardVariants = cva(
@@ -10,6 +20,8 @@ const cardVariants = cva(
     variants: {
       variant: {
         default: "",
+        ember: `${emberHover} rounded-xl border border-border`,
+        "ember-active": emberActive,
         document: documentAppearance,
         action: `${documentAppearance} border-0 bg-muted [--card-spacing:--spacing(6)]`,
         "claim-band": "relative flex-row flex-wrap items-start justify-between gap-4 overflow-visible border border-muted-foreground bg-claim-band px-8 py-7 text-base text-claim-band-foreground shadow-none ring-0 before:absolute before:top-7 before:left-0 before:h-12 before:w-2 before:bg-brand before:content-[''] max-sm:px-6 dark:before:w-1",
@@ -35,13 +47,15 @@ function Card({
   className,
   size = "default",
   variant = "default",
+  disabled,
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" } & VariantProps<typeof cardVariants>) {
+}: React.ComponentProps<"div"> & { size?: "default" | "sm"; disabled?: boolean } & VariantProps<typeof cardVariants>) {
   return (
     <div
       data-slot="card"
       data-size={size}
       data-variant={variant}
+      data-disabled={disabled ? "true" : undefined}
       className={cn(cardVariants({ variant }), className)}
       {...props}
     />

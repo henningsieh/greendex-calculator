@@ -952,9 +952,15 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     try {
       const page = await actor.newPage();
       await openPartnership(page, "claim");
-      const checklist = page.getByRole("list", { name: "Submission checklist" });
+      // Text-free hook: stable test id + design-system state only. No visible
+      // copy is asserted anywhere here, so rewording never breaks this.
+      const checklist = page.locator('[data-testid="submission-checklist"]');
       await expect(checklist.getByRole("listitem")).toHaveCount(7);
-      await expect(checklist.getByText(/^Pass:/)).toHaveCount(7);
+      // Functional state only: each item carries the pass badge variant.
+      // No visible copy is asserted, so rewording never breaks this.
+      await expect(
+        checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
+      ).toHaveCount(7);
       const band = getTravelFundingRate(Number(distance));
       expect(band).not.toBeNull();
       const [entry] = await db

@@ -358,8 +358,15 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       .insert(entryDocuments)
       .values({ travelCostEntryId: ids.entry, proofDocumentId: ids.document });
     await p.goto(claimURL);
-    const checklist = p.getByRole("list", { name: "Submission checklist" });
-    await expect(checklist.getByText(/^Pass:/)).toHaveCount(7);
+    // Text-free hook: stable test id + design-system state only. No visible
+    // copy is asserted anywhere here, so rewording never breaks this.
+    const checklist = p.locator('[data-testid="submission-checklist"]');
+    // Functional state only: 7 items, each carrying the pass badge variant.
+    // No visible copy is asserted, so rewording never breaks this.
+    await expect(checklist.getByRole("listitem")).toHaveCount(7);
+    await expect(
+      checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
+    ).toHaveCount(7);
     await p.getByRole("button", { name: "Submit Claim" }).dblclick();
     const confirm = p.getByRole("button", { name: "Confirm submission" });
     await expect(confirm).toBeVisible();

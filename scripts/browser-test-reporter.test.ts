@@ -21,6 +21,13 @@ it("accounts for real installed Playwright list and execution identities without
     resolve(tmpdir(), "greendex-browser-reporter-"),
   );
   try {
+    // Pin the temp dir to CommonJS: the generated spec uses require(),
+    // and os.tmpdir() may sit under a "type": "module" package.json
+    // (gateway TMPDIR). Without this the test inherits ambient ESM scope.
+    await writeFile(
+      resolve(directory, "package.json"),
+      JSON.stringify({ type: "commonjs" }),
+    );
     await writeFile(
       resolve(directory, "playwright.config.cjs"),
       'module.exports = { testDir: ".", reporter: "json", workers: 1, retries: 0 };',
