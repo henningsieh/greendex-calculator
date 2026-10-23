@@ -738,7 +738,7 @@ export function SetupLinkRecipient({
           <output>Checking setup link…</output>
         ) : state.phase === "completed" ? (
           <>
-            <Alert>
+            <Alert data-relationship="project-partnership">
               <AlertTitle>Project Partnership created</AlertTitle>
               <AlertDescription>
                 Your Organization is now connected to the Project. No Hosting
