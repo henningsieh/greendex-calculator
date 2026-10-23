@@ -61,9 +61,14 @@ export function PayoutAccountLines({
   return (
     <dl className="grid min-w-0 grid-cols-[130px_minmax(0,1fr)] gap-x-5 gap-y-2 max-sm:grid-cols-1">
       <dt className="text-muted-foreground">Account holder</dt>
-      <dd className="wrap-anywhere">{account.accountHolder}</dd>
+      <dd className="wrap-anywhere" data-testid="payout-account-holder">
+        {account.accountHolder}
+      </dd>
       <dt className="text-muted-foreground">IBAN</dt>
-      <dd className="font-mono wrap-anywhere tabular-nums select-all">
+      <dd
+        className="font-mono wrap-anywhere tabular-nums select-all"
+        data-testid="payout-account-iban"
+      >
         {account.iban}
       </dd>
       {account.bic && (
@@ -129,7 +134,12 @@ export function ClaimCostTable({
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.id} id={`cost-${row.id}`}>
+          <TableRow
+            key={row.id}
+            id={`cost-${row.id}`}
+            data-transport-profile={row.transportProfile}
+            data-amount-eur={row.amountEur}
+          >
             <TableCell variant="accounting">{row.transportProfile}</TableCell>
             <TableCell variant="amount">{row.amountEur}</TableCell>
             <TableCell variant="accounting">

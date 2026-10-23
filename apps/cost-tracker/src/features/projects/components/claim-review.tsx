@@ -109,7 +109,12 @@ export function ClaimHistory({ events }: { events: History }) {
                 Actor: <span className="font-mono">{event.actorUserId}</span>
               </span>
               {event.reason && (
-                <p className="col-span-full wrap-anywhere">{event.reason}</p>
+                <p
+                  className="col-span-full wrap-anywhere"
+                  data-testid="history-reason"
+                >
+                  {event.reason}
+                </p>
               )}
             </li>
           ))}
@@ -289,7 +294,11 @@ export function ClaimReviewDetails({
         )}
         <p>
           Calculated payable:{" "}
-          <span className="font-mono tabular-nums">
+          <span
+            className="font-mono tabular-nums"
+            data-testid="review-approved-payable"
+            data-amount-eur={details.approvedAmountEur}
+          >
             {details.approvedAmountEur ?? "Unavailable"} EUR
           </span>
         </p>
@@ -357,6 +366,8 @@ export function ClaimReviewDetails({
             {details.journeys.map((journey) => (
               <li
                 data-testid={`review-journey-${journey.participantId}`}
+                data-trip-type={journey.tripType}
+                data-distance-km={journey.erasmusDistanceKm}
                 key={journey.participantId}
               >
                 {journey.participantName}: {journey.origin} →{" "}
