@@ -484,7 +484,12 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
       {isHydrated && (
         <div className="flex items-center gap-3">
           <Progress className="h-1.5 flex-1" value={progress} />
-          <div className="text-[11px] text-muted-foreground sm:text-xs">
+          <div
+            className="text-[11px] text-muted-foreground sm:text-xs"
+            data-current={currentStepDisplay + 1}
+            data-testid="step-counter"
+            data-total={totalSteps}
+          >
             {t("header.step-counter", {
               current: currentStepDisplay + 1,
               total: totalSteps,
@@ -519,7 +524,12 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
           key={renderedStep}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          <Card tone="glass" className="p-4 sm:p-5 md:p-6">
+          <Card
+            tone="glass"
+            className="p-4 sm:p-5 md:p-6"
+            data-step={renderedStep}
+            data-testid="participate-step"
+          >
             {/* Step 0: Welcome */}
             {renderedStep === 0 && (
               <div className="space-y-6 text-center">
@@ -971,7 +981,10 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="border-teal-500/30 bg-linear-to-br from-teal-500/20 to-emerald-500/20 p-6">
+          <Card
+            className="border-teal-500/30 bg-linear-to-br from-teal-500/20 to-emerald-500/20 p-6"
+            data-testid="summary-panel"
+          >
             <div className="space-y-6">
               <h3 className="text-center text-2xl font-bold text-foreground sm:text-3xl">
                 {t("results.summary-title")}
@@ -981,7 +994,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                   <span className="text-muted-foreground">
                     {t("results.participant-travel")}
                   </span>
-                  <span className="font-semibold text-foreground">
+                  <span
+                    className="font-semibold text-foreground"
+                    data-co2-kg={emissions.participantTravelCO2.toFixed(1)}
+                    data-testid="summary-participant-travel"
+                  >
                     {emissions.participantTravelCO2.toFixed(1)} kg CO₂
                   </span>
                 </div>
@@ -989,7 +1006,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                   <span className="text-muted-foreground">
                     {t("results.accommodation")}
                   </span>
-                  <span className="font-semibold text-foreground">
+                  <span
+                    className="font-semibold text-foreground"
+                    data-co2-kg={emissions.accommodationCO2.toFixed(1)}
+                    data-testid="summary-accommodation"
+                  >
                     {emissions.accommodationCO2.toFixed(1)} kg CO₂
                   </span>
                 </div>
@@ -997,7 +1018,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                   <span className="text-muted-foreground">
                     {t("results.food")}
                   </span>
-                  <span className="font-semibold text-foreground">
+                  <span
+                    className="font-semibold text-foreground"
+                    data-co2-kg={emissions.foodCO2.toFixed(1)}
+                    data-testid="summary-food"
+                  >
                     {emissions.foodCO2.toFixed(1)} kg CO₂
                   </span>
                 </div>
@@ -1006,7 +1031,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                     <span className="text-muted-foreground">
                       {t("results.project-shared-travel")}
                     </span>
-                    <span className="font-semibold text-foreground">
+                    <span
+                      className="font-semibold text-foreground"
+                      data-co2-kg={emissions.projectSharedTravelCO2.toFixed(1)}
+                      data-testid="summary-shared-travel"
+                    >
                       {emissions.projectSharedTravelCO2.toFixed(1)} kg CO₂
                     </span>
                   </div>
@@ -1016,7 +1045,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                     <span className="font-bold text-foreground">
                       {t("results.total")}
                     </span>
-                    <span className="font-bold text-teal-400">
+                    <span
+                      className="font-bold text-teal-400"
+                      data-co2-kg={emissions.totalCO2.toFixed(1)}
+                      data-testid="summary-total"
+                    >
                       {emissions.totalCO2.toFixed(1)} kg CO₂
                     </span>
                   </div>
