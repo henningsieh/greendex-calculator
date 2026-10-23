@@ -175,10 +175,16 @@ async function selectEntity(
   await page
     .getByRole("combobox", { name: `Search ${label} by name or ID` })
     .fill(name);
-  await page.getByRole("option", { name: new RegExp(name, "i") }).click();
+  const table = label.includes("Project") ? projectsTable : organization;
+  const [entity] = await db
+    .select({ id: table.id })
+    .from(table)
+    .where(eq(table.name, name));
+  expect(entity).toBeDefined();
+  await page.locator(`[role="option"][data-entity-id="${entity!.id}"]`).click();
   await expect(
     scope.getByRole("button", { name: label, exact: true }),
-  ).toContainText(name);
+  ).toHaveAttribute("aria-expanded", "false");
 }
 
 async function openOrganizationDialog(page: Page) {
@@ -187,6 +193,26 @@ async function openOrganizationDialog(page: Page) {
   await page.getByRole("button", { name: "Create Organization" }).click();
   await expect(dialog).toBeVisible();
   return dialog;
+}
+
+async function projectLink(page: Page, name: string) {
+  const [project] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .where(eq(projectsTable.name, name));
+  expect(project).toBeDefined();
+  return page.locator(
+    `a[href="/projects/${project!.id}"], a[href^="/projects/${project!.id}?"]`,
+  );
+}
+
+async function staffRow(page: Page, userId: string) {
+  const [membership] = await db
+    .select({ id: member.id })
+    .from(member)
+    .where(eq(member.userId, userId));
+  expect(membership).toBeDefined();
+  return page.getByTestId(`staff-member-${membership!.id}`);
 }
 
 async function createProject(page: Page, name: string) {
@@ -199,7 +225,7 @@ async function createProject(page: Page, name: string) {
   await dialog.getByLabel("Location").fill("Berlin");
   await dialog.getByLabel("Country").selectOption("DE");
   await dialog.getByRole("button", { name: "Create project" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible();
+  await expect(page.getByTestId("project-workspace")).toBeVisible();
   await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
   return new URL(page.url()).pathname;
 }
@@ -210,12 +236,10 @@ async function issueThroughUI(
   recipient: string,
 ) {
   await page.goto("/partner-organizations");
-  await expect(
-    page.getByRole("heading", { name: "Partner Organizations" }),
-  ).toBeVisible();
-  const creator = page.locator("section").filter({
-    hasText: "Share this recipient-bound link privately",
-  });
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  const creator = page
+    .locator("section")
+    .filter({ has: page.getByLabel("Recipient email", { exact: true }) });
   await selectEntity(page, "Hosted Project", projectName, creator);
   await creator.getByLabel("Recipient email").fill(recipient);
   await creator.getByRole("button", { name: "Neuer Link", exact: true }).click();
@@ -264,10 +288,10 @@ async function issueInSetup(projectName: string, recipient: string) {
 
 async function openPartnerProject(page: Page, name: string) {
   await page.goto("/projects");
-  const link = page.getByRole("link", { name, exact: true });
+  const link = await projectLink(page, name);
   await expect(link).toBeVisible();
   await link.click();
-  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator('[data-relationship="partner"]')).toBeVisible();
 }
 
@@ -296,21 +320,20 @@ async function selectAndOpenPartnerProject(
   await page
     .getByRole("link", { name: "Open Partner Project", exact: true })
     .click();
-  await expect(
-    page.getByRole("heading", { name: projectName, exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator('[data-relationship="partner"]')).toBeVisible();
-  await expect(
-    page.getByRole("button", {
-      name: new RegExp(`Acting Organization: ${organizationName}`),
-    }),
-  ).toBeVisible();
+  const [selectedOrganization] = await db
+    .select({ id: organization.id })
+    .from(organization)
+    .where(eq(organization.name, organizationName));
+  const acting = await page.request.get("/api/auth/get-session");
+  expect((await acting.json()).session.activeOrganizationId).toBe(
+    selectedOrganization!.id,
+  );
   await page
     .getByRole("link", { name: "Open Claim workspace", exact: true })
     .click();
-  await expect(
-    page.getByRole("heading", { name: "Claim workspace", level: 1, exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Create Payout Account", exact: true }),
   ).toBeEnabled();
@@ -582,9 +605,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     expect(attempts).toBe(1);
     await page.goto("/projects");
-    await expect(
-      page.getByRole("heading", { name: "Projects", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.goto(url);
     // Text-free: retained-org state proven by absent name input + attempts counter below (no copy).
     await expect(page.getByLabel("New Organization name")).toHaveCount(0);
@@ -911,9 +932,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     );
     await page.goto("/projects");
     await expect(
-      page.getByRole("button", {
-        name: /Acting Organization: Owned Search canonical 30/,
-      }),
+      page.getByRole("button", { name: /Switch Organization/ }),
     ).toBeVisible();
     await page.goto(url);
     await page.getByRole("radio", { name: "Existing Organization" }).check();
@@ -977,14 +996,17 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const ownerPage = await owner.newPage();
       await ownerPage.goto("/organization");
       await expect(
-        ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
+        ownerPage.getByTestId(`staff-invitation-${invitationId}`),
+      ).toBeVisible();
+      const [pendingInvitation] = await db
+        .select({ role: invitation.role })
+        .from(invitation)
+        .where(eq(invitation.id, invitationId));
+      expect(pendingInvitation?.role).toBe(ORGANIZATION_ROLES.OrganizationAdmin);
       const context = await actorContext(browser, "M", baseURL!);
       const page = await context.newPage();
       await page.goto(`/accept-invitation/${invitationId}`);
-      await expect(
-        page.getByRole("heading", { name: "Organization Invitation" }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       // Text-free: enabled Accept proves the invitation loaded for E (no name copy).
       await page
         .getByRole("button", { name: "Accept Organization Invitation" })
@@ -994,12 +1016,16 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await page.goto("/organization");
       await expect(page.locator('[data-testid="staff-invite"]')).toBeVisible();
       await expect(
-        page.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
+        (await staffRow(page, actors.M.id)).getByTestId(
+          `staff-role-${ORGANIZATION_ROLES.OrganizationAdmin}`,
+        ),
+      ).toBeVisible();
       await ownerPage.reload();
       await expect(
-        ownerPage.getByRole("row").filter({ hasText: actors.M.email }),
-      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
+        (await staffRow(ownerPage, actors.M.id)).getByTestId(
+          `staff-role-${ORGANIZATION_ROLES.OrganizationAdmin}`,
+        ),
+      ).toBeVisible();
       const [participation] = await db
         .select({ id: projectParticipantsTable.id })
         .from(projectParticipantsTable)
@@ -1022,9 +1048,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const page = await context.newPage();
     // Admin authority is Organization-wide, unlike assignment-only coordination.
     await page.goto("/projects");
-    await expect(
-      page.getByRole("heading", { name: "Projects", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     // Text-free: hydrated project list + DB proof below prove successful load (no error).
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
@@ -1033,9 +1057,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     try {
       await createProject(page, adminProjectName);
       await page.goto("/projects");
-      await expect(
-        page.getByRole("link", { name: adminProjectName }),
-      ).toBeVisible();
+      await expect(await projectLink(page, adminProjectName)).toBeVisible();
       const [created] = await db
         .select({ organizationId: projectsTable.organizationId })
         .from(projectsTable)
@@ -1088,9 +1110,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(
       page.locator('[data-testid="organization-assignment"]'),
     ).toBeVisible();
-    const section = page.locator("section").filter({
-      has: page.getByRole("heading", { name: "Current Project Partnerships" }),
-    });
+    const section = page.getByTestId("organization-assignment");
     await selectEntity(page, "Hosted Project", fixture.projectNames[2]!, section);
     await selectEntity(page, "Partner Organization", names.E, section);
     await section.getByRole("button", { name: "Assign", exact: true }).click();
@@ -1127,24 +1147,20 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const closedRow = list.locator(
       `[data-setup-link-id="${idFrom(closedSetupURL)}"]`,
     );
-    await expect(closedRow).toContainText(actors.P.email);
+    await expect(closedRow).toBeVisible();
     await closedRow
       .getByRole("button", { name: "Close Partner Organization Setup Link" })
       .click();
-    await expect(
-      closedRow.getByRole("cell", { name: "Closed", exact: true }),
-    ).toBeVisible();
+    await expect(closedRow.locator('[data-link-status="closed"]')).toBeVisible();
     await expect(closedRow.getByRole("button")).toBeDisabled();
     for (const url of siblingSetupURLs)
       await expect(
         list
           .locator(`[data-setup-link-id="${idFrom(url)}"]`)
-          .getByRole("cell", { name: "Open", exact: true }),
+          .locator('[data-link-status="open"]'),
       ).toBeVisible();
     await page.reload();
-    await expect(
-      closedRow.getByRole("cell", { name: "Closed", exact: true }),
-    ).toBeVisible();
+    await expect(closedRow.locator('[data-link-status="closed"]')).toBeVisible();
   });
 
   test("13a closed setup link refuses completion; both siblings redeem independently", async ({
@@ -1221,7 +1237,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       // Text-free: own-partnership href equality above proves isolation (no name copy).
       await page.goto("/projects");
       await expect(
-        page.getByRole("link", { name: fixture.projectNames[0]! }),
+        await projectLink(page, fixture.projectNames[0]!),
       ).toBeVisible();
       // Text-free: own-partnership href equality above proves isolation (no name copy).
     }

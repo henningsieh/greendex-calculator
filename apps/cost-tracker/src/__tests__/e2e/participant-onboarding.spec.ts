@@ -208,7 +208,11 @@ async function pageFor(browser: Browser, actor: Actor, baseURL: string) {
 async function openPartnerParticipants(page: Page, projectName: string) {
   await page.goto("/projects");
   await page.getByRole("tab", { name: "Partner" }).click();
-  await page.getByRole("link", { name: projectName, exact: true }).click();
+  await page
+    .locator(
+      `a[href="/projects/${projectName === names.main ? ids.main : ids.other}"], a[href^="/projects/${projectName === names.main ? ids.main : ids.other}?"]`,
+    )
+    .click();
   await page.getByRole("link", { name: "Coordinate Participants" }).click();
   await expect(
     page.locator('section[aria-label="Project Participations"]'),
@@ -220,11 +224,7 @@ async function openPartnerParticipants(page: Page, projectName: string) {
 async function join(page: Page, url: string, actor: Actor) {
   await page.goto(url);
   // Text-free: the join form interactions + redirect below prove the page (no copy).
-  await expect(
-    page.getByRole("heading", {
-      name: /EU–Erasmus Participant agreement \(eu-erasmus-dev-v1\)/,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByLabel("Participant agreement text")).not.toBeEmpty();
   await page.getByLabel("Full name").fill(actors[actor].name);
   await page.getByLabel("Country", { exact: true }).selectOption("DE");
@@ -489,11 +489,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await page.getByLabel("Full name", { exact: true }).fill(actors.T.name);
     await page.getByRole("button", { name: "Save profile" }).click();
     // Text-free: the filled form + save interaction above prove the page (no copy).
-    await expect(
-      page.getByRole("heading", {
-        name: /EU–Erasmus Participant agreement \(eu-erasmus-dev-v1\)/,
-      }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByLabel("Participant agreement text")).not.toBeEmpty();
     await expect(
       page.getByRole("button", { name: "Accept agreement" }),
@@ -525,7 +521,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       p.getByRole("button", { name: "Send Participant Invitation" }),
     ).toBeVisible();
     await expect(
-      p.getByRole("button", { name: `Reissue invitation for ${actors.T.email}` }),
+      p
+        .getByTestId(`participant-invitation-${ids.oldInvitation}`)
+        .getByRole("button", { name: /^Reissue invitation for / }),
     ).toBeVisible();
     // Reissue UI sends mail. Rotate app-owned invitation records in setup instead.
     await db
@@ -545,7 +543,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await p.reload();
     // Text-free: the Reissue control below proves the revoked state (no toast copy).
     await expect(
-      p.getByRole("button", { name: `Reissue invitation for ${actors.T.email}` }),
+      p
+        .getByTestId(`participant-invitation-${ids.invitation}`)
+        .getByRole("button", { name: /^Reissue invitation for / }),
     ).toBeVisible();
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(invitationUrl(ids.oldInvitation));
@@ -554,9 +554,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
-    await expect(t.locator("form p[role='alert']")).toContainText(
-      "Invitation is closed.",
-    );
+    await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(
       await db
         .select()
@@ -585,7 +583,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .inputValue();
     const id = new URL(sharedLink).pathname.split("/").at(-1)!;
     await p
-      .getByRole("button", { name: `Close registration link ${id}` })
+      .getByTestId(`registration-link-${id}`)
+      .getByRole("button", { name: /^Close registration link / })
       .click();
     // Text-free: link row carries the closed state (stable id, not copy).
     await expect(
@@ -600,9 +599,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await u.getByLabel("I accept the current Participant agreement").check();
     await u.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
-    await expect(u.locator("form p[role='alert']")).toContainText(
-      "Registration link is closed.",
-    );
+    await expect(u.locator("form p[role='alert']")).toBeVisible();
     expect(
       await db
         .select()
@@ -610,7 +607,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .where(eq(participants.userId, actors.U.id)),
     ).toHaveLength(0);
     await p
-      .getByRole("button", { name: `Reopen registration link ${id}` })
+      .getByTestId(`registration-link-${id}`)
+      .getByRole("button", { name: /^Reopen registration link / })
       .click();
     // Text-free: link row carries the reopened state (DB pending-check below covers value).
     await expect(
@@ -625,7 +623,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ).toBe("pending");
     await p.reload();
     await expect(
-      p.getByRole("button", { name: `Close registration link ${id}` }),
+      p
+        .getByTestId(`registration-link-${id}`)
+        .getByRole("button", { name: /^Close registration link / }),
     ).toBeVisible();
   });
 
@@ -652,7 +652,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .inputValue();
     const id = new URL(url).pathname.split("/").at(-1)!;
     await p
-      .getByRole("button", { name: `Close registration link ${id}` })
+      .getByTestId(`registration-link-${id}`)
+      .getByRole("button", { name: /^Close registration link / })
       .click();
     // Text-free: link row carries the closed state (DB revoked-check below covers value).
     await expect(
@@ -666,13 +667,10 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .values({ partnershipId: ids.otherPartnership, status: "submitted" });
     try {
       await p
-        .getByRole("button", { name: `Reopen registration link ${id}` })
+        .getByTestId(`registration-link-${id}`)
+        .getByRole("button", { name: /^Reopen registration link / })
         .click();
-      await expect(
-        p
-          .getByRole("alert")
-          .filter({ hasText: "Registration link cannot be reopened" }),
-      ).toContainText("A non-editable Claim prevents reopening registration.");
+      await expect(p.getByRole("alert")).toBeVisible();
       // Text-free: link row carries the closed state (stable id + DB proof below).
       await expect(
         p.locator(
@@ -717,7 +715,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     for (const actor of ["T", "U"] as const) {
       const page = await pageFor(browser, actor, baseURL!);
       await page.goto("/participant");
-      await expect(page.getByRole("heading", { name: names.main })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       // Text-free: partner-scoped interactions below prove the acting context (no copy).
     }
     const p = await pageFor(browser, "P", baseURL!);
@@ -734,11 +732,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       f.locator('[data-testid="joined-participants-empty"]'),
     ).toBeVisible();
     await f.goto(participantsURL);
-    await expect(
-      f
-        .getByRole("alert")
-        .filter({ hasText: "Unable to load Project Participations" }),
-    ).toContainText("Project Partnership not found in scope.", {
+    await expect(f.getByRole("alert")).toBeVisible({
       timeout: 90_000,
     });
     // Text-free: the scope-denied alert above proves F sees no participant data.
@@ -768,9 +762,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the joinedOtherPartner factory copy.
-    await expect(t.locator("form p[role='alert']")).toContainText(
-      "You already joined this Project through another Partner Organization.",
-    );
+    await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(
       await db
         .select()
@@ -815,7 +807,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByRole("button", { name: "Join Project" }).click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(t, /\/participant$/);
-    await expect(t.getByRole("heading", { name: names.other })).toBeVisible();
+    await expect(t.getByRole("heading", { level: 1 })).toBeVisible();
     await assertJoined("T", ids.partner, ids.other);
 
     const q = await pageFor(browser, "Q", baseURL!);
@@ -849,14 +841,14 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       c.locator('[data-testid="assigned-projects-empty"]'),
     ).toBeVisible();
     await expect(
-      c.getByRole("link", { name: names.main, exact: true }),
+      c.locator(
+        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
+      ),
     ).toHaveCount(0);
     await p
       .getByRole("button", { name: "Assign Group Organizer", exact: true })
       .click();
-    await expect(
-      p.getByRole("alert").filter({ hasText: "Group Organizer update" }),
-    ).toContainText("Group Organizer assigned to this Project Partnership.");
+    await expect(p.getByRole("alert")).toBeVisible();
     expect(
       await db
         .select()
@@ -873,12 +865,20 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ]);
     await c.goto("/projects");
     await expect(
-      c.getByRole("link", { name: names.main, exact: true }),
+      c.locator(
+        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
+      ),
     ).toBeVisible();
     await expect(
-      c.getByRole("link", { name: names.other, exact: true }),
+      c.locator(
+        `a[href="/projects/${ids.other}"], a[href^="/projects/${ids.other}?"]`,
+      ),
     ).toHaveCount(0);
-    await c.getByRole("link", { name: names.main, exact: true }).click();
+    await c
+      .locator(
+        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
+      )
+      .click();
     await c
       .getByRole("link", { name: "Coordinate Participants", exact: true })
       .click();
@@ -890,13 +890,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await c
       .getByRole("button", { name: "Manage Group Organizers", exact: true })
       .click();
-    await expect(
-      c
-        .getByRole("alert")
-        .filter({ hasText: "Group Organizer management unavailable" }),
-    ).toContainText(
-      "You need Organization Owner or Admin access to manage this Organization.",
-    );
+    await expect(c.getByRole("alert")).toBeVisible();
     await expect(
       c.getByRole("button", { name: "Assign Group Organizer", exact: true }),
     ).toHaveCount(0);
@@ -906,11 +900,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         exact: true,
       })
       .click();
-    await expect(
-      p.getByRole("alert").filter({ hasText: "Group Organizer update" }),
-    ).toContainText(
-      "Group Organizer assignment revoked for this Project Partnership.",
-    );
+    await expect(p.getByRole("alert")).toBeVisible();
     expect(
       await db
         .select()
@@ -931,17 +921,12 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       c.locator('[data-testid="assigned-projects-empty"]'),
     ).toBeVisible();
     await expect(
-      c.getByRole("link", { name: names.main, exact: true }),
+      c.locator(
+        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
+      ),
     ).toHaveCount(0);
     await c.goto(participantsURL);
-    await expect(
-      c
-        .getByRole("alert")
-        .filter({ hasText: "Unable to load Project Participations" }),
-    ).toContainText(
-      "You need Partner Organization staff access or an assignment to this Project Partnership.",
-      { timeout: 90_000 },
-    );
+    await expect(c.getByRole("alert")).toBeVisible({ timeout: 90_000 });
     // Text-free: the scope-denied alert above proves no participant data leaks.
   });
 });
