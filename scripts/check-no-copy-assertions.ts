@@ -4,8 +4,8 @@
  * occurrence inside a test file is a policy violation, no matter the
  * surrounding intent. Design or marketing rewording must never break tests.
  *
- * Scope (phase 1): browser test sources (e2e, merge suites, helpers).
- * Unit/integration sources follow in phase 2; extend the patterns below then.
+ * Scope (phase 2): browser test sources (e2e, merge suites, helpers)
+ * plus unit/integration test sources across apps and packages.
  * Enforcement: wired into `pnpm run lint`; fails CI-red with file:line list.
  */
 import { globSync } from "node:fs";
@@ -17,7 +17,11 @@ const patterns = [
   "apps/*/src/__tests__/e2e/**/*.{ts,tsx,js,jsx,mts,cts}",
   "apps/*/src/__tests__/merge/**/*.{ts,tsx,js,jsx,mts,cts}",
   "apps/*/test/e2e/**/*.{ts,tsx,js,jsx,mts,cts}",
+  "apps/*/src/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts}",
+  "packages/*/src/**/*.{test,spec}.{ts,tsx,js,jsx,mts,cts}",
 ];
+
+const seen = new Set<string>();
 
 const violations: string[] = [];
 for (const pattern of patterns) {
@@ -29,7 +33,11 @@ for (const pattern of patterns) {
     source.split("\n").forEach((line, index) => {
       const stripped = line.replace(/^\s*(\/\/|\*)/, "");
       if (stripped.includes("getByText")) {
-        violations.push(`${file}:${index + 1}: ${line.trim().slice(0, 120)}`);
+        const key = `${file}:${index + 1}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          violations.push(`${file}:${index + 1}: ${line.trim().slice(0, 120)}`);
+        }
       }
     });
   }
@@ -45,6 +53,4 @@ if (violations.length > 0) {
   );
   process.exit(1);
 }
-console.log(
-  "check:no-copy-assertions passed — no getByText in test sources.",
-);
+console.log("check:no-copy-assertions passed — no getByText in test sources.");
