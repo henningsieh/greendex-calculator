@@ -36,10 +36,10 @@
   },
   "dependencies": {
     "dotenv-cli": "catalog:",
-    "turbo": "^2.11.7"
+    "turbo": "^2.11.10"
   },
   "devDependencies": {
-    "@shadcn/lint": "^0.2.0",
+    "@shadcn/lint": "^0.2.3",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -48,7 +48,7 @@
     "husky": "^9.1.7",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "oxlint-tsgolint": "^7.0.2003",
+    "oxlint-tsgolint": "^7.0.2004",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",

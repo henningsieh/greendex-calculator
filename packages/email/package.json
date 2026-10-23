@@ -15,7 +15,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "nodemailer": "^10.0.16",
+    "nodemailer": "^10.2.0",
     "react-email": "catalog:",
     "tailwindcss": "catalog:"
   },
