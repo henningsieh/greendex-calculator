@@ -1,0 +1,14 @@
+decision	reason	evidence
+isolate-runtime	Owned local database textfree305_fix and dev server localhost:3415; external Playwright config omits production global setup without setting production flag	/tmp/textfree-305-fix/env.json; /tmp/textfree-305-fix/playwright.config.ts
+limit-scope	Only the three assigned specs may change; no production edits	User task
+access-alert	Delete redundant global alert assertion; denied() already asserts data-error-fallback and Retry button	Baseline strict-mode violation includes data-error-fallback and __next-route-announcer__
+participation-identity	Wait for persisted addition and resolve a fresh participation ID; assert both new and old row state before and after reload	Baseline joined-participant locator timeout after delete/re-add
+partnership-no-guess	Do not alter a currently passing test or production code without reproduction	Unmodified setup cases 05+06 passed on isolated dev server
+throughput	Single writer and sequential browser worker; focused full-spec run, per-file lint and one app typecheck	No shared code changes; only three owned specs in scope
+access-pattern	Remove two additional identical assertions after denied(T/H); first later occurrence reproduced in full spec run	/tmp/textfree-305-fix/all-after.log
+issue-reopen	Reopen #305 before progress comment because ticket was already closed	Supervisor explicitly approved via intercom
+review-state-locators	Resolve each Review Task through open, assigned and resolved state-specific locators; the previous open-only locator disappears on assignment	Full run failed at assigned assertion while DOM showed assigned task and select control
+partnership-verified-unchanged	All 17 original partnership setup cases passed in full run; initial 05+06 also passed separately. No speculative fix	/tmp/textfree-305-fix/all-after.log; /tmp/textfree-305-fix/partnership-before.log
+mcp-diagnostics	Config and build diagnostics clean; existing logo hydration float-rounding warnings remain out of scope	/tmp/textfree-305-fix/mcp-errors.log
+dev-cold-root	Sign-out RPC returned 200 then dev server first compiled /. URL assertion expired after 15s; investigate by warming root and rerunning access without code changes	/tmp/textfree-305-fix/two-final.log; /tmp/textfree-305-fix/server.log; GET / subsequently 200 in 0.91s
+proof-link-completion	Await linkDocument RPC 200 and refreshed option removal before closing actor context; previous run uploaded document but sent no linkDocument request and next checklist had 5/7 passes	/tmp/textfree-305-fix/two-final.log; /tmp/textfree-305-fix/server.log
