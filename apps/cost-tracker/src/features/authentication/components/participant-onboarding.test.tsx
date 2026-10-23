@@ -73,7 +73,9 @@ describe("ParticipantJoin", () => {
     await user.type(screen.getByLabelText("Full name"), "Alex Example");
     await user.selectOptions(screen.getByLabelText("Country"), "DE");
     expect(screen.getByRole("button", { name: "Join Project" })).toBeDisabled();
-    expect(screen.getByText(published.content)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Participant agreement text"),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
     await user.click(screen.getByRole("button", { name: "Join Project" }));
     await waitFor(() =>
@@ -116,15 +118,16 @@ describe("ParticipantJoin", () => {
         source={{ kind: "invitation", invitationId: "i", secret: "s" }}
       />,
     );
-    expect(
-      screen.getByText(/agreement is not yet available/i),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveAttribute(
+      "data-agreement-state",
+      "unavailable",
+    );
     expect(screen.getByRole("button", { name: "Join Project" })).toBeDisabled();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(mocks.join).not.toHaveBeenCalled();
   });
 
-  it("keeps the join form available after a server refusal without leaking server messages", async () => {
+  it("keeps the join form and its values available after a server refusal", async () => {
     mocks.join.mockRejectedValue(new Error("internal secret detail"));
     const user = userEvent.setup();
     render(
@@ -137,24 +140,28 @@ describe("ParticipantJoin", () => {
     await user.selectOptions(screen.getByLabelText("Country"), "DE");
     await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
     await user.click(screen.getByRole("button", { name: "Join Project" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /server or network is unreachable/i,
-    );
-    expect(screen.queryByText("internal secret detail")).not.toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByLabelText("Full name")).toHaveValue("Alex Example");
+    expect(screen.getByLabelText("Country")).toHaveValue("DE");
+    expect(mocks.join).toHaveBeenCalledWith({
+      source: { kind: "link", id: "link-1", secret: "secret-1" },
+      profile: { fullName: "Alex Example", country: "DE" },
+      agreement: { accepted: true },
+    });
     expect(
       screen.getByRole("button", { name: "Join Project" }),
     ).not.toBeDisabled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
-  it("rejects incomplete Participant Registration Links before joining without internal wording", () => {
+  it("rejects incomplete Participant Registration Links before joining", () => {
     render(<ParticipantJoin agreement={published} source={null} />);
-    expect(
-      screen.getByText(
-        /complete Participant Invitation or Participant Registration Link required/i,
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/secret|hash/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveAttribute(
+      "data-entry-state",
+      "incomplete",
+    );
+    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
+    expect(mocks.join).not.toHaveBeenCalled();
     expect(
       screen.queryByRole("button", { name: "Join Project" }),
     ).not.toBeInTheDocument();
@@ -162,19 +169,42 @@ describe("ParticipantJoin", () => {
 });
 
 describe("ParticipantDashboard", () => {
-  it("lists only server-returned Participations and their Organizations, not memberships", async () => {
+  it("lists only server-returned Participations with represented and Hosting Organization slots", async () => {
     render(<ParticipantDashboard agreement={published} />);
-    expect(await screen.findByText("Workshop")).toBeInTheDocument();
-    expect(screen.getByText(/Partner A/)).toBeInTheDocument();
-    expect(screen.getByText(/Host B/)).toBeInTheDocument();
-    expect(screen.queryByText("Other member Project")).not.toBeInTheDocument();
+    const project = await screen.findByTestId("participant-project-project-1");
+    expect(project).toHaveAttribute("data-participation-id", "participation-1");
+    expect(
+      project.querySelector('[data-organization-role="represented"]'),
+    ).toBeInTheDocument();
+    expect(
+      project.querySelector('[data-organization-role="hosting"]'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "ready",
+    );
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-project-count",
+      "1",
+    );
     expect(mocks.listMyProjects).toHaveBeenCalledOnce();
   });
 
   it("shows an empty state for users without Participations", async () => {
     mocks.listMyProjects.mockResolvedValue([]);
     render(<ParticipantDashboard agreement={published} />);
-    expect(await screen.findByText(/No Projects yet/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+        "data-dashboard-state",
+        "ready",
+      ),
+    );
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-project-count",
+      "0",
+    );
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
   it("blocks missing profiles until saved, then requests current agreement", async () => {
@@ -184,17 +214,35 @@ describe("ParticipantDashboard", () => {
       .mockResolvedValueOnce(projects);
     const user = userEvent.setup();
     render(<ParticipantDashboard agreement={published} />);
-    expect(await screen.findByText(/Complete your profile/)).toBeInTheDocument();
-    expect(screen.queryByText("Workshop")).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("textbox", { name: "Full name" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "profile",
+    );
+    expect(
+      screen.queryByTestId("participant-project-project-1"),
+    ).not.toBeInTheDocument();
     await user.type(screen.getByLabelText("Full name"), "Alex Example");
     await user.click(screen.getByRole("button", { name: "Save profile" }));
     expect(
-      await screen.findByText(/Accept the current agreement/),
-    ).toBeInTheDocument();
+      await screen.findByRole("button", { name: "Accept agreement" }),
+    ).toBeDisabled();
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "agreement",
+    );
     expect(mocks.saveProfile).toHaveBeenCalledWith({ fullName: "Alex Example" });
     await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
     await user.click(screen.getByRole("button", { name: "Accept agreement" }));
-    expect(await screen.findByText("Workshop")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("participant-project-project-1"),
+    ).toHaveAttribute("data-participation-id", "participation-1");
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "ready",
+    );
     expect(mocks.acceptAgreement).toHaveBeenCalledWith({ accepted: true });
   });
 
@@ -206,9 +254,14 @@ describe("ParticipantDashboard", () => {
       }),
     );
     render(<ParticipantDashboard agreement={published} />);
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "You do not have permission to access this resource.",
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "error",
     );
+    expect(
+      screen.getByRole("button", { name: "Retry loading Projects" }),
+    ).toBeEnabled();
     expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
   });
 
@@ -219,19 +272,32 @@ describe("ParticipantDashboard", () => {
     const user = userEvent.setup();
     render(<ParticipantDashboard agreement={published} />);
     expect(
-      await screen.findByText(/Accept the current agreement/),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Workshop")).not.toBeInTheDocument();
+      await screen.findByRole("button", { name: "Accept agreement" }),
+    ).toBeDisabled();
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "agreement",
+    );
+    expect(
+      screen.queryByTestId("participant-project-project-1"),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
     await user.click(screen.getByRole("button", { name: "Accept agreement" }));
-    expect(await screen.findByText("Workshop")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("participant-project-project-1"),
+    ).toHaveAttribute("data-participation-id", "participation-1");
+    expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "ready",
+    );
   });
 
   it("explains pending publication and keeps Participant actions blocked", () => {
     render(<ParticipantDashboard agreement={pending} />);
-    expect(
-      screen.getByText(/agreement is not yet available/i),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveAttribute(
+      "data-agreement-state",
+      "unavailable",
+    );
     expect(
       screen.getByRole("button", { name: "Accept agreement" }),
     ).toBeDisabled();
