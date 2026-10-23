@@ -1,3 +1,4 @@
+import { QUESTIONNAIRE_STEPS as STEP } from "@greendex/config/participate";
 import { expect, test, type Page } from "@playwright/test";
 
 import { TestProjectFixture } from "./fixtures/test-project";
@@ -44,26 +45,6 @@ const OPTION_REGEX = {
   green: /green/i,
   conventional: /conventional/i,
   electric: /electric/i,
-} as const;
-
-// Questionnaire step indices (mirrors QUESTIONNAIRE_STEPS in
-// @greendex/config/participate). Asserted as counters, never as copy.
-const STEP = {
-  participantInfo: 1,
-  days: 2,
-  accommodationCategory: 3,
-  roomOccupancy: 4,
-  electricity: 5,
-  food: 6,
-  flightKm: 7,
-  boatKm: 8,
-  trainKm: 9,
-  busKm: 10,
-  carKm: 11,
-  carType: 12,
-  carPassengers: 13,
-  age: 14,
-  gender: 15,
 } as const;
 
 async function expectStep(page: Page, step: number) {

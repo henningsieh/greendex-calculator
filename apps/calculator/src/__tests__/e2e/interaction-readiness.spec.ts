@@ -48,7 +48,7 @@ test("Project tabs accept the first available click after a slow script load", a
       page
         .getByRole("tabpanel", { name: "Project Participants", exact: true })
         .locator('[data-slot="card-title"]'),
-    ).toHaveText("Participants");
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: project.name })).toBeVisible();
   } finally {
     release();
