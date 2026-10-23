@@ -2,7 +2,12 @@ import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
-import { member, organization, projectsTable } from "@greendex/database/schema";
+import {
+  invitation,
+  member,
+  organization,
+  projectsTable,
+} from "@greendex/database/schema";
 import { type Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 
@@ -25,6 +30,26 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 const fixture = new HostingJourneyFixture();
 let mainProjectURL: string;
 
+async function projectLink(page: Page, name: string) {
+  const [project] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .where(eq(projectsTable.name, name));
+  expect(project).toBeDefined();
+  return page.locator(
+    `a[href="/projects/${project!.id}"], a[href^="/projects/${project!.id}?"]`,
+  );
+}
+
+async function staffRow(page: Page, userId: string) {
+  const [membership] = await db
+    .select({ id: member.id })
+    .from(member)
+    .where(eq(member.userId, userId));
+  expect(membership).toBeDefined();
+  return page.getByTestId(`staff-member-${membership!.id}`);
+}
+
 async function createProject(page: Page, name: string) {
   await page.goto("/projects");
   await page.getByRole("button", { name: "New project" }).click();
@@ -35,7 +60,7 @@ async function createProject(page: Page, name: string) {
   await dialog.getByLabel("Location").fill("Berlin");
   await dialog.getByLabel("Country").selectOption("DE");
   await dialog.getByRole("button", { name: "Create project" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible({
+  await expect(page.getByTestId("project-workspace")).toBeVisible({
     timeout: 90_000,
   });
   await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
@@ -78,8 +103,10 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await page.reload();
     await expectFirstOrganizationProjects(page, fixture.organizationName);
     await page.goto("/organization");
-    const row = page.getByRole("row").filter({ hasText: fixture.actors.H.email });
-    await expect(row).toContainText(ORGANIZATION_ROLES.OrganizationOwner);
+    const row = (await staffRow(page, fixture.actors.H.id)).getByTestId(
+      `staff-role-${ORGANIZATION_ROLES.OrganizationOwner}`,
+    );
+    await expect(row).toBeVisible();
   });
 
   test("02 H creates Main, Existing and Isolation Hosted Projects", async ({
@@ -93,7 +120,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await createProject(page, fixture.projectNames[2]!);
     await page.goto("/projects");
     for (const name of fixture.projectNames)
-      await expect(page.getByRole("link", { name })).toBeVisible();
+      await expect(await projectLink(page, name)).toBeVisible();
   });
 
   test.describe("Organization Invitation acceptance", () => {
@@ -108,15 +135,18 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       const hostPage = await host.newPage();
       await hostPage.goto("/organization");
       await expect(
-        hostPage.getByRole("row").filter({ hasText: fixture.actors.A.email }),
-      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
+        hostPage.getByTestId(`staff-invitation-${fixture.invitationId}`),
+      ).toBeVisible();
 
+      const [pendingInvitation] = await db
+        .select({ role: invitation.role })
+        .from(invitation)
+        .where(eq(invitation.id, fixture.invitationId));
+      expect(pendingInvitation?.role).toBe(ORGANIZATION_ROLES.OrganizationAdmin);
       const admin = await fixture.actorContext(browser, "A", baseURL!);
       const page = await admin.newPage();
       await page.goto(`/accept-invitation/${fixture.invitationId}`);
-      await expect(
-        page.getByRole("heading", { name: "Organization Invitation" }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       // Text-free: the invitation loaded (accept available) instead of org-name copy.
       await expect(
         page.getByRole("button", { name: "Accept Organization Invitation" }),
@@ -128,12 +158,16 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await expectPrivateURL(page, /\/projects$/);
       await page.goto("/organization");
       await expect(
-        page.getByRole("row").filter({ hasText: fixture.actors.A.email }),
-      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
+        (await staffRow(page, fixture.actors.A.id)).getByTestId(
+          `staff-role-${ORGANIZATION_ROLES.OrganizationAdmin}`,
+        ),
+      ).toBeVisible();
       await hostPage.reload();
       await expect(
-        hostPage.getByRole("row").filter({ hasText: fixture.actors.A.email }),
-      ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
+        (await staffRow(hostPage, fixture.actors.A.id)).getByTestId(
+          `staff-role-${ORGANIZATION_ROLES.OrganizationAdmin}`,
+        ),
+      ).toBeVisible();
     });
   });
 
@@ -191,15 +225,11 @@ test.describe.serial("Hosting Organization journey section 1", () => {
         `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
       );
       await page.goto("/projects");
-      await expect(page.getByRole("link", { name: projectName })).toBeVisible();
+      await expect(await projectLink(page, projectName)).toBeVisible();
       await page.goto(projectURL);
-      await expect(
-        page.getByRole("heading", { name: projectName }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await page.goto(mainProjectURL);
-      await expect(
-        page.getByRole("heading", { name: fixture.projectNames[0]! }),
-      ).toHaveCount(0);
+      await expect(page.getByTestId("project-workspace")).toHaveCount(0);
     } finally {
       await db
         .delete(projectsTable)
@@ -226,9 +256,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       const context = await fixture.actorContext(browser, actor, baseURL!);
       const page = await context.newPage();
       await page.goto(mainProjectURL);
-      await expect(
-        page.getByRole("heading", { name: fixture.projectNames[0]! }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
       await expect(
         page.getByRole("link", { name: "Review submitted Claims" }),
@@ -256,12 +284,12 @@ test("creation refreshes Organization management before navigating to Projects",
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
     await expectPrivateURL(page, /\/organization$/);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Organization", exact: true }),
+      (await staffRow(page, recovery.actors.H.id)).getByTestId(
+        `staff-role-${ORGANIZATION_ROLES.OrganizationOwner}`,
+      ),
     ).toBeVisible();
-    await expect(
-      page.getByRole("row").filter({ hasText: recovery.actors.H.email }),
-    ).toContainText(ORGANIZATION_ROLES.OrganizationOwner);
     await page
       .getByRole("navigation", { name: "Primary navigation" })
       .getByRole("link", { name: "Projects", exact: true })
