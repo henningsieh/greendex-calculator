@@ -70,11 +70,7 @@ describe("NoOrganizationAccess", () => {
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Create Organization" }));
 
-    expect(
-      await screen.findByText(
-        "The server or network is unreachable. Check your connection and try again.",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByTestId("organization-error")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Create Organization" }),
     ).not.toBeDisabled();

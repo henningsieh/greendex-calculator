@@ -1,5 +1,5 @@
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -12,7 +12,11 @@ const queryKey = ["projects", "hydrated-list"] as const;
 function HydratedProject({ queryFn }: { queryFn: () => Promise<string> }) {
   const { data } = useQuery({ queryKey, queryFn });
 
-  return <p>{data}</p>;
+  return (
+    <p data-testid="hydrated-project" data-query-value={data}>
+      {data}
+    </p>
+  );
 }
 
 describe("Cost Tracker Query hydration", () => {
@@ -33,7 +37,12 @@ describe("Cost Tracker Query hydration", () => {
       </QueryClientProvider>,
     );
 
-    await screen.findByText("Hydrated Project");
+    await waitFor(() =>
+      expect(screen.getByTestId("hydrated-project")).toHaveAttribute(
+        "data-query-value",
+        "Hydrated Project",
+      ),
+    );
     await new Promise((resolve) => setTimeout(resolve, 100));
     // Red if staleTime becomes zero or the server/client query identity diverges.
     expect(browserQuery).not.toHaveBeenCalled();

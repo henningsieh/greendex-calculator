@@ -7,9 +7,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/session", () => ({ requireSession: mocks.requireSession }));
 vi.mock("@/features/projects/components/setup-link", () => ({
   SetupLinkRecipient: ({ id, secret }: { id: string; secret?: string }) => (
-    <p>
-      Setup {id}: {secret ?? "invalid"}
-    </p>
+    <p data-testid="setup-recipient" data-link-id={id} data-secret={secret} />
   ),
 }));
 
@@ -26,7 +24,14 @@ describe("Setup Link route", () => {
     expect(mocks.requireSession).toHaveBeenCalledWith(
       "/setup-links/link-1?secret=secret-1",
     );
-    expect(screen.getByText("Setup link-1: secret-1")).toBeTruthy();
+    expect(screen.getByTestId("setup-recipient")).toHaveAttribute(
+      "data-link-id",
+      "link-1",
+    );
+    expect(screen.getByTestId("setup-recipient")).toHaveAttribute(
+      "data-secret",
+      "secret-1",
+    );
   });
 
   it("does not accept ambiguous secrets", async () => {
@@ -36,6 +41,12 @@ describe("Setup Link route", () => {
         searchParams: Promise.resolve({ secret: ["first", "second"] }),
       }),
     );
-    expect(screen.getByText("Setup link-1: invalid")).toBeTruthy();
+    expect(screen.getByTestId("setup-recipient")).toHaveAttribute(
+      "data-link-id",
+      "link-1",
+    );
+    expect(screen.getByTestId("setup-recipient")).not.toHaveAttribute(
+      "data-secret",
+    );
   });
 });

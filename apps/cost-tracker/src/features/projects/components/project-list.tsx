@@ -223,7 +223,12 @@ export function ProjectList() {
       );
     }
     return (
-      <Empty variant="outlined" aria-label="Project list" className="mt-10">
+      <Empty
+        data-testid="projects-unavailable"
+        variant="outlined"
+        aria-label="Project list"
+        className="mt-10"
+      >
         <EmptyHeader>
           <EmptyTitle>No Projects available</EmptyTitle>
           <EmptyDescription>
