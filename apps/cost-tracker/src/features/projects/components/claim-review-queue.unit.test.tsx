@@ -51,15 +51,13 @@ describe("Host submitted Claim queue", () => {
             new QueryClient({ defaultOptions: { queries: { retry: false } } })
           }
         >
-          <ErrorBoundary fallback={<p>Claim queue failed</p>}>
+          <ErrorBoundary fallback={<p data-testid="claim-queue-failed" />}>
             <ClaimReviewQueue />
           </ErrorBoundary>
         </QueryClientProvider>,
       );
-      expect(await screen.findByText("Claim queue failed")).toBeTruthy();
-      expect(
-        screen.queryByText("No submitted Claims available for review."),
-      ).toBeNull();
+      expect(await screen.findByTestId("claim-queue-failed")).toBeTruthy();
+      expect(screen.queryByTestId("review-queue-empty")).toBeNull();
       expect(consoleError.mock.calls).toEqual([
         [
           "%o\n\n%s\n\n%s\n",

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({ requireSession: vi.fn() }));
 vi.mock("@/lib/session", () => ({ requireSession: mocks.requireSession }));
 vi.mock("@/features/organizations/components/invitation-acceptance", () => ({
   InvitationAcceptance: ({ invitationId }: { invitationId: string }) => (
-    <p>Organization Invitation {invitationId}</p>
+    <p data-testid="invitation-acceptance" data-invitation-id={invitationId} />
   ),
 }));
 
@@ -21,8 +21,9 @@ describe("Organization Invitation route", () => {
     expect(mocks.requireSession).toHaveBeenCalledWith(
       "/accept-invitation/invite-1",
     );
-    expect(
-      screen.getByText("Organization Invitation invite-1"),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("invitation-acceptance")).toHaveAttribute(
+      "data-invitation-id",
+      "invite-1",
+    );
   });
 });

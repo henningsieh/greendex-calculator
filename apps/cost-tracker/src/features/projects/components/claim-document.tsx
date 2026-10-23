@@ -46,7 +46,13 @@ export function ClaimBand({
         </p>
         <CardTitle as="h2">{title}</CardTitle>
         {status && (
-          <Badge variant="claim-status">{claimStatusLabel(status)}</Badge>
+          <Badge
+            variant="claim-status"
+            data-testid="claim-status"
+            data-status={status}
+          >
+            {claimStatusLabel(status)}
+          </Badge>
         )}
       </Card>
     </header>
@@ -68,13 +74,20 @@ export function PayoutAccountLines({
       <dd
         className="font-mono wrap-anywhere tabular-nums select-all"
         data-testid="payout-account-iban"
+        data-iban={account.iban}
       >
         {account.iban}
       </dd>
       {account.bic && (
         <>
           <dt className="text-muted-foreground">BIC</dt>
-          <dd className="font-mono wrap-anywhere">{account.bic}</dd>
+          <dd
+            data-testid="payout-bic"
+            data-bic={account.bic}
+            className="font-mono wrap-anywhere"
+          >
+            {account.bic}
+          </dd>
         </>
       )}
     </dl>

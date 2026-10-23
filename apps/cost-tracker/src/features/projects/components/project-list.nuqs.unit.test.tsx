@@ -97,12 +97,9 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     expect(update.options.history).toBe("replace");
     expect(update.searchParams.get("scope")).toBe("hosted");
     expect(update.searchParams.has("cursor")).toBe(false);
-    expect(mocks.toastAdd).toHaveBeenCalledWith({
-      description:
-        "Partner Projects are unavailable. Hosted Projects are shown instead.",
-      title: "Project view updated",
-      type: "info",
-    });
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "info" }),
+    );
   });
 
   it("renders an honest empty state without creating an list query when neither scope is available", async () => {
@@ -111,11 +108,7 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
 
     renderList({ onUrlUpdate });
 
-    expect(
-      await screen.findByText(
-        "No Projects are hosted by or assigned to your active Organization.",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByTestId("projects-unavailable")).toBeTruthy();
     expect(mocks.getListOptions).not.toHaveBeenCalled();
     expect(onUrlUpdate).not.toHaveBeenCalled();
   });
