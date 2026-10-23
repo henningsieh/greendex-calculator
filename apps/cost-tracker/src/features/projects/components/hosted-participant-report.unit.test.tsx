@@ -74,26 +74,64 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
       { name: "Hosting Participant view" },
       { timeout: 10_000 },
     );
-    expect(within(report).getByText("Alpha Mobility")).toBeTruthy();
-    expect(within(report).getByText("Country: FR")).toBeTruthy();
-    expect(within(report).getByText("2 Participants")).toBeTruthy();
-    expect(within(report).getByText("1 completed")).toBeTruthy();
-    expect(within(report).getByText("1 pending")).toBeTruthy();
-    expect(within(report).queryByText("Zoe")).toBeNull();
+    expect(report).toHaveAttribute("data-agreement-published", "true");
+    expect(
+      within(report).queryByTestId("unpublished-agreement"),
+    ).not.toBeInTheDocument();
+    const organization = within(report).getByTestId(
+      "report-organization-org-alpha",
+    );
+    expect(organization.querySelector("[data-country]")).toHaveAttribute(
+      "data-country",
+      "FR",
+    );
+    expect(
+      organization.querySelector("[data-participant-count]"),
+    ).toHaveAttribute("data-participant-count", "2");
+    expect(organization.querySelector("[data-completed-count]")).toHaveAttribute(
+      "data-completed-count",
+      "1",
+    );
+    expect(organization.querySelector("[data-pending-count]")).toHaveAttribute(
+      "data-pending-count",
+      "1",
+    );
+    expect(within(organization).queryByRole("list")).not.toBeInTheDocument();
 
-    const toggle = within(report).getByRole("button", {
+    const toggle = within(organization).getByRole("button", {
       name: "Show 2 Participants",
     });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "participants-org-alpha");
     await userEvent.click(toggle);
 
     const toggleName = await screen.findByRole("button", {
       name: "Hide 2 Participants",
     });
-    expect(toggleName.getAttribute("aria-expanded")).toBe("true");
-    expect(within(report).getByText("Zoe")).toBeTruthy();
-    expect(within(report).getByText("Agreement completed")).toBeTruthy();
-    expect(within(report).getByText("Agreement pending")).toBeTruthy();
-    expect(within(report).getByText("amy@example.org")).toBeTruthy();
+    expect(toggleName).toHaveAttribute("aria-expanded", "true");
+    expect(within(organization).getByRole("list")).toHaveAttribute(
+      "id",
+      "participants-org-alpha",
+    );
+    expect(within(organization).getAllByRole("listitem")).toHaveLength(2);
+    const completed = within(organization).getByTestId(
+      "report-participant-participation-Zoe",
+    );
+    const pending = within(organization).getByTestId(
+      "report-participant-participation-Amy",
+    );
+    expect(completed.querySelector("[data-agreement-status]")).toHaveAttribute(
+      "data-agreement-status",
+      "completed",
+    );
+    expect(pending.querySelector("[data-agreement-status]")).toHaveAttribute(
+      "data-agreement-status",
+      "pending",
+    );
+
+    await userEvent.click(toggleName);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(organization).queryByRole("list")).not.toBeInTheDocument();
   });
 
   it("offers no Participant control beyond expanding", async () => {
@@ -108,9 +146,10 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
       within(report).getByRole("button", { name: "Show 2 Participants" }),
     );
 
+    expect(within(report).getAllByRole("button")).toHaveLength(1);
     expect(
-      within(report).queryByRole("button", { name: /remove|invite|edit/i }),
-    ).toBeNull();
+      within(report).getByRole("button", { name: "Hide 2 Participants" }),
+    ).toHaveAttribute("aria-expanded", "true");
     expect(within(report).queryAllByRole("link")).toHaveLength(0);
   });
 
@@ -122,25 +161,30 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
     };
     renderReport();
 
-    expect(
-      await screen.findByText(
-        "No Project Participations have joined this Project yet.",
-      ),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(/not counted, so this is\s+not a pre-join funnel/),
-    ).toBeTruthy();
+    const report = await screen.findByRole("region", {
+      name: "Hosting Participant view",
+    });
+    expect(report.querySelector('[data-slot="empty"]')).toBeInTheDocument();
+    expect(within(report).queryAllByRole("button")).toHaveLength(0);
+    expect(within(report).queryAllByRole("listitem")).toHaveLength(0);
   });
 
-  it("counts nothing as completed while the required agreement is unpublished", async () => {
+  it("flags an unpublished required agreement without hiding joined Participants", async () => {
     mocks.report = {
       ...(mocks.report as Record<string, unknown>),
       agreement: { versionId: "PENDING-v2", published: false },
     };
     renderReport();
 
+    const report = await screen.findByRole("region", {
+      name: "Hosting Participant view",
+    });
+    expect(report).toHaveAttribute("data-agreement-published", "false");
     expect(
-      await screen.findByText(/Agreement version PENDING-v2 is not published/),
-    ).toBeTruthy();
+      within(report).getByTestId("unpublished-agreement"),
+    ).toBeInTheDocument();
+    expect(
+      within(report).getByRole("button", { name: "Show 2 Participants" }),
+    ).toBeEnabled();
   });
 });
