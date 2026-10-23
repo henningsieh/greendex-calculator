@@ -23,6 +23,7 @@ import {
 } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { and, count, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 
 import {
   expectPrivateURL,
@@ -32,6 +33,7 @@ import {
 } from "./fixtures/artifact-privacy";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
+import { projectLink, staffRow } from "./fixtures/journey-locators";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -165,23 +167,33 @@ async function actorContext(
   return context;
 }
 
-async function selectEntity(
-  page: Page,
-  label: string,
+const actingSessionSchema = z.object({
+  session: z.object({ activeOrganizationId: z.string() }),
+});
+
+async function entityId(
+  table: typeof projectsTable | typeof organization,
   name: string,
-  scope: Locator = page.locator("body"),
 ) {
-  await scope.getByRole("button", { name: label, exact: true }).click();
-  await page
-    .getByRole("combobox", { name: `Search ${label} by name or ID` })
-    .fill(name);
-  const table = label.includes("Project") ? projectsTable : organization;
   const [entity] = await db
     .select({ id: table.id })
     .from(table)
     .where(eq(table.name, name));
   expect(entity).toBeDefined();
-  await page.locator(`[role="option"][data-entity-id="${entity!.id}"]`).click();
+  return entity!.id;
+}
+
+async function selectEntity(
+  page: Page,
+  label: string,
+  entityId: string,
+  scope: Locator = page.locator("body"),
+) {
+  await scope.getByRole("button", { name: label, exact: true }).click();
+  await page
+    .getByRole("combobox", { name: `Search ${label} by name or ID` })
+    .fill(entityId);
+  await page.locator(`[role="option"][data-entity-id="${entityId}"]`).click();
   await expect(
     scope.getByRole("button", { name: label, exact: true }),
   ).toHaveAttribute("aria-expanded", "false");
@@ -193,26 +205,6 @@ async function openOrganizationDialog(page: Page) {
   await page.getByRole("button", { name: "Create Organization" }).click();
   await expect(dialog).toBeVisible();
   return dialog;
-}
-
-async function projectLink(page: Page, name: string) {
-  const [project] = await db
-    .select({ id: projectsTable.id })
-    .from(projectsTable)
-    .where(eq(projectsTable.name, name));
-  expect(project).toBeDefined();
-  return page.locator(
-    `a[href="/projects/${project!.id}"], a[href^="/projects/${project!.id}?"]`,
-  );
-}
-
-async function staffRow(page: Page, userId: string) {
-  const [membership] = await db
-    .select({ id: member.id })
-    .from(member)
-    .where(eq(member.userId, userId));
-  expect(membership).toBeDefined();
-  return page.getByTestId(`staff-member-${membership!.id}`);
 }
 
 async function createProject(page: Page, name: string) {
@@ -240,7 +232,12 @@ async function issueThroughUI(
   const creator = page
     .locator("section")
     .filter({ has: page.getByLabel("Recipient email", { exact: true }) });
-  await selectEntity(page, "Hosted Project", projectName, creator);
+  await selectEntity(
+    page,
+    "Hosted Project",
+    await entityId(projectsTable, projectName),
+    creator,
+  );
   await creator.getByLabel("Recipient email").fill(recipient);
   await creator.getByRole("button", { name: "Neuer Link", exact: true }).click();
   const field = creator.getByLabel("Recipient setup link");
@@ -327,9 +324,9 @@ async function selectAndOpenPartnerProject(
     .from(organization)
     .where(eq(organization.name, organizationName));
   const acting = await page.request.get("/api/auth/get-session");
-  expect((await acting.json()).session.activeOrganizationId).toBe(
-    selectedOrganization!.id,
-  );
+  expect(
+    actingSessionSchema.parse(await acting.json()).session.activeOrganizationId,
+  ).toBe(selectedOrganization!.id);
   await page
     .getByRole("link", { name: "Open Claim workspace", exact: true })
     .click();
@@ -857,7 +854,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     );
     await page.goto(existingSetupURL);
     await page.getByRole("radio", { name: "Existing Organization" }).check();
-    await selectEntity(page, "Organization", names.E);
+    await selectEntity(
+      page,
+      "Organization",
+      await entityId(organization, names.E),
+    );
     await markSetupDocument(page);
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(
@@ -936,7 +937,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     await page.goto(url);
     await page.getByRole("radio", { name: "Existing Organization" }).check();
-    await selectEntity(page, "Organization", targetName);
+    await selectEntity(page, "Organization", targetId);
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(page.locator('[data-setup-error="disabled"]')).toBeVisible();
     expect(bindingAttempts).toBe(1);
@@ -955,13 +956,16 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     expect(bindingAttempts).toBe(2);
     const unchanged = await context.request.get("/api/auth/get-session");
-    expect((await unchanged.json()).session.activeOrganizationId).toBe(
-      unrelatedId,
-    );
+    expect(
+      actingSessionSchema.parse(await unchanged.json()).session
+        .activeOrganizationId,
+    ).toBe(unrelatedId);
     expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(1);
     await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, targetName);
     const acting = await context.request.get("/api/auth/get-session");
-    expect((await acting.json()).session.activeOrganizationId).toBe(targetId);
+    expect(
+      actingSessionSchema.parse(await acting.json()).session.activeOrganizationId,
+    ).toBe(targetId);
     const membershipsAfter = await db
       .select({ id: member.id })
       .from(member)
@@ -1111,8 +1115,18 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       page.locator('[data-testid="organization-assignment"]'),
     ).toBeVisible();
     const section = page.getByTestId("organization-assignment");
-    await selectEntity(page, "Hosted Project", fixture.projectNames[2]!, section);
-    await selectEntity(page, "Partner Organization", names.E, section);
+    await selectEntity(
+      page,
+      "Hosted Project",
+      await entityId(projectsTable, fixture.projectNames[2]!),
+      section,
+    );
+    await selectEntity(
+      page,
+      "Partner Organization",
+      await entityId(organization, names.E),
+      section,
+    );
     await section.getByRole("button", { name: "Assign", exact: true }).click();
     await expect
       .poll(() => partnershipCount(fixture.projectNames[2]!, names.E))
@@ -1181,7 +1195,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await siblingPage
         .getByRole("radio", { name: "Existing Organization" })
         .check();
-      await selectEntity(siblingPage, "Organization", names[actor]);
+      await selectEntity(
+        siblingPage,
+        "Organization",
+        await entityId(organization, names[actor]),
+      );
       await siblingPage.getByRole("button", { name: "Complete setup" }).click();
       await expect(
         siblingPage.getByRole("button", {
