@@ -278,6 +278,7 @@ export function ImpactModal({
             }
       }
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm sm:p-10"
+      data-testid="impact-modal"
       initial={{
         opacity: 0,
         scale: 0.9,
