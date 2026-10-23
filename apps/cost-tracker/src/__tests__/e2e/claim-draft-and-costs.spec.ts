@@ -540,14 +540,22 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         .locator(`[role="option"][data-entity-id="${people[2]!.id}"]`)
         .click();
       await page.getByRole("button", { name: "Add Participation" }).click();
-      // Text-free: the new row + DB length below prove the addition (no toast copy).
-      await expect(row).toBeVisible();
-      expect(
-        await db
-          .select()
-          .from(projectParticipantsTable)
-          .where(eq(projectParticipantsTable.projectId, projectId)),
-      ).toHaveLength(3);
+      await expect
+        .poll(async () =>
+          db
+            .select()
+            .from(projectParticipantsTable)
+            .where(eq(projectParticipantsTable.projectId, projectId)),
+        )
+        .toHaveLength(3);
+      const addedId = await participationId(people[2]!.id);
+      expect(addedId).not.toBe(original!.id);
+      const addedRow = page.getByTestId(`joined-participant-${addedId}`);
+      await expect(addedRow).toBeVisible();
+      await expect(row).toHaveCount(0);
+      await page.reload();
+      await expect(addedRow).toBeVisible();
+      await expect(row).toHaveCount(0);
     } finally {
       await actor.close();
     }
@@ -594,27 +602,26 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         await expect(
           page.locator('[data-feedback-outcome="duplicate-review"]'),
         ).toBeVisible();
-        const row = tasks.locator('li[data-task-status="open"]');
-        await expect(row).toHaveCount(1);
-        // Text-free: task state machine via stable state attribute.
-        await expect(row).toHaveAttribute("data-task-status", "open");
-        await row
+        const openRow = tasks.locator('li[data-task-status="open"]');
+        await expect(openRow).toHaveCount(1);
+        await openRow
           .getByRole("button", { name: "Assign Review Task to me", exact: true })
           .click();
-        await expect(row).toHaveAttribute("data-task-status", "assigned");
-        // Text-free: assignee + decision are proven by the DB toMatchObject below.
-        await row
+        await expect(openRow).toHaveCount(0);
+        const assignedRow = tasks.locator('li[data-task-status="assigned"]');
+        await expect(assignedRow).toHaveCount(1);
+        await assignedRow
           .getByLabel("Review Task decision", { exact: true })
           .selectOption(decisions[index]!.value);
-        await row
+        await assignedRow
           .getByRole("button", { name: "Resolve Review Task", exact: true })
           .click();
-        await expect(row).toHaveAttribute("data-task-status", "resolved");
-        await expect(row).toHaveAttribute(
-          "data-task-decision",
-          decisions[index]!.value,
+        await expect(assignedRow).toHaveCount(0);
+        const resolvedRow = tasks.locator(
+          `li[data-task-status="resolved"][data-task-decision="${decisions[index]!.value}"]`,
         );
-        await expect(row.getByRole("button")).toHaveCount(0);
+        await expect(resolvedRow).toHaveCount(1);
+        await expect(resolvedRow.getByRole("button")).toHaveCount(0);
         const [task] = await db
           .select()
           .from(duplicateReviewTasksTable)
@@ -900,10 +907,18 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         .from(proofDocumentsTable)
         .where(eq(proofDocumentsTable.claimId, claim!.id));
       expect(document).toBeDefined();
+      const linkResponse = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === "/api/rpc/costs/linkDocument" &&
+          response.request().method() === "POST",
+      );
       await page
         .getByLabel("Link a Proof Document to this cost")
         .selectOption(document!.id);
-      // Text-free: the selectable option + submitting checklist below prove linkage.
+      expect((await linkResponse).status()).toBe(200);
+      await expect(
+        page.locator(`#link-${entry!.id} option[value="${document!.id}"]`),
+      ).toHaveCount(0);
     } finally {
       await actor.close();
     }
