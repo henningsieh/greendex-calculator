@@ -543,12 +543,28 @@ const runBrowser = async (suite: BrowserSuite) => {
       );
     } finally {
       try {
-        const parsed = browserTestEvidence(
-          JSON.parse(await readFile(reportFile, "utf8")),
-          discovery,
-        );
+        const raw = await readFile(reportFile, "utf8");
+        const parsed = browserTestEvidence(JSON.parse(raw), discovery);
         if (discovery) evidence.discovery = parsed;
         else evidence.execution = parsed;
+        if (!discovery && !parsed.clean) {
+          console.log(
+            `browser/${suite.name}: ${parsed.stats.failed} failed, ${parsed.stats.flaky} flaky, ${parsed.stats.skipped} skipped of ${parsed.tests.length} tests`,
+          );
+          for (const test of parsed.tests
+            .filter((test) => !test.clean)
+            .slice(0, 60)) {
+            console.log(
+              `  ${test.status} ${test.file}:${test.line} attempts=${test.attempts}${
+                test.failure
+                  ? ` ${test.failure.category}${test.failure.matcher ? ` ${test.failure.matcher}` : ""} ${test.failure.durationMs}ms`
+                  : ""
+              }`,
+            );
+          }
+          await mkdir(resolve(directory, "failed"), { recursive: true });
+          await writeFile(resolve(directory, "failed", "raw.json"), raw);
+        }
       } finally {
         await rm(reportFile, { force: true });
       }
