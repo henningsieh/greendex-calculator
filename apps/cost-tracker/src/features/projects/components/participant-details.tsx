@@ -36,6 +36,13 @@ function asCountry(value: string | null): EUCountryCode | "" {
   return EU_COUNTRY_CODES.find((code) => code === value) ?? "";
 }
 
+function countrySaveFailedFeedback(error: unknown) {
+  return {
+    title: "Unable to save country",
+    description: getORPCRequestErrorMessage(error).text,
+  };
+}
+
 function CountryCorrection({
   partnershipId,
   participationId,
@@ -51,10 +58,14 @@ function CountryCorrection({
   const [selected, setSelected] = useState<EUCountryCode | "">(
     asCountry(country),
   );
-  const [feedback, setFeedback] = useState<{
-    title: string;
-    description: string;
-  }>();
+  const countrySavedFeedback = {
+    title: "Country saved",
+    description: `The corrected country is stored for ${displayName}.`,
+    outcome: "country-saved",
+  } as const;
+  const [feedback, setFeedback] = useState<
+    typeof countrySavedFeedback | ReturnType<typeof countrySaveFailedFeedback>
+  >();
   const details = orpcQuery.participations.get.queryOptions({
     input: { partnershipId, id: participationId },
     meta: { costTrackerORPC: true },
@@ -67,10 +78,7 @@ function CountryCorrection({
         country: selected || null,
       }),
     onSuccess: async () => {
-      setFeedback({
-        title: "Country saved",
-        description: `The corrected country is stored for ${displayName}.`,
-      });
+      setFeedback(countrySavedFeedback);
       await queryClient.invalidateQueries({
         queryKey: details.queryKey,
       });
@@ -80,11 +88,7 @@ function CountryCorrection({
         }),
       });
     },
-    onError: (error) =>
-      setFeedback({
-        title: "Unable to save country",
-        description: getORPCRequestErrorMessage(error).text,
-      }),
+    onError: (error) => setFeedback(countrySaveFailedFeedback(error)),
   });
   return (
     <div className="space-y-4">
@@ -120,7 +124,11 @@ function CountryCorrection({
         Save country for {displayName}
       </Button>
       {feedback && (
-        <Alert>
+        <Alert
+          data-feedback-outcome={
+            "outcome" in feedback ? feedback.outcome : undefined
+          }
+        >
           <AlertTitle>{feedback.title}</AlertTitle>
           <AlertDescription>{feedback.description}</AlertDescription>
         </Alert>
