@@ -125,11 +125,10 @@ test.describe("Project Shared Travel Legs", () => {
     await expect(sharedTravelTab).toBeEnabled();
     await sharedTravelTab.click();
     const sharedTravelLegRow = page
-      .getByRole("row")
-      .filter({ hasText: description });
-    await expect(sharedTravelLegRow).toContainText(
-      en.project["shared-travel"].types.electricCar,
-    );
+      .getByRole("table")
+      .locator("tbody")
+      .getByRole("row");
+    await expect(sharedTravelLegRow).toHaveCount(1);
 
     const editedProjectName = `${projectName} edited`;
     await page
@@ -154,12 +153,31 @@ test.describe("Project Shared Travel Legs", () => {
       .getByRole("button", { name: en.organization.projects.form.edit.update })
       .click();
 
+    await expect(editDialog).not.toBeVisible();
+    await expect(sharedTravelLegRow).toHaveCount(1);
+    await page
+      .getByRole("button", { name: en.organization.projects.form.edit.title })
+      .click();
+    await page
+      .getByRole("menuitem", {
+        name: en.organization.projects.table["edit-project"],
+      })
+      .click();
     await expect(
-      page.getByRole("heading", { name: editedProjectName }),
-    ).toBeVisible();
-    await expect(sharedTravelLegRow).toContainText(
-      en.project["shared-travel"].types.electricCar,
-    );
+      editDialog.getByLabel(en.organization.projects.form.new.name),
+    ).toHaveValue(editedProjectName);
+    await editDialog.getByRole("button", { name: "Close", exact: true }).click();
+    await sharedTravelLegRow
+      .getByRole("button", { name: en.project["shared-travel"].table.edit })
+      .click();
+    const legDialog = page.getByRole("dialog");
+    await expect(legDialog.locator("select")).toHaveValue("electricCar");
+    await expect(
+      legDialog.getByLabel(en.project["shared-travel"].form.distance),
+    ).toHaveValue("120.5");
+    await expect(
+      legDialog.getByLabel(en.project["shared-travel"].form.description),
+    ).toHaveValue(description);
   });
 
   test("switches project-detail tabs and renders their content", async ({
@@ -183,8 +201,8 @@ test.describe("Project Shared Travel Legs", () => {
     await sharedTravelTab.click();
     await expect(sharedTravelTab).toHaveAttribute("data-state", "active");
     await expect(
-      page.locator('[data-slot="card-title"]', {
-        hasText: en.project["shared-travel"].title,
+      page.getByRole("tabpanel", {
+        name: en.project.details.tabs["shared-travel"],
       }),
     ).toBeVisible();
 
@@ -192,9 +210,7 @@ test.describe("Project Shared Travel Legs", () => {
     await participantsTab.click();
     await expect(participantsTab).toHaveAttribute("data-state", "active");
     await expect(
-      page.locator('[data-slot="card-title"]', {
-        hasText: en.project.details.participants,
-      }),
+      page.getByRole("tabpanel", { name: en.project.details.tabs.participants }),
     ).toBeVisible();
 
     await detailsTab.click();
@@ -213,11 +229,10 @@ test.describe("Project Shared Travel Legs", () => {
     await expect(sharedTravelTab).toHaveAttribute("data-state", "active");
 
     await expect(
-      page.locator('[data-slot="card-title"]', {
-        hasText: en.project["shared-travel"].title,
+      page.getByRole("tabpanel", {
+        name: en.project.details.tabs["shared-travel"],
       }),
     ).toBeVisible();
-    // Text-free: empty-state hook instead of i18n copy.
     await expect(
       page.locator('[data-testid="shared-travel-empty"]'),
     ).toBeVisible();
@@ -260,16 +275,21 @@ test.describe("Project Shared Travel Legs", () => {
       .click();
 
     const sharedTravelLegRow = page
-      .getByRole("row")
-      .filter({ hasText: sharedTravelLegDescription });
-    await expect(sharedTravelLegRow).toContainText(
-      en.project["shared-travel"].types.electricCar,
-    );
-    await expect(sharedTravelLegRow).toContainText("123.4");
+      .getByRole("table")
+      .locator("tbody")
+      .getByRole("row");
+    await expect(sharedTravelLegRow).toHaveCount(1);
 
     await sharedTravelLegRow
       .getByRole("button", { name: en.project["shared-travel"].table.edit })
       .click();
+    await expect(dialog.locator("select")).toHaveValue("electricCar");
+    await expect(
+      dialog.getByLabel(en.project["shared-travel"].form.distance),
+    ).toHaveValue("123.4");
+    await expect(
+      dialog.getByLabel(en.project["shared-travel"].form.description),
+    ).toHaveValue(sharedTravelLegDescription);
     await dialog
       .getByLabel(en.project["shared-travel"].form.description)
       .fill(`${sharedTravelLegDescription} updated`);
@@ -277,14 +297,18 @@ test.describe("Project Shared Travel Legs", () => {
       .getByRole("button", { name: en.project["shared-travel"].form.update })
       .click();
 
-    const updatedSharedTravelLegRow = page
-      .getByRole("row")
-      .filter({ hasText: `${sharedTravelLegDescription} updated` });
-    await expect(updatedSharedTravelLegRow).toContainText(
-      en.project["shared-travel"].types.electricCar,
-    );
+    await expect(dialog).not.toBeVisible();
+    await expect(sharedTravelLegRow).toHaveCount(1);
+    await sharedTravelLegRow
+      .getByRole("button", { name: en.project["shared-travel"].table.edit })
+      .click();
+    await expect(
+      dialog.getByLabel(en.project["shared-travel"].form.description),
+    ).toHaveValue(`${sharedTravelLegDescription} updated`);
+    await expect(dialog.locator("select")).toHaveValue("electricCar");
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
 
-    await updatedSharedTravelLegRow
+    await sharedTravelLegRow
       .getByRole("button", { name: en.project["shared-travel"].table.delete })
       .click();
     const confirmation = page.getByRole("alertdialog");
@@ -299,11 +323,11 @@ test.describe("Project Shared Travel Legs", () => {
       })
       .click();
 
-    // Text-free: the deleted row is gone (stronger than absent copy).
-    await expect(updatedSharedTravelLegRow).toHaveCount(0);
+    await expect(sharedTravelLegRow).toHaveCount(0);
+    await expect(page.getByTestId("shared-travel-empty")).toBeVisible();
   });
 
-  test("renders shared-travel translations from the active locale", async ({
+  test("renders shared-travel controls in each supported locale", async ({
     page,
   }) => {
     for (const [locale, messages] of [
@@ -319,11 +343,10 @@ test.describe("Project Shared Travel Legs", () => {
       await expect(sharedTravelTab).toHaveAttribute("data-state", "active");
 
       await expect(
-        page.locator('[data-slot="card-title"]', {
-          hasText: messages.project["shared-travel"].title,
+        page.getByRole("tabpanel", {
+          name: messages.project.details.tabs["shared-travel"],
         }),
       ).toBeVisible();
-      // Text-free: empty-state hook instead of i18n copy (title + description subsumed).
       await expect(
         page.locator('[data-testid="shared-travel-empty"]'),
       ).toBeVisible();
