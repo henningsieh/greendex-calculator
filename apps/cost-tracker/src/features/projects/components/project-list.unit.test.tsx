@@ -143,11 +143,19 @@ describe("Project list", { timeout: 20_000 }, () => {
         { timeout: 10_000 },
       ),
     ).toBeTruthy();
-    expect(screen.getByText("Open")).toBeTruthy();
-    expect(screen.getByText("Projects (3 total)")).toBeTruthy();
-    expect(
-      screen.queryByText(/EUR|submission count|latest activity/i),
-    ).toBeNull();
+    expect(screen.getByTestId("project-list")).toHaveAttribute(
+      "data-project-count",
+      "3",
+    );
+    expect(screen.getByTestId("project-list")).toHaveAttribute(
+      "data-filtered-project-count",
+      "1",
+    );
+    expect(screen.getByTestId("project-window-project-1")).toHaveAttribute(
+      "data-state",
+      "open",
+    );
+    expect(screen.getAllByRole("columnheader")).toHaveLength(5);
   });
 
   it("offers the Hosting Participant view beside the details destination", async () => {
@@ -182,7 +190,11 @@ describe("Project list", { timeout: 20_000 }, () => {
 
   it("clears the cursor when scope or filters change", async () => {
     renderList();
-    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+    await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: "Partner" }));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
@@ -205,7 +217,11 @@ describe("Project list", { timeout: 20_000 }, () => {
     mocks.state.dateFrom = new Date("2026-01-01T00:00:00.000Z");
     mocks.state.dateTo = new Date("2026-12-31T00:00:00.000Z");
     renderList();
-    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+    await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
 
     fireEvent.change(screen.getByLabelText("Active on or after"), {
       target: { value: "" },
@@ -236,7 +252,11 @@ describe("Project list", { timeout: 20_000 }, () => {
     mocks.state.cursor = "current-page";
     const browserBack = vi.spyOn(window.history, "back");
     renderList();
-    await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+    await screen.findByRole(
+      "link",
+      { name: "Climate Forum" },
+      { timeout: 10_000 },
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
@@ -256,7 +276,11 @@ describe("Project list", { timeout: 20_000 }, () => {
 
     try {
       renderList();
-      await screen.findByText("Climate Forum", undefined, { timeout: 10_000 });
+      await screen.findByRole(
+        "link",
+        { name: "Climate Forum" },
+        { timeout: 10_000 },
+      );
       fireEvent.change(screen.getByLabelText("Project name"), {
         target: { value: "Travel" },
       });

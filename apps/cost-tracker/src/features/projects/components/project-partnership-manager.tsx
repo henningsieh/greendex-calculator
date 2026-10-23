@@ -137,7 +137,16 @@ export function ProjectPartnershipManager({
               </Button>
             </form>
             {feedback && (
-              <p aria-live="polite" className="mt-4 text-sm">
+              <p
+                aria-live="polite"
+                className="mt-4 text-sm"
+                data-testid="partnership-feedback"
+                data-state={
+                  assignMutation.isError || removeMutation.isError
+                    ? "error"
+                    : "success"
+                }
+              >
                 {feedback}
               </p>
             )}
@@ -150,7 +159,10 @@ export function ProjectPartnershipManager({
           Current Project Partnerships
         </h2>
         {partnerships.length === 0 ? (
-          <p className="rounded-xl border p-8 text-center text-muted-foreground">
+          <p
+            data-testid="partnerships-empty"
+            className="rounded-xl border p-8 text-center text-muted-foreground"
+          >
             No Partner Organizations are assigned to hosted Projects.
           </p>
         ) : (

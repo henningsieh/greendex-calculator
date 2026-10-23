@@ -130,13 +130,17 @@ export function EntityCombobox<T extends Entity>({
                 </Button>
               </div>
             ) : options.length === 0 ? (
-              <p className="p-3 text-sm text-muted-foreground">
+              <p
+                data-testid="entity-search-empty"
+                className="p-3 text-sm text-muted-foreground"
+              >
                 No matches — refine or paste full ID
               </p>
             ) : (
               options.map((item) => (
                 <CommandItem
                   key={item.id}
+                  data-entity-id={item.id}
                   value={item.id}
                   onSelect={() => {
                     setSelected(item);

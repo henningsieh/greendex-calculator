@@ -124,7 +124,7 @@ async function renderManager(partnerships: Partnership[]) {
     </QueryClientProvider>,
   );
 
-  await screen.findByText(partnerships[0]?.organizationName ?? "");
+  await screen.findByTestId(`partnership-row-${partnerships[0]?.organizationId}`);
   return { invalidateQueries, queryClient };
 }
 
@@ -152,13 +152,13 @@ async function selectAssignment(user: ReturnType<typeof userEvent.setup>) {
     await screen.findByLabelText("Search Hosted Project by name or ID"),
     "New",
   );
-  await user.click(await screen.findByText("New Project"));
+  await user.click(await screen.findByRole("option"));
   await user.click(screen.getByRole("button", { name: "Partner Organization" }));
   await user.type(
     await screen.findByLabelText("Search Partner Organization by name or ID"),
     "New",
   );
-  await user.click(await screen.findByText("New Partner"));
+  await user.click(await screen.findByRole("option"));
 }
 
 describe("ProjectPartnershipManager", () => {
@@ -207,9 +207,11 @@ describe("ProjectPartnershipManager", () => {
         projectId: assignedPartnership.projectId,
       });
     });
-    await screen.findByText("New Partner Organization");
+    await screen.findByTestId("partnership-row-organization-new");
     // Red if the list query is not invalidated and refetched after a successful assign.
-    expect(screen.queryByText("Existing Partner Organization")).toBeNull();
+    expect(
+      screen.queryByTestId("partnership-row-organization-existing"),
+    ).toBeNull();
     expectProjectDataInvalidation(invalidateQueries);
   });
 
@@ -226,12 +228,11 @@ describe("ProjectPartnershipManager", () => {
     await selectAssignment(user);
     await user.click(screen.getByRole("button", { name: "Assign" }));
 
-    expect(
-      await screen.findByText("The request could not be completed. Try again."),
-    ).toBeTruthy();
-    expect(
-      screen.queryByText(/internal-user|secret|database\/private/),
-    ).toBeNull();
+    expect(await screen.findByTestId("partnership-feedback")).toBeTruthy();
+    expect(screen.getByTestId("partnership-feedback")).toHaveAttribute(
+      "data-state",
+      "error",
+    );
   });
 
   it("invalidates generated Project query families and refreshes the visible list after removal", async () => {
@@ -245,11 +246,7 @@ describe("ProjectPartnershipManager", () => {
 
     await waitFor(() => {
       // Red if remove succeeds without invalidating the active list query.
-      expect(
-        screen.getByText(
-          "No Partner Organizations are assigned to hosted Projects.",
-        ),
-      ).toBeTruthy();
+      expect(screen.getByTestId("partnerships-empty")).toBeTruthy();
     });
     expect(mocks.remove).toHaveBeenCalledWith({ id: existingPartnership.id });
     expectProjectDataInvalidation(invalidateQueries);

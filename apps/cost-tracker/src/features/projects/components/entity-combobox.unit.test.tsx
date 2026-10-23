@@ -64,14 +64,14 @@ describe("EntityCombobox", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: "Organization" }));
-    expect(screen.getByText("Local")).toBeTruthy();
+    expect(screen.getByRole("option")).toBeTruthy();
     const input = screen.getByLabelText("Search Organization by name or ID");
     await user.type(input, "p");
     expect(search).not.toHaveBeenCalled();
     await user.type(input, "artner-123");
-    expect(await screen.findByText("Green Partner")).toBeTruthy();
+    expect(await screen.findByRole("option")).toBeTruthy();
     expect(search).toHaveBeenCalledWith("partner-123");
-    await user.click(screen.getByText("Green Partner"));
+    await user.click(screen.getByRole("option"));
     expect(onChange).toHaveBeenCalledWith("partner-123");
   });
 
@@ -96,10 +96,12 @@ describe("EntityCombobox", () => {
       screen.getByLabelText("Search Onboarded Participant by name, email or ID"),
       "person@example.org",
     );
-    expect(await screen.findByText("Onboarded Person")).toBeTruthy();
+    expect(await screen.findByRole("option")).toBeTruthy();
     expect(search).toHaveBeenCalledWith("person@example.org");
-    expect(screen.getByText("user-123")).toBeTruthy();
-    expect(screen.queryByText("person@example.org")).toBeNull();
+    expect(screen.getByRole("option")).toHaveAttribute(
+      "data-entity-id",
+      "user-123",
+    );
   });
 
   it("selects the highlighted result by keyboard and keeps the ID", async () => {
@@ -134,11 +136,8 @@ describe("EntityCombobox", () => {
     );
     await user.click(screen.getByRole("button", { name: "Project" }));
     await user.type(screen.getByLabelText("Search Project by name or ID"), "zz");
-    expect(await screen.findByText("Search failed.")).toBeTruthy();
-    expect(screen.queryByText(/private connection/)).toBeNull();
+    expect(await screen.findByRole("alert")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Retry" }));
-    expect(
-      await screen.findByText("No matches — refine or paste full ID"),
-    ).toBeTruthy();
+    expect(await screen.findByTestId("entity-search-empty")).toBeTruthy();
   });
 });

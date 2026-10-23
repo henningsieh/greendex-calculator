@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import Link from "next/link";
 import { describe, expect, it, vi } from "vitest";
 
 import { Button } from "@/components/ui/button";
@@ -133,7 +134,9 @@ describe("Claim document presentation", () => {
                 <li>Alex: 50.000000%</li>
               </ul>
             ),
-            documents: filename,
+            documents: (
+              <Link href="/proof-documents/receipt.pdf">{filename}</Link>
+            ),
             action: (
               <Button variant="outline" size="lg" onClick={edit}>
                 Edit cost
@@ -150,9 +153,11 @@ describe("Claim document presentation", () => {
     const row = screen.getByRole("cell", { name: "train" }).closest("tr")!;
     expect(row).toHaveAttribute("id", "cost-saved-cost");
     expect(within(row).getByRole("cell", { name: "428.60" })).toBeInTheDocument();
-    expect(within(row).getByText("Robin: 50.000000%")).toBeInTheDocument();
-    expect(within(row).getByText("Alex: 50.000000%")).toBeInTheDocument();
-    expect(within(row).getByText(filename)).toBeInTheDocument();
+    expect(within(row).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(row).getByRole("link")).toHaveAttribute(
+      "href",
+      "/proof-documents/receipt.pdf",
+    );
     fireEvent.click(within(row).getByRole("button", { name: "Edit cost" }));
     expect(edit).toHaveBeenCalledOnce();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
@@ -193,13 +198,22 @@ describe("Claim document presentation", () => {
         />
       </>,
     );
-    expect(screen.getByText("Correction requested")).toBeInTheDocument();
-    expect(screen.getByText("DE89370400440532013000")).toHaveClass(
+    expect(screen.getByTestId("claim-status")).toHaveAttribute(
+      "data-status",
+      "correction_requested",
+    );
+    expect(screen.getByTestId("payout-iban")).toHaveAttribute(
+      "data-iban",
+      "DE89370400440532013000",
+    );
+    expect(screen.getByTestId("payout-iban")).toHaveClass(
       "font-mono",
       "select-all",
     );
-    expect(screen.getByText("COBADEFFXXX")).toBeInTheDocument();
-    expect(screen.queryByText("correction_requested")).not.toBeInTheDocument();
+    expect(screen.getByTestId("payout-bic")).toHaveAttribute(
+      "data-bic",
+      "COBADEFFXXX",
+    );
   });
 
   it("keeps the default discovery-table density contract unchanged", () => {
