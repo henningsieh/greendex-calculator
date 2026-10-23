@@ -91,8 +91,17 @@ test.describe("instant initial load: static shells", () => {
     });
     await expect(page.getByTestId("workshops-shell-marker")).toBeVisible();
     await expect(page.getByTestId("workshops-content")).toBeVisible();
-    await expect(page.getByRole("tab", { selected: true })).toContainText(
-      /deal/i,
+    await expect(page.getByRole("tab", { selected: true })).toHaveAttribute(
+      "aria-controls",
+      /-content-deal$/,
+    );
+    await expect(page.getByRole("tabpanel")).toHaveAttribute(
+      "data-state",
+      "active",
+    );
+    await expect(page.getByRole("tabpanel")).toHaveAttribute(
+      "id",
+      /-content-deal$/,
     );
   });
 });
