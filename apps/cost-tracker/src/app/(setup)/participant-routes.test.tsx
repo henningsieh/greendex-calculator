@@ -7,9 +7,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/session", () => ({ requireSession: mocks.requireSession }));
 vi.mock("@/features/authentication/components/participant-onboarding", () => ({
   ParticipantJoin: ({ source }: { source: unknown }) => (
-    <p>Join: {JSON.stringify(source)}</p>
+    <p data-testid="participant-join" data-source={JSON.stringify(source)} />
   ),
-  ParticipantDashboard: () => <p>My Participations</p>,
+  ParticipantDashboard: () => <p data-testid="participant-dashboard" />,
 }));
 
 import ParticipantInvitationPage from "@/app/(setup)/participant-invitations/[invitationId]/page";
@@ -24,9 +24,10 @@ describe("Participant routes", () => {
         searchParams: Promise.resolve({ secret: "secret-1" }),
       }),
     );
-    expect(
-      screen.getByText('Join: {"kind":"link","id":"link-1","secret":"secret-1"}'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("participant-join")).toHaveAttribute(
+      "data-source",
+      '{"kind":"link","id":"link-1","secret":"secret-1"}',
+    );
     expect(mocks.requireSession).toHaveBeenCalled();
   });
   it("rejects ambiguous secrets", async () => {
@@ -36,7 +37,10 @@ describe("Participant routes", () => {
         searchParams: Promise.resolve({ secret: ["one", "two"] }),
       }),
     );
-    expect(screen.getByText("Join: null")).toBeInTheDocument();
+    expect(screen.getByTestId("participant-join")).toHaveAttribute(
+      "data-source",
+      "null",
+    );
   });
   it("lets signed-in, Organization-less recipients open invitations", async () => {
     render(
@@ -45,11 +49,10 @@ describe("Participant routes", () => {
         searchParams: Promise.resolve({ secret: "secret-1" }),
       }),
     );
-    expect(
-      screen.getByText(
-        'Join: {"kind":"invitation","invitationId":"invite-1","secret":"secret-1"}',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("participant-join")).toHaveAttribute(
+      "data-source",
+      '{"kind":"invitation","invitationId":"invite-1","secret":"secret-1"}',
+    );
   });
   it("rejects ambiguous invitation secrets", async () => {
     render(
@@ -58,10 +61,13 @@ describe("Participant routes", () => {
         searchParams: Promise.resolve({ secret: ["one", "two"] }),
       }),
     );
-    expect(screen.getByText("Join: null")).toBeInTheDocument();
+    expect(screen.getByTestId("participant-join")).toHaveAttribute(
+      "data-source",
+      "null",
+    );
   });
   it("offers the same dashboard regardless of the join path", async () => {
     render(await ParticipantPage());
-    expect(screen.getByText("My Participations")).toBeInTheDocument();
+    expect(screen.getByTestId("participant-dashboard")).toBeInTheDocument();
   });
 });

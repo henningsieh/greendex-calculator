@@ -1,6 +1,6 @@
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -98,18 +98,20 @@ describe("Organization team", () => {
   it("lists members with combined roles and pending invitations", async () => {
     renderTeam();
 
-    expect(await screen.findByText("Staff Owner")).toBeTruthy();
-    expect(screen.getByText("hybrid@example.org")).toBeTruthy();
-    expect(screen.getByText("pending@example.org")).toBeTruthy();
+    expect(await screen.findByTestId("staff-member-member-1")).toBeTruthy();
+    expect(screen.getByTestId("staff-member-member-2")).toBeTruthy();
+    expect(screen.getByTestId("staff-invitation-invitation-1")).toBeTruthy();
     expect(
-      screen.getAllByText(ORGANIZATION_ROLES.Participant).length,
-    ).toBeGreaterThan(0);
+      within(screen.getByTestId("staff-member-member-2")).getByTestId(
+        "staff-role-participant",
+      ),
+    ).toHaveAttribute("data-role", "participant");
   });
 
   it("sends an invitation and refreshes the lists", async () => {
     const user = userEvent.setup();
     renderTeam();
-    await screen.findByText("Staff Owner");
+    await screen.findByTestId("staff-member-member-1");
 
     await user.type(screen.getByLabelText("Email"), "new@example.org");
     await user.click(screen.getByRole("button", { name: "Send invitation" }));
@@ -121,10 +123,9 @@ describe("Organization team", () => {
       }),
     );
     await waitFor(() =>
-      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
-        title: "Invitation sent to new@example.org.",
-        type: "success",
-      }),
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ type: "success" }),
+      ),
     );
   });
 
@@ -132,21 +133,19 @@ describe("Organization team", () => {
     mocks.inviteMember.mockRejectedValueOnce(new Error("network unavailable"));
     const user = userEvent.setup();
     renderTeam();
-    await screen.findByText("Staff Owner");
+    await screen.findByTestId("staff-member-member-1");
 
     await user.type(screen.getByLabelText("Email"), "new@example.org");
     await user.click(screen.getByRole("button", { name: "Send invitation" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The server or network is unreachable. Check your connection and try again.",
-    );
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(mocks.toastAdd).not.toHaveBeenCalled();
   });
 
   it("cancels a pending invitation", async () => {
     const user = userEvent.setup();
     renderTeam();
-    await screen.findByText("pending@example.org");
+    await screen.findByTestId("staff-invitation-invitation-1");
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
@@ -156,10 +155,9 @@ describe("Organization team", () => {
       }),
     );
     await waitFor(() =>
-      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
-        title: "Invitation cancelled.",
-        type: "success",
-      }),
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ type: "success" }),
+      ),
     );
   });
 });

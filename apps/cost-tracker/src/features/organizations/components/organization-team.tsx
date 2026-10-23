@@ -62,7 +62,12 @@ const pendingOptions = {
 
 function roleBadges(role: string) {
   return parseOrganizationRoles(role).map((entry) => (
-    <Badge key={entry} variant="secondary">
+    <Badge
+      key={entry}
+      variant="secondary"
+      data-testid={`staff-role-${entry}`}
+      data-role={entry}
+    >
       {entry}
     </Badge>
   ));
@@ -172,7 +177,7 @@ export function OrganizationTeam({
             </TableHeader>
             <TableBody>
               {memberRows.map((entry) => (
-                <TableRow key={entry.id}>
+                <TableRow key={entry.id} data-testid={`staff-member-${entry.id}`}>
                   <TableCell>{entry.name}</TableCell>
                   <TableCell>{entry.email}</TableCell>
                   <TableCell>
@@ -259,7 +264,10 @@ export function OrganizationTeam({
             </TableHeader>
             <TableBody>
               {invitationRows.map((entry) => (
-                <TableRow key={entry.id}>
+                <TableRow
+                  key={entry.id}
+                  data-testid={`staff-invitation-${entry.id}`}
+                >
                   <TableCell>{entry.email}</TableCell>
                   <TableCell>{entry.role ?? "No role"}</TableCell>
                   <TableCell className="text-right">
