@@ -444,7 +444,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       ).toBeVisible();
       await page.getByLabel(`Country for ${people[2]!.name}`).selectOption("DE");
       await page.getByRole("button", { name: /^Save country for / }).click();
-      await expect(page.getByRole("alert")).toBeVisible();
+      await expect(
+        page.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      ).toBeVisible();
       await expect(page.getByLabel(`Country for ${people[2]!.name}`)).toHaveValue(
         "DE",
       );
@@ -833,7 +835,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await openPartnership(page, "claim");
       await page.getByLabel("Exact total (EUR)").fill("0");
       await page.getByRole("button", { name: "Save cost" }).click();
-      await expect(page.getByRole("alert")).toBeVisible();
+      await expect(
+        page.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
       await page.getByLabel("Exact total (EUR)").fill("100.00");
       await page.getByLabel("Allocation method").selectOption("amount");
@@ -845,7 +849,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       for (const person of people)
         await page.getByLabel(`${person.name} EUR share`).fill("33.33");
       await page.getByRole("button", { name: "Save cost" }).click();
-      await expect(page.getByRole("alert")).toBeVisible();
+      await expect(
+        page.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
       await page.getByLabel("Allocation method").selectOption("equal");
       await page.getByRole("button", { name: "Save cost" }).click();

@@ -674,7 +674,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .getByTestId(`registration-link-${id}`)
         .getByRole("button", { name: /^Reopen registration link / })
         .click();
-      await expect(p.getByRole("alert")).toBeVisible();
+      await expect(
+        p.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      ).toBeVisible();
       // Text-free: link row carries the closed state (stable id + DB proof below).
       await expect(
         p.locator(
@@ -741,7 +743,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       f.locator('[data-testid="joined-participants-empty"]'),
     ).toBeVisible();
     await f.goto(participantsURL);
-    await expect(f.getByRole("alert")).toBeVisible({
+    await expect(
+      f.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+    ).toBeVisible({
       timeout: 90_000,
     });
     // Text-free: the scope-denied alert above proves F sees no participant data.
@@ -861,7 +865,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await p
       .getByRole("button", { name: "Assign Group Organizer", exact: true })
       .click();
-    await expect(p.getByRole("alert")).toBeVisible();
+    await expect(
+      p.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+    ).toBeVisible();
     await expect
       .poll(() =>
         db
@@ -905,7 +911,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await c
       .getByRole("button", { name: "Manage Group Organizers", exact: true })
       .click();
-    await expect(c.getByRole("alert")).toBeVisible();
+    await expect(
+      c.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+    ).toBeVisible();
     await expect(
       c.getByRole("button", { name: "Assign Group Organizer", exact: true }),
     ).toHaveCount(0);
@@ -915,7 +923,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         exact: true,
       })
       .click();
-    await expect(p.getByRole("alert")).toBeVisible();
+    await expect(
+      p.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+    ).toBeVisible();
     await expect
       .poll(() =>
         db
@@ -943,7 +953,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       ),
     ).toHaveCount(0);
     await c.goto(participantsURL);
-    await expect(c.getByRole("alert")).toBeVisible({ timeout: 90_000 });
+    await expect(
+      c.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+    ).toBeVisible({ timeout: 90_000 });
     // Text-free: the scope-denied alert above proves no participant data leaks.
   });
 });
