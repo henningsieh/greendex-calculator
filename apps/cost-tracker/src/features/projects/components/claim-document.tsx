@@ -145,7 +145,12 @@ export function ClaimCostTable({
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.id} id={`cost-${row.id}`}>
+          <TableRow
+            key={row.id}
+            id={`cost-${row.id}`}
+            data-transport-profile={row.transportProfile}
+            data-amount-eur={row.amountEur}
+          >
             <TableCell variant="accounting">{row.transportProfile}</TableCell>
             <TableCell variant="amount">{row.amountEur}</TableCell>
             <TableCell variant="accounting">

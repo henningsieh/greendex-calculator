@@ -150,9 +150,10 @@ describe("Claim document presentation", () => {
       name: /Travel Cost Entries table/,
     });
     expect(region).toHaveAttribute("tabindex", "0");
-    const row = screen.getByRole("cell", { name: "train" }).closest("tr")!;
+    const row = screen.getAllByRole("row")[1]!;
     expect(row).toHaveAttribute("id", "cost-saved-cost");
-    expect(within(row).getByRole("cell", { name: "428.60" })).toBeInTheDocument();
+    expect(row).toHaveAttribute("data-transport-profile", "train");
+    expect(row).toHaveAttribute("data-amount-eur", "428.60");
     expect(within(row).getAllByRole("listitem")).toHaveLength(2);
     expect(within(row).getByRole("link")).toHaveAttribute(
       "href",
@@ -182,7 +183,7 @@ describe("Claim document presentation", () => {
       screen.queryByRole("columnheader", { name: "Action" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "None" })).toBeInTheDocument();
+    expect(screen.getAllByRole("cell")).toHaveLength(4);
   });
 
   it("exposes the selected payout account and Claim status independently of selectors", () => {
