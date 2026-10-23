@@ -160,10 +160,19 @@ async function selectOption(
   user: ReturnType<typeof userEvent.setup>,
   label: string,
   name: string,
+  id: string,
 ) {
   await user.click(screen.getByRole("button", { name: label }));
   await user.type(screen.getByLabelText(`Search ${label} by name or ID`), name);
-  await user.click(await screen.findByText(name));
+  const option = await screen.findByRole("option");
+  expect(option).toHaveAttribute("data-value", id);
+  await user.click(option);
+}
+
+async function expectSetupError(state: string) {
+  await waitFor(() =>
+    expect(document.querySelector(`[data-setup-error="${state}"]`)).toBeVisible(),
+  );
 }
 
 async function submitExisting() {
@@ -171,7 +180,7 @@ async function submitExisting() {
   await user.click(
     await screen.findByRole("radio", { name: "Existing Organization" }),
   );
-  await selectOption(user, "Organization", "My Organization");
+  await selectOption(user, "Organization", "My Organization", "partner-1");
   await user.click(screen.getByRole("button", { name: "Complete setup" }));
 }
 
@@ -189,7 +198,12 @@ describe("Setup Link UI", () => {
       },
     ]);
     creator();
-    expect(await screen.findByText("Expired")).toBeTruthy();
+    await screen.findByRole("table");
+    expect(
+      document.querySelector(
+        '[data-setup-link-id="expired-link"] [data-link-status]',
+      ),
+    ).toHaveAttribute("data-link-status", "expired");
   });
 
   it("creates a recipient-bound link, displays it and copies the URL", async () => {
@@ -198,13 +212,18 @@ describe("Setup Link UI", () => {
       mocks.writeText,
     );
     creator();
-    await screen.findByText("No Partner Organization Setup Links yet.");
+    await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Hosted Project" }));
     await user.type(
       screen.getByLabelText("Search Hosted Project by name or ID"),
       "Host",
     );
-    await user.click(await screen.findByText("Hosted Example"));
+    const projectOption = await screen.findByRole("option");
+    expect(projectOption).toHaveAttribute("data-value", "project-1");
+    await user.click(projectOption);
     await user.type(
       screen.getByLabelText("Recipient email"),
       "partner@example.com",
@@ -221,7 +240,7 @@ describe("Setup Link UI", () => {
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
   });
 
-  it("uses the approved new-link wording while issuance is pending", async () => {
+  it("prevents repeat issuance while the new link is pending", async () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));
     creator();
@@ -230,18 +249,26 @@ describe("Setup Link UI", () => {
       screen.getByLabelText("Search Hosted Project by name or ID"),
       "Host",
     );
-    await user.click(await screen.findByText("Hosted Example"));
+    const projectOption = await screen.findByRole("option");
+    expect(projectOption).toHaveAttribute("data-value", "project-1");
+    await user.click(projectOption);
     await user.type(
       screen.getByLabelText("Recipient email"),
       "partner@example.com",
     );
-    await user.click(screen.getByRole("button", { name: "Neuer Link" }));
-    expect(screen.getByRole("button", { name: "Neuer Link…" })).toBeDisabled();
+    const submit = screen.getByRole("button", { name: "Neuer Link" });
+    await user.click(submit);
+    expect(submit).toBeDisabled();
   });
 
   it("does not submit a missing secret", () => {
     recipient("");
-    expect(screen.getByText("Invalid setup link")).toBeTruthy();
+    expect(screen.getByRole("alert")).toHaveAttribute(
+      "data-setup-error",
+      "invalid",
+    );
+    expect(mocks.eligibility).not.toHaveBeenCalled();
+    expect(mocks.consume).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Complete setup" })).toBeNull();
   });
 
@@ -273,10 +300,13 @@ describe("Setup Link UI", () => {
       secret: "private-secret",
       organizationId: "partner-2",
     });
-    expect(await screen.findByText("Project Partnership created")).toBeTruthy();
     expect(
-      screen.getByText(/does not grant Hosting Organization membership/i),
-    ).toBeTruthy();
+      await screen.findByRole("button", { name: "Use this Organization" }),
+    ).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveAttribute(
+      "data-relationship",
+      "project-partnership",
+    );
   });
 
   it.each(["A", "A!", "A !!!", "!!!", "éé"])(
@@ -309,7 +339,7 @@ describe("Setup Link UI", () => {
       );
       await user.click(screen.getByRole("button", { name: "Complete setup" }));
       expect(
-        await screen.findByText("Project Partnership created"),
+        await screen.findByRole("button", { name: "Use this Organization" }),
       ).toBeVisible();
       expect(mocks.createOrganization).toHaveBeenCalledExactlyOnceWith({
         country: "DE",
@@ -332,7 +362,7 @@ describe("Setup Link UI", () => {
       "New Partner",
     );
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    expect(await screen.findByText("Could not create Organization")).toBeTruthy();
+    await expectSetupError("create");
     expect(mocks.consume).not.toHaveBeenCalled();
   });
 
@@ -350,7 +380,7 @@ describe("Setup Link UI", () => {
     );
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Could not create Organization");
+    await expectSetupError("create");
     expect(localStorage.getItem("partner-setup:user-1:link-1")).toBeNull();
     await user.clear(await screen.findByLabelText("New Organization name"));
     await user.type(
@@ -359,7 +389,9 @@ describe("Setup Link UI", () => {
     );
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    expect(await screen.findByText("Project Partnership created")).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "Use this Organization" }),
+    ).toBeVisible();
     expect(
       mocks.createOrganization.mock.calls.map(([input]) => input.slug),
     ).toEqual(["taken-partner", "available-partner"]);
@@ -376,19 +408,21 @@ describe("Setup Link UI", () => {
       partnershipId: "partnership-1",
     });
     recipient();
-    expect(await screen.findByText("Project Partnership created")).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "Use this Organization" }),
+    ).toBeVisible();
     expect(mocks.createOrganization).toHaveBeenCalledTimes(2);
     expect(screen.queryByLabelText("New Organization name")).toBeNull();
   });
 
-  it("shows Owner verification on the existing path and sends the ID for server verification", async () => {
+  it("requires an existing selection and sends its ID for server verification", async () => {
     recipient();
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole("radio", { name: "Existing Organization" }),
     );
-    expect(screen.getByText(/verified by the server/i)).toBeTruthy();
-    await selectOption(user, "Organization", "My Organization");
+    expect(screen.getByRole("button", { name: "Complete setup" })).toBeDisabled();
+    await selectOption(user, "Organization", "My Organization", "partner-1");
     expect(mocks.listMine).toHaveBeenCalledWith({ search: "My Organization" });
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
     expect(mocks.consume).toHaveBeenCalledWith({
@@ -408,7 +442,8 @@ describe("Setup Link UI", () => {
     );
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Setup result needs inspection");
+    await screen.findByRole("button", { name: "Inspect setup result" });
+    expect(document.querySelector("[data-setup-error]")).toBeNull();
     expect(mocks.createOrganization).toHaveBeenCalledTimes(1);
     expect(screen.queryByLabelText("New Organization name")).toBeNull();
     await user.click(
@@ -425,7 +460,7 @@ describe("Setup Link UI", () => {
         name: "Retry setup with retained Organization",
       }),
     );
-    await screen.findByText("Project Partnership created");
+    await screen.findByRole("button", { name: "Use this Organization" });
     expect(mocks.createOrganization).toHaveBeenCalledTimes(1);
     expect(
       mocks.consume.mock.calls.map(([input]) => input.organizationId),
@@ -442,7 +477,8 @@ describe("Setup Link UI", () => {
     );
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Setup result needs inspection");
+    await screen.findByRole("button", { name: "Inspect setup result" });
+    expect(document.querySelector("[data-setup-error]")).toBeNull();
     mocks.eligibility.mockResolvedValue({
       status: "redeemed",
       projectId: "project-1",
@@ -452,7 +488,7 @@ describe("Setup Link UI", () => {
     await user.click(
       screen.getByRole("button", { name: "Inspect setup result" }),
     );
-    await screen.findByText("Project Partnership created");
+    await screen.findByRole("button", { name: "Use this Organization" });
     expect(mocks.consume).toHaveBeenCalledTimes(1);
     expect(mocks.createOrganization).toHaveBeenCalledTimes(1);
     expect(mocks.setActive).not.toHaveBeenCalled();
@@ -481,7 +517,10 @@ describe("Setup Link UI", () => {
     await user.click(
       await screen.findByRole("button", { name: "Use this Organization" }),
     );
-    await screen.findByText(/Could not confirm Organization selection/);
+    await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
+    expect(mocks.setActive).toHaveBeenCalledExactlyOnceWith({
+      organizationId: "partner-2",
+    });
     expect(
       screen.queryByRole("link", { name: "Open Partner Project" }),
     ).toBeNull();
@@ -515,17 +554,13 @@ describe("Setup Link UI", () => {
     await user.click(
       await screen.findByRole("button", { name: "Use this Organization" }),
     );
-    expect(
-      screen.getByRole("button", { name: "Selecting Organization…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button")).toBeDisabled();
     expect(
       screen.queryByRole("link", { name: "Open Partner Project" }),
     ).toBeNull();
     resolveActive({ data: {} });
     await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
-    expect(
-      screen.getByRole("button", { name: "Selecting Organization…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button")).toBeDisabled();
     expect(
       screen.queryByRole("link", { name: "Open Partner Project" }),
     ).toBeNull();
@@ -560,14 +595,14 @@ describe("Setup Link UI", () => {
         "DE",
       );
       await user.click(screen.getByRole("button", { name: "Complete setup" }));
-      await screen.findByText("Could not create Organization");
+      await expectSetupError("create");
       view.unmount();
       recipient();
-      await screen.findByText(/Organization creation may have completed/);
+      await screen.findByRole("alert");
       expect(screen.queryByLabelText("New Organization name")).toBeNull();
-      await selectOption(user, "Organization", "My Organization");
+      await selectOption(user, "Organization", "My Organization", "partner-1");
       await user.click(screen.getByRole("button", { name: "Complete setup" }));
-      await screen.findByText("Project Partnership created");
+      await screen.findByRole("button", { name: "Use this Organization" });
       expect(mocks.createOrganization).toHaveBeenCalledTimes(1);
       expect(mocks.consume).toHaveBeenCalledExactlyOnceWith({
         id: "link-1",
@@ -589,7 +624,7 @@ describe("Setup Link UI", () => {
       new ORPCError("BAD_REQUEST", { data: { reason: "SETUP_LINK_DISABLED" } }),
     );
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Disabled setup link");
+    await expectSetupError("disabled");
     expect(mocks.createOrganization).not.toHaveBeenCalled();
     expect(mocks.consume).not.toHaveBeenCalled();
   });
@@ -602,14 +637,14 @@ describe("Setup Link UI", () => {
     );
     recipient();
     await submitExisting();
-    await screen.findByText("Owner verification required");
+    await expectSetupError("owner");
     const user = userEvent.setup();
     await user.click(
       screen.getByRole("button", { name: "Inspect setup result" }),
     );
-    await screen.findByText(
-      /Continue with the existing Organization you selected/,
-    );
+    expect(
+      await screen.findByRole("button", { name: "Complete setup" }),
+    ).toBeEnabled();
     mocks.listMine.mockResolvedValue([
       { id: "partner-3", name: "Another Owned Organization" },
     ]);
@@ -617,9 +652,14 @@ describe("Setup Link UI", () => {
       partnershipId: "partnership-3",
       organizationId: "partner-3",
     });
-    await selectOption(user, "Organization", "Another Owned Organization");
+    await selectOption(
+      user,
+      "Organization",
+      "Another Owned Organization",
+      "partner-3",
+    );
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Project Partnership created");
+    await screen.findByRole("button", { name: "Use this Organization" });
     expect(
       mocks.consume.mock.calls.map(([input]) => input.organizationId),
     ).toEqual(["partner-1", "partner-3"]);
@@ -633,15 +673,16 @@ describe("Setup Link UI", () => {
     mocks.consume.mockRejectedValueOnce(new Error("lost response"));
     const view = recipient();
     await submitExisting();
-    await screen.findByText("Setup result needs inspection");
+    await screen.findByRole("button", { name: "Inspect setup result" });
+    expect(document.querySelector("[data-setup-error]")).toBeNull();
     view.unmount();
     recipient();
-    await screen.findByText(
-      /Continue with the existing Organization you selected/,
-    );
+    expect(
+      await screen.findByRole("button", { name: "Complete setup" }),
+    ).toBeEnabled();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Project Partnership created");
+    await screen.findByRole("button", { name: "Use this Organization" });
     expect(
       mocks.consume.mock.calls.map(([input]) => input.organizationId),
     ).toEqual(["partner-1", "partner-1"]);
@@ -660,7 +701,7 @@ describe("Setup Link UI", () => {
       throw new Error("storage unavailable");
     });
     await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByText("Could not create Organization");
+    await expectSetupError("create");
     expect(mocks.createOrganization).not.toHaveBeenCalled();
     expect(mocks.consume).not.toHaveBeenCalled();
   });
@@ -672,13 +713,13 @@ describe("Setup Link UI", () => {
     );
     recipient();
     expect(await screen.findByLabelText("New Organization name")).toBeVisible();
-    expect(screen.queryByText("Organization retained")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("requires existing-Organization inspection for a corrupt recovery checkpoint", async () => {
     localStorage.setItem("partner-setup:user-1:link-1", "corrupt");
     recipient();
-    await screen.findByText(/Organization creation may have completed/);
+    await screen.findByRole("alert");
     expect(screen.queryByLabelText("New Organization name")).toBeNull();
     expect(
       await screen.findByRole("button", { name: /^Organization$/ }),
@@ -688,63 +729,53 @@ describe("Setup Link UI", () => {
   const states = [
     {
       code: "FORBIDDEN",
-      message: "Verify your email before continuing.",
       reason: "EMAIL_VERIFICATION_REQUIRED",
-      heading: "Verify your email",
+      state: "verify-email",
     },
     {
       code: "NOT_FOUND",
-      message: "Setup link not found.",
       reason: "SETUP_LINK_NOT_FOUND",
-      heading: "Invalid setup link",
+      state: "invalid",
     },
     {
       code: "BAD_REQUEST",
-      message: "This setup link is disabled.",
       reason: "SETUP_LINK_DISABLED",
-      heading: "Disabled setup link",
+      state: "disabled",
     },
     {
       code: "BAD_REQUEST",
-      message: "This setup link has expired.",
       reason: "SETUP_LINK_EXPIRED",
-      heading: "Expired setup link",
+      state: "expired",
     },
     {
       code: "FORBIDDEN",
-      message: "This setup link belongs to another email address.",
       reason: "SETUP_LINK_WRONG_EMAIL",
-      heading: "Wrong email address",
+      state: "wrong-email",
     },
     {
       code: "BAD_REQUEST",
-      message: "This setup link has already been used for another Organization.",
       reason: "SETUP_LINK_USED",
-      heading: "Setup already completed",
+      state: "duplicate",
     },
     {
       code: "FORBIDDEN",
-      message: "You must be an Owner of the selected Organization.",
       reason: "ORGANIZATION_OWNER_REQUIRED",
-      heading: "Owner verification required",
+      state: "owner",
     },
     {
       code: "BAD_REQUEST",
-      message: "This Organization is already assigned to the Project.",
       reason: "PARTNERSHIP_ALREADY_ASSIGNED",
-      heading: "Setup already completed",
+      state: "duplicate",
     },
     {
       code: "NOT_FOUND",
-      message: "This Project is no longer available.",
       reason: "PROJECT_NOT_FOUND",
-      heading: "Project unavailable",
+      state: "unavailable",
     },
     {
       code: "BAD_REQUEST",
-      message: "The Hosting Organization cannot be its own Partner Organization.",
       reason: "SELF_PARTNERSHIP",
-      heading: "Invalid Partner Organization",
+      state: "host",
     },
   ];
 
@@ -759,33 +790,28 @@ describe("Setup Link UI", () => {
         "PROJECT_NOT_FOUND",
       ].includes(reason),
     ),
-  )(
-    "refuses $reason before either mutation",
-    async ({ code, reason, heading }) => {
-      mocks.eligibility.mockRejectedValue(
-        new ORPCError(code, { data: { reason } }),
-      );
-      recipient();
-      await screen.findByText(heading);
-      expect(screen.queryByLabelText("New Organization name")).toBeNull();
-      expect(mocks.createOrganization).not.toHaveBeenCalled();
-      expect(mocks.consume).not.toHaveBeenCalled();
-    },
-  );
+  )("refuses $reason before either mutation", async ({ code, reason, state }) => {
+    mocks.eligibility.mockRejectedValue(
+      new ORPCError(code, { data: { reason } }),
+    );
+    recipient();
+    await expectSetupError(state);
+    expect(screen.queryByLabelText("New Organization name")).toBeNull();
+    expect(mocks.createOrganization).not.toHaveBeenCalled();
+    expect(mocks.consume).not.toHaveBeenCalled();
+  });
 
   it.each(states)(
-    "maps $code / $message to $heading without displaying remote text",
-    async ({ code, message, reason, heading }) => {
-      mocks.consume.mockRejectedValue(
-        new ORPCError(code, {
-          message: "Untrusted remote copy",
-          data: { reason },
-        }),
-      );
+    "maps $code / $reason to $state without reading the remote message",
+    async ({ code, reason, state }) => {
+      const message = vi.fn(() => "Untrusted remote copy");
+      const error = new ORPCError(code, { data: { reason } });
+      Object.defineProperty(error, "message", { get: message });
+      mocks.consume.mockRejectedValue(error);
       recipient();
       await submitExisting();
-      expect(await screen.findByText(heading)).toBeTruthy();
-      expect(screen.queryByText(message)).toBeNull();
+      await expectSetupError(state);
+      expect(message).not.toHaveBeenCalled();
     },
   );
 
@@ -798,11 +824,14 @@ describe("Setup Link UI", () => {
     );
     recipient();
     await submitExisting();
-    expect(await screen.findByText("Setup result needs inspection")).toBeTruthy();
-    expect(screen.queryByText("Disabled setup link")).toBeNull();
+    expect(
+      await screen.findByRole("button", { name: "Inspect setup result" }),
+    ).toBeVisible();
+    expect(document.querySelector("[data-setup-error]")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Complete setup" })).toBeNull();
   });
 
-  it("does not activate link-state copy for contradictory code/reason metadata", async () => {
+  it("does not activate a link state for contradictory code/reason metadata", async () => {
     mocks.consume.mockRejectedValue(
       new ORPCError("FORBIDDEN", {
         message: "This setup link is disabled.",
@@ -811,17 +840,24 @@ describe("Setup Link UI", () => {
     );
     recipient();
     await submitExisting();
-    expect(await screen.findByText("Setup result needs inspection")).toBeTruthy();
-    expect(screen.queryByText("Disabled setup link")).toBeNull();
+    expect(
+      await screen.findByRole("button", { name: "Inspect setup result" }),
+    ).toBeVisible();
+    expect(document.querySelector("[data-setup-error]")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Complete setup" })).toBeNull();
   });
 
-  it("renders an unknown error safely, without leaking remote data", async () => {
-    mocks.consume.mockRejectedValue(
-      new ORPCError("BAD_REQUEST", { message: "postgres://private" }),
-    );
+  it("renders an unknown error without reading its remote message", async () => {
+    const message = vi.fn(() => "postgres://private");
+    const error = new ORPCError("BAD_REQUEST");
+    Object.defineProperty(error, "message", { get: message });
+    mocks.consume.mockRejectedValue(error);
     recipient();
     await submitExisting();
-    expect(await screen.findByText("Setup result needs inspection")).toBeTruthy();
-    expect(screen.queryByText(/postgres/)).toBeNull();
+    expect(
+      await screen.findByRole("button", { name: "Inspect setup result" }),
+    ).toBeVisible();
+    expect(document.querySelector("[data-setup-error]")).toBeNull();
+    expect(message).not.toHaveBeenCalled();
   });
 });
