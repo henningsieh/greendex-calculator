@@ -223,8 +223,7 @@ async function openPartnerParticipants(page: Page, projectName: string) {
 
 async function join(page: Page, url: string, actor: Actor) {
   await page.goto(url);
-  // Text-free: the join form interactions + redirect below prove the page (no copy).
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByLabel("Participant agreement text")).toBeVisible();
   await expect(page.getByLabel("Participant agreement text")).not.toBeEmpty();
   await page.getByLabel("Full name").fill(actors[actor].name);
   await page.getByLabel("Country", { exact: true }).selectOption("DE");
@@ -232,7 +231,10 @@ async function join(page: Page, url: string, actor: Actor) {
   await page.getByRole("button", { name: "Join Project" }).click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
   await expectPrivateURL(page, /\/participant$/);
-  // Text-free: project heading by role (no copy assertion).
+  await expect(page.getByTestId("participant-dashboard")).toHaveAttribute(
+    "data-dashboard-state",
+    "ready",
+  );
 }
 
 async function membershipRole(actor: Actor, organizationId: string) {
@@ -488,8 +490,10 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await page.goto("/participant");
     await page.getByLabel("Full name", { exact: true }).fill(actors.T.name);
     await page.getByRole("button", { name: "Save profile" }).click();
-    // Text-free: the filled form + save interaction above prove the page (no copy).
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "agreement",
+    );
     await expect(page.getByLabel("Participant agreement text")).not.toBeEmpty();
     await expect(
       page.getByRole("button", { name: "Accept agreement" }),
@@ -715,8 +719,13 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     for (const actor of ["T", "U"] as const) {
       const page = await pageFor(browser, actor, baseURL!);
       await page.goto("/participant");
-      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      // Text-free: partner-scoped interactions below prove the acting context (no copy).
+      await expect(page.getByTestId("participant-dashboard")).toHaveAttribute(
+        "data-dashboard-state",
+        "ready",
+      );
+      await expect(
+        page.getByTestId(`participant-project-${ids.main}`),
+      ).toBeVisible();
     }
     const p = await pageFor(browser, "P", baseURL!);
     await openPartnerParticipants(p, names.main);
@@ -807,7 +816,11 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByRole("button", { name: "Join Project" }).click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(t, /\/participant$/);
-    await expect(t.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(t.getByTestId("participant-dashboard")).toHaveAttribute(
+      "data-dashboard-state",
+      "ready",
+    );
+    await expect(t.getByTestId(`participant-project-${ids.other}`)).toBeVisible();
     await assertJoined("T", ids.partner, ids.other);
 
     const q = await pageFor(browser, "Q", baseURL!);
@@ -849,17 +862,19 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .getByRole("button", { name: "Assign Group Organizer", exact: true })
       .click();
     await expect(p.getByRole("alert")).toBeVisible();
-    expect(
-      await db
-        .select()
-        .from(coordinatorAssignments)
-        .where(
-          and(
-            eq(coordinatorAssignments.partnershipId, ids.partnership),
-            eq(coordinatorAssignments.userId, actors.C.id),
+    await expect
+      .poll(() =>
+        db
+          .select()
+          .from(coordinatorAssignments)
+          .where(
+            and(
+              eq(coordinatorAssignments.partnershipId, ids.partnership),
+              eq(coordinatorAssignments.userId, actors.C.id),
+            ),
           ),
-        ),
-    ).toHaveLength(1);
+      )
+      .toHaveLength(1);
     expect(await membershipRole("C", ids.partner)).toEqual([
       { role: ORGANIZATION_ROLES.ProjectCoordinator },
     ]);
@@ -901,17 +916,19 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       })
       .click();
     await expect(p.getByRole("alert")).toBeVisible();
-    expect(
-      await db
-        .select()
-        .from(coordinatorAssignments)
-        .where(
-          and(
-            eq(coordinatorAssignments.partnershipId, ids.partnership),
-            eq(coordinatorAssignments.userId, actors.C.id),
+    await expect
+      .poll(() =>
+        db
+          .select()
+          .from(coordinatorAssignments)
+          .where(
+            and(
+              eq(coordinatorAssignments.partnershipId, ids.partnership),
+              eq(coordinatorAssignments.userId, actors.C.id),
+            ),
           ),
-        ),
-    ).toHaveLength(0);
+      )
+      .toHaveLength(0);
     expect(await membershipRole("C", ids.partner)).toEqual([
       { role: ORGANIZATION_ROLES.ProjectCoordinator },
     ]);
