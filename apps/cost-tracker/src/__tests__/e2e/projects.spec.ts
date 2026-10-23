@@ -33,7 +33,7 @@ test.describe("Cost Tracker Project production path", () => {
     });
 
     await page.goto("/projects");
-    await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
@@ -47,7 +47,9 @@ test.describe("Cost Tracker Project production path", () => {
     await rpcResponse;
     await expect(page).toHaveURL(/search=Cost\+Tracker\+E2E/);
     await expect(
-      page.getByRole("link", { name: fixture.name, exact: true }),
+      page.locator(
+        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
+      ),
     ).toBeVisible();
     // Red if nuqs no longer writes list state to the URL or bypasses /api/rpc.
     expect(rpcRequests.length).toBeGreaterThan(0);
@@ -56,13 +58,22 @@ test.describe("Cost Tracker Project production path", () => {
     await page.reload();
     await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
     await expect(
-      page.getByRole("link", { name: fixture.name, exact: true }),
+      page.locator(
+        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
+      ),
     ).toBeVisible();
     // Red if reloading loses the URL-backed state or its matching Project data.
     expect(listURL(page.url())).toBe(filteredListURL);
 
-    await page.getByRole("link", { name: fixture.name }).click();
-    await expect(page.getByRole("heading", { name: fixture.name })).toBeVisible();
+    await page
+      .locator(
+        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
+      )
+      .click();
+    await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+      "data-project-id",
+      fixture.projectId,
+    );
     const detailURL = page.url();
     await page.getByRole("link", { name: "Back to Projects" }).click();
     await expect(page).toHaveURL(filteredListURL);
@@ -71,7 +82,10 @@ test.describe("Cost Tracker Project production path", () => {
 
     await page.goBack();
     await expect(page).toHaveURL(detailURL);
-    await expect(page.getByRole("heading", { name: fixture.name })).toBeVisible();
+    await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+      "data-project-id",
+      fixture.projectId,
+    );
     await page.goForward();
     await expect(page).toHaveURL(filteredListURL);
     await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
@@ -79,7 +93,9 @@ test.describe("Cost Tracker Project production path", () => {
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: fixture.name, exact: true }),
+      page.locator(
+        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
+      ),
     ).toBeVisible();
   });
 
@@ -87,12 +103,13 @@ test.describe("Cost Tracker Project production path", () => {
     page,
   }) => {
     await page.goto(`/projects/${fixture.projectId}`);
-    await expect(page.getByRole("heading", { name: fixture.name })).toBeVisible();
+    await expect(page.getByTestId("project-workspace")).toHaveAttribute(
+      "data-project-id",
+      fixture.projectId,
+    );
 
     await page.goto("/partner-organizations");
-    await expect(
-      page.getByRole("heading", { name: "Partner Organizations" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     // Text-free hook: the assignment card carries a stable test id.
     const assignment = page.locator('[data-testid="organization-assignment"]');
@@ -100,7 +117,9 @@ test.describe("Cost Tracker Project production path", () => {
     await page
       .getByRole("combobox", { name: "Search Hosted Project by name or ID" })
       .fill(fixture.projectId);
-    await page.getByRole("option").filter({ hasText: fixture.projectId }).click();
+    await page
+      .locator(`[role="option"][data-entity-id="${fixture.projectId}"]`)
+      .click();
 
     await assignment
       .getByRole("button", { name: "Partner Organization" })
@@ -111,8 +130,9 @@ test.describe("Cost Tracker Project production path", () => {
       })
       .fill(fixture.partnerOrganizationId);
     await page
-      .getByRole("option")
-      .filter({ hasText: fixture.partnerOrganizationId })
+      .locator(
+        `[role="option"][data-entity-id="${fixture.partnerOrganizationId}"]`,
+      )
       .click();
 
     const rpcResponse = page.waitForResponse(
@@ -141,7 +161,7 @@ test("renders Organization staff controls without importing server auth into the
 }) => {
   const response = await page.goto("/organization");
   expect(response?.ok()).toBe(true);
-  await expect(page.getByRole("heading", { name: "Organization" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   // Text-free: staff controls are identified by stable test ids, not copy.
   await expect(page.locator('[data-testid="staff-members"]')).toBeVisible();
   await expect(page.locator('[data-testid="staff-invite"]')).toBeVisible();
