@@ -325,11 +325,7 @@ describe("ParticipantCoordination", () => {
       userId: "user-existing",
     });
     const notice = await screen.findByRole("alert");
-    expect(notice).toHaveAttribute("data-create-error-code", "BAD_REQUEST");
-    expect(notice).toHaveAttribute(
-      "data-create-error-reason",
-      "PARTICIPATION_DUPLICATE",
-    );
+    expect(notice).toHaveAttribute("data-feedback-outcome", "duplicate-review");
     expect(screen.getByTestId("joined-participant-person-1")).toBeInTheDocument();
   });
 
@@ -342,31 +338,42 @@ describe("ParticipantCoordination", () => {
     await selectRegisteredUser(user, "user-existing", "Existing Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     const notice = await screen.findByRole("alert");
-    expect(notice).toHaveAttribute("data-create-error-code", "BAD_REQUEST");
-    expect(notice).not.toHaveAttribute("data-create-error-reason");
+    expect(notice).toHaveAttribute("data-feedback-outcome", "create-failed");
     expect(
       screen.getByRole("button", { name: "Add Participation" }),
     ).toBeEnabled();
   });
 
   it.each([
-    new ORPCError("BAD_REQUEST", {
-      message:
-        "Identity already participates in this Project; request merge review.",
-    }),
-    new ORPCError("FORBIDDEN", { data: { reason: "PARTICIPATION_DUPLICATE" } }),
-    new ORPCError("UNKNOWN", { data: { reason: "PARTICIPATION_DUPLICATE" } }),
+    {
+      error: new ORPCError("BAD_REQUEST", {
+        message:
+          "Identity already participates in this Project; request merge review.",
+      }),
+      outcome: "create-failed",
+    },
+    {
+      error: new ORPCError("FORBIDDEN", {
+        data: { reason: "PARTICIPATION_DUPLICATE" },
+      }),
+      outcome: "access-denied",
+    },
+    {
+      error: new ORPCError("UNKNOWN", {
+        data: { reason: "PARTICIPATION_DUPLICATE" },
+      }),
+      outcome: "create-failed",
+    },
   ])(
     "does not activate duplicate recovery for legacy prose or wrong code/reason",
-    async (error) => {
+    async ({ error, outcome }) => {
       mocks.create.mockRejectedValue(error);
       const user = userEvent.setup();
       await renderCoordination();
       await selectRegisteredUser(user, "user-existing", "Existing Candidate");
       await user.click(screen.getByRole("button", { name: "Add Participation" }));
       const notice = await screen.findByRole("alert");
-      expect(notice).toHaveAttribute("data-create-error-code", error.code);
-      expect(notice).not.toHaveAttribute("data-create-error-reason");
+      expect(notice).toHaveAttribute("data-feedback-outcome", outcome);
       expect(
         screen.getByRole("button", { name: "Add Participation" }),
       ).toBeEnabled();
@@ -404,8 +411,8 @@ describe("ParticipantCoordination", () => {
       }),
     );
     expect(await screen.findByRole("alert")).toHaveAttribute(
-      "data-reopen-error-reason",
-      "REGISTRATION_CLAIM_LOCKED",
+      "data-entry-outcome",
+      "reopen-refused",
     );
     expect(screen.getByTestId("registration-link-link-1")).toHaveAttribute(
       "data-link-open",
@@ -432,8 +439,8 @@ describe("ParticipantCoordination", () => {
       }),
     );
     expect(await screen.findByRole("alert")).toHaveAttribute(
-      "data-remove-error-reason",
-      "PARTICIPATION_JOURNEY_OR_COST_REFERENCED",
+      "data-feedback-outcome",
+      "remove-refused",
     );
     expect(screen.getByTestId("joined-participant-person-1")).toBeInTheDocument();
     expect(mocks.remove).toHaveBeenCalledWith({
@@ -451,8 +458,7 @@ describe("ParticipantCoordination", () => {
     await selectRegisteredUser(user, "host-user", "Host Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     const notice = await screen.findByRole("alert");
-    expect(notice).toHaveAttribute("data-create-error-code", "FORBIDDEN");
-    expect(notice).not.toHaveAttribute("data-create-error-reason");
+    expect(notice).toHaveAttribute("data-feedback-outcome", "access-denied");
     expect(
       screen.getByRole("button", { name: "Add Participation" }),
     ).toBeEnabled();

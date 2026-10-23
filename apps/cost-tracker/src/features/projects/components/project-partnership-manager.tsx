@@ -46,6 +46,7 @@ export function ProjectPartnershipManager({
   const [projectId, setProjectId] = useState("");
   const [organizationId, setOrganizationId] = useState("");
   const [feedback, setFeedback] = useState<string>();
+  const [feedbackError, setFeedbackError] = useState(false);
 
   const invalidateProjectData = async () => {
     await Promise.all([
@@ -69,18 +70,26 @@ export function ProjectPartnershipManager({
       orpc.projectPartnerships.assign({ projectId, organizationId }),
     onSuccess: async () => {
       setFeedback("Project Partnership assigned.");
+      setFeedbackError(false);
       setOrganizationId("");
       await invalidateProjectData();
     },
-    onError: (error) => setFeedback(mutationMessage(error)),
+    onError: (error) => {
+      setFeedback(mutationMessage(error));
+      setFeedbackError(true);
+    },
   });
   const removeMutation = useMutation({
     mutationFn: (id: string) => orpc.projectPartnerships.remove({ id }),
     onSuccess: async () => {
       setFeedback("Project Partnership removed.");
+      setFeedbackError(false);
       await invalidateProjectData();
     },
-    onError: (error) => setFeedback(mutationMessage(error)),
+    onError: (error) => {
+      setFeedback(mutationMessage(error));
+      setFeedbackError(true);
+    },
   });
 
   return (
@@ -96,6 +105,7 @@ export function ProjectPartnershipManager({
               onSubmit={(event) => {
                 event.preventDefault();
                 setFeedback(undefined);
+                setFeedbackError(false);
                 assignMutation.mutate();
               }}
             >
@@ -141,11 +151,7 @@ export function ProjectPartnershipManager({
                 aria-live="polite"
                 className="mt-4 text-sm"
                 data-testid="partnership-feedback"
-                data-state={
-                  assignMutation.isError || removeMutation.isError
-                    ? "error"
-                    : "success"
-                }
+                data-state={feedbackError ? "error" : "success"}
               >
                 {feedback}
               </p>

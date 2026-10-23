@@ -496,6 +496,13 @@ function CostEditor({
       setPending(false);
     }
   }
+  const shareTotal =
+    method === "equal"
+      ? undefined
+      : enteredShareTotal(
+          selected.map((id) => shares[id] || "0"),
+          method,
+        );
   return (
     <Card variant="document">
       <CardHeader>
@@ -671,23 +678,10 @@ function CostEditor({
               })}
               <FieldError message={errors.allocations} />
             </fieldset>
-            <p
-              aria-live="polite"
-              data-share-total={
-                method === "equal"
-                  ? undefined
-                  : enteredShareTotal(
-                      selected.map((id) => shares[id] || "0"),
-                      method,
-                    )
-              }
-            >
+            <p aria-live="polite" data-share-total={shareTotal}>
               {method === "equal"
                 ? `Equal split across ${selected.length} Participations; exact EUR shares computed by the server after save.`
-                : `Entered shares total: ${enteredShareTotal(
-                    selected.map((id) => shares[id] || "0"),
-                    method,
-                  )} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
+                : `Entered shares total: ${shareTotal} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
             </p>
             <Button size="lg" variant="default" type="submit" disabled={pending}>
               Save cost

@@ -89,7 +89,7 @@ export function SelectOrganization({ organizations }: SelectOrganizationProps) {
             ))}
           </ul>
           {failed ? (
-            <p role="alert">
+            <p role="alert" data-select-status="failed">
               Could not select that Organization. It may have been removed —
               choose another one.
             </p>

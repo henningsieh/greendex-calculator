@@ -97,8 +97,9 @@ describe("OrganizationSwitcher", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "Beta" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Could not switch Organization. Try again.",
+      expect(screen.getByRole("alert")).toHaveAttribute(
+        "data-switch-status",
+        "failed",
       );
     });
     expect(mocks.refresh).not.toHaveBeenCalled();

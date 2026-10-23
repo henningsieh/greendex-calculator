@@ -235,6 +235,31 @@ describe("ProjectPartnershipManager", () => {
     );
   });
 
+  it("reports success after a failed removal followed by a successful assignment", async () => {
+    mocks.remove.mockRejectedValueOnce(
+      new ORPCError("INTERNAL_SERVER_ERROR", { message: "db down" }),
+    );
+    mocks.list.mockResolvedValue([existingPartnership]);
+    const user = userEvent.setup();
+    await renderManager([existingPartnership]);
+
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    expect(await screen.findByTestId("partnership-feedback")).toHaveAttribute(
+      "data-state",
+      "error",
+    );
+
+    await selectAssignment(user);
+    await user.click(screen.getByRole("button", { name: "Assign" }));
+    await waitFor(() => {
+      expect(mocks.assign).toHaveBeenCalled();
+    });
+    expect(screen.getByTestId("partnership-feedback")).toHaveAttribute(
+      "data-state",
+      "success",
+    );
+  });
+
   it("invalidates generated Project query families and refreshes the visible list after removal", async () => {
     mocks.list
       .mockResolvedValueOnce([existingPartnership])
