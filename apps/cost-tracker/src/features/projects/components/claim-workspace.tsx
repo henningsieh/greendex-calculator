@@ -671,7 +671,17 @@ function CostEditor({
               })}
               <FieldError message={errors.allocations} />
             </fieldset>
-            <p aria-live="polite">
+            <p
+              aria-live="polite"
+              data-share-total={
+                method === "equal"
+                  ? undefined
+                  : enteredShareTotal(
+                      selected.map((id) => shares[id] || "0"),
+                      method,
+                    )
+              }
+            >
               {method === "equal"
                 ? `Equal split across ${selected.length} Participations; exact EUR shares computed by the server after save.`
                 : `Entered shares total: ${enteredShareTotal(

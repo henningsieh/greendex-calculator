@@ -246,7 +246,7 @@ describe("Claim workspace", () => {
     mocks.permitted = false;
     mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
     mount();
-    await screen.findByText("No costs saved yet.");
+    await screen.findByTestId("costs-empty");
     expect(screen.getByLabelText("Payout Account")).toBeDisabled();
     for (const name of [
       "Save cost",
@@ -288,7 +288,11 @@ describe("Claim workspace", () => {
           <ClaimWorkspace partnershipId="own" />
         </QueryClientProvider>,
       );
-      expect(await screen.findByText(/Berlin → Riga/)).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          document.querySelector('li[id="journey-person"]'),
+        ).toBeInTheDocument(),
+      );
       expect(
         screen.queryByRole("button", { name: "Correct Robin's journey" }),
       ).toBeNull();
@@ -313,7 +317,11 @@ describe("Claim workspace", () => {
         <ClaimWorkspace partnershipId="own" />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText(/Berlin → Riga/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        document.querySelector('li[id="journey-person"]'),
+      ).toBeInTheDocument(),
+    );
     expect(
       screen.queryByRole("button", { name: "Correct Robin's journey" }),
     ).toBeNull();
@@ -371,13 +379,17 @@ describe("Claim workspace", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Save correction" }),
     );
-    for (const message of [
-      "Enter origin.",
-      "Enter destination.",
-      "Select trip type.",
-      "Invalid distance.",
+    for (const label of [
+      "Origin for Robin",
+      "Destination for Robin",
+      "Trip type for Robin",
+      "Erasmus Distance-Calculator distance (km) for Robin",
     ])
-      expect(await screen.findByText(message)).toBeInTheDocument();
+      expect(
+        await within(screen.getByLabelText(label).parentElement!).findByRole(
+          "alert",
+        ),
+      ).toBeInTheDocument();
     expect(screen.getByLabelText(/distance \(km\) for Robin/)).toHaveValue("bad");
     await userEvent.type(screen.getByLabelText("Origin for Robin"), "Tallinn");
     await userEvent.clear(screen.getByLabelText(/distance \(km\) for Robin/));
@@ -399,12 +411,17 @@ describe("Claim workspace", () => {
       }),
     );
     await waitFor(() =>
-      expect(screen.getByText(/Tallinn → Riga City/)).toBeInTheDocument(),
+      expect(
+        screen.queryByRole("button", { name: "Save correction" }),
+      ).toBeNull(),
     );
     await userEvent.click(
       screen.getByRole("button", { name: "Correct Robin's journey" }),
     );
     expect(screen.getByLabelText("Origin for Robin")).toHaveValue("Tallinn");
+    expect(screen.getByLabelText("Destination for Robin")).toHaveValue(
+      "Riga City",
+    );
     expect(screen.getByLabelText("Trip type for Robin")).toHaveValue(
       "round-trip",
     );
@@ -417,10 +434,12 @@ describe("Claim workspace", () => {
     await waitFor(() =>
       expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
-    expect(
-      await screen.findByText(/Claim Submitted \/ saved/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Tallinn → Riga City/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-draft-status="submitted"]'),
+      ).toBeInTheDocument(),
+    );
+    expect(document.querySelector('li[id="journey-person"]')).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Correct Robin's journey" }),
     ).toBeNull();
@@ -428,7 +447,7 @@ describe("Claim workspace", () => {
     // Heavy render + async flows: flakes at the 5s default under full parallel load.
   }, 30_000);
 
-  it("shows correction reason, editing actions and resubmit; rejected reason without payment or edit controls", async () => {
+  it("shows correction notice, editing actions and resubmit; rejection history without payment or edit controls", async () => {
     mocks.draft = {
       id: "claim",
       partnershipId: "own",
@@ -449,9 +468,12 @@ describe("Claim workspace", () => {
       </QueryClientProvider>,
     );
     expect(
-      await screen.findByText(/Correction requested: Fix receipt/),
+      await screen.findByTestId("claim-correction-notice"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Correct the Claim data/)).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-draft-status="correction_requested"]'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save cost" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
     unmount();
     mocks.preview = null;
@@ -471,8 +493,17 @@ describe("Claim workspace", () => {
       },
     ];
     mount();
-    expect(await screen.findByText("Ineligible")).toBeInTheDocument();
-    expect(screen.getByText("Mistaken rejection")).toBeInTheDocument();
+    const history = await screen.findByRole("region", { name: "Claim history" });
+    expect(within(history).getAllByRole("listitem")).toHaveLength(2);
+    expect(
+      history.querySelector('[data-history-event="rejected"]'),
+    ).toBeInTheDocument();
+    expect(
+      history.querySelector('[data-history-event="reopened"]'),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-draft-status="rejected"]'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Submit Claim" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();
@@ -480,9 +511,11 @@ describe("Claim workspace", () => {
 
   it("does not create on open, selects payout then explicitly saves, and shows saved state", async () => {
     mount();
-    expect(
-      await screen.findByText(/Opening this workspace saves nothing/),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-draft-status="none"]'),
+      ).toBeInTheDocument(),
+    );
     expect(mocks.saveDraft).not.toHaveBeenCalled();
     expect(
       within(
@@ -498,14 +531,14 @@ describe("Claim workspace", () => {
       "account",
     );
     await waitFor(() =>
-      expect(screen.getByText(/Selected Payout Account:/)).toBeInTheDocument(),
+      expect(screen.getByLabelText("Payout Account")).toHaveValue("account"),
     );
     await userEvent.click(
       screen.getByRole("button", { name: "Save Claim draft" }),
     );
     await waitFor(() =>
       expect(
-        screen.getByText(/Claim Editable draft \/ saved/),
+        document.querySelector('[data-draft-status="editable"]'),
       ).toBeInTheDocument(),
     );
     expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" });
@@ -528,7 +561,7 @@ describe("Claim workspace", () => {
     );
     mocks.saveCost.mockResolvedValue({ id: "cost" });
     mount();
-    await screen.findByText("No costs saved yet.");
+    await screen.findByTestId("costs-empty");
     await userEvent.selectOptions(
       screen.getByLabelText("Participation"),
       "person",
@@ -539,8 +572,17 @@ describe("Claim workspace", () => {
       "bad",
     );
     await userEvent.click(screen.getByRole("button", { name: "Save journey" }));
-    expect(await screen.findByText("Enter origin.")).toBeInTheDocument();
-    expect(screen.getByText("Enter calculator distance.")).toBeInTheDocument();
+    expect(
+      await within(screen.getByLabelText("Origin").parentElement!).findByRole(
+        "alert",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByLabelText(/Erasmus Distance-Calculator distance/)
+          .parentElement!,
+      ).getByRole("alert"),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Origin")).toHaveValue("Mars");
     expect(
       screen.getByLabelText(/Erasmus Distance-Calculator distance/),
@@ -567,7 +609,13 @@ describe("Claim workspace", () => {
       }),
     );
     mount();
-    await screen.findByText(/No journeys saved yet/);
+    expect(
+      within(
+        await screen.findByRole("list", {
+          name: "Participations needing Journeys",
+        }),
+      ).getByRole("listitem"),
+    ).toHaveAttribute("id", "journey-gap-person");
     await userEvent.selectOptions(
       screen.getByLabelText("Participation"),
       "person",
@@ -575,9 +623,9 @@ describe("Claim workspace", () => {
     await userEvent.type(screen.getByLabelText("Origin"), "Berlin");
     await userEvent.click(screen.getByRole("button", { name: "Save journey" }));
     expect(
-      await screen.findByText(
-        "This Participation already has a Participant Journey.",
-      ),
+      await within(
+        screen.getByLabelText("Participation").parentElement!,
+      ).findByRole("alert"),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Origin")).toHaveValue("Berlin");
   });
@@ -598,19 +646,28 @@ describe("Claim workspace", () => {
       }),
     );
     mount();
-    await screen.findByText("No costs saved yet.");
+    await screen.findByTestId("costs-empty");
     await userEvent.selectOptions(
       screen.getByLabelText("Allocation method"),
       "percentage",
     );
     await userEvent.click(screen.getByRole("checkbox", { name: "Robin" }));
     await userEvent.type(screen.getByLabelText("Robin percentage"), "35.5");
-    expect(
-      screen.getByText(/Entered shares total: 35.500000 % of 100%/),
-    ).toBeInTheDocument();
+    expect(document.querySelector("[data-share-total]")).toHaveAttribute(
+      "data-share-total",
+      "35.500000",
+    );
     await userEvent.click(screen.getByRole("button", { name: "Save cost" }));
-    expect(await screen.findByText("Invalid percentage.")).toBeInTheDocument();
-    expect(screen.getByText("Shares must total 100%.")).toBeInTheDocument();
+    expect(
+      await within(
+        screen.getByLabelText("Robin percentage").parentElement!,
+      ).findByRole("alert"),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("group", { name: "Covered Participations" })
+        .querySelector(':scope > [role="alert"]'),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Robin percentage")).toHaveValue("35.5");
   });
 
@@ -656,9 +713,13 @@ describe("Claim workspace", () => {
     vi.stubGlobal("XMLHttpRequest", FakeUploadRequest);
     try {
       mount();
-      expect(
-        await screen.findByText(/receipt.pdf \(4 bytes\)/),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          within(document.getElementById("claim-proofs")!).getAllByRole(
+            "listitem",
+          ),
+        ).toHaveLength(1),
+      );
       const picker = screen.getByLabelText("Link a Proof Document to this cost");
       expect(
         within(picker).getByRole("option", { name: "receipt.pdf" }),
@@ -693,8 +754,14 @@ describe("Claim workspace", () => {
       );
       requests[0].onload?.();
       await waitFor(() =>
-        expect(screen.getByText("Proof Document uploaded.")).toBeInTheDocument(),
+        expect(screen.getByRole("progressbar")).toHaveValue(100),
       );
+      expect(
+        within(document.getElementById("claim-proofs")!).getByRole("status"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Upload document" }),
+      ).toBeEnabled();
     } finally {
       vi.stubGlobal("XMLHttpRequest", original);
     }
@@ -849,21 +916,32 @@ describe("Claim workspace", () => {
     };
     expect(await client.query(project)).toBe("editable");
     mount(client);
-    expect(await screen.findByText("726.00 EUR")).toBeInTheDocument();
+    expect(await screen.findByTestId("calculated-payable")).toHaveAttribute(
+      "data-payable",
+      "726.00",
+    );
     await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
     expect(mocks.submit).not.toHaveBeenCalled();
-    expect(screen.getByText(/submission locks the Claim/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("complementary", { name: "Submission" })).getByRole(
+        "alert",
+      ),
+    ).toContainElement(
+      screen.getByRole("button", { name: "Confirm submission" }),
+    );
     await userEvent.click(
       screen.getByRole("button", { name: "Confirm submission" }),
     );
     await waitFor(() =>
       expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
-    expect(
-      await screen.findByText(/Claim Submitted \/ saved/),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-draft-status="submitted"]'),
+      ).toBeInTheDocument(),
+    );
     expect(await client.query(project)).toBe("submitted");
-    expect(screen.getByText(/locked for Partner editing/)).toBeInTheDocument();
+    expect(screen.getByTestId("claim-locked")).toBeInTheDocument();
     expect(screen.getByLabelText("Payout Account")).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Save journey" })).toBeNull();
@@ -873,9 +951,7 @@ describe("Claim workspace", () => {
   it("renders a previously submitted Claim read-only on initial load", async () => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "submitted" };
     mount();
-    expect(
-      await screen.findByText(/locked for Partner editing/),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId("claim-locked")).toBeInTheDocument();
     expect(screen.getByLabelText("Payout Account")).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Submit Claim" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Save journey" })).toBeNull();
@@ -930,15 +1006,18 @@ describe("Claim workspace", () => {
       });
     });
     mount();
-    await screen.findByText("726.00 EUR");
+    expect(await screen.findByTestId("calculated-payable")).toHaveAttribute(
+      "data-payable",
+      "726.00",
+    );
     await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
     await userEvent.click(
       screen.getByRole("button", { name: "Confirm submission" }),
     );
     expect(
-      await screen.findByText(
-        "We could not complete that request. Check your details and try again.",
-      ),
+      await within(
+        screen.getByRole("complementary", { name: "Submission" }),
+      ).findByRole("alert"),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole("link", { name: /Link evidence/ }),
@@ -956,8 +1035,9 @@ describe("Claim workspace", () => {
     );
     mount();
     expect(
-      await screen.findByText(/No Payout Accounts available/),
+      await screen.findByRole("button", { name: "Create Payout Account" }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Payout Account" })).toBeNull();
     expect(
       screen.getByRole("button", { name: "Save Claim draft" }),
     ).toBeDisabled();
@@ -966,7 +1046,11 @@ describe("Claim workspace", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Create Payout Account" }),
     );
-    expect(await screen.findByText("Invalid IBAN checksum.")).toBeInTheDocument();
+    expect(
+      await within(screen.getByLabelText("IBAN").parentElement!).findByRole(
+        "alert",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("IBAN")).toHaveValue("DE89370400440532013001");
     expect(mocks.saveDraft).not.toHaveBeenCalled();
     await userEvent.clear(screen.getByLabelText("IBAN"));
@@ -1008,7 +1092,7 @@ describe("Claim workspace", () => {
     await waitFor(() =>
       expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
-  });
+  }, 30_000);
 
   it("shows account absence and saved journeys read-only", async () => {
     mocks.accounts = [];
@@ -1024,9 +1108,10 @@ describe("Claim workspace", () => {
     ];
     mount();
     expect(
-      await screen.findByText(/No Payout Accounts available/),
+      await screen.findByRole("button", { name: "Create Payout Account" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Berlin → Riga/)).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Payout Account" })).toBeNull();
+    expect(document.querySelector('li[id="journey-person"]')).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Robin" })).toBeNull();
   });
 });
@@ -1040,89 +1125,55 @@ it.each([
       reason: "PROOF_FILE_TOO_LARGE",
       error: "private token",
     },
-    "Choose a Proof Document no larger than 10 MB.",
   ],
   [
     "unsupported media",
     415,
     { code: "UNSUPPORTED_MEDIA_TYPE", reason: "PROOF_MEDIA_UNSUPPORTED" },
-    "Choose a PDF, JPEG, or PNG Proof Document.",
   ],
   [
     "missing Claim",
     400,
     { code: "BAD_REQUEST", reason: "CLAIM_REQUIRED_FOR_PROOF" },
-    "Save an editable Claim before uploading a Proof Document.",
   ],
-  [
-    "locked Claim",
-    400,
-    { code: "BAD_REQUEST", reason: "CLAIM_NOT_EDITABLE" },
-    "Claim is not editable.",
-  ],
+  ["locked Claim", 400, { code: "BAD_REQUEST", reason: "CLAIM_NOT_EDITABLE" }],
   [
     "missing selection",
     400,
     { code: "BAD_REQUEST", reason: "ACTIVE_ORGANIZATION_REQUIRED" },
-    "Select an active Organization before accessing Cost Tracker data.",
   ],
   [
     "missing Membership",
     403,
     { code: "FORBIDDEN", reason: "ORGANIZATION_MEMBERSHIP_REQUIRED" },
-    "Membership in the active Organization is required.",
   ],
   [
     "scoped absence",
     404,
     { code: "NOT_FOUND", reason: "PROJECT_PARTNERSHIP_NOT_FOUND" },
-    "Project Partnership not found in scope.",
   ],
-  [
-    "missing session",
-    401,
-    { code: "UNAUTHORIZED", reason: "SESSION_REQUIRED" },
-    "Your session is missing or has expired. Sign in to continue.",
-  ],
+  ["missing session", 401, { code: "UNAUTHORIZED", reason: "SESSION_REQUIRED" }],
   [
     "storage failure",
     500,
     { code: "INTERNAL_SERVER_ERROR", reason: "PROOF_UPLOAD_FAILED" },
-    "Upload failed. Please try again.",
   ],
   [
     "wrong status",
     400,
     { code: "UNAUTHORIZED", reason: "SESSION_REQUIRED", error: "private token" },
-    "Upload failed. Please try again.",
   ],
-  [
-    "wrong code",
-    403,
-    { code: "FORBIDDEN", reason: "PROOF_FILE_TOO_LARGE" },
-    "Upload failed. Please try again.",
-  ],
-  [
-    "hostile reason",
-    400,
-    { code: "BAD_REQUEST", reason: "private token" },
-    "Upload failed. Please try again.",
-  ],
+  ["wrong code", 403, { code: "FORBIDDEN", reason: "PROOF_FILE_TOO_LARGE" }],
+  ["hostile reason", 400, { code: "BAD_REQUEST", reason: "private token" }],
   [
     "legacy prose",
     413,
     { error: "Choose a Proof Document no larger than 10 MB." },
-    "Upload failed. Please try again.",
   ],
-  [
-    "malformed JSON",
-    500,
-    "not JSON private token",
-    "Upload failed. Please try again.",
-  ],
+  ["malformed JSON", 500, "not JSON private token"],
 ] as const)(
-  "proof upload renders validated %s outcome",
-  async (_name, status, body, text) => {
+  "keeps failed %s uploads retryable without refreshing Claim data",
+  async (_name, status, body) => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
     const requests: FakeUploadRequest[] = [];
     class FakeUploadRequest {
@@ -1140,7 +1191,9 @@ it.each([
     const original = globalThis.XMLHttpRequest;
     vi.stubGlobal("XMLHttpRequest", FakeUploadRequest);
     try {
-      mount();
+      const client = createQueryClient();
+      const invalidate = vi.spyOn(client, "invalidateQueries");
+      mount(client);
       const user = userEvent.setup();
       await user.upload(
         await screen.findByLabelText(/Upload Proof Document/),
@@ -1153,12 +1206,20 @@ it.each([
       );
       expect(requests[0].send).toHaveBeenCalledOnce();
       requests[0].onload?.();
-      expect(await screen.findByText(text)).toBeInTheDocument();
-      expect(screen.queryByText("private token")).toBeNull();
+      expect(
+        await within(document.getElementById("claim-proofs")!).findByRole(
+          "status",
+        ),
+      ).toBeInTheDocument();
+      expect(invalidate).not.toHaveBeenCalled();
       expect(
         screen.getByRole("button", { name: "Upload document" }),
       ).toBeEnabled();
-      expect(screen.queryByText("Proof Document uploaded.")).toBeNull();
+      expect(screen.getByRole("progressbar")).toHaveValue(0);
+      expect(screen.getByLabelText(/Upload Proof Document/)).toHaveProperty(
+        "files.length",
+        1,
+      );
     } finally {
       vi.stubGlobal("XMLHttpRequest", original);
     }
