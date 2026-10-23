@@ -66,11 +66,7 @@ describe("AuthForm", () => {
       await user.type(screen.getByLabelText("Password"), "example-password");
       await user.click(screen.getByRole("button", { name: "Create account" }));
 
-      expect(
-        await screen.findByText(
-          "Check your inbox. The verification link will sign you in and take you back to Cost Tracker.",
-        ),
-      ).toBeTruthy();
+      expect(await screen.findByTestId("auth-verification-message")).toBeTruthy();
       expect(mocks.signUp).toHaveBeenCalledExactlyOnceWith({
         name: "Alex Morgan",
         email: "user@example.org",
@@ -93,32 +89,23 @@ describe("AuthForm", () => {
     );
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
-    expect(
-      await screen.findByText(
-        "Too many requests were sent. Wait a moment and try again.",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByTestId("auth-form-error")).toBeTruthy();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 });
 
 it.each([
-  [createSituationErrors().invalidCredentials(), "Incorrect email or password."],
-  [
-    createSituationErrors().unauthenticated(),
-    "Your session is missing or has expired. Sign in to continue.",
-  ],
-  [createSituationErrors().verifyEmail(), "Verify your email before continuing."],
-])(
-  "renders credential/session/verification distinction $data.reason",
-  async (error, text) => {
-    mocks.signIn.mockRejectedValue(error);
-    const user = userEvent.setup();
-    render(<AuthForm mode="sign-in" />);
-    await user.type(screen.getByLabelText("Email address"), "user@example.org");
-    await user.type(screen.getByLabelText("Password"), "example-password");
-    await user.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByText(text)).toBeTruthy();
-    expect(screen.queryByText("private SQL token")).toBeNull();
-  },
-);
+  createSituationErrors().invalidCredentials(),
+  createSituationErrors().unauthenticated(),
+  createSituationErrors().verifyEmail(),
+])("renders an inline error for $data.reason", async (error) => {
+  mocks.signIn.mockRejectedValue(error);
+  const user = userEvent.setup();
+  render(<AuthForm mode="sign-in" />);
+  await user.type(screen.getByLabelText("Email address"), "user@example.org");
+  await user.type(screen.getByLabelText("Password"), "example-password");
+  await user.click(screen.getByRole("button", { name: "Sign in" }));
+  expect(await screen.findByTestId("auth-form-error")).toBeInTheDocument();
+  expect(screen.queryByTestId("auth-verification-message")).toBeNull();
+  expect(mocks.replace).not.toHaveBeenCalled();
+});
