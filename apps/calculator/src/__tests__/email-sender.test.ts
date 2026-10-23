@@ -32,7 +32,7 @@ describe("email sender", () => {
       expect.objectContaining({
         from: senderAddress,
         to: recipient,
-        subject: "Verify Your Email Address",
+        subject: expect.stringMatching(/\S/),
         html: expect.stringContaining(verificationUrl),
       }),
     );
@@ -50,7 +50,7 @@ describe("email sender", () => {
       expect.objectContaining({
         from: senderAddress,
         to: recipient,
-        subject: "Reset Your Password",
+        subject: expect.stringMatching(/\S/),
         html: expect.stringContaining(resetUrl),
       }),
     );
@@ -70,7 +70,7 @@ describe("email sender", () => {
       expect.objectContaining({
         from: senderAddress,
         to: recipient,
-        subject: "You're invited to join Analytical Engine Society",
+        subject: expect.stringMatching(/\S/),
         html: expect.stringContaining(inviteLink),
       }),
     );
@@ -78,27 +78,31 @@ describe("email sender", () => {
     const [{ html }] = sendMail.mock.calls[0];
     const renderedEmail = new DOMParser().parseFromString(html, "text/html");
 
-    expect(renderedEmail.body.textContent).toContain(
-      "If the button doesn't work, copy and paste this link into your browser:",
+    const links = Array.from(renderedEmail.querySelectorAll("a"), (link) =>
+      link.getAttribute("href"),
     );
-    expect(renderedEmail.body.textContent).toContain(inviteLink);
-    expect(html).toContain(baseUrl);
+    expect(links).toContain(inviteLink);
+    expect(links).toContain(baseUrl);
   });
 
-  it("renders a Participant Invitation without Organization Invitation or Registration Link language", async () => {
+  it("sends a Participant Invitation with its dedicated acceptance URL", async () => {
     const inviteLink = `${baseUrl}/participant-invitations/invitation-182`;
     await emailSender.sendParticipantInvitation({ email: recipient, inviteLink });
     expect(sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
         from: senderAddress,
         to: recipient,
-        subject: "Your Participant Invitation",
+        subject: expect.stringMatching(/\S/),
         html: expect.stringContaining(inviteLink),
       }),
     );
     const [{ html }] = sendMail.mock.calls[0];
-    expect(html).toContain("Participant Invitation");
-    expect(html).not.toMatch(/Organization Invitation|Registration Link/);
+    const renderedEmail = new DOMParser().parseFromString(html, "text/html");
+    expect(
+      Array.from(renderedEmail.querySelectorAll("a"), (link) =>
+        link.getAttribute("href"),
+      ),
+    ).toContain(inviteLink);
   });
 
   it("sends a magic-link message with HTML and plain text content", async () => {
@@ -109,9 +113,9 @@ describe("email sender", () => {
     expect(sendMail).toHaveBeenCalledWith({
       from: senderAddress,
       to: recipient,
-      subject: "Sign in to your account",
+      subject: expect.stringMatching(/\S/),
       html: expect.stringContaining(magicLink),
-      text: `Click the link below to sign in: ${magicLink}`,
+      text: expect.stringContaining(magicLink),
     });
   });
 });

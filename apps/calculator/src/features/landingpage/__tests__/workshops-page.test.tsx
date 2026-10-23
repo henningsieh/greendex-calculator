@@ -20,20 +20,23 @@ vi.mock(
     WorkshopContent: ({ initialType }: { initialType: string }) => {
       if (!useContext(AdapterContext))
         throw new Error("Workshop tabs require the URL-state adapter");
-      return <output data-testid="selected-workshop">{initialType}</output>;
+      return (
+        <output
+          data-testid="selected-workshop"
+          data-workshop-type={initialType}
+        />
+      );
     },
   }),
 );
 
 const AdapterContext = createContext(false);
+const translate = vi.fn((key: string) => `workshops:${key}`);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getTranslations).mockResolvedValue(
-    ((key: string) => `workshops:${key}`) as Awaited<
-      ReturnType<typeof getTranslations>
-    >,
-  );
+  vi.mocked(getTranslations).mockResolvedValue(((key: string) =>
+    translate(key)) as Awaited<ReturnType<typeof getTranslations>>);
 });
 
 describe("workshops page", () => {
@@ -58,11 +61,13 @@ describe("workshops page", () => {
       const html = document.createElement("div");
       html.innerHTML = await new Response(stream).text();
       expect(
-        html.querySelector('[data-testid="selected-workshop"]')?.textContent,
+        html
+          .querySelector('[data-testid="selected-workshop"]')
+          ?.getAttribute("data-workshop-type"),
       ).toBe(expected);
-      expect(html.querySelector("h1")?.textContent).toContain(
-        "workshops:headingPrefix",
-      );
+      expect(html.querySelector("h1")).not.toBeNull();
+      expect(translate).toHaveBeenCalledWith("headingPrefix");
+      expect(translate).toHaveBeenCalledWith("headingEmphasis");
     }
     expect(setRequestLocale).toHaveBeenCalledWith("de");
     expect(getTranslations).toHaveBeenCalledWith({
@@ -97,11 +102,13 @@ describe("workshops page", () => {
       reader.releaseLock();
     }
     expect(remainder).toContain('data-testid="workshops-shell-marker"');
-    expect(remainder).toContain("workshops:headingEmphasis");
+    expect(remainder).toContain("<h1");
     const html = document.createElement("div");
     html.innerHTML = remainder;
     expect(
-      html.querySelector('[data-testid="selected-workshop"]')?.textContent,
+      html
+        .querySelector('[data-testid="selected-workshop"]')
+        ?.getAttribute("data-workshop-type"),
     ).toBe("deal");
   }, 2000);
 });

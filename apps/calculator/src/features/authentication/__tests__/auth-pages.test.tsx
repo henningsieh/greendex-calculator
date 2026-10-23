@@ -34,31 +34,39 @@ vi.mock("@/features/authentication/components/auth-flow-layout", () => ({
     backLabel?: string;
   }) => (
     <section lang={locale}>
-      <a href={backHref}>{backLabel}</a>
+      <a href={backHref} data-label={backLabel}>
+        {backLabel}
+      </a>
       {children}
     </section>
   ),
 }));
 vi.mock("@/features/authentication/components/login-form", () => ({
   LoginForm: ({ nextPageUrl }: { nextPageUrl?: string | string[] }) => (
-    <output data-form="login">{JSON.stringify({ nextPageUrl })}</output>
+    <output
+      data-form="login"
+      data-next-page-url={JSON.stringify({ nextPageUrl })}
+    />
   ),
 }));
 vi.mock("@/features/authentication/components/signup-form", () => ({
   SignupForm: ({ nextPageUrl }: { nextPageUrl?: string | string[] }) => (
-    <output data-form="signup">{JSON.stringify({ nextPageUrl })}</output>
+    <output
+      data-form="signup"
+      data-next-page-url={JSON.stringify({ nextPageUrl })}
+    />
   ),
 }));
 vi.mock("@/features/authentication/components/reset-password-form", () => ({
   ResetPasswordForm: ({ token }: { token: string }) => (
-    <output data-form="reset">{token}</output>
+    <output data-form="reset" data-token={token} />
   ),
 }));
 vi.mock("@/features/authentication/components/forgot-password-form", () => ({
-  ForgotPasswordForm: () => <output>forgot password</output>,
+  ForgotPasswordForm: () => <output data-form="forgot" />,
 }));
 vi.mock("@/features/authentication/components/verify-email-content", () => ({
-  VerifyEmailContent: () => <output>verify email</output>,
+  VerifyEmailContent: () => <output data-form="verify" />,
 }));
 
 beforeEach(() => {
@@ -93,9 +101,11 @@ describe.each([
         }),
       );
       expect(html.querySelector("section")?.lang).toBe("de");
-      expect(html.querySelector(`[data-form="${name}"]`)?.textContent).toBe(
-        JSON.stringify({ nextPageUrl }),
-      );
+      expect(
+        html
+          .querySelector(`[data-form="${name}"]`)
+          ?.getAttribute("data-next-page-url"),
+      ).toBe(JSON.stringify({ nextPageUrl }));
       expect(mocks.redirect).not.toHaveBeenCalled();
     },
   );
@@ -151,9 +161,9 @@ describe("reset-password page", () => {
         searchParams: Promise.resolve({ token: "signed+token/with=padding" }),
       }),
     );
-    expect(html.querySelector('[data-form="reset"]')?.textContent).toBe(
-      "signed+token/with=padding",
-    );
+    expect(
+      html.querySelector('[data-form="reset"]')?.getAttribute("data-token"),
+    ).toBe("signed+token/with=padding");
     expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
@@ -188,7 +198,7 @@ describe("static auth pages", () => {
       ForgotPasswordPage({ params: Promise.resolve({ locale: "nl" }) }),
     );
     expect(html.querySelector("section")?.lang).toBe("nl");
-    expect(html.textContent).toContain("forgot password");
+    expect(html.querySelector('[data-form="forgot"]')).not.toBeNull();
   });
 
   it("uses explicit locale for the verify-email translation and back link", async () => {
@@ -202,7 +212,9 @@ describe("static auth pages", () => {
     });
     expect(html.querySelector("section")?.lang).toBe("es");
     expect(html.querySelector("a")?.getAttribute("href")).toBe(LOGIN_PATH);
-    expect(html.querySelector("a")?.textContent).toBe("translated:backToLogin");
-    expect(html.textContent).toContain("verify email");
+    expect(html.querySelector("a")?.getAttribute("data-label")).toBe(
+      "translated:backToLogin",
+    );
+    expect(html.querySelector('[data-form="verify"]')).not.toBeNull();
   });
 });

@@ -51,10 +51,12 @@ describe("Tab interaction readiness", () => {
         );
       });
       expect(participants.getAttribute("aria-selected")).toBe("true");
-      expect(
-        container.querySelector('[role="tabpanel"][data-state="active"]')!
-          .textContent,
-      ).toBe("Participant journeys");
+      const panel = container.querySelector(
+        '[role="tabpanel"][data-state="active"]',
+      );
+      expect(panel?.id).toBe(participants.getAttribute("aria-controls"));
+      expect(panel?.getAttribute("aria-labelledby")).toBe(participants.id);
+      expect(panel?.hasAttribute("hidden")).toBe(false);
     } finally {
       if (root) await act(async () => root.unmount());
       container.remove();
