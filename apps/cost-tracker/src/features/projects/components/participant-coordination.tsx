@@ -591,7 +591,11 @@ export function ParticipantCoordination({
   });
 
   return (
-    <section className="space-y-6" aria-label="Project Participations">
+    <section
+      className="space-y-6"
+      aria-label="Project Participations"
+      data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
+    >
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
       {entryAccess.permitted && (
         <Card>
@@ -628,7 +632,23 @@ export function ParticipantCoordination({
               </Button>
             </form>
             {feedback && (
-              <Alert>
+              <Alert
+                data-create-error-code={
+                  create.error instanceof ORPCError
+                    ? create.error.code
+                    : undefined
+                }
+                data-create-error-reason={
+                  create.error instanceof ORPCError
+                    ? getSafeErrorSituation(create.error)?.reason
+                    : undefined
+                }
+                data-remove-error-reason={
+                  removeParticipation.error instanceof ORPCError
+                    ? getSafeErrorSituation(removeParticipation.error)?.reason
+                    : undefined
+                }
+              >
                 <AlertTitle>{feedback.title}</AlertTitle>
                 <AlertDescription>{feedback.description}</AlertDescription>
               </Alert>
@@ -666,7 +686,9 @@ export function ParticipantCoordination({
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     <strong>{participant.displayName}</strong>
-                    <Badge variant="secondary">Joined</Badge>
+                    <Badge variant="secondary" data-participation-state="joined">
+                      Joined
+                    </Badge>
                   </div>
                   {participant.email && (
                     <p className="text-sm text-muted-foreground">
@@ -825,7 +847,16 @@ export function ParticipantCoordination({
             </>
           )}
           {entryFeedback && (
-            <Alert>
+            <Alert
+              data-reopen-error-reason={
+                reopenLink.error instanceof ORPCError
+                  ? getSafeErrorSituation(reopenLink.error)?.reason
+                  : undefined
+              }
+              data-invitation-delivery={issueInvitation.data?.delivery}
+              data-reissue-delivery={reissueInvitation.data?.delivery}
+              data-link-creation-status={createLink.status}
+            >
               <AlertTitle>{entryFeedback.title}</AlertTitle>
               <AlertDescription>{entryFeedback.description}</AlertDescription>
             </Alert>
@@ -849,6 +880,8 @@ export function ParticipantCoordination({
                 <li
                   className="flex flex-wrap items-center gap-3 py-3"
                   key={invitation.invitationId}
+                  data-testid={`participant-invitation-${invitation.invitationId}`}
+                  data-invitation-status={invitation.status}
                 >
                   <span>{invitation.email}</span>
                   <Badge variant="secondary">
