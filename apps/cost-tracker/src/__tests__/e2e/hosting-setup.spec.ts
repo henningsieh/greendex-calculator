@@ -14,6 +14,7 @@ import { and, eq } from "drizzle-orm";
 import { expectPrivateURL, expect, test } from "./fixtures/artifact-privacy";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
+import { projectLink, staffRow } from "./fixtures/journey-locators";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
@@ -29,26 +30,6 @@ import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 // Checkpoint: assignment of a different Hosting Project Coordinator has no UI.
 const fixture = new HostingJourneyFixture();
 let mainProjectURL: string;
-
-async function projectLink(page: Page, name: string) {
-  const [project] = await db
-    .select({ id: projectsTable.id })
-    .from(projectsTable)
-    .where(eq(projectsTable.name, name));
-  expect(project).toBeDefined();
-  return page.locator(
-    `a[href="/projects/${project!.id}"], a[href^="/projects/${project!.id}?"]`,
-  );
-}
-
-async function staffRow(page: Page, userId: string) {
-  const [membership] = await db
-    .select({ id: member.id })
-    .from(member)
-    .where(eq(member.userId, userId));
-  expect(membership).toBeDefined();
-  return page.getByTestId(`staff-member-${membership!.id}`);
-}
 
 async function createProject(page: Page, name: string) {
   await page.goto("/projects");
