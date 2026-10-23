@@ -77,7 +77,7 @@ describe("AuthForm", () => {
     },
   );
 
-  it("shows the safe rate-limit message returned by its oRPC command", async () => {
+  it("keeps rate-limited sign-in on the form with an inline error", async () => {
     mocks.signIn.mockRejectedValue(new ORPCError("TOO_MANY_REQUESTS"));
     const user = userEvent.setup();
     render(<AuthForm mode="sign-in" />);

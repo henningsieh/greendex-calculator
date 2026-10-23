@@ -185,7 +185,7 @@ describe("Claim document presentation", () => {
     expect(screen.getByRole("cell", { name: "None" })).toBeInTheDocument();
   });
 
-  it("shows the full selected IBAN separately from the native selector and uses human status text", () => {
+  it("exposes the selected payout account and Claim status independently of selectors", () => {
     render(
       <>
         <ClaimBand title="Claim workspace" status="correction_requested" />

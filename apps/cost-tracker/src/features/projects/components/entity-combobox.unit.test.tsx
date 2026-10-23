@@ -75,7 +75,7 @@ describe("EntityCombobox", () => {
     expect(onChange).toHaveBeenCalledWith("partner-123");
   });
 
-  it("labels Participant searches for email while showing only name and ID", async () => {
+  it("supports Participant email searches and preserves the result ID", async () => {
     const user = userEvent.setup();
     const search = vi
       .fn()

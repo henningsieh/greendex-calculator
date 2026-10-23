@@ -215,7 +215,7 @@ describe("ProjectPartnershipManager", () => {
     expectProjectDataInvalidation(invalidateQueries);
   });
 
-  it("shows a safe message instead of a remote mutation error", async () => {
+  it("reports a failed assignment through the error feedback state", async () => {
     mocks.assign.mockRejectedValue(
       new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "postgres://internal-user:secret@database/private",

@@ -65,7 +65,6 @@ describe("EditNameForm", () => {
     await waitFor(() =>
       expect(nameInput).toHaveAttribute("aria-invalid", "true"),
     );
-    expect(nameInput.getAttribute("aria-invalid")).toBe("true");
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 
