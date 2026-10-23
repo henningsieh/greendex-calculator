@@ -37,7 +37,14 @@ export function TransportBreakdown({ stats }: TransportBreakdownProps) {
             getParticipantTravelLegPresentation(profile);
 
           return (
-            <div className="space-y-2" key={profile}>
+            <div
+              className="space-y-2"
+              key={profile}
+              data-profile={profile}
+              data-co2-kg={data.co2}
+              data-distance-km={data.distance}
+              data-trip-count={data.count}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">

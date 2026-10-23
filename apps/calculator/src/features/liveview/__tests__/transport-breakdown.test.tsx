@@ -49,23 +49,20 @@ describe("TransportBreakdown", () => {
       root?.render(<TransportBreakdown stats={stats} />);
     });
 
-    expect(container.textContent).toContain(
-      "Participant Travel Leg CO₂ Breakdown",
+    expect(container.querySelector("h2")).not.toBeNull();
+    expect(container.querySelectorAll("[data-profile]")).toHaveLength(
+      PARTICIPANT_TRANSPORT_EMISSION_PROFILES.length,
     );
-    for (const profile of PARTICIPANT_TRANSPORT_EMISSION_PROFILES) {
-      expect(container.textContent).toContain(
-        profile === "plane"
-          ? "Plane"
-          : profile === "electricCar"
-            ? "Electric car"
-            : `${profile[0].toUpperCase()}${profile.slice(1)}`,
+    for (const [
+      index,
+      profile,
+    ] of PARTICIPANT_TRANSPORT_EMISSION_PROFILES.entries()) {
+      const row = container.querySelector(`[data-profile="${profile}"]`);
+      expect(row?.getAttribute("data-co2-kg")).toBe(
+        String(TRANSPORT_EMISSION_FACTORS[profile]),
       );
-      expect(container.textContent).toContain(
-        `${TRANSPORT_EMISSION_FACTORS[profile].toFixed(1)}`,
-      );
-      expect(container.textContent).toContain(
-        `${stats.breakdownByProfile[profile].distance} km`,
-      );
+      expect(row?.getAttribute("data-distance-km")).toBe(String(index + 1));
+      expect(row?.getAttribute("data-trip-count")).toBe("1");
     }
   });
 });

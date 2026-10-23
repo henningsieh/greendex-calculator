@@ -27,7 +27,7 @@ function ProfileSelectionProbe() {
         onValueChange={setValue}
         value={value}
       />
-      <output>{value}</output>
+      <output data-value={value} />
     </NextIntlClientProvider>
   );
 }
@@ -52,16 +52,22 @@ describe("TransportEmissionProfileSelect", () => {
     const options = Array.from(
       document.querySelectorAll<HTMLElement>('[role="option"]'),
     );
-    expect(options.map((option) => option.textContent)).toContain("Electric car");
-    expect(options.map((option) => option.textContent)).not.toContain("Plane");
+    expect(options.map((option) => option.dataset.profile)).toContain(
+      "electricCar",
+    );
+    expect(options.map((option) => option.dataset.profile)).not.toContain(
+      "plane",
+    );
 
     const electricCar = options.find(
-      (option) => option.textContent === "Electric car",
+      (option) => option.dataset.profile === "electricCar",
     );
     act(() => {
       electricCar?.click();
     });
 
-    expect(container.querySelector("output")?.textContent).toBe("electricCar");
+    expect(container.querySelector("output")?.getAttribute("data-value")).toBe(
+      "electricCar",
+    );
   });
 });
