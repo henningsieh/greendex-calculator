@@ -675,7 +675,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .getByRole("button", { name: /^Reopen registration link / })
         .click();
       await expect(
-        p.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+        p.locator('[role="alert"]:not(#__next-route-announcer__)'),
       ).toBeVisible();
       // Text-free: link row carries the closed state (stable id + DB proof below).
       await expect(
@@ -744,7 +744,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ).toBeVisible();
     await f.goto(participantsURL);
     await expect(
-      f.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      f.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible({
       timeout: 90_000,
     });
@@ -866,7 +866,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .getByRole("button", { name: "Assign Group Organizer", exact: true })
       .click();
     await expect(
-      p.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      p.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible();
     await expect
       .poll(() =>
@@ -912,7 +912,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       .getByRole("button", { name: "Manage Group Organizers", exact: true })
       .click();
     await expect(
-      c.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      c.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible();
     await expect(
       c.getByRole("button", { name: "Assign Group Organizer", exact: true }),
@@ -924,7 +924,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       })
       .click();
     await expect(
-      p.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      p.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible();
     await expect
       .poll(() =>
@@ -954,7 +954,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ).toHaveCount(0);
     await c.goto(participantsURL);
     await expect(
-      c.locator('[role=\"alert\"]:not(#__next-route-announcer__)'),
+      c.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible({ timeout: 90_000 });
     // Text-free: the scope-denied alert above proves no participant data leaks.
   });
