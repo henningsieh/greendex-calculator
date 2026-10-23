@@ -445,7 +445,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.getByLabel(`Country for ${people[2]!.name}`).selectOption("DE");
       await page.getByRole("button", { name: /^Save country for / }).click();
       await expect(
-        page.locator('[role="alert"]:not(#__next-route-announcer__)'),
+        page.locator('[data-feedback-outcome="country-saved"]'),
       ).toBeVisible();
       await expect(page.getByLabel(`Country for ${people[2]!.name}`)).toHaveValue(
         "DE",
@@ -836,7 +836,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.getByLabel("Exact total (EUR)").fill("0");
       await page.getByRole("button", { name: "Save cost" }).click();
       await expect(
-        page.locator('[role="alert"]:not(#__next-route-announcer__)'),
+        page.getByLabel("Exact total (EUR)").locator("..").getByRole("alert"),
       ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
       await page.getByLabel("Exact total (EUR)").fill("100.00");
@@ -850,7 +850,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         await page.getByLabel(`${person.name} EUR share`).fill("33.33");
       await page.getByRole("button", { name: "Save cost" }).click();
       await expect(
-        page.locator('[role="alert"]:not(#__next-route-announcer__)'),
+        page
+          .getByRole("group", { name: "Covered Participations" })
+          .locator(':scope > [role="alert"]'),
       ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
       await page.getByLabel("Allocation method").selectOption("equal");
