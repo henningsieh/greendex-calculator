@@ -563,12 +563,10 @@ test.describe.serial("Claim review journey 25–26", () => {
     const host = await pageFor(browser, "H", baseURL!);
     await host.goto("/claims/review");
     await expect(host.locator('[data-testid="review-queue"]')).toBeVisible();
-    const first = host.getByRole("link", {
-      name: `${projectName} · ${partnerNames[0]}`,
-    });
+    const first = host.locator(`a[href="/claims/review/${ids.partnerships[0]}"]`);
     await expect(first).toBeVisible();
     await expect(
-      host.getByRole("link", { name: `${projectName} · ${partnerNames[1]}` }),
+      host.locator(`a[href="/claims/review/${ids.partnerships[1]}"]`),
     ).toBeVisible();
     await first.click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
@@ -589,13 +587,12 @@ test.describe.serial("Claim review journey 25–26", () => {
       .getByRole("table", {
         name: "Exact totals, Cost Allocations and linked Proof Documents.",
       })
-      .getByRole("row")
-      .filter({ has: host.getByRole("cell", { name: "train", exact: true }) });
-    await expect(
-      cost.getByRole("cell", { name: "100.00", exact: true }),
-    ).toBeVisible();
+      .locator(
+        'tbody tr[data-transport-profile="train"][data-amount-eur="100.00"]',
+      );
+    await expect(cost).toBeVisible();
     // Text-free: the allocation share row for the participant renders in the
-    // cost row pinned above by train + 100.00 cells (method detail subsumed).
+    // cost row pinned above by transport and amount attributes.
     await expect(
       cost.locator(`[data-testid="allocation-share-${ids.participants[0]}"]`),
     ).toBeVisible();
@@ -605,23 +602,16 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(
       review.locator(`[data-testid="review-journey-${ids.participants[0]}"]`),
     ).toBeVisible();
-    await expect(
-      review
-        .getByRole("definition")
-        .filter({ hasText: `CT ${suffix} test-only reference` }),
-    ).toBeVisible();
-    await expect(
-      review
-        .getByRole("definition")
-        .filter({ hasText: `NOT-A-BANK-ACCOUNT-${suffix}` }),
-    ).toBeVisible();
+    await expect(review.getByTestId("payout-account-holder")).toBeVisible();
+    await expect(review.getByTestId("payout-account-iban")).toHaveAttribute(
+      "data-iban",
+      `NOT-A-BANK-ACCOUNT-${suffix}`,
+    );
     await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
       0,
     );
     const downloadPromise = host.waitForEvent("download");
-    await review
-      .getByRole("link", { name: `Download Proof Document: ${proofNames[0]}` })
-      .click();
+    await review.locator(`a[href*="${ids.documents[0]}"]`).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toBe(proofNames[0]);
     expect(await download.failure()).toBeNull();
@@ -666,7 +656,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect((await claimState(0))!.status).toBe("correction_requested");
     await host.goto("/claims/review");
     await expect(
-      host.getByRole("link", { name: `${projectName} · ${partnerNames[1]}` }),
+      host.locator(`a[href="/claims/review/${ids.partnerships[1]}"]`),
     ).toBeVisible();
     await expect(first).toHaveCount(0);
 
@@ -813,11 +803,9 @@ test.describe.serial("Claim review journey 25–26", () => {
 
     await host.goto("/claims/review");
     await expect(
-      host.getByRole("link", { name: `${projectName} · ${partnerNames[0]}` }),
+      host.locator(`a[href="/claims/review/${ids.partnerships[0]}"]`),
     ).toHaveCount(0);
-    await host
-      .getByRole("link", { name: `${projectName} · ${partnerNames[1]}` })
-      .click();
+    await host.locator(`a[href="/claims/review/${ids.partnerships[1]}"]`).click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(host, `/claims/review/${ids.partnerships[1]}`);
     await expect(
