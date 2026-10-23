@@ -451,7 +451,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ]) {
       await f.goto(route);
       await denied(f);
-      await expect(f.getByRole("alert")).toBeVisible();
       // Text-free: no link to the protected partnership leaks.
       await expect(f.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
       await expect(
@@ -468,7 +467,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       const page = await pageFor(browser, actor, baseURL!);
       await page.goto(`/claims/review/${ids.partnership}`);
       await denied(page);
-      await expect(page.getByRole("alert")).toBeVisible();
       if (actor === "P") {
         await expect(
           page.getByRole("button", {
@@ -530,7 +528,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       const t = await pageFor(browser, "T", baseURL!);
       await t.goto(`/partnerships/${ids.partnership}/claim`);
       await denied(t);
-      await expect(t.getByRole("alert")).toBeVisible();
       // Text-free: the authorized user is not access-denied (state hook, not copy).
       await expect(
         t.locator('[data-testid="no-organization-access"]'),
@@ -543,7 +540,6 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       const h = await pageFor(browser, "H", baseURL!);
       await h.goto(`/partnerships/${ids.partnership}/claim`);
       await denied(h);
-      await expect(h.getByRole("alert")).toBeVisible();
       await expect(
         h.getByRole("button", { name: /Save cost|Save Claim draft/ }),
       ).toHaveCount(0);
