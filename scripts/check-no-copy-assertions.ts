@@ -70,4 +70,6 @@ if (violations.length > 0) {
   );
   process.exit(1);
 }
-console.log("check:no-copy-assertions passed — no getByText in test sources.");
+console.log(
+  "check:no-copy-assertions passed — no visible-copy matchers in test sources.",
+);
