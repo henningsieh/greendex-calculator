@@ -210,7 +210,10 @@ async function invalidCredentialCheck(
   }
 }
 
-function reportBlockedWorkflows(results: Result[], apps: readonly IntegrationApp[]): void {
+function reportBlockedWorkflows(
+  results: Result[],
+  apps: readonly IntegrationApp[],
+): void {
   for (const app of apps) {
     for (const workflow of [
       "imap",
@@ -232,19 +235,32 @@ export interface ExistingEmailRun {
   apps?: readonly IntegrationApp[];
 }
 
-export async function resolveExistingIntegrationSeed(databaseUrl: string): Promise<ExistingIntegrationSeed> {
+export async function resolveExistingIntegrationSeed(
+  databaseUrl: string,
+): Promise<ExistingIntegrationSeed> {
   assertExistingIntegrationDatabase(databaseUrl);
-  const pool = new Pool({ connectionString: databaseUrl, max: 1,
-    connectionTimeoutMillis: 10_000, query_timeout: 10_000, statement_timeout: 10_000 });
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: 1,
+    connectionTimeoutMillis: 10_000,
+    query_timeout: 10_000,
+    statement_timeout: 10_000,
+  });
   try {
     const result = await pool.query<{ id: string; slug: string }>(
       "SELECT id, slug FROM organization WHERE slug = ANY($1::text[])",
       [[SEED_ORGANIZATION.slug, SEED_SECOND_PARTNER_ORGANIZATION.slug]],
     );
-    const organizationId = result.rows.find(({ slug }) => slug === SEED_ORGANIZATION.slug)?.id;
-    const secondPartnerOrganizationId = result.rows.find(({ slug }) => slug === SEED_SECOND_PARTNER_ORGANIZATION.slug)?.id;
+    const organizationId = result.rows.find(
+      ({ slug }) => slug === SEED_ORGANIZATION.slug,
+    )?.id;
+    const secondPartnerOrganizationId = result.rows.find(
+      ({ slug }) => slug === SEED_SECOND_PARTNER_ORGANIZATION.slug,
+    )?.id;
     if (!organizationId || !secondPartnerOrganizationId)
-      throw new Error("Required existing seed Organizations are missing; no seeding will be performed.");
+      throw new Error(
+        "Required existing seed Organizations are missing; no seeding will be performed.",
+      );
     return { organizationId, secondPartnerOrganizationId };
   } finally {
     await pool.end();
@@ -256,9 +272,12 @@ export async function verifyEmailWorkflows(
   signal?: AbortSignal,
 ): Promise<boolean> {
   signal?.throwIfAborted();
-  const apps = existing.apps ?? ["calculator", "cost-tracker"] as const;
+  const apps = existing.apps ?? (["calculator", "cost-tracker"] as const);
   const results: Result[] = [];
-  const run = { runId: existing.context.correlationId, databaseUrl: existing.context.databaseUrl };
+  const run = {
+    runId: existing.context.correlationId,
+    databaseUrl: existing.context.databaseUrl,
+  };
   const bases: Partial<Record<IntegrationApp, string>> = {};
   let pool: Pool | undefined;
   const inboxes: { app: string; inbox: EmailInbox }[] = [];
@@ -299,13 +318,19 @@ export async function verifyEmailWorkflows(
     }
   };
   try {
-    const environments: Partial<Record<IntegrationApp, Record<string, string>>> = {};
+    const environments: Partial<Record<IntegrationApp, Record<string, string>>> =
+      {};
     if (!apps.length || new Set(apps).size !== apps.length)
-      throw new Error("Required email application inventory is empty or duplicated.");
+      throw new Error(
+        "Required email application inventory is empty or duplicated.",
+      );
     for (const app of apps) {
       const target = existing.context.apps[app];
       if (!target) throw new Error("Existing email application is unavailable.");
-      const environment = { ...target.environment, DELETE_TESTMAILS_DURING_TESTRUN: "false" };
+      const environment = {
+        ...target.environment,
+        DELETE_TESTMAILS_DURING_TESTRUN: "false",
+      };
       if (existingIntegrationApp(environment).baseUrl !== target.baseUrl)
         throw new Error("Existing email application URL mismatch.");
       bases[app] = target.baseUrl;
@@ -331,7 +356,8 @@ export async function verifyEmailWorkflows(
       signal?.throwIfAborted();
       const base = bases[app];
       const environment = environments[app];
-      if (!base || !environment) throw new Error("Required email application configuration is missing.");
+      if (!base || !environment)
+        throw new Error("Required email application configuration is missing.");
       const inbox = new EmailInbox(environment);
       inboxes.push({ app, inbox });
       if (!(await check(`${app}/imap`, () => inbox.connect()))) continue;
@@ -353,66 +379,98 @@ export async function verifyEmailWorkflows(
       const verificationIdsBefore = new Set<string>();
       const account = newSession();
       try {
-      {
-        const consistent = await check(`${app}/database-consistency`, async () => {
-          const owner = newSession();
-          await owner.signIn(SEED_USER.email, SEED_USER.password);
-          const identity = await owner.auth("get-session");
-          if (!isRecord(identity.session) || typeof identity.session.id !== "string" || !isRecord(identity.user))
-            throw new Error("Existing application session identity is unavailable.");
-          const observed = await db.query.session.findFirst({ where: eq(schema.session.id, identity.session.id) });
-          if (!observed || observed.userId !== identity.user.id)
-            throw new Error("Existing application does not observe the shared development database.");
+        {
+          const consistent = await check(
+            `${app}/database-consistency`,
+            async () => {
+              const owner = newSession();
+              await owner.signIn(SEED_USER.email, SEED_USER.password);
+              const identity = await owner.auth("get-session");
+              if (
+                !isRecord(identity.session) ||
+                typeof identity.session.id !== "string" ||
+                !isRecord(identity.user)
+              )
+                throw new Error(
+                  "Existing application session identity is unavailable.",
+                );
+              const observed = await db.query.session.findFirst({
+                where: eq(schema.session.id, identity.session.id),
+              });
+              if (!observed || observed.userId !== identity.user.id)
+                throw new Error(
+                  "Existing application does not observe the shared development database.",
+                );
+            },
+          );
+          if (!consistent) continue;
+          const clean = await check(`${app}/fixture-prerequisites`, async () => {
+            const identities = await db
+              .select({ id: schema.user.id })
+              .from(schema.user)
+              .where(eq(schema.user.email, recipient));
+            const invitations = await db
+              .select({ id: schema.invitation.id })
+              .from(schema.invitation)
+              .where(eq(schema.invitation.email, recipient));
+            const entries = await db
+              .select({ id: schema.participantEntryTokensTable.id })
+              .from(schema.participantEntryTokensTable)
+              .where(eq(schema.participantEntryTokensTable.email, recipient));
+            if (identities.length || invitations.length || entries.length)
+              throw new Error(
+                "Dedicated workflow recipient has existing records; refusing to alter them.",
+              );
+            const verifications = await db
+              .select({ id: schema.verification.id })
+              .from(schema.verification)
+              .where(
+                or(
+                  eq(schema.verification.identifier, recipient),
+                  like(schema.verification.value, `%${recipient}%`),
+                ),
+              );
+            for (const { id } of verifications) verificationIdsBefore.add(id);
+            recipientWasClean = true;
+          });
+          if (!clean) continue;
+        }
+        const verified = await check(`${app}/signup-verification`, async () => {
+          const existing = await db
+            .select({ id: schema.user.id })
+            .from(schema.user)
+            .where(eq(schema.user.email, recipient));
+          if (existing.length)
+            throw new Error("Run recipient identity was not clean.");
+          failureStage = "inbox-receipt";
+          const boundary = await inbox.boundary();
+          failureStage = "send-accept";
+          const response = await account.auth("sign-up/email", {
+            name,
+            email: recipient,
+            password: initialPassword,
+            callbackURL: `${base}/?run=${run.runId}&workflow=signup`,
+          });
+          const createdUser = response.user;
+          if (!isRecord(createdUser) || typeof createdUser.id !== "string")
+            throw new Error("Signup did not create a User.");
+          userId = createdUser.id;
+          failureStage = "inbox-receipt";
+          const link = await inbox.deliveredLink(
+            boundary,
+            "Verify Your Email Address",
+            base,
+            "/api/auth/verify-email",
+            (_, html) => html.includes(name),
+            signal,
+          );
+          failureStage = "link-exercise";
+          const exercised = await account.request(link);
+          if (exercised.status < 200 || exercised.status >= 400)
+            throw new Error("Delivered verification link failed.");
+          failureStage = "session";
+          await account.signIn(recipient, initialPassword);
         });
-        if (!consistent) continue;
-        const clean = await check(`${app}/fixture-prerequisites`, async () => {
-          const identities = await db.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, recipient));
-          const invitations = await db.select({ id: schema.invitation.id }).from(schema.invitation).where(eq(schema.invitation.email, recipient));
-          const entries = await db.select({ id: schema.participantEntryTokensTable.id }).from(schema.participantEntryTokensTable).where(eq(schema.participantEntryTokensTable.email, recipient));
-          if (identities.length || invitations.length || entries.length)
-            throw new Error("Dedicated workflow recipient has existing records; refusing to alter them.");
-          const verifications = await db.select({ id: schema.verification.id }).from(schema.verification).where(or(eq(schema.verification.identifier, recipient), like(schema.verification.value, `%${recipient}%`)));
-          for (const { id } of verifications) verificationIdsBefore.add(id);
-          recipientWasClean = true;
-        });
-        if (!clean) continue;
-      }
-      const verified = await check(`${app}/signup-verification`, async () => {
-        const existing = await db
-          .select({ id: schema.user.id })
-          .from(schema.user)
-          .where(eq(schema.user.email, recipient));
-        if (existing.length)
-          throw new Error("Run recipient identity was not clean.");
-        failureStage = "inbox-receipt";
-        const boundary = await inbox.boundary();
-        failureStage = "send-accept";
-        const response = await account.auth("sign-up/email", {
-          name,
-          email: recipient,
-          password: initialPassword,
-          callbackURL: `${base}/?run=${run.runId}&workflow=signup`,
-        });
-        const createdUser = response.user;
-        if (!isRecord(createdUser) || typeof createdUser.id !== "string")
-          throw new Error("Signup did not create a User.");
-        userId = createdUser.id;
-        failureStage = "inbox-receipt";
-        const link = await inbox.deliveredLink(
-          boundary,
-          "Verify Your Email Address",
-          base,
-          "/api/auth/verify-email",
-          (_, html) => html.includes(name),
-          signal,
-        );
-        failureStage = "link-exercise";
-        const exercised = await account.request(link);
-        if (exercised.status < 200 || exercised.status >= 400)
-          throw new Error("Delivered verification link failed.");
-        failureStage = "session";
-        await account.signIn(recipient, initialPassword);
-      });
         if (!verified) {
           for (const workflow of [
             "organization-invitation",
@@ -549,9 +607,7 @@ export async function verifyEmailWorkflows(
               base,
               "/api/auth/magic-link/verify",
               (url) =>
-                (url.searchParams.get("callbackURL") || "").includes(
-                  run.runId,
-                ),
+                (url.searchParams.get("callbackURL") || "").includes(run.runId),
               signal,
             );
             failureStage = "link-exercise";
@@ -657,9 +713,15 @@ export async function verifyEmailWorkflows(
         }
       } finally {
         const clean = async (action: () => Promise<void>) => {
-          try { await action(); }
-          catch {
-            results.push({ workflow: `${app}/fixture-cleanup`, status: "failed", failureStage: "cleanup", durationMs: 0 });
+          try {
+            await action();
+          } catch {
+            results.push({
+              workflow: `${app}/fixture-cleanup`,
+              status: "failed",
+              failureStage: "cleanup",
+              durationMs: 0,
+            });
           }
         };
         {
@@ -667,52 +729,125 @@ export async function verifyEmailWorkflows(
             if (!session.cookie) continue;
             await clean(async () => {
               const response = await fetch(`${base}/api/auth/sign-out`, {
-                method: "POST", redirect: "manual",
-                headers: { origin: base, cookie: session.cookie, "content-type": "application/json" },
-                body: "{}", signal: AbortSignal.timeout(10_000),
+                method: "POST",
+                redirect: "manual",
+                headers: {
+                  origin: base,
+                  cookie: session.cookie,
+                  "content-type": "application/json",
+                },
+                body: "{}",
+                signal: AbortSignal.timeout(10_000),
               });
-              if (!response.ok) throw new Error("Workflow session cleanup failed.");
+              if (!response.ok)
+                throw new Error("Workflow session cleanup failed.");
             });
           }
           await clean(async () => {
             if (!userId) {
               const created = await db.query.user.findFirst({
-                where: and(eq(schema.user.email, recipient), eq(schema.user.name, name)),
+                where: and(
+                  eq(schema.user.email, recipient),
+                  eq(schema.user.name, name),
+                ),
               });
               userId = created?.id;
             }
             if (recipientWasClean) {
-              const invitations = await db.select({ id: schema.invitation.id }).from(schema.invitation).where(and(eq(schema.invitation.email, recipient), eq(schema.invitation.organizationId, seed.organizationId)));
+              const invitations = await db
+                .select({ id: schema.invitation.id })
+                .from(schema.invitation)
+                .where(
+                  and(
+                    eq(schema.invitation.email, recipient),
+                    eq(schema.invitation.organizationId, seed.organizationId),
+                  ),
+                );
               organizationInvitationIds.push(...invitations.map(({ id }) => id));
-              const entries = await db.select({ id: schema.participantEntryTokensTable.id }).from(schema.participantEntryTokensTable).where(eq(schema.participantEntryTokensTable.email, recipient));
+              const entries = await db
+                .select({ id: schema.participantEntryTokensTable.id })
+                .from(schema.participantEntryTokensTable)
+                .where(eq(schema.participantEntryTokensTable.email, recipient));
               participantInvitationIds.push(...entries.map(({ id }) => id));
             }
           });
-          if (userId) await clean(async () => {
-            const verifications = await db.select().from(schema.verification).where(or(eq(schema.verification.value, userId!), eq(schema.verification.identifier, recipient), like(schema.verification.value, `%${recipient}%`)));
-            const owned = verifications.filter(({ id, value, identifier }) => {
-              if (verificationIdsBefore.has(id)) return false;
-              if (value === userId || identifier === recipient) return true;
-              try {
-                const parsed: unknown = JSON.parse(value);
-                return isRecord(parsed) && parsed.email === recipient;
-              } catch { return false; }
+          if (userId)
+            await clean(async () => {
+              const verifications = await db
+                .select()
+                .from(schema.verification)
+                .where(
+                  or(
+                    eq(schema.verification.value, userId!),
+                    eq(schema.verification.identifier, recipient),
+                    like(schema.verification.value, `%${recipient}%`),
+                  ),
+                );
+              const owned = verifications.filter(({ id, value, identifier }) => {
+                if (verificationIdsBefore.has(id)) return false;
+                if (value === userId || identifier === recipient) return true;
+                try {
+                  const parsed: unknown = JSON.parse(value);
+                  return isRecord(parsed) && parsed.email === recipient;
+                } catch {
+                  return false;
+                }
+              });
+              if (owned.length)
+                await db.delete(schema.verification).where(
+                  inArray(
+                    schema.verification.id,
+                    owned.map(({ id }) => id),
+                  ),
+                );
             });
-            if (owned.length) await db.delete(schema.verification).where(inArray(schema.verification.id, owned.map(({ id }) => id)));
-          });
         }
         const tokens = sessions.flatMap((session) => [...session.sessionTokens]);
-        if (tokens.length) await clean(async () => { await db.delete(schema.session).where(inArray(schema.session.token, tokens)); });
-        if (organizationInvitationIds.length) await clean(async () => {
-          await db.delete(schema.invitation).where(and(inArray(schema.invitation.id, organizationInvitationIds), eq(schema.invitation.email, recipient)));
-        });
-        if (participantInvitationIds.length) await clean(async () => {
-          await db.delete(schema.participantEntryTokensTable).where(and(inArray(schema.participantEntryTokensTable.id, participantInvitationIds), eq(schema.participantEntryTokensTable.email, recipient)));
-        });
-        if (userId) await clean(async () => {
-          await db.delete(schema.projectParticipantsTable).where(eq(schema.projectParticipantsTable.userId, userId!));
-          await db.delete(schema.user).where(and(eq(schema.user.id, userId!), eq(schema.user.email, recipient)));
-        });
+        if (tokens.length)
+          await clean(async () => {
+            await db
+              .delete(schema.session)
+              .where(inArray(schema.session.token, tokens));
+          });
+        if (organizationInvitationIds.length)
+          await clean(async () => {
+            await db
+              .delete(schema.invitation)
+              .where(
+                and(
+                  inArray(schema.invitation.id, organizationInvitationIds),
+                  eq(schema.invitation.email, recipient),
+                ),
+              );
+          });
+        if (participantInvitationIds.length)
+          await clean(async () => {
+            await db
+              .delete(schema.participantEntryTokensTable)
+              .where(
+                and(
+                  inArray(
+                    schema.participantEntryTokensTable.id,
+                    participantInvitationIds,
+                  ),
+                  eq(schema.participantEntryTokensTable.email, recipient),
+                ),
+              );
+          });
+        if (userId)
+          await clean(async () => {
+            await db
+              .delete(schema.projectParticipantsTable)
+              .where(eq(schema.projectParticipantsTable.userId, userId!));
+            await db
+              .delete(schema.user)
+              .where(
+                and(
+                  eq(schema.user.id, userId!),
+                  eq(schema.user.email, recipient),
+                ),
+              );
+          });
       }
     }
   } catch {
@@ -723,16 +858,31 @@ export async function verifyEmailWorkflows(
     });
   } finally {
     for (const { app, inbox } of inboxes) {
-      try { await inbox.cleanup(); }
-      catch { results.push({ workflow: `${app}/mail-cleanup`, status: "failed", durationMs: 0 }); }
+      try {
+        await inbox.cleanup();
+      } catch {
+        results.push({
+          workflow: `${app}/mail-cleanup`,
+          status: "failed",
+          durationMs: 0,
+        });
+      }
     }
-    try { await pool?.end(); }
-    catch { results.push({ workflow: "pool-cleanup", status: "failed", durationMs: 0 }); }
+    try {
+      await pool?.end();
+    } catch {
+      results.push({ workflow: "pool-cleanup", status: "failed", durationMs: 0 });
+    }
   }
   reportBlockedWorkflows(results, apps);
-  const passed = results.length > 0 && results.every((result) => result.status === "passed");
-  console.log(`Real email workflows ${passed ? "PASSED" : "FAILED"} (${Date.now() - startedAt}ms). Mail retained. Existing servers and database retained.`);
+  const passed =
+    results.length > 0 && results.every((result) => result.status === "passed");
+  console.log(
+    `Real email workflows ${passed ? "PASSED" : "FAILED"} (${Date.now() - startedAt}ms). Mail retained. Existing servers and database retained.`,
+  );
   for (const result of results)
-    console.log(`${result.status.toUpperCase()} ${result.workflow} (${result.durationMs}ms)`);
+    console.log(
+      `${result.status.toUpperCase()} ${result.workflow} (${result.durationMs}ms)`,
+    );
   return passed;
 }

@@ -105,16 +105,28 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
         .join("; ");
       expect(cookie).toContain("session_token=");
       cookies.push(cookie);
-      const identityResponse = await fetchWithTimeout(`${baseURL}/api/auth/get-session`, {
-        headers: { cookie, origin: baseURL },
-      });
+      const identityResponse = await fetchWithTimeout(
+        `${baseURL}/api/auth/get-session`,
+        {
+          headers: { cookie, origin: baseURL },
+        },
+      );
       expect(identityResponse.status).toBe(200);
       const identity = await identityResponse.json();
       const observed = await db.query.session.findFirst({
         where: eq(session.id, identity.session.id),
       });
-      expect(Boolean(observed && observed.userId === actor.id && identity.user.id === actor.id)).toBe(true);
-      if (!observed) throw new Error("HTTP application database consistency could not be established.");
+      expect(
+        Boolean(
+          observed &&
+          observed.userId === actor.id &&
+          identity.user.id === actor.id,
+        ),
+      ).toBe(true);
+      if (!observed)
+        throw new Error(
+          "HTTP application database consistency could not be established.",
+        );
       sessionIds.push(observed.id);
       const selected = await fetchWithTimeout(
         `${baseURL}/api/auth/organization/set-active`,
@@ -138,15 +150,24 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     for (const cookie of cookies) {
       try {
         const response = await fetchWithTimeout(`${baseURL}/api/auth/sign-out`, {
-          method: "POST", headers: { cookie, origin: baseURL, "content-type": "application/json" },
+          method: "POST",
+          headers: {
+            cookie,
+            origin: baseURL,
+            "content-type": "application/json",
+          },
           body: "{}",
         });
         if (!response.ok) cleanupFailed = true;
-      } catch { cleanupFailed = true; }
+      } catch {
+        cleanupFailed = true;
+      }
     }
     try {
       if (projectIds.length)
-        await db.delete(projectsTable).where(inArray(projectsTable.id, projectIds));
+        await db
+          .delete(projectsTable)
+          .where(inArray(projectsTable.id, projectIds));
     } finally {
       if (sessionIds.length)
         await db.delete(session).where(inArray(session.id, sessionIds));
@@ -235,9 +256,13 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     expect(created.status).toBe(200);
     const { id } = await created.json();
     projectIds.push(id);
-    expect(Boolean(await db.query.projectsTable.findFirst({
-      where: eq(projectsTable.id, id),
-    }))).toBe(true);
+    expect(
+      Boolean(
+        await db.query.projectsTable.findFirst({
+          where: eq(projectsTable.id, id),
+        }),
+      ),
+    ).toBe(true);
     const listing = await post(
       "projects/listHosted",
       {

@@ -223,12 +223,17 @@ describe("Garage interruption", () => {
       if (!address || typeof address === "string")
         throw new Error("Expected TCP listener");
       const controller = new AbortController();
-      const pending = verifyDevelopmentGarage({
-        S3_BUCKET: "greendex-cost-tracker-development",
-        S3_ENDPOINT: `http://127.0.0.1:${address.port}`,
-        S3_REGION: "garage", S3_FORCE_PATH_STYLE: true,
-        S3_ACCESS_KEY_ID: "unused", S3_SECRET_ACCESS_KEY: "unused",
-      }, controller.signal);
+      const pending = verifyDevelopmentGarage(
+        {
+          S3_BUCKET: "greendex-cost-tracker-development",
+          S3_ENDPOINT: `http://127.0.0.1:${address.port}`,
+          S3_REGION: "garage",
+          S3_FORCE_PATH_STYLE: true,
+          S3_ACCESS_KEY_ID: "unused",
+          S3_SECRET_ACCESS_KEY: "unused",
+        },
+        controller.signal,
+      );
       const rejected = expect(pending).rejects.toThrow();
       const timeout = setTimeout(() => {
         put.reject(new Error("Verifier did not PUT."));
