@@ -5,9 +5,16 @@ import {
   assertExistingIntegrationDatabase,
   existingIntegrationApp,
   nonbrowserTestNeedsServices,
+  sharedDevelopmentDatabaseUrl,
 } from "./existing-integration-environment";
 
-const databaseUrl = "postgres://188.245.144.137:5489/greendex_development";
+const databaseUrl = sharedDevelopmentDatabaseUrl();
+
+function mutatedDatabaseUrl(mutate: (url: URL) => void): string {
+  const url = new URL(databaseUrl);
+  mutate(url);
+  return url.toString();
+}
 
 describe("test selection", () => {
   it.each([
@@ -45,9 +52,9 @@ describe("existing environment boundary", () => {
   });
 
   it.each([
-    databaseUrl.replace("5489", "5432"),
-    databaseUrl.replace("188.245.144.137", "localhost"),
-    databaseUrl.replace("greendex_development", "greendex_production"),
+    mutatedDatabaseUrl((url) => (url.port = "5432")),
+    mutatedDatabaseUrl((url) => (url.hostname = "localhost")),
+    mutatedDatabaseUrl((url) => (url.pathname = "/other_database")),
     `${databaseUrl}?host=other`,
     `${databaseUrl}?options=-csearch_path=other`,
     "not-a-url",

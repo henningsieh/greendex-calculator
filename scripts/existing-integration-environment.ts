@@ -1,3 +1,7 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { parseEnv } from "node:util";
+
 export const integrationApps = ["calculator", "cost-tracker"] as const;
 export type IntegrationApp = (typeof integrationApps)[number];
 
@@ -19,7 +23,20 @@ export interface ExistingIntegrationContext {
   seed: ExistingIntegrationSeed;
 }
 
+export function sharedDevelopmentDatabaseUrl(): string {
+  for (const path of [
+    resolve(process.cwd(), "packages/database/.env"),
+    resolve(process.cwd(), "../../packages/database/.env"),
+  ]) {
+    if (!existsSync(path)) continue;
+    const value = parseEnv(readFileSync(path, "utf8")).DATABASE_URL;
+    if (value) return value;
+  }
+  throw new Error("Missing shared development database configuration.");
+}
+
 export function assertExistingIntegrationDatabase(databaseUrl: string): void {
+  const expected = new URL(sharedDevelopmentDatabaseUrl());
   let target: URL;
   try {
     target = new URL(databaseUrl);
@@ -30,9 +47,9 @@ export function assertExistingIntegrationDatabase(databaseUrl: string): void {
   }
   if (
     !["postgres:", "postgresql:"].includes(target.protocol) ||
-    target.hostname !== "188.245.144.137" ||
-    target.port !== "5489" ||
-    target.pathname !== "/greendex_development" ||
+    target.hostname !== expected.hostname ||
+    target.port !== expected.port ||
+    target.pathname !== expected.pathname ||
     target.hash ||
     [...target.searchParams.keys()].some((key) => key !== "sslmode")
   )

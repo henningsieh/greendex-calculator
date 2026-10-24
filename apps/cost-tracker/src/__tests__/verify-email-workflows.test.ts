@@ -29,6 +29,7 @@ vi.mock("../../scripts/email-run-safety", () => ({
   validateMailboxEnvironment: vi.fn(),
 }));
 
+import { sharedDevelopmentDatabaseUrl } from "../../../../scripts/existing-integration-environment";
 import {
   HttpSession,
   resolveExistingIntegrationSeed,
@@ -200,7 +201,7 @@ describe("verify-email-workflows response validation", () => {
 });
 
 describe("existing mail environment", () => {
-  const databaseUrl = "postgres://188.245.144.137:5489/greendex_development";
+  const databaseUrl = sharedDevelopmentDatabaseUrl();
 
   it("reads existing seed identities and closes its own pool", async () => {
     fixtures.query.mockResolvedValueOnce({
