@@ -302,7 +302,7 @@ async function main(): Promise<void> {
               await check(`${app}/real HTTP`, () => {
                 if (!ready[app])
                   throw new TestRunError("Blocked by missing existing server.");
-                vitest(directory, http, true, environment);
+                return vitest(directory, http, true, environment);
               });
             await check(`${app}/real mail`, async () => {
               if (!ready[app] || !seed)
@@ -346,7 +346,7 @@ async function main(): Promise<void> {
                   !ready["cost-tracker"])
               )
                 throw new TestRunError("Blocked by missing existing server.");
-              command(
+              return command(
                 `apps/${app}`,
                 [
                   "playwright",
