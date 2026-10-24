@@ -47,8 +47,10 @@ function command(
     ...environment,
   };
   if (!process.stdout.isTTY) {
-    delete outputEnvironment.FORCE_COLOR;
+    // Playwright colours its report footer whenever it sees a TTY stdin, and
+    // pnpm re-injects FORCE_COLOR. "0" is the value both tools read as "off".
     delete outputEnvironment.NO_COLOR;
+    outputEnvironment.FORCE_COLOR = "0";
   }
   const result = spawnSync("pnpm", ["exec", ...args], {
     cwd: resolve(root, directory),
