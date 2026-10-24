@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { globSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -13,6 +13,21 @@ import {
 } from "./existing-integration-environment";
 
 if (!process.stdout.isTTY) delete process.env.FORCE_COLOR;
+
+function gitValue(args: string[]): string {
+  try {
+    return execFileSync("git", args, { encoding: "utf8" }).trim();
+  } catch {
+    return "unavailable";
+  }
+}
+
+function candidateLine(): string {
+  const commit = gitValue(["rev-parse", "HEAD"]);
+  const branch = gitValue(["rev-parse", "--abbrev-ref", "HEAD"]);
+  const tree = gitValue(["status", "--porcelain"]) ? "dirty" : "clean";
+  return `candidate commit ${commit} branch ${branch} tree ${tree}`;
+}
 
 const root = resolve(dirname(process.argv[1]), "..");
 const mode = process.argv[2];
@@ -172,6 +187,7 @@ async function main(): Promise<void> {
   console.log(
     "Tests use existing configuration and servers only, dev or production. No production provenance claim.",
   );
+  console.log(candidateLine());
   console.log("No builds, startup, migrations, seeding or provisioning.");
   for (const suite of mode === "full"
     ? modes
@@ -371,6 +387,7 @@ async function main(): Promise<void> {
       );
     }
     failed ||= !passed;
+    console.log(`${suite} exit ${passed ? 0 : 1}`);
     timings.push({
       suite,
       passed,
@@ -381,6 +398,8 @@ async function main(): Promise<void> {
     console.log(
       `${result.suite} ${result.passed ? "PASSED" : "FAILED"} (${result.seconds}s)`,
     );
+  console.log(candidateLine());
+  console.log(`overall exit ${failed || interrupted ? 1 : 0}`);
   process.removeListener("SIGINT", interrupt);
   process.removeListener("SIGTERM", interrupt);
   process.exitCode = failed || interrupted ? 1 : 0;

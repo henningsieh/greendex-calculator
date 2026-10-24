@@ -227,16 +227,93 @@ const verificationGuidanceFiles = [
 ] as const;
 
 const verificationPolicyClauses = [
-  ["risk-based selection", ["smallest meaningful checks", "Record the selection rationale", "Expand coverage for shared auth, schema, router, SSR, or persistence"]],
-  ["server-free units", ["Keep pure unit/component checks server-free", "two workers"]],
-  ["existing runtime", ["existing loopback applications", "188.245.144.137:5489", "greendex_development", "packages/database/.env"]],
-  ["honest existing-server policy", ["operator owns build/start", "accept dev or production servers without an attestation flag", "do not establish production provenance", "Dev results do not prove production behavior"]],
-  ["no managed lifecycle", ["never build, start servers, migrate, seed, provision databases", "never dispose of them"]],
-  ["full failure propagation", ["unit, integration and e2e sequentially", "exits nonzero if any mode fails", "full still attempts the remaining modes"]],
-  ["live services", ["dedicated-mailbox/current-run correlation", "default mail retention", "development Garage isolation", "owned-object cleanup", "Missing services or credentials are blockers"]],
-  ["review", ["independent Standards and Spec reviews", "bounded focused repairs", "review the changed final diff again"]],
-  ["honest evidence", ["zero flaky final acceptance", "zero retries", "Report failures, blocks, skips and cleanup failures honestly", "sanitized timings", "Implementing the command alone does not prove acceptance"]],
-  ["retained gates", ["`pnpm run format`", "`pnpm run lint`", "design-system checks", "`pnpm run type-check`", "affected SSR regressions", "persistence checks", "instruction-policy checks", "diff review"]],
+  [
+    "risk-based selection",
+    [
+      "smallest meaningful checks",
+      "Record the selection rationale",
+      "Expand coverage for shared auth, schema, router, SSR, or persistence",
+    ],
+  ],
+  [
+    "server-free units",
+    ["Keep pure unit/component checks server-free", "two workers"],
+  ],
+  [
+    "existing runtime",
+    [
+      "existing loopback applications",
+      "188.245.144.137:5489",
+      "greendex_development",
+      "packages/database/.env",
+    ],
+  ],
+  [
+    "honest existing-server policy",
+    [
+      "operator owns build/start",
+      "accept dev or production servers without an attestation flag",
+      "do not establish production provenance",
+      "Dev results do not prove production behavior",
+    ],
+  ],
+  [
+    "no managed lifecycle",
+    [
+      "never build, start servers, migrate, provision databases",
+      "may seed the shared development database",
+      "never dispose of them",
+    ],
+  ],
+  [
+    "full failure propagation",
+    [
+      "unit, integration and e2e sequentially",
+      "exits nonzero if any mode fails",
+      "full still attempts the remaining modes",
+    ],
+  ],
+  [
+    "live services",
+    [
+      "dedicated-mailbox/current-run correlation",
+      "default mail retention",
+      "development Garage isolation",
+      "owned-object cleanup",
+      "Missing services or credentials are blockers",
+    ],
+  ],
+  [
+    "review",
+    [
+      "independent Standards and Spec reviews",
+      "bounded focused repairs",
+      "review the changed final diff again",
+    ],
+  ],
+  [
+    "honest evidence",
+    [
+      "zero flaky final acceptance",
+      "zero retries",
+      "Report failures, blocks, skips and cleanup failures honestly",
+      "sanitized timings",
+      "Implementing the command alone does not prove acceptance",
+    ],
+  ],
+  [
+    "retained gates",
+    [
+      "`pnpm run format`",
+      "`pnpm run lint`",
+      "design-system checks",
+      "`pnpm run type-check`",
+      "affected SSR regressions",
+      "persistence checks",
+      "instruction-policy checks",
+      "diff review",
+    ],
+  ],
 ] as const;
 
 describe("two-loop verification instruction policy", () => {
@@ -259,7 +336,12 @@ describe("two-loop verification instruction policy", () => {
 
   it("exposes exactly four test commands at the root and none in workspaces", async () => {
     const root = fileURLToPath(new URL("../", import.meta.url));
-    const manifests = ["package.json", ...globSync(["apps/*/package.json", "packages/*/package.json"], { cwd: root })];
+    const manifests = [
+      "package.json",
+      ...globSync(["apps/*/package.json", "packages/*/package.json"], {
+        cwd: root,
+      }),
+    ];
     const commands: string[] = [];
     for (const file of manifests) {
       const manifest = JSON.parse(await readFile(path.join(root, file), "utf8"));
@@ -270,18 +352,36 @@ describe("two-loop verification instruction policy", () => {
         commands.push(name);
       }
     }
-    expect(commands.sort()).toEqual(["test:e2e", "test:full", "test:integration", "test:unit"]);
-    const turbo = JSON.parse(await readFile(path.join(root, "turbo.json"), "utf8"));
-    expect(Object.keys(turbo.tasks).filter((name) => name === "test" || name.startsWith("test:"))).toEqual([]);
+    expect(commands.sort()).toEqual([
+      "test:e2e",
+      "test:full",
+      "test:integration",
+      "test:unit",
+    ]);
+    const turbo = JSON.parse(
+      await readFile(path.join(root, "turbo.json"), "utf8"),
+    );
+    expect(
+      Object.keys(turbo.tasks).filter(
+        (name) => name === "test" || name.startsWith("test:"),
+      ),
+    ).toEqual([]);
   });
 
   it("documents only the three existing browser configurations", async () => {
-    const text = await readFile(new URL("../docs/agents/instructions/conventions.md", import.meta.url), "utf8");
+    const text = await readFile(
+      new URL("../docs/agents/instructions/conventions.md", import.meta.url),
+      "utf8",
+    );
     for (const file of [
-      "apps/cost-tracker/playwright.config.ts", "apps/calculator/playwright.config.ts", "apps/calculator/playwright.merge.config.ts",
+      "apps/cost-tracker/playwright.config.ts",
+      "apps/calculator/playwright.config.ts",
+      "apps/calculator/playwright.merge.config.ts",
     ]) {
       expect(text).toContain(`\`${file}\``);
-      expect(await readFile(new URL(`../${file}`, import.meta.url), "utf8")).toContain("defineConfig");
+      expect(
+        await readFile(new URL(`../${file}`, import.meta.url), "utf8"),
+      ).toContain("defineConfig");
     }
     expect(text).toContain("Pure organization role rule");
     expect(text).toContain("Browser/session setup");

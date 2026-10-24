@@ -61,6 +61,12 @@ const findFiles = async (directoryPath: string): Promise<string[]> => {
   return files;
 };
 
+type SpecifierScan = {
+  importedBindings: Map<string, string>;
+  recordSpecifier: (value: string, isReExport: boolean) => void;
+  tokens: ScannedToken[];
+};
+
 type ModuleSpecifier = {
   isReExport: boolean;
   value: string;
@@ -70,6 +76,18 @@ type ScannedToken = {
   kind: SyntaxKind;
   text: string;
   value: string;
+};
+
+const findFromSpecifier = (tokens: ScannedToken[], start: number) => {
+  for (let i = start; i < tokens.length - 1; i += 1) {
+    if (
+      tokens[i].kind === SyntaxKind.FromKeyword &&
+      isSpecifierToken(tokens[i + 1].kind)
+    ) {
+      return { index: i + 1, value: getTokenSpecifier(tokens[i + 1]) };
+    }
+  }
+  return undefined;
 };
 
 const isSpecifierToken = (kind: SyntaxKind) =>
@@ -84,7 +102,11 @@ const scanTokens = (content: string): ScannedToken[] => {
   scanner.setText(content);
   const tokens: ScannedToken[] = [];
 
-  for (let kind = scanner.scan(); kind !== SyntaxKind.EndOfFile; kind = scanner.scan()) {
+  for (
+    let kind = scanner.scan();
+    kind !== SyntaxKind.EndOfFile;
+    kind = scanner.scan()
+  ) {
     tokens.push({
       kind,
       text: scanner.getTokenText(),
@@ -93,6 +115,46 @@ const scanTokens = (content: string): ScannedToken[] => {
   }
 
   return tokens;
+};
+
+const recordReExport = (
+  { importedBindings, recordSpecifier, tokens }: SpecifierScan,
+  index: number,
+  next: ScannedToken,
+): number | undefined => {
+  if (next.kind === SyntaxKind.TypeKeyword) return undefined;
+  if (next.kind === SyntaxKind.AsteriskToken) {
+    const from = findFromSpecifier(tokens, index + 1);
+    if (!from) return undefined;
+    recordSpecifier(from.value, true);
+    return from.index;
+  }
+  if (next.kind !== SyntaxKind.OpenBraceToken) return undefined;
+
+  let closingBrace = index + 2;
+  while (
+    closingBrace < tokens.length &&
+    tokens[closingBrace].kind !== SyntaxKind.CloseBraceToken
+  ) {
+    closingBrace += 1;
+  }
+  const from = tokens[closingBrace + 1];
+  const specifier = tokens[closingBrace + 2];
+  if (
+    from?.kind === SyntaxKind.FromKeyword &&
+    specifier &&
+    isSpecifierToken(specifier.kind)
+  ) {
+    recordSpecifier(getTokenSpecifier(specifier), true);
+    return closingBrace + 2;
+  }
+  for (let j = index + 2; j < closingBrace; j += 1) {
+    if (tokens[j].kind === SyntaxKind.Identifier) {
+      const importedSpecifier = importedBindings.get(tokens[j].value);
+      if (importedSpecifier) recordSpecifier(importedSpecifier, true);
+    }
+  }
+  return closingBrace;
 };
 
 const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
@@ -109,16 +171,11 @@ const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
       }
     }
   };
-  const findFromSpecifier = (start: number) => {
-    for (let i = start; i < tokens.length - 1; i += 1) {
-      if (
-        tokens[i].kind === SyntaxKind.FromKeyword &&
-        isSpecifierToken(tokens[i + 1].kind)
-      ) {
-        return { index: i + 1, value: getTokenSpecifier(tokens[i + 1]) };
-      }
-    }
-    return undefined;
+
+  const context: SpecifierScan = {
+    importedBindings,
+    recordSpecifier,
+    tokens,
   };
 
   for (let i = 0; i < tokens.length; i += 1) {
@@ -148,55 +205,15 @@ const getModuleSpecifiers = (content: string): ModuleSpecifier[] => {
         continue;
       }
 
-      const from = findFromSpecifier(i + 1);
+      const from = findFromSpecifier(tokens, i + 1);
       if (from) {
         recordSpecifier(from.value, false);
         recordBindings(i + 1, from.index, from.value);
         i = from.index;
       }
     } else if (token.kind === SyntaxKind.ExportKeyword) {
-      if (next.kind === SyntaxKind.TypeKeyword) continue;
-      if (
-        next.kind !== SyntaxKind.OpenBraceToken &&
-        next.kind !== SyntaxKind.AsteriskToken
-      ) {
-        continue;
-      }
-
-      if (next.kind === SyntaxKind.AsteriskToken) {
-        const from = findFromSpecifier(i + 1);
-        if (from) {
-          recordSpecifier(from.value, true);
-          i = from.index;
-        }
-        continue;
-      }
-
-      let closingBrace = i + 2;
-      while (
-        closingBrace < tokens.length &&
-        tokens[closingBrace].kind !== SyntaxKind.CloseBraceToken
-      ) {
-        closingBrace += 1;
-      }
-      const from = tokens[closingBrace + 1];
-      const specifier = tokens[closingBrace + 2];
-      if (
-        from?.kind === SyntaxKind.FromKeyword &&
-        specifier &&
-        isSpecifierToken(specifier.kind)
-      ) {
-        recordSpecifier(getTokenSpecifier(specifier), true);
-        i = closingBrace + 2;
-      } else {
-        for (let j = i + 2; j < closingBrace; j += 1) {
-          if (tokens[j].kind === SyntaxKind.Identifier) {
-            const importedSpecifier = importedBindings.get(tokens[j].value);
-            if (importedSpecifier) recordSpecifier(importedSpecifier, true);
-          }
-        }
-        i = closingBrace;
-      }
+      const resume = recordReExport(context, i, next);
+      if (resume !== undefined) i = resume;
     }
   }
 
