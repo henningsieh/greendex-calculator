@@ -12,10 +12,7 @@ import {
   type ExistingIntegrationContext,
 } from "./existing-integration-environment";
 
-if (!process.stdout.isTTY) {
-  delete process.env.FORCE_COLOR;
-  process.env.NO_COLOR = "1";
-}
+if (!process.stdout.isTTY) delete process.env.FORCE_COLOR;
 
 const root = resolve(dirname(process.argv[1]), "..");
 const mode = process.argv[2];
@@ -51,7 +48,7 @@ function command(
   };
   if (!process.stdout.isTTY) {
     delete outputEnvironment.FORCE_COLOR;
-    outputEnvironment.NO_COLOR = "1";
+    delete outputEnvironment.NO_COLOR;
   }
   const result = spawnSync("pnpm", ["exec", ...args], {
     cwd: resolve(root, directory),
