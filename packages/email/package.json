@@ -11,7 +11,6 @@
     "clean": "rm -rf node_modules .turbo",
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
-    "test:run": "vitest run",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

@@ -36,7 +36,7 @@ export const developmentGarageEnvironmentSchema =
 
 export function validatedDevelopmentGarageEnvironment(
   local: Record<string, string>,
-  injected: NodeJS.ProcessEnv,
+  injected: Record<string, string | undefined>,
 ): Record<string, string> {
   const config = developmentGarageEnvironmentSchema.parse({
     ...injected,

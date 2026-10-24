@@ -31,7 +31,7 @@ Each cluster has one node and replication factor 1, without data redundancy. Pre
 
 ## Verification
 
-Run `pnpm --filter @greendex/cost-tracker test:garage-storage` using the local development `.env`. The live test verifies PUT, byte-for-byte GET, DELETE, and invalid-credential rejection. It rejects non-development targets and writes unique run-owned keys under `smoke-tests/`. If interrupted, remove only the confirmed run-owned orphan, never a shared prefix or bucket.
+Run `pnpm run test:integration` using the local development `.env`. The live test verifies PUT, byte-for-byte GET, DELETE, and invalid-credential rejection. It rejects non-development targets and writes unique run-owned keys under `smoke-tests/`. If interrupted, remove only the confirmed run-owned orphan, never a shared prefix or bucket.
 
 For staging, use its application key and configured bucket with a unique temporary object. Verify downloaded bytes and delete only that object. Confirm existing aliases and permissions remain intact.
 

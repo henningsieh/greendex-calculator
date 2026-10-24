@@ -1,6 +1,6 @@
 // @vitest-environment node
 /** HTTP routing regression coverage; auth API responses are fixtures, not live auth. */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { env } from "@/env";
 
@@ -729,6 +729,8 @@ describe("OpenAPI contract gaps", () => {
   ] as const)(
     "keeps the %s %s failure status and safe message",
     async (method, path, api, status, message) => {
+      const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+      onTestFinished(() => errorLog.mockRestore());
       const { auth } = await import("@/lib/better-auth");
       vi.mocked(auth.api[api]).mockRejectedValueOnce(
         new Error("private backend detail"),
@@ -754,6 +756,12 @@ describe("OpenAPI contract gaps", () => {
       });
       expect(body).not.toHaveProperty("status");
       expect(JSON.stringify(body)).not.toContain("private backend detail");
+      expect(errorLog).toHaveBeenCalledTimes(status === 500 ? 1 : 0);
+      if (status === 500)
+        expect(errorLog).toHaveBeenCalledWith(
+          "[OpenAPI Error]",
+          expect.any(Error),
+        );
     },
   );
 });

@@ -21,12 +21,20 @@ REST uses schema-driven `SmartCoercionHandlerPlugin` consistently for every proc
 
 HTTP statuses use the existing `ERROR_STATUS_MAP`. Error bodies retain `code`, safe `message`, and `data` (including established domain `reason` values), not a body-level `status` or internal stack. Malformed JSON returns 400; unmatched REST routes return 404. External consumers should use HTTP status plus code/reason, not remote message text.
 
-## Real-HTTP tests in `test:run`
+## Real-HTTP integration tests
 
-`src/__tests__/openapi-http.test.ts` belongs to the existing Vitest suite, not Playwright or a separate command. It requires a **running local Cost Tracker server** at the app's `.env` `NEXT_PUBLIC_BASE_URL`, connected to the **same migrated disposable/development database** as Vitest. Do not point these tests at production. Existing direct-call tests remain unchanged.
+`src/__tests__/openapi-http.test.ts` runs under root `pnpm run test:integration`.
+It requires the existing loopback Cost Tracker app configured in its `.env` and
+the same shared `greendex_development` database at `188.245.144.137:5489` as Vitest.
+The runner loads configuration automatically and never starts or builds servers,
+migrates or seeds. Missing prerequisites fail explicitly.
 
-Prerequisites: Node/pnpm versions from the repository, installed workspace dependencies, and a complete Cost Tracker `.env` (database, auth, SMTP, Google, and S3 settings). Database migrations must already be applied through the normal migration workflow. These HTTP fixtures hash their own credentials and sign in over HTTP; they do not send verification email or require live Google/S3 services. The suite creates UUID-isolated Users, Organizations, Memberships, accounts, sessions and Projects, and cleans up its rows, including cascaded accounts/sessions/assignments.
+Fixtures use existing seed actors, sign in over real HTTP and verify that the
+returned sessions are visible in the shared database. They create UUID-isolated
+Projects and clean up their own Projects and sessions. No `TEST_RUN_ID` ownership
+marker is required. These HTTP tests do not send verification mail.
 
-For an agent-owned production-mode validation server, build with `pnpm --filter @greendex/cost-tracker exec next build`, then run `pnpm --filter @greendex/cost-tracker exec next start --port <free-local-port>` matching `.env`. This intentionally bypasses the `start` script's port-killing prestart hook. Never kill a foreign process; stop only the server you started. If an appropriate local server already exists, reuse it instead.
-
-Run `pnpm --filter @greendex/cost-tracker test:run` with that server available. Without it the HTTP suite fails explicitly with a prerequisite message, rather than silently skipping. Requests naturally produce backend OpenAPI request/error logs; logged paths omit query strings and never include bodies or cookies. Tests cover reference gating/spec/asset pinning, successful reads and Project creation, session failures, permission failures, cross-tenant isolation, malformed JSON, schema/date validation, and continued RPC behavior.
+Checks cover reference gating/spec/asset pinning, reads and Project creation,
+session and permission failures, cross-tenant isolation, malformed JSON,
+schema/date validation and continued RPC behavior. Logged request paths omit
+query strings, bodies and cookies.
