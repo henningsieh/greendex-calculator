@@ -17,6 +17,8 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";
@@ -24,18 +26,22 @@ import { cn } from "@/lib/utils";
 type AuthFormProps = {
   mode: "sign-in" | "sign-up";
   returnTo?: string;
+  entryContext?: OnboardingDecision["entryContext"];
 };
 
-export function AuthForm({ mode, returnTo }: AuthFormProps) {
+export function AuthForm({
+  mode,
+  returnTo,
+  entryContext = "direct",
+}: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string>();
-  // Email verification is required before sign-in, so keep this instruction inline.
-  const [verificationMessage, setVerificationMessage] = useState<string>();
+  const [submittedEmail, setSubmittedEmail] = useState<string>();
   const isSignIn = mode === "sign-in";
 
   async function submit(formData: FormData) {
     setError(undefined);
-    setVerificationMessage(undefined);
+    setSubmittedEmail(undefined);
 
     const email = String(formData.get("email"));
     const password = String(formData.get("password"));
@@ -49,9 +55,7 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
       }
 
       if (!isSignIn) {
-        setVerificationMessage(
-          "Check your inbox. The verification link will sign you in and take you back to Cost Tracker.",
-        );
+        setSubmittedEmail(email);
         return;
       }
 
@@ -75,16 +79,28 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
     }
   }
 
+  if (submittedEmail) return <CheckInbox email={submittedEmail} />;
+
   return (
     <div className="w-full max-w-md">
       <div className="mb-9">
         <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          {isSignIn ? "Welcome back" : "Create your account"}
+          {isSignIn
+            ? "Welcome back"
+            : entryContext === "organization-invitation"
+              ? "Join your Organization"
+              : entryContext === "partner-setup"
+                ? "Get ready for Partner setup"
+                : "Let's get your Organization started"}
         </h1>
         <p className="mt-3 leading-7 text-muted-foreground">
           {isSignIn
             ? "Sign in to continue managing Project travel costs."
-            : "Set up your account to begin organizing shared journey costs."}
+            : entryContext === "organization-invitation"
+              ? "Create your personal login with the invited email address. Then join the Organization from your invitation."
+              : entryContext === "partner-setup"
+                ? "Create your personal login with the email address that received the setup link. Then continue your Partner Organization setup."
+                : "First, create your personal login. After verifying your email, set up your Organization to host Erasmus Projects and manage travel costs together."}
         </p>
       </div>
 
@@ -140,14 +156,6 @@ export function AuthForm({ mode, returnTo }: AuthFormProps) {
 
           {error && (
             <FieldError data-testid="auth-form-error">{error}</FieldError>
-          )}
-          {verificationMessage && (
-            <output
-              className="rounded-xl bg-secondary px-4 py-3 text-sm/6 text-secondary-foreground"
-              data-testid="auth-verification-message"
-            >
-              {verificationMessage}
-            </output>
           )}
 
           <SubmitButton isSignIn={isSignIn} />

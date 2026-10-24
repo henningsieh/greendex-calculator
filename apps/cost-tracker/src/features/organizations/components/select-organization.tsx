@@ -19,18 +19,13 @@ import { authClient } from "@/lib/auth-client";
 
 type SelectOrganizationProps = {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];
+  onSelected?: () => Promise<void>;
 };
 
-/**
- * Recovery for a missing, stale, or revoked active Organization (ADR-0015).
- * Renders inline with no staff actions and no redirects, so the shell can
- * neither show unusable actions nor loop: choosing a Membership re-anchors
- * the session through the supported Better Auth API and refreshes the
- * shell. Creating a new Organization is intentionally absent here — Better
- * Auth only lets Membership-free Users create one, and that case keeps the
- * existing creation empty state.
- */
-export function SelectOrganization({ organizations }: SelectOrganizationProps) {
+export function SelectOrganization({
+  organizations,
+  onSelected,
+}: SelectOrganizationProps) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -41,7 +36,12 @@ export function SelectOrganization({ organizations }: SelectOrganizationProps) {
     setFailed(false);
 
     try {
-      await authClient.organization.setActive({ organizationId });
+      const result = await authClient.organization.setActive({ organizationId });
+      if (result.error) {
+        setFailed(true);
+        return;
+      }
+      if (onSelected) await onSelected();
       router.refresh();
     } catch {
       setFailed(true);

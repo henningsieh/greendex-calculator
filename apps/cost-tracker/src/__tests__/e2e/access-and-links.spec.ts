@@ -423,14 +423,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await expect(
         x.getByRole("dialog", { name: "Create Organization" }),
       ).toBeHidden();
-      await x.getByRole("button", { name: "Create Organization" }).click();
       await expect(
-        x.getByRole("dialog", { name: "Create Organization" }),
-      ).toBeVisible();
-      await expect(
-        x
-          .getByRole("dialog", { name: "Create Organization" })
-          .getByRole("textbox", { name: "Organization name", exact: true }),
+        x.getByRole("textbox", { name: "Organization name", exact: true }),
       ).toBeEditable();
       // Text-free: no links to the protected entities leak (stable ids, not copy).
       await expect(x.locator(`a[href*="${projectId}"]`)).toHaveCount(0);

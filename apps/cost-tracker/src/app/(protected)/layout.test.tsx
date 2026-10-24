@@ -7,6 +7,7 @@ import { renderToStaticMarkup, renderToPipeableStream } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  onboardingNextStep: vi.fn(),
   connection: vi.fn().mockResolvedValue(undefined),
   getSession: vi.fn(),
   listMemberships: vi.fn(),
@@ -21,7 +22,10 @@ vi.mock("@/lib/session", () => ({
 }));
 
 vi.mock("@/lib/orpc/orpc", () => ({
-  orpc: { organizations: { listMemberships: mocks.listMemberships } },
+  orpc: {
+    authentication: { onboardingNextStep: mocks.onboardingNextStep },
+    organizations: { listMemberships: mocks.listMemberships },
+  },
 }));
 
 vi.mock("@/features/organizations/access", () => ({
@@ -88,6 +92,11 @@ function session(activeOrganizationId: string | null) {
 describe("ProtectedLayout Organization context", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.onboardingNextStep.mockResolvedValue({
+      nextStep: "continue",
+      entryContext: "direct",
+      availableActions: [{ kind: "continue", destination: "/projects" }],
+    });
     mocks.canManageOrganization.mockResolvedValue(true);
     mocks.canViewPartnerNetwork.mockResolvedValue(true);
   });
@@ -95,6 +104,11 @@ describe("ProtectedLayout Organization context", () => {
   it("offers creation recovery without Memberships", async () => {
     mocks.getSession.mockResolvedValue(session(null));
     mocks.listMemberships.mockResolvedValue([]);
+    mocks.onboardingNextStep.mockResolvedValue({
+      nextStep: "create-organization",
+      entryContext: "direct",
+      availableActions: [{ kind: "create-organization" }, { kind: "sign-out" }],
+    });
 
     const html = renderToStaticMarkup(
       await ProtectedShell({ children: <p>child</p> }),
@@ -105,19 +119,27 @@ describe("ProtectedLayout Organization context", () => {
       mocks.getSession.mock.invocationCallOrder[0],
     );
     expect(html).toContain("Create Organization recovery");
-    expect(html).toContain("child");
+    expect(html).toContain('<div hidden=""><p>child</p></div>');
   });
 
   it("offers selection recovery for stale active context", async () => {
     mocks.getSession.mockResolvedValue(session("org-deleted"));
     mocks.listMemberships.mockResolvedValue([ownerMembership]);
+    mocks.onboardingNextStep.mockResolvedValue({
+      nextStep: "select-organization",
+      entryContext: "direct",
+      availableActions: [
+        { kind: "select-organization", organizations: [ownerMembership] },
+        { kind: "sign-out" },
+      ],
+    });
 
     const html = renderToStaticMarkup(
       await ProtectedShell({ children: <p>child</p> }),
     );
 
     expect(html).toContain("Select Organization recovery");
-    expect(html).toContain("child");
+    expect(html).toContain('<div hidden=""><p>child</p></div>');
   });
 
   it("renders the staff shell with a switcher for staff Memberships", async () => {
@@ -157,6 +179,11 @@ it("streams neutral chrome before the session gate resolves", async () => {
       resolveSession = resolve;
     }),
   );
+  mocks.onboardingNextStep.mockResolvedValue({
+    nextStep: "continue",
+    entryContext: "direct",
+    availableActions: [{ kind: "continue", destination: "/projects" }],
+  });
   mocks.listMemberships.mockResolvedValue([ownerMembership]);
   mocks.canManageOrganization.mockResolvedValue(false);
   mocks.canViewPartnerNetwork.mockResolvedValue(false);

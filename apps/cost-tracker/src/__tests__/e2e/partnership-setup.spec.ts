@@ -189,6 +189,10 @@ async function selectEntity(
   entityId: string,
   scope: Locator = page.locator("body"),
 ) {
+  if (label === "Organization") {
+    await page.getByLabel("Organization", { exact: true }).selectOption(entityId);
+    return;
+  }
   await scope.getByRole("button", { name: label, exact: true }).click();
   await page
     .getByRole("combobox", { name: `Search ${label} by name or ID` })
@@ -199,12 +203,16 @@ async function selectEntity(
   ).toHaveAttribute("aria-expanded", "false");
 }
 
-async function openOrganizationDialog(page: Page) {
-  const dialog = page.getByRole("dialog", { name: "Create Organization" });
-  await expect(dialog).toBeHidden();
-  await page.getByRole("button", { name: "Create Organization" }).click();
-  await expect(dialog).toBeVisible();
-  return dialog;
+async function chooseExisting(page: Page) {
+  await expect(page.getByLabel("Organization", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+}
+
+async function organizationSetup(page: Page) {
+  await expect(page.getByRole("dialog")).toBeHidden();
+  const setup = page.getByTestId("no-organization-access");
+  await expect(setup).toBeVisible();
+  return setup;
 }
 
 async function createProject(page: Page, name: string) {
@@ -304,6 +312,7 @@ async function selectAndOpenPartnerProject(
   page: Page,
   projectName: string,
   organizationName: string,
+  expectedStep: "select" | "continue",
 ) {
   const documentIdentity = await page.evaluate(
     () =>
@@ -311,12 +320,24 @@ async function selectAndOpenPartnerProject(
         .setupDocumentIdentity,
   );
   expect(typeof documentIdentity).toBe("string");
-  await page
-    .getByRole("button", { name: "Use this Organization", exact: true })
-    .click();
-  await page
-    .getByRole("link", { name: "Open Partner Project", exact: true })
-    .click();
+  const selection = page.getByRole("button", {
+    name: "Use this Organization",
+    exact: true,
+  });
+  const project = page.getByRole("link", {
+    name: "Open Partner Project",
+    exact: true,
+  });
+  if (expectedStep === "select") {
+    await expect(selection).toBeVisible();
+    await expect(project).toHaveCount(0);
+    await selection.click();
+  } else {
+    await expect(project).toBeVisible();
+    await expect(selection).toHaveCount(0);
+  }
+  await expect(project).toBeVisible();
+  await project.click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator('[data-relationship="partner"]')).toBeVisible();
   const [selectedOrganization] = await db
@@ -366,7 +387,7 @@ async function completeNew(page: Page, url: string, name: string) {
   await markSetupDocument(page);
   await page.getByRole("button", { name: "Complete setup" }).click();
   await expect(
-    page.getByRole("button", { name: "Use this Organization", exact: true }),
+    page.getByRole("link", { name: "Open Partner Project", exact: true }),
   ).toBeVisible();
 }
 
@@ -451,7 +472,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
-    const dialog = await openOrganizationDialog(page);
+    const dialog = await organizationSetup(page);
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
@@ -489,7 +510,12 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     await completeNew(page, setupURL, names.P);
     expect(await partnershipCount(fixture.projectNames[0]!, names.P)).toBe(1);
-    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.P);
+    await selectAndOpenPartnerProject(
+      page,
+      fixture.projectNames[0]!,
+      names.P,
+      "continue",
+    );
     await page.goto(setupURL);
     // Text-free: creation proven by the adjacent DB/navigation assertions (no toast copy).
     await expect(page.getByLabel("New Organization name")).toHaveCount(0);
@@ -535,10 +561,15 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await markSetupDocument(page);
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(
-      page.getByRole("button", { name: "Use this Organization", exact: true }),
+      page.getByRole("link", { name: "Open Partner Project", exact: true }),
     ).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
-    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.D);
+    await selectAndOpenPartnerProject(
+      page,
+      fixture.projectNames[0]!,
+      names.D,
+      "continue",
+    );
     const [created] = await db
       .select({ id: organization.id })
       .from(organization)
@@ -614,7 +645,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .getByRole("button", { name: "Retry setup with retained Organization" })
       .click();
     await expect(
-      page.getByRole("button", { name: "Use this Organization", exact: true }),
+      page.getByRole("link", { name: "Open Partner Project", exact: true }),
     ).toBeVisible();
     expect(attempts).toBe(2);
     const retained = await db
@@ -627,10 +658,15 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       organizationId,
       fixture.projectNames[0]!,
     );
-    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.R);
+    await selectAndOpenPartnerProject(
+      page,
+      fixture.projectNames[0]!,
+      names.R,
+      "continue",
+    );
     await page.goto(url);
     await expect(
-      page.getByRole("button", { name: "Use this Organization", exact: true }),
+      page.getByRole("link", { name: "Open Partner Project", exact: true }),
     ).toBeVisible();
     expect(attempts).toBe(2);
     await assertRecipientPersistence(
@@ -671,7 +707,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toHaveCount(0);
     await page.getByRole("button", { name: "Inspect setup result" }).click();
     await expect(
-      page.getByRole("button", { name: "Use this Organization", exact: true }),
+      page.getByRole("link", { name: "Open Partner Project", exact: true }),
     ).toBeVisible();
     expect(attempts).toBe(1);
     const [created] = await db
@@ -679,7 +715,12 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .from(organization)
       .where(eq(organization.name, names.U));
     await assertRecipientPersistence("U", created!.id, fixture.projectNames[0]!);
-    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.U);
+    await selectAndOpenPartnerProject(
+      page,
+      fixture.projectNames[0]!,
+      names.U,
+      "continue",
+    );
     await page.goto(url);
     // Text-free: creation proven by the adjacent DB/navigation assertions (no toast copy).
     expect(attempts).toBe(1);
@@ -744,7 +785,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       try {
         await page.goto(parsed.toString());
         await expect(
-          page.locator(`[data-setup-error="${scenario.state}"]`),
+          scenario.state === "verify-email"
+            ? page.getByTestId("auth-verification-message")
+            : page.locator(`[data-setup-error="${scenario.state}"]`),
         ).toBeVisible();
         await expect(page.getByLabel("New Organization name")).toHaveCount(0);
         const [stored] = await db
@@ -826,7 +869,12 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const page = await partner.newPage();
     await completeNew(page, url, names.F);
     expect(await partnershipCount(fixture.projectNames[0]!, names.F)).toBe(1);
-    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, names.F);
+    await selectAndOpenPartnerProject(
+      page,
+      fixture.projectNames[0]!,
+      names.F,
+      "continue",
+    );
     // Text-free: the helper proves F's own view (own assertions inside); P-absence subsumed.
   });
 
@@ -840,7 +888,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
-    const dialog = await openOrganizationDialog(page);
+    const dialog = await organizationSetup(page);
     await dialog.getByLabel("Organization name").fill(names.E);
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
@@ -853,7 +901,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       actors.E.email,
     );
     await page.goto(existingSetupURL);
-    await page.getByRole("radio", { name: "Existing Organization" }).check();
+    await chooseExisting(page);
     await selectEntity(
       page,
       "Organization",
@@ -862,7 +910,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await markSetupDocument(page);
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(
-      page.getByRole("button", { name: "Use this Organization", exact: true }),
+      page.getByRole("link", { name: "Open Partner Project", exact: true }),
     ).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[1]!, names.E)).toBe(1);
   });
@@ -936,7 +984,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       page.getByRole("button", { name: /Switch Organization/ }),
     ).toBeVisible();
     await page.goto(url);
-    await page.getByRole("radio", { name: "Existing Organization" }).check();
+    await chooseExisting(page);
     await selectEntity(page, "Organization", targetId);
     await page.getByRole("button", { name: "Complete setup" }).click();
     await expect(page.locator('[data-setup-error="disabled"]')).toBeVisible();
@@ -950,7 +998,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     // Text-free: retained-org state proven by absent name input + setup flow below (no copy).
     await expect(page.getByLabel("New Organization name")).toHaveCount(0);
     await markSetupDocument(page);
-    await page.getByRole("button", { name: "Complete setup" }).click();
+    await page
+      .getByRole("button", { name: "Retry setup with retained Organization" })
+      .click();
     await expect(
       page.getByRole("button", { name: "Use this Organization", exact: true }),
     ).toBeVisible();
@@ -961,7 +1011,12 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         .activeOrganizationId,
     ).toBe(unrelatedId);
     expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(1);
-    await selectAndOpenPartnerProject(page, fixture.projectNames[0]!, targetName);
+    await selectAndOpenPartnerProject(
+      page,
+      fixture.projectNames[0]!,
+      targetName,
+      "select",
+    );
     const acting = await context.request.get("/api/auth/get-session");
     expect(
       actingSessionSchema.parse(await acting.json()).session.activeOrganizationId,
@@ -1089,17 +1144,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const context = await actorContext(browser, "M", baseURL!);
       const page = await context.newPage();
       await page.goto(adminSetupURL);
-      await page.getByRole("radio", { name: "Existing Organization" }).check();
-      await page
-        .getByRole("button", { name: "Organization", exact: true })
-        .click();
-      await page
-        .getByRole("combobox", { name: "Search Organization by name or ID" })
-        .fill(names.E);
-      // Text-free: disabled Complete setup + zero partnership below prove no-match (no copy).
+      await expect(page.locator('[data-setup-error="owner"]')).toBeVisible();
       await expect(
         page.getByRole("button", { name: "Complete setup" }),
-      ).toBeDisabled();
+      ).toHaveCount(0);
+      await expect(page.getByLabel("New Organization name")).toHaveCount(0);
       expect(await partnershipCount(fixture.projectNames[2]!, names.E)).toBe(0);
     });
   });
@@ -1192,9 +1241,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const sibling = await actorContext(browser, actor, baseURL!);
       const siblingPage = await sibling.newPage();
       await siblingPage.goto(siblingSetupURLs[index]!);
-      await siblingPage
-        .getByRole("radio", { name: "Existing Organization" })
-        .check();
+      await chooseExisting(siblingPage);
       await selectEntity(
         siblingPage,
         "Organization",
@@ -1202,8 +1249,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       );
       await siblingPage.getByRole("button", { name: "Complete setup" }).click();
       await expect(
-        siblingPage.getByRole("button", {
-          name: "Use this Organization",
+        siblingPage.getByRole("link", {
+          name: "Open Partner Project",
           exact: true,
         }),
       ).toBeVisible();

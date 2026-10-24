@@ -1,92 +1,134 @@
 "use client";
 
-import { ORPCError } from "@orpc/client";
 import { organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
+import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import { SignOutButton } from "@/features/authentication/components/sign-out-button";
+import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
+import { SelectOrganization } from "@/features/organizations/components/select-organization";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
-
-// Validated code/status/reason selects local copy, never remote prose.
-const ACCEPTANCE_ERROR_COPY: Record<string, string> = {
-  STAFF_INVITATION_NOT_FOUND:
-    "This Organization Invitation is expired, cancelled, or addressed to another email address.",
-  STAFF_INVITATION_CLOSED:
-    "This Organization Invitation is no longer valid. Ask for a new invitation.",
-  STAFF_INVITATION_EXPIRED:
-    "This Organization Invitation has expired. Ask for a new invitation.",
-  STAFF_INVITATION_WRONG_EMAIL:
-    "This invitation was sent to a different email address. Sign in with the invited address.",
-  STAFF_INVITATION_WRONG_KIND:
-    "This link is not a staff Organization Invitation. Participant invitations are accepted through the Project join flow.",
-};
 
 const authClient = createAuthClient({ plugins: [organizationClient()] });
 
 export function InvitationAcceptance({ invitationId }: { invitationId: string }) {
   const router = useRouter();
+  const [decision, setDecision] = useState<OnboardingDecision>();
   const [organizationName, setOrganizationName] = useState<string>();
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
+  const returnTo = `/accept-invitation/${invitationId}`;
+
+  function continueJourney(next: OnboardingDecision) {
+    setDecision(next);
+    if (next.nextStep === "continue")
+      router.replace(next.availableActions[0].destination);
+    if (next.nextStep === "authenticate")
+      router.replace(
+        `/login?next=${encodeURIComponent(next.availableActions[0].returnTo ?? returnTo)}`,
+      );
+  }
 
   useEffect(() => {
     let active = true;
-    void authClient.organization
-      .getInvitation({ query: { id: invitationId } })
-      .then(
-        ({ data, error }) => {
-          if (!active) return;
-          if (error || !data) {
-            setError(
-              "This Organization Invitation is expired, cancelled, or addressed to another email address.",
-            );
-          } else {
-            setOrganizationName(data.organizationName);
-          }
-        },
-        () => {
-          if (active) setError("Could not load this Organization Invitation.");
-        },
-      );
+    void orpc.authentication
+      .onboardingNextStep({ returnTo })
+      .then(async (next) => {
+        if (!active) return;
+        setDecision(next);
+        if (next.nextStep === "continue")
+          router.replace(next.availableActions[0].destination);
+        if (next.nextStep === "authenticate")
+          router.replace(
+            `/login?next=${encodeURIComponent(next.availableActions[0].returnTo ?? returnTo)}`,
+          );
+        if (next.nextStep === "accept-invitation") {
+          // The preview supplies display data only. The server decision owns actions.
+          const { data } = await authClient.organization.getInvitation({
+            query: { id: invitationId },
+          });
+          if (active && data) setOrganizationName(data.organizationName);
+        }
+      })
+      .catch((cause: unknown) => {
+        if (active) setError(getORPCRequestErrorMessage(cause).text);
+      });
     return () => {
       active = false;
     };
-  }, [invitationId]);
+  }, [returnTo, invitationId, router]);
 
-  async function accept() {
+  async function recheck() {
     setPending(true);
     setError(undefined);
     try {
-      await orpc.organizations.acceptInvitation({ invitationId });
-      router.replace("/projects");
-    } catch (error) {
-      const situation =
-        error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
-      if (situation && ACCEPTANCE_ERROR_COPY[situation.reason])
-        setError(ACCEPTANCE_ERROR_COPY[situation.reason]);
-      else setError(getORPCRequestErrorMessage(error).text);
+      continueJourney(await orpc.authentication.onboardingNextStep({ returnTo }));
+    } catch (cause) {
+      setError(getORPCRequestErrorMessage(cause).text);
     } finally {
       setPending(false);
     }
   }
 
+  async function accept() {
+    if (decision?.nextStep !== "accept-invitation") return;
+    setPending(true);
+    setError(undefined);
+    try {
+      await orpc.organizations.acceptInvitation({
+        invitationId: decision.availableActions[0].invitationId,
+      });
+      continueJourney(await orpc.authentication.onboardingNextStep({ returnTo }));
+    } catch (cause) {
+      setError(getORPCRequestErrorMessage(cause).text);
+      try {
+        continueJourney(
+          await orpc.authentication.onboardingNextStep({ returnTo }),
+        );
+      } catch {
+        /* The mutation error remains visible if rechecking also fails. */
+      }
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (decision?.nextStep === "verify-email")
+    return (
+      <>
+        <CheckInbox email={decision.email} />
+        <SignOutButton />
+      </>
+    );
+  if (decision?.nextStep === "select-organization")
+    return (
+      <SelectOrganization
+        organizations={decision.availableActions[0].organizations}
+        onSelected={recheck}
+      />
+    );
+
   return (
-    <section aria-labelledby="invitation-heading">
+    <section aria-labelledby="invitation-heading" aria-busy={pending}>
       <h1 id="invitation-heading" className="font-heading text-3xl font-semibold">
-        Organization Invitation
+        Join your Organization
       </h1>
-      {organizationName ? (
+      {!decision && !error && <output>Checking your invitation…</output>}
+      {decision?.nextStep === "accept-invitation" && (
         <>
           <p
             className="mt-4"
             data-testid="invitation-preview"
             data-organization-name={organizationName}
           >
-            You have been invited to join {organizationName}.
+            {organizationName
+              ? `You have been invited to join ${organizationName}.`
+              : "Your invitation is ready. Join the Organization to continue."}
           </p>
           <Button
             className="mt-6"
@@ -94,16 +136,45 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
             onClick={accept}
             type="button"
           >
-            {pending ? "Accepting…" : "Accept Organization Invitation"}
+            {pending ? "Joining…" : "Accept Organization Invitation"}
           </Button>
         </>
-      ) : !error ? (
-        <output className="mt-4">Loading Organization Invitation…</output>
-      ) : null}
+      )}
+      {decision?.nextStep === "invitation-recovery" && (
+        <Alert
+          className="mt-6"
+          variant="info"
+          data-invitation-recovery={decision.reason}
+        >
+          <AlertTitle>Let&apos;s get you back to your invitation</AlertTitle>
+          <AlertDescription>
+            Open the complete link from your invitation email and sign in with the
+            invited address. If it has expired or been cancelled, ask your
+            Organization for a new invitation.
+          </AlertDescription>
+        </Alert>
+      )}
       {error && (
-        <p className="mt-4 text-destructive" role="alert">
+        <p className="mt-4" role="alert">
           {error}
         </p>
+      )}
+      {(decision?.nextStep === "invitation-recovery" || error) && (
+        <Button
+          className="mt-4"
+          disabled={pending}
+          onClick={recheck}
+          type="button"
+        >
+          Check invitation again
+        </Button>
+      )}
+      {decision?.availableActions.some(
+        (action) => action.kind === "sign-out",
+      ) && (
+        <div className="mt-4">
+          <SignOutButton />
+        </div>
       )}
     </section>
   );

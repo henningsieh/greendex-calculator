@@ -5,16 +5,10 @@ import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-  type SyntheticEvent,
-} from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -27,6 +21,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import { SignOutButton } from "@/features/authentication/components/sign-out-button";
+import {
+  OnboardingInputSchema,
+  type OnboardingDecision,
+  type OnboardingInput,
+} from "@/features/authentication/onboarding-decision";
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
@@ -37,8 +38,6 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
-const searchOwnedOrganizations = (search: string) =>
-  orpc.organizations.listMine({ search });
 
 type SetupError =
   | "invalid"
@@ -351,62 +350,45 @@ export function SetupLinkCreator() {
   );
 }
 
-type RecoveryCheckpoint =
-  | { phase: "creating" }
-  | { phase: "created" | "selected"; organizationId: string };
-type Eligibility = Awaited<
-  ReturnType<typeof orpc.projectPartnerships.getSetupLinkEligibility>
->;
-type CompletedSetup = Extract<Eligibility, { status: "redeemed" }>;
-type RecipientState =
-  | { phase: "checking" }
-  | { phase: "ready"; recovery?: RecoveryCheckpoint; error?: SetupError }
-  | { phase: "inspect"; recovery?: RecoveryCheckpoint }
-  | { phase: "refused"; error: SetupError; recovery?: RecoveryCheckpoint }
-  | { phase: "completed"; result: CompletedSetup };
+type RecoveryCheckpoint = NonNullable<OnboardingInput["setupRecovery"]>;
 
 function readRecovery(key: string): RecoveryCheckpoint | undefined {
   const raw = localStorage.getItem(key);
-  if (!raw) return undefined;
-  const value: unknown = JSON.parse(raw);
-  if (typeof value !== "object" || value === null || !("phase" in value))
-    throw createSituationErrors().internalFailure();
-  if (value.phase === "creating") return { phase: "creating" };
-  if (
-    (value.phase === "created" || value.phase === "selected") &&
-    "organizationId" in value &&
-    typeof value.organizationId === "string" &&
-    value.organizationId
-  )
-    return { phase: value.phase, organizationId: value.organizationId };
-  throw createSituationErrors().internalFailure();
+  return raw
+    ? OnboardingInputSchema.shape.setupRecovery.parse(JSON.parse(raw))
+    : undefined;
 }
 
 type SetupChoice =
   | { kind: "new"; name: string; country: EUCountryCode | "" }
   | { kind: "existing"; organizationId: string };
+type ChoiceDecision = Extract<
+  OnboardingDecision,
+  { nextStep: "choose-organization" }
+>;
 
 function SetupOrganizationForm({
-  recovery,
+  decision,
   pending,
-  error,
   onConsume,
 }: {
-  recovery?: RecoveryCheckpoint;
+  decision: ChoiceDecision;
   pending: boolean;
-  error?: SetupError;
   onConsume: (choice: SetupChoice) => Promise<void>;
 }) {
-  const [kind, setKind] = useState<"new" | "existing">("new");
+  const create = decision.availableActions.some(
+    (action) => action.kind === "create-organization",
+  );
+  const owned = [...decision.availableActions].find(
+    (action) => action.kind === "choose-owned-organization",
+  );
+  const [kind, setKind] = useState<"new" | "existing">(
+    create ? "new" : "existing",
+  );
   const [name, setName] = useState("");
   const [country, setCountry] = useState<EUCountryCode | "">("");
-  const [organizationId, setOrganizationId] = useState(
-    recovery?.phase === "selected" ? recovery.organizationId : "",
-  );
-  const existing =
-    kind === "existing" ||
-    recovery?.phase === "creating" ||
-    recovery?.phase === "selected";
+  const [organizationId, setOrganizationId] = useState("");
+  const existing = !create || kind === "existing";
   return (
     <form
       onSubmit={(event) => {
@@ -419,42 +401,49 @@ function SetupOrganizationForm({
       }}
     >
       <FieldGroup>
-        {!recovery && (
+        {create && owned && (
           <fieldset disabled={pending} className="flex flex-col gap-3">
             <legend>Choose an Organization</legend>
-            <label className="flex items-center gap-2">
+            <label>
               <input
-                checked={kind === "new"}
-                name="setup-kind"
-                onChange={() => setKind("new")}
                 type="radio"
-              />
+                name="setup-kind"
+                checked={!existing}
+                onChange={() => setKind("new")}
+              />{" "}
               New Organization
             </label>
-            <label className="flex items-center gap-2">
+            <label>
               <input
-                checked={kind === "existing"}
-                name="setup-kind"
-                onChange={() => setKind("existing")}
                 type="radio"
-              />
+                name="setup-kind"
+                checked={existing}
+                onChange={() => setKind("existing")}
+              />{" "}
               Existing Organization
             </label>
           </fieldset>
         )}
-        {recovery?.phase === "created" ? null : existing ? (
+        {existing && owned ? (
           <Field>
-            <span className="text-sm font-medium">Organization</span>
-            <EntityCombobox
-              label="Organization"
+            <FieldLabel htmlFor="setup-existing">Organization</FieldLabel>
+            <select
+              id="setup-existing"
+              disabled={pending}
+              required
               value={organizationId}
-              onChange={setOrganizationId}
-              search={searchOwnedOrganizations}
-            />
-            <p>
-              Only an Owner of this Organization can complete setup. Ownership is
-              verified by the server when you submit.
-            </p>
+              onChange={(event) => setOrganizationId(event.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              <option value="" disabled>
+                Choose an Organization you own
+              </option>
+              {owned.organizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name}
+                </option>
+              ))}
+            </select>
           </Field>
         ) : (
           <>
@@ -489,38 +478,25 @@ function SetupOrganizationForm({
                 </option>
                 {EU_COUNTRIES.map(({ code }) => (
                   <option key={code} value={code}>
-                    {new Intl.DisplayNames(["en"], {
-                      type: "region",
-                    }).of(code)}
+                    {new Intl.DisplayNames(["en"], { type: "region" }).of(code)}
                   </option>
                 ))}
               </select>
-              <p>
-                This creates your Organization through the normal setup flow and
-                makes you its Owner, then connects it to the Project.
-              </p>
             </Field>
           </>
         )}
         <Button
           disabled={
             pending ||
-            (recovery?.phase === "created"
-              ? false
-              : existing
-                ? !organizationId
-                : !slugifyOrganizationName(name) || !country)
+            (existing
+              ? !organizationId
+              : !slugifyOrganizationName(name) || !country)
           }
           type="submit"
         >
-          {pending
-            ? "Completing…"
-            : recovery?.phase === "created"
-              ? "Retry setup with retained Organization"
-              : "Complete setup"}
+          {pending ? "Completing…" : "Complete setup"}
         </Button>
       </FieldGroup>
-      {error && <SetupStatus state={error} />}
     </form>
   );
 }
@@ -536,281 +512,258 @@ export function SetupLinkRecipient({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [state, setState] = useState<RecipientState>({ phase: "checking" });
+  const [decision, setDecision] = useState<OnboardingDecision>();
+  const [error, setError] = useState<SetupError>();
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
-  const [selecting, startSelection] = useTransition();
-  const [selected, setSelected] = useState(false);
-  const [selectionError, setSelectionError] = useState(false);
+  const recovery = useRef<RecoveryCheckpoint | undefined>(undefined);
   const recoveryKey = `partner-setup:${userId}:${id}`;
+  const returnTo = `/setup-links/${id}${secret ? `?secret=${encodeURIComponent(secret)}` : ""}`;
+
+  function retain(checkpoint: RecoveryCheckpoint) {
+    // This checkpoint prevents duplicate mutations after uncertain responses. It grants no actions.
+    localStorage.setItem(recoveryKey, JSON.stringify(checkpoint));
+    recovery.current = checkpoint;
+  }
+
+  async function resolve() {
+    const next = await orpc.authentication.onboardingNextStep({
+      returnTo,
+      setupRecovery: recovery.current,
+    });
+    setDecision(next);
+    return next;
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    async function inspect() {
-      if (!secret) return;
-      let recovery: RecoveryCheckpoint | undefined;
-      try {
-        recovery = readRecovery(recoveryKey);
-      } catch {
-        recovery = { phase: "creating" };
-      }
-      try {
-        const result = await orpc.projectPartnerships.getSetupLinkEligibility({
-          id,
-          secret,
-        });
-        if (!cancelled)
-          setState(
-            result.status === "redeemed"
-              ? { phase: "completed", result }
-              : { phase: "ready", recovery },
-          );
-      } catch (cause) {
-        if (!cancelled)
-          setState({ phase: "refused", error: setupError(cause), recovery });
-      }
+    let active = true;
+    try {
+      recovery.current = readRecovery(recoveryKey);
+    } catch {
+      recovery.current = { phase: "creating" };
     }
-    void inspect();
+    void orpc.authentication
+      .onboardingNextStep({ returnTo, setupRecovery: recovery.current })
+      .then((next) => {
+        if (active) setDecision(next);
+      })
+      .catch((cause: unknown) => {
+        if (active) setError(setupError(cause));
+      });
     return () => {
-      cancelled = true;
+      active = false;
     };
-  }, [id, secret, recoveryKey]);
+  }, [recoveryKey, returnTo]);
 
-  async function consume(choice: SetupChoice) {
-    if (!secret || busy.current || state.phase !== "ready") return;
-    busy.current = true;
-    setPending(true);
-    let recovery = state.recovery;
-    try {
-      const result = await orpc.projectPartnerships.getSetupLinkEligibility({
-        id,
-        secret,
-      });
-      if (result.status === "redeemed") {
-        setState({ phase: "completed", result });
-        return;
-      }
-      let targetId =
-        recovery?.phase === "created"
-          ? recovery.organizationId
-          : choice.kind === "existing"
-            ? choice.organizationId
-            : "";
-      if (!recovery && choice.kind === "new") {
-        const input = CreateOrganizationInputSchema.safeParse({
-          country: choice.country,
-          name: choice.name.trim(),
-          slug: slugifyOrganizationName(choice.name.trim()),
-        });
-        if (!input.success) {
-          setState({ phase: "ready", error: "create" });
-          return;
-        }
-        try {
-          localStorage.setItem(
-            recoveryKey,
-            JSON.stringify({ phase: "creating" }),
-          );
-        } catch {
-          setState({ phase: "ready", error: "create" });
-          return;
-        }
-        recovery = { phase: "creating" };
-        setState({ phase: "ready", recovery });
-        try {
-          const created = await orpc.authentication.createOrganization(
-            input.data,
-          );
-          targetId = created.organizationId;
-          recovery = { phase: "created", organizationId: targetId };
-          setState({ phase: "ready", recovery });
-          localStorage.setItem(recoveryKey, JSON.stringify(recovery));
-        } catch (cause) {
-          if (
-            cause instanceof ORPCError &&
-            getSafeErrorSituation(cause)?.reason ===
-              "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION"
-          ) {
-            localStorage.removeItem(recoveryKey);
-            recovery = undefined;
-          }
-          setState({ phase: "ready", recovery, error: "create" });
-          return;
-        }
-      }
-      if (!targetId) return;
-      recovery = {
-        phase: recovery?.phase === "created" ? "created" : "selected",
-        organizationId: targetId,
-      };
-      localStorage.setItem(recoveryKey, JSON.stringify(recovery));
-      try {
-        const redeemed = await orpc.projectPartnerships.consumeSetupLink({
-          id,
-          secret,
-          organizationId: targetId,
-        });
-        setState({
-          phase: "completed",
-          result: {
-            status: "redeemed",
-            projectId: result.projectId,
-            ...redeemed,
-          },
-        });
-      } catch (cause) {
-        const error = setupError(cause);
-        setState(
-          error === "generic"
-            ? {
-                phase: "inspect",
-                recovery,
-              }
-            : { phase: "refused", error, recovery },
-        );
-      }
-    } catch (cause) {
-      setState({ phase: "refused", error: setupError(cause), recovery });
-    } finally {
-      busy.current = false;
-      setPending(false);
-    }
-  }
-
-  async function inspectResult() {
-    if (!secret || busy.current) return;
-    busy.current = true;
-    setPending(true);
-    const recovery = "recovery" in state ? state.recovery : undefined;
-    try {
-      const result = await orpc.projectPartnerships.getSetupLinkEligibility({
-        id,
-        secret,
-      });
-      setState(
-        result.status === "redeemed"
-          ? { phase: "completed", result }
-          : { phase: "ready", recovery },
-      );
-    } catch (cause) {
-      setState({ phase: "refused", error: setupError(cause), recovery });
-    } finally {
-      busy.current = false;
-      setPending(false);
-    }
-  }
-
-  function selectOrganization(result: CompletedSetup) {
-    setSelectionError(false);
-    startSelection(async () => {
-      try {
-        const response = await authClient.organization.setActive({
-          organizationId: result.organizationId,
-        });
-        if (response.error) throw createSituationErrors().selectOrganization();
-        await queryClient.invalidateQueries();
-        startSelection(() => {
-          router.refresh();
-          setSelected(true);
-        });
-      } catch {
-        setSelectionError(true);
-        setSelected(false);
-      }
+  async function bind(next: OnboardingDecision) {
+    if (next.nextStep !== "bind-partnership" || !secret) return;
+    await orpc.projectPartnerships.consumeSetupLink({
+      id,
+      secret,
+      organizationId: next.availableActions[0].organizationId,
     });
+    await resolve();
   }
 
-  const recovery = "recovery" in state ? state.recovery : undefined;
+  async function consume(choice?: SetupChoice) {
+    if (busy.current) return;
+    busy.current = true;
+    setPending(true);
+    setError(undefined);
+    try {
+      let next = await resolve();
+      if (next.nextStep === "choose-organization" && choice) {
+        if (choice.kind === "new") {
+          if (
+            !next.availableActions.some(
+              (action) => action.kind === "create-organization",
+            )
+          )
+            return;
+          const input = CreateOrganizationInputSchema.safeParse({
+            name: choice.name.trim(),
+            slug: slugifyOrganizationName(choice.name.trim()),
+            country: choice.country,
+          });
+          if (!input.success) {
+            setError("create");
+            return;
+          }
+          retain({ phase: "creating" });
+          try {
+            const created = await orpc.authentication.createOrganization(
+              input.data,
+            );
+            retain({ phase: "created", organizationId: created.organizationId });
+          } catch (cause) {
+            if (
+              cause instanceof ORPCError &&
+              getSafeErrorSituation(cause)?.reason ===
+                "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION"
+            ) {
+              localStorage.removeItem(recoveryKey);
+              recovery.current = undefined;
+            }
+            setError("create");
+            await resolve();
+            return;
+          }
+        } else {
+          const owned = [...next.availableActions].find(
+            (action) => action.kind === "choose-owned-organization",
+          );
+          if (
+            !owned?.organizations.some(
+              (organization) => organization.id === choice.organizationId,
+            )
+          )
+            return;
+          retain({ phase: "selected", organizationId: choice.organizationId });
+        }
+        next = await resolve();
+      }
+      await bind(next);
+    } catch (cause) {
+      setError(setupError(cause));
+      // An uncertain binding is inspected on the next explicit retry, never repeated blindly.
+      setDecision(undefined);
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
+  }
+
+  async function recheck() {
+    setPending(true);
+    setError(undefined);
+    try {
+      if (
+        decision?.nextStep === "setup-recovery" &&
+        recovery.current?.phase === "selected"
+      )
+        retain({ phase: "creating" });
+      await resolve();
+    } catch (cause) {
+      setError(setupError(cause));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function select(organizationId: string) {
+    if (decision?.nextStep !== "select-organization" || pending) return;
+    setPending(true);
+    setError(undefined);
+    try {
+      const response = await authClient.organization.setActive({
+        organizationId,
+      });
+      if (response.error) throw createSituationErrors().selectOrganization();
+      await queryClient.invalidateQueries();
+      await resolve();
+      router.refresh();
+    } catch {
+      setError("generic");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (decision?.nextStep === "verify-email")
+    return (
+      <>
+        <CheckInbox email={decision.email} />
+        <SignOutButton />
+      </>
+    );
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Partner Organization setup</CardTitle>
+        <CardTitle>
+          <h1>Partner Organization setup</h1>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-5">
+      <CardContent className="flex flex-col gap-5" aria-busy={pending}>
         <p>
-          Sign in with the verified email address this link was sent to.
-          Completing setup creates a Project Partnership; it does not grant
-          Hosting Organization membership.
+          Continue with the email address this setup link was sent to. This
+          connects your Organization to the Project; it does not grant Hosting
+          Organization membership.
         </p>
-        {!secret ? (
-          <SetupStatus state="invalid" />
-        ) : state.phase === "checking" ? (
-          <output>Checking setup link…</output>
-        ) : state.phase === "completed" ? (
+        {decision?.nextStep === "choose-organization" ? (
+          <SetupOrganizationForm
+            key={JSON.stringify(decision.availableActions)}
+            decision={decision}
+            pending={pending}
+            onConsume={consume}
+          />
+        ) : decision?.nextStep === "bind-partnership" ? (
           <>
-            <Alert data-relationship="project-partnership">
-              <AlertTitle>Project Partnership created</AlertTitle>
+            <Alert variant="info">
+              <AlertTitle>Organization retained</AlertTitle>
               <AlertDescription>
-                Your Organization is now connected to the Project. No Hosting
-                Organization membership was granted. Choose this Organization
-                explicitly before opening its Project.
+                Your Organization is ready. Continue to connect it to the Project.
+                No new Organization will be created.
               </AlertDescription>
             </Alert>
-            {!selected || selecting ? (
-              <Button
-                disabled={selecting}
-                onClick={() => selectOrganization(state.result)}
-              >
-                {selecting ? "Selecting Organization…" : "Use this Organization"}
-              </Button>
-            ) : (
-              <Button
-                render={
-                  <Link
-                    prefetch={false}
-                    href={`/projects/${encodeURIComponent(state.result.projectId)}`}
-                  />
-                }
-              >
-                Open Partner Project
-              </Button>
-            )}
-            {selectionError && (
-              <p role="alert">
-                Could not confirm Organization selection. Select it again before
-                opening the Project.
-              </p>
-            )}
+            <Button disabled={pending} onClick={() => void consume()}>
+              Retry setup with retained Organization
+            </Button>
           </>
-        ) : (
+        ) : decision?.nextStep === "setup-recovery" ? (
           <>
-            {recovery && (
-              <Alert>
-                <AlertTitle>Organization retained</AlertTitle>
-                <AlertDescription>
-                  {recovery.phase === "created"
-                    ? `Setup is incomplete. Continue with the exact Organization already selected (${recovery.organizationId}). No new Organization will be created.`
-                    : recovery.phase === "selected"
-                      ? "Continue with the existing Organization you selected, or choose another Organization you own."
-                      : "Organization creation may have completed. Inspect your existing Organizations and select the one you created. Do not create it again."}
-                </AlertDescription>
-              </Alert>
-            )}
-            {state.phase === "inspect" ? (
-              <Alert>
-                <AlertTitle>Setup result needs inspection</AlertTitle>
-                <AlertDescription>
-                  The binding response was not confirmed. Inspect the result
-                  before retrying. Your Organization will not be deleted.
-                </AlertDescription>
-              </Alert>
-            ) : state.phase === "refused" ? (
-              <SetupStatus state={state.error} />
-            ) : (
-              <SetupOrganizationForm
-                recovery={recovery}
-                pending={pending}
-                error={state.error}
-                onConsume={consume}
-              />
-            )}
-            {(state.phase === "inspect" || state.phase === "refused") && (
-              <Button disabled={pending} onClick={() => void inspectResult()}>
-                {pending ? "Inspecting…" : "Inspect setup result"}
+            <SetupStatus state={knownErrors[decision.reason] ?? "generic"} />
+            <Button disabled={pending} onClick={recheck}>
+              Inspect setup result
+            </Button>
+          </>
+        ) : decision?.nextStep === "select-organization" ? (
+          <>
+            <Alert variant="info" data-relationship="project-partnership">
+              <AlertTitle>Project Partnership created</AlertTitle>
+              <AlertDescription>
+                Select your Organization before opening its Project.
+              </AlertDescription>
+            </Alert>
+            {decision.availableActions[0].organizations.map((organization) => (
+              <Button
+                key={organization.id}
+                disabled={pending}
+                onClick={() => void select(organization.id)}
+              >
+                Use this Organization
               </Button>
-            )}
+            ))}
+          </>
+        ) : decision?.nextStep === "continue" ? (
+          <Link
+            className={buttonVariants()}
+            prefetch={false}
+            href={decision.availableActions[0].destination}
+          >
+            Open Partner Project
+          </Link>
+        ) : decision?.nextStep === "authenticate" ? (
+          <Link
+            className={buttonVariants()}
+            href={`/login?next=${encodeURIComponent(decision.availableActions[0].returnTo ?? returnTo)}`}
+          >
+            Sign in to continue
+          </Link>
+        ) : !error ? (
+          <output>Checking setup link…</output>
+        ) : null}
+        {error && (
+          <>
+            <SetupStatus state={error} />
+            <Button disabled={pending} onClick={recheck}>
+              Inspect setup result
+            </Button>
           </>
         )}
+        {decision?.availableActions.some(
+          (action) => action.kind === "sign-out",
+        ) && <SignOutButton />}
       </CardContent>
     </Card>
   );

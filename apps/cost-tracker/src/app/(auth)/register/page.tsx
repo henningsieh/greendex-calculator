@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/components/auth-form";
+import { orpc } from "@/lib/orpc/orpc";
 import { getSession, safeSignInReturnTo } from "@/lib/session";
 
 export const metadata: Metadata = {
@@ -20,5 +21,14 @@ export default async function RegisterPage({
   const next = safeSignInReturnTo((await searchParams).next);
   if (await getSession()) redirect(next ?? "/projects");
 
-  return <AuthForm mode="sign-up" returnTo={next} />;
+  const decision = await orpc.authentication.onboardingNextStep({
+    returnTo: next,
+  });
+  return (
+    <AuthForm
+      mode="sign-up"
+      returnTo={next}
+      entryContext={decision.entryContext}
+    />
+  );
 }

@@ -66,7 +66,13 @@ describe("AuthForm", () => {
       await user.type(screen.getByLabelText("Password"), "example-password");
       await user.click(screen.getByRole("button", { name: "Create account" }));
 
-      expect(await screen.findByTestId("auth-verification-message")).toBeTruthy();
+      const instruction = await screen.findByTestId("auth-verification-message");
+      expect(instruction).toBeVisible();
+      expect(instruction).toHaveAttribute("role", "status");
+      expect(instruction).toHaveAttribute("data-emphasis", "prominent");
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
+      expect(instruction.querySelector("strong")).toBeVisible();
       expect(mocks.signUp).toHaveBeenCalledExactlyOnceWith({
         name: "Alex Morgan",
         email: "user@example.org",
