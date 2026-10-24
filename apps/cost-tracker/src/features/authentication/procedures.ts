@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import { loadOnboardingFacts } from "@/features/authentication/onboarding-context";
+import {
+  decideOnboarding,
+  OnboardingInputSchema,
+  OnboardingDecisionSchema,
+} from "@/features/authentication/onboarding-decision";
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { auth } from "@/lib/auth";
@@ -188,4 +194,14 @@ export const updateUser = authorized
     );
 
     return { success: true };
+  });
+
+export const onboardingNextStep = base
+  .input(OnboardingInputSchema)
+  .output(OnboardingDecisionSchema)
+  .handler(async ({ context, input, errors }) => {
+    context.resHeaders?.set("cache-control", "private, no-store");
+    return decideOnboarding(
+      await loadOnboardingFacts(context.headers, input, errors),
+    );
   });
