@@ -4,18 +4,30 @@ import { createServer } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const fixtures = vi.hoisted(() => ({
-  connect: vi.fn(), query: vi.fn(), end: vi.fn(), environments: [] as Record<string, string>[],
+  connect: vi.fn(),
+  query: vi.fn(),
+  end: vi.fn(),
+  environments: [] as Record<string, string>[],
 }));
 vi.mock("../../scripts/email-inbox", () => ({
   EmailInbox: class {
-    constructor(environment: Record<string, string>) { fixtures.environments.push(environment); }
+    constructor(environment: Record<string, string>) {
+      fixtures.environments.push(environment);
+    }
     connect = fixtures.connect;
     cleanup = async () => ({ retained: 0, deleted: 0 });
   },
 }));
-vi.mock("pg", () => ({ Pool: class { query = fixtures.query; end = fixtures.end; } }));
+vi.mock("pg", () => ({
+  Pool: class {
+    query = fixtures.query;
+    end = fixtures.end;
+  },
+}));
 vi.mock("drizzle-orm/node-postgres", () => ({ drizzle: () => ({}) }));
-vi.mock("../../scripts/email-run-safety", () => ({ validateMailboxEnvironment: vi.fn() }));
+vi.mock("../../scripts/email-run-safety", () => ({
+  validateMailboxEnvironment: vi.fn(),
+}));
 
 import {
   HttpSession,
@@ -188,15 +200,18 @@ describe("verify-email-workflows response validation", () => {
 });
 
 describe("existing mail environment", () => {
-  const databaseUrl = "postgres://fixture:fixture@188.245.144.137:5489/greendex_development";
+  const databaseUrl = "postgres://188.245.144.137:5489/greendex_development";
 
   it("reads existing seed identities and closes its own pool", async () => {
-    fixtures.query.mockResolvedValueOnce({ rows: [
-      { id: "existing-host", slug: "seed-org" },
-      { id: "existing-partner", slug: "seed-second-partner-org" },
-    ] });
+    fixtures.query.mockResolvedValueOnce({
+      rows: [
+        { id: "existing-host", slug: "seed-org" },
+        { id: "existing-partner", slug: "seed-second-partner-org" },
+      ],
+    });
     expect(await resolveExistingIntegrationSeed(databaseUrl)).toEqual({
-      organizationId: "existing-host", secondPartnerOrganizationId: "existing-partner",
+      organizationId: "existing-host",
+      secondPartnerOrganizationId: "existing-partner",
     });
     expect(fixtures.query.mock.lastCall).toEqual([
       "SELECT id, slug FROM organization WHERE slug = ANY($1::text[])",
@@ -207,7 +222,9 @@ describe("existing mail environment", () => {
 
   it("fails missing seed identities without reseeding", async () => {
     fixtures.query.mockResolvedValueOnce({ rows: [] });
-    await expect(resolveExistingIntegrationSeed(databaseUrl)).rejects.toThrow("Required existing seed Organizations are missing");
+    await expect(resolveExistingIntegrationSeed(databaseUrl)).rejects.toThrow(
+      "Required existing seed Organizations are missing",
+    );
     expect(fixtures.end.mock.calls).toEqual([[]]);
   });
 
@@ -216,16 +233,35 @@ describe("existing mail environment", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      expect(await verifyEmailWorkflows({ apps: ["cost-tracker"], context: {
-        kind: "existing-environment", correlationId: "11111111-2222-4333-8444-555555555555", databaseUrl,
-        apps: { "cost-tracker": { baseUrl: "http://127.0.0.1:3002", environment: {
-          NEXT_PUBLIC_BASE_URL: "http://127.0.0.1:3002", DELETE_TESTMAILS_DURING_TESTRUN: "true",
-        } } },
-        seed: { organizationId: "existing-host", secondPartnerOrganizationId: "existing-partner" },
-      } })).toBe(false);
-      expect(fixtures.environments).toEqual([{
-        NEXT_PUBLIC_BASE_URL: "http://127.0.0.1:3002", DELETE_TESTMAILS_DURING_TESTRUN: "false",
-      }]);
+      expect(
+        await verifyEmailWorkflows({
+          apps: ["cost-tracker"],
+          context: {
+            kind: "existing-environment",
+            correlationId: "11111111-2222-4333-8444-555555555555",
+            databaseUrl,
+            apps: {
+              "cost-tracker": {
+                baseUrl: "http://127.0.0.1:3002",
+                environment: {
+                  NEXT_PUBLIC_BASE_URL: "http://127.0.0.1:3002",
+                  DELETE_TESTMAILS_DURING_TESTRUN: "true",
+                },
+              },
+            },
+            seed: {
+              organizationId: "existing-host",
+              secondPartnerOrganizationId: "existing-partner",
+            },
+          },
+        }),
+      ).toBe(false);
+      expect(fixtures.environments).toEqual([
+        {
+          NEXT_PUBLIC_BASE_URL: "http://127.0.0.1:3002",
+          DELETE_TESTMAILS_DURING_TESTRUN: "false",
+        },
+      ]);
       expect(fixtures.end.mock.calls).toEqual([[]]);
       const output = [...log.mock.calls, ...error.mock.calls].flat().join("\n");
       expect(output).toContain("FAILED cost-tracker/imap");
@@ -233,6 +269,9 @@ describe("existing mail environment", () => {
       expect(output).not.toContain("SECRET");
       expect(output).not.toContain("private.test");
       expect(output).not.toContain(databaseUrl);
-    } finally { log.mockRestore(); error.mockRestore(); }
+    } finally {
+      log.mockRestore();
+      error.mockRestore();
+    }
   });
 });
