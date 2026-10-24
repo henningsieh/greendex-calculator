@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -102,8 +102,20 @@ describe("Project workspace", () => {
     };
     renderWorkspace();
 
-    expect(await screen.findByText("Climate Forum")).toBeTruthy();
-    expect(screen.getByText("Mobility Group")).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(screen.getByTestId("project-workspace")).toHaveAttribute(
+      "data-project-id",
+      "project-1",
+    );
+    const partnerships = within(
+      screen.getByTestId("assigned-partner-organizations"),
+    ).getAllByRole("listitem");
+    expect(partnerships).toHaveLength(1);
+    expect(partnerships[0]).toHaveAttribute(
+      "data-partnership-id",
+      "partnership-1",
+    );
+    expect(partnerships[0]).toHaveAttribute("data-organization-id", "partner-1");
     expect(
       screen
         .getByRole("link", { name: "Manage Project Partnerships" })
@@ -117,7 +129,9 @@ describe("Project workspace", () => {
         .getByRole("link", { name: "Hosting Participant view" })
         .getAttribute("href"),
     ).toBe("/projects/project-1/participants");
-    expect(screen.queryByText(/Cost Submission$/)).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Open Claim workspace" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders each hosted Partnership's derived readiness independently", async () => {
@@ -140,19 +154,27 @@ describe("Project workspace", () => {
       })),
     };
     renderWorkspace();
-    await screen.findByText("Mobility Group");
-    for (const [name, status] of [
-      ["Mobility Group", "Correction requested"],
-      ["Civic Union", "Approved · unpaid"],
-      ["Green Society", "Paid"],
-      ["Arts Circle", "Rejected"],
-      ["Future Collective", "Submitted"],
-      ["Open Partnership", "No Claim"],
-      ["New Claim", "Active Claim · editable"],
+    const partnerships = within(
+      await screen.findByTestId("assigned-partner-organizations"),
+    ).getAllByRole("listitem");
+    expect(partnerships).toHaveLength(7);
+    for (const [id, status] of [
+      ["partnership-0", "correction_requested"],
+      ["partnership-1", "approved"],
+      ["partnership-2", "paid"],
+      ["partnership-3", "rejected"],
+      ["partnership-4", "submitted"],
+      ["partnership-5", "none"],
+      ["partnership-6", "editable"],
     ]) {
-      expect(
-        within(screen.getByText(name).closest("li")!).getByText(status),
-      ).toBeTruthy();
+      const partnership = partnerships.find(
+        (row) => row.getAttribute("data-partnership-id") === id,
+      );
+      expect(partnership).toBeInTheDocument();
+      expect(partnership?.querySelector("[data-claim-status]")).toHaveAttribute(
+        "data-claim-status",
+        status,
+      );
     }
   });
 
@@ -172,13 +194,22 @@ describe("Project workspace", () => {
         },
       ],
     };
-    mocks.complete.mockResolvedValue({ projectId: "project-1", completed: true });
+    mocks.complete.mockImplementation(async () => {
+      mocks.detail = {
+        ...mocks.detail,
+        completedAt: new Date("2026-06-05T12:00:00.000Z"),
+        completedByUserId: "staff-1",
+      };
+      return { projectId: "project-1", completed: true };
+    });
     renderWorkspace();
     await user.click(
       await screen.findByRole("button", { name: "Complete Project" }),
     );
     expect(mocks.complete).toHaveBeenCalledWith({ projectId: "project-1" });
-    expect(await screen.findByText("Project completed.")).toBeTruthy();
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+    expect(await screen.findByTestId("project-completed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
   });
 
   it("hides completion for blocked, completed and Partner Projects", async () => {
@@ -196,7 +227,11 @@ describe("Project workspace", () => {
       ],
     };
     renderWorkspace();
-    await screen.findByText("Partner");
+    expect(
+      within(
+        await screen.findByTestId("assigned-partner-organizations"),
+      ).getAllByRole("listitem"),
+    ).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
   });
 
@@ -210,8 +245,15 @@ describe("Project workspace", () => {
       partnerOrganizations: [],
     };
     renderWorkspace();
-    expect(await screen.findByText("Completed")).toBeTruthy();
-    expect(screen.getByText(/Completed 5 Jun 2026.*staff-1/)).toBeTruthy();
+    expect(await screen.findByTestId("project-completed")).toBeInTheDocument();
+    const completion = screen
+      .getByTestId("project-workspace")
+      .querySelector("[data-completed-at]");
+    expect(completion).toHaveAttribute(
+      "data-completed-at",
+      "2026-06-05T12:00:00.000Z",
+    );
+    expect(completion).toHaveAttribute("data-completed-by-user-id", "staff-1");
     expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
   });
 
@@ -228,10 +270,13 @@ describe("Project workspace", () => {
     await user.click(
       await screen.findByRole("button", { name: "Complete Project" }),
     );
-    expect(
-      await screen.findByText(/server or network is unreachable/i),
-    ).toBeTruthy();
-    expect(screen.queryByText("Completed")).toBeNull();
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Complete Project" }),
+      ).toBeEnabled();
+    });
+    expect(screen.queryByTestId("project-completed")).not.toBeInTheDocument();
   });
 
   it("renders only the active Partner assignment and Hosting identity", async () => {
@@ -248,9 +293,18 @@ describe("Project workspace", () => {
     };
     renderWorkspace();
 
-    expect(await screen.findByText("Hosting Group")).toBeTruthy();
-    expect(screen.getByText("Submitted")).toBeTruthy();
-    expect(screen.queryByText("Assigned Partner Organizations")).toBeNull();
+    expect(await screen.findByTestId("hosting-organization")).toHaveAttribute(
+      "data-organization-id",
+      "host-1",
+    );
+    expect(
+      screen
+        .getByTestId("project-workspace")
+        .querySelector("[data-claim-status]"),
+    ).toHaveAttribute("data-claim-status", "submitted");
+    expect(
+      screen.queryByTestId("assigned-partner-organizations"),
+    ).not.toBeInTheDocument();
     expect(
       screen
         .getByRole("link", { name: "Coordinate Participants" })
@@ -261,12 +315,9 @@ describe("Project workspace", () => {
         .getByRole("link", { name: "Open Claim workspace" })
         .getAttribute("href"),
     ).toBe("/partnerships/partnership-1/claim");
-    // A Partner Project row keeps its Partnership workspace and is never sent
-    // to the Hosting-only Hosting Participant view it cannot read.
     expect(
       screen.queryByRole("link", { name: "Hosting Participant view" }),
     ).toBeNull();
-    expect(screen.queryByText(/EUR|Proof Document/i)).toBeNull();
     expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
   });
 });

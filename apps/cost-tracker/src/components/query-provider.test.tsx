@@ -27,7 +27,9 @@ function CachedORPCQuery() {
 
   return (
     <>
-      <p>{query.data}</p>
+      <p data-testid="cached-project" data-query-value={query.data}>
+        {query.data}
+      </p>
       <button onClick={() => void query.refetch()} type="button">
         Refresh
       </button>
@@ -74,18 +76,23 @@ describe("QueryProvider", () => {
       </QueryProvider>,
     );
 
-    await screen.findByText("Cached Project");
+    await waitFor(() =>
+      expect(screen.getByTestId("cached-project")).toHaveAttribute(
+        "data-query-value",
+        "Cached Project",
+      ),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
 
     await waitFor(() => {
-      expect(mocks.add).toHaveBeenCalledWith({
-        description:
-          "The server or network is unreachable. Check your connection and try again.",
-        title: "Could not refresh data",
-        type: "error",
-      });
+      expect(mocks.add).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ type: "error" }),
+      );
     });
-    expect(screen.getByText("Cached Project")).toBeTruthy();
+    expect(screen.getByTestId("cached-project")).toHaveAttribute(
+      "data-query-value",
+      "Cached Project",
+    );
   });
 
   it("shows one toast for an identical oRPC failure burst across queries", async () => {

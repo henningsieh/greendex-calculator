@@ -33,7 +33,11 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
   );
 
   return (
-    <section aria-label="Hosting Participant view" className="space-y-6">
+    <section
+      aria-label="Hosting Participant view"
+      className="space-y-6"
+      data-agreement-published={data.agreement.published}
+    >
       <p className="text-sm text-muted-foreground">
         Totals count the Project Participations that exist, each in the Partner
         Organization it represents. Invitees who have not joined and unknown
@@ -41,7 +45,10 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
         a pre-join funnel.
       </p>
       {!data.agreement.published && (
-        <p className="text-sm text-muted-foreground">
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="unpublished-agreement"
+        >
           Agreement version {data.agreement.versionId} is not published, so no
           Participant counts as completed.
         </p>
@@ -72,7 +79,7 @@ function PartnerOrganizationParticipants({
   const participantsId = `participants-${group.id}`;
 
   return (
-    <Card>
+    <Card data-testid={`report-organization-${group.id}`}>
       <CardHeader className="flex flex-wrap items-center justify-between gap-3">
         <CardTitle>
           <span className="flex items-center gap-2">
@@ -84,10 +91,21 @@ function PartnerOrganizationParticipants({
           </span>
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{`Country: ${group.country}`}</Badge>
-          <Badge>{pluralize(group.participantCount, "Participant")}</Badge>
-          <Badge variant="secondary">{`${group.completedCount} completed`}</Badge>
-          <Badge variant="secondary">{`${group.pendingCount} pending`}</Badge>
+          <Badge
+            variant="secondary"
+            data-country={group.country}
+          >{`Country: ${group.country}`}</Badge>
+          <Badge data-participant-count={group.participantCount}>
+            {pluralize(group.participantCount, "Participant")}
+          </Badge>
+          <Badge
+            variant="secondary"
+            data-completed-count={group.completedCount}
+          >{`${group.completedCount} completed`}</Badge>
+          <Badge
+            variant="secondary"
+            data-pending-count={group.pendingCount}
+          >{`${group.pendingCount} pending`}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -110,10 +128,15 @@ function PartnerOrganizationParticipants({
         {expanded && (
           <ul className="divide-y" id={participantsId}>
             {group.participants.map((participant) => (
-              <li className="space-y-2 py-4" key={participant.id}>
+              <li
+                className="space-y-2 py-4"
+                data-testid={`report-participant-${participant.id}`}
+                key={participant.id}
+              >
                 <div className="flex flex-wrap items-center gap-3">
                   <strong>{participant.displayName}</strong>
                   <Badge
+                    data-agreement-status={participant.agreement}
                     variant={
                       participant.agreement === "completed"
                         ? "default"

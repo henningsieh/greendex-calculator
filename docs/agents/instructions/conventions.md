@@ -49,45 +49,44 @@ This section owns test selection and final verification policy. Follow it during
 
 ### Focused implementation
 
-- Select the smallest meaningful checks for changed behavior and affected integration boundaries. Record the selection rationale. Expand coverage for shared auth, schema, router, SSR, or persistence changes; do not omit affected tests.
-- Keep pure unit/component checks server-free. Direct database, migration, and service tests retain their appropriate seams.
-- Run runtime-dependent browser/HTTP checks against an isolated running dev server. Use Next MCP routes, errors, and compilation diagnostics plus real browser observations before and after app changes. Start an owned server when needed; do not reuse an unrelated server or database.
-- For a changed production-only instant-navigation, prerender, or prefetch contract, use the smallest dedicated production-build check. Dev results do not prove production behavior.
-- Do not run unrelated full suites or builds during ordinary fixing. Existing root `pnpm test` is the full non-browser contract; `pnpm run test:run` aliases it, not a cheap unit-only check.
+- Select the smallest meaningful checks for changed behavior and affected integration boundaries. Record the selection rationale. Expand coverage for shared auth, schema, router, SSR, or persistence changes.
+- Keep pure unit/component checks server-free. Use focused `pnpm --dir <workspace> exec vitest run <file>` or `pnpm --dir <app> exec playwright test --config=<config> <file> --workers=1 --retries=0` when narrowing a suite.
+- Runtime-dependent checks use existing loopback applications and the shared development database. Inspect Next MCP routes, errors, and compilation diagnostics when using an existing dev server, plus real browser observations before and after app changes.
+- Existing-server checks accept dev or production servers without an attestation flag. They do not establish production provenance. Dev results do not prove production behavior. The operator owns build/start and final production verification against the reviewed candidate.
+- Test runners never build, start servers, migrate, provision databases or stop existing processes. A run may seed the shared development database, because tests need canonical data. It may not delete rows outside the seed while running. Production and staging are excluded. Missing servers or credentials fail rather than skip. The only database target is `greendex_development` at `188.245.144.137:5489`, loaded from shared `packages/database/.env`; each app loads its own configuration automatically. Injected values retain precedence but must satisfy the same target restriction.
 
-Use these representative selections, not a mandatory command sequence:
+Representative focused selections:
 
 | Changed behavior | Focused selection and rationale |
 | --- | --- |
-| Pure organization role rule | `pnpm --dir packages/auth run test:run src/organization-roles.test.ts`. No server is needed. |
-| Browser/session setup | After provisioning the isolated environment and owned dev server, use `pnpm --dir apps/cost-tracker exec playwright test --config=playwright.config.ts hosting-setup.spec.ts --workers=1 --retries=0`. Inspect Next MCP and browser evidence of original-session success, before reload or reauthentication. |
-| Shared auth/schema/router | Expand to affected role/permission units, both apps' relevant auth/procedure integrations, SSR routing, persistence, and cross-app session journeys. Select by affected boundary. |
-| Production-only instant/prerender | Select the affected case in `apps/calculator/playwright.instant.config.ts` against a dedicated owned production build with build-time testing API enablement and a public unauthenticated context. Do not deploy that artifact. |
-
-These examples require the relevant isolated environment and prerequisites. They do not authorize unsafe default start hooks, arbitrary listener termination, or ordinary development/staging database writes.
+| Pure organization role rule | `pnpm --dir packages/auth exec vitest run src/organization-roles.test.ts`. No server is needed. |
+| Browser/session setup | Against existing apps, use `pnpm --dir apps/cost-tracker exec playwright test --config=playwright.config.ts hosting-setup.spec.ts --workers=1 --retries=0`. Verify original-session success before reload or reauthentication. |
+| Shared auth/schema/router | Expand to affected role/permission units, both apps' auth/procedure integrations, SSR routing, persistence, and cross-app session journeys. |
 
 ### Centrally owned final acceptance
 
-- One coordinator owns heavy builds and full gates after all writers finish. Run heavy work sequentially with bounded browser/server concurrency. Implementers and reviewers do not launch competing full runs.
-- Preserve the complete existing `pnpm test` non-browser contract, including unit, component, integration, migration, cross-app, policy, real mail, and storage groups with their failure and cleanup semantics.
-- `pnpm run test:full` is the required final integrated entrypoint. It extends the existing non-browser runner with a full-production profile and all four browser configurations below without recursive aggregates, duplicate group execution, or omitted coverage. Root `pnpm test` retains its non-browser scope and managed development HTTP targets. #289 verifies final consistency and real production execution; implementing the command alone does not prove acceptance.
-- Final app HTTP/browser consumers must target production build/start artifacts from the reviewed candidate, including runtime-dependent non-browser HTTP checks. Units, direct database, migration, and service checks retain their appropriate runners. Production start does not require dev MCP; use startup/readiness, logs, HTTP/browser behavior, and results.
+The root owns exactly four test commands. Workspace test scripts and aliases are absent.
 
-The required browser inventory is:
+- `pnpm run test:unit` runs the established server-free package/app selection with two workers, plus repository policy/tooling and Documentation tests.
+- `pnpm run test:integration` runs the classifier-complement database/procedure tests, database connection and real OpenAPI HTTP checks, full real-mail workflows, and development Garage checks. Files and shared fixtures run serially. Migration/reset/lifecycle tests that provision additional databases are removed; the canonical development seed implementation remains outside test execution.
+- `pnpm run test:e2e` runs both ordinary Playwright suites and the cross-app merge suite against existing apps, with one worker and zero retries. The extra-build-only instant suite is removed.
+- `pnpm run test:full` runs unit, integration and e2e sequentially and exits nonzero if any mode fails. Console summaries include sanitized timings. Implementing the command alone does not prove acceptance.
 
-- Cost Tracker ordinary suite, `apps/cost-tracker/playwright.config.ts`.
-- Calculator ordinary suite, `apps/calculator/playwright.config.ts`, excluding the separate instant specs.
-- Cross-app merge suite, `apps/calculator/playwright.merge.config.ts`.
-- Calculator instant-navigation suite, `apps/calculator/playwright.instant.config.ts`, using a separate build-time test-enabled artifact and public unauthenticated context without ordinary login setup or inherited auth state. Ordinary Calculator production verification keeps the testing API disabled.
+The browser inventory is:
+
+- Cost Tracker, `apps/cost-tracker/playwright.config.ts`.
+- Calculator, `apps/calculator/playwright.config.ts`.
+- Cross-app merge, `apps/calculator/playwright.merge.config.ts`.
+
+One coordinator owns final acceptance after all writers finish. Reviewers and implementers do not launch competing full runs. The operator owns starting the reviewed production builds, including the required socket service, and making the existing seed fixtures available. Runners borrow these resources and never dispose of them.
 
 For final verification:
 
-1. Use run-owned migrated/canonically seeded databases, reserved ports, processes, required socket service, artifacts, and generated declarations. Both apps share the intended run database for browser/cross-app workflows. Keep dev and production variants separate. Never kill unowned listeners or migrate an ordinary development/staging database through default start hooks.
-2. Preserve dedicated-mailbox/current-run correlation, default mail retention, development Garage isolation, owned-object cleanup, and sanitized evidence. Missing services or credentials are blockers, not permission to mock or skip required live checks. Do not expose secrets or assume browser artifacts are safe to publish.
-3. Require independent Standards and Spec reviews of the same integration candidate. Resolve findings with bounded focused repairs, review the changed final diff again, then run the complete final matrix for the resulting candidate. Repeat for actionable findings or failures, not merely to obtain green.
-4. Require zero flaky final acceptance. Use zero retries or verified failure on retry-pass. Report failures, blocks, skips, flaky results, and cleanup honestly. Any required failure, block, unaccounted skip, flaky result, or cleanup failure makes acceptance fail. Continue independent safe groups and mark dependent groups blocked.
-5. Record the exact candidate, build variants, runtime targets, suite inventory, results, timings, flaky/skipped/blocked counts, and cleanup in sanitized current-run evidence. Source/build-affecting changes invalidate relevant evidence; rebuild affected artifacts. No fixed count of repeated green full runs is required.
-6. Retain final `pnpm run format`, `pnpm run lint` (including design-system checks), applicable `pnpm run type-check`, affected SSR regressions, persistence checks, instruction-policy checks after instruction changes, and diff review. Account for overlap without omitting a gate. For instruction-only work, run focused inventory/policy/link/budget and style checks; the coordinator owns final repository-wide gates.
+1. Preserve dedicated-mailbox/current-run correlation, default mail retention, development Garage isolation, owned-object cleanup, and sanitized evidence. Missing services or credentials are blockers. Remove only run-owned rows, sessions and storage objects; never clear shared fixtures or mailboxes. Browser artifacts remain private, with trace, video and automatic screenshots off.
+2. Require independent Standards and Spec reviews of the same integration candidate. Resolve findings with bounded focused repairs and review the changed final diff again.
+3. Require zero flaky final acceptance. Use zero retries. Report failures, blocks, skips and cleanup failures honestly; none prove a passed gate. A nonzero subprocess or real-workflow failure fails its mode; full still attempts the remaining modes.
+4. Record the exact candidate, runtime targets, selected suites, results, timings, and blockers without secrets. Source/build-affecting changes invalidate relevant evidence. No fixed count of repeated green full runs is required.
+5. Retain final `pnpm run format`, `pnpm run lint` including design-system checks, applicable `pnpm run type-check`, affected SSR regressions, persistence checks, instruction-policy checks and diff review. Account for overlap without omitting a gate. Honor explicit user restrictions on command execution and report unrun gates rather than inventing evidence.
 
 ## Database changes
 

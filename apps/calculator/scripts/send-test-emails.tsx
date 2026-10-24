@@ -5,7 +5,7 @@ import { loadEnvFile } from "node:process";
 import { createEmailSender, createTransporter } from "@greendex/email";
 
 // Legacy template preview only: no IMAP receipt or managed app workflows.
-// #273 acceptance uses Cost Tracker's test:email-delivery entrypoint for both apps.
+// #273 acceptance uses the root test:integration entrypoint for both apps.
 console.warn(
   "Legacy direct template send: NOT real-email workflow verification.",
 );

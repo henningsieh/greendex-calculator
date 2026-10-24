@@ -47,7 +47,7 @@ export function TransportEmissionProfileSelect({
       </SelectTrigger>
       <SelectContent>
         {PROJECT_SHARED_TRANSPORT_EMISSION_PROFILES.map((profile) => (
-          <SelectItem key={profile} value={profile}>
+          <SelectItem key={profile} value={profile} data-profile={profile}>
             <TransportEmissionProfileIcon profile={profile} />
             {t(`types.${profile}`)}
           </SelectItem>

@@ -22,7 +22,7 @@ vi.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>, options: { ssr: boolean }) => {
     mocks.dynamic = { loader, options };
     return ({ initialIsOpen }: { initialIsOpen: boolean }) => (
-      <output data-testid="devtools">{String(initialIsOpen)}</output>
+      <output data-testid="devtools" data-open={initialIsOpen} />
     );
   },
 }));
@@ -33,9 +33,10 @@ const clients: QueryClient[] = [];
 function Consumer({ label }: { label: string }) {
   const client = useQueryClient();
   return (
-    <p>
-      {label}:{client.getQueryData<string>(["message"])}
-    </p>
+    <output
+      data-consumer={label}
+      data-cached-value={client.getQueryData<string>(["message"])}
+    />
   );
 }
 
@@ -80,10 +81,16 @@ describe("query provider with client-only devtools", () => {
       ),
     );
     expect(mocks.createQueryClient).toHaveBeenCalledOnce();
-    expect(container.querySelector("p")?.textContent).toBe("second:cached value");
-    expect(container.querySelector('[data-testid="devtools"]')?.textContent).toBe(
-      "false",
-    );
+    expect(
+      container
+        .querySelector('[data-consumer="second"]')
+        ?.getAttribute("data-cached-value"),
+    ).toBe("cached value");
+    expect(
+      container
+        .querySelector('[data-testid="devtools"]')
+        ?.getAttribute("data-open"),
+    ).toBe("false");
   });
 
   it("creates a fresh cache when a provider is remounted", () => {
@@ -105,6 +112,11 @@ describe("query provider with client-only devtools", () => {
     );
     expect(mocks.createQueryClient).toHaveBeenCalledTimes(2);
     expect(clients[1]).not.toBe(clients[0]);
-    expect(container.querySelector("p")?.textContent).toBe("second:");
+    expect(container.querySelector('[data-consumer="second"]')).not.toBeNull();
+    expect(
+      container
+        .querySelector('[data-consumer="second"]')
+        ?.hasAttribute("data-cached-value"),
+    ).toBe(false);
   });
 });

@@ -61,8 +61,9 @@ describe("SelectOrganization", () => {
     await user.click(screen.getByRole("button", { name: "Beta" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Could not select that Organization.",
+      expect(screen.getByRole("alert")).toHaveAttribute(
+        "data-select-status",
+        "failed",
       );
     });
     expect(mocks.refresh).not.toHaveBeenCalled();

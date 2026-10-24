@@ -35,9 +35,12 @@ Schemas and migrations live in `packages/database/src/`.
 
 Better Auth schema generation uses the calculator's `auth:generate` script and writes to `packages/database/src/schemas/auth-schema.ts`.
 
-## Migration regression checks
+## Test execution
 
-Calculator's Project Shared Travel Leg [cutover](../../apps/calculator/src/__tests__/project-shared-travel-legs-migration.integration.test.ts) and [compatibility cleanup](../../apps/calculator/src/__tests__/project-shared-travel-legs-cleanup.integration.test.ts) tests compare the exact primary-key and foreign-key constraint names. Their catalog queries filter `pg_constraint` to `contype IN ('p', 'f')`; unrelated constraints, including catalog-exposed `NOT NULL` entries, must not affect those assertions. This keeps the checks precise across PostgreSQL versions without changing migrations or snapshots.
+Tests borrow the shared development database and existing loopback apps. The
+provisioning migration/seed/lifecycle suites are removed. See
+[existing test fixtures](local-test-fixtures.md) and the
+[two-loop policy](../agents/instructions/conventions.md#two-verification-loops).
 
 ## Connection
 

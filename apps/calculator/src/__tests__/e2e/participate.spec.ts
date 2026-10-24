@@ -1,3 +1,4 @@
+import { QUESTIONNAIRE_STEPS as STEP } from "@greendex/config/participate";
 import { expect, test, type Page } from "@playwright/test";
 
 import { TestProjectFixture } from "./fixtures/test-project";
@@ -11,6 +12,11 @@ import { TestProjectFixture } from "./fixtures/test-project";
  * - Conditional step logic (car questions)
  * - Progress tracking
  * - Final emissions calculation and console output
+ *
+ * Text-free policy: no assertion searches visible copy. Step position is
+ * proven through the `data-step` counter on the question card, the impact
+ * modal through its `data-testid`, and emissions through numeric
+ * `data-co2-kg` / `data-value` attributes.
  */
 
 // Regular expressions for button matching
@@ -41,14 +47,18 @@ const OPTION_REGEX = {
   electric: /electric/i,
 } as const;
 
+async function expectStep(page: Page, step: number) {
+  await expect(page.getByTestId("participate-step")).toHaveAttribute(
+    "data-step",
+    String(step),
+  );
+}
+
 async function dismissImpactModal(page: Page) {
-  const title = page.getByRole("heading", { name: "Your Impact", exact: true });
-  await expect(title).toBeVisible();
-  await title
-    .locator("..")
-    .getByRole("button", { name: "Continue", exact: true })
-    .click();
-  await expect(title).toBeHidden();
+  const modal = page.getByTestId("impact-modal");
+  await expect(modal).toBeVisible();
+  await modal.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+  await expect(modal).toBeHidden();
 }
 
 let fixture: TestProjectFixture;
@@ -72,10 +82,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     // Navigate to the test project participation page
     await page.goto(`/en/project/${projectId}/participate`);
 
-    // Wait for the form to be visible
+    // Wait for the form to be visible (role-based start action)
     await expect(
-      page.locator("text=Start").or(page.locator("text=start")).first(),
-    ).toBeVisible({});
+      page.getByRole("button", { name: BUTTON_REGEX.start }),
+    ).toBeVisible();
   });
 
   test("should complete full questionnaire with valid inputs", async ({
@@ -85,7 +95,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
 
     // Step 1: Participant Info
-    await expect(page.locator("text=first name").first()).toBeVisible();
+    await expectStep(page, STEP.participantInfo);
     await page.locator('input[id="firstName"]').fill("John");
 
     // Fill country - using CountrySelect component
@@ -96,7 +106,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 2: Days
-    await expect(page.locator("text=days").first()).toBeVisible();
+    await expectStep(page, STEP.days);
     let numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("7", { delay: 50 });
@@ -108,39 +118,33 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 3: Accommodation Category
-    await expect(page.locator("text=accommodation").first()).toBeVisible();
+    await expectStep(page, STEP.accommodationCategory);
     await page.getByRole("button", { name: "Hostel" }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 4: Room Occupancy
-    await expect(page.locator("text=sharing").first()).toBeVisible();
+    await expectStep(page, STEP.roomOccupancy);
     await page.getByRole("button", { name: "2 people" }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 5: Electricity - should show impact modal
-    await expect(page.locator("text=energy").first()).toBeVisible();
+    await expectStep(page, STEP.electricity);
     await page.getByRole("button", { name: OPTION_REGEX.greenEnergy }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Wait for and close impact modal
-    await expect(page.locator("text=impact").first()).toBeVisible({
-      timeout: 3000,
-    });
     await dismissImpactModal(page);
 
     // Step 6: Food - should show impact modal
-    await expect(page.locator("text=meat").first()).toBeVisible();
+    await expectStep(page, STEP.food);
     await page.getByRole("button", { name: "sometimes" }).click();
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Wait for and close impact modal
-    await expect(page.locator("text=impact").first()).toBeVisible({
-      timeout: 3000,
-    });
     await dismissImpactModal(page);
 
     // Step 7: Flight km - should show impact modal if > 0
-    await expect(page.locator("text=fly").first()).toBeVisible();
+    await expectStep(page, STEP.flightKm);
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("500", { delay: 50 });
@@ -152,13 +156,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Wait for and close impact modal
-    await expect(page.locator("text=impact").first()).toBeVisible({
-      timeout: 3000,
-    });
     await dismissImpactModal(page);
 
     // Step 8: Boat km - entering 0 should NOT show impact
-    await expect(page.locator("text=boat").first()).toBeVisible();
+    await expectStep(page, STEP.boatKm);
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("0", { delay: 50 });
@@ -170,7 +171,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 9: Train km - should show impact modal if > 0
-    await expect(page.locator("text=train").first()).toBeVisible();
+    await expectStep(page, STEP.trainKm);
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("100", { delay: 50 });
@@ -182,13 +183,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Wait for and close impact modal
-    await expect(page.locator("text=impact").first()).toBeVisible({
-      timeout: 3000,
-    });
     await dismissImpactModal(page);
 
     // Step 10: Bus km - entering 0 should NOT show impact
-    await expect(page.locator("text=bus").first()).toBeVisible();
+    await expectStep(page, STEP.busKm);
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("0", { delay: 50 });
@@ -199,14 +197,9 @@ test.describe("Questionnaire Form E2E Tests", () => {
     });
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
     // Wait for next step content to be visible
-    await expect(page.locator("text=car").first()).toBeVisible({
-      timeout: 3000,
-    });
+    await expectStep(page, STEP.carKm);
 
     // Step 11: Car km - test with value > 0 to trigger conditional steps
-    await expect(page.locator("text=car").first()).toBeVisible({
-      timeout: 10_000,
-    });
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("200", { delay: 50 });
@@ -218,9 +211,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 12: Car Type (conditional - only shown if carKm > 0) - Select Electric
-    await expect(
-      page.locator("text=What type of car did you use?").first(),
-    ).toBeVisible();
+    await expectStep(page, STEP.carType);
     // Wait for the electric button to be stable/clickable
     await expect(
       page.getByRole("button", { name: OPTION_REGEX.electric }),
@@ -231,7 +222,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 13: Car Passengers (conditional) - should show impact modal
-    await expect(page.locator("text=participants").first()).toBeVisible();
+    await expectStep(page, STEP.carPassengers);
     const carPassengersInput = page.locator('input[type="number"]').first();
     await carPassengersInput.click();
     await carPassengersInput.clear();
@@ -244,13 +235,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Wait for and close impact modal
-    await expect(page.locator("text=impact").first()).toBeVisible({
-      timeout: 3000,
-    });
     await dismissImpactModal(page);
 
     // Step 14: Age
-    await expect(page.locator("text=old").first()).toBeVisible();
+    await expectStep(page, STEP.age);
     const ageInput = page.locator('input[type="number"]').first();
     await ageInput.click();
     await ageInput.clear();
@@ -258,7 +246,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Step 15: Gender - Final step
-    await expect(page.locator("text=gender").first()).toBeVisible();
+    await expectStep(page, STEP.gender);
 
     // Select gender to enable Complete button
     await page.getByRole("button", { name: "Male", exact: true }).click();
@@ -270,15 +258,23 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await completeBtn.click();
 
     // Verify final results are displayed with emissions breakdown
-    await expect(page.locator("text=summary").first()).toBeVisible({
+    await expect(page.getByTestId("summary-panel")).toBeVisible({
       timeout: 5000,
     });
 
-    // Verify the summary shows participant and project-shared travel separately.
-    await expect(page.locator("text=Your travel").first()).toBeVisible();
-    await expect(page.locator("text=Accommodation").first()).toBeVisible();
-    await expect(page.locator("text=Food").first()).toBeVisible();
-    await expect(page.locator("text=Total").first()).toBeVisible();
+    // Verify the summary shows participant and project-shared travel separately
+    // through numeric emission attributes (reword-proof).
+    for (const testId of [
+      "summary-participant-travel",
+      "summary-accommodation",
+      "summary-food",
+      "summary-total",
+    ]) {
+      await expect(page.getByTestId(testId)).toHaveAttribute(
+        "data-co2-kg",
+        /^\d+\.\d+$/,
+      );
+    }
   });
 
   test("should handle conditional car question skip when carKm is 0", async ({
@@ -333,15 +329,16 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Car - 0 km (should skip car type and passengers)
-    await expect(page.locator("text=car").first()).toBeVisible();
+    await expectStep(page, STEP.carKm);
     await page.locator('input[type="number"]').first().fill("0");
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
-    // Should skip to Age (not car type/passengers)
-    await expect(page.locator("text=old").first()).toBeVisible();
+    // Should skip to Age (not car type/passengers): the step counter lands
+    // on age, and no impact modal appears for the skipped car steps.
+    await expectStep(page, STEP.age);
 
     // Verify car type question is NOT shown
-    await expect(page.locator("text=type of car").first()).not.toBeVisible();
+    await expect(page.getByTestId("impact-modal")).toHaveCount(0);
   });
 
   test("should validate required fields and prevent progression with invalid input", async ({
@@ -445,7 +442,9 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
 
     // Check initial step counter (should show step 2 of 16)
-    await expect(page.locator("text=Step 2 of 16").first()).toBeVisible();
+    const counter = page.getByTestId("step-counter");
+    await expect(counter).toHaveAttribute("data-current", "2");
+    await expect(counter).toHaveAttribute("data-total", "16");
 
     // Fill and continue
     await page.locator('input[id="firstName"]').fill("Test");
@@ -455,7 +454,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Should show step 3 of 16
-    await expect(page.locator("text=Step 3 of 16").first()).toBeVisible();
+    await expect(counter).toHaveAttribute("data-current", "3");
 
     // Progress bar should exist
     await expect(page.locator('[role="progressbar"]')).toBeVisible();
@@ -476,13 +475,13 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Now at accommodation step - verify we can go back
-    await expect(page.locator("text=accommodation").first()).toBeVisible();
+    await expectStep(page, STEP.accommodationCategory);
 
     // Click back button
     await page.getByRole("button", { name: BUTTON_REGEX.back }).click();
 
     // Should be back at days step
-    await expect(page.locator("text=days").first()).toBeVisible();
+    await expectStep(page, STEP.days);
 
     // Value should be preserved
     const daysInput = page.locator('input[type="number"]').first();
@@ -493,7 +492,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
 
     // Step 1 - stats should not be visible yet
-    await expect(page.locator("text=CO2 footprint").first()).not.toBeVisible();
+    await expect(page.getByTestId("stat-co2")).toHaveCount(0);
 
     // Fill participant info and continue
     await page.locator('input[id="firstName"]').fill("Stats");
@@ -512,8 +511,8 @@ test.describe("Questionnaire Form E2E Tests", () => {
       "0.0",
     );
     await expect(page.locator('[data-testid="stat-trees"]')).toBeVisible();
-    // Should show 0.0 kg initially
-    await expect(page.locator("text=/0\\.0.*kg/i").first()).toBeVisible();
+    // Should show 0.0 kg initially (numeric attribute, no copy search)
+    await expect(page.getByTestId("stat-co2")).toBeVisible();
   });
 
   test("should handle car passengers validation", async ({ page }) => {
@@ -606,9 +605,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Car type (no impact modal for carKm, modal only appears after carPassengers)
-    await expect(page.locator("text=type of car").first()).toBeVisible({
-      timeout: 3000,
-    });
+    await expectStep(page, STEP.carType);
     const electricBtn = page.getByRole("button", {
       name: OPTION_REGEX.electric,
     });
@@ -686,9 +683,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
 
     // Gender step - select gender
-    await expect(page.locator("text=gender").first()).toBeVisible({
-      timeout: 3000,
-    });
+    await expectStep(page, STEP.gender);
     await page.getByRole("button", { name: "Male", exact: true }).click();
 
     // Now expect and click the complete button to submit and show summary
@@ -700,14 +695,20 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
     // Should show breakdown labels, including the public Project Shared Travel
     // contribution seeded by the unauthenticated fixture.
-    await expect(page.locator("text=Your travel").first()).toBeVisible();
+    await expect(page.getByTestId("summary-participant-travel")).toBeVisible();
     // Text-free: shared-travel metric with exact computed value (reword-proof attribute).
     await expect(
       page.locator('[data-testid="shared-travel-metric"]'),
     ).toHaveAttribute("data-co2-kg", "5.3");
 
-    // Should show CO2 values (numbers with "kg CO₂")
-    const co2Values = await page.locator("text=/\\d+\\.\\d+.*kg.*CO₂/i").all();
+    // Should show CO2 values as numeric attributes (no copy search).
+    const co2Values = await page
+      .getByTestId("summary-panel")
+      .locator("[data-co2-kg]")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-co2-kg")));
     expect(co2Values.length).toBeGreaterThan(0);
+    for (const value of co2Values) {
+      expect(value).toMatch(/^\d+\.\d+$/);
+    }
   });
 });

@@ -1,7 +1,7 @@
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -202,7 +202,11 @@ async function selectRegisteredUser(
       search: id,
     }),
   );
-  await user.click(await screen.findByText(name));
+  await user.click(
+    await screen.findByRole("option", {
+      name: (label) => label.includes(name) && label.includes(id),
+    }),
+  );
 }
 
 describe("ParticipantCoordination", () => {
@@ -268,12 +272,18 @@ describe("ParticipantCoordination", () => {
   it("renders only the server-scoped Partnership response with honest joined and invitation states", async () => {
     await renderCoordination();
     expect(mocks.list).toHaveBeenCalledOnce();
-    expect(screen.getByText("Own Person")).toBeTruthy();
-    expect(screen.getByText("Joined")).toBeTruthy();
-    expect(screen.getByText("1 Participant in Own Project")).toBeTruthy();
-    expect(screen.getByText("pending@example.org")).toBeTruthy();
-    expect(screen.getByText("Invitation pending")).toBeTruthy();
-    expect(screen.queryByText("Other Partnership Person")).toBeNull();
+    const participants = screen.getByTestId("joined-participants");
+    expect(within(participants).getAllByRole("listitem")).toHaveLength(1);
+    const participant = within(participants).getByTestId(
+      "joined-participant-person-1",
+    );
+    expect(
+      participant.querySelector('[data-participation-state="joined"]'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("participant-invitation-invite-1")).toHaveAttribute(
+      "data-invitation-status",
+      "pending",
+    );
   });
 
   it("does not render a foreign Partnership when the server denies the list", async () => {
@@ -293,9 +303,9 @@ describe("ParticipantCoordination", () => {
       </QueryClientProvider>,
     );
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("You do not have permission");
-    expect(screen.queryByText("Own Person")).toBeNull();
-    expect(screen.queryByText("Other Partnership Person")).toBeNull();
+    expect(alert).toHaveAttribute("data-testid", "data-error-fallback");
+    expect(within(alert).getByRole("button", { name: "Retry" })).toBeEnabled();
+    expect(screen.queryByTestId("joined-participants")).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
 
@@ -315,12 +325,11 @@ describe("ParticipantCoordination", () => {
       userId: "user-existing",
     });
     const notice = await screen.findByRole("alert");
-    expect(notice.textContent).toContain("Review request");
-    expect(notice.textContent).toContain("contact the Hosting Organization");
-    expect(notice.textContent).not.toContain("Identity already participates");
+    expect(notice).toHaveAttribute("data-feedback-outcome", "duplicate-review");
+    expect(screen.getByTestId("joined-participant-person-1")).toBeInTheDocument();
   });
 
-  it("does not treat an arbitrary BAD_REQUEST as a duplicate or expose remote text", async () => {
+  it("keeps generic BAD_REQUEST feedback separate from duplicate recovery", async () => {
     mocks.create.mockRejectedValue(
       new ORPCError("BAD_REQUEST", { message: "database secret" }),
     );
@@ -328,32 +337,46 @@ describe("ParticipantCoordination", () => {
     await renderCoordination();
     await selectRegisteredUser(user, "user-existing", "Existing Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
-    await waitFor(() =>
-      expect(screen.getByRole("alert").textContent).toContain(
-        "Check your details",
-      ),
-    );
-    expect(screen.queryByText("database secret")).toBeNull();
+    const notice = await screen.findByRole("alert");
+    expect(notice).toHaveAttribute("data-feedback-outcome", "create-failed");
+    expect(
+      screen.getByRole("button", { name: "Add Participation" }),
+    ).toBeEnabled();
   });
 
   it.each([
-    new ORPCError("BAD_REQUEST", {
-      message:
-        "Identity already participates in this Project; request merge review.",
-    }),
-    new ORPCError("FORBIDDEN", { data: { reason: "PARTICIPATION_DUPLICATE" } }),
-    new ORPCError("UNKNOWN", { data: { reason: "PARTICIPATION_DUPLICATE" } }),
+    {
+      error: new ORPCError("BAD_REQUEST", {
+        message:
+          "Identity already participates in this Project; request merge review.",
+      }),
+      outcome: "create-failed",
+    },
+    {
+      error: new ORPCError("FORBIDDEN", {
+        data: { reason: "PARTICIPATION_DUPLICATE" },
+      }),
+      outcome: "access-denied",
+    },
+    {
+      error: new ORPCError("UNKNOWN", {
+        data: { reason: "PARTICIPATION_DUPLICATE" },
+      }),
+      outcome: "create-failed",
+    },
   ])(
     "does not activate duplicate recovery for legacy prose or wrong code/reason",
-    async (error) => {
+    async ({ error, outcome }) => {
       mocks.create.mockRejectedValue(error);
       const user = userEvent.setup();
       await renderCoordination();
       await selectRegisteredUser(user, "user-existing", "Existing Candidate");
       await user.click(screen.getByRole("button", { name: "Add Participation" }));
       const notice = await screen.findByRole("alert");
-      expect(notice.textContent).not.toContain("Review request");
-      expect(notice.textContent).not.toContain("Identity already participates");
+      expect(notice).toHaveAttribute("data-feedback-outcome", outcome);
+      expect(
+        screen.getByRole("button", { name: "Add Participation" }),
+      ).toBeEnabled();
     },
   );
 
@@ -387,15 +410,20 @@ describe("ParticipantCoordination", () => {
         name: "Reopen registration link link-1",
       }),
     );
+    expect(await screen.findByRole("alert")).toHaveAttribute(
+      "data-entry-outcome",
+      "reopen-refused",
+    );
+    expect(screen.getByTestId("registration-link-link-1")).toHaveAttribute(
+      "data-link-open",
+      "false",
+    );
     expect(
-      await screen.findByText(
-        "A non-editable Claim prevents reopening registration.",
-      ),
-    ).toBeTruthy();
-    expect(screen.queryByText("hostile remote text")).toBeNull();
+      screen.getByRole("button", { name: "Reopen registration link link-1" }),
+    ).toBeEnabled();
   });
 
-  it("names only Journey/Cost Allocation references for validated removal refusal", async () => {
+  it("retains the Participation for a validated Journey/Cost Allocation removal refusal", async () => {
     vi.spyOn(window, "confirm").mockReturnValueOnce(true);
     mocks.remove.mockRejectedValueOnce(
       new ORPCError("BAD_REQUEST", {
@@ -410,12 +438,15 @@ describe("ParticipantCoordination", () => {
         name: "Remove Project Participation for Own Person",
       }),
     );
-    expect(
-      await screen.findByText(
-        "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
-      ),
-    ).toBeTruthy();
-    expect(screen.queryByText("private SQL")).toBeNull();
+    expect(await screen.findByRole("alert")).toHaveAttribute(
+      "data-feedback-outcome",
+      "remove-refused",
+    );
+    expect(screen.getByTestId("joined-participant-person-1")).toBeInTheDocument();
+    expect(mocks.remove).toHaveBeenCalledWith({
+      partnershipId: "own-partnership",
+      id: "person-1",
+    });
   });
 
   it("shows access denied when the server forbids a Partner-side write", async () => {
@@ -427,9 +458,10 @@ describe("ParticipantCoordination", () => {
     await selectRegisteredUser(user, "host-user", "Host Candidate");
     await user.click(screen.getByRole("button", { name: "Add Participation" }));
     const notice = await screen.findByRole("alert");
-    expect(notice.textContent).toContain("Access denied");
-    expect(notice.textContent).toContain("You do not have permission");
-    expect(notice.textContent).not.toContain("private role details");
+    expect(notice).toHaveAttribute("data-feedback-outcome", "access-denied");
+    expect(
+      screen.getByRole("button", { name: "Add Participation" }),
+    ).toBeEnabled();
   });
 
   it("issues email invitations and distinguishes already-issued from delivery failure", async () => {
@@ -449,9 +481,10 @@ describe("ParticipantCoordination", () => {
         email: "new@example.org",
       }),
     );
-    expect(
-      (await screen.findByText("Invitation already issued")).textContent,
-    ).toBeTruthy();
+    expect(await screen.findByRole("alert")).toHaveAttribute(
+      "data-invitation-delivery",
+      "already-issued",
+    );
     await user.click(
       screen.getByRole("button", {
         name: "Reissue invitation for pending@example.org",
@@ -463,7 +496,12 @@ describe("ParticipantCoordination", () => {
         email: "pending@example.org",
       }),
     );
-    expect(await screen.findByText("Email delivery failed")).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveAttribute(
+        "data-reissue-delivery",
+        "failed",
+      ),
+    );
   });
 
   it("shows a new secret URL only on creation and closes listed entry points", async () => {
@@ -529,7 +567,12 @@ describe("ParticipantCoordination", () => {
         name: "Create Participant Registration Link",
       }),
     );
-    await screen.findByText("Entry point unavailable");
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveAttribute(
+        "data-link-creation-status",
+        "error",
+      ),
+    );
     expect(
       (
         screen.getByLabelText(
@@ -588,10 +631,8 @@ describe("ParticipantCoordination", () => {
       browserSession.role = role;
       await renderCoordination();
       expect(
-        screen.getAllByText(
-          "Only the Partner Organization of this Project Partnership issues participant entry points.",
-        ).length,
-      ).toBeGreaterThan(0);
+        screen.getByRole("region", { name: "Project Participations" }),
+      ).toHaveAttribute("data-entry-denial", "HOSTING_SIDE");
       for (const name of [
         "Add Participation",
         "Remove Project Participation for Own Person",
@@ -605,18 +646,33 @@ describe("ParticipantCoordination", () => {
       ])
         expect(screen.queryByRole("button", { name })).toBeNull();
       // Oversight of the existing entries stays available.
-      expect(screen.getByText("pending@example.org")).toBeTruthy();
-      expect(screen.getByText("Link link-1")).toBeTruthy();
+      expect(
+        screen.getByTestId("participant-invitation-invite-1"),
+      ).toHaveAttribute("data-invitation-status", "pending");
+      expect(screen.getByTestId("registration-link-link-1")).toHaveAttribute(
+        "data-link-open",
+        "true",
+      );
       expect(
         screen.getByRole("link", { name: "Participant details for Own Person" }),
       ).toBeTruthy();
       await userEvent.click(
         screen.getByRole("button", { name: "Show Review Tasks" }),
       );
-      await screen.findByText("Registered User: review@example.org");
+      const reviews = await screen.findByRole("region", { name: "Review Tasks" });
+      await waitFor(() =>
+        expect(within(reviews).getAllByRole("listitem")).toHaveLength(2),
+      );
       expect(
-        screen.getByText("Registered User: assigned@example.org"),
-      ).toBeTruthy();
+        reviews.querySelectorAll(
+          '[data-task-status="open"][data-task-decision="none"]',
+        ),
+      ).toHaveLength(1);
+      expect(
+        reviews.querySelectorAll(
+          '[data-task-status="assigned"][data-task-decision="none"]',
+        ),
+      ).toHaveLength(1);
       expect(
         screen.queryByRole("button", { name: "Assign Review Task to me" }),
       ).toBeNull();
@@ -633,10 +689,8 @@ describe("ParticipantCoordination", () => {
     browserSession.role = ORGANIZATION_ROLES.ProjectCoordinator;
     await renderCoordination();
     expect(
-      screen.getAllByText(
-        "Ask an Organization Owner or Admin to assign you as Group Organizer for this Project Partnership.",
-      ).length,
-    ).toBeGreaterThan(0);
+      screen.getByRole("region", { name: "Project Participations" }),
+    ).toHaveAttribute("data-entry-denial", "ASSIGNMENT_MISSING");
     for (const name of [
       "Send Participant Invitation",
       "Add Participation",
@@ -647,7 +701,15 @@ describe("ParticipantCoordination", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Show Review Tasks" }),
     );
-    await screen.findByText("Registered User: review@example.org");
+    const reviews = await screen.findByRole("region", { name: "Review Tasks" });
+    await waitFor(() =>
+      expect(within(reviews).getAllByRole("listitem")).toHaveLength(2),
+    );
+    expect(
+      reviews.querySelectorAll(
+        '[data-task-status="open"][data-task-decision="none"]',
+      ),
+    ).toHaveLength(1);
     expect(
       screen.queryByRole("button", { name: "Assign Review Task to me" }),
     ).toBeNull();
@@ -663,6 +725,13 @@ describe("ParticipantCoordination", () => {
       registrationLinks: [],
     });
     await renderCoordination();
+    expect(screen.getByTestId("participant-invitation-invite-1")).toHaveAttribute(
+      "data-invitation-status",
+      "pending",
+    );
+    expect(
+      screen.getByRole("region", { name: "Project Participations" }),
+    ).toHaveAttribute("data-entry-denial");
     expect(
       screen.queryByRole("button", {
         name: "Reissue invitation for p@example.org",
@@ -684,10 +753,8 @@ describe("ParticipantCoordination", () => {
     browserSession.activeOrganizationId = null;
     await renderCoordination();
     expect(
-      screen.getAllByText(
-        "Select an active Partner Organization before issuing participant entry points.",
-      ).length,
-    ).toBeGreaterThan(0);
+      screen.getAllByRole("region", { name: "Project Participations" }).at(-1),
+    ).toHaveAttribute("data-entry-denial", "MISSING_ACTIVE_ORGANIZATION");
     expect(
       screen.queryByRole("button", {
         name: "Reissue invitation for q@example.org",

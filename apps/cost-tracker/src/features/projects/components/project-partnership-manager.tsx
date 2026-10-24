@@ -45,7 +45,9 @@ export function ProjectPartnershipManager({
   );
   const [projectId, setProjectId] = useState("");
   const [organizationId, setOrganizationId] = useState("");
-  const [feedback, setFeedback] = useState<string>();
+  const [feedback, setFeedback] = useState<
+    { message: string; status: "success" | "error" } | undefined
+  >();
 
   const invalidateProjectData = async () => {
     await Promise.all([
@@ -68,19 +70,29 @@ export function ProjectPartnershipManager({
     mutationFn: () =>
       orpc.projectPartnerships.assign({ projectId, organizationId }),
     onSuccess: async () => {
-      setFeedback("Project Partnership assigned.");
+      setFeedback({
+        message: "Project Partnership assigned.",
+        status: "success",
+      });
       setOrganizationId("");
       await invalidateProjectData();
     },
-    onError: (error) => setFeedback(mutationMessage(error)),
+    onError: (error) => {
+      setFeedback({ message: mutationMessage(error), status: "error" });
+    },
   });
   const removeMutation = useMutation({
     mutationFn: (id: string) => orpc.projectPartnerships.remove({ id }),
     onSuccess: async () => {
-      setFeedback("Project Partnership removed.");
+      setFeedback({
+        message: "Project Partnership removed.",
+        status: "success",
+      });
       await invalidateProjectData();
     },
-    onError: (error) => setFeedback(mutationMessage(error)),
+    onError: (error) => {
+      setFeedback({ message: mutationMessage(error), status: "error" });
+    },
   });
 
   return (
@@ -137,8 +149,13 @@ export function ProjectPartnershipManager({
               </Button>
             </form>
             {feedback && (
-              <p aria-live="polite" className="mt-4 text-sm">
-                {feedback}
+              <p
+                aria-live="polite"
+                className="mt-4 text-sm"
+                data-testid="partnership-feedback"
+                data-state={feedback.status}
+              >
+                {feedback.message}
               </p>
             )}
           </CardContent>
@@ -150,7 +167,10 @@ export function ProjectPartnershipManager({
           Current Project Partnerships
         </h2>
         {partnerships.length === 0 ? (
-          <p className="rounded-xl border p-8 text-center text-muted-foreground">
+          <p
+            data-testid="partnerships-empty"
+            className="rounded-xl border p-8 text-center text-muted-foreground"
+          >
             No Partner Organizations are assigned to hosted Projects.
           </p>
         ) : (

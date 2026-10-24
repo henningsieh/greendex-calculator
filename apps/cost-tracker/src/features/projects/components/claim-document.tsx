@@ -46,7 +46,13 @@ export function ClaimBand({
         </p>
         <CardTitle as="h2">{title}</CardTitle>
         {status && (
-          <Badge variant="claim-status">{claimStatusLabel(status)}</Badge>
+          <Badge
+            variant="claim-status"
+            data-testid="claim-status"
+            data-status={status}
+          >
+            {claimStatusLabel(status)}
+          </Badge>
         )}
       </Card>
     </header>
@@ -61,15 +67,27 @@ export function PayoutAccountLines({
   return (
     <dl className="grid min-w-0 grid-cols-[130px_minmax(0,1fr)] gap-x-5 gap-y-2 max-sm:grid-cols-1">
       <dt className="text-muted-foreground">Account holder</dt>
-      <dd className="wrap-anywhere">{account.accountHolder}</dd>
+      <dd className="wrap-anywhere" data-testid="payout-account-holder">
+        {account.accountHolder}
+      </dd>
       <dt className="text-muted-foreground">IBAN</dt>
-      <dd className="font-mono wrap-anywhere tabular-nums select-all">
+      <dd
+        className="font-mono wrap-anywhere tabular-nums select-all"
+        data-testid="payout-account-iban"
+        data-iban={account.iban}
+      >
         {account.iban}
       </dd>
       {account.bic && (
         <>
           <dt className="text-muted-foreground">BIC</dt>
-          <dd className="font-mono wrap-anywhere">{account.bic}</dd>
+          <dd
+            data-testid="payout-bic"
+            data-bic={account.bic}
+            className="font-mono wrap-anywhere"
+          >
+            {account.bic}
+          </dd>
         </>
       )}
     </dl>
@@ -129,7 +147,12 @@ export function ClaimCostTable({
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.id} id={`cost-${row.id}`}>
+          <TableRow
+            key={row.id}
+            id={`cost-${row.id}`}
+            data-transport-profile={row.transportProfile}
+            data-amount-eur={row.amountEur}
+          >
             <TableCell variant="accounting">{row.transportProfile}</TableCell>
             <TableCell variant="amount">{row.amountEur}</TableCell>
             <TableCell variant="accounting">

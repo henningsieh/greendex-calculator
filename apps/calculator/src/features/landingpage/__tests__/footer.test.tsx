@@ -29,14 +29,13 @@ vi.mock("@/lib/i18n/routing", () => ({
   ),
 }));
 
+const translate = vi.fn((key: string) => `translated:${key}`);
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
-  vi.mocked(getTranslations).mockResolvedValue(
-    ((key: string) => `translated:${key}`) as Awaited<
-      ReturnType<typeof getTranslations>
-    >,
-  );
+  vi.mocked(getTranslations).mockResolvedValue(((key: string) =>
+    translate(key)) as Awaited<ReturnType<typeof getTranslations>>);
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -66,7 +65,8 @@ describe("prerenderable footer", () => {
         SIGNUP_PATH,
       ]);
       for (const link of links) expect(link.dataset.locale).toBe(locale);
-      expect(container.textContent).toContain("translated:footer.copyright");
+      expect(container.querySelector("footer")).not.toBeNull();
+      expect(translate).toHaveBeenCalledWith("footer.copyright");
     },
   );
 

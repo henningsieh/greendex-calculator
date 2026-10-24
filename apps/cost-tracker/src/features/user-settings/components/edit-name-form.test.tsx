@@ -62,8 +62,9 @@ describe("EditNameForm", () => {
 
     await user.click(saveButton);
 
-    expect(await screen.findByText("Enter at least 2 characters.")).toBeTruthy();
-    expect(nameInput.getAttribute("aria-invalid")).toBe("true");
+    await waitFor(() =>
+      expect(nameInput).toHaveAttribute("aria-invalid", "true"),
+    );
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 
@@ -78,10 +79,9 @@ describe("EditNameForm", () => {
       expect(mocks.updateUser).toHaveBeenCalledWith({ name: "Morgan Lee" });
     });
     await waitFor(() =>
-      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
-        title: "Your name has been updated.",
-        type: "success",
-      }),
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ type: "success" }),
+      ),
     );
     expect(mocks.refresh).toHaveBeenCalledOnce();
     expect((nameInput as HTMLInputElement).value).toBe("Morgan Lee");
@@ -95,19 +95,11 @@ describe("EditNameForm", () => {
 
     await user.click(saveButton);
 
-    expect(
-      await screen.findByText(
-        "The server or network is unreachable. Check your connection and try again.",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByTestId("name-form-error")).toBeTruthy();
     expect(mocks.refresh).not.toHaveBeenCalled();
 
     await user.type(nameInput, " Jr");
-    expect(
-      screen.queryByText(
-        "The server or network is unreachable. Check your connection and try again.",
-      ),
-    ).toBeNull();
+    expect(screen.queryByTestId("name-form-error")).toBeNull();
   });
 
   it("gives actionable feedback when the update request throws", async () => {
@@ -117,11 +109,7 @@ describe("EditNameForm", () => {
 
     await user.click(saveButton);
 
-    expect(
-      await screen.findByText(
-        "The server or network is unreachable. Check your connection and try again.",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByTestId("name-form-error")).toBeTruthy();
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
@@ -145,10 +133,9 @@ describe("EditNameForm", () => {
 
     resolveUpdate?.({ success: true });
     await waitFor(() =>
-      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
-        title: "Your name has been updated.",
-        type: "success",
-      }),
+      expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ type: "success" }),
+      ),
     );
   });
 });

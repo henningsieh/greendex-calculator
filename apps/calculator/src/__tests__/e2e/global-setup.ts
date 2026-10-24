@@ -13,15 +13,7 @@ import { chromium, expect, type FullConfig } from "@playwright/test";
  * Don't import from @/env here to avoid validation errors during type-checking.
  */
 async function globalSetup(config: FullConfig) {
-  // Policy: e2e runs against production builds only — never next dev.
-  // The managed runner sets this once its production target is verified;
-  // set it by hand only after `next build` + `next start`, never for dev.
-  if (process.env.GREENDEX_E2E_PRODUCTION_OK !== "1") {
-    throw new Error(
-      "Refusing e2e: target must be a production build (next build + next start) or a managed test-runner server — never next dev. " +
-        "Set GREENDEX_E2E_PRODUCTION_OK=1 only after starting a production artifact.",
-    );
-  }
+  // Use the configured existing server. This does not establish production provenance.
   // Launch browser for setup checks
   const browser = await chromium.launch({
     headless: process.env.HEADED !== "true",

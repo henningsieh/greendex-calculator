@@ -23,7 +23,10 @@ export default async function PartnerOrganizationsPage() {
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
           Partner Organizations
         </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">
+        <p
+          className="mt-4 text-lg/8 text-muted-foreground"
+          data-testid="hosting-staff-note"
+        >
           Partner Organization management is available to Hosting Organization
           staff. Coordinators work from their assigned Projects.
         </p>

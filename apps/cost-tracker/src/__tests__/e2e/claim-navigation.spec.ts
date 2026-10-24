@@ -374,7 +374,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       p.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
     await expect(
-      p.getByRole("link", { name: projectName, exact: true }),
+      p.locator(
+        `a[href="/projects/${ids.project}"], a[href^="/projects/${ids.project}?"]`,
+      ),
     ).toBeVisible();
     await p.goBack();
     await expect(p).toHaveURL(claimURL);
@@ -395,7 +397,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       p.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
     await expect(
-      p.getByRole("link", { name: projectName, exact: true }),
+      p.locator(
+        `a[href="/projects/${ids.project}"], a[href^="/projects/${ids.project}?"]`,
+      ),
     ).toBeVisible();
     await p.goto(claimURL);
     await submissionState(p);
@@ -421,9 +425,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
         .locator('[data-history-event="submitted"]'),
     ).toBeVisible();
     await h.goto("/claims/review");
-    await expect(
-      h.getByRole("link", { name: new RegExp(projectName) }),
-    ).toBeVisible();
+    await expect(h.locator(`a[href="${reviewURL}"]`)).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(reviewURL);
     await expect(
@@ -439,9 +441,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     expect((await counts())[5]).toBe(1);
     await h.goForward();
     await expect(h).toHaveURL("/claims/review");
-    await expect(
-      h.getByRole("link", { name: new RegExp(projectName) }),
-    ).toBeVisible();
+    await expect(h.locator(`a[href="${reviewURL}"]`)).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(reviewURL);
     await expect(
@@ -463,12 +463,8 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
   }) => {
     const h = await pageFor(browser, "H", baseURL!);
     await h.goto(`/projects/${ids.project}`);
-    await expect(
-      h.getByRole("heading", { name: projectName, exact: true }),
-    ).toBeVisible();
-    const readiness = h
-      .getByRole("listitem")
-      .filter({ hasText: `CT ${suffix} Partner` });
+    await expect(h.getByTestId("project-workspace")).toBeVisible();
+    const readiness = h.locator(`[data-partnership-id="${ids.partnership}"]`);
     await expect(
       readiness.locator('[data-claim-status="submitted"]'),
     ).toBeVisible();
@@ -476,7 +472,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       .getByRole("link", { name: "Review submitted Claims", exact: true })
       .click();
     await expect(h).toHaveURL("/claims/review");
-    const queued = h.getByRole("link", { name: new RegExp(projectName) });
+    const queued = h.locator(`a[href="${reviewURL}"]`);
     await expect(queued).toBeVisible();
     await queued.click();
     await expect(h).toHaveURL(reviewURL);
@@ -521,9 +517,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(h.locator('[data-testid="review-queue-empty"]')).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(`/projects/${ids.project}`);
-    await expect(
-      h.getByRole("heading", { name: projectName, exact: true }),
-    ).toBeVisible();
+    await expect(h.getByTestId("project-workspace")).toBeVisible();
     await expect(
       readiness.locator('[data-claim-status="approved"]'),
     ).toBeVisible();

@@ -35,9 +35,6 @@ Migration `0013_remove_project_activity_compatibility_view` dropped the temporar
 `project_activity_compatibility_view_write()` function created in `0010`. The
 canonical `project_shared_travel_leg` table and its
 `project_shared_transport_emission_profile` enum are the sole persistence
-contract. The historical cutover suite
-(`project-shared-travel-legs-migration.integration.test.ts`) remains the only
-code that references legacy `activity_type`/`activity_date`, and the cleanup
-suite (`project-shared-travel-legs-cleanup.integration.test.ts`) proves the
-canonical table and procedures still work after removal. Application code must
-not reintroduce legacy `project_activity` aliases.
+contract. Historical migration/cleanup suites that provisioned disposable
+databases are removed. Existing-database procedure tests retain application
+coverage. Application code must not reintroduce legacy `project_activity` aliases.

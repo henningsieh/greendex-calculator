@@ -81,7 +81,11 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
       </h1>
       {organizationName ? (
         <>
-          <p className="mt-4">
+          <p
+            className="mt-4"
+            data-testid="invitation-preview"
+            data-organization-name={organizationName}
+          >
             You have been invited to join {organizationName}.
           </p>
           <Button

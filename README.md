@@ -212,9 +212,10 @@ Run these from the repository root:
 | `pnpm run lint`                                    | Run Oxlint and agent-instruction drift checks |
 | `pnpm run format`                                  | Format workspaces with Oxfmt                  |
 | `pnpm run check:agent-instructions`                | Validate scoped agent instructions            |
-| `pnpm test` / `pnpm run test:run`                  | Run all non-browser checks uncached           |
-| `pnpm --filter @greendex/calculator test:coverage` | Run calculator coverage                       |
-| `pnpm run test:e2e`                                | Run Playwright tests                          |
+| `pnpm run test:unit` | Server-free units, components and policies |
+| `pnpm run test:integration` | Existing database, HTTP, real mail and Garage |
+| `pnpm run test:e2e` | Both app browser suites and cross-app merge |
+| `pnpm run test:full` | All three modes sequentially |
 | `pnpm run db:generate`                             | Generate Drizzle migrations                   |
 | `pnpm run db:migrate`                              | Apply Drizzle migrations                      |
 | `pnpm run db:seed`                                 | Seed local development data                   |
@@ -354,34 +355,32 @@ oRPC routing fix: an authenticated user can open an existing internal Project
 page, and a public participation page loads for an existing Project instead of
 returning 404.
 
-`pnpm test` runs repository policies, shared-package tests, both apps' Vitest
-suites, live email workflows and development Garage verification directly,
-without Turbo caching or Playwright. Pure suites run independently of service
-prerequisites; service failures block dependent groups but not independent checks.
+The root exposes exactly four test commands, implemented in `scripts/test.ts`.
+`test:unit` retains the package/app selection with two Vitest workers and includes
+repository policy/tooling and Documentation tests. `test:integration` runs the
+complementary database/procedure tests, connection and HTTP checks, full real-mail
+journeys, and development Garage checks serially. `test:e2e` runs both ordinary
+Playwright suites and the merge suite with one worker and zero retries.
+`test:full` runs all three modes sequentially and fails if any mode fails.
 
-Each pure app group uses at most two file workers. Both apps can run their pure
-groups concurrently, so up to four app file workers can overlap with repository
-and package checks. Each file retains Vitest isolation because pure suites also
-use module mocks, environment overrides, and fake timers. Database and live
-groups retain serial file execution. Standalone app commands retain their
-existing configuration. The runner does not enable a persistent transform cache.
+Configure the shared `packages/database/.env` and each app's ignored `.env`.
+Only `greendex_development` at `188.245.144.137:5489` and existing loopback apps
+are accepted. Missing servers or credentials fail rather than skip. The runner
+never builds, starts servers, migrates, seeds or provisions databases. The user
+owns starting the existing apps. Browser checks accept dev or production servers
+without an attestation flag and make no production-provenance claim. Final
+production verification requires the user to supply the reviewed production builds.
 
-The root runner creates one uniquely owned database, migrates and seeds it once,
-and injects that same database and `TEST_RUN_ID` into dedicated managed app
-servers and live suites. It never attaches to ordinary development servers.
-Calculator's migration-chain and individual migration-contract suites, plus
-`development-seed.integration.test.ts`, are explicit exceptions: they execute on
-separate disposable databases because they must prove migrations or seed/reset
-behavior from zero. The standalone lifecycle and email commands retain their own
-isolated setup; aggregate execution reuses the root-owned setup instead.
+Live mail uses the correlated dedicated mailbox and retains messages. Cleanup
+removes only run-owned rows, sessions and Garage objects. Existing apps and the
+shared database are retained. Console summaries report mode outcomes and timings
+without a custom evidence framework. The extra-build instant suite and
+provisioning migration/seed/lifecycle tests are removed. The canonical seed used
+by development remains available outside tests.
 
-Configure the shared database and each app's ignored local environment files,
-including live mailbox and development Garage settings, before running. Missing
-prerequisites, skipped required tests, failed checks and cleanup failures produce
-a nonzero exit. Sanitized group/test counts, failures, run identity, commit,
-seed-version hash and cleanup results are saved in `.turbo/nonbrowser-tests/`.
-The root owns server shutdown and database disposal even after failed checks.
-Playwright remains available separately through `pnpm run test:e2e`.
+For focused work use `pnpm --dir <workspace> exec vitest run <file>` or
+`pnpm --dir <app> exec playwright test --config=<config> <file> --workers=1 --retries=0`.
+There are no workspace test scripts or root aliases.
 
 ---
 

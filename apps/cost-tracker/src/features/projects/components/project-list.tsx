@@ -223,7 +223,12 @@ export function ProjectList() {
       );
     }
     return (
-      <Empty variant="outlined" aria-label="Project list" className="mt-10">
+      <Empty
+        data-testid="projects-unavailable"
+        variant="outlined"
+        aria-label="Project list"
+        className="mt-10"
+      >
         <EmptyHeader>
           <EmptyTitle>No Projects available</EmptyTitle>
           <EmptyDescription>
@@ -430,6 +435,8 @@ function ResolvedProjectList({
         header: "Submission window",
         cell: ({ row }) => (
           <Badge
+            data-testid={`project-window-${row.original.id}`}
+            data-state={row.original.costSubmissionWindowOpen ? "open" : "closed"}
             variant={
               row.original.costSubmissionWindowOpen ? "default" : "secondary"
             }
@@ -530,6 +537,9 @@ function ResolvedProjectList({
       aria-label="Project list"
       className="mt-10 space-y-8"
       data-hydrated={isHydrated ? "true" : undefined}
+      data-testid="project-list"
+      data-project-count={whole.projectCount}
+      data-filtered-project-count={filtered.projectCount}
     >
       <div
         className="flex flex-wrap gap-2"

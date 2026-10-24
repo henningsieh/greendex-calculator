@@ -43,18 +43,47 @@ function createFeedback(error: unknown) {
       title: "Review request",
       description:
         "This Registered User may already participate in this Project. Open Review Tasks to review the duplicate identity, then contact the Hosting Organization to request a merge review if needed. No new Project Participation was added.",
+      outcome: "duplicate-review" as const,
     };
   }
   if (error instanceof ORPCError && error.code === "FORBIDDEN")
     return {
       title: "Access denied",
       description: getORPCRequestErrorMessage(error).text,
+      outcome: "access-denied" as const,
     };
   return {
     title: "Unable to add Participation",
     description: getORPCRequestErrorMessage(error).text,
+    outcome: "create-failed" as const,
   };
 }
+
+function removeRefusalFeedback(error: unknown) {
+  const refusals: Record<string, string> = {
+    PARTICIPATION_REMOVE_LOCKED:
+      "A locked Claim prevents removal of this Project Participation.",
+    PARTICIPATION_JOURNEY_OR_COST_REFERENCED:
+      "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
+    PARTICIPATION_REFERENCED:
+      "This Project Participation is referenced by other records. Request review instead.",
+  };
+  return {
+    title: "Unable to remove Project Participation",
+    description:
+      error instanceof ORPCError && error.code === "BAD_REQUEST"
+        ? (refusals[getSafeErrorSituation(error)?.reason ?? ""] ??
+          getORPCRequestErrorMessage(error).text)
+        : getORPCRequestErrorMessage(error).text,
+    outcome: "remove-refused" as const,
+  };
+}
+
+const reopenRefusedFeedback = {
+  title: "Registration link cannot be reopened",
+  description: "A non-editable Claim prevents reopening registration.",
+  outcome: "reopen-refused",
+} as const;
 
 type ReviewTask = Outputs["duplicateReviews"]["list"][number];
 type ReviewDecision = NonNullable<ReviewTask["decision"]>;
@@ -415,16 +444,16 @@ export function ParticipantCoordination({
     id: string;
     url: string;
   }>();
-  const [entryFeedback, setEntryFeedback] = useState<{
-    title: string;
-    description: string;
-  }>();
+  const [entryFeedback, setEntryFeedback] = useState<
+    { title: string; description: string } | typeof reopenRefusedFeedback
+  >();
   const searchOnboarded = (search: string) =>
     orpc.participations.searchOnboarded({ partnershipId, search });
-  const [feedback, setFeedback] = useState<{
-    title: string;
-    description: string;
-  }>();
+  const [feedback, setFeedback] = useState<
+    | ReturnType<typeof createFeedback>
+    | ReturnType<typeof removeRefusalFeedback>
+    | { title: string; description: string }
+  >();
   const refresh = async () => {
     await queryClient.invalidateQueries({
       queryKey: orpcQuery.participations.listPartnership.queryKey({
@@ -538,10 +567,7 @@ export function ParticipantCoordination({
         error instanceof ORPCError &&
         getSafeErrorSituation(error)?.reason === "REGISTRATION_CLAIM_LOCKED"
       ) {
-        setEntryFeedback({
-          title: "Registration link cannot be reopened",
-          description: "A non-editable Claim prevents reopening registration.",
-        });
+        setEntryFeedback(reopenRefusedFeedback);
       } else entryError(error);
     },
   });
@@ -555,22 +581,7 @@ export function ParticipantCoordination({
       await refresh();
     },
     onError: (error) => {
-      const refusals: Record<string, string> = {
-        PARTICIPATION_REMOVE_LOCKED:
-          "A locked Claim prevents removal of this Project Participation.",
-        PARTICIPATION_JOURNEY_OR_COST_REFERENCED:
-          "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
-        PARTICIPATION_REFERENCED:
-          "This Project Participation is referenced by other records. Request review instead.",
-      };
-      setFeedback({
-        title: "Unable to remove Project Participation",
-        description:
-          error instanceof ORPCError && error.code === "BAD_REQUEST"
-            ? (refusals[getSafeErrorSituation(error)?.reason ?? ""] ??
-              getORPCRequestErrorMessage(error).text)
-            : getORPCRequestErrorMessage(error).text,
-      });
+      setFeedback(removeRefusalFeedback(error));
     },
   });
   // Hosts retain read-only oversight; the shared scope gate hides Partner writes.
@@ -591,7 +602,11 @@ export function ParticipantCoordination({
   });
 
   return (
-    <section className="space-y-6" aria-label="Project Participations">
+    <section
+      className="space-y-6"
+      aria-label="Project Participations"
+      data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
+    >
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
       {entryAccess.permitted && (
         <Card>
@@ -628,7 +643,11 @@ export function ParticipantCoordination({
               </Button>
             </form>
             {feedback && (
-              <Alert>
+              <Alert
+                data-feedback-outcome={
+                  "outcome" in feedback ? feedback.outcome : undefined
+                }
+              >
                 <AlertTitle>{feedback.title}</AlertTitle>
                 <AlertDescription>{feedback.description}</AlertDescription>
               </Alert>
@@ -666,7 +685,9 @@ export function ParticipantCoordination({
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     <strong>{participant.displayName}</strong>
-                    <Badge variant="secondary">Joined</Badge>
+                    <Badge variant="secondary" data-participation-state="joined">
+                      Joined
+                    </Badge>
                   </div>
                   {participant.email && (
                     <p className="text-sm text-muted-foreground">
@@ -825,7 +846,14 @@ export function ParticipantCoordination({
             </>
           )}
           {entryFeedback && (
-            <Alert>
+            <Alert
+              data-invitation-delivery={issueInvitation.data?.delivery}
+              data-reissue-delivery={reissueInvitation.data?.delivery}
+              data-link-creation-status={createLink.status}
+              data-entry-outcome={
+                "outcome" in entryFeedback ? entryFeedback.outcome : undefined
+              }
+            >
               <AlertTitle>{entryFeedback.title}</AlertTitle>
               <AlertDescription>{entryFeedback.description}</AlertDescription>
             </Alert>
@@ -849,6 +877,8 @@ export function ParticipantCoordination({
                 <li
                   className="flex flex-wrap items-center gap-3 py-3"
                   key={invitation.invitationId}
+                  data-testid={`participant-invitation-${invitation.invitationId}`}
+                  data-invitation-status={invitation.status}
                 >
                   <span>{invitation.email}</span>
                   <Badge variant="secondary">

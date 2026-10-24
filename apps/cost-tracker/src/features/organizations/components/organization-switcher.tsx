@@ -110,7 +110,9 @@ export function OrganizationSwitcher({
         </DropdownMenuContent>
       </DropdownMenu>
       {failed ? (
-        <p role="alert">Could not switch Organization. Try again.</p>
+        <p role="alert" data-switch-status="failed">
+          Could not switch Organization. Try again.
+        </p>
       ) : null}
     </div>
   );

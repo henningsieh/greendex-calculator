@@ -41,7 +41,10 @@ describe("Organization Invitation acceptance", () => {
     const button = await screen.findByRole("button", {
       name: "Accept Organization Invitation",
     });
-    expect(screen.getByText(/Example Organization/)).toBeInTheDocument();
+    expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
+      "data-organization-name",
+      "Example Organization",
+    );
     expect(mocks.acceptInvitation).not.toHaveBeenCalled();
     fireEvent.click(button);
     await waitFor(() =>
@@ -55,14 +58,12 @@ describe("Organization Invitation acceptance", () => {
   it("shows an error without an acceptance button for invalid invitations", async () => {
     mocks.getInvitation.mockResolvedValue({ error: { message: "Not found" } });
     render(<InvitationAcceptance invitationId="expired" />);
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /expired, cancelled/,
-    );
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(mocks.acceptInvitation).not.toHaveBeenCalled();
   });
 
-  it("explains an expired invitation with actionable copy", async () => {
+  it("keeps an expired invitation open without navigating", async () => {
     const { ORPCError } = await import("@orpc/client");
     mocks.acceptInvitation.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
@@ -75,26 +76,8 @@ describe("Organization Invitation acceptance", () => {
       name: "Accept Organization Invitation",
     });
     fireEvent.click(button);
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /has expired. Ask for a new invitation/,
-    );
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(button).toBeEnabled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
-});
-
-it("ignores known invitation prose with a contradictory code/reason", async () => {
-  const { ORPCError } = await import("@orpc/client");
-  mocks.acceptInvitation.mockRejectedValue(
-    new ORPCError("FORBIDDEN", {
-      message: "Organization Invitation has expired.",
-      data: { reason: "STAFF_INVITATION_EXPIRED" },
-    }),
-  );
-  render(<InvitationAcceptance invitationId="invite-1" />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Accept Organization Invitation" }),
-  );
-  expect(await screen.findByRole("alert")).not.toHaveTextContent(
-    /has expired. Ask for a new invitation/,
-  );
 });

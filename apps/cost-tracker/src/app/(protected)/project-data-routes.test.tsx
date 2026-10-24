@@ -23,39 +23,57 @@ const mocks = vi.hoisted(() => ({
 const queryClient = { query: mocks.query };
 
 vi.mock("@/features/projects/components/project-list", () => ({
-  ProjectList: () => <p>Project list</p>,
+  ProjectList: () => <p data-testid="project-list">Project list</p>,
 }));
 vi.mock("@/features/projects/components/project-list-section", () => ({
-  ProjectListSection: () => <p>Project list section</p>,
+  ProjectListSection: () => (
+    <p data-testid="project-list-section">Project list section</p>
+  ),
 }));
 vi.mock("@/features/projects/components/project-partnership-section", () => ({
   ProjectPartnershipSection: ({ canAssign }: { canAssign: boolean }) => (
-    <p data-can-assign={canAssign}>Project Partnership manager</p>
+    <p data-can-assign={canAssign} data-testid="project-partnership-section">
+      Project Partnership manager
+    </p>
   ),
 }));
 vi.mock(
   "@/features/projects/components/partnership-participants-section",
   () => ({
-    PartnershipParticipantsSection: () => <p>Partnership participants section</p>,
+    PartnershipParticipantsSection: () => (
+      <p data-testid="partnership-participants-section">
+        Partnership participants section
+      </p>
+    ),
   }),
 );
 vi.mock("@/features/projects/components/hosted-participants-section", () => ({
-  HostedParticipantsSection: () => <p>Hosted participants section</p>,
+  HostedParticipantsSection: () => (
+    <p data-testid="hosted-participants-section">Hosted participants section</p>
+  ),
 }));
 vi.mock("@/features/projects/components/hosted-participant-report", () => ({
-  HostedParticipantReport: () => <p>Hosted participant report</p>,
+  HostedParticipantReport: () => (
+    <p data-testid="hosted-participant-report">Hosted participant report</p>
+  ),
 }));
 vi.mock("@/features/projects/components/project-workspace-section", () => ({
-  ProjectWorkspaceSection: () => <p>Project workspace section</p>,
+  ProjectWorkspaceSection: () => (
+    <p data-testid="project-workspace-section">Project workspace section</p>
+  ),
 }));
 vi.mock("@/features/projects/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: ({ canAssign }: { canAssign: boolean }) => (
-    <p data-can-assign={canAssign}>Project Partnership manager</p>
+    <p data-can-assign={canAssign} data-testid="project-partnership-manager">
+      Project Partnership manager
+    </p>
   ),
 }));
 vi.mock("@/features/projects/components/participant-coordination", () => ({
   ParticipantCoordination: ({ partnershipId }: { partnershipId: string }) => (
-    <p>Coordination for {partnershipId}</p>
+    <p data-partnership-id={partnershipId} data-testid="participant-coordination">
+      Coordination for {partnershipId}
+    </p>
   ),
 }));
 vi.mock("@/features/projects/components/project-workspace", () => ({
@@ -65,7 +83,15 @@ vi.mock("@/features/projects/components/project-workspace", () => ({
   }: {
     projectId: string;
     returnTo?: string;
-  }) => <p data-return-to={returnTo}>Project workspace: {projectId}</p>,
+  }) => (
+    <p
+      data-project-id={projectId}
+      data-return-to={returnTo}
+      data-testid="project-workspace"
+    >
+      Project workspace: {projectId}
+    </p>
+  ),
 }));
 vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
   ProjectDataErrorBoundary: ({
@@ -120,7 +146,7 @@ vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
 }));
 vi.mock("server-only", () => ({}));
-vi.mock("@/features/projects/assigned-partnerships.server", () => ({
+vi.mock("@/features/projects/procedures/assigned-partnerships", () => ({
   assignedPartnershipIds: vi.fn(async () => []),
 }));
 vi.mock("@/lib/orpc/middleware", () => ({
@@ -164,7 +190,6 @@ const { HostedParticipantsSection: RealHostedParticipantsSection } =
 
 describe("Cost Tracker Project data routes", () => {
   it("shows the manager without assignment tools when readable but not assignable", async () => {
-    // Gate check passes, create-grant check fails: list renders, tools hide.
     mocks.getSession.mockResolvedValue({
       session: {
         id: "session-1",
@@ -179,7 +204,7 @@ describe("Cost Tracker Project data routes", () => {
     render(await PartnerOrganizationsPage());
     expect(
       screen
-        .getByText("Project Partnership manager")
+        .getByTestId("project-partnership-section")
         .getAttribute("data-can-assign"),
     ).toBe("false");
   });
@@ -187,10 +212,10 @@ describe("Cost Tracker Project data routes", () => {
   it("shows a friendly note instead of a denial when nothing is viewable", async () => {
     mocks.hasCostTrackerPermissions.mockResolvedValue(false);
     render(await PartnerOrganizationsPage());
+    expect(screen.getByTestId("hosting-staff-note")).toBeInTheDocument();
     expect(
-      screen.getByText(/available to Hosting Organization staff/),
-    ).toBeTruthy();
-    expect(screen.queryByText("Project Partnership manager")).toBeNull();
+      screen.queryByTestId("project-partnership-section"),
+    ).not.toBeInTheDocument();
   });
   beforeEach(() => {
     vi.clearAllMocks();
@@ -200,8 +225,8 @@ describe("Cost Tracker Project data routes", () => {
   it("renders the page shell without awaiting section prefetches", async () => {
     render(await ProjectsPage());
 
-    expect(screen.getByRole("heading", { name: "Projects" })).toBeTruthy();
-    expect(screen.getByText("Project list section")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(screen.getByTestId("project-list-section")).toBeInTheDocument();
     expect(mocks.query).not.toHaveBeenCalled();
   });
 
@@ -223,9 +248,11 @@ describe("Cost Tracker Project data routes", () => {
       }),
     );
 
-    expect(screen.getByText("Partnership participants section")).toBeTruthy();
-    expect(screen.getByText("Project workspace section")).toBeTruthy();
-    expect(screen.getByText("Hosted participants section")).toBeTruthy();
+    expect(
+      screen.getByTestId("partnership-participants-section"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("project-workspace-section")).toBeInTheDocument();
+    expect(screen.getByTestId("hosted-participants-section")).toBeInTheDocument();
     expect(mocks.query).not.toHaveBeenCalled();
   });
 
@@ -244,7 +271,7 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenNthCalledWith(2, {
       queryKey: ["projects", "hosted"],
     });
-    expect(screen.getByText("Project list")).toBeTruthy();
+    expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });
 
   it("uses Partner when requested and available", async () => {
@@ -258,7 +285,7 @@ describe("Cost Tracker Project data routes", () => {
       "partner",
       expect.objectContaining({ window: "open" }),
     );
-    expect(screen.getByText("Project list")).toBeTruthy();
+    expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });
 
   it("falls back to Partner when no Hosted Projects are available", async () => {
@@ -266,7 +293,7 @@ describe("Cost Tracker Project data routes", () => {
 
     render(await RealProjectListSection({ searchParams: Promise.resolve({}) }));
 
-    expect(screen.getByText("Project list")).toBeTruthy();
+    expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });
 
   it("does not prefetch an list when no Project scope is available", async () => {
@@ -276,7 +303,7 @@ describe("Cost Tracker Project data routes", () => {
 
     expect(mocks.getListOptions).not.toHaveBeenCalled();
     expect(mocks.query).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Project list")).toBeTruthy();
+    expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });
 
   it("prefetches the assigned-project branch when creation is allowed without a list scope", async () => {
@@ -318,7 +345,10 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["partnerships", "list"],
     });
-    expect(screen.getByText("Project Partnership manager")).toBeTruthy();
+    expect(screen.getByTestId("project-partnership-manager")).toHaveAttribute(
+      "data-can-assign",
+      "true",
+    );
   });
 
   it("prefetches only the requested Partnership's server-authorized list", async () => {
@@ -330,7 +360,10 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["participations", "own-partnership"],
     });
-    expect(screen.getByText("Coordination for own-partnership")).toBeTruthy();
+    expect(screen.getByTestId("participant-coordination")).toHaveAttribute(
+      "data-partnership-id",
+      "own-partnership",
+    );
   });
 
   it("prefetches only the requested Hosting report", async () => {
@@ -343,7 +376,7 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["participants-report", "project-9"],
     });
-    expect(screen.getByText("Hosted participant report")).toBeTruthy();
+    expect(screen.getByTestId("hosted-participant-report")).toBeInTheDocument();
   });
 
   it("keeps Project authorization independent from the return destination", async () => {
@@ -359,10 +392,11 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["projects", "detail", "project-1"],
     });
-    expect(
-      screen
-        .getByText("Project workspace: project-1")
-        .getAttribute("data-return-to"),
-    ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
+    const workspace = screen.getByTestId("project-workspace");
+    expect(workspace).toHaveAttribute("data-project-id", "project-1");
+    expect(workspace).toHaveAttribute(
+      "data-return-to",
+      "/projects?scope=partner&search=climate&cursor=opaque",
+    );
   });
 });

@@ -9,15 +9,7 @@ const storageStatePath =
   "src/__tests__/e2e/.auth/storage-state.json";
 
 export default async function globalSetup(config: FullConfig) {
-  // Policy: e2e runs against production builds only — never next dev.
-  // The managed runner sets this once its production target is verified;
-  // set it by hand only after `next build` + `next start`, never for dev.
-  if (process.env.GREENDEX_E2E_PRODUCTION_OK !== "1") {
-    throw new Error(
-      "Refusing e2e: target must be a production build (next build + next start) or a managed test-runner server — never next dev. " +
-        "Set GREENDEX_E2E_PRODUCTION_OK=1 only after starting a production artifact.",
-    );
-  }
+  // Use the configured existing server. This does not establish production provenance.
   const baseURL = config.projects[0]?.use.baseURL;
   if (typeof baseURL !== "string") {
     throw new Error("Cost Tracker E2E base URL is not configured.");

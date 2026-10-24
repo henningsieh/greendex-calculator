@@ -36,7 +36,7 @@ function hasAgreementCopy(
 
 function AgreementUnavailable() {
   return (
-    <Alert>
+    <Alert data-agreement-state="unavailable">
       <AlertTitle>Participant agreement is not yet available</AlertTitle>
       <AlertDescription>
         Joining and Participant actions are paused until the approved agreement is
@@ -126,7 +126,7 @@ export function ParticipantJoin({
           access.
         </p>
         {!source ? (
-          <Alert variant="destructive">
+          <Alert variant="destructive" data-entry-state="incomplete">
             <AlertTitle>
               Complete Participant Invitation or Participant Registration Link
               required
@@ -261,7 +261,11 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
   }
 
   return (
-    <Card>
+    <Card
+      data-testid="participant-dashboard"
+      data-dashboard-state={available ? state : "agreement-unavailable"}
+      data-project-count={projects.length}
+    >
       <CardHeader>
         <CardTitle>My Project Participations</CardTitle>
       </CardHeader>
@@ -331,12 +335,21 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
         ) : (
           <ul className="space-y-4">
             {projects.map((project) => (
-              <li className="rounded-md border p-4" key={project.participationId}>
+              <li
+                className="rounded-md border p-4"
+                key={project.participationId}
+                data-testid={`participant-project-${project.projectId}`}
+                data-participation-id={project.participationId}
+              >
                 <h2 className="font-heading text-lg font-semibold">
                   {project.projectName}
                 </h2>
-                <p>Representing: {project.representedOrganizationName}</p>
-                <p>Hosted by: {project.hostingOrganizationName}</p>
+                <p data-organization-role="represented">
+                  Representing: {project.representedOrganizationName}
+                </p>
+                <p data-organization-role="hosting">
+                  Hosted by: {project.hostingOrganizationName}
+                </p>
               </li>
             ))}
           </ul>

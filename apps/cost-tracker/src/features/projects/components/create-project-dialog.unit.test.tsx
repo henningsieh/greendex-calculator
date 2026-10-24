@@ -25,7 +25,12 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     await user.click(screen.getByRole("button", { name: "New project" }));
     expect(screen.getByRole("dialog", { name: "New project" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Create project" }));
-    expect(await screen.findByText("Name is required")).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByLabelText("Name")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      ),
+    );
     expect(mocks.create).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Workshop" },
@@ -43,9 +48,12 @@ describe("New project dialog", { timeout: 60_000 }, () => {
       target: { value: "DE" },
     });
     await user.click(screen.getByRole("button", { name: "Create project" }));
-    expect(
-      await screen.findByText("End date must not precede start date."),
-    ).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByLabelText("End date")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      ),
+    );
     fireEvent.change(screen.getByLabelText("End date"), {
       target: { value: "2027-04-05" },
     });

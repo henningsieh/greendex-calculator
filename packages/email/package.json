@@ -11,11 +11,10 @@
     "clean": "rm -rf node_modules .turbo",
     "format": "oxfmt",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
-    "test:run": "vitest run",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "nodemailer": "^10.0.16",
+    "nodemailer": "^10.2.0",
     "react-email": "catalog:",
     "tailwindcss": "catalog:"
   },

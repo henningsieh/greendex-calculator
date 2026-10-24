@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -147,22 +147,29 @@ describe("Claim decisions", () => {
         }}
       />,
     );
-    expect(screen.getByText("Partner")).toBeInTheDocument();
-    expect(screen.getByText("DE123")).toHaveClass("font-mono");
-    expect(screen.getByRole("cell", { name: "train" })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "800.00" })).toBeInTheDocument();
+    expect(screen.getByTestId("payout-account-holder")).toBeVisible();
+    expect(screen.getByTestId("payout-account-iban")).toHaveClass("font-mono");
+    const costRow = document.querySelector("#cost-cost");
+    expect(costRow).toHaveAttribute("data-transport-profile", "train");
+    expect(costRow).toHaveAttribute("data-amount-eur", "800.00");
+    expect(costRow?.querySelectorAll("td")).toHaveLength(4);
+    expect(screen.getByTestId("allocation-share-person")).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: /Travel Cost Entries table/ }),
     ).toHaveAttribute("tabindex", "0");
-    expect(screen.getByText(/^Proof Document: receipt.pdf/)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Download Proof Document: receipt.pdf" }),
     ).toHaveAttribute(
       "href",
       "/api/proof-documents?partnershipId=partner&documentId=proof",
     );
-    expect(screen.getByText(/Berlin → Riga/)).toBeInTheDocument();
-    expect(screen.getByText(/726.00 EUR/)).toBeInTheDocument();
+    const journey = screen.getByTestId("review-journey-person");
+    expect(journey).toHaveAttribute("data-trip-type", "one-way");
+    expect(journey).toHaveAttribute("data-distance-km", "850.00");
+    expect(screen.getByTestId("review-approved-payable")).toHaveAttribute(
+      "data-amount-eur",
+      "726.00",
+    );
   });
   it("hides every decision from unauthorized viewers", () => {
     render(<ClaimDecisionPanel {...base} canReview={false} />);
@@ -215,12 +222,17 @@ describe("Claim decisions", () => {
     const { rerender } = render(
       <ClaimDecisionPanel {...base} status="approved" onDecision={onDecision} />,
     );
-    expect(screen.getByText("Approved · unpaid")).toBeInTheDocument();
+    expect(document.querySelector("[data-review-status]")).toHaveAttribute(
+      "data-review-status",
+      "approved",
+    );
     expect(
       screen.queryByRole("button", { name: "Correct paid flag" }),
     ).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Mark paid" }));
-    expect(screen.getByText(/full bank transfer/)).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(onDecision).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Confirm payment" })).toBeEnabled();
     await userEvent.click(
       screen.getByRole("button", { name: "Confirm payment" }),
     );
@@ -231,7 +243,10 @@ describe("Claim decisions", () => {
     rerender(
       <ClaimDecisionPanel {...base} status="paid" onDecision={onDecision} />,
     );
-    expect(screen.getByText("Paid")).toBeInTheDocument();
+    expect(document.querySelector("[data-review-status]")).toHaveAttribute(
+      "data-review-status",
+      "paid",
+    );
     expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
     await userEvent.click(
       screen.getByRole("button", { name: "Correct paid flag" }),
@@ -252,23 +267,59 @@ describe("Claim decisions", () => {
     });
   });
 
-  it("shows rejection reason and unpaid reopen, with no payment or editing shortcut", async () => {
-    render(
+  it("shows review reasons and confirms an unpaid reopen without a payment shortcut", async () => {
+    const onDecision = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
       <>
         <ClaimHistory events={history} />
         <ClaimDecisionPanel
           {...base}
           status="rejected"
           approvedAmountEur={null}
+          onDecision={onDecision}
         />
       </>,
     );
-    expect(screen.getByText("Ineligible")).toBeInTheDocument();
-    expect(screen.getByText("Fix receipt")).toBeInTheDocument();
-    expect(screen.getByText(/Reopened/)).toBeInTheDocument();
-    expect(screen.getByText("Mistaken rejection")).toBeInTheDocument();
+    const events = within(
+      screen.getByRole("region", { name: "Claim history" }),
+    ).getAllByRole("listitem");
+    expect(events).toHaveLength(3);
+    for (const [index, eventType] of [
+      "correction_requested",
+      "rejected",
+      "reopened",
+    ].entries()) {
+      const event = events[index];
+      expect(event).toHaveAttribute("data-history-event", eventType);
+      expect(within(event).getByTestId("history-reason")).toBeVisible();
+    }
     expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: "Reopen Claim" }));
-    expect(screen.getByText(/keeps Partner editing locked/)).toBeInTheDocument();
+    expect(onDecision).not.toHaveBeenCalled();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Confirm reopening" }),
+    );
+    expect(onDecision).toHaveBeenCalledExactlyOnceWith("reopen", {
+      partnershipId: "partner",
+    });
+    rerender(
+      <ClaimDecisionPanel
+        {...base}
+        status="submitted"
+        approvedAmountEur={null}
+        onDecision={onDecision}
+      />,
+    );
+    expect(document.querySelector("[data-review-status]")).toHaveAttribute(
+      "data-review-status",
+      "submitted",
+    );
+    expect(
+      screen.getByRole("button", { name: "Request correction" }),
+    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Approve Claim" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Reject Claim" })).toBeEnabled();
+    expect(screen.getAllByRole("button")).toHaveLength(3);
   });
 });

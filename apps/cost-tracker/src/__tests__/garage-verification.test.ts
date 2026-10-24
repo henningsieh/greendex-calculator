@@ -1,8 +1,6 @@
 // @vitest-environment node
 /* eslint-disable import/no-relative-parent-imports -- Tests the owning script's verification boundary. */
-import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { resolve } from "node:path";
 
 import {
   DeleteObjectCommand,
@@ -13,6 +11,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   assertDevelopmentGarageTarget,
+  verifyDevelopmentGarage,
   verifyInvalidGarageCredentials,
   verifyGarageObject,
 } from "../../scripts/garage-verification";
@@ -184,7 +183,7 @@ describe("Garage interruption", () => {
     { probe: "invalid-credential-probe", deleteFails: false },
     { probe: "invalid-credential-probe", deleteFails: true },
   ])(
-    "SIGTERM cleans only owned keys and reports incomplete cleanup ($probe, $deleteFails)",
+    "cancellation cleans only owned keys and rejects incomplete cleanup ($probe, $deleteFails)",
     async ({ probe, deleteFails }) => {
       const objects = new Set(["developer-object"]);
       const put = Promise.withResolvers<string>();
@@ -223,54 +222,27 @@ describe("Garage interruption", () => {
       const address = server.address();
       if (!address || typeof address === "string")
         throw new Error("Expected TCP listener");
-      const child = spawn(
-        process.execPath,
-        ["--import", "tsx", "scripts/verify-garage-storage.ts"],
+      const controller = new AbortController();
+      const pending = verifyDevelopmentGarage(
         {
-          cwd: resolve(import.meta.dirname, "../.."),
-          env: {
-            PATH: process.env.PATH,
-            NODE_ENV: "test",
-            DATABASE_URL: "postgres://localhost/unused",
-            BETTER_AUTH_SECRET: "x".repeat(32),
-            GOOGLE_CLIENT_ID: "unused",
-            GOOGLE_CLIENT_SECRET: "unused",
-            SMTP_HOST: "localhost",
-            SMTP_PORT: "465",
-            SMTP_SENDER: "unused@example.test",
-            SMTP_USERNAME: "unused",
-            SMTP_PASSWORD: "unused",
-            SMTP_SECURE: "true",
-            NEXT_PUBLIC_BASE_URL: "http://localhost:3000",
-            S3_BUCKET: "greendex-cost-tracker-development",
-            S3_ENDPOINT: `http://127.0.0.1:${address.port}`,
-            S3_REGION: "garage",
-            S3_FORCE_PATH_STYLE: "true",
-            S3_ACCESS_KEY_ID: "unused",
-            S3_SECRET_ACCESS_KEY: "unused",
-          },
-          stdio: ["ignore", "pipe", "pipe"],
+          S3_BUCKET: "greendex-cost-tracker-development",
+          S3_ENDPOINT: `http://127.0.0.1:${address.port}`,
+          S3_REGION: "garage",
+          S3_FORCE_PATH_STYLE: true,
+          S3_ACCESS_KEY_ID: "unused",
+          S3_SECRET_ACCESS_KEY: "unused",
         },
+        controller.signal,
       );
-      let output = "";
-      child.stdout.on("data", (chunk) => {
-        output += chunk;
-      });
-      child.stderr.on("data", (chunk) => {
-        output += chunk;
-      });
-      const exit = new Promise<number | null>((resolve, reject) => {
-        child.once("error", reject);
-        child.once("exit", (code) => resolve(code));
-      });
+      const rejected = expect(pending).rejects.toThrow();
       const timeout = setTimeout(() => {
-        put.reject(new Error(`Verifier did not PUT: ${output}`));
-        child.kill("SIGKILL");
+        put.reject(new Error("Verifier did not PUT."));
+        controller.abort();
       }, 10_000);
       try {
         const ownedKey = await put.promise;
-        child.kill("SIGTERM");
-        expect(await exit).toBe(1);
+        controller.abort();
+        await rejected;
         const runPrefix = ownedKey.slice(0, ownedKey.lastIndexOf("/") + 1);
         expect(runPrefix).toMatch(/^smoke-tests\/[a-f0-9-]+\/$/);
         expect(deleted).toEqual(
@@ -279,16 +251,10 @@ describe("Garage interruption", () => {
         expect([...objects]).toEqual(
           deleteFails ? ["developer-object", ownedKey] : ["developer-object"],
         );
-        if (deleteFails) {
-          expect(output).toContain("cleanup failed for run-owned key");
-          expect(output).toContain(ownedKey);
-        } else {
-          expect(output).toContain("Garage smoke-test object deleted.");
-        }
       } finally {
         clearTimeout(timeout);
-        child.kill("SIGKILL");
-        await exit;
+        controller.abort();
+        await rejected;
         server.closeAllConnections();
         await new Promise<void>((resolve, reject) =>
           server.close((error) => (error ? reject(error) : resolve())),

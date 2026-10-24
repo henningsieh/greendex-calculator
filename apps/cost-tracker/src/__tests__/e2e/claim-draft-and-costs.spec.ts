@@ -96,6 +96,24 @@ function disposableIban() {
   return `DE${String(98 - remainder).padStart(2, "0")}${bban}`;
 }
 
+async function participationId(userId: string) {
+  const [participation] = await db
+    .select({ id: projectParticipantsTable.id })
+    .from(projectParticipantsTable)
+    .where(
+      and(
+        eq(projectParticipantsTable.projectId, projectId),
+        eq(projectParticipantsTable.userId, userId),
+      ),
+    );
+  expect(participation).toBeDefined();
+  return participation!.id;
+}
+
+async function participationRow(page: Page, userId: string) {
+  return page.getByTestId(`joined-participant-${await participationId(userId)}`);
+}
+
 async function claimCount() {
   const [row] = await db
     .select({ value: count() })
@@ -113,7 +131,11 @@ async function openPartnership(
     "aria-selected",
     "true",
   );
-  await page.getByRole("link", { name: `CT ${suffix} Project` }).click();
+  await page
+    .locator(
+      `a[href="/projects/${projectId}"], a[href^="/projects/${projectId}?"]`,
+    )
+    .click();
   await page
     .getByRole("link", {
       name:
@@ -374,17 +396,11 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     try {
       const page = await actor.newPage();
       await openPartnership(page, "participants");
-      await expect(
-        page.getByRole("heading", { name: "Project Participations" }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       // Text-free: the add-participation form below proves the section renders;
       // participant rows are asserted by role right after.
-      await expect(
-        page.getByRole("listitem").filter({ hasText: people[0]!.name }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole("listitem").filter({ hasText: people[1]!.name }),
-      ).toBeVisible();
+      await expect(await participationRow(page, people[0]!.id)).toBeVisible();
+      await expect(await participationRow(page, people[1]!.id)).toBeVisible();
       await page.getByRole("button", { name: "Registered User" }).click();
       const search = page.getByRole("combobox", {
         name: /Search Registered User/,
@@ -404,18 +420,21 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       expect(found.status()).toBe(200);
       expect(JSON.stringify(await found.json())).toContain(people[2]!.id);
       await expect(
-        page.getByRole("option", { name: new RegExp(people[2]!.name) }),
+        page.locator(`[role="option"][data-entity-id="${people[2]!.id}"]`),
       ).toBeVisible();
       await page
-        .getByRole("option", { name: new RegExp(people[2]!.name) })
+        .locator(`[role="option"][data-entity-id="${people[2]!.id}"]`)
         .click();
+      const added = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === "/api/rpc/participations/create",
+      );
       await page.getByRole("button", { name: "Add Participation" }).click();
+      expect((await added).ok()).toBe(true);
       // Text-free: the new row + DB length below prove the addition (no toast copy).
-      const row = page.getByRole("listitem").filter({ hasText: people[2]!.name });
+      const row = await participationRow(page, people[2]!.id);
       await expect(row).toBeVisible();
-      const detailsLink = row.getByRole("link", {
-        name: `Participant details for ${people[2]!.name}`,
-      });
+      const detailsLink = row.getByRole("link");
       const detailsHref = await detailsLink.getAttribute("href");
       expect(detailsHref).not.toBeNull();
       await detailsLink.click();
@@ -424,11 +443,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         page.getByRole("region", { name: "Participant details", exact: true }),
       ).toBeVisible();
       await page.getByLabel(`Country for ${people[2]!.name}`).selectOption("DE");
-      await page
-        .getByRole("button", { name: `Save country for ${people[2]!.name}` })
-        .click();
+      await page.getByRole("button", { name: /^Save country for / }).click();
       await expect(
-        page.getByRole("alert").filter({ hasText: "Country saved" }),
+        page.locator('[data-feedback-outcome="country-saved"]'),
       ).toBeVisible();
       await expect(page.getByLabel(`Country for ${people[2]!.name}`)).toHaveValue(
         "DE",
@@ -450,7 +467,14 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         })
         .click();
       await expectPrivateURL(page, participantsURL);
-      await expect(row).toContainText("DE");
+      const [savedCountry] = await db
+        .select({ country: projectParticipantsTable.country })
+        .from(projectParticipantsTable)
+        .where(
+          eq(projectParticipantsTable.id, await participationId(people[2]!.id)),
+        );
+      expect(savedCountry?.country).toBe("DE");
+      await expect(row).toBeVisible();
       await expect(
         page.getByRole("button", { name: "Show Review Tasks", exact: true }),
       ).toBeVisible();
@@ -469,7 +493,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       // Control-only coverage uses direct navigation; the original journey cases
       // retain Project-detail → workspace navigation coverage.
       await page.goto(participantsURL);
-      const row = page.getByRole("listitem").filter({ hasText: people[2]!.name });
+      const row = await participationRow(page, people[2]!.id);
       await expect(row).toBeVisible();
       const [original] = await db
         .select({ id: projectParticipantsTable.id })
@@ -481,11 +505,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           ),
         );
       page.once("dialog", (dialog) => dialog.accept());
-      await row
-        .getByRole("button", {
-          name: `Remove Project Participation for ${people[2]!.name}`,
-        })
-        .click();
+      await row.getByRole("button").click();
       // Text-free: vanished row + DB deletion below prove removal (no toast copy).
       await expect(row).toHaveCount(0);
       expect(
@@ -516,20 +536,28 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       expect(found.status()).toBe(200);
       expect(JSON.stringify(await found.json())).toContain(people[2]!.id);
       await expect(
-        page.getByRole("option", { name: new RegExp(people[2]!.name) }),
+        page.locator(`[role="option"][data-entity-id="${people[2]!.id}"]`),
       ).toBeVisible();
       await page
-        .getByRole("option", { name: new RegExp(people[2]!.name) })
+        .locator(`[role="option"][data-entity-id="${people[2]!.id}"]`)
         .click();
       await page.getByRole("button", { name: "Add Participation" }).click();
-      // Text-free: the new row + DB length below prove the addition (no toast copy).
-      await expect(row).toBeVisible();
-      expect(
-        await db
-          .select()
-          .from(projectParticipantsTable)
-          .where(eq(projectParticipantsTable.projectId, projectId)),
-      ).toHaveLength(3);
+      await expect
+        .poll(async () =>
+          db
+            .select()
+            .from(projectParticipantsTable)
+            .where(eq(projectParticipantsTable.projectId, projectId)),
+        )
+        .toHaveLength(3);
+      const addedId = await participationId(people[2]!.id);
+      expect(addedId).not.toBe(original!.id);
+      const addedRow = page.getByTestId(`joined-participant-${addedId}`);
+      await expect(addedRow).toBeVisible();
+      await expect(row).toHaveCount(0);
+      await page.reload();
+      await expect(addedRow).toBeVisible();
+      await expect(row).toHaveCount(0);
     } finally {
       await actor.close();
     }
@@ -567,33 +595,35 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         });
         await search.fill("");
         await search.pressSequentially(person.name, { delay: 35 });
-        await page.getByRole("option", { name: new RegExp(person.name) }).click();
+        await page
+          .locator(`[role="option"][data-entity-id="${person.id}"]`)
+          .click();
         await page
           .getByRole("button", { name: "Add Participation", exact: true })
           .click();
         await expect(
-          page.getByRole("alert").filter({ hasText: "Review request" }),
-        ).toContainText("No new Project Participation was added.");
-        const row = tasks.getByRole("listitem").filter({ hasText: person.email });
-        // Text-free: task state machine via stable state attribute.
-        await expect(row).toHaveAttribute("data-task-status", "open");
-        await row
+          page.locator('[data-feedback-outcome="duplicate-review"]'),
+        ).toBeVisible();
+        const openRow = tasks.locator('li[data-task-status="open"]');
+        await expect(openRow).toHaveCount(1);
+        await openRow
           .getByRole("button", { name: "Assign Review Task to me", exact: true })
           .click();
-        await expect(row).toHaveAttribute("data-task-status", "assigned");
-        // Text-free: assignee + decision are proven by the DB toMatchObject below.
-        await row
+        await expect(openRow).toHaveCount(0);
+        const assignedRow = tasks.locator('li[data-task-status="assigned"]');
+        await expect(assignedRow).toHaveCount(1);
+        await assignedRow
           .getByLabel("Review Task decision", { exact: true })
           .selectOption(decisions[index]!.value);
-        await row
+        await assignedRow
           .getByRole("button", { name: "Resolve Review Task", exact: true })
           .click();
-        await expect(row).toHaveAttribute("data-task-status", "resolved");
-        await expect(row).toHaveAttribute(
-          "data-task-decision",
-          decisions[index]!.value,
+        await expect(assignedRow).toHaveCount(0);
+        const resolvedRow = tasks.locator(
+          `li[data-task-status="resolved"][data-task-decision="${decisions[index]!.value}"]`,
         );
-        await expect(row.getByRole("button")).toHaveCount(0);
+        await expect(resolvedRow).toHaveCount(1);
+        await expect(resolvedRow.getByRole("button")).toHaveCount(0);
         const [task] = await db
           .select()
           .from(duplicateReviewTasksTable)
@@ -620,22 +650,12 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       );
       // Resolved Review Tasks retain their survivor references; the removal
       // control must surface that refusal rather than deleting the survivor.
-      const survivor = page
-        .getByRole("listitem")
-        .filter({ hasText: people[0]!.name });
+      const survivor = await participationRow(page, people[0]!.id);
       page.once("dialog", (dialog) => dialog.accept());
-      await survivor
-        .getByRole("button", {
-          name: `Remove Project Participation for ${people[0]!.name}`,
-        })
-        .click();
+      await survivor.getByRole("button").click();
       await expect(
-        page
-          .getByRole("alert")
-          .filter({ hasText: "Unable to remove Project Participation" }),
-      ).toContainText(
-        "This Project Participation is referenced by other records. Request review instead.",
-      );
+        page.locator('[data-feedback-outcome="remove-refused"]'),
+      ).toBeVisible();
       await expect(survivor).toBeVisible();
       expect(
         await db
@@ -699,18 +719,32 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await openPartnership(page, "claim");
       await page
         .getByLabel("Participation", { exact: true })
-        .selectOption({ label: people[0]!.name });
+        .selectOption(await participationId(people[0]!.id));
       await page.getByRole("button", { name: "Save journey" }).click();
       await expect(
-        page.getByRole("alert").filter({ hasText: /Too small: expected string/ }),
-      ).toHaveCount(2);
+        page
+          .getByLabel("Origin", { exact: true })
+          .locator("..")
+          .getByRole("alert"),
+      ).toBeVisible();
       await expect(
-        page.getByRole("alert").filter({ hasText: /distance/i }),
+        page
+          .getByLabel("Destination", { exact: true })
+          .locator("..")
+          .getByRole("alert"),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByLabel("Erasmus Distance-Calculator distance (km)", {
+            exact: true,
+          })
+          .locator("..")
+          .getByRole("alert"),
       ).toBeVisible();
       for (const person of people) {
         await page
           .getByLabel("Participation", { exact: true })
-          .selectOption({ label: person.name });
+          .selectOption(await participationId(person.id));
         await page.getByLabel("Origin", { exact: true }).fill("Berlin");
         await page.getByLabel("Destination", { exact: true }).fill("Riga");
         await page
@@ -727,7 +761,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         await expect(
           page
             .getByLabel("Participation", { exact: true })
-            .locator("option", { hasText: person.name }),
+            .locator(`option[value="${await participationId(person.id)}"]`),
         ).toHaveCount(0);
       }
       const [snapshot] = await db
@@ -771,21 +805,13 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     try {
       const page = await actor.newPage();
       await page.goto(participantsURL);
-      const row = page.getByRole("listitem").filter({ hasText: people[0]!.name });
+      const row = await participationRow(page, people[0]!.id);
       await expect(row).toBeVisible();
       page.once("dialog", (dialog) => dialog.accept());
-      await row
-        .getByRole("button", {
-          name: `Remove Project Participation for ${people[0]!.name}`,
-        })
-        .click();
+      await row.getByRole("button").click();
       await expect(
-        page
-          .getByRole("alert")
-          .filter({ hasText: "Unable to remove Project Participation" }),
-      ).toContainText(
-        "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
-      );
+        page.locator('[data-feedback-outcome="remove-refused"]'),
+      ).toBeVisible();
       await expect(row).toBeVisible();
       expect(
         await db
@@ -810,7 +836,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.getByLabel("Exact total (EUR)").fill("0");
       await page.getByRole("button", { name: "Save cost" }).click();
       await expect(
-        page.getByRole("alert").filter({ hasText: /positive|greater|amount/i }),
+        page.getByLabel("Exact total (EUR)").locator("..").getByRole("alert"),
       ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
       await page.getByLabel("Exact total (EUR)").fill("100.00");
@@ -824,7 +850,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         await page.getByLabel(`${person.name} EUR share`).fill("33.33");
       await page.getByRole("button", { name: "Save cost" }).click();
       await expect(
-        page.getByRole("alert").filter({ hasText: /total|share|allocation/i }),
+        page
+          .getByRole("group", { name: "Covered Participations" })
+          .locator(':scope > [role="alert"]'),
       ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
       await page.getByLabel("Allocation method").selectOption("equal");
@@ -833,11 +861,8 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         .getByRole("table", {
           name: "Exact totals, Cost Allocations and linked Proof Documents.",
         })
-        .getByRole("row")
-        .filter({ has: page.getByRole("cell", { name: "100.00", exact: true }) });
-      await expect(
-        cost.getByRole("cell", { name: "100.00", exact: true }),
-      ).toBeVisible();
+        .locator('tbody tr[data-amount-eur="100.00"]');
+      await expect(cost).toBeVisible();
       // Text-free: equal-split method proven by the shares DB assertions below (all null = equal).
       const [claim] = await db
         .select({ id: claimsTable.id })
@@ -885,10 +910,23 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.getByRole("button", { name: "Upload document" }).click();
       expect((await uploadResponse).status()).toBe(201);
       // Text-free: 201 + working selectOption below prove upload+linkage (no toast copy).
+      const [document] = await db
+        .select({ id: proofDocumentsTable.id })
+        .from(proofDocumentsTable)
+        .where(eq(proofDocumentsTable.claimId, claim!.id));
+      expect(document).toBeDefined();
+      const linkResponse = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === "/api/rpc/costs/linkDocument" &&
+          response.request().method() === "POST",
+      );
       await page
         .getByLabel("Link a Proof Document to this cost")
-        .selectOption({ label: proofName });
-      // Text-free: the selectable option + submitting checklist below prove linkage.
+        .selectOption(document!.id);
+      expect((await linkResponse).status()).toBe(200);
+      await expect(
+        page.locator(`#link-${entry!.id} option[value="${document!.id}"]`),
+      ).toHaveCount(0);
     } finally {
       await actor.close();
     }
@@ -952,14 +990,11 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(
         page
           .getByRole("region", { name: "Claim history" })
-          .getByRole("listitem")
-          .filter({ hasText: coordinatorId }),
-      ).toContainText("Submitted");
+          .locator('[data-history-event="submitted"]'),
+      ).toBeVisible();
       await page.goBack();
       await expectPrivateURL(page, `/projects/${projectId}?returnTo=%2Fprojects`);
-      await expect(
-        page.getByRole("heading", { name: `CT ${suffix} Project`, exact: true }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(
         page.getByRole("link", { name: "Open Claim workspace", exact: true }),
       ).toBeVisible();
@@ -1016,21 +1051,13 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       expect(event.occurredAt).toBeInstanceOf(Date);
       // A locked Claim refuses the new removal control without deleting the row.
       await page.goto(participantsURL);
-      const row = page.getByRole("listitem").filter({ hasText: people[0]!.name });
+      const row = await participationRow(page, people[0]!.id);
       await expect(row).toBeVisible();
       page.once("dialog", (dialog) => dialog.accept());
-      await row
-        .getByRole("button", {
-          name: `Remove Project Participation for ${people[0]!.name}`,
-        })
-        .click();
+      await row.getByRole("button").click();
       await expect(
-        page
-          .getByRole("alert")
-          .filter({ hasText: "Unable to remove Project Participation" }),
-      ).toContainText(
-        "A locked Claim prevents removal of this Project Participation.",
-      );
+        page.locator('[data-feedback-outcome="remove-refused"]'),
+      ).toBeVisible();
       await expect(row).toBeVisible();
       expect(
         await db

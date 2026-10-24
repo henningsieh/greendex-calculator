@@ -89,7 +89,11 @@ export function ProjectWorkspace({
   }
 
   return (
-    <div className="space-y-8">
+    <div
+      className="space-y-8"
+      data-project-id={project.id}
+      data-testid="project-workspace"
+    >
       <header className="space-y-4">
         <Link
           className={buttonVariants({ variant: "ghost" })}
@@ -107,7 +111,11 @@ export function ProjectWorkspace({
               : "Partner Project"}
           </p>
           {project.archived && <Badge variant="secondary">Archived</Badge>}
-          {project.completedAt && <Badge variant="secondary">Completed</Badge>}
+          {project.completedAt && (
+            <Badge data-testid="project-completed" variant="secondary">
+              Completed
+            </Badge>
+          )}
         </div>
         <h1 className="font-heading text-4xl font-semibold tracking-tight">
           {project.name}
@@ -119,7 +127,11 @@ export function ProjectWorkspace({
           {project.costSubmissionWindowOpen ? "open" : "closed"}
         </Badge>
         {project.completedAt && (
-          <p className="text-sm">
+          <p
+            className="text-sm"
+            data-completed-at={project.completedAt.toISOString()}
+            data-completed-by-user-id={project.completedByUserId}
+          >
             Completed {dateTimeFormatter.format(project.completedAt)} by{" "}
             {project.completedByUserId}
           </p>
@@ -182,6 +194,8 @@ export function ProjectWorkspace({
                 {project.partnerOrganizations.map((partner) => (
                   <li
                     className="flex items-center justify-between gap-4 py-4"
+                    data-organization-id={partner.organizationId}
+                    data-partnership-id={partner.id}
                     key={partner.id}
                   >
                     <span className="flex items-center gap-3 font-medium">
@@ -233,7 +247,11 @@ export function ProjectWorkspace({
               <span className="text-muted-foreground">Claim readiness:</span>{" "}
               <ClaimReadiness status={project.partnership.claimStatus} />
             </p>
-            <p className="text-sm">
+            <p
+              className="text-sm"
+              data-organization-id={project.hostingOrganization.id}
+              data-testid="hosting-organization"
+            >
               <span className="text-muted-foreground">Hosting Organization:</span>{" "}
               {project.hostingOrganization.name}
             </p>

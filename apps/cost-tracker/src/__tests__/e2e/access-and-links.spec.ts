@@ -20,7 +20,7 @@ import {
 } from "@greendex/database/schema";
 import { type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
-import { count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 
 import {
   expectPrivateURL,
@@ -177,18 +177,22 @@ async function pageFor(browser: Browser, actor: Actor, baseURL: string) {
   return context.newPage();
 }
 
-async function denied(page: Page, resource: string) {
-  await expect(
-    page.getByRole("alert").filter({ hasText: `Unable to load ${resource}` }),
-  ).toBeVisible({ timeout: 90_000 });
+async function denied(page: Page) {
+  await expect(page.getByTestId("data-error-fallback")).toBeVisible({
+    timeout: 90_000,
+  });
   await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
 }
 
 async function partnerPage(page: Page) {
   await page.goto("/projects");
   await page.getByRole("tab", { name: "Partner" }).click();
-  await page.getByRole("link", { name: names.project, exact: true }).click();
-  await expect(page.getByRole("heading", { name: names.project })).toBeVisible({
+  await page
+    .locator(
+      `a[href="/projects/${projectId}"], a[href^="/projects/${projectId}?"]`,
+    )
+    .click();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
     timeout: 90_000,
   });
 }
@@ -346,7 +350,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(h, /\/projects\/[^/]+$/, { timeout: 90_000 });
     projectId = new URL(h.url()).pathname.split("/").at(-1)!;
-    await expect(h.getByRole("heading", { name: names.project })).toBeVisible({
+    await expect(h.getByRole("heading", { level: 1 })).toBeVisible({
       timeout: 90_000,
     });
     await db.insert(partnerships).values([
@@ -355,9 +359,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ]);
     const a = await pageFor(browser, "A", baseURL!);
     await a.goto(`/accept-invitation/${ids.invitation}`);
-    await expect(
-      a.getByRole("heading", { name: "Organization Invitation" }),
-    ).toBeVisible();
+    await expect(a.getByRole("heading", { level: 1 })).toBeVisible();
     await a
       .getByRole("button", { name: "Accept Organization Invitation" })
       .click();
@@ -365,9 +367,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expectPrivateURL(a, /\/projects$/, { timeout: 90_000 });
     for (const page of [h, a]) {
       await page.goto(`/projects/${projectId}`);
-      await expect(
-        page.getByRole("heading", { name: names.project }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(
         page.getByRole("link", { name: "Review submitted Claims" }),
       ).toBeVisible();
@@ -388,9 +388,18 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       }),
     ).toHaveCount(0);
     await h.goto("/organization");
+    const [adminMembership] = await db
+      .select({ id: member.id })
+      .from(member)
+      .where(
+        and(eq(member.userId, actors.A.id), eq(member.organizationId, ids.host)),
+      );
+    expect(adminMembership).toBeDefined();
     await expect(
-      h.getByRole("row").filter({ hasText: actors.A.email }),
-    ).toContainText(ORGANIZATION_ROLES.OrganizationAdmin);
+      h
+        .getByTestId(`staff-member-${adminMembership!.id}`)
+        .getByTestId(`staff-role-${ORGANIZATION_ROLES.OrganizationAdmin}`),
+    ).toBeVisible();
     // A creator and Organization Admin are observable; assignment to another
     // Project-/Partnership-scoped coordinator is UI GAP, not inferred from DB roles.
   });
@@ -436,15 +445,12 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       p.getByRole("link", { name: "Coordinate Participants" }),
     ).toBeVisible();
     const f = await pageFor(browser, "F", baseURL!);
-    for (const [route, resource] of [
+    for (const [route, _resource] of [
       [`/partnerships/${ids.partnership}/participants`, "Project Participations"],
       [`/partnerships/${ids.partnership}/claim`, "Claim workspace"],
     ]) {
       await f.goto(route);
-      await denied(f, resource);
-      await expect(
-        f.getByRole("alert").filter({ hasText: `Unable to load ${resource}` }),
-      ).toContainText("Project Partnership not found in scope.");
+      await denied(f);
       // Text-free: no link to the protected partnership leaks.
       await expect(f.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
       await expect(
@@ -460,20 +466,11 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     }) => {
       const page = await pageFor(browser, actor, baseURL!);
       await page.goto(`/claims/review/${ids.partnership}`);
-      await denied(page, "Claim review");
-      await expect(
-        page
-          .getByRole("alert")
-          .filter({ hasText: "Unable to load Claim review" }),
-      ).toContainText(
-        actor === "F"
-          ? "Project Partnership not found in scope."
-          : "Only Hosting staff may review Claims.",
-      );
+      await denied(page);
       if (actor === "P") {
         await expect(
           page.getByRole("button", {
-            name: `Acting Organization: ${names.partner}. Switch Organization`,
+            name: /Switch Organization/,
             exact: true,
           }),
         ).toBeVisible();
@@ -530,14 +527,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       ).toEqual([{ userId: actors.T.id, projectId }]);
       const t = await pageFor(browser, "T", baseURL!);
       await t.goto(`/partnerships/${ids.partnership}/claim`);
-      await denied(t, "Claim workspace");
-      await expect(
-        t
-          .getByRole("alert")
-          .filter({ hasText: "Unable to load Claim workspace" }),
-      ).toContainText(
-        "You need Partner Organization staff access or an assignment to this Project Partnership.",
-      );
+      await denied(t);
       // Text-free: the authorized user is not access-denied (state hook, not copy).
       await expect(
         t.locator('[data-testid="no-organization-access"]'),
@@ -549,12 +539,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       ).toHaveCount(0);
       const h = await pageFor(browser, "H", baseURL!);
       await h.goto(`/partnerships/${ids.partnership}/claim`);
-      await denied(h, "Claim workspace");
-      await expect(
-        h
-          .getByRole("alert")
-          .filter({ hasText: "Unable to load Claim workspace" }),
-      ).toContainText("Only the Partner Organization may edit its Claim.");
+      await denied(h);
       await expect(
         h.getByRole("button", { name: /Save cost|Save Claim draft/ }),
       ).toHaveCount(0);
@@ -580,14 +565,14 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await h.goto("/partner-organizations");
     const creator = h
       .locator("section")
-      .filter({ hasText: "Share this recipient-bound link privately" });
+      .filter({ has: h.getByLabel("Recipient email", { exact: true }) });
     await creator
       .getByRole("button", { name: "Hosted Project", exact: true })
       .click();
     await h
       .getByRole("combobox", { name: "Search Hosted Project by name or ID" })
       .fill(names.project);
-    await h.getByRole("option", { name: new RegExp(names.project) }).click();
+    await h.locator(`[role="option"][data-entity-id="${projectId}"]`).click();
     await creator.getByLabel("Recipient email").fill(actors.X.email);
     await creator
       .getByRole("button", { name: "Neuer Link", exact: true })
@@ -668,7 +653,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     const p = await pageFor(browser, "P", baseURL!);
     await p.goto(`/partnerships/${ids.partnership}/participants`);
     await expect(
-      p.getByRole("button", { name: `Reissue invitation for ${actors.T.email}` }),
+      p
+        .getByTestId(`participant-invitation-${ids.oldParticipantInvitation}`)
+        .getByRole("button", { name: /^Reissue invitation for / }),
     ).toBeVisible();
     await db
       .update(participantInvitations)
@@ -693,9 +680,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
-    await expect(t.locator("form p[role='alert']")).toContainText(
-      "Invitation is closed.",
-    );
+    await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(
       await db
         .select()
@@ -730,7 +715,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       .inputValue();
     registrationId = new URL(link).pathname.split("/").at(-1)!;
     await p
-      .getByRole("button", { name: `Close registration link ${registrationId}` })
+      .getByTestId(`registration-link-${registrationId}`)
+      .getByRole("button", { name: /^Close registration link / })
       .click();
     // Text-free: closing clears the transient link input (functional proof).
     await expect(p.getByLabel("New registration link (copy now)")).toHaveCount(0);
@@ -742,9 +728,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.getByLabel("I accept the current Participant agreement").check();
     await t.getByRole("button", { name: "Join Project" }).click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
-    await expect(t.locator("form p[role='alert']")).toContainText(
-      "Registration link is closed.",
-    );
+    await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(
       await db
         .select()

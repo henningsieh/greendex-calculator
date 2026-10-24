@@ -103,12 +103,12 @@ async function ownedCounts() {
   ];
 }
 
-async function openHostedProject(page: Page, name: string, url: string) {
+async function openHostedProject(page: Page, url: string) {
   await page.goto("/projects");
-  await page.getByRole("link", { name, exact: true }).click();
+  await page.locator(`a[href^="${url}?"]`).click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
   await expectPrivateURL(page, new RegExp(`${url}(?:\\?.*)?$`));
-  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   // Text-free: relationship state hook instead of visible copy.
   await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
   await expect(
@@ -116,8 +116,8 @@ async function openHostedProject(page: Page, name: string, url: string) {
   ).toBeVisible();
 }
 
-function partnerRow(page: Page, name: string) {
-  return page.getByRole("listitem").filter({ hasText: name });
+function partnerRow(page: Page, organizationId: string) {
+  return page.locator(`[data-organization-id="${organizationId}"]`);
 }
 
 // Disable traces for every context in this file, including auth API requests.
@@ -246,11 +246,15 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
 
   test("28 shows independent terminal and claimless readiness without offering completion", async () => {
     const page = await hostContext!.newPage();
-    await openHostedProject(page, names.main, mainURL);
+    await openHostedProject(page, mainURL);
     const assigned = page.getByRole("listitem");
     await expect(assigned).toHaveCount(2);
-    await expect(partnerRow(page, names.partnerA)).toContainText("Rejected");
-    await expect(partnerRow(page, names.partnerB)).toContainText("No Claim");
+    await expect(
+      partnerRow(page, ids.partnerA).locator('[data-claim-status="rejected"]'),
+    ).toBeVisible();
+    await expect(
+      partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Complete Project" }),
     ).toHaveCount(0);
@@ -261,12 +265,16 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
+    await expect(page.locator(`a[href^="${mainURL}?"]`)).toBeVisible();
     await expect(
-      page.getByRole("link", { name: names.main, exact: true }),
+      page.locator(
+        `a[href="/projects/${ids.other}"], a[href^="/projects/${ids.other}?"]`,
+      ),
+    ).toHaveCount(0);
+    await openHostedProject(page, mainURL);
+    await expect(
+      partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: names.other })).toHaveCount(0);
-    await openHostedProject(page, names.main, mainURL);
-    await expect(partnerRow(page, names.partnerB)).toContainText("No Claim");
     // Text-free: no partner row carries the editable-claim state.
     await expect(page.locator('[data-claim-status="editable"]')).toHaveCount(0);
     await expect(
@@ -276,18 +284,20 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
 
   test("N2 hides completion for a claimless Partnership; observes zero-Partnership control only", async () => {
     const page = await hostContext!.newPage();
-    await openHostedProject(page, names.isolation, isolationURL);
-    await expect(partnerRow(page, names.partnerA)).toContainText("No Claim");
+    await openHostedProject(page, isolationURL);
+    await expect(
+      partnerRow(page, ids.partnerA).locator('[data-claim-status="none"]'),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Complete Project" }),
     ).toHaveCount(0);
 
-    await openHostedProject(page, names.zero, zeroURL);
+    await openHostedProject(page, zeroURL);
     // Text-free: empty-state hook instead of visible copy.
     await expect(
       page.locator('[data-testid="assigned-partnerships-empty"]'),
     ).toBeVisible();
-    await expect(partnerRow(page, names.partnerA)).toHaveCount(0);
+    await expect(partnerRow(page, ids.partnerA)).toHaveCount(0);
     // Observation only: current UI offers an enabled button for zero Partnerships.
     // Whether completing this Project is valid is unresolved; NOT-RUN, never click.
     await expect(

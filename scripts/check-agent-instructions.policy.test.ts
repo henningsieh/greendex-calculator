@@ -1,3 +1,4 @@
+import { globSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -235,118 +236,73 @@ const verificationPolicyClauses = [
     ],
   ],
   [
-    "server-free pure checks",
+    "server-free units",
+    ["Keep pure unit/component checks server-free", "two workers"],
+  ],
+  [
+    "existing runtime",
     [
-      "Keep pure unit/component checks server-free",
-      "Direct database, migration, and service tests retain their appropriate seams",
+      "existing loopback applications",
+      "188.245.144.137:5489",
+      "greendex_development",
+      "packages/database/.env",
     ],
   ],
   [
-    "dev runtime evidence",
+    "honest existing-server policy",
     [
-      "isolated running dev server",
-      "Next MCP routes, errors, and compilation diagnostics",
-      "real browser observations before and after",
-    ],
-  ],
-  [
-    "production-only exception",
-    [
-      "smallest dedicated production-build check",
+      "operator owns build/start",
+      "accept dev or production servers without an attestation flag",
+      "do not establish production provenance",
       "Dev results do not prove production behavior",
     ],
   ],
   [
-    "central resource ownership",
+    "no managed lifecycle",
     [
-      "One coordinator owns heavy builds and full gates after all writers finish",
-      "heavy work sequentially",
-      "bounded browser/server concurrency",
-      "do not launch competing full runs",
+      "never build, start servers, migrate, provision databases",
+      "may seed the shared development database",
+      "never dispose of them",
     ],
   ],
   [
-    "preserved non-browser contract",
+    "full failure propagation",
     [
-      "complete existing `pnpm test` non-browser contract",
-      "real mail, and storage",
-      "failure and cleanup semantics",
+      "unit, integration and e2e sequentially",
+      "exits nonzero if any mode fails",
+      "full still attempts the remaining modes",
     ],
   ],
   [
-    "implemented production command",
-    [
-      "`pnpm run test:full` is the required final integrated entrypoint",
-      "#289 verifies final consistency and real production execution",
-      "implementing the command alone does not prove acceptance",
-    ],
-  ],
-  [
-    "production final targets",
-    [
-      "production build/start artifacts from the reviewed candidate",
-      "runtime-dependent non-browser HTTP checks",
-      "Production start does not require dev MCP",
-    ],
-  ],
-  [
-    "instant isolation",
-    [
-      "separate build-time test-enabled artifact",
-      "without ordinary login setup or inherited auth state",
-      "Ordinary Calculator production verification keeps the testing API disabled",
-    ],
-  ],
-  [
-    "safe lifecycle",
-    [
-      "run database for browser/cross-app workflows",
-      "Keep dev and production variants separate",
-      "Never kill unowned listeners",
-      "generated declarations",
-      "required socket service",
-    ],
-  ],
-  [
-    "live-service safety",
+    "live services",
     [
       "dedicated-mailbox/current-run correlation",
       "default mail retention",
       "development Garage isolation",
       "owned-object cleanup",
-      "sanitized evidence",
       "Missing services or credentials are blockers",
     ],
   ],
   [
-    "two-axis review and repair",
+    "review",
     [
-      "independent Standards and Spec reviews of the same integration candidate",
+      "independent Standards and Spec reviews",
       "bounded focused repairs",
       "review the changed final diff again",
-      "complete final matrix for the resulting candidate",
     ],
   ],
   [
-    "strict final outcomes",
+    "honest evidence",
     [
       "zero flaky final acceptance",
-      "verified failure on retry-pass",
-      "unaccounted skip",
-      "cleanup failure makes acceptance fail",
-      "Continue independent safe groups",
+      "zero retries",
+      "Report failures, blocks, skips and cleanup failures honestly",
+      "sanitized timings",
+      "Implementing the command alone does not prove acceptance",
     ],
   ],
   [
-    "candidate evidence",
-    [
-      "exact candidate, build variants, runtime targets, suite inventory, results, timings",
-      "Source/build-affecting changes invalidate relevant evidence",
-      "No fixed count of repeated green full runs",
-    ],
-  ],
-  [
-    "retained quality gates",
+    "retained gates",
     [
       "`pnpm run format`",
       "`pnpm run lint`",
@@ -378,20 +334,41 @@ describe("two-loop verification instruction policy", () => {
     for (const clause of clauses) expect(text).toContain(clause);
   });
 
-  it("keeps the non-browser command distinct from full production acceptance", async () => {
-    const manifest = JSON.parse(
-      await readFile(new URL("../package.json", import.meta.url), "utf8"),
+  it("exposes exactly four test commands at the root and none in workspaces", async () => {
+    const root = fileURLToPath(new URL("../", import.meta.url));
+    const manifests = [
+      "package.json",
+      ...globSync(["apps/*/package.json", "packages/*/package.json"], {
+        cwd: root,
+      }),
+    ];
+    const commands: string[] = [];
+    for (const file of manifests) {
+      const manifest = JSON.parse(await readFile(path.join(root, file), "utf8"));
+      for (const [name, command] of Object.entries(manifest.scripts ?? {})) {
+        if (name !== "test" && !name.startsWith("test:")) continue;
+        expect(file).toBe("package.json");
+        expect(command).toBe(`tsx scripts/test.ts ${name.slice(5)}`);
+        commands.push(name);
+      }
+    }
+    expect(commands.sort()).toEqual([
+      "test:e2e",
+      "test:full",
+      "test:integration",
+      "test:unit",
+    ]);
+    const turbo = JSON.parse(
+      await readFile(path.join(root, "turbo.json"), "utf8"),
     );
-    expect(manifest.scripts.test).toBe(
-      "tsx apps/cost-tracker/scripts/run-nonbrowser-tests.ts",
-    );
-    expect(manifest.scripts["test:run"]).toBe("pnpm test");
-    expect(manifest.scripts["test:full"]).toBe(
-      "tsx apps/cost-tracker/scripts/run-nonbrowser-tests.ts --full-production",
-    );
+    expect(
+      Object.keys(turbo.tasks).filter(
+        (name) => name === "test" || name.startsWith("test:"),
+      ),
+    ).toEqual([]);
   });
 
-  it("references all four existing browser configurations as the implemented production inventory", async () => {
+  it("documents only the three existing browser configurations", async () => {
     const text = await readFile(
       new URL("../docs/agents/instructions/conventions.md", import.meta.url),
       "utf8",
@@ -400,56 +377,17 @@ describe("two-loop verification instruction policy", () => {
       "apps/cost-tracker/playwright.config.ts",
       "apps/calculator/playwright.config.ts",
       "apps/calculator/playwright.merge.config.ts",
-      "apps/calculator/playwright.instant.config.ts",
     ]) {
       expect(text).toContain(`\`${file}\``);
       expect(
         await readFile(new URL(`../${file}`, import.meta.url), "utf8"),
       ).toContain("defineConfig");
     }
-  });
-
-  it("keeps representative pure, session, shared-boundary, and production-only selections discoverable", async () => {
-    const text = await readFile(
-      new URL("../docs/agents/instructions/conventions.md", import.meta.url),
-      "utf8",
-    );
-    for (const example of [
-      "Pure organization role rule",
-      "Browser/session setup",
-      "Shared auth/schema/router",
-      "Production-only instant/prerender",
-    ])
-      expect(text).toContain(example);
-    const authManifest = JSON.parse(
-      await readFile(
-        new URL("../packages/auth/package.json", import.meta.url),
-        "utf8",
-      ),
-    );
-    expect(authManifest.scripts["test:run"]).toBe("vitest run");
-    expect(
-      await readFile(
-        new URL(
-          "../packages/auth/src/organization-roles.test.ts",
-          import.meta.url,
-        ),
-        "utf8",
-      ),
-    ).toContain("describe");
-    expect(
-      await readFile(
-        new URL(
-          "../apps/cost-tracker/src/__tests__/e2e/hosting-setup.spec.ts",
-          import.meta.url,
-        ),
-        "utf8",
-      ),
-    ).toContain("test");
+    expect(text).toContain("Pure organization role rule");
+    expect(text).toContain("Browser/session setup");
+    expect(text).toContain("Shared auth/schema/router");
     expect(text).toContain("--workers=1 --retries=0");
-    expect(text).toContain(
-      "These examples require the relevant isolated environment and prerequisites",
-    );
+    expect(text).not.toContain("playwright.instant.config.ts");
   });
 
   it("keeps focused handoffs and final authority explicit", async () => {
