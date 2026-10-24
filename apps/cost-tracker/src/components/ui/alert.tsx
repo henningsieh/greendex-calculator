@@ -12,10 +12,18 @@ const alertVariants = cva(
           "bg-card text-destructive after:bg-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
         accent:
           "border-primary/25 bg-primary/10 text-foreground after:bg-primary *:data-[slot=alert-description]:text-foreground/80 [&_kbd]:bg-primary/15 [&_kbd]:text-foreground",
+        info:
+          "border-primary/25 bg-accent text-accent-foreground after:bg-primary *:data-[slot=alert-description]:text-accent-foreground *:[svg]:text-current",
+      },
+      emphasis: {
+        default: "",
+        prominent:
+          "min-w-0 gap-3 px-6 py-5 wrap-anywhere after:w-1 has-data-[slot=alert-action]:pr-6 has-[>svg]:gap-x-3 *:min-w-0 *:data-[slot=alert-title]:text-base *:data-[slot=alert-description]:text-base/relaxed *:data-[slot=alert-action]:static *:data-[slot=alert-action]:col-span-full *:data-[slot=alert-action]:flex *:data-[slot=alert-action]:flex-wrap *:data-[slot=alert-action]:gap-2 *:data-[slot=alert-action]:pt-1 *:[svg:not([class*='size-'])]:size-5",
       },
     },
     defaultVariants: {
       variant: "default",
+      emphasis: "default",
     },
   }
 )
@@ -23,13 +31,16 @@ const alertVariants = cva(
 function Alert({
   className,
   variant,
+  emphasis,
+  role = variant === "info" ? "status" : "alert",
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
   return (
     <div
       data-slot="alert"
-      role="alert"
-      className={cn(alertVariants({ variant }), className)}
+      data-emphasis={emphasis ?? "default"}
+      role={role}
+      className={cn(alertVariants({ variant, emphasis }), className)}
       {...props}
     />
   )
