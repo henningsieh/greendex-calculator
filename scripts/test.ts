@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { globSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -37,45 +37,46 @@ const interrupt = () => {
 process.on("SIGINT", interrupt);
 process.on("SIGTERM", interrupt);
 
-function command(
+const ansi = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
+
+function plain(text: string): string {
+  return text.replace(ansi, "");
+}
+
+async function command(
   directory: string,
   args: string[],
   environment: Record<string, string | undefined> = process.env,
-): void {
-  const outputEnvironment: NodeJS.ProcessEnv = {
-    NODE_ENV: process.env.NODE_ENV,
-    ...environment,
-  };
-  if (!process.stdout.isTTY) {
-    // Playwright colours its report footer whenever it sees a TTY stdin, and
-    // pnpm re-injects FORCE_COLOR. "0" is the value both tools read as "off".
-    delete outputEnvironment.NO_COLOR;
-    outputEnvironment.FORCE_COLOR = "0";
-  }
-  const result = spawnSync("pnpm", ["exec", ...args], {
+): Promise<void> {
+  const child = spawn("pnpm", ["exec", ...args], {
     cwd: resolve(root, directory),
-    stdio: "inherit",
-    env: outputEnvironment,
+    stdio: ["inherit", "pipe", "pipe"],
+    env: { NODE_ENV: process.env.NODE_ENV, ...environment },
   });
-  if (result.signal) interrupted = true;
+  const forward = (stream: NodeJS.ReadableStream, target: NodeJS.WriteStream) =>
+    stream.on("data", (chunk: Buffer) => target.write(plain(chunk.toString())));
+  forward(child.stdout, process.stdout);
+  forward(child.stderr, process.stderr);
+
+  const status = await new Promise<number | null>((done) => {
+    child.on("error", () => done(null));
+    child.on("close", (code) => done(code));
+  });
+  if (child.signalCode) interrupted = true;
   if (interrupted)
     throw new TestRunError("Interrupted; remaining checks were not run.");
-  if (result.error)
-    throw new TestRunError(
-      "Could not launch test subprocess. Check installed pnpm and dependencies.",
-    );
-  if (result.status !== 0)
+  if (status === null || status !== 0)
     throw new TestRunError("Test subprocess failed; see its output above.");
 }
 
-function vitest(
+async function vitest(
   directory: string,
   files: string[],
   integration = false,
   environment: Record<string, string | undefined> = process.env,
-): void {
+): Promise<void> {
   if (!files.length) throw new TestRunError("Required test selection is empty.");
-  command(
+  return command(
     directory,
     [
       "vitest",
@@ -205,7 +206,9 @@ async function main(): Promise<void> {
       if (suite === "unit") {
         for (const name of ["auth", "email", "database", "config", "i18n"]) {
           const directory = `packages/${name}`;
-          const files = filesFor(directory);
+          const files = filesFor(directory).filter(
+            (file) => !file.includes(".integration.test."),
+          );
           if (files.length)
             await check(directory, () => vitest(directory, files));
         }
@@ -255,6 +258,19 @@ async function main(): Promise<void> {
             validatedDevelopmentGarageEnvironment,
             verifyDevelopmentGarage,
           } = await import("../apps/cost-tracker/scripts/garage-verification");
+          await check("shared migration and seed contracts", () =>
+            vitest(
+              "packages/database",
+              globSync("src/**/*.integration.test.ts", {
+                cwd: resolve(root, "packages/database"),
+              }).sort(),
+              true,
+              {
+                ...context.apps.calculator!.environment,
+                DATABASE_URL: context.databaseUrl,
+              },
+            ),
+          );
           let seed: ExistingIntegrationContext["seed"] | undefined;
           await check("existing seed lookup", async () => {
             seed = await resolveExistingIntegrationSeed(context.databaseUrl);
