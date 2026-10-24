@@ -183,6 +183,7 @@ async function main(): Promise<void> {
       name: string,
       action: () => void | Promise<void>,
     ): Promise<boolean> => {
+      await new Promise((resolve) => setImmediate(resolve));
       if (interrupted)
         throw new TestRunError("Interrupted; remaining checks were not run.");
       const start = Date.now();

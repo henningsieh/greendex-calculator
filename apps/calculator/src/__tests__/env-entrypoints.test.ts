@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseEnv } from "node:util";
@@ -184,39 +190,43 @@ describe("environment entrypoints", () => {
     }
   });
 
-  it.each(["calculator", "cost-tracker"])(
-    "loads the shared development database instead of an inherited URL for %s",
-    (app) => {
-      const manifest = app === "calculator" ? calculatorPackage : costTrackerPackage;
-      const loader = manifest.scripts.dev.split(" -- ")[0];
-      expect(loader).toBe(
-        "env -u DATABASE_URL dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env",
-      );
-      const cwd = path.resolve(`../../apps/${app}`);
-      const shared = parseEnv(
-        readFileSync(path.resolve("../../packages/database/.env"), "utf8"),
-      ).DATABASE_URL;
-      expect(shared).toBeTypeOf("string");
-      const result = execFileSync(
-        "/bin/sh",
-        [
-          "-c",
-          `${loader} -- "${process.execPath}" -e 'process.stdout.write(process.env.DATABASE_URL === process.env.EXPECTED_DEV_DATABASE ? "shared" : "unexpected")'`,
-        ],
-        {
-          cwd,
-          encoding: "utf8",
-          env: {
-            ...process.env,
-            PATH: `${path.resolve(cwd, "node_modules/.bin")}:${process.env.PATH}`,
-            DATABASE_URL: "postgres://obsolete.invalid/old_database",
-            EXPECTED_DEV_DATABASE: shared,
+  const sharedEnvironmentFile = path.resolve("../../packages/database/.env");
+  for (const app of ["calculator", "cost-tracker"] as const) {
+    it.skipIf(!existsSync(sharedEnvironmentFile))(
+      `loads the shared development database instead of an inherited URL for ${app}`,
+      () => {
+        const manifest =
+          app === "calculator" ? calculatorPackage : costTrackerPackage;
+        const loader = manifest.scripts.dev.split(" -- ")[0];
+        expect(loader).toBe(
+          "env -u DATABASE_URL dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env",
+        );
+        const cwd = path.resolve(`../../apps/${app}`);
+        const shared = parseEnv(
+          readFileSync(sharedEnvironmentFile, "utf8"),
+        ).DATABASE_URL;
+        expect(shared).toBeTypeOf("string");
+        const result = execFileSync(
+          "/bin/sh",
+          [
+            "-c",
+            `${loader} -- "${process.execPath}" -e 'process.stdout.write(process.env.DATABASE_URL === process.env.EXPECTED_DEV_DATABASE ? "shared" : "unexpected")'`,
+          ],
+          {
+            cwd,
+            encoding: "utf8",
+            env: {
+              ...process.env,
+              PATH: `${path.resolve(cwd, "node_modules/.bin")}:${process.env.PATH}`,
+              DATABASE_URL: "postgres://obsolete.invalid/old_database",
+              EXPECTED_DEV_DATABASE: shared,
+            },
           },
-        },
-      );
-      expect(result).toBe("shared");
-    },
-  );
+        );
+        expect(result).toBe("shared");
+      },
+    );
+  }
 
   it("configures every service port from the environment", () => {
     expect(calculatorPackage.scripts["dev:next"]).toBe("next dev --port $PORT");
