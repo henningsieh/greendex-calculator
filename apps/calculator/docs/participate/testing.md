@@ -24,10 +24,10 @@ This file covers how to test the participant questionnaire implementations and w
 
 ## Running Tests
 
-Use the existing project test script:
+From the repository root:
 
 ```bash
-npm run test:run
+pnpm run test:unit
 ```
 
 ## Integration & Manual Verification

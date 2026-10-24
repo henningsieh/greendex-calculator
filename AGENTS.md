@@ -61,7 +61,7 @@ Do not pre-read documentation. Open only what the task touches, when you need it
 
 ## Verification
 
-Follow the authoritative [two-loop testing policy](docs/agents/instructions/conventions.md#two-verification-loops). Use focused dev/MCP checks during implementation and centrally owned production verification after writers finish. `pnpm run test:full` owns the full production matrix; root `pnpm test` remains the full non-browser contract.
+Follow the authoritative [two-loop testing policy](docs/agents/instructions/conventions.md#two-verification-loops). Use focused checks during implementation and centrally owned verification after writers finish. The four root commands are `test:unit`, `test:integration`, `test:e2e`, and `test:full`. Tests borrow existing environments; the operator owns production build/start.
 
 ## Delegation
 
@@ -104,7 +104,7 @@ Before final delivery (the main agent owns these gates after shared-worktree chi
 - [ ] No forbidden commands were executed
 - [ ] Only the matching scoped instruction(s) were read — no speculative pre-reading
 - [ ] Tests updated for changed functionality; focused selection, rationale, runtime target, evidence, and blockers reported
-- [ ] Coordinator-owned final production matrix and independent Standards/Spec review completed under the two-loop policy; planned tooling is not a passed gate
+- [ ] Coordinator-owned final existing-environment suites and independent Standards/Spec review completed under the two-loop policy; planned tooling is not a passed gate
 - [ ] `pnpm run format && pnpm run lint` executed and passing
 - [ ] `pnpm run check:agent-instructions` passes after instruction changes
 

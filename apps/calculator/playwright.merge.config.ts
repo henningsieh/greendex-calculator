@@ -1,16 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import {
-  fullBrowserConfig,
-  fullBrowserUse,
-} from "../../scripts/browser-test-config";
-
 // Explicit two-app proof; the ordinary Calculator suite still needs only Calculator.
 export default defineConfig({
   testDir: "./src/__tests__/merge",
   fullyParallel: false,
   forbidOnly: true,
   workers: 1,
+  retries: 0,
   // Covers the first Turbopack compilation of both apps on a small dev host.
   timeout: 300_000,
   expect: { timeout: 20_000 },
@@ -24,7 +20,5 @@ export default defineConfig({
     trace: "off",
     screenshot: "off",
     video: "off",
-    ...fullBrowserUse(),
   },
-  ...fullBrowserConfig(),
 });

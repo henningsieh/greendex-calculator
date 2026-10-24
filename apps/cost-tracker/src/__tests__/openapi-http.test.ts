@@ -13,18 +13,13 @@ import {
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Router } from "@/lib/orpc/router";
 
-/**
- * #273/#274 managed-server handoff (not a dev-server suite).
- * The runner MUST provide COST_TRACKER_TEST_BASE_URL and TEST_RUN_ID, start
- * its own Cost Tracker process against the same DATABASE_URL, and seed once.
- * Verify #265's database ownership marker before any sign-in or mutation.
- * Missing configuration is a failure, never a fallback to the development URL.
- */
+import { assertExistingHttpTarget } from "../../../../scripts/existing-integration-environment";
+
 const baseURL = process.env.COST_TRACKER_TEST_BASE_URL ?? "";
 const suffix = randomUUID();
 let host = "";
@@ -82,20 +77,7 @@ const projectInput = {
 
 describe("Cost Tracker OpenAPI over real HTTP", () => {
   beforeAll(async () => {
-    if (!baseURL || !/^[0-9a-f]{32}$/.test(process.env.TEST_RUN_ID ?? ""))
-      throw new Error(
-        "Managed server required: COST_TRACKER_TEST_BASE_URL and TEST_RUN_ID must be supplied by #274.",
-      );
-    const ownership = await db.execute<{ marker: string | null }>(sql`
-      SELECT shobj_description(oid, 'pg_database') AS marker
-      FROM pg_database WHERE datname = current_database()
-    `);
-    if (
-      ownership.rows[0]?.marker !== `greendex-test-run:${process.env.TEST_RUN_ID}`
-    )
-      throw new Error(
-        "Refusing HTTP fixture setup: run database ownership mismatch.",
-      );
+    assertExistingHttpTarget(process.env);
     const seededHost = await db.query.organization.findFirst({
       where: eq(organization.slug, "seed-org"),
     });
@@ -103,7 +85,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
       where: eq(organization.slug, "seed-partner-org"),
     });
     if (!seededHost || !seededOther)
-      throw new Error("Canonical seed required before managed HTTP checks.");
+      throw new Error("Required existing seed Organizations are missing.");
     host = seededHost.id;
     other = seededOther.id;
     await fetchWithTimeout(`${baseURL}/api/docs`, {
@@ -114,23 +96,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
         where: eq(user.email, email),
       });
       if (!actor) throw new Error("Canonical HTTP actor missing.");
-      const existingSessions = await db.query.session.findMany({
-        where: eq(session.userId, actor.id),
-      });
-      let response: Response;
-      try {
-        response = await post("authentication/signIn", { email, password });
-      } finally {
-        const previousIds = new Set(existingSessions.map(({ id }) => id));
-        const signedInSessions = await db.query.session.findMany({
-          where: eq(session.userId, actor.id),
-        });
-        sessionIds.push(
-          ...signedInSessions
-            .filter(({ id }) => !previousIds.has(id))
-            .map(({ id }) => id),
-        );
-      }
+      const response = await post("authentication/signIn", { email, password });
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ success: true });
       const cookie = response.headers
@@ -139,6 +105,17 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
         .join("; ");
       expect(cookie).toContain("session_token=");
       cookies.push(cookie);
+      const identityResponse = await fetchWithTimeout(`${baseURL}/api/auth/get-session`, {
+        headers: { cookie, origin: baseURL },
+      });
+      expect(identityResponse.status).toBe(200);
+      const identity = await identityResponse.json();
+      const observed = await db.query.session.findFirst({
+        where: eq(session.id, identity.session.id),
+      });
+      expect(Boolean(observed && observed.userId === actor.id && identity.user.id === actor.id)).toBe(true);
+      if (!observed) throw new Error("HTTP application database consistency could not be established.");
+      sessionIds.push(observed.id);
       const selected = await fetchWithTimeout(
         `${baseURL}/api/auth/organization/set-active`,
         {
@@ -157,11 +134,25 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
   }, 30000);
 
   afterAll(async () => {
-    if (projectIds.length)
-      await db.delete(projectsTable).where(inArray(projectsTable.id, projectIds));
-    if (sessionIds.length)
-      await db.delete(session).where(inArray(session.id, sessionIds));
-  });
+    let cleanupFailed = false;
+    for (const cookie of cookies) {
+      try {
+        const response = await fetchWithTimeout(`${baseURL}/api/auth/sign-out`, {
+          method: "POST", headers: { cookie, origin: baseURL, "content-type": "application/json" },
+          body: "{}",
+        });
+        if (!response.ok) cleanupFailed = true;
+      } catch { cleanupFailed = true; }
+    }
+    try {
+      if (projectIds.length)
+        await db.delete(projectsTable).where(inArray(projectsTable.id, projectIds));
+    } finally {
+      if (sessionIds.length)
+        await db.delete(session).where(inArray(session.id, sessionIds));
+    }
+    if (cleanupFailed) throw new Error("HTTP fixture session cleanup failed.");
+  }, 45_000);
 
   it("gates both explicit docs paths as unmatched and serves pinned Scalar and the newest spec to sessions", async () => {
     for (const path of ["/api/docs", "/api/openapi-spec"]) {
@@ -244,6 +235,9 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     expect(created.status).toBe(200);
     const { id } = await created.json();
     projectIds.push(id);
+    expect(Boolean(await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, id),
+    }))).toBe(true);
     const listing = await post(
       "projects/listHosted",
       {

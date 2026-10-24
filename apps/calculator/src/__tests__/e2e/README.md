@@ -8,35 +8,19 @@ E2E tests are located at `src/__tests__/e2e/` following the colocated testing pa
 
 ## Prerequisites
 
-- pnpm runtime installed
-- PostgreSQL database running and configured
-- Application dev server running on your configured `NEXT_PUBLIC_BASE_URL`
+The operator supplies existing apps on configured loopback origins, the shared
+development database and the Calculator socket service. Dev and production
+servers are accepted without an attestation flag. These checks do not establish
+production provenance; the user supplies reviewed builds for final production
+verification. The runner does not build, start servers, migrate or seed.
 
 ## Running E2E Tests
 
-### 1. Start the development server
-
-```bash
-pnpm run dev
-```
-
-The dev server must be running before executing e2e tests.
-
-### 2. Run the tests
-
-```bash
-# Run all e2e tests
-pnpm run test:e2e
-
-# Run with UI mode (interactive)
-pnpm run test:e2e:ui
-
-# Debug mode
-pnpm run test:e2e:debug
-
-# View test report
-pnpm run test:e2e:report
-```
+From the repository root, use `pnpm run test:e2e`. Both ordinary suites and the
+cross-app merge suite run serially with one worker and zero retries. Missing
+servers or credentials fail. For a focused Calculator spec use
+`pnpm --dir apps/calculator exec playwright test --config=playwright.config.ts <file> --workers=1 --retries=0`
+with the same prerequisites and loaded environment.
 
 ## Test Structure
 

@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 // @vitest-environment node
 import { getErrorStatus } from "@/lib/orpc/error-status";
@@ -91,10 +91,13 @@ describe("Proof transport semantic adapters", () => {
       data: { reason: "INVALID_INPUT" },
     }),
   ])("unknown/malformed errors use safe operation failure", async (error) => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => errorLog.mockRestore());
     mocks.download.mockRejectedValue(error);
     mocks.upload.mockRejectedValue(error);
     await expectSituation(await GET(new Request(url)), "proofDownloadFailed");
     await expectSituation(await POST(multipart()), "proofUploadFailed");
+    expect(errorLog).toHaveBeenCalledTimes(2);
   });
   it("missing session is401 before feature calls", async () => {
     mocks.session.mockResolvedValue(null);
@@ -104,9 +107,12 @@ describe("Proof transport semantic adapters", () => {
     expect(mocks.upload).not.toHaveBeenCalled();
   });
   it("session lookup failures receive a safe response", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => errorLog.mockRestore());
     mocks.session.mockRejectedValue(new Error("private auth config"));
     await expectSituation(await GET(new Request(url)), "proofDownloadFailed");
     await expectSituation(await POST(multipart()), "proofUploadFailed");
+    expect(errorLog).toHaveBeenCalledTimes(2);
   });
   it("accepts the configured browser origin when the runtime reconstructs an internal URL", async () => {
     const response = await POST(

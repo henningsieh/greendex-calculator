@@ -52,7 +52,7 @@ Your files untouched by me.
 
 - `partnership-setup.spec.ts` imports `./fixtures/hosting-journey`, which
   does not exist. The e2e phase cannot even load until you create it —
-  this blocks `pnpm test` for everyone. Highest priority.
+  this blocks `pnpm run test:e2e` for everyone. Highest priority.
 - Case 20 "No matches": human repro on identical data found, added, and
   listed V; the server procedure returns V live. Debug on your side:
   capture the `searchOnboarded` request/response from your run, compare

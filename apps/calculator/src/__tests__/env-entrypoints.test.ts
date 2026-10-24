@@ -1,7 +1,14 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { parseEnv } from "node:util";
 
 import { describe, expect, it } from "vitest";
 
@@ -183,6 +190,44 @@ describe("environment entrypoints", () => {
     }
   });
 
+  const sharedEnvironmentFile = path.resolve("../../packages/database/.env");
+  for (const app of ["calculator", "cost-tracker"] as const) {
+    it.skipIf(!existsSync(sharedEnvironmentFile))(
+      `loads the shared development database instead of an inherited URL for ${app}`,
+      () => {
+        const manifest =
+          app === "calculator" ? calculatorPackage : costTrackerPackage;
+        const loader = manifest.scripts.dev.split(" -- ")[0];
+        expect(loader).toBe(
+          "env -u DATABASE_URL dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env",
+        );
+        const cwd = path.resolve(`../../apps/${app}`);
+        const shared = parseEnv(
+          readFileSync(sharedEnvironmentFile, "utf8"),
+        ).DATABASE_URL;
+        expect(shared).toBeTypeOf("string");
+        const result = execFileSync(
+          "/bin/sh",
+          [
+            "-c",
+            `${loader} -- "${process.execPath}" -e 'process.stdout.write(process.env.DATABASE_URL === process.env.EXPECTED_DEV_DATABASE ? "shared" : "unexpected")'`,
+          ],
+          {
+            cwd,
+            encoding: "utf8",
+            env: {
+              ...process.env,
+              PATH: `${path.resolve(cwd, "node_modules/.bin")}:${process.env.PATH}`,
+              DATABASE_URL: "postgres://obsolete.invalid/old_database",
+              EXPECTED_DEV_DATABASE: shared,
+            },
+          },
+        );
+        expect(result).toBe("shared");
+      },
+    );
+  }
+
   it("configures every service port from the environment", () => {
     expect(calculatorPackage.scripts["dev:next"]).toBe("next dev --port $PORT");
     expect(calculatorPackage.scripts.prestart).toBe(
@@ -195,18 +240,23 @@ describe("environment entrypoints", () => {
       "dotenv -v NODE_ENV=production -e ../../packages/database/.env -e .env -- pnpm run serve",
     );
     expect(calculatorPackage.scripts.serve).toContain("next start --port $PORT");
-    expect(calculatorPackage.scripts["test:e2e:report"]).toBe(
-      "pnpm dlx kill-port 9323 || true && pnpm exec playwright show-report src/__tests__/e2e/.playwright/report",
-    );
+    expect(
+      Object.keys(calculatorPackage.scripts).filter(
+        (name) => name === "test" || name.startsWith("test:"),
+      ),
+    ).toEqual([]);
+    expect(
+      Object.keys(rootPackage.scripts).filter(
+        (name) => name === "test" || name.startsWith("test:"),
+      ),
+    ).toEqual(["test:e2e", "test:full", "test:integration", "test:unit"]);
     expect(documentationPackage.scripts.dev).toBe(
       "dotenv -v NODE_ENV=development -e .env -- sh -c 'next dev --port \"$DOCUMENTATION_PORT\"'",
     );
     expect(documentationPackage.scripts.predev).toBe(
       "dotenv -e .env -- sh -c 'fuser -k \"$DOCUMENTATION_PORT/tcp\" || true'",
     );
-    expect(costTrackerPackage.scripts.predev).toBe(
-      "dotenv -e ../../packages/database/.env -e .env -- sh -c 'fuser -k \"$COST_TRACKER_PORT/tcp\" || true'",
-    );
+    expect(costTrackerPackage.scripts.predev).toBeUndefined();
     expect(documentationPackage.scripts.start).toBe(
       "dotenv -v NODE_ENV=production -e .env -- sh -c 'next start --port \"$DOCUMENTATION_PORT\"'",
     );

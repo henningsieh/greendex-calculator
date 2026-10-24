@@ -60,9 +60,8 @@ Use this disposable shared-database account for local Cost Tracker authenticatio
 - **Status:** email verified; it has no Organization Membership and therefore no Project access.
 
 Do not grant this account roles or add it to an Organization. The IMAP-backed
-`pnpm --filter @greendex/cost-tracker test:email-delivery` check uses run-created
-mailbox Users on an isolated database, not this account. Messages are retained
-by default; see [live email verification](live-email-verification.md).
+`pnpm run test:integration` check uses run-created
+mailbox Users on the shared development database, not this account. Messages are retained; see [live email verification](live-email-verification.md).
 
 ## Scope
 

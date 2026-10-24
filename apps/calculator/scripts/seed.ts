@@ -5,9 +5,8 @@ import { Buffer } from "node:buffer";
  * Canonical development + test seed.
  *
  * Single implementation used by normal development seeding (`pnpm run db:seed`
- * in either app; Cost Tracker reuses this file) and by test setup, which
- * imports {@link seedDatabase} against an isolated database instead of
- * shelling the CLI. Do not introduce a parallel fixture generator.
+ * in either app; Cost Tracker reuses this file). Tests read existing canonical
+ * identities and never invoke seeding. Do not introduce a parallel fixture generator.
  *
  * Stable identities and scenario registry:
  * - The Seed Owner (`SEED_USER`), the Hosting Organization (`seed-org`), the
@@ -49,8 +48,8 @@ import { Buffer } from "node:buffer";
  * 2. Add an `ensure*` step below following the find-or-create pattern (stable
  *    lookup first, insert only when missing, no fixed secrets, no destructive
  *    writes), and call it from {@link seedDatabase}.
- * 3. Register the scenario in `SEED_SCENARIOS` and cover it in
- *    `src/__tests__/development-seed.integration.test.ts`.
+ * 3. Register the scenario in `SEED_SCENARIOS` and cover its application behavior
+ *    with focused existing-database procedure tests.
  * Cost Tracker's co-located `seed-cost-tracker.ts` builders are called only by
  * seedDatabase and share this registry and explicit-reset contract.
  * Accepted shared-auth, Organization/Project Participation, and Participant
