@@ -556,6 +556,7 @@ function ResolvedProjectList({
           Hosted
         </Button>
         <Button
+          data-testid="project-scope-partner"
           aria-selected={scope === "partner"}
           disabled={!availableScopes.partner}
           onClick={() => updateListState({ scope: "partner" })}

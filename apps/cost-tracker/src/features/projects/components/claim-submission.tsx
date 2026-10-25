@@ -125,6 +125,7 @@ export function ClaimSubmission({
             size="lg"
             type="button"
             disabled={!ready || pending}
+            data-testid="claim-submit"
             onClick={() => setConfirming(true)}
           >
             Submit Claim
@@ -142,6 +143,7 @@ export function ClaimSubmission({
                 size="lg"
                 type="button"
                 disabled={!ready || pending}
+                data-testid="claim-submit-confirm"
                 onClick={() => void submit()}
               >
                 Confirm submission

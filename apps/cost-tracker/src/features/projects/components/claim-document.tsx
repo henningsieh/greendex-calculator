@@ -113,7 +113,7 @@ export function ClaimCostTable({
   actions?: boolean;
 }) {
   return (
-    <Table variant="accounting">
+    <Table variant="accounting" data-testid="claim-cost-table">
       <TableCaption>
         Exact totals, Cost Allocations and linked Proof Documents.
       </TableCaption>

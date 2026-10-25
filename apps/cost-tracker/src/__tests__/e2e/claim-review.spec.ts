@@ -575,7 +575,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect(new URL(reviewURL).pathname).toBe(
       `/claims/review/${ids.partnerships[0]}`,
     );
-    const review = host.getByRole("region", { name: "Claim review" });
+    const review = host.getByTestId("claim-review");
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
@@ -584,9 +584,7 @@ test.describe.serial("Claim review journey 25–26", () => {
       review.locator('[data-testid="approved-payable"]'),
     ).toBeVisible();
     const cost = review
-      .getByRole("table", {
-        name: "Exact totals, Cost Allocations and linked Proof Documents.",
-      })
+      .getByTestId("claim-cost-table")
       .locator(
         'tbody tr[data-transport-profile="train"][data-amount-eur="100.00"]',
       );
@@ -607,9 +605,7 @@ test.describe.serial("Claim review journey 25–26", () => {
       "data-iban",
       `NOT-A-BANK-ACCOUNT-${suffix}`,
     );
-    await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
-      0,
-    );
+    await expect(review.getByTestId("cost-save")).toHaveCount(0);
     const downloadPromise = host.waitForEvent("download");
     await review.locator(`a[href*="${ids.documents[0]}"]`).click();
     const download = await downloadPromise;
@@ -624,17 +620,15 @@ test.describe.serial("Claim review journey 25–26", () => {
       "Hosting downloaded exact linked Proof Document bytes",
     ).toBe(true);
     await download.delete();
-    await review.getByRole("button", { name: "Request correction" }).click();
-    const confirm = review.getByRole("button", {
-      name: "Confirm correction request",
-    });
+    await review.getByTestId("claim-decision-requestCorrection").click();
+    const confirm = review.getByTestId(
+      "claim-decision-confirm-requestCorrection",
+    );
     await expect(confirm).toBeDisabled();
-    await review.getByRole("textbox", { name: "Correction reason" }).fill("   ");
+    await review.locator("#decision-reason").fill("   ");
     await expect(confirm).toBeDisabled();
     expect(await events(0)).toHaveLength(1);
-    await review
-      .getByRole("textbox", { name: "Correction reason" })
-      .fill(correctionReason);
+    await review.locator("#decision-reason").fill(correctionReason);
     await confirm.click();
     await expect(
       review.locator('[data-review-status="correction_requested"]'),
@@ -642,7 +636,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     // Text-free: history event recorded with reason (DB proof), rendered entry (UI proof).
     await expect(
       review
-        .getByRole("region", { name: "Claim history" })
+        .getByTestId("claim-history")
         .locator('[data-history-event="correction_requested"]'),
     ).toBeVisible();
     expect(await events(0)).toEqual(
@@ -667,10 +661,13 @@ test.describe.serial("Claim review journey 25–26", () => {
       partner.locator('[data-testid="claim-correction-notice"]'),
     ).toBeVisible();
     await partner
-      .getByRole("button", { name: `Correct ${personNames[0]}'s journey` })
+      .locator(`#journey-${ids.participants[0]}`)
+      .getByTestId("journey-correct")
       .click();
-    await partner.getByLabel(`Origin for ${personNames[0]}`).fill("Tallinn");
-    await partner.getByRole("button", { name: "Save correction" }).click();
+    await partner
+      .locator(`#journey-${ids.participants[0]} input[id$="-origin"]`)
+      .fill("Tallinn");
+    await partner.getByTestId("journey-correction-save").click();
     // Text-free: the corrected leg persists (checklist pass + resubmission below prove validity).
     // The leg value itself is setup detail typed two lines above.
     // Text-free hook: stable test id + design-system state only. No visible
@@ -682,22 +679,18 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(
       checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
     ).toHaveCount(7);
-    await partner.getByRole("button", { name: "Submit Claim" }).click();
+    await partner.getByTestId("claim-submit").click();
     // Text-free: confirm dialog ready (enabled confirm proves dialog state).
-    await expect(
-      partner.getByRole("button", { name: "Confirm submission" }),
-    ).toBeEnabled();
-    await partner.getByRole("button", { name: "Confirm submission" }).click();
+    await expect(partner.getByTestId("claim-submit-confirm")).toBeEnabled();
+    await partner.getByTestId("claim-submit-confirm").click();
     await expect(
       partner.locator('[data-draft-status="submitted"]'),
     ).toBeVisible();
-    await expect(
-      partner.getByRole("button", { name: "Save correction" }),
-    ).toHaveCount(0);
+    await expect(partner.getByTestId("journey-correction-save")).toHaveCount(0);
     // Text-free: history event hook instead of visible copy.
     await expect(
       partner
-        .getByRole("region", { name: "Claim history" })
+        .getByTestId("claim-history")
         .locator('[data-history-event="resubmitted"]'),
     ).toBeVisible();
     expect((await claimState(0))!.status).toBe("submitted");
@@ -768,7 +761,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect(reviewURL).toBeTruthy();
     const host = await pageFor(browser, "H", baseURL!);
     await host.goto(reviewURL);
-    const review = host.getByRole("region", { name: "Claim review" });
+    const review = host.getByTestId("claim-review");
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
@@ -776,16 +769,16 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(
       review.locator(`[data-testid="review-journey-${ids.participants[0]}"]`),
     ).toBeVisible();
-    await review.getByRole("button", { name: "Approve Claim" }).click();
+    await review.getByTestId("claim-decision-approve").click();
     await expect(
-      review.getByRole("button", { name: "Confirm approval" }),
+      review.getByTestId("claim-decision-confirm-approve"),
     ).toBeVisible();
-    await review.getByRole("button", { name: "Confirm approval" }).click();
+    await review.getByTestId("claim-decision-confirm-approve").click();
     await expect(review.locator('[data-review-status="approved"]')).toBeVisible();
     // Text-free: history event hook instead of visible copy.
     await expect(
       review
-        .getByRole("region", { name: "Claim history" })
+        .getByTestId("claim-history")
         .locator('[data-history-event="approved"]'),
     ).toBeVisible();
     expect(await claimState(0)).toEqual({
@@ -811,19 +804,17 @@ test.describe.serial("Claim review journey 25–26", () => {
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
-    await review.getByRole("button", { name: "Reject Claim" }).click();
+    await review.getByTestId("claim-decision-reject").click();
     await expect(
-      review.getByRole("button", { name: "Confirm rejection" }),
+      review.getByTestId("claim-decision-confirm-reject"),
     ).toBeDisabled();
-    await review
-      .getByRole("textbox", { name: "Rejection reason" })
-      .fill(rejectionReason);
-    await review.getByRole("button", { name: "Confirm rejection" }).click();
+    await review.locator("#decision-reason").fill(rejectionReason);
+    await review.getByTestId("claim-decision-confirm-reject").click();
     await expect(review.locator('[data-review-status="rejected"]')).toBeVisible();
     // Text-free: history event recorded with reason (DB proof), rendered entry (UI proof).
     await expect(
       review
-        .getByRole("region", { name: "Claim history" })
+        .getByTestId("claim-history")
         .locator('[data-history-event="rejected"]'),
     ).toBeVisible();
     expect(await events(1)).toEqual(
@@ -835,19 +826,19 @@ test.describe.serial("Claim review journey 25–26", () => {
       ]),
     );
     expect((await claimState(1))!.status).toBe("rejected");
-    await review.getByRole("button", { name: "Reopen Claim" }).click();
+    await review.getByTestId("claim-decision-reopen").click();
     // Text-free: reopen dialog ready (enabled confirm proves dialog state).
     await expect(
-      review.getByRole("button", { name: "Confirm reopening" }),
+      review.getByTestId("claim-decision-confirm-reopen"),
     ).toBeEnabled();
-    await review.getByRole("button", { name: "Confirm reopening" }).click();
+    await review.getByTestId("claim-decision-confirm-reopen").click();
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
     // Text-free: history event hook instead of visible copy.
     await expect(
       review
-        .getByRole("region", { name: "Claim history" })
+        .getByTestId("claim-history")
         .locator('[data-history-event="reopened"]'),
     ).toBeVisible();
     expect((await claimState(1))!.status).toBe("submitted");
@@ -857,15 +848,9 @@ test.describe.serial("Claim review journey 25–26", () => {
       partner.locator('[data-draft-status="submitted"]'),
     ).toBeVisible();
     await expect(partner.locator('[data-testid="claim-locked"]')).toBeVisible();
-    await expect(partner.getByRole("button", { name: "Save cost" })).toHaveCount(
-      0,
-    );
-    await expect(
-      partner.getByRole("button", { name: "Save correction" }),
-    ).toHaveCount(0);
-    await expect(
-      partner.getByRole("button", { name: "Submit Claim" }),
-    ).toHaveCount(0);
+    await expect(partner.getByTestId("cost-save")).toHaveCount(0);
+    await expect(partner.getByTestId("journey-correction-save")).toHaveCount(0);
+    await expect(partner.getByTestId("claim-submit")).toHaveCount(0);
     expect((await events(1)).map((event) => event.eventType)).toEqual([
       "submitted",
       "rejected",

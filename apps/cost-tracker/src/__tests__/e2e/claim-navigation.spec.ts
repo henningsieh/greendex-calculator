@@ -141,9 +141,9 @@ async function submissionState(page: Page) {
   await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
   await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
   await expect(
-    page.getByRole("button", {
-      name: /Submit Claim|Save cost|Save journey|Save Claim draft/,
-    }),
+    page.locator(
+      '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-draft-save"]',
+    ),
   ).toHaveCount(0);
   const persisted = await db
     .select({ id: claims.id, status: claims.status })
@@ -305,9 +305,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(p.locator('[data-draft-status="none"]')).toBeVisible();
     // The none-state above already proves no claim loaded (deep link is the
     // Partnership ID, not a guessed Claim ID); the enabled save below confirms it.
-    const accountPicker = p.getByLabel("Payout Account", { exact: true });
+    const accountPicker = p.locator("#claim-payout-select");
     await accountPicker.selectOption(ids.payout);
-    const save = p.getByRole("button", { name: "Save Claim draft" });
+    const save = p.getByTestId("claim-draft-save");
     await expect(save).toBeEnabled();
     await save.dblclick();
     // Inspect persisted state before any retry: never issue a blind second mutation.
@@ -363,8 +363,8 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(
       checklist.locator('[data-slot="badge"][data-variant="status-pass"]'),
     ).toHaveCount(7);
-    await p.getByRole("button", { name: "Submit Claim" }).dblclick();
-    const confirm = p.getByRole("button", { name: "Confirm submission" });
+    await p.getByTestId("claim-submit").dblclick();
+    const confirm = p.getByTestId("claim-submit-confirm");
     await expect(confirm).toBeVisible();
     await confirm.dblclick();
     await submissionState(p); // inspect uncertain mutation result before any retry
@@ -414,14 +414,14 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
   }) => {
     const h = await pageFor(browser, "H", baseURL!);
     await h.goto(reviewURL);
-    const review = h.getByRole("region", { name: "Claim review" });
+    const review = h.getByTestId("claim-review");
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
     // Text-free: history event state hook instead of visible copy.
     await expect(
       review
-        .getByRole("region", { name: "Claim history" })
+        .getByTestId("claim-history")
         .locator('[data-history-event="submitted"]'),
     ).toBeVisible();
     await h.goto("/claims/review");
@@ -431,12 +431,8 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
-    await expect(
-      review.getByRole("button", { name: "Approve Claim", exact: true }),
-    ).toBeEnabled();
-    await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
-      0,
-    );
+    await expect(review.getByTestId("claim-decision-approve")).toBeEnabled();
+    await expect(review.getByTestId("cost-save")).toHaveCount(0);
     expect((await counts())[4]).toBe(1);
     expect((await counts())[5]).toBe(1);
     await h.goForward();
@@ -452,9 +448,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
     expect((await counts())[5]).toBe(1);
-    await expect(review.getByRole("button", { name: "Save cost" })).toHaveCount(
-      0,
-    );
+    await expect(review.getByTestId("cost-save")).toHaveCount(0);
   });
 
   test("N5 Hosting approval survives Back/Forward and reload without duplicate decisions or Partner editing", async ({
@@ -469,34 +463,27 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       readiness.locator('[data-claim-status="submitted"]'),
     ).toBeVisible();
     await h
-      .getByRole("link", { name: "Review submitted Claims", exact: true })
+      .getByTestId("project-workspace")
+      .locator('a[href="/claims/review"]')
       .click();
     await expect(h).toHaveURL("/claims/review");
     const queued = h.locator(`a[href="${reviewURL}"]`);
     await expect(queued).toBeVisible();
     await queued.click();
     await expect(h).toHaveURL(reviewURL);
-    const review = h.getByRole("region", { name: "Claim review", exact: true });
+    const review = h.getByTestId("claim-review");
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
-    await review
-      .getByRole("button", { name: "Approve Claim", exact: true })
-      .click();
-    await review
-      .getByRole("button", { name: "Confirm approval", exact: true })
-      .click();
+    await review.getByTestId("claim-decision-approve").click();
+    await review.getByTestId("claim-decision-confirm-approve").click();
     const approved = async () => {
       await expect(h).toHaveURL(reviewURL);
       await expect(
         review.locator('[data-review-status="approved"]'),
       ).toBeVisible();
-      await expect(
-        review.getByRole("button", { name: "Mark paid", exact: true }),
-      ).toBeEnabled();
-      await expect(
-        review.getByRole("button", { name: "Approve Claim", exact: true }),
-      ).toHaveCount(0);
+      await expect(review.getByTestId("claim-decision-markPaid")).toBeEnabled();
+      await expect(review.getByTestId("claim-decision-approve")).toHaveCount(0);
       expect(
         await db
           .select({ id: claims.id, status: claims.status })
@@ -533,9 +520,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(p.locator('[data-draft-status="approved"]')).toBeVisible();
     await expect(p.locator('[data-testid="claim-locked"]')).toBeVisible();
     await expect(
-      p.getByRole("button", {
-        name: /Save cost|Save journey|Save Claim draft|Submit Claim/,
-      }),
+      p.locator(
+        '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-draft-save"]',
+      ),
     ).toHaveCount(0);
   });
 });

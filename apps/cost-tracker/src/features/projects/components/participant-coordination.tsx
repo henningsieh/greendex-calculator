@@ -160,6 +160,7 @@ function ReviewTaskControls({
           type="button"
           variant="outline"
           disabled={assign.isPending}
+          data-testid="review-task-assign"
           onClick={() => assign.mutate()}
         >
           Assign Review Task to me
@@ -192,6 +193,7 @@ function ReviewTaskControls({
           <Button
             type="button"
             disabled={resolve.isPending}
+            data-testid="review-task-resolve"
             onClick={() => resolve.mutate()}
           >
             Resolve Review Task
@@ -227,7 +229,11 @@ function ReviewTasks({
     await queryClient.invalidateQueries({ queryKey: options.queryKey });
   };
   return (
-    <section aria-label="Review Tasks" className="space-y-4">
+    <section
+      aria-label="Review Tasks"
+      data-testid="review-tasks"
+      className="space-y-4"
+    >
       {tasks.isPending ? (
         <output>Loading Review Tasks…</output>
       ) : tasks.isError ? (
@@ -627,7 +633,7 @@ export function ParticipantCoordination({
                 create.mutate();
               }}
             >
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="participation-user-picker">
                 <span className="text-sm font-medium">Registered User</span>
                 <EntityCombobox
                   label="Registered User"
@@ -638,7 +644,11 @@ export function ParticipantCoordination({
                   disabled={create.isPending}
                 />
               </div>
-              <Button disabled={create.isPending || !userId} type="submit">
+              <Button
+                data-testid="participation-add"
+                disabled={create.isPending || !userId}
+                type="submit"
+              >
                 {create.isPending ? "Adding…" : "Add Participation"}
               </Button>
             </form>
@@ -766,6 +776,7 @@ export function ParticipantCoordination({
           <Button
             type="button"
             variant="outline"
+            data-testid="review-tasks-toggle"
             onClick={() => setReviewsOpen((open) => !open)}
             aria-expanded={reviewsOpen}
           >

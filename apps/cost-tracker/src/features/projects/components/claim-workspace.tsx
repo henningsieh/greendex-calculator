@@ -150,6 +150,7 @@ function JourneyCorrection({
           size="lg"
           variant="outline"
           type="button"
+          data-testid="journey-correct"
           onClick={() => setEditing(true)}
         >
           Correct {name}&apos;s journey
@@ -205,7 +206,13 @@ function JourneyCorrection({
             />
             <FieldError message={errors.erasmusDistanceKm} />
           </div>
-          <Button size="lg" variant="default" type="submit" disabled={pending}>
+          <Button
+            size="lg"
+            variant="default"
+            type="submit"
+            disabled={pending}
+            data-testid="journey-correction-save"
+          >
             Save correction
           </Button>
           <Button
@@ -408,6 +415,7 @@ function JourneyEditor({
               variant="default"
               type="submit"
               disabled={pending || !person}
+              data-testid="journey-save"
             >
               Save journey
             </Button>
@@ -526,7 +534,10 @@ function CostEditor({
               allocations: (
                 <ul className="space-y-2">
                   {entry.allocations.map((share) => (
-                    <li key={share.projectParticipantId}>
+                    <li
+                      key={share.projectParticipantId}
+                      data-amount-eur={share.amountEur}
+                    >
                       {participants.find(
                         (item) => item.id === share.projectParticipantId,
                       )?.displayName ?? "Participant"}
@@ -616,7 +627,7 @@ function CostEditor({
               </select>
               <FieldError message={errors.allocationMethod} />
             </div>
-            <fieldset className="space-y-2">
+            <fieldset data-testid="cost-participations" className="space-y-2">
               <legend>Covered Participations</legend>
               {participants.map((item) => {
                 const index = selected.indexOf(item.id);
@@ -625,6 +636,7 @@ function CostEditor({
                     <label>
                       <input
                         type="checkbox"
+                        data-testid={`cost-participation-${item.id}`}
                         checked={index !== -1}
                         onChange={(event) =>
                           setSelected((old) =>
@@ -683,7 +695,13 @@ function CostEditor({
                 ? `Equal split across ${selected.length} Participations; exact EUR shares computed by the server after save.`
                 : `Entered shares total: ${shareTotal} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
             </p>
-            <Button size="lg" variant="default" type="submit" disabled={pending}>
+            <Button
+              size="lg"
+              variant="default"
+              type="submit"
+              disabled={pending}
+              data-testid="cost-save"
+            >
               Save cost
             </Button>
           </form>
@@ -807,7 +825,13 @@ function ProofEditor({
               type="file"
               accept="application/pdf,image/jpeg,image/png"
             />
-            <Button size="lg" variant="default" type="submit" disabled={busy}>
+            <Button
+              size="lg"
+              variant="default"
+              type="submit"
+              disabled={busy}
+              data-testid="proof-upload"
+            >
               Upload document
             </Button>
           </form>
@@ -1205,6 +1229,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                         variant="default"
                         type="submit"
                         disabled={pending}
+                        data-testid="payout-account-create"
                       >
                         Create Payout Account
                       </Button>
@@ -1217,6 +1242,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                     size="lg"
                     type="button"
                     disabled={pending || !payout.selectedPayoutAccountId}
+                    data-testid="claim-draft-save"
                     onClick={() => void saveDraft()}
                   >
                     Save Claim draft

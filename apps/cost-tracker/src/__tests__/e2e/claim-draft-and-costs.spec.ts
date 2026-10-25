@@ -127,7 +127,7 @@ async function openPartnership(
   destination: "participants" | "claim",
 ) {
   await page.goto("/projects");
-  await expect(page.getByRole("tab", { name: "Partner" })).toHaveAttribute(
+  await expect(page.getByTestId("project-scope-partner")).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -137,12 +137,9 @@ async function openPartnership(
     )
     .click();
   await page
-    .getByRole("link", {
-      name:
-        destination === "participants"
-          ? "Coordinate Participants"
-          : "Open Claim workspace",
-    })
+    .locator(
+      `a[href="${destination === "participants" ? participantsURL : claimURL}"]`,
+    )
     .click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
   await expectPrivateURL(
@@ -401,10 +398,11 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       // participant rows are asserted by role right after.
       await expect(await participationRow(page, people[0]!.id)).toBeVisible();
       await expect(await participationRow(page, people[1]!.id)).toBeVisible();
-      await page.getByRole("button", { name: "Registered User" }).click();
-      const search = page.getByRole("combobox", {
-        name: /Search Registered User/,
-      });
+      await page
+        .getByTestId("participation-user-picker")
+        .getByRole("button")
+        .click();
+      const search = page.locator('[data-slot="command-input"]');
       const response = page.waitForResponse((result) => {
         const request = result.request();
         return (
@@ -429,7 +427,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         (response) =>
           new URL(response.url()).pathname === "/api/rpc/participations/create",
       );
-      await page.getByRole("button", { name: "Add Participation" }).click();
+      await page.getByTestId("participation-add").click();
       expect((await added).ok()).toBe(true);
       // Text-free: the new row + DB length below prove the addition (no toast copy).
       const row = await participationRow(page, people[2]!.id);
@@ -439,33 +437,22 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       expect(detailsHref).not.toBeNull();
       await detailsLink.click();
       await expectPrivateURL(page, detailsHref!);
-      await expect(
-        page.getByRole("region", { name: "Participant details", exact: true }),
-      ).toBeVisible();
-      await page.getByLabel(`Country for ${people[2]!.name}`).selectOption("DE");
-      await page.getByRole("button", { name: /^Save country for / }).click();
+      await expect(page.getByTestId("participant-details")).toBeVisible();
+      await page.locator("#participation-country").selectOption("DE");
+      await page.getByTestId("participation-country-save").click();
       await expect(
         page.locator('[data-feedback-outcome="country-saved"]'),
       ).toBeVisible();
-      await expect(page.getByLabel(`Country for ${people[2]!.name}`)).toHaveValue(
-        "DE",
-      );
+      await expect(page.locator("#participation-country")).toHaveValue("DE");
       await page.reload();
-      await expect(page.getByLabel(`Country for ${people[2]!.name}`)).toHaveValue(
-        "DE",
-      );
+      await expect(page.locator("#participation-country")).toHaveValue("DE");
       expect(
         await db
           .select()
           .from(projectParticipantsTable)
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
-      await page
-        .getByRole("link", {
-          name: "Back to Project Participations",
-          exact: true,
-        })
-        .click();
+      await page.locator(`a[href="${participantsURL}"]`).click();
       await expectPrivateURL(page, participantsURL);
       const [savedCountry] = await db
         .select({ country: projectParticipantsTable.country })
@@ -475,9 +462,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         );
       expect(savedCountry?.country).toBe("DE");
       await expect(row).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Show Review Tasks", exact: true }),
-      ).toBeVisible();
+      await expect(page.getByTestId("review-tasks-toggle")).toBeVisible();
     } finally {
       await actor.close();
     }
@@ -517,7 +502,8 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.reload();
       await expect(row).toHaveCount(0);
       await page
-        .getByRole("button", { name: "Registered User", exact: true })
+        .getByTestId("participation-user-picker")
+        .getByRole("button")
         .click();
       const response = page.waitForResponse((result) => {
         const request = result.request();
@@ -530,7 +516,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         );
       });
       await page
-        .getByRole("combobox", { name: /Search Registered User/ })
+        .locator('[data-slot="command-input"]')
         .pressSequentially(people[2]!.name, { delay: 35 });
       const found = await response;
       expect(found.status()).toBe(200);
@@ -541,7 +527,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page
         .locator(`[role="option"][data-entity-id="${people[2]!.id}"]`)
         .click();
-      await page.getByRole("button", { name: "Add Participation" }).click();
+      await page.getByTestId("participation-add").click();
       await expect
         .poll(async () =>
           db
@@ -572,13 +558,8 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     try {
       const page = await actor.newPage();
       await page.goto(participantsURL);
-      await page
-        .getByRole("button", { name: "Show Review Tasks", exact: true })
-        .click();
-      const tasks = page.getByRole("region", {
-        name: "Review Tasks",
-        exact: true,
-      });
+      await page.getByTestId("review-tasks-toggle").click();
+      const tasks = page.getByTestId("review-tasks");
       // Text-free: the empty tasks region proves the empty state (no copy).
       await expect(tasks.getByRole("listitem")).toHaveCount(0);
       const decisions = [
@@ -588,36 +569,29 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       ] as const;
       for (const [index, person] of people.entries()) {
         await page
-          .getByRole("button", { name: "Registered User", exact: true })
+          .getByTestId("participation-user-picker")
+          .getByRole("button")
           .click();
-        const search = page.getByRole("combobox", {
-          name: /Search Registered User/,
-        });
+        const search = page.locator('[data-slot="command-input"]');
         await search.fill("");
         await search.pressSequentially(person.name, { delay: 35 });
         await page
           .locator(`[role="option"][data-entity-id="${person.id}"]`)
           .click();
-        await page
-          .getByRole("button", { name: "Add Participation", exact: true })
-          .click();
+        await page.getByTestId("participation-add").click();
         await expect(
           page.locator('[data-feedback-outcome="duplicate-review"]'),
         ).toBeVisible();
         const openRow = tasks.locator('li[data-task-status="open"]');
         await expect(openRow).toHaveCount(1);
-        await openRow
-          .getByRole("button", { name: "Assign Review Task to me", exact: true })
-          .click();
+        await openRow.getByTestId("review-task-assign").click();
         await expect(openRow).toHaveCount(0);
         const assignedRow = tasks.locator('li[data-task-status="assigned"]');
         await expect(assignedRow).toHaveCount(1);
         await assignedRow
-          .getByLabel("Review Task decision", { exact: true })
+          .locator('select[id^="review-decision-"]')
           .selectOption(decisions[index]!.value);
-        await assignedRow
-          .getByRole("button", { name: "Resolve Review Task", exact: true })
-          .click();
+        await assignedRow.getByTestId("review-task-resolve").click();
         await expect(assignedRow).toHaveCount(0);
         const resolvedRow = tasks.locator(
           `li[data-task-status="resolved"][data-task-decision="${decisions[index]!.value}"]`,
@@ -641,9 +615,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         });
       }
       await page.reload();
-      await page
-        .getByRole("button", { name: "Show Review Tasks", exact: true })
-        .click();
+      await page.getByTestId("review-tasks-toggle").click();
       // Text-free: all resolved rows carry the resolved state (DB proof below covers values).
       await expect(tasks.locator('li[data-task-status="resolved"]')).toHaveCount(
         3,
@@ -680,28 +652,22 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(page.locator('[data-draft-status="none"]')).toBeVisible();
       expect(await claimCount()).toBe(0);
       await page
-        .getByLabel("Account holder")
+        .locator("#account-holder")
         .fill(`CT ${suffix} disposable holder`);
-      await page.getByLabel("IBAN").fill(disposableIban());
-      await page.getByRole("button", { name: "Create Payout Account" }).click();
+      await page.locator("#account-iban").fill(disposableIban());
+      await page.getByTestId("payout-account-create").click();
       // Text-free: claimCount 0 + disabled Save below prove nothing was created (no toast copy).
       expect(await claimCount()).toBe(0);
-      await expect(
-        page.getByRole("button", { name: "Save Claim draft" }),
-      ).toBeDisabled();
-      await page
-        .getByLabel("Payout Account", { exact: true })
-        .selectOption({ index: 1 });
+      await expect(page.getByTestId("claim-draft-save")).toBeDisabled();
+      await page.locator("#claim-payout-select").selectOption({ index: 1 });
       // Text-free: the succeeding Save click below proves the selection applied (no copy).
       expect(await claimCount()).toBe(0);
-      await page.getByRole("button", { name: "Save Claim draft" }).click();
+      await page.getByTestId("claim-draft-save").click();
       await expect(page.locator('[data-draft-status="editable"]')).toBeVisible();
       expect(await claimCount()).toBe(1);
       await page.reload();
       await expect(page.locator('[data-draft-status="editable"]')).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Save Claim draft" }),
-      ).toHaveCount(0);
+      await expect(page.getByTestId("claim-draft-save")).toHaveCount(0);
       expect(await claimCount()).toBe(1);
       // A second Save is unavailable after success; concurrent saves are tested in claims.integration.test.ts.
     } finally {
@@ -718,49 +684,32 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       const page = await actor.newPage();
       await openPartnership(page, "claim");
       await page
-        .getByLabel("Participation", { exact: true })
+        .locator("#journey-person")
         .selectOption(await participationId(people[0]!.id));
-      await page.getByRole("button", { name: "Save journey" }).click();
+      await page.getByTestId("journey-save").click();
       await expect(
-        page
-          .getByLabel("Origin", { exact: true })
-          .locator("..")
-          .getByRole("alert"),
+        page.locator("#journey-origin").locator("..").getByRole("alert"),
       ).toBeVisible();
       await expect(
-        page
-          .getByLabel("Destination", { exact: true })
-          .locator("..")
-          .getByRole("alert"),
+        page.locator("#journey-destination").locator("..").getByRole("alert"),
       ).toBeVisible();
       await expect(
-        page
-          .getByLabel("Erasmus Distance-Calculator distance (km)", {
-            exact: true,
-          })
-          .locator("..")
-          .getByRole("alert"),
+        page.locator("#journey-distance").locator("..").getByRole("alert"),
       ).toBeVisible();
       for (const person of people) {
         await page
-          .getByLabel("Participation", { exact: true })
+          .locator("#journey-person")
           .selectOption(await participationId(person.id));
-        await page.getByLabel("Origin", { exact: true }).fill("Berlin");
-        await page.getByLabel("Destination", { exact: true }).fill("Riga");
-        await page
-          .getByLabel("Trip type", { exact: true })
-          .selectOption("round-trip");
-        await page
-          .getByLabel("Erasmus Distance-Calculator distance (km)", {
-            exact: true,
-          })
-          .fill(distance);
-        await page.getByRole("button", { name: "Save journey" }).click();
+        await page.locator("#journey-origin").fill("Berlin");
+        await page.locator("#journey-destination").fill("Riga");
+        await page.locator("#journey-type").selectOption("round-trip");
+        await page.locator("#journey-distance").fill(distance);
+        await page.getByTestId("journey-save").click();
         // Text-free: saved journeys persist (submit + checklist + DB below prove
         // validity); rendered leg echoes are setup detail typed two lines above.
         await expect(
           page
-            .getByLabel("Participation", { exact: true })
+            .locator("#journey-person")
             .locator(`option[value="${await participationId(person.id)}"]`),
         ).toHaveCount(0);
       }
@@ -787,9 +736,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       ).toBeDefined();
       await page.reload();
       // Text-free: reloaded journeys persist (submit below proves validity).
-      await expect(
-        page.getByLabel("Participation", { exact: true }).locator("option"),
-      ).toHaveCount(1);
+      await expect(page.locator("#journey-person").locator("option")).toHaveCount(
+        1,
+      );
       // The selector excludes saved Journeys: a second cannot be initiated in the UI.
       // Forged second-Journey rejection is AUTOMATED-ONLY in journeys.integration.test.ts.
     } finally {
@@ -833,34 +782,34 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
     try {
       const page = await actor.newPage();
       await openPartnership(page, "claim");
-      await page.getByLabel("Exact total (EUR)").fill("0");
-      await page.getByRole("button", { name: "Save cost" }).click();
+      await page.locator("#cost-amount").fill("0");
+      await page.getByTestId("cost-save").click();
       await expect(
-        page.getByLabel("Exact total (EUR)").locator("..").getByRole("alert"),
+        page.locator("#cost-amount").locator("..").getByRole("alert"),
       ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
-      await page.getByLabel("Exact total (EUR)").fill("100.00");
-      await page.getByLabel("Allocation method").selectOption("amount");
+      await page.locator("#cost-amount").fill("100.00");
+      await page.locator("#cost-method").selectOption("amount");
       for (const person of people)
         await page
-          .getByRole("group", { name: "Covered Participations" })
-          .getByLabel(person.name)
+          .getByTestId("cost-participations")
+          .getByTestId(`cost-participation-${await participationId(person.id)}`)
           .check();
       for (const person of people)
-        await page.getByLabel(`${person.name} EUR share`).fill("33.33");
-      await page.getByRole("button", { name: "Save cost" }).click();
+        await page
+          .locator(`#share-${await participationId(person.id)}`)
+          .fill("33.33");
+      await page.getByTestId("cost-save").click();
       await expect(
         page
-          .getByRole("group", { name: "Covered Participations" })
+          .getByTestId("cost-participations")
           .locator(':scope > [role="alert"]'),
       ).toBeVisible();
       await expect(page.locator('[data-testid="costs-empty"]')).toBeVisible();
-      await page.getByLabel("Allocation method").selectOption("equal");
-      await page.getByRole("button", { name: "Save cost" }).click();
+      await page.locator("#cost-method").selectOption("equal");
+      await page.getByTestId("cost-save").click();
       const cost = page
-        .getByRole("table", {
-          name: "Exact totals, Cost Allocations and linked Proof Documents.",
-        })
+        .getByTestId("claim-cost-table")
         .locator('tbody tr[data-amount-eur="100.00"]');
       await expect(cost).toBeVisible();
       // Text-free: equal-split method proven by the shares DB assertions below (all null = equal).
@@ -883,18 +832,19 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         ),
       ).toBe(true);
       const displayedShares = await page
-        .locator(`#cost-${entry!.id}`)
-        .getByRole("listitem")
-        .allTextContents();
+        .locator(`#cost-${entry!.id} li[data-amount-eur]`)
+        .evaluateAll((shares) =>
+          shares.map((share) => share.getAttribute("data-amount-eur")),
+        );
       const cents = displayedShares.map((share) => {
-        const amount = share.match(/: (\d+)\.(\d{2}) EUR \(computed\)/);
+        const amount = share?.match(/^(\d+)\.(\d{2})$/);
         expect(amount, `exact EUR allocation missing: ${share}`).not.toBeNull();
         return Number(amount![1]) * 100 + Number(amount![2]);
       });
       expect(cents).toHaveLength(3);
       expect(cents.reduce((sum, share) => sum + share, 0)).toBe(10000);
       expect(Math.max(...cents) - Math.min(...cents)).toBe(1);
-      await page.getByLabel(/Upload Proof Document/).setInputFiles({
+      await page.locator("#proof-file").setInputFiles({
         name: proofName,
         mimeType: "application/pdf",
         buffer: Buffer.from(
@@ -907,7 +857,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           response.request().method() === "POST",
         { timeout: 60_000 },
       );
-      await page.getByRole("button", { name: "Upload document" }).click();
+      await page.getByTestId("proof-upload").click();
       expect((await uploadResponse).status()).toBe(201);
       // Text-free: 201 + working selectOption below prove upload+linkage (no toast copy).
       const [document] = await db
@@ -920,9 +870,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           new URL(response.url()).pathname === "/api/rpc/costs/linkDocument" &&
           response.request().method() === "POST",
       );
-      await page
-        .getByLabel("Link a Proof Document to this cost")
-        .selectOption(document!.id);
+      await page.locator(`#link-${entry!.id}`).selectOption(document!.id);
       expect((await linkResponse).status()).toBe(200);
       await expect(
         page.locator(`#link-${entry!.id} option[value="${document!.id}"]`),
@@ -970,34 +918,24 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
             .getAttribute("data-payable"),
         ),
       ).toBe(Number(expectedPayable));
-      await page.getByRole("button", { name: "Submit Claim" }).click();
+      await page.getByTestId("claim-submit").click();
       // Text-free: confirm dialog ready (enabled confirm proves dialog state).
-      await expect(
-        page.getByRole("button", { name: "Confirm submission" }),
-      ).toBeEnabled();
-      await page.getByRole("button", { name: "Confirm submission" }).click();
+      await expect(page.getByTestId("claim-submit-confirm")).toBeEnabled();
+      await page.getByTestId("claim-submit-confirm").click();
       await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
       await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
-      await expect(page.getByRole("button", { name: "Save cost" })).toHaveCount(
-        0,
-      );
-      await expect(
-        page.getByRole("button", { name: "Save journey" }),
-      ).toHaveCount(0);
-      await expect(
-        page.getByRole("button", { name: "Submit Claim" }),
-      ).toHaveCount(0);
+      await expect(page.getByTestId("cost-save")).toHaveCount(0);
+      await expect(page.getByTestId("journey-save")).toHaveCount(0);
+      await expect(page.getByTestId("claim-submit")).toHaveCount(0);
       await expect(
         page
-          .getByRole("region", { name: "Claim history" })
+          .getByTestId("claim-history")
           .locator('[data-history-event="submitted"]'),
       ).toBeVisible();
       await page.goBack();
       await expectPrivateURL(page, `/projects/${projectId}?returnTo=%2Fprojects`);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(
-        page.getByRole("link", { name: "Open Claim workspace", exact: true }),
-      ).toBeVisible();
+      await expect(page.locator(`a[href="${claimURL}"]`)).toBeVisible();
       // Text-free: readiness card carries the submitted claim state (no copy).
       await expect(
         page.locator('[data-slot="card"]').filter({
@@ -1009,9 +947,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
       await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
       await expect(
-        page.getByRole("button", {
-          name: /Save cost|Save journey|Submit Claim|Save Claim draft/,
-        }),
+        page.locator(
+          '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-draft-save"]',
+        ),
       ).toHaveCount(0);
       expect(await claimCount()).toBe(1);
       const [submitted] = await db
@@ -1027,9 +965,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       ).toEqual([{ type: "submitted" }]);
       await page.reload();
       await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
-      await expect(page.getByRole("button", { name: "Save cost" })).toHaveCount(
-        0,
-      );
+      await expect(page.getByTestId("cost-save")).toHaveCount(0);
       const [claim] = await db
         .select()
         .from(claimsTable)

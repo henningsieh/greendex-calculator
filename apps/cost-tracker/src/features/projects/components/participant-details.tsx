@@ -113,6 +113,7 @@ function CountryCorrection({
         </select>
       </div>
       <Button
+        data-testid="participation-country-save"
         disabled={update.isPending}
         onClick={() => {
           setFeedback(undefined);
@@ -160,7 +161,11 @@ export function ParticipantDetails({
   const denial = participantEntryDenialMessage(correction);
   const { participation } = data;
   return (
-    <section className="space-y-6" aria-label="Participant details">
+    <section
+      className="space-y-6"
+      aria-label="Participant details"
+      data-testid="participant-details"
+    >
       <div className="space-y-2">
         <Link
           className={buttonVariants({ variant: "ghost" })}
