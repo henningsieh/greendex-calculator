@@ -27,6 +27,18 @@ import {
   costTrackerOrganizationRoles,
 } from "./permissions";
 
+export async function canCreateOrganization(
+  userId: string,
+  flags: Pick<FeatureFlags, "singleOrganization">,
+): Promise<boolean> {
+  if (!flags.singleOrganization) return true;
+  const membership = await db.query.member.findFirst({
+    where: eq(member.userId, userId),
+    columns: { id: true },
+  });
+  return !membership;
+}
+
 type EmailVerificationOptions = NonNullable<
   BetterAuthOptions["emailVerification"]
 >;
@@ -148,14 +160,7 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
           },
         },
         allowUserToCreateOrganization: flags.singleOrganization
-          ? async (user) => {
-              const membership = await db.query.member.findFirst({
-                where: eq(member.userId, user.id),
-                columns: { id: true },
-              });
-
-              return !membership;
-            }
+          ? (user) => canCreateOrganization(user.id, flags)
           : undefined,
         organizationHooks: {
           ...config.organizationHooks,
@@ -271,6 +276,7 @@ async function requireUniqueOrganizationName(name: unknown): Promise<void> {
 
   if (existingOrganization) {
     throw new APIError("BAD_REQUEST", {
+      code: "ORGANIZATION_NAME_ALREADY_EXISTS",
       message: "Choose a different Organization name.",
     });
   }

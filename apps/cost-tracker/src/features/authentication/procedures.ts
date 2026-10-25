@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import { loadOnboardingFacts } from "@/features/authentication/onboarding-context";
+import {
+  decideOnboarding,
+  OnboardingInputSchema,
+  OnboardingDecisionSchema,
+} from "@/features/authentication/onboarding-decision";
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
 import { auth } from "@/lib/auth";
@@ -158,13 +164,19 @@ export const createOrganization = authorized
           .json()
           .catch(() => undefined);
         const refusal = z
-          .object({ code: z.literal("ORGANIZATION_ALREADY_EXISTS") })
+          .object({
+            code: z.enum([
+              "ORGANIZATION_ALREADY_EXISTS",
+              "ORGANIZATION_NAME_ALREADY_EXISTS",
+            ]),
+          })
           .safeParse(body);
         if (refusal.success) {
           forwardCookies(response, context);
-          throw createSituationErrors(
-            errors,
-          ).organizationSlugTakenBeforeCreation();
+          const situations = createSituationErrors(errors);
+          throw refusal.data.code === "ORGANIZATION_ALREADY_EXISTS"
+            ? situations.organizationSlugTakenBeforeCreation()
+            : situations.organizationNameTakenBeforeCreation();
         }
       }
       return response;
@@ -188,4 +200,14 @@ export const updateUser = authorized
     );
 
     return { success: true };
+  });
+
+export const onboardingNextStep = base
+  .input(OnboardingInputSchema)
+  .output(OnboardingDecisionSchema)
+  .handler(async ({ context, input, errors }) => {
+    context.resHeaders?.set("cache-control", "private, no-store");
+    return decideOnboarding(
+      await loadOnboardingFacts(context.headers, input, errors),
+    );
   });

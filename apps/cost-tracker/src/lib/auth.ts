@@ -9,9 +9,11 @@ import {
 } from "@/features/organizations/roles";
 import { emailSender } from "@/lib/email";
 
+export const costTrackerAuthFlags = { singleOrganization: true };
+
 export const auth = createServerAuth({
   appName: "Cost Tracker",
-  flags: { singleOrganization: true },
+  flags: costTrackerAuthFlags,
   roleSet: "costTracker",
   organizationHooks: costTrackerOrganizationHooks,
   plugins: [costTrackerInvitationRoleGate, participantMembershipGrantPlugin],

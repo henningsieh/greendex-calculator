@@ -31,17 +31,14 @@ describe("NoOrganizationAccess", () => {
     mocks.replace.mockReset();
   });
 
-  it("refreshes the current protected route once after creating an Organization", async () => {
+  it("ends setup at the Project overview after inline Organization creation", async () => {
     mocks.createOrganization.mockResolvedValue({});
     // No inter-keystroke delay: keystroke timing must not eat the timeout.
     const user = userEvent.setup({ delay: null });
     render(<NoOrganizationAccess />);
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Create Organization" }));
-    expect(
-      screen.getByRole("dialog", { name: "Create Organization" }),
-    ).toBeVisible();
+    expect(screen.getByLabelText("Organization name")).toBeVisible();
 
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
@@ -56,7 +53,7 @@ describe("NoOrganizationAccess", () => {
       screen.queryByRole("dialog", { name: "Create Organization" }),
     ).not.toBeInTheDocument();
     expect(mocks.refresh).toHaveBeenCalledExactlyOnceWith();
-    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
   });
 
   it("clears pending state and gives safe feedback when Organization creation rejects", async () => {
@@ -64,8 +61,6 @@ describe("NoOrganizationAccess", () => {
     // No inter-keystroke delay: keystroke timing must not eat the timeout.
     const user = userEvent.setup({ delay: null });
     render(<NoOrganizationAccess />);
-    await user.click(screen.getByRole("button", { name: "Create Organization" }));
-
     await user.type(screen.getByLabelText("Organization name"), "Northwind");
     await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
     await user.click(screen.getByRole("button", { name: "Create Organization" }));
@@ -74,9 +69,8 @@ describe("NoOrganizationAccess", () => {
     expect(
       screen.getByRole("button", { name: "Create Organization" }),
     ).not.toBeDisabled();
-    expect(
-      screen.getByRole("dialog", { name: "Create Organization" }),
-    ).toBeVisible();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Organization name")).toHaveValue("Northwind");
     expect(mocks.refresh).not.toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });

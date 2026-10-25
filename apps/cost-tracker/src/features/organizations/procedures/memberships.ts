@@ -18,14 +18,18 @@ export const listMemberships = authorized
     z.array(z.object({ id: z.string(), name: z.string(), role: z.string() })),
   )
   .handler(async ({ context }) => {
-    return db
-      .select({
-        id: organization.id,
-        name: organization.name,
-        role: member.role,
-      })
-      .from(member)
-      .innerJoin(organization, eq(organization.id, member.organizationId))
-      .where(eq(member.userId, context.user.id))
-      .orderBy(asc(organization.name), asc(organization.id));
+    return readOrganizationMemberships(context.user.id);
   });
+
+export async function readOrganizationMemberships(userId: string) {
+  return db
+    .select({
+      id: organization.id,
+      name: organization.name,
+      role: member.role,
+    })
+    .from(member)
+    .innerJoin(organization, eq(organization.id, member.organizationId))
+    .where(eq(member.userId, userId))
+    .orderBy(asc(organization.name), asc(organization.id));
+}

@@ -9,7 +9,11 @@
 
 export type { Session, User } from "better-auth/types";
 
-export { createServerAuth, type ServerAuthConfig } from "./server-auth";
+export {
+  canCreateOrganization,
+  createServerAuth,
+  type ServerAuthConfig,
+} from "./server-auth";
 
 export {
   accessControl,

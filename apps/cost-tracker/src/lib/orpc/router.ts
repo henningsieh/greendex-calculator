@@ -3,6 +3,7 @@ import type { InferRouterOutputs } from "@orpc/server";
 import { participantOnboarding } from "@/features/authentication/participant-onboarding-procedures";
 import {
   createOrganization,
+  onboardingNextStep,
   signIn,
   signOut,
   signUp,
@@ -89,6 +90,7 @@ import {
 export const router = {
   authentication: {
     createOrganization,
+    onboardingNextStep,
     signIn,
     signOut,
     signUp,

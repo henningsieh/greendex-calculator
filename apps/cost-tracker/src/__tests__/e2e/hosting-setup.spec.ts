@@ -72,9 +72,8 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await expect(
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
-    const dialog = page.getByRole("dialog", { name: "Create Organization" });
-    await expect(dialog).toBeHidden();
-    await page.getByRole("button", { name: "Create Organization" }).click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+    const dialog = page.getByTestId("no-organization-access");
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(fixture.organizationName);
     await dialog.getByLabel("Organization country").selectOption("DE");
@@ -150,6 +149,25 @@ test.describe.serial("Hosting Organization journey section 1", () => {
         ),
       ).toBeVisible();
     });
+  });
+
+  test("invalid Organization Invitations stay in joining recovery without creation", async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await fixture.actorContext(browser, "X", baseURL!);
+    const page = await context.newPage();
+    await page.goto(`/accept-invitation/${randomUUID()}`);
+    await expect(page.locator("[data-invitation-recovery]")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Check invitation again" }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: "Create Organization" }),
+    ).toHaveCount(0);
+    await expect(page.getByLabel("Organization name")).toHaveCount(0);
+    await page.getByRole("button", { name: "Check invitation again" }).click();
+    await expect(page.locator("[data-invitation-recovery]")).toBeVisible();
   });
 
   test("04 X sees no Hosting Project data on direct Main URL", async ({
@@ -246,7 +264,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
   });
 });
 
-test("creation refreshes Organization management before navigating to Projects", async ({
+test("creation from Organization management ends at the Project overview", async ({
   browser,
   baseURL,
 }) => {
@@ -256,25 +274,14 @@ test("creation refreshes Organization management before navigating to Projects",
     const context = await recovery.actorContext(browser, "H", baseURL!);
     const page = await context.newPage();
     await page.goto("/organization");
-    const dialog = page.getByRole("dialog", { name: "Create Organization" });
-    await expect(dialog).toBeHidden();
-    await page.getByRole("button", { name: "Create Organization" }).click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+    const dialog = page.getByTestId("no-organization-access");
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Organization name").fill(recovery.organizationName);
     await dialog.getByLabel("Organization country").selectOption("DE");
     await dialog.getByRole("button", { name: "Create Organization" }).click();
     await expect(dialog).toBeHidden();
-    await expectPrivateURL(page, /\/organization$/);
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(
-      (await staffRow(page, recovery.actors.H.id)).getByTestId(
-        `staff-role-${ORGANIZATION_ROLES.OrganizationOwner}`,
-      ),
-    ).toBeVisible();
-    await page
-      .getByRole("navigation", { name: "Primary navigation" })
-      .getByRole("link", { name: "Projects", exact: true })
-      .click();
+    await expectPrivateURL(page, /\/projects$/);
     await expectFirstOrganizationProjects(page, recovery.organizationName);
   } finally {
     await recovery.teardown();

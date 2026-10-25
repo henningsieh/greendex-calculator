@@ -214,30 +214,39 @@ describe("Cost Tracker authentication procedures", () => {
     },
   );
 
-  it("confirms only the native pre-insertion duplicate-slug refusal as safe to retry", async () => {
-    mocks.createOrganization.mockResolvedValueOnce(
-      response(400, { code: "ORGANIZATION_ALREADY_EXISTS", message: "private" }),
-    );
-    const input = { name: "Taken", slug: "taken", country: "DE" as const };
-    const resHeaders = new Headers();
-    await expect(
-      createClient(resHeaders).authentication.createOrganization(input),
-    ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-      message: "This Organization name is already in use. Choose another name.",
-      data: { reason: "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION" },
-    });
-    expect(resHeaders.getSetCookie()).toEqual([
-      "session=updated; Path=/; HttpOnly",
-    ]);
-    await expect(
-      createClient().authentication.createOrganization({
-        ...input,
-        name: "Available",
-        slug: "available",
-      }),
-    ).resolves.toEqual({ success: true, organizationId: "created-org" });
-  });
+  it.each([
+    ["ORGANIZATION_ALREADY_EXISTS", "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION"],
+    [
+      "ORGANIZATION_NAME_ALREADY_EXISTS",
+      "ORGANIZATION_NAME_TAKEN_BEFORE_CREATION",
+    ],
+  ])(
+    "confirms the pre-insertion %s refusal as safe to retry",
+    async (code, reason) => {
+      mocks.createOrganization.mockResolvedValueOnce(
+        response(400, { code, message: "private" }),
+      );
+      const input = { name: "Taken", slug: "taken", country: "DE" as const };
+      const resHeaders = new Headers();
+      await expect(
+        createClient(resHeaders).authentication.createOrganization(input),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "This Organization name is already in use. Choose another name.",
+        data: { reason },
+      });
+      expect(resHeaders.getSetCookie()).toEqual([
+        "session=updated; Path=/; HttpOnly",
+      ]);
+      await expect(
+        createClient().authentication.createOrganization({
+          ...input,
+          name: "Available",
+          slug: "available",
+        }),
+      ).resolves.toEqual({ success: true, organizationId: "created-org" });
+    },
+  );
 
   it.each([
     [
@@ -245,6 +254,18 @@ describe("Cost Tracker authentication procedures", () => {
       { code: "ORGANIZATION_ALREADY_EXISTS" },
       "INTERNAL_SERVER_ERROR",
       "INTERNAL_FAILURE",
+    ],
+    [
+      500,
+      { code: "ORGANIZATION_NAME_ALREADY_EXISTS" },
+      "INTERNAL_SERVER_ERROR",
+      "INTERNAL_FAILURE",
+    ],
+    [
+      400,
+      { message: "Choose a different Organization name." },
+      "BAD_REQUEST",
+      "INVALID_INPUT",
     ],
     [400, { code: "UNKNOWN_CREATION_FAILURE" }, "BAD_REQUEST", "INVALID_INPUT"],
     [

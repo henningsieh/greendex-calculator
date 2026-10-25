@@ -1,7 +1,9 @@
 import { connection } from "next/server";
 
 import { AppNavigation } from "@/components/app-navigation";
+import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
+import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import {
   canManageOrganization,
   canViewPartnerNetwork,
@@ -17,34 +19,41 @@ export async function ProtectedShell({
   await connection();
   const session = await getSession();
   if (!session) return children;
-  // Shell context, not policy: the caller's Memberships bootstrap the
-  // active-Membership gate and the switcher list. Procedures re-authorize
-  // every request, so this gate only decides which shell renders.
+  const decision = await orpc.authentication.onboardingNextStep({});
+  if (decision.nextStep === "verify-email") {
+    return (
+      <main className="mx-auto flex min-h-svh max-w-xl flex-col justify-center gap-6 p-5">
+        <CheckInbox email={decision.email} />
+        <SignOutButton />
+        <div hidden>{children}</div>
+      </main>
+    );
+  }
+  if (decision.nextStep === "create-organization")
+    return (
+      <>
+        <NoOrganizationAccess />
+        <div hidden>{children}</div>
+      </>
+    );
+  if (decision.nextStep === "select-organization") {
+    return (
+      <>
+        <SelectOrganization
+          organizations={decision.availableActions[0].organizations}
+        />
+        <div hidden>{children}</div>
+      </>
+    );
+  }
+  if (decision.nextStep !== "continue") return children;
+
   const memberships = await orpc.organizations.listMemberships();
   const context = resolveStaffOrganizationContext({
     memberships,
     activeOrganizationId: session.session.activeOrganizationId ?? null,
   });
-
-  if (context.status === "no-membership") {
-    return (
-      <>
-        <NoOrganizationAccess />
-        {children}
-      </>
-    );
-  }
-
-  // Missing, stale, or revoked active context: inline selection recovery.
-  // No staff actions render and nothing redirects, so this cannot loop.
-  if (context.status === "select") {
-    return (
-      <>
-        <SelectOrganization organizations={context.memberships} />
-        {children}
-      </>
-    );
-  }
+  if (context.status !== "ready") return null;
 
   const canViewOrganization = await canManageOrganization();
 

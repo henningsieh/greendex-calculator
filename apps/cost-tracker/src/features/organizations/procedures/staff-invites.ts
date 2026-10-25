@@ -237,37 +237,52 @@ export const inviteMember = authorized
     };
   });
 
+export async function readStaffInvitation(
+  invitationId: string,
+  email: string,
+  errors: ProcedureErrors["errors"],
+  allowAccepted = false,
+) {
+  const [pending] = await db
+    .select({
+      organizationId: invitation.organizationId,
+      email: invitation.email,
+      role: invitation.role,
+      status: invitation.status,
+      expiresAt: invitation.expiresAt,
+    })
+    .from(invitation)
+    .where(eq(invitation.id, invitationId))
+    .limit(1);
+
+  if (!pending) throw createSituationErrors(errors).staffInvitationNotFound();
+  requireCostTrackerRole(pending.role, () =>
+    createSituationErrors(errors).invalidOrganizationRole(),
+  );
+  // Participant entry never flows through Better Auth invitations
+  // (ADR-0013): any row carrying the participant role — including stale
+  // development rows — would bypass agreement and Project Participation
+  // checks here, so only staff invitations may proceed.
+  if (pending.role === ORGANIZATION_ROLES.Participant)
+    throw createSituationErrors(errors).staffInvitationWrongKind();
+  if (
+    pending.status !== "pending" &&
+    !(allowAccepted && pending.status === "accepted")
+  )
+    throw createSituationErrors(errors).staffInvitationClosed();
+  if (pending.status === "pending" && pending.expiresAt < new Date())
+    throw createSituationErrors(errors).staffInvitationExpired();
+  if (pending.email.toLowerCase() !== email.toLowerCase())
+    throw createSituationErrors(errors).staffInvitationWrongEmail();
+
+  return pending;
+}
+
 export const acceptInvitation = authorized
   .input(z.object({ invitationId: z.string().min(1).max(128) }))
   .output(z.object({ organizationId: z.string() }))
   .handler(async ({ context, errors, input }) => {
-    const [pending] = await db
-      .select({
-        email: invitation.email,
-        role: invitation.role,
-        status: invitation.status,
-        expiresAt: invitation.expiresAt,
-      })
-      .from(invitation)
-      .where(eq(invitation.id, input.invitationId))
-      .limit(1);
-
-    if (!pending) throw createSituationErrors(errors).staffInvitationNotFound();
-    requireCostTrackerRole(pending.role, () =>
-      createSituationErrors(errors).invalidOrganizationRole(),
-    );
-    // Participant entry never flows through Better Auth invitations
-    // (ADR-0013): any row carrying the participant role — including stale
-    // development rows — would bypass agreement and Project Participation
-    // checks here, so only staff invitations may proceed.
-    if (pending.role === ORGANIZATION_ROLES.Participant)
-      throw createSituationErrors(errors).staffInvitationWrongKind();
-    if (pending.status !== "pending")
-      throw createSituationErrors(errors).staffInvitationClosed();
-    if (pending.expiresAt < new Date())
-      throw createSituationErrors(errors).staffInvitationExpired();
-    if (pending.email.toLowerCase() !== context.user.email.toLowerCase())
-      throw createSituationErrors(errors).staffInvitationWrongEmail();
+    await readStaffInvitation(input.invitationId, context.user.email, errors);
 
     try {
       const accepted = await auth.api.acceptInvitation({

@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/components/auth-form";
+import { InvitationRecovery } from "@/features/organizations/components/invitation-acceptance";
+import { orpc } from "@/lib/orpc/orpc";
 import { getSession, safeSignInReturnTo } from "@/lib/session";
+
+const MAX_RETURN_TO_LENGTH = 2048;
 
 export const metadata: Metadata = {
   title: "Create account",
@@ -17,8 +21,24 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
-  const next = safeSignInReturnTo((await searchParams).next);
+  const rawNext = (await searchParams).next;
+  const next = safeSignInReturnTo(rawNext);
+
+  const decision = await orpc.authentication.onboardingNextStep({
+    returnTo:
+      typeof rawNext === "string" && rawNext.length <= MAX_RETURN_TO_LENGTH
+        ? rawNext
+        : undefined,
+  });
+  if (decision.entryContext === "organization-invitation" && !next)
+    return <InvitationRecovery reason="STAFF_INVITATION_NOT_FOUND" />;
   if (await getSession()) redirect(next ?? "/projects");
 
-  return <AuthForm mode="sign-up" returnTo={next} />;
+  return (
+    <AuthForm
+      mode="sign-up"
+      returnTo={next}
+      entryContext={decision.entryContext}
+    />
+  );
 }

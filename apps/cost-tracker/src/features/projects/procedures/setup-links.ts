@@ -212,6 +212,24 @@ async function validateSetupLink(
   return { link, project, redemption };
 }
 
+export async function readSetupLinkEligibility(
+  input: z.infer<typeof setupLinkInput>,
+  user: { id: string; email: string; emailVerified: boolean },
+  errors: SetupErrors,
+) {
+  return db.transaction(async (tx) => {
+    const { project, redemption } = await validateSetupLink(
+      tx,
+      input,
+      user,
+      errors,
+    );
+    return redemption
+      ? { status: "redeemed" as const, projectId: project.id, ...redemption }
+      : { status: "eligible" as const, projectId: project.id };
+  });
+}
+
 /** Advisory only. Redemption rechecks authoritative state after Better Auth creation. */
 export const getSetupLinkEligibility = authorized
   .input(setupLinkInput)
@@ -225,18 +243,50 @@ export const getSetupLinkEligibility = authorized
     ]),
   )
   .handler(async ({ input, context, errors }) =>
-    db.transaction(async (tx) => {
-      const { project, redemption } = await validateSetupLink(
-        tx,
-        input,
-        context.user,
-        createSituationErrors(errors),
-      );
-      return redemption
-        ? { status: "redeemed" as const, projectId: project.id, ...redemption }
-        : { status: "eligible" as const, projectId: project.id };
-    }),
+    readSetupLinkEligibility(input, context.user, createSituationErrors(errors)),
   );
+
+async function validateSetupBinding(
+  tx: SetupTransaction,
+  input: z.infer<typeof setupLinkInput> & { organizationId: string },
+  user: { id: string; email: string; emailVerified: boolean },
+  situations: SetupErrors,
+) {
+  const { link, project, redemption } = await validateSetupLink(
+    tx,
+    input,
+    user,
+    situations,
+  );
+  await requireOrganizationOwner(tx, user.id, input.organizationId, situations);
+  if (redemption) {
+    if (redemption.organizationId !== input.organizationId)
+      throw situations.setupLinkUsed();
+    return { link, project, redemption };
+  }
+
+  if (input.organizationId === project.hostId) throw situations.selfPartnership();
+  const [existing] = await tx
+    .select({ id: partnerships.id })
+    .from(partnerships)
+    .where(
+      and(
+        eq(partnerships.projectId, project.id),
+        eq(partnerships.organizationId, input.organizationId),
+      ),
+    )
+    .limit(1);
+  if (existing) throw situations.partnershipAlreadyAssigned();
+  return { link, project, redemption };
+}
+
+export async function readSetupBindingEligibility(
+  input: z.infer<typeof setupLinkInput> & { organizationId: string },
+  user: { id: string; email: string; emailVerified: boolean },
+  errors: SetupErrors,
+) {
+  await db.transaction((tx) => validateSetupBinding(tx, input, user, errors));
+}
 
 /** Binds only. Better Auth owns Organization creation and Memberships (ADR-0013). */
 export const consumeSetupLink = authorized
@@ -245,39 +295,14 @@ export const consumeSetupLink = authorized
   .handler(async ({ input, context, errors }) => {
     return db.transaction(async (tx) => {
       const situations = createSituationErrors(errors);
-      const { link, project, redemption } = await validateSetupLink(
+      const { link, project, redemption } = await validateSetupBinding(
         tx,
         input,
         context.user,
         situations,
       );
-      await requireOrganizationOwner(
-        tx,
-        context.user.id,
-        input.organizationId,
-        situations,
-      );
-      if (redemption) {
-        if (redemption.organizationId !== input.organizationId)
-          throw situations.setupLinkUsed();
-        return redemption;
-      }
-
+      if (redemption) return redemption;
       const organizationId = input.organizationId;
-      if (organizationId === project.hostId)
-        throw createSituationErrors(errors).selfPartnership();
-      const [existing] = await tx
-        .select({ id: partnerships.id })
-        .from(partnerships)
-        .where(
-          and(
-            eq(partnerships.projectId, project.id),
-            eq(partnerships.organizationId, organizationId),
-          ),
-        )
-        .limit(1);
-      if (existing)
-        throw createSituationErrors(errors).partnershipAlreadyAssigned();
       const [partnership] = await tx
         .insert(partnerships)
         .values({ projectId: project.id, organizationId })
