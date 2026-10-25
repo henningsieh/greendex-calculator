@@ -117,6 +117,31 @@ describe("visible-copy assertion checker", () => {
     );
   });
 
+  it("rejects Text-suffixed copy queries with literals", () => {
+    expectViolations(
+      [
+        'screen.getByLabelText("Email address");',
+        "screen.findByPlaceholderText(/Search/);",
+        'screen.getByDisplayValue("Cost Tracker E2E");',
+        "screen.queryByDisplayValue(/Dashboard/);",
+      ].join("\n"),
+    );
+  });
+
+  it("allows identifiers and test ids in Text-suffixed queries", () => {
+    const source = [
+      "screen.getByLabelText(label);",
+      "screen.findByPlaceholderText(placeholder);",
+      'screen.getByTestId("email");',
+    ].join("\n");
+    expect(runChecker(source)).toEqual({
+      status: 0,
+      stdout:
+        "check:no-copy-assertions passed — no visible-copy matchers in test sources.\n",
+      stderr: "",
+    });
+  });
+
   it("allows identifiers, member expressions, catalogue reads, and nameless roles", () => {
     const source = [
       'page.getByRole("button", { name: projectName });',

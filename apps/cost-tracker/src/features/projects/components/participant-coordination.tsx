@@ -860,6 +860,7 @@ export function ParticipantCoordination({
                   </Label>
                   <input
                     id="new-participant-link"
+                    data-testid="new-registration-link"
                     className="h-9 w-full rounded-md border bg-background px-3 text-sm"
                     readOnly
                     value={createdLink.url}

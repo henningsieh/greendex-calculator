@@ -497,11 +497,8 @@ describe("ParticipantCoordination", () => {
       partnershipId: "own-partnership",
     });
     expect(
-      (
-        (await screen.findByLabelText(
-          "New registration link (copy now)",
-        )) as HTMLInputElement
-      ).value,
+      ((await screen.findByTestId("new-registration-link")) as HTMLInputElement)
+        .value,
     ).toContain("/participant-links/new-link?secret=one-time-secret");
     await user.click(screen.getByTestId("close-participant-invitation-invite-1"));
     await waitFor(() =>
@@ -528,11 +525,8 @@ describe("ParticipantCoordination", () => {
     await renderCoordination();
     await user.click(screen.getByTestId("create-registration-link"));
     expect(
-      (
-        (await screen.findByLabelText(
-          "New registration link (copy now)",
-        )) as HTMLInputElement
-      ).value,
+      ((await screen.findByTestId("new-registration-link")) as HTMLInputElement)
+        .value,
     ).toContain("/participant-links/new-link?secret=one-time-secret");
     mocks.createRegistrationLink.mockRejectedValueOnce(
       new ORPCError("FORBIDDEN"),
@@ -545,11 +539,7 @@ describe("ParticipantCoordination", () => {
       ),
     );
     expect(
-      (
-        screen.getByLabelText(
-          "New registration link (copy now)",
-        ) as HTMLInputElement
-      ).value,
+      (screen.getByTestId("new-registration-link") as HTMLInputElement).value,
     ).toContain("/participant-links/new-link?secret=one-time-secret");
   });
 

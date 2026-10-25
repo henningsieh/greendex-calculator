@@ -43,16 +43,26 @@ const copyQueryCallees = [
   "queryByRole",
   "getByLabel",
   "findByLabel",
+  "queryByLabel",
   "getByPlaceholder",
+  "findByPlaceholder",
   "getByTitle",
   "getByAltText",
   "toHaveTitle",
+  "getByLabelText",
+  "findByLabelText",
+  "queryByLabelText",
+  "getByPlaceholderText",
+  "findByPlaceholderText",
+  "getByDisplayValue",
+  "findByDisplayValue",
+  "queryByDisplayValue",
 ];
 
 const copyOptionLiteral =
   /["']?(?:name|title|placeholder|labelText|altText)["']?\s*:\s*["'/]/;
 const bareCopyLiteral =
-  /(?:getByLabel|findByLabel|getByPlaceholder|getByTitle|getByAltText|toHaveTitle)\s*\(\s*["'/]/;
+  /(?:getByLabel|findByLabel|queryByLabel|getByPlaceholder|findByPlaceholder|getByTitle|getByAltText|toHaveTitle|getByLabelText|findByLabelText|queryByLabelText|getByPlaceholderText|findByPlaceholderText|getByDisplayValue|findByDisplayValue|queryByDisplayValue)\s*\(\s*["'/]/;
 
 const templatePattern = /`(?:[^`\\]|\\.)*`/g;
 const literalPattern =
