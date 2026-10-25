@@ -195,7 +195,7 @@ export function SetupLinkCreator() {
   }
 
   return (
-    <Card>
+    <Card data-testid="setup-link-creator">
       <CardHeader>
         <CardTitle>Partner Organization Setup Link</CardTitle>
       </CardHeader>
@@ -205,7 +205,7 @@ export function SetupLinkCreator() {
           Organization membership.
         </p>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={create}>
-          <div className="space-y-2">
+          <div data-testid="hosted-project-picker" className="space-y-2">
             <span className="text-sm font-medium">Hosted Project</span>
             <EntityCombobox
               label="Hosted Project"
@@ -225,13 +225,18 @@ export function SetupLinkCreator() {
             />
           </div>
           <div>
-            <Button disabled={pending || !projectId} type="submit">
+            <Button
+              data-testid="create-setup-link"
+              disabled={pending || !projectId}
+              type="submit"
+            >
               {pending ? "Neuer Link…" : "Neuer Link"}
             </Button>
           </div>
         </form>
         {error && <p role="alert">{error}</p>}
         <section
+          data-testid="setup-links"
           aria-label="Existing Partner Organization Setup Links"
           className="space-y-3"
         >
@@ -302,6 +307,7 @@ export function SetupLinkCreator() {
                     </TableCell>
                     <TableCell>
                       <Button
+                        data-testid="close-setup-link"
                         type="button"
                         variant="outline"
                         disabled={!existing.enabled || !!closingId}
@@ -323,6 +329,7 @@ export function SetupLinkCreator() {
             <Label htmlFor="recipient-link">Recipient setup link</Label>
             <Input id="recipient-link" readOnly value={link} />
             <Button
+              data-testid="copy-setup-link"
               type="button"
               variant="outline"
               onClick={async () => {
@@ -425,7 +432,7 @@ function SetupOrganizationForm({
           </fieldset>
         )}
         {existing && owned ? (
-          <Field>
+          <Field data-testid="setup-organization-picker">
             <FieldLabel>Organization</FieldLabel>
             <EntityCombobox
               label="Organization"
@@ -476,6 +483,7 @@ function SetupOrganizationForm({
           </>
         )}
         <Button
+          data-testid="complete-setup"
           disabled={
             pending ||
             (existing
@@ -699,14 +707,22 @@ export function SetupLinkRecipient({
                 No new Organization will be created.
               </AlertDescription>
             </Alert>
-            <Button disabled={pending} onClick={() => void consume()}>
+            <Button
+              data-testid="retry-retained-setup"
+              disabled={pending}
+              onClick={() => void consume()}
+            >
               Retry setup with retained Organization
             </Button>
           </>
         ) : decision?.nextStep === "setup-recovery" ? (
           <>
             <SetupStatus state={knownErrors[decision.reason] ?? "generic"} />
-            <Button disabled={pending} onClick={recheck}>
+            <Button
+              data-testid="inspect-setup"
+              disabled={pending}
+              onClick={recheck}
+            >
               Inspect setup result
             </Button>
           </>
@@ -720,6 +736,7 @@ export function SetupLinkRecipient({
             </Alert>
             {decision.availableActions[0].organizations.map((organization) => (
               <Button
+                data-testid="select-setup-organization"
                 key={organization.id}
                 disabled={pending}
                 onClick={() => void select(organization.id)}
@@ -730,6 +747,7 @@ export function SetupLinkRecipient({
           </>
         ) : decision?.nextStep === "continue" ? (
           <Link
+            data-testid="open-partner-project"
             className={buttonVariants()}
             prefetch={false}
             href={decision.availableActions[0].destination}
@@ -749,7 +767,11 @@ export function SetupLinkRecipient({
         {error && (
           <>
             <SetupStatus state={error} />
-            <Button disabled={pending} onClick={recheck}>
+            <Button
+              data-testid="inspect-setup"
+              disabled={pending}
+              onClick={recheck}
+            >
               Inspect setup result
             </Button>
           </>

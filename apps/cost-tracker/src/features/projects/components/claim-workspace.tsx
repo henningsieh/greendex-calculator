@@ -683,7 +683,13 @@ function CostEditor({
                 ? `Equal split across ${selected.length} Participations; exact EUR shares computed by the server after save.`
                 : `Entered shares total: ${shareTotal} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
             </p>
-            <Button size="lg" variant="default" type="submit" disabled={pending}>
+            <Button
+              data-testid="save-cost"
+              size="lg"
+              variant="default"
+              type="submit"
+              disabled={pending}
+            >
               Save cost
             </Button>
           </form>
@@ -1201,6 +1207,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                         <FieldError message={accountErrors.bic} />
                       </div>
                       <Button
+                        data-testid="create-payout-account"
                         size="lg"
                         variant="default"
                         type="submit"
@@ -1213,6 +1220,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                 </div>
                 {editable && !draft && (
                   <Button
+                    data-testid="save-claim-draft"
                     variant="default"
                     size="lg"
                     type="button"

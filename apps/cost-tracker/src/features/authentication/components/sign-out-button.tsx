@@ -32,6 +32,7 @@ export function SignOutButton({
 
   return (
     <Button
+      data-testid="sign-out"
       {...props}
       aria-label={compact ? "Sign out" : undefined}
       disabled={pending}

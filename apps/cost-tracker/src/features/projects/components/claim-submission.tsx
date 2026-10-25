@@ -121,6 +121,7 @@ export function ClaimSubmission({
         </p>
         {!confirming ? (
           <Button
+            data-testid="submit-claim"
             variant="default"
             size="lg"
             type="button"

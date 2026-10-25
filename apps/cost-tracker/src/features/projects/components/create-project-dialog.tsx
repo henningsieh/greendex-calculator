@@ -45,13 +45,16 @@ export function CreateProjectDialog() {
 
   return (
     <Dialog.Root onOpenChange={setOpen} open={open}>
-      <Dialog.Trigger render={<Button type="button" />}>
+      <Dialog.Trigger data-testid="new-project" render={<Button type="button" />}>
         New project
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 bg-foreground/20 backdrop-blur-sm" />
         <Dialog.Viewport className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Popup className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border bg-background p-6 shadow-xl outline-none">
+          <Dialog.Popup
+            data-testid="create-project-dialog"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border bg-background p-6 shadow-xl outline-none"
+          >
             <Dialog.Title className="font-heading text-2xl font-semibold">
               New project
             </Dialog.Title>
@@ -159,7 +162,11 @@ export function CreateProjectDialog() {
                   >
                     Cancel
                   </Dialog.Close>
-                  <Button disabled={isSubmitting} type="submit">
+                  <Button
+                    data-testid="create-project"
+                    disabled={isSubmitting}
+                    type="submit"
+                  >
                     {isSubmitting ? "Creating…" : "Create project"}
                   </Button>
                 </div>

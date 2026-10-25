@@ -62,6 +62,7 @@ function AgreementAcceptance({
         EU–Erasmus Participant agreement ({agreement.id})
       </h2>
       <div
+        data-testid="participant-agreement"
         className="max-h-64 overflow-auto rounded-md border p-4 whitespace-pre-wrap"
         aria-label="Participant agreement text"
       >
@@ -69,6 +70,7 @@ function AgreementAcceptance({
       </div>
       <label className="flex items-start gap-2">
         <input
+          data-testid="accept-participant-agreement"
           checked={checked}
           onChange={(event) => onCheckedChange(event.target.checked)}
           required
@@ -141,6 +143,7 @@ export function ParticipantJoin({
             <div className="space-y-2">
               <Label htmlFor="participant-name">Full name</Label>
               <Input
+                data-testid="participant-name"
                 id="participant-name"
                 autoComplete="name"
                 maxLength={200}
@@ -176,6 +179,7 @@ export function ParticipantJoin({
               onCheckedChange={setAccepted}
             />
             <Button
+              data-testid="join-project"
               disabled={!available || !accepted || !country || pending}
               type="submit"
             >
@@ -273,7 +277,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
         {!available ? (
           <>
             <AgreementUnavailable />
-            <Button disabled type="button">
+            <Button data-testid="accept-agreement" disabled type="button">
               Accept agreement
             </Button>
           </>
@@ -286,6 +290,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
               <div className="space-y-2">
                 <Label htmlFor="profile-name">Full name</Label>
                 <Input
+                  data-testid="participant-name"
                   id="profile-name"
                   autoComplete="name"
                   maxLength={200}
@@ -294,7 +299,11 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                   onChange={(event) => setName(event.target.value)}
                 />
               </div>
-              <Button disabled={pending} type="submit">
+              <Button
+                data-testid="save-participant-profile"
+                disabled={pending}
+                type="submit"
+              >
                 {pending ? "Saving…" : "Save profile"}
               </Button>
             </form>
@@ -311,7 +320,11 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                 checked={accepted}
                 onCheckedChange={setAccepted}
               />
-              <Button disabled={!accepted || pending} type="submit">
+              <Button
+                data-testid="accept-agreement"
+                disabled={!accepted || pending}
+                type="submit"
+              >
                 {pending ? "Accepting…" : "Accept agreement"}
               </Button>
             </form>

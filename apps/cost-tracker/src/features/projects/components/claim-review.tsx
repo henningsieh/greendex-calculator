@@ -206,6 +206,7 @@ export function ClaimDecisionPanel({
             <Button
               size="lg"
               key={action}
+              data-testid={`claim-review-${action}`}
               type="button"
               variant={
                 action === "approve" || action === "markPaid"
@@ -244,6 +245,7 @@ export function ClaimDecisionPanel({
             </AlertDescription>
             <div className="flex flex-wrap gap-2">
               <Button
+                data-testid={`claim-review-confirm-${confirming}`}
                 variant="default"
                 size="lg"
                 type="button"

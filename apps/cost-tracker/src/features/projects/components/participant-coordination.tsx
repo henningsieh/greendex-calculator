@@ -387,6 +387,7 @@ function PartnerCoordinatorControls({
       )}
       <div className="flex flex-wrap gap-3">
         <Button
+          data-testid="assign-group-organizer"
           type="button"
           disabled={!targetUserId || assign.isPending || revoke.isPending}
           onClick={() => {
@@ -397,6 +398,7 @@ function PartnerCoordinatorControls({
           Assign Group Organizer
         </Button>
         <Button
+          data-testid="revoke-group-organizer"
           type="button"
           variant="outline"
           disabled={!targetUserId || assign.isPending || revoke.isPending}
@@ -603,6 +605,7 @@ export function ParticipantCoordination({
 
   return (
     <section
+      data-testid="project-participations"
       className="space-y-6"
       aria-label="Project Participations"
       data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
@@ -739,6 +742,7 @@ export function ParticipantCoordination({
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
+              data-testid="manage-group-organizers"
               type="button"
               variant="outline"
               aria-expanded={coordinatorsOpen}
@@ -814,11 +818,16 @@ export function ParticipantCoordination({
                     onChange={(event) => setEmail(event.target.value)}
                   />
                 </div>
-                <Button disabled={issueInvitation.isPending} type="submit">
+                <Button
+                  data-testid="send-participant-invitation"
+                  disabled={issueInvitation.isPending}
+                  type="submit"
+                >
                   Send Participant Invitation
                 </Button>
               </form>
               <Button
+                data-testid="create-registration-link"
                 type="button"
                 variant="outline"
                 disabled={createLink.isPending}
@@ -888,6 +897,7 @@ export function ParticipantCoordination({
                   </Badge>
                   {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
+                      data-testid="reissue-participant-invitation"
                       type="button"
                       variant="outline"
                       disabled={
@@ -950,6 +960,7 @@ export function ParticipantCoordination({
                   </Badge>
                   {entryAccess.permitted && link.enabled && (
                     <Button
+                      data-testid="close-registration-link"
                       type="button"
                       variant="outline"
                       disabled={closeLink.isPending || reopenLink.isPending}
@@ -960,6 +971,7 @@ export function ParticipantCoordination({
                   )}
                   {entryAccess.permitted && !link.enabled && (
                     <Button
+                      data-testid="reopen-registration-link"
                       type="button"
                       variant="outline"
                       disabled={reopenLink.isPending || closeLink.isPending}

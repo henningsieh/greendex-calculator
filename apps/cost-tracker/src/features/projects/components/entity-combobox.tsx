@@ -83,6 +83,7 @@ export function EntityCombobox<T extends Entity>({
       <PopoverTrigger
         render={
           <Button
+            data-testid="entity-trigger"
             aria-label={label}
             aria-expanded={open}
             className="w-full justify-between"
@@ -98,6 +99,7 @@ export function EntityCombobox<T extends Entity>({
       <PopoverContent align="start" className="w-(--anchor-width) gap-0 p-0">
         <Command shouldFilter={false}>
           <CommandInput
+            data-testid="entity-search"
             aria-label={`Search ${label} by ${searchBy}`}
             ref={(node) => node?.focus()}
             placeholder={`Search ${searchBy}…`}
