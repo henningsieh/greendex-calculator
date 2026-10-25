@@ -111,7 +111,7 @@ export function ProjectPartnershipManager({
                 assignMutation.mutate();
               }}
             >
-              <div className="space-y-2">
+              <div data-testid="hosted-project-picker" className="space-y-2">
                 <span className="text-sm font-medium">Hosted Project</span>
                 <EntityCombobox
                   label="Hosted Project"
@@ -123,7 +123,10 @@ export function ProjectPartnershipManager({
                   )}
                 />
               </div>
-              <div className="space-y-2">
+              <div
+                data-testid="partner-organization-picker"
+                className="space-y-2"
+              >
                 <span className="text-sm font-medium">Partner Organization</span>
                 <EntityCombobox
                   label="Partner Organization"
@@ -139,6 +142,7 @@ export function ProjectPartnershipManager({
                 />
               </div>
               <Button
+                data-testid="assign-partnership"
                 disabled={
                   assignMutation.isPending || !projectId || !organizationId
                 }

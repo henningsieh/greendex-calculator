@@ -108,6 +108,7 @@ export function NoOrganizationAccess() {
           </Field>
           <div className="flex flex-wrap gap-3">
             <Button
+              data-testid="create-organization"
               disabled={pending || !slugify(name) || !country}
               type="submit"
             >

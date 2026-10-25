@@ -207,28 +207,26 @@ async function pageFor(browser: Browser, actor: Actor, baseURL: string) {
 
 async function openPartnerParticipants(page: Page, projectName: string) {
   await page.goto("/projects");
-  await page.getByRole("tab", { name: "Partner" }).click();
+  await page.getByTestId("project-scope-partner").click();
   await page
     .locator(
       `a[href="/projects/${projectName === names.main ? ids.main : ids.other}"], a[href^="/projects/${projectName === names.main ? ids.main : ids.other}?"]`,
     )
     .click();
-  await page.getByRole("link", { name: "Coordinate Participants" }).click();
-  await expect(
-    page.locator('section[aria-label="Project Participations"]'),
-  ).toBeVisible();
+  await page.locator('a[href^="/partnerships/"][href$="/participants"]').click();
+  await expect(page.getByTestId("project-participations")).toBeVisible();
   // Text-free: the section above is already proven visible; the invitation
   // form interactions below prove the content (no heading-copy assertion).
 }
 
 async function join(page: Page, url: string, actor: Actor) {
   await page.goto(url);
-  await expect(page.getByLabel("Participant agreement text")).toBeVisible();
-  await expect(page.getByLabel("Participant agreement text")).not.toBeEmpty();
-  await page.getByLabel("Full name").fill(actors[actor].name);
-  await page.getByLabel("Country", { exact: true }).selectOption("DE");
-  await page.getByLabel("I accept the current Participant agreement").check();
-  await page.getByRole("button", { name: "Join Project" }).click();
+  await expect(page.getByTestId("participant-agreement")).toBeVisible();
+  await expect(page.getByTestId("participant-agreement")).not.toBeEmpty();
+  await page.getByTestId("participant-name").fill(actors[actor].name);
+  await page.locator("#participant-country").selectOption("DE");
+  await page.getByTestId("accept-participant-agreement").check();
+  await page.getByTestId("join-project").click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
   await expectPrivateURL(page, /\/participant$/);
   await expect(page.getByTestId("participant-dashboard")).toHaveAttribute(
@@ -488,16 +486,14 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
   }) => {
     const page = await pageFor(browser, "T", baseURL!);
     await page.goto("/participant");
-    await page.getByLabel("Full name", { exact: true }).fill(actors.T.name);
-    await page.getByRole("button", { name: "Save profile" }).click();
+    await page.getByTestId("participant-name").fill(actors.T.name);
+    await page.getByTestId("save-participant-profile").click();
     await expect(page.getByTestId("participant-dashboard")).toHaveAttribute(
       "data-dashboard-state",
       "agreement",
     );
-    await expect(page.getByLabel("Participant agreement text")).not.toBeEmpty();
-    await expect(
-      page.getByRole("button", { name: "Accept agreement" }),
-    ).toBeDisabled();
+    await expect(page.getByTestId("participant-agreement")).not.toBeEmpty();
+    await expect(page.getByTestId("accept-agreement")).toBeDisabled();
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, actors.T.id)),
     ).toHaveLength(1);
@@ -521,13 +517,11 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
   }) => {
     const p = await pageFor(browser, "P", baseURL!);
     await openPartnerParticipants(p, names.main);
-    await expect(
-      p.getByRole("button", { name: "Send Participant Invitation" }),
-    ).toBeVisible();
+    await expect(p.getByTestId("send-participant-invitation")).toBeVisible();
     await expect(
       p
         .getByTestId(`participant-invitation-${ids.oldInvitation}`)
-        .getByRole("button", { name: /^Reissue invitation for / }),
+        .getByTestId("reissue-participant-invitation"),
     ).toBeVisible();
     // Reissue UI sends mail. Rotate app-owned invitation records in setup instead.
     await db
@@ -549,14 +543,14 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(
       p
         .getByTestId(`participant-invitation-${ids.invitation}`)
-        .getByRole("button", { name: /^Reissue invitation for / }),
+        .getByTestId("reissue-participant-invitation"),
     ).toBeVisible();
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(invitationUrl(ids.oldInvitation));
-    await t.getByLabel("Full name").fill(actors.T.name);
-    await t.getByLabel("Country", { exact: true }).selectOption("DE");
-    await t.getByLabel("I accept the current Participant agreement").check();
-    await t.getByRole("button", { name: "Join Project" }).click();
+    await t.getByTestId("participant-name").fill(actors.T.name);
+    await t.locator("#participant-country").selectOption("DE");
+    await t.getByTestId("accept-participant-agreement").check();
+    await t.getByTestId("join-project").click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
     await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(
@@ -566,7 +560,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         .where(eq(participants.userId, actors.T.id)),
     ).toHaveLength(0);
     await t.goto(invitationUrl(ids.invitation));
-    await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
+    await expect(t.getByTestId("join-project")).toBeVisible();
   });
 
   test("15 P creates a shareable link, closes it and reopens it in-browser", async ({
@@ -575,20 +569,14 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
   }) => {
     const p = await pageFor(browser, "P", baseURL!);
     await openPartnerParticipants(p, names.main);
-    await p
-      .getByRole("button", { name: "Create Participant Registration Link" })
-      .click();
+    await p.getByTestId("create-registration-link").click();
     // Text-free: the created link input carries a value (functional proof).
-    await expect(
-      p.getByLabel("New registration link (copy now)"),
-    ).not.toBeEmpty();
-    sharedLink = await p
-      .getByLabel("New registration link (copy now)")
-      .inputValue();
+    await expect(p.locator("#new-participant-link")).not.toBeEmpty();
+    sharedLink = await p.locator("#new-participant-link").inputValue();
     const id = new URL(sharedLink).pathname.split("/").at(-1)!;
     await p
       .getByTestId(`registration-link-${id}`)
-      .getByRole("button", { name: /^Close registration link / })
+      .getByTestId("close-registration-link")
       .click();
     // Text-free: link row carries the closed state (stable id, not copy).
     await expect(
@@ -598,10 +586,10 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ).toBeVisible();
     const u = await pageFor(browser, "U", baseURL!);
     await u.goto(sharedLink);
-    await u.getByLabel("Full name").fill(actors.U.name);
-    await u.getByLabel("Country", { exact: true }).selectOption("DE");
-    await u.getByLabel("I accept the current Participant agreement").check();
-    await u.getByRole("button", { name: "Join Project" }).click();
+    await u.getByTestId("participant-name").fill(actors.U.name);
+    await u.locator("#participant-country").selectOption("DE");
+    await u.getByTestId("accept-participant-agreement").check();
+    await u.getByTestId("join-project").click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
     await expect(u.locator("form p[role='alert']")).toBeVisible();
     expect(
@@ -612,7 +600,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ).toHaveLength(0);
     await p
       .getByTestId(`registration-link-${id}`)
-      .getByRole("button", { name: /^Reopen registration link / })
+      .getByTestId("reopen-registration-link")
       .click();
     // Text-free: link row carries the reopened state (DB pending-check below covers value).
     await expect(
@@ -629,7 +617,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(
       p
         .getByTestId(`registration-link-${id}`)
-        .getByRole("button", { name: /^Close registration link / }),
+        .getByTestId("close-registration-link"),
     ).toBeVisible();
   });
 
@@ -641,23 +629,15 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     // Isolate control coverage from the intermittently stuck Project-detail → desk
     // navigation seam; the existing journey tests still exercise that navigation.
     await p.goto(`/partnerships/${ids.otherPartnership}/participants`);
-    await expect(
-      p.locator('section[aria-label="Project Participations"]'),
-    ).toBeVisible();
-    await p
-      .getByRole("button", { name: "Create Participant Registration Link" })
-      .click();
+    await expect(p.getByTestId("project-participations")).toBeVisible();
+    await p.getByTestId("create-registration-link").click();
     // Text-free: the created link input carries a value (functional proof).
-    await expect(
-      p.getByLabel("New registration link (copy now)"),
-    ).not.toBeEmpty();
-    const url = await p
-      .getByLabel("New registration link (copy now)")
-      .inputValue();
+    await expect(p.locator("#new-participant-link")).not.toBeEmpty();
+    const url = await p.locator("#new-participant-link").inputValue();
     const id = new URL(url).pathname.split("/").at(-1)!;
     await p
       .getByTestId(`registration-link-${id}`)
-      .getByRole("button", { name: /^Close registration link / })
+      .getByTestId("close-registration-link")
       .click();
     // Text-free: link row carries the closed state (DB revoked-check below covers value).
     await expect(
@@ -672,7 +652,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     try {
       await p
         .getByTestId(`registration-link-${id}`)
-        .getByRole("button", { name: /^Reopen registration link / })
+        .getByTestId("reopen-registration-link")
         .click();
       await expect(
         p.locator('[role="alert"]:not(#__next-route-announcer__)'),
@@ -758,22 +738,16 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     test.setTimeout(120_000); // Three independent actor flows and the Organization Invitation handshake.
     const f = await pageFor(browser, "F", baseURL!);
     await openPartnerParticipants(f, names.main);
-    await f
-      .getByRole("button", { name: "Create Participant Registration Link" })
-      .click();
+    await f.getByTestId("create-registration-link").click();
     // Text-free: the created link input carries a value (functional proof).
-    await expect(
-      f.getByLabel("New registration link (copy now)"),
-    ).not.toBeEmpty();
-    const foreignLink = await f
-      .getByLabel("New registration link (copy now)")
-      .inputValue();
+    await expect(f.locator("#new-participant-link")).not.toBeEmpty();
+    const foreignLink = await f.locator("#new-participant-link").inputValue();
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(foreignLink);
-    await t.getByLabel("Full name").fill(actors.T.name);
-    await t.getByLabel("Country", { exact: true }).selectOption("DE");
-    await t.getByLabel("I accept the current Participant agreement").check();
-    await t.getByRole("button", { name: "Join Project" }).click();
+    await t.getByTestId("participant-name").fill(actors.T.name);
+    await t.locator("#participant-country").selectOption("DE");
+    await t.getByTestId("accept-participant-agreement").check();
+    await t.getByTestId("join-project").click();
     // Error centralization: join uses the joinedOtherPartner factory copy.
     await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(
@@ -803,21 +777,15 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     // Separate Project's shareable link: P creates it in the browser, T joins it.
     const p = await pageFor(browser, "P", baseURL!);
     await openPartnerParticipants(p, names.other);
-    await p
-      .getByRole("button", { name: "Create Participant Registration Link" })
-      .click();
+    await p.getByTestId("create-registration-link").click();
     // Text-free: the created link input carries a value (functional proof).
-    await expect(
-      p.getByLabel("New registration link (copy now)"),
-    ).not.toBeEmpty();
-    otherLink = await p
-      .getByLabel("New registration link (copy now)")
-      .inputValue();
+    await expect(p.locator("#new-participant-link")).not.toBeEmpty();
+    otherLink = await p.locator("#new-participant-link").inputValue();
     await t.goto(otherLink);
-    await t.getByLabel("Full name").fill(actors.T.name);
-    await t.getByLabel("Country", { exact: true }).selectOption("DE");
-    await t.getByLabel("I accept the current Participant agreement").check();
-    await t.getByRole("button", { name: "Join Project" }).click();
+    await t.getByTestId("participant-name").fill(actors.T.name);
+    await t.locator("#participant-country").selectOption("DE");
+    await t.getByTestId("accept-participant-agreement").check();
+    await t.getByTestId("join-project").click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(t, /\/participant$/);
     await expect(t.getByTestId("participant-dashboard")).toHaveAttribute(
@@ -842,13 +810,8 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     test.setTimeout(120_000); // Owner action plus independent coordinator access checks.
     const p = await pageFor(browser, "P", baseURL!);
     await p.goto(participantsURL);
-    await p
-      .getByRole("button", { name: "Manage Group Organizers", exact: true })
-      .click();
-    const target = p.getByLabel(
-      "Registered User for Group Organizer assignment",
-      { exact: true },
-    );
+    await p.getByTestId("manage-group-organizers").click();
+    const target = p.locator('select[id^="group-organizer-"]');
     await expect(target).toBeVisible();
     await target.selectOption(actors.C.id);
     const c = await pageFor(browser, "C", baseURL!);
@@ -862,9 +825,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
       ),
     ).toHaveCount(0);
-    await p
-      .getByRole("button", { name: "Assign Group Organizer", exact: true })
-      .click();
+    await p.getByTestId("assign-group-organizer").click();
     await expect(
       p.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible();
@@ -900,29 +861,16 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
       )
       .click();
-    await c
-      .getByRole("link", { name: "Coordinate Participants", exact: true })
-      .click();
-    await expect(
-      c.locator('section[aria-label="Project Participations"]'),
-    ).toBeVisible();
+    await c.locator('a[href^="/partnerships/"][href$="/participants"]').click();
+    await expect(c.getByTestId("project-participations")).toBeVisible();
     // Text-free: membership proven by assertJoined DB proof in this flow (no email copy).
     // (Joined-card presence already proven by the section assertion above.)
-    await c
-      .getByRole("button", { name: "Manage Group Organizers", exact: true })
-      .click();
+    await c.getByTestId("manage-group-organizers").click();
     await expect(
       c.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible();
-    await expect(
-      c.getByRole("button", { name: "Assign Group Organizer", exact: true }),
-    ).toHaveCount(0);
-    await p
-      .getByRole("button", {
-        name: "Revoke Group Organizer assignment",
-        exact: true,
-      })
-      .click();
+    await expect(c.getByTestId("assign-group-organizer")).toHaveCount(0);
+    await p.getByTestId("revoke-group-organizer").click();
     await expect(
       p.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible();

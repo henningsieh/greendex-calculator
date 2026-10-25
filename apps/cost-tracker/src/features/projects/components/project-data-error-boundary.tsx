@@ -43,6 +43,7 @@ function ProjectDataErrorFallback({
           </Link>
         ) : (
           <Button
+            data-testid="retry-project-data"
             onClick={resetErrorBoundary}
             size="sm"
             type="button"

@@ -185,23 +185,26 @@ async function entityId(
 
 async function selectEntity(
   page: Page,
-  label: string,
+  pickerTestId:
+    | "hosted-project-picker"
+    | "partner-organization-picker"
+    | "setup-organization-picker",
   entityId: string,
   scope: Locator = page.locator("body"),
 ) {
-  await scope.getByRole("button", { name: label, exact: true }).click();
-  await page
-    .getByRole("combobox", { name: `Search ${label} by name or ID` })
-    .fill(entityId);
+  await scope.getByTestId(pickerTestId).getByTestId("entity-trigger").click();
+  await page.getByTestId("entity-search").fill(entityId);
   await page.locator(`[role="option"][data-entity-id="${entityId}"]`).click();
   await expect(
-    scope.getByRole("button", { name: label, exact: true }),
+    scope.getByTestId(pickerTestId).getByTestId("entity-trigger"),
   ).toHaveAttribute("aria-expanded", "false");
 }
 
 async function chooseExisting(page: Page) {
-  await expect(page.getByLabel("Organization", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+  await expect(
+    page.getByTestId("setup-organization-picker").getByTestId("entity-trigger"),
+  ).toBeVisible();
+  await expect(page.locator("#setup-name")).toHaveCount(0);
 }
 
 async function organizationSetup(page: Page) {
@@ -213,14 +216,14 @@ async function organizationSetup(page: Page) {
 
 async function createProject(page: Page, name: string) {
   await page.goto("/projects");
-  await page.getByRole("button", { name: "New project" }).click();
-  const dialog = page.getByRole("dialog", { name: "New project" });
-  await dialog.getByLabel("Name", { exact: true }).fill(name);
-  await dialog.getByLabel("Start date").fill("2027-04-01");
-  await dialog.getByLabel("End date").fill("2027-04-03");
-  await dialog.getByLabel("Location").fill("Berlin");
-  await dialog.getByLabel("Country").selectOption("DE");
-  await dialog.getByRole("button", { name: "Create project" }).click();
+  await page.getByTestId("new-project").click();
+  const dialog = page.getByTestId("create-project-dialog");
+  await dialog.locator("#new-project-name").fill(name);
+  await dialog.locator("#new-project-start").fill("2027-04-01");
+  await dialog.locator("#new-project-end").fill("2027-04-03");
+  await dialog.locator("#new-project-location").fill("Berlin");
+  await dialog.locator("#new-project-country").selectOption("DE");
+  await dialog.getByTestId("create-project").click();
   await expect(page.getByTestId("project-workspace")).toBeVisible();
   await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
   return new URL(page.url()).pathname;
@@ -233,18 +236,16 @@ async function issueThroughUI(
 ) {
   await page.goto("/partner-organizations");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  const creator = page
-    .locator("section")
-    .filter({ has: page.getByLabel("Recipient email", { exact: true }) });
+  const creator = page.getByTestId("setup-link-creator");
   await selectEntity(
     page,
-    "Hosted Project",
+    "hosted-project-picker",
     await entityId(projectsTable, projectName),
     creator,
   );
-  await creator.getByLabel("Recipient email").fill(recipient);
-  await creator.getByRole("button", { name: "Neuer Link", exact: true }).click();
-  const field = creator.getByLabel("Recipient setup link");
+  await creator.locator("#setup-email").fill(recipient);
+  await creator.getByTestId("create-setup-link").click();
+  const field = creator.locator("#recipient-link");
   // Preserve the original setup-link value regex, without reporting its value.
   await expect
     .poll(async () =>
@@ -258,7 +259,7 @@ async function issueThroughUI(
   // Copy is a visible user action. Value matcher diagnostics are boolean-only;
   // reporter/snapshot privacy remains the documented follow-up.
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-  await creator.getByRole("button", { name: "Kopieren" }).click();
+  await creator.getByTestId("copy-setup-link").click();
   // Text-free: clipboard holds the copied URL (functional proof the copy worked).
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url);
   return url;
@@ -316,14 +317,8 @@ async function selectAndOpenPartnerProject(
         .setupDocumentIdentity,
   );
   expect(typeof documentIdentity).toBe("string");
-  const selection = page.getByRole("button", {
-    name: "Use this Organization",
-    exact: true,
-  });
-  const project = page.getByRole("link", {
-    name: "Open Partner Project",
-    exact: true,
-  });
+  const selection = page.getByTestId("select-setup-organization");
+  const project = page.getByTestId("open-partner-project");
   if (expectedStep === "select") {
     await expect(selection).toBeVisible();
     await expect(project).toHaveCount(0);
@@ -344,13 +339,9 @@ async function selectAndOpenPartnerProject(
   expect(
     actingSessionSchema.parse(await acting.json()).session.activeOrganizationId,
   ).toBe(selectedOrganization!.id);
-  await page
-    .getByRole("link", { name: "Open Claim workspace", exact: true })
-    .click();
+  await page.locator('a[href^="/partnerships/"][href$="/claim"]').click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Create Payout Account", exact: true }),
-  ).toBeEnabled();
+  await expect(page.getByTestId("payout-account-create")).toBeEnabled();
   expect(
     await page.evaluate(
       () =>
@@ -378,13 +369,11 @@ async function assertRecipientPersistence(
 async function completeNew(page: Page, url: string, name: string) {
   await page.goto(url);
   // Text-free: the setup form interactions below prove the page (no heading copy).
-  await page.getByLabel("New Organization name").fill(name);
-  await page.getByLabel("Organization country").selectOption("DE");
+  await page.locator("#setup-name").fill(name);
+  await page.locator("#setup-country").selectOption("DE");
   await markSetupDocument(page);
-  await page.getByRole("button", { name: "Complete setup" }).click();
-  await expect(
-    page.getByRole("link", { name: "Open Partner Project", exact: true }),
-  ).toBeVisible();
+  await page.getByTestId("complete-setup").click();
+  await expect(page.getByTestId("open-partner-project")).toBeVisible();
 }
 
 async function partnershipCount(projectName: string, organizationName: string) {
@@ -469,9 +458,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
     const dialog = await organizationSetup(page);
-    await dialog.getByLabel("Organization name").fill(fixture.organizationName);
-    await dialog.getByLabel("Organization country").selectOption("DE");
-    await dialog.getByRole("button", { name: "Create Organization" }).click();
+    await dialog.locator("#organization-name").fill(fixture.organizationName);
+    await dialog.locator("#organization-country").selectOption("DE");
+    await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectFirstOrganizationProjects(page, fixture.organizationName);
     projectURLs = [];
@@ -514,7 +503,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     );
     await page.goto(setupURL);
     // Text-free: creation proven by the adjacent DB/navigation assertions (no toast copy).
-    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    await expect(page.locator("#setup-name")).toHaveCount(0);
     expect(await partnershipCount(fixture.projectNames[0]!, names.P)).toBe(1);
     const [hostingMembership] = await db
       .select({ id: member.id })
@@ -541,9 +530,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
     await page.goto(url);
-    await page.getByLabel("New Organization name").fill(`${names.P}!`);
-    await page.getByLabel("Organization country").selectOption("DE");
-    await page.getByRole("button", { name: "Complete setup" }).click();
+    await page.locator("#setup-name").fill(`${names.P}!`);
+    await page.locator("#setup-country").selectOption("DE");
+    await page.getByTestId("complete-setup").click();
     await expect(page.locator('[data-setup-error="create"]')).toBeVisible();
     // Text-free: zero membership + zero partnership below prove graceful failure (no copy).
     const [membership] = await db
@@ -552,13 +541,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .where(eq(member.userId, actors.D.id));
     expect(membership!.value).toBe(0);
     expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(0);
-    await expect(page.getByLabel("New Organization name")).toBeVisible();
-    await page.getByLabel("New Organization name").fill(names.D);
+    await expect(page.locator("#setup-name")).toBeVisible();
+    await page.locator("#setup-name").fill(names.D);
     await markSetupDocument(page);
-    await page.getByRole("button", { name: "Complete setup" }).click();
-    await expect(
-      page.getByRole("link", { name: "Open Partner Project", exact: true }),
-    ).toBeVisible();
+    await page.getByTestId("complete-setup").click();
+    await expect(page.getByTestId("open-partner-project")).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
     await selectAndOpenPartnerProject(
       page,
@@ -573,7 +560,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     expect(created).toBeDefined();
     await page.goto(url);
     // Text-free: input absence + DB ownership below prove creation (no toast copy).
-    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    await expect(page.locator("#setup-name")).toHaveCount(0);
     const owned = await db
       .select({ organizationId: member.organizationId })
       .from(member)
@@ -604,10 +591,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       },
     );
     await page.goto(url);
-    await page.getByLabel("New Organization name").fill(names.R);
-    await page.getByLabel("Organization country").selectOption("DE");
+    await page.locator("#setup-name").fill(names.R);
+    await page.locator("#setup-country").selectOption("DE");
     await markSetupDocument(page);
-    await page.getByRole("button", { name: "Complete setup" }).click();
+    await page.getByTestId("complete-setup").click();
     await expect(page.locator('[data-setup-error="disabled"]')).toBeVisible();
     // Text-free: retained org proven by the DB select below (no copy).
     const [created] = await db
@@ -621,28 +608,20 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .update(setupLinks)
       .set({ enabled: true })
       .where(eq(setupLinks.id, id));
-    await page.getByRole("button", { name: "Inspect setup result" }).click();
-    await expect(
-      page.getByRole("button", {
-        name: "Retry setup with retained Organization",
-      }),
-    ).toBeVisible();
+    await page.getByTestId("inspect-setup").click();
+    await expect(page.getByTestId("retry-retained-setup")).toBeVisible();
     expect(attempts).toBe(1);
     await page.goto("/projects");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.goto(url);
     // Text-free: retained-org state proven by absent name input + attempts counter below (no copy).
-    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    await expect(page.locator("#setup-name")).toHaveCount(0);
     await page.reload();
     // Text-free: retained-org state proven by attempts counter + retry flow below (no copy).
     expect(attempts).toBe(1);
     await markSetupDocument(page);
-    await page
-      .getByRole("button", { name: "Retry setup with retained Organization" })
-      .click();
-    await expect(
-      page.getByRole("link", { name: "Open Partner Project", exact: true }),
-    ).toBeVisible();
+    await page.getByTestId("retry-retained-setup").click();
+    await expect(page.getByTestId("open-partner-project")).toBeVisible();
     expect(attempts).toBe(2);
     const retained = await db
       .select({ id: organization.id })
@@ -661,9 +640,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       "continue",
     );
     await page.goto(url);
-    await expect(
-      page.getByRole("link", { name: "Open Partner Project", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByTestId("open-partner-project")).toBeVisible();
     expect(attempts).toBe(2);
     await assertRecipientPersistence(
       "R",
@@ -690,21 +667,15 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       },
     );
     await page.goto(url);
-    await page.getByLabel("New Organization name").fill(names.U);
-    await page.getByLabel("Organization country").selectOption("DE");
+    await page.locator("#setup-name").fill(names.U);
+    await page.locator("#setup-country").selectOption("DE");
     await markSetupDocument(page);
-    await page.getByRole("button", { name: "Complete setup" }).click();
-    await expect(
-      page.getByRole("button", { name: "Inspect setup result", exact: true }),
-    ).toBeEnabled();
+    await page.getByTestId("complete-setup").click();
+    await expect(page.getByTestId("inspect-setup")).toBeEnabled();
     expect(await partnershipCount(fixture.projectNames[0]!, names.U)).toBe(1);
-    await expect(
-      page.getByRole("button", { name: "Complete setup" }),
-    ).toHaveCount(0);
-    await page.getByRole("button", { name: "Inspect setup result" }).click();
-    await expect(
-      page.getByRole("link", { name: "Open Partner Project", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByTestId("complete-setup")).toHaveCount(0);
+    await page.getByTestId("inspect-setup").click();
+    await expect(page.getByTestId("open-partner-project")).toBeVisible();
     expect(attempts).toBe(1);
     const [created] = await db
       .select({ id: organization.id })
@@ -785,7 +756,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
             ? page.getByTestId("auth-verification-message")
             : page.locator(`[data-setup-error="${scenario.state}"]`),
         ).toBeVisible();
-        await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+        await expect(page.locator("#setup-name")).toHaveCount(0);
         const [stored] = await db
           .select({ partnershipId: setupLinks.partnershipId })
           .from(setupLinks)
@@ -838,7 +809,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await expect(
         page.locator('[data-setup-error="wrong-email"]'),
       ).toBeVisible();
-      await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+      await expect(page.locator("#setup-name")).toHaveCount(0);
       expect(
         await partnershipCount(fixture.projectNames[0]!, attemptedName),
       ).toBe(0);
@@ -885,9 +856,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
     const dialog = await organizationSetup(page);
-    await dialog.getByLabel("Organization name").fill(names.E);
-    await dialog.getByLabel("Organization country").selectOption("DE");
-    await dialog.getByRole("button", { name: "Create Organization" }).click();
+    await dialog.locator("#organization-name").fill(names.E);
+    await dialog.locator("#organization-country").selectOption("DE");
+    await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectFirstOrganizationProjects(page, names.E);
     const host = await fixture.actorContext(browser, "H", baseURL!);
@@ -900,14 +871,12 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await chooseExisting(page);
     await selectEntity(
       page,
-      "Organization",
+      "setup-organization-picker",
       await entityId(organization, names.E),
     );
     await markSetupDocument(page);
-    await page.getByRole("button", { name: "Complete setup" }).click();
-    await expect(
-      page.getByRole("link", { name: "Open Partner Project", exact: true }),
-    ).toBeVisible();
+    await page.getByTestId("complete-setup").click();
+    await expect(page.getByTestId("open-partner-project")).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[1]!, names.E)).toBe(1);
   });
 
@@ -976,13 +945,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       },
     );
     await page.goto("/projects");
-    await expect(
-      page.getByRole("button", { name: /Switch Organization/ }),
-    ).toBeVisible();
+    await expect(page.getByTestId("organization-switcher")).toBeVisible();
     await page.goto(url);
     await chooseExisting(page);
-    await selectEntity(page, "Organization", targetId);
-    await page.getByRole("button", { name: "Complete setup" }).click();
+    await selectEntity(page, "setup-organization-picker", targetId);
+    await page.getByTestId("complete-setup").click();
     await expect(page.locator('[data-setup-error="disabled"]')).toBeVisible();
     expect(bindingAttempts).toBe(1);
     expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(0);
@@ -992,14 +959,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .where(eq(setupLinks.id, linkId));
     await page.reload();
     // Text-free: retained-org state proven by absent name input + setup flow below (no copy).
-    await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+    await expect(page.locator("#setup-name")).toHaveCount(0);
     await markSetupDocument(page);
-    await page
-      .getByRole("button", { name: "Retry setup with retained Organization" })
-      .click();
-    await expect(
-      page.getByRole("button", { name: "Use this Organization", exact: true }),
-    ).toBeVisible();
+    await page.getByTestId("retry-retained-setup").click();
+    await expect(page.getByTestId("select-setup-organization")).toBeVisible();
     expect(bindingAttempts).toBe(2);
     const unchanged = await context.request.get("/api/auth/get-session");
     expect(
@@ -1063,9 +1026,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await page.goto(`/accept-invitation/${invitationId}`);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       // Text-free: enabled Accept proves the invitation loaded for E (no name copy).
-      await page
-        .getByRole("button", { name: "Accept Organization Invitation" })
-        .click();
+      await page.getByTestId("accept-organization-invitation").click();
       // Preserve the original full-URL match; only the diagnostic receives a boolean.
       await expectPrivateURL(page, /\/projects$/);
       await page.goto("/organization");
@@ -1106,9 +1067,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     // Text-free: hydrated project list + DB proof below prove successful load (no error).
     await expect(
-      page.locator('[aria-label="Project list"][data-hydrated="true"]'),
+      page.locator('[data-testid="project-list"][data-hydrated="true"]'),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "New project" })).toBeVisible();
+    await expect(page.getByTestId("new-project")).toBeVisible();
     try {
       await createProject(page, adminProjectName);
       await page.goto("/projects");
@@ -1141,10 +1102,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const page = await context.newPage();
       await page.goto(adminSetupURL);
       await expect(page.locator('[data-setup-error="owner"]')).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Complete setup" }),
-      ).toHaveCount(0);
-      await expect(page.getByLabel("New Organization name")).toHaveCount(0);
+      await expect(page.getByTestId("complete-setup")).toHaveCount(0);
+      await expect(page.locator("#setup-name")).toHaveCount(0);
       expect(await partnershipCount(fixture.projectNames[2]!, names.E)).toBe(0);
     });
   });
@@ -1162,17 +1121,17 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const section = page.getByTestId("organization-assignment");
     await selectEntity(
       page,
-      "Hosted Project",
+      "hosted-project-picker",
       await entityId(projectsTable, fixture.projectNames[2]!),
       section,
     );
     await selectEntity(
       page,
-      "Partner Organization",
+      "partner-organization-picker",
       await entityId(organization, names.E),
       section,
     );
-    await section.getByRole("button", { name: "Assign", exact: true }).click();
+    await section.getByTestId("assign-partnership").click();
     await expect
       .poll(() => partnershipCount(fixture.projectNames[2]!, names.E))
       .toBe(1);
@@ -1198,18 +1157,14 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ];
     const idFrom = (url: string) => new URL(url).pathname.split("/").at(-1)!;
     await page.reload();
-    const list = page.getByRole("region", {
-      name: "Existing Partner Organization Setup Links",
-    });
+    const list = page.getByTestId("setup-links");
     for (const id of issuedLinks)
       await expect(list.locator(`[data-setup-link-id="${id}"]`)).toHaveCount(1);
     const closedRow = list.locator(
       `[data-setup-link-id="${idFrom(closedSetupURL)}"]`,
     );
     await expect(closedRow).toBeVisible();
-    await closedRow
-      .getByRole("button", { name: "Close Partner Organization Setup Link" })
-      .click();
+    await closedRow.getByTestId("close-setup-link").click();
     await expect(closedRow.locator('[data-link-status="closed"]')).toBeVisible();
     await expect(closedRow.getByRole("button")).toBeDisabled();
     for (const url of siblingSetupURLs)
@@ -1240,16 +1195,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await chooseExisting(siblingPage);
       await selectEntity(
         siblingPage,
-        "Organization",
+        "setup-organization-picker",
         await entityId(organization, names[actor]),
       );
-      await siblingPage.getByRole("button", { name: "Complete setup" }).click();
-      await expect(
-        siblingPage.getByRole("link", {
-          name: "Open Partner Project",
-          exact: true,
-        }),
-      ).toBeVisible();
+      await siblingPage.getByTestId("complete-setup").click();
+      await expect(siblingPage.getByTestId("open-partner-project")).toBeVisible();
       expect(await partnershipCount(fixture.projectNames[2]!, names[actor])).toBe(
         1,
       );
@@ -1284,7 +1234,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const context = await actorContext(browser, actor, baseURL!);
       const page = await context.newPage();
       await openPartnerProject(page, fixture.projectNames[0]!);
-      const claimLink = page.getByRole("link", { name: "Open Claim workspace" });
+      const claimLink = page.locator('a[href^="/partnerships/"][href$="/claim"]');
       await expect(claimLink).toBeVisible();
       const href = await claimLink.getAttribute("href");
       expect(href).toMatch(/^\/partnerships\/[^/]+\/claim$/);

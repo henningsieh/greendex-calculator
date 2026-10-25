@@ -71,6 +71,7 @@ export function OrganizationSwitcher({
         <DropdownMenuTrigger
           render={
             <Button
+              data-testid="organization-switcher"
               aria-label={`Acting Organization: ${active?.name ?? "unknown"}. Switch Organization`}
               disabled={pendingId !== null}
               size="sm"

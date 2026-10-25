@@ -33,14 +33,14 @@ let mainProjectURL: string;
 
 async function createProject(page: Page, name: string) {
   await page.goto("/projects");
-  await page.getByRole("button", { name: "New project" }).click();
-  const dialog = page.getByRole("dialog", { name: "New project" });
-  await dialog.getByLabel("Name", { exact: true }).fill(name);
-  await dialog.getByLabel("Start date").fill("2027-04-01");
-  await dialog.getByLabel("End date").fill("2027-04-03");
-  await dialog.getByLabel("Location").fill("Berlin");
-  await dialog.getByLabel("Country").selectOption("DE");
-  await dialog.getByRole("button", { name: "Create project" }).click();
+  await page.getByTestId("new-project").click();
+  const dialog = page.getByTestId("create-project-dialog");
+  await dialog.locator("#new-project-name").fill(name);
+  await dialog.locator("#new-project-start").fill("2027-04-01");
+  await dialog.locator("#new-project-end").fill("2027-04-03");
+  await dialog.locator("#new-project-location").fill("Berlin");
+  await dialog.locator("#new-project-country").selectOption("DE");
+  await dialog.getByTestId("create-project").click();
   await expect(page.getByTestId("project-workspace")).toBeVisible({
     timeout: 90_000,
   });
@@ -75,9 +75,9 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await expect(page.getByRole("dialog")).toBeHidden();
     const dialog = page.getByTestId("no-organization-access");
     await expect(dialog).toBeVisible();
-    await dialog.getByLabel("Organization name").fill(fixture.organizationName);
-    await dialog.getByLabel("Organization country").selectOption("DE");
-    await dialog.getByRole("button", { name: "Create Organization" }).click();
+    await dialog.locator("#organization-name").fill(fixture.organizationName);
+    await dialog.locator("#organization-country").selectOption("DE");
+    await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectFirstOrganizationProjects(page, fixture.organizationName);
     await page.reload();
@@ -129,11 +129,9 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       // Text-free: the invitation loaded (accept available) instead of org-name copy.
       await expect(
-        page.getByRole("button", { name: "Accept Organization Invitation" }),
+        page.getByTestId("accept-organization-invitation"),
       ).toBeEnabled();
-      await page
-        .getByRole("button", { name: "Accept Organization Invitation" })
-        .click();
+      await page.getByTestId("accept-organization-invitation").click();
       // Preserve the original full-URL match; only the diagnostic receives a boolean.
       await expectPrivateURL(page, /\/projects$/);
       await page.goto("/organization");
@@ -160,13 +158,11 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     await page.goto(`/accept-invitation/${randomUUID()}`);
     await expect(page.locator("[data-invitation-recovery]")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Check invitation again" }),
+      page.getByTestId("recheck-organization-invitation"),
     ).toBeEnabled();
-    await expect(
-      page.getByRole("button", { name: "Create Organization" }),
-    ).toHaveCount(0);
-    await expect(page.getByLabel("Organization name")).toHaveCount(0);
-    await page.getByRole("button", { name: "Check invitation again" }).click();
+    await expect(page.getByTestId("create-organization")).toHaveCount(0);
+    await expect(page.locator("#organization-name")).toHaveCount(0);
+    await page.getByTestId("recheck-organization-invitation").click();
     await expect(page.locator("[data-invitation-recovery]")).toBeVisible();
   });
 
@@ -212,9 +208,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       const context = await fixture.actorContext(browser, "X", baseURL!);
       const page = await context.newPage();
       await page.goto("/projects");
-      await expect(
-        page.getByRole("button", { name: "New project" }),
-      ).toBeVisible();
+      await expect(page.getByTestId("new-project")).toBeVisible();
       const projectURL = await createProject(page, projectName);
       const [createdMembership] = await db
         .select({ role: member.role })
@@ -257,9 +251,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await page.goto(mainProjectURL);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
-      await expect(
-        page.getByRole("link", { name: "Review submitted Claims" }),
-      ).toBeVisible();
+      await expect(page.locator('a[href="/claims/review"]')).toBeVisible();
     }
   });
 });
@@ -277,9 +269,9 @@ test("creation from Organization management ends at the Project overview", async
     await expect(page.getByRole("dialog")).toBeHidden();
     const dialog = page.getByTestId("no-organization-access");
     await expect(dialog).toBeVisible();
-    await dialog.getByLabel("Organization name").fill(recovery.organizationName);
-    await dialog.getByLabel("Organization country").selectOption("DE");
-    await dialog.getByRole("button", { name: "Create Organization" }).click();
+    await dialog.locator("#organization-name").fill(recovery.organizationName);
+    await dialog.locator("#organization-country").selectOption("DE");
+    await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectPrivateURL(page, /\/projects$/);
     await expectFirstOrganizationProjects(page, recovery.organizationName);
