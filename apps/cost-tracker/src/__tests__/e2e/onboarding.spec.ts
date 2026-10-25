@@ -1,9 +1,9 @@
-import { randomUUID } from "node:crypto";
-import { mkdir } from "node:fs/promises";
+import { createHmac, randomUUID } from "node:crypto";
+import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { db } from "@greendex/database";
-import { organization, user } from "@greendex/database/schema";
+import { account, organization, session, user } from "@greendex/database/schema";
 import { and, eq } from "drizzle-orm";
 
 import { assertExistingIntegrationDatabase } from "../../../../../scripts/existing-integration-environment";
@@ -19,11 +19,12 @@ test.use({
   video: "off",
 });
 
-for (const viewport of [
-  { width: 375, height: 667 },
-  { width: 1280, height: 800 },
+for (const { viewport, fontSize } of [
+  { viewport: { width: 375, height: 667 }, fontSize: 16 },
+  { viewport: { width: 1280, height: 800 }, fontSize: 16 },
+  { viewport: { width: 375, height: 667 }, fontSize: 24 },
 ]) {
-  test(`email signup replaces the form with above-fold progress at ${viewport.width}`, async ({
+  test(`email signup replaces the form with prominent progress at ${viewport.width} with ${fontSize}px text`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport);
@@ -32,6 +33,9 @@ for (const viewport of [
       route.fulfill({ json: { json: { success: true } } }),
     );
     await page.goto("/register");
+    await page.evaluate((size) => {
+      document.documentElement.style.fontSize = `${size}px`;
+    }, fontSize);
     await page.getByLabel("Name", { exact: true }).fill("Alex Morgan");
     await page.getByLabel("Email address").fill(`${"a".repeat(64)}@example.org`);
     await page.getByLabel("Password", { exact: true }).fill("example-password");
@@ -48,7 +52,9 @@ for (const viewport of [
     expect(
       bounds !== null &&
         bounds.y >= 0 &&
-        bounds.y + bounds.height <= viewport.height,
+        (fontSize === 16
+          ? bounds.y + bounds.height <= viewport.height
+          : bounds.y < viewport.height),
     ).toBe(true);
     expect(
       await page.evaluate(
@@ -56,6 +62,25 @@ for (const viewport of [
       ),
     ).toBe(true);
     await expect(progress.locator("strong")).toBeVisible();
+    await expect(progress.locator("p").first()).toBeInViewport();
+    await progress.locator("p").last().scrollIntoViewIfNeeded();
+    await expect(progress.locator("p").last()).toBeInViewport();
+    const description = progress.locator('[data-slot="alert-description"]');
+    expect(
+      await description.evaluate((element) =>
+        parseFloat(getComputedStyle(element).fontSize),
+      ),
+    ).toBe(fontSize);
+    expect(
+      await progress.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return (
+          style.backgroundColor !==
+            getComputedStyle(document.body).backgroundColor &&
+          style.borderLeftWidth !== "0px"
+        );
+      }),
+    ).toBe(true);
     const evidence = resolve("src/__tests__/e2e/.playwright/evidence");
     await mkdir(evidence, { recursive: true, mode: 0o700 });
     for (const theme of ["light", "dark"]) {
@@ -64,7 +89,10 @@ for (const viewport of [
       }, theme);
       await expect(progress).toBeVisible();
       await page.screenshot({
-        path: resolve(evidence, `check-inbox-${viewport.width}-${theme}.png`),
+        path: resolve(
+          evidence,
+          `check-inbox-${viewport.width}-${fontSize}-${theme}.png`,
+        ),
       });
     }
   });
@@ -92,6 +120,109 @@ test("invitation registration keeps its continuation on Google and account navig
   expect(request.postDataJSON()).toEqual({
     json: { returnTo: "/accept-invitation/example-invitation" },
   });
+});
+
+test("malformed invitation registration stays in recovery before and after sign-in", async ({
+  page,
+  context,
+}) => {
+  const destination = "/register?next=%2Faccept-invitation%2Fbad!";
+  await page.goto(destination);
+  const recovery = page.locator(
+    '[data-invitation-recovery="STAFF_INVITATION_NOT_FOUND"]',
+  );
+  await expect(recovery).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  const state = JSON.parse(
+    await readFile(
+      process.env.GREENDEX_PLAYWRIGHT_AUTH ??
+        "src/__tests__/e2e/.auth/storage-state.json",
+      "utf8",
+    ),
+  );
+  await context.addCookies(state.cookies);
+  await page.goto(destination);
+  await expect(recovery).toBeVisible();
+  await expect(page.getByTestId("no-organization-access")).toHaveCount(0);
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+});
+
+test("Google provider-return session continues into server-owned Organization setup", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const databaseURL = process.env.DATABASE_URL;
+  if (!databaseURL) throw new Error("Existing database environment is required");
+  assertExistingIntegrationDatabase(databaseURL);
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret || !baseURL)
+    throw new Error("Existing auth environment is required");
+  const id = randomUUID();
+  const token = randomUUID();
+  const organizationName = `Google continuation ${randomUUID()}`;
+  registerPrivateValues(token);
+  try {
+    await db.insert(user).values({
+      id,
+      name: "Google recipient",
+      email: `google-${id}@example.invalid`,
+      emailVerified: true,
+    });
+    await db.insert(account).values({
+      id: randomUUID(),
+      userId: id,
+      accountId: id,
+      providerId: "google",
+    });
+    await db.insert(session).values({
+      id: randomUUID(),
+      userId: id,
+      token,
+      expiresAt: new Date(Date.now() + 3600000),
+    });
+    await page.goto("/register");
+    // This is the provider-return seam, not a live Google consent flow.
+    await page.route(
+      "**/api/rpc/authentication/startGoogleSignIn",
+      async (route) => {
+        const signature = createHmac("sha256", secret)
+          .update(token)
+          .digest("base64");
+        await context.addCookies([
+          {
+            name: "better-auth.session_token",
+            value: encodeURIComponent(`${token}.${signature}`),
+            url: baseURL,
+          },
+        ]);
+        await route.fulfill({
+          json: { json: { url: new URL("/projects", baseURL).href } },
+        });
+      },
+    );
+    await page.getByRole("button", { name: "Continue with Google" }).click();
+    const setup = page.getByTestId("no-organization-access");
+    await expect(setup).toBeVisible();
+    await expect(page.getByTestId("auth-verification-message")).toHaveCount(0);
+    await page.waitForLoadState("networkidle");
+    const organizationInput = setup.getByLabel("Organization name");
+    await organizationInput.fill(organizationName);
+    await setup.getByLabel("Organization country").selectOption("DE");
+    await expect(organizationInput).toHaveValue(organizationName);
+    const create = setup.getByRole("button", {
+      name: "Create Organization",
+      exact: true,
+    });
+    await expect(create).toBeEnabled();
+    await create.click();
+    await expectFirstOrganizationProjects(page, organizationName);
+    await page.reload();
+    await expectFirstOrganizationProjects(page, organizationName);
+  } finally {
+    await db.delete(organization).where(eq(organization.name, organizationName));
+    await db.delete(user).where(eq(user.id, id));
+  }
 });
 
 test("delivered email continues direct signup into one Organization and first-Project access", async ({

@@ -139,6 +139,7 @@ describe("authoritative onboarding next step", () => {
       "/setup-links/setup_123?secret=abc_DEF-123",
     ],
     ["/accept-invitation/bad/path", "organization-invitation", undefined],
+    ["/accept-invitation/bad!", "organization-invitation", undefined],
     ["/setup-links/id?secret=bad&extra=value", "partner-setup", undefined],
   ])(
     "only discloses authentication guidance for signed-out continuation %s",
@@ -299,7 +300,14 @@ describe("authoritative onboarding next step", () => {
     });
   });
 
-  it.each(["missing", "malformed", "expired", "cancelled", "wrong-recipient"])(
+  it.each([
+    "missing",
+    "malformed",
+    "invalid-character",
+    "expired",
+    "cancelled",
+    "wrong-recipient",
+  ])(
     "keeps %s invitations in recovery and refuses forged acceptance",
     async (invalid) => {
       const { host, recipient, invitationId, returnTo } = await invite();
@@ -313,6 +321,10 @@ describe("authoritative onboarding next step", () => {
       }
       if (invalid === "malformed") {
         input = "/accept-invitation/bad/path";
+        id = "missing";
+      }
+      if (invalid === "invalid-character") {
+        input = "/accept-invitation/bad!";
         id = "missing";
       }
       if (invalid === "expired") {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -72,6 +72,47 @@ describe("Organization Invitation acceptance", () => {
       }),
     );
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/projects"));
+  });
+
+  it.each(["continue", "authenticate"])(
+    "applies initial %s navigation",
+    async (nextStep) => {
+      mocks.onboardingNextStep.mockResolvedValue({
+        entryContext: "organization-invitation",
+        nextStep,
+        availableActions:
+          nextStep === "continue"
+            ? [{ kind: "continue", destination: "/projects" }]
+            : [{ kind: "authenticate", returnTo: "/accept-invitation/invite-1" }],
+      });
+      render(<InvitationAcceptance invitationId="invite-1" />);
+      await waitFor(() =>
+        expect(mocks.replace).toHaveBeenCalledWith(
+          nextStep === "continue"
+            ? "/projects"
+            : "/login?next=%2Faccept-invitation%2Finvite-1",
+        ),
+      );
+    },
+  );
+
+  it("ignores a decision that resolves after unmount", async () => {
+    let resolve!: (value: unknown) => void;
+    mocks.onboardingNextStep.mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    const view = render(<InvitationAcceptance invitationId="invite-1" />);
+    view.unmount();
+    await act(async () =>
+      resolve({
+        entryContext: "organization-invitation",
+        nextStep: "continue",
+        availableActions: [{ kind: "continue", destination: "/projects" }],
+      }),
+    );
+    expect(mocks.replace).not.toHaveBeenCalled();
   });
 
   it("shows an error without an acceptance button for invalid invitations", async () => {

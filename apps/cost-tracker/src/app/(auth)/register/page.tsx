@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/components/auth-form";
+import { InvitationRecovery } from "@/features/organizations/components/invitation-acceptance";
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession, safeSignInReturnTo } from "@/lib/session";
 
@@ -18,12 +19,16 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
-  const next = safeSignInReturnTo((await searchParams).next);
-  if (await getSession()) redirect(next ?? "/projects");
+  const rawNext = (await searchParams).next;
+  const next = safeSignInReturnTo(rawNext);
 
   const decision = await orpc.authentication.onboardingNextStep({
-    returnTo: next,
+    returnTo: typeof rawNext === "string" ? rawNext : undefined,
   });
+  if (decision.entryContext === "organization-invitation" && !next)
+    return <InvitationRecovery reason="STAFF_INVITATION_NOT_FOUND" />;
+  if (await getSession()) redirect(next ?? "/projects");
+
   return (
     <AuthForm
       mode="sign-up"

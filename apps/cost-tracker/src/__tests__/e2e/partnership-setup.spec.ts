@@ -189,10 +189,6 @@ async function selectEntity(
   entityId: string,
   scope: Locator = page.locator("body"),
 ) {
-  if (label === "Organization") {
-    await page.getByLabel("Organization", { exact: true }).selectOption(entityId);
-    return;
-  }
   await scope.getByRole("button", { name: label, exact: true }).click();
   await page
     .getByRole("combobox", { name: `Search ${label} by name or ID` })
@@ -1282,8 +1278,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(assigned).toBeVisible();
     const workspacePaths: string[] = [];
     for (const [actor, own] of [
-      ["P", names.P, names.F],
-      ["F", names.F, names.P],
+      ["P", names.P],
+      ["F", names.F],
     ] as const) {
       const context = await actorContext(browser, actor, baseURL!);
       const page = await context.newPage();
@@ -1293,11 +1289,19 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const href = await claimLink.getAttribute("href");
       expect(href).toMatch(/^\/partnerships\/[^/]+\/claim$/);
       workspacePaths.push(href!);
-      const [ownPartnership] = await db
+      const ownPartnerships = await db
         .select({ id: partnerships.id })
         .from(partnerships)
         .innerJoin(organization, eq(partnerships.organizationId, organization.id))
-        .where(eq(organization.name, own));
+        .innerJoin(projectsTable, eq(partnerships.projectId, projectsTable.id))
+        .where(
+          and(
+            eq(organization.name, own),
+            eq(projectsTable.name, fixture.projectNames[0]!),
+          ),
+        );
+      expect(ownPartnerships).toHaveLength(1);
+      const [ownPartnership] = ownPartnerships;
       expect(href).toBe(`/partnerships/${ownPartnership!.id}/claim`);
       // Text-free: own-partnership href equality above proves isolation (no name copy).
       await page.goto("/projects");

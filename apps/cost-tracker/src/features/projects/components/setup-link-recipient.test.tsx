@@ -77,6 +77,15 @@ const key = "partner-setup:user-1:link-1";
 beforeEach(() => {
   vi.resetAllMocks();
   localStorage.clear();
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  Element.prototype.scrollIntoView = vi.fn();
   mocks.next.mockResolvedValue(choose);
   mocks.create.mockResolvedValue({ organizationId: "retained", success: true });
   mocks.bind.mockResolvedValue({ organizationId: "retained" });
@@ -109,7 +118,9 @@ async function existing() {
   const user = userEvent.setup({ delay: null });
   const radio = screen.queryByRole("radio", { name: "Existing Organization" });
   if (radio) await user.click(radio);
-  await user.selectOptions(await screen.findByLabelText("Organization"), "owned");
+  await user.click(await screen.findByRole("button", { name: /^Organization$/ }));
+  await user.type(screen.getByRole("combobox"), "Our");
+  await user.click(screen.getByRole("option"));
   await user.click(screen.getByRole("button", { name: "Complete setup" }));
 }
 
@@ -484,4 +495,46 @@ it("sends missing-secret links to server recovery without offering creation", as
   expect(
     screen.queryByRole("button", { name: "Complete setup" }),
   ).not.toBeInTheDocument();
+});
+
+it("searches server-owned choices beyond the initial list and binds the selected Organization", async () => {
+  const choices: OnboardingDecision = {
+    entryContext: "partner-setup",
+    nextStep: "choose-organization",
+    availableActions: [
+      {
+        kind: "choose-owned-organization",
+        organizations: Array.from({ length: 25 }, (_, index) => ({
+          id: `owned-${index}`,
+          name: `Organization ${index}`,
+        })),
+      },
+      { kind: "sign-out" },
+    ],
+  };
+  mocks.next
+    .mockResolvedValueOnce(choices)
+    .mockResolvedValueOnce(choices)
+    .mockResolvedValueOnce({
+      ...bind,
+      availableActions: [
+        { kind: "bind-partnership", organizationId: "owned-24" },
+        { kind: "sign-out" },
+      ],
+    })
+    .mockResolvedValue(select);
+  recipient();
+  const user = userEvent.setup({ delay: null });
+  await user.click(await screen.findByRole("button", { name: /^Organization$/ }));
+  await user.type(screen.getByRole("combobox"), "Organization 24");
+  await user.click(screen.getByRole("option"));
+  await user.click(screen.getByRole("button", { name: "Complete setup" }));
+  expect(
+    await screen.findByRole("button", { name: "Use this Organization" }),
+  ).toBeVisible();
+  expect(mocks.bind).toHaveBeenCalledExactlyOnceWith({
+    id: "link-1",
+    secret: "private-secret",
+    organizationId: "owned-24",
+  });
 });

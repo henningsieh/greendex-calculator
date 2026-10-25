@@ -426,24 +426,14 @@ function SetupOrganizationForm({
         )}
         {existing && owned ? (
           <Field>
-            <FieldLabel htmlFor="setup-existing">Organization</FieldLabel>
-            <select
-              id="setup-existing"
+            <FieldLabel>Organization</FieldLabel>
+            <EntityCombobox
+              label="Organization"
               disabled={pending}
-              required
               value={organizationId}
-              onChange={(event) => setOrganizationId(event.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            >
-              <option value="" disabled>
-                Choose an Organization you own
-              </option>
-              {owned.organizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>
-                  {organization.name}
-                </option>
-              ))}
-            </select>
+              onChange={setOrganizationId}
+              preload={owned.organizations}
+            />
           </Field>
         ) : (
           <>

@@ -3,7 +3,7 @@
 import { organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -24,15 +24,18 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
   const [pending, setPending] = useState(false);
   const returnTo = `/accept-invitation/${invitationId}`;
 
-  function continueJourney(next: OnboardingDecision) {
-    setDecision(next);
-    if (next.nextStep === "continue")
-      router.replace(next.availableActions[0].destination);
-    if (next.nextStep === "authenticate")
-      router.replace(
-        `/login?next=${encodeURIComponent(next.availableActions[0].returnTo ?? returnTo)}`,
-      );
-  }
+  const continueJourney = useCallback(
+    (next: OnboardingDecision) => {
+      setDecision(next);
+      if (next.nextStep === "continue")
+        router.replace(next.availableActions[0].destination);
+      if (next.nextStep === "authenticate")
+        router.replace(
+          `/login?next=${encodeURIComponent(next.availableActions[0].returnTo ?? returnTo)}`,
+        );
+    },
+    [router, returnTo],
+  );
 
   useEffect(() => {
     let active = true;
@@ -40,13 +43,7 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
       .onboardingNextStep({ returnTo })
       .then(async (next) => {
         if (!active) return;
-        setDecision(next);
-        if (next.nextStep === "continue")
-          router.replace(next.availableActions[0].destination);
-        if (next.nextStep === "authenticate")
-          router.replace(
-            `/login?next=${encodeURIComponent(next.availableActions[0].returnTo ?? returnTo)}`,
-          );
+        continueJourney(next);
         if (next.nextStep === "accept-invitation") {
           // The preview supplies display data only. The server decision owns actions.
           const { data } = await authClient.organization.getInvitation({
@@ -61,7 +58,7 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
     return () => {
       active = false;
     };
-  }, [returnTo, invitationId, router]);
+  }, [returnTo, invitationId, continueJourney]);
 
   async function recheck() {
     setPending(true);
@@ -141,18 +138,7 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
         </>
       )}
       {decision?.nextStep === "invitation-recovery" && (
-        <Alert
-          className="mt-6"
-          variant="info"
-          data-invitation-recovery={decision.reason}
-        >
-          <AlertTitle>Let&apos;s get you back to your invitation</AlertTitle>
-          <AlertDescription>
-            Open the complete link from your invitation email and sign in with the
-            invited address. If it has expired or been cancelled, ask your
-            Organization for a new invitation.
-          </AlertDescription>
-        </Alert>
+        <InvitationRecovery reason={decision.reason} />
       )}
       {error && (
         <p className="mt-4" role="alert">
@@ -177,5 +163,18 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
         </div>
       )}
     </section>
+  );
+}
+
+export function InvitationRecovery({ reason }: { reason: string }) {
+  return (
+    <Alert className="mt-6" variant="info" data-invitation-recovery={reason}>
+      <AlertTitle>Let&apos;s get you back to your invitation</AlertTitle>
+      <AlertDescription>
+        Open the complete link from your invitation email and sign in with the
+        invited address. If it has expired or been cancelled, ask your
+        Organization for a new invitation.
+      </AlertDescription>
+    </Alert>
   );
 }
