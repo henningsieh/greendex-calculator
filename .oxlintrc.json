@@ -41,17 +41,18 @@
     ],
     "complexity": ["warn", 25],
     "curly": "off",
-    "react/no-array-index-key": "off",
-    "typescript/array-type": "warn",
-    "typescript/no-misused-spread": "off",
-    "typescript/no-base-to-string": "off",
-    "typescript/restrict-template-expressions": "off",
-    "no-unsafe-optional-chaining": "off",
     "import/no-relative-parent-imports": "error",
     "better-tailwindcss/no-conflicting-classes": "error",
     "better-tailwindcss/no-duplicate-classes": "error",
     "better-tailwindcss/enforce-canonical-classes": "error",
-    "better-tailwindcss/no-deprecated-classes": "error"
+    "better-tailwindcss/no-deprecated-classes": "error",
+    "no-unsafe-finally": "error",
+    "no-unsafe-optional-chaining": "off",
+    "react/no-array-index-key": "off",
+    "typescript/array-type": "warn",
+    "typescript/no-misused-spread": "off",
+    "typescript/no-base-to-string": "off",
+    "typescript/restrict-template-expressions": "off"
   },
   "overrides": [
     {

@@ -203,22 +203,23 @@ The root Turbo task starts:
 
 Run these from the repository root:
 
-| Command                                            | Purpose                                       |
-| -------------------------------------------------- | --------------------------------------------- |
-| `pnpm run dev`                                     | Start all development tasks                   |
-| `pnpm run build`                                   | Build all apps/packages                       |
-| `pnpm run start`                                   | Start persistent workspace services           |
-| `pnpm run type-check`                              | Run workspace type checks                     |
-| `pnpm run lint`                                    | Run Oxlint and agent-instruction drift checks |
-| `pnpm run format`                                  | Format workspaces with Oxfmt                  |
-| `pnpm run check:agent-instructions`                | Validate scoped agent instructions            |
-| `pnpm run test:unit` | Server-free units, components and policies |
-| `pnpm run test:integration` | Existing database, HTTP, real mail and Garage |
-| `pnpm run test:e2e` | Both app browser suites and cross-app merge |
-| `pnpm run test:full` | All three modes sequentially |
-| `pnpm run db:generate`                             | Generate Drizzle migrations                   |
-| `pnpm run db:migrate`                              | Apply Drizzle migrations                      |
-| `pnpm run db:seed`                                 | Seed local development data                   |
+| Command                             | Purpose                                                               |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| `pnpm run dev`                      | Start all development tasks                                           |
+| `pnpm run build`                    | Build all apps/packages                                               |
+| `pnpm run start`                    | Start persistent workspace services                                   |
+| `pnpm run type-check`               | Run workspace type checks                                             |
+| `pnpm run lint`                     | Run Oxlint and agent-instruction drift checks                         |
+| `pnpm run format`                   | Format workspaces with Oxfmt                                          |
+| `pnpm run check:agent-instructions` | Validate scoped agent instructions                                    |
+| `pnpm run test:unit`                | Server-free units, components and policies                            |
+| `pnpm run test:integration`         | Existing database, HTTP, real mail and Garage                         |
+| `pnpm run test:e2e`                 | Both app browser suites and cross-app merge                           |
+| `pnpm run test:full`                | All three modes sequentially                                          |
+| `pnpm run db:generate`              | Generate Drizzle migrations                                           |
+| `pnpm run db:migrate`               | Apply Drizzle migrations                                              |
+| `pnpm run db:seed`                  | Seed local development data                                           |
+| `pnpm run db:reset`                 | [Operator-only destructive reset](#manual-development-database-reset) |
 
 > **Database side effect:** Calculator's `prebuild` and `prestart` both apply
 > committed Drizzle migrations. Consequently, `pnpm run build` and
@@ -305,6 +306,19 @@ cutover migration. It preserves valid legacy rows while converting the old
 `project_activity` table. Migration `0013_remove_project_activity_compatibility_view.sql`
 removes the temporary legacy view after cutover. Do not edit applied migration
 history; add a new migration for every schema change.
+
+### Manual development database reset
+
+Run `pnpm run db:reset` manually from the root; `--help` is safe and reads no environment file.
+**This destroys the `public` and `drizzle` schemas, including their data. No backup is made.**
+Manually stop apps, Socket.IO, tests and all other database consumers; keep them stopped throughout.
+The command does not detect or stop consumers and is never an automatic startup/test hook.
+It loads `packages/database/.env`; injected `DATABASE_URL` takes precedence. Only PostgreSQL at
+`188.245.144.137:5489/greendex_development` is allowed, without URL queries/fragments; production is refused.
+An interactive terminal must type exactly `greendex_development`; there is no `--yes` mode.
+After the transactional schema wipe it closes its connection, then runs root `db:migrate` and `db:seed` sequentially.
+Failure stops subsequent steps and may leave an empty or partially populated database; inspect privately before retrying.
+The seed uses normal configuration; this does not reset external services or guarantee that tests will pass.
 
 ### Internationalization
 
