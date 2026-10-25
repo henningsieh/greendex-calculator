@@ -10,7 +10,7 @@ function isMessageCatalog(value: unknown): value is MessageCatalog {
 }
 
 async function loadMessages(locale: string): Promise<MessageCatalog> {
-  return (await import(`@greendex/i18n/locales/${locale}.json`)).default;
+  return (await import(`@/messages/${locale}.json`)).default;
 }
 
 function collectMessageLeaves(

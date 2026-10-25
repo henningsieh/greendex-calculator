@@ -2,8 +2,9 @@ import { mkdirSync } from "fs";
 import { dirname } from "node:path";
 
 import { SEED_USER } from "@greendex/auth/seed-user";
-import en from "@greendex/i18n/locales/en.json" with { type: "json" };
 import { chromium, expect, type FullConfig } from "@playwright/test";
+
+import en from "@/messages/en.json" with { type: "json" };
 
 /**
  * Global setup for Playwright tests

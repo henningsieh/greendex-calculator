@@ -429,7 +429,6 @@
     }
   },
   "organization": {
-    "country": { "label": "Country", "placeholder": "Select an EU country" },
     "dashboard": {
       "title": "Dashboard",
       "description": "Overview of your organization's statistics, projects, and participants.",

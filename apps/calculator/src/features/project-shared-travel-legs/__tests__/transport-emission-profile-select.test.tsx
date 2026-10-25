@@ -1,11 +1,11 @@
 import type { ProjectSharedTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
 import { NextIntlClientProvider } from "@greendex/i18n/client";
-import messages from "@greendex/i18n/locales/en.json";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TransportEmissionProfileSelect } from "@/features/project-shared-travel-legs/components/transport-emission-profile-select";
+import messages from "@/messages/en.json";
 
 let root: Root | undefined;
 let container: HTMLDivElement | undefined;

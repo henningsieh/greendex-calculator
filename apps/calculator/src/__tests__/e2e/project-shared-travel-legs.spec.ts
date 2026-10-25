@@ -6,10 +6,11 @@ import {
   organization,
   projectsTable,
 } from "@greendex/database/schema";
-import de from "@greendex/i18n/locales/de.json" with { type: "json" };
-import en from "@greendex/i18n/locales/en.json" with { type: "json" };
 import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
+
+import de from "@/messages/de.json" with { type: "json" };
+import en from "@/messages/en.json" with { type: "json" };
 
 const SEED_ORGANIZATION_SLUG = "seed-org";
 const sharedTravelLegDescription = `Shared travel E2E ${randomUUID()}`;

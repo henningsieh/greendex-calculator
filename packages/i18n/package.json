@@ -6,8 +6,7 @@
   "exports": {
     ".": "./src/*",
     "./client": "./src/client.ts",
-    "./server": "./src/server.ts",
-    "./locales/*.json": "./src/locales/*.json"
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "clean": "rm -rf node_modules .turbo",

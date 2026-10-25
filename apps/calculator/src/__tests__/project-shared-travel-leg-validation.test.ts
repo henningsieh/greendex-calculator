@@ -5,8 +5,6 @@ import {
 } from "@greendex/config/project-shared-travel";
 import { projectSharedTravelLegsTable } from "@greendex/database/schema";
 import { createTranslator } from "@greendex/i18n/client";
-import deMessages from "@greendex/i18n/locales/de.json";
-import enMessages from "@greendex/i18n/locales/en.json";
 import { createInsertSchema } from "drizzle-zod";
 import { describe, expect, it } from "vitest";
 
@@ -16,6 +14,8 @@ import {
   validateDistanceStep,
 } from "@/features/project-shared-travel-legs/distance-validation";
 import { ProjectSharedTravelLegFormSchema } from "@/features/project-shared-travel-legs/validation-schemas";
+import deMessages from "@/messages/de.json";
+import enMessages from "@/messages/en.json";
 
 /**
  * Create real next-intl translators for both English and German
