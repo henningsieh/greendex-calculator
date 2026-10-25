@@ -32,7 +32,7 @@ export const expectedScopes: Record<string, string> = {
   "email.md":
     "packages/email/src/**/*.ts,packages/email/src/**/*.tsx,apps/calculator/src/lib/email.ts",
   "i18n.md":
-    "packages/i18n/src/**/*.ts,packages/i18n/src/locales/*.json,packages/config/src/languages.ts,apps/calculator/src/lib/i18n/**/*.ts,apps/calculator/src/proxy.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/app/sitemap.ts",
+    "packages/i18n/src/**/*.ts,apps/calculator/src/messages/*.json,packages/config/src/languages.ts,apps/calculator/src/lib/i18n/**/*.ts,apps/calculator/src/proxy.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/app/sitemap.ts",
   "nuqs.md":
     "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/components/nuqs-provider.tsx,apps/cost-tracker/src/features/**/project-list-query-options.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx",
   "orpc.md":
@@ -151,7 +151,7 @@ export const requiredRepositoryPaths = [
   "packages/config/src/languages.ts",
   "packages/database/src/schemas/auth-schema.ts",
   "packages/email/src/templates",
-  "packages/i18n/src/locales",
+  "apps/calculator/src/messages",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
   "turbo.json",
@@ -221,7 +221,7 @@ export const stalePatterns: AgentGuidancePattern[] = [
   },
   {
     pattern: /`messages\/<locale>/u,
-    message: "use packages/i18n/src/locales paths",
+    message: "use apps/calculator/src/messages paths",
   },
   {
     pattern: /`src\/lib\/email(?:\/|`)/u,

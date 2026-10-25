@@ -143,6 +143,27 @@ describe("stale guidance matcher", () => {
   });
 });
 
+describe("calculator message catalogue policy", () => {
+  it("requires the app-owned catalogue under the i18n instruction scope", () => {
+    expect(requiredRepositoryPaths).toContain("apps/calculator/src/messages");
+    expect(requiredRepositoryPaths).not.toContain("packages/i18n/src/locales");
+    const scopes = expectedScopes["i18n.md"].split(",");
+    expect(scopes).toContain("apps/calculator/src/messages/*.json");
+    expect(scopes).not.toContain("packages/i18n/src/locales/*.json");
+  });
+
+  it("directs abbreviated catalogue guidance to its current home", () => {
+    expect(
+      findPatternHits("read `messages/<locale>.json`", stalePatterns).map(
+        (hit) => hit.message,
+      ),
+    ).toEqual(["use apps/calculator/src/messages paths"]);
+    expect(
+      matchesStaleGuidance("read `apps/calculator/src/messages/en.json`"),
+    ).toBe(false);
+  });
+});
+
 describe("glossary migration coverage", () => {
   it("requires and checks the map, glossaries, domain route, and extracted behavior", () => {
     for (const filePath of [
