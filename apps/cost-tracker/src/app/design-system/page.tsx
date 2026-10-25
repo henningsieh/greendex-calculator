@@ -106,7 +106,7 @@ export default function DesignSystemPage() {
         <div className="flex items-center gap-3">
           <StarWreath size={34} />
           <div className="flex flex-col">
-            <span className="text-[19px] font-extrabold">GreenEx</span>
+            <span className="text-[19px] font-extrabold">GreenDex</span>
             <span className="font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase">
               Cost Tracker
             </span>
@@ -114,7 +114,7 @@ export default function DesignSystemPage() {
         </div>
         <Badge variant="ember-pill">
           <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
-          GreenEx Cost Tracker · Erasmus Edition
+          GreenDex Cost Tracker · Erasmus Edition
         </Badge>
         <h1 className="type-ember-display">
           Ember <span className="ember-headline-accent text-primary">

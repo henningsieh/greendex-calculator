@@ -42,7 +42,7 @@ export function ClaimBand({
     <header>
       <Card variant="claim-band">
         <p className="w-full type-ember-eyebrow">
-          GreenEx Cost Tracker · Erasmus Edition
+          GreenDex Cost Tracker · Erasmus Edition
         </p>
         <CardTitle as="h2">{title}</CardTitle>
         {status && (

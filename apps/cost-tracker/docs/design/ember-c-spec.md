@@ -36,8 +36,11 @@ ist das Fundament, kein Ersatz dafür.
 ## Brand-Zeichen (LOCKED 2026-10-11)
 
 - Sternenkranz aus 12 Feuer-Punkten (`#FFB800`), EU-Symbolik, wird nicht mehr verändert
-- Header-Lockup: Kranz (34px) + `GreenEx` (Sans 800, 19px) + `Cost Tracker` (Mono, 12px, Tracking .18em)
-- Hero-Pille über der Headline: `GREENEX COST TRACKER · ERASMUS EDITION`, Glas-Badge mit Feuer-Punkt, Abstand zum Content eng (54px Desktop / 34px Mobile)
+- Header-Lockup: Kranz (34px) + `GreenDex` (Sans 800, 19px) + `Cost Tracker` (Mono, 12px, Tracking .18em)
+- Hero-Pille über der Headline: `GREENDEX COST TRACKER · ERASMUS EDITION`, Glas-Badge mit Feuer-Punkt, Abstand zum Content eng (54px Desktop / 34px Mobile)
+
+Schreibweise in #313 ausdrücklich als `GreenDex` bestätigt und korrigiert.
+Der visuelle Lockup (Kranz, Typografie, Größen und Abstände) bleibt unverändert.
 
 ## Karten: Hover + Active (LOCKED 2026-10-11)
 

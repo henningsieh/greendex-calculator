@@ -90,7 +90,7 @@ components:
 
 ## Overview
 
-Ember C ist das gelockte Dark-Theme des GreenEx Cost Tracker (Erasmus Edition).
+Ember C ist das gelockte Dark-Theme des GreenDex Cost Tracker (Erasmus Edition).
 Pflaumen-Schwarz als Bühne, ein einziger Feuer-Akzent, Riesen-Headlines in Inter
 Black gegen winzige Mono-Labels in JetBrains Mono. Das System kennt genau vier
 Button-Rezepte, ein fugenloses Stat-Raster, eine Terminal-Karte und einen

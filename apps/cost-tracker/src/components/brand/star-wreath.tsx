@@ -19,7 +19,7 @@ function StarWreath({
       height={size}
       viewBox="0 0 80 80"
       role="img"
-      aria-label="GreenEx star wreath"
+      aria-label="GreenDex star wreath"
       className={cn("shrink-0", className)}
       {...props}
     >

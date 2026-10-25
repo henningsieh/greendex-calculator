@@ -81,7 +81,7 @@ export default function LandingPage() {
               aria-hidden="true"
               className="size-1.5 rounded-full bg-primary"
             />
-            GreenEx Cost Tracker · Erasmus Edition
+            GreenDex Cost Tracker · Erasmus Edition
           </Badge>
           <h1 className="mt-6 type-ember-display">
             Receipts in.{" "}
