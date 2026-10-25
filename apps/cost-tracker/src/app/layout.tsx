@@ -1,4 +1,5 @@
 import "@/lib/orpc/client.server";
+import { DEFAULT_LANGUAGE } from "@greendex/config/languages";
 import type { Metadata } from "next";
 import { Geist, Inter, JetBrains_Mono } from "next/font/google";
 
@@ -34,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang={DEFAULT_LANGUAGE}
       suppressHydrationWarning
       className={cn(
         "font-sans antialiased",

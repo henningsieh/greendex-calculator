@@ -143,6 +143,28 @@ describe("stale guidance matcher", () => {
   });
 });
 
+describe("cost-tracker i18n instruction policy", () => {
+  it("covers the app-owned catalogue, routing, request config and locale layouts", () => {
+    const scopes = expectedScopes["i18n.md"].split(",");
+    for (const scope of [
+      "apps/cost-tracker/src/messages/*.json",
+      "apps/cost-tracker/src/lib/i18n/**/*.ts",
+      "apps/cost-tracker/src/proxy.ts",
+      "apps/cost-tracker/src/app/**/page.tsx",
+      "apps/cost-tracker/src/app/**/layout.tsx",
+    ])
+      expect(scopes).toContain(scope);
+    for (const file of [
+      "apps/cost-tracker/src/messages",
+      "apps/cost-tracker/src/lib/i18n/routing.ts",
+      "apps/cost-tracker/src/lib/i18n/request.ts",
+      "apps/cost-tracker/src/proxy.ts",
+      "apps/cost-tracker/src/app/[locale]/layout.tsx",
+    ])
+      expect(requiredRepositoryPaths).toContain(file);
+  });
+});
+
 describe("calculator message catalogue policy", () => {
   it("requires the app-owned catalogue under the i18n instruction scope", () => {
     expect(requiredRepositoryPaths).toContain("apps/calculator/src/messages");
