@@ -164,13 +164,19 @@ export const createOrganization = authorized
           .json()
           .catch(() => undefined);
         const refusal = z
-          .object({ code: z.literal("ORGANIZATION_ALREADY_EXISTS") })
+          .object({
+            code: z.enum([
+              "ORGANIZATION_ALREADY_EXISTS",
+              "ORGANIZATION_NAME_ALREADY_EXISTS",
+            ]),
+          })
           .safeParse(body);
         if (refusal.success) {
           forwardCookies(response, context);
-          throw createSituationErrors(
-            errors,
-          ).organizationSlugTakenBeforeCreation();
+          const situations = createSituationErrors(errors);
+          throw refusal.data.code === "ORGANIZATION_ALREADY_EXISTS"
+            ? situations.organizationSlugTakenBeforeCreation()
+            : situations.organizationNameTakenBeforeCreation();
         }
       }
       return response;

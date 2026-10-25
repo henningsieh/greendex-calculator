@@ -276,6 +276,7 @@ async function requireUniqueOrganizationName(name: unknown): Promise<void> {
 
   if (existingOrganization) {
     throw new APIError("BAD_REQUEST", {
+      code: "ORGANIZATION_NAME_ALREADY_EXISTS",
       message: "Choose a different Organization name.",
     });
   }

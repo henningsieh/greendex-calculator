@@ -21,6 +21,34 @@ import RegisterPage from "@/app/(auth)/register/page";
 
 beforeEach(() => vi.clearAllMocks());
 
+it.each([
+  {
+    label: "valid invitation",
+    next: "/accept-invitation/invite_123",
+    expected: "/accept-invitation/invite_123",
+  },
+  { label: "empty string", next: "", expected: "" },
+  { label: "schema limit", next: "a".repeat(2048), expected: "a".repeat(2048) },
+  { label: "over schema limit", next: "a".repeat(2049), expected: undefined },
+  {
+    label: "array",
+    next: ["/accept-invitation/invite_123"],
+    expected: undefined,
+  },
+  { label: "missing value", next: undefined, expected: undefined },
+])(
+  "bounds the $label before resolving onboarding",
+  async ({ next, expected }) => {
+    mocks.session.mockResolvedValue(null);
+    mocks.next.mockResolvedValue({
+      entryContext: "direct",
+      nextStep: "authenticate",
+    });
+    await RegisterPage({ searchParams: Promise.resolve({ next }) });
+    expect(mocks.next).toHaveBeenCalledExactlyOnceWith({ returnTo: expected });
+  },
+);
+
 it.each([false, true])(
   "keeps malformed invitation registration in recovery with signed-in state %s",
   async (signedIn) => {

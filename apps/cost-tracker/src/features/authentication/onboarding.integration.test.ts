@@ -93,6 +93,26 @@ async function setup() {
   return { host, hosting, project, recipient, link, returnTo };
 }
 
+it("maps case-insensitive name refusal before creation and permits a corrected name", async () => {
+  const owner = await account();
+  const taken = await createOrganization(owner);
+  const recipient = await account();
+  await expect(
+    recipient.api.authentication.createOrganization({
+      name: taken.name.toUpperCase(),
+      slug: `available-${randomUUID()}`,
+      country: "DE",
+    }),
+  ).rejects.toMatchObject({
+    code: "BAD_REQUEST",
+    data: { reason: "ORGANIZATION_NAME_TAKEN_BEFORE_CREATION" },
+  });
+  expect(await recipient.api.authentication.onboardingNextStep({})).toMatchObject(
+    { nextStep: "create-organization" },
+  );
+  await createOrganization(recipient);
+});
+
 async function invite() {
   const host = await account();
   const target = await createOrganization(host);

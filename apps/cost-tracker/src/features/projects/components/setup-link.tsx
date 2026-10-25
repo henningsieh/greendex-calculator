@@ -586,10 +586,13 @@ export function SetupLinkRecipient({
             );
             retain({ phase: "created", organizationId: created.organizationId });
           } catch (cause) {
+            const reason =
+              cause instanceof ORPCError
+                ? getSafeErrorSituation(cause)?.reason
+                : undefined;
             if (
-              cause instanceof ORPCError &&
-              getSafeErrorSituation(cause)?.reason ===
-                "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION"
+              reason === "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION" ||
+              reason === "ORGANIZATION_NAME_TAKEN_BEFORE_CREATION"
             ) {
               localStorage.removeItem(recoveryKey);
               recovery.current = undefined;

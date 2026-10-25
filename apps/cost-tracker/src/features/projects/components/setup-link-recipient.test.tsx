@@ -285,19 +285,45 @@ it("holds Project access while Organization selection is pending", async () => {
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
 });
 
-it("never creates again after uncertain creation, but permits correction after confirmed slug refusal", async () => {
-  const { createSituationErrors } = await import("@/lib/orpc/errors");
-  mocks.create.mockRejectedValueOnce(
-    createSituationErrors().organizationSlugTakenBeforeCreation(),
-  );
-  recipient();
-  await create();
-  await waitFor(() =>
-    expect(document.querySelector('[data-setup-error="create"]')).toBeVisible(),
-  );
-  expect(localStorage.getItem(key)).toBeNull();
-  expect(screen.getByLabelText("New Organization name")).toBeVisible();
-});
+it.each([
+  "organizationSlugTakenBeforeCreation",
+  "organizationNameTakenBeforeCreation",
+] as const)(
+  "permits a different name after confirmed %s refusal",
+  async (situation) => {
+    const { createSituationErrors } = await import("@/lib/orpc/errors");
+    mocks.create.mockRejectedValueOnce(createSituationErrors()[situation]());
+    recipient();
+    await create();
+    await waitFor(() =>
+      expect(document.querySelector('[data-setup-error="create"]')).toBeVisible(),
+    );
+    expect(localStorage.getItem(key)).toBeNull();
+    expect(screen.getByLabelText("New Organization name")).toBeVisible();
+    expect(mocks.next).toHaveBeenLastCalledWith({
+      returnTo: "/setup-links/link-1?secret=private-secret",
+      setupRecovery: undefined,
+    });
+    mocks.next
+      .mockResolvedValueOnce(choose)
+      .mockResolvedValueOnce(bind)
+      .mockResolvedValue(select);
+    const user = userEvent.setup({ delay: null });
+    await user.clear(screen.getByLabelText("New Organization name"));
+    await user.type(
+      screen.getByLabelText("New Organization name"),
+      "Different name",
+    );
+    await user.click(screen.getByRole("button", { name: "Complete setup" }));
+    await screen.findByRole("button", { name: "Use this Organization" });
+    expect(mocks.create).toHaveBeenCalledTimes(2);
+    expect(mocks.create).toHaveBeenLastCalledWith({
+      name: "Different name",
+      slug: "different-name",
+      country: "DE",
+    });
+  },
+);
 
 it("retains the creating checkpoint after an uncertain creation response", async () => {
   mocks.create.mockRejectedValueOnce(new Error("lost response"));

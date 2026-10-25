@@ -6,6 +6,8 @@ import { InvitationRecovery } from "@/features/organizations/components/invitati
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession, safeSignInReturnTo } from "@/lib/session";
 
+const MAX_RETURN_TO_LENGTH = 2048;
+
 export const metadata: Metadata = {
   title: "Create account",
   description: "Create an account for the Greendex Cost Tracker.",
@@ -23,7 +25,10 @@ export default async function RegisterPage({
   const next = safeSignInReturnTo(rawNext);
 
   const decision = await orpc.authentication.onboardingNextStep({
-    returnTo: typeof rawNext === "string" ? rawNext : undefined,
+    returnTo:
+      typeof rawNext === "string" && rawNext.length <= MAX_RETURN_TO_LENGTH
+        ? rawNext
+        : undefined,
   });
   if (decision.entryContext === "organization-invitation" && !next)
     return <InvitationRecovery reason="STAFF_INVITATION_NOT_FOUND" />;

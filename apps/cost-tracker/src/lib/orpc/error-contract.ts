@@ -13,6 +13,11 @@ export const situationCatalog = {
     reason: "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION",
     message: "This Organization name is already in use. Choose another name.",
   },
+  organizationNameTakenBeforeCreation: {
+    code: "BAD_REQUEST",
+    reason: "ORGANIZATION_NAME_TAKEN_BEFORE_CREATION",
+    message: "This Organization name is already in use. Choose another name.",
+  },
   invalidCredentials: {
     code: "UNAUTHORIZED",
     reason: "INVALID_CREDENTIALS",
