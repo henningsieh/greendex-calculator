@@ -38,15 +38,10 @@ async function globalSetup(config: FullConfig) {
     const loginUrl = new URL("/en/login", baseURL).toString();
     await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
-    // Build safe regexes from translations
-    const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
-    const titleRegex = new RegExp(escapeRegExp(en.authentication.login.title));
-
-    // Wait for expected text on sign-in page
+    // The sign-in heading and form controls below prove the page rendered.
     await page
-      .getByRole("heading", { level: 1, name: titleRegex })
+      .getByRole("heading", { level: 1, name: en.authentication.login.title })
       .waitFor({ timeout: 30_000 });
-    // Text-free: heading above + form inputs below prove full page render (no copy).
 
     console.log("✅ Sign-in page loaded with expected content");
 
@@ -66,9 +61,7 @@ async function globalSetup(config: FullConfig) {
     // Wait for redirect to dashboard
     await page.waitForURL("**/org/dashboard", { timeout: 30_000 });
 
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Dashboard", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByTestId("organization-dashboard")).toBeVisible();
 
     // Ensure auth dir exists and save storage state for the rest of the suite
     mkdirSync(dirname(storagePath), { recursive: true, mode: 0o700 });

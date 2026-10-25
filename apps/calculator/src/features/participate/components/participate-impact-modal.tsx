@@ -347,7 +347,12 @@ export function ImpactModal({
         </div>
 
         {/* Continue Button */}
-        <Button onClick={onClose} size="lg" variant="impact">
+        <Button
+          data-testid="impact-continue"
+          onClick={onClose}
+          size="lg"
+          variant="impact"
+        >
           Continue
           <ArrowRightIcon className="ml-2 size-5" />
         </Button>

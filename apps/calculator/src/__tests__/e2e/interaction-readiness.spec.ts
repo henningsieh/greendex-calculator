@@ -34,10 +34,7 @@ test("Project tabs accept the first available click after a slow script load", a
   const release = await holdClientScripts(page);
   try {
     await page.goto(`/en/org/projects/${project.id}`, { waitUntil: "commit" });
-    const participants = page.getByRole("tab", {
-      name: "Project Participants",
-      exact: true,
-    });
+    const participants = page.getByTestId("project-participants-tab");
     await expect(participants).toBeVisible();
     await expect(participants).toBeDisabled();
     release();
@@ -46,7 +43,7 @@ test("Project tabs accept the first available click after a slow script load", a
     await expect(participants).toHaveAttribute("aria-selected", "true");
     await expect(
       page
-        .getByRole("tabpanel", { name: "Project Participants", exact: true })
+        .getByTestId("project-participants-panel")
         .locator('[data-slot="card-title"]'),
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: project.name })).toBeVisible();
@@ -79,9 +76,7 @@ test.describe("Login readiness", () => {
       await expect(submit).toBeEnabled();
       await submit.click();
       await expect(page).toHaveURL(/\/en\/org\/dashboard$/);
-      await expect(
-        page.getByRole("heading", { level: 1, name: "Dashboard", exact: true }),
-      ).toBeVisible();
+      await expect(page.getByTestId("organization-dashboard")).toBeVisible();
     } finally {
       release();
     }
