@@ -20,9 +20,9 @@ export default async function globalSetup(config: FullConfig) {
 
   try {
     await page.goto(new URL("/login", baseURL).toString());
-    await page.getByLabel("Email address").fill(SEED_USER.email);
-    await page.getByLabel("Password").fill(SEED_USER.password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByTestId("email").fill(SEED_USER.email);
+    await page.getByTestId("password").fill(SEED_USER.password);
+    await page.getByTestId("auth-submit").click();
     await page.waitForURL("**/projects");
     // waitForURL observes the navigation start, not the streamed page finish.
     // Closing this browser while its RSC response is still rendering aborts it.

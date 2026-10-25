@@ -70,6 +70,7 @@ export function SelectOrganization({
             {organizations.map((organization) => (
               <li key={organization.id}>
                 <Button
+                  data-testid={`select-organization-${organization.id}`}
                   className="w-full"
                   disabled={pendingId !== null}
                   onClick={() => void selectOrganization(organization.id)}

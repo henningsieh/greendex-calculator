@@ -35,7 +35,7 @@ describe("SignOutButton", () => {
 
   it("uses the shared ghost button design and default size without overrides", () => {
     render(<SignOutButton />);
-    const button = screen.getByRole("button", { name: "Sign out" });
+    const button = screen.getByTestId("sign-out");
     expect(button.className).toBe(
       cn(buttonVariants({ variant: "ghost", size: "default" })),
     );
@@ -47,7 +47,7 @@ describe("SignOutButton", () => {
     const user = userEvent.setup();
     render(<SignOutButton />);
 
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await user.click(screen.getByTestId("sign-out"));
 
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
     expect(mocks.refresh).not.toHaveBeenCalled();
@@ -58,10 +58,10 @@ describe("SignOutButton", () => {
     const user = userEvent.setup();
     render(<SignOutButton />);
 
-    const button = screen.getByRole("button", { name: "Sign out" });
+    const button = screen.getByTestId("sign-out");
     await user.click(button);
 
-    expect(await screen.findByRole("button", { name: "Sign out" })).toBeTruthy();
+    expect(await screen.findByTestId("sign-out")).toBeTruthy();
     expect(mocks.toastAdd).toHaveBeenCalledWith({
       description:
         "The server or network is unreachable. Check your connection and try again.",

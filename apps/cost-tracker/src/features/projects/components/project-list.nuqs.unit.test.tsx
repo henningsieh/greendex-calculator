@@ -86,7 +86,7 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     const onUrlUpdate = vi.fn();
     renderList({ onUrlUpdate });
 
-    await screen.findByRole("tab", { name: "Hosted" }, { timeout: 10_000 });
+    await screen.findByTestId("project-scope-hosted", {}, { timeout: 10_000 });
 
     expect(mocks.getListOptions).toHaveBeenCalledWith(
       "hosted",
@@ -122,11 +122,7 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     });
 
     fireEvent.click(
-      await screen.findByRole(
-        "button",
-        { name: "Previous page" },
-        { timeout: 10_000 },
-      ),
+      await screen.findByTestId("previous-project-page", {}, { timeout: 10_000 }),
     );
 
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalledOnce());
@@ -134,7 +130,7 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     expect(update.options.history).toBe("push");
     expect(update.searchParams.get("cursor")).toBe("previous-page");
 
-    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    fireEvent.click(screen.getByTestId("next-project-page"));
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalledTimes(2));
     const nextUpdate = onUrlUpdate.mock.calls[1]?.[0] as UrlUpdateEvent;
     expect(nextUpdate.options.history).toBe("push");
@@ -152,7 +148,7 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
         searchParams: `?scope=${scope}&cursor=${scope}-cursor`,
       });
 
-      await screen.findByRole("tab", { name: "Hosted" }, { timeout: 10_000 });
+      await screen.findByTestId("project-scope-hosted", {}, { timeout: 10_000 });
 
       expect(mocks.getListOptions).toHaveBeenCalledWith(
         scope,

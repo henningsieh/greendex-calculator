@@ -204,6 +204,7 @@ export function ProjectPartnershipManager({
                 {canAssign && (
                   <Button
                     disabled={removeMutation.isPending}
+                    data-testid={`remove-partnership-${partnership.id}`}
                     onClick={() => {
                       if (
                         window.confirm(

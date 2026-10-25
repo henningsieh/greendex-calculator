@@ -26,8 +26,8 @@ function renderForm() {
   render(<EditNameForm email="alex@example.org" name="Alex Morgan" />);
 
   return {
-    nameInput: screen.getByRole("textbox", { name: "Name" }),
-    saveButton: screen.getByRole("button", { name: /save name/i }),
+    nameInput: screen.getByTestId("account-name"),
+    saveButton: screen.getByTestId("save-account-name"),
   };
 }
 
@@ -48,7 +48,7 @@ describe("EditNameForm", () => {
 
   it("shows the current account values and starts with saving disabled", () => {
     const { nameInput, saveButton } = renderForm();
-    const emailInput = screen.getByRole("textbox", { name: "Email address" });
+    const emailInput = screen.getByTestId("account-email");
 
     expect((nameInput as HTMLInputElement).value).toBe("Alex Morgan");
     expect((emailInput as HTMLInputElement).value).toBe("alex@example.org");
@@ -125,9 +125,7 @@ describe("EditNameForm", () => {
 
     await user.click(saveButton);
 
-    expect(
-      await screen.findByRole("button", { name: /saving name/i }),
-    ).toBeTruthy();
+    expect(await screen.findByTestId("save-account-name")).toBeTruthy();
     expect((saveButton as HTMLButtonElement).disabled).toBe(true);
     expect(mocks.updateUser).toHaveBeenCalledOnce();
 

@@ -19,9 +19,13 @@ describe("UserSettingsTabs", () => {
     render(<UserSettingsTabs email="alex@example.org" name="Alex Morgan" />);
 
     expect(screen.getAllByRole("tab")[0]).toBe(
-      screen.getByRole("tab", { name: "Account details", selected: true }),
+      screen.getByTestId("settings-tab-account"),
     );
 
+    expect(screen.getByTestId("settings-tab-account")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     const activePanel = screen.getByRole("tabpanel");
     expect(within(activePanel).getByTestId("account-form")).toHaveAttribute(
       "data-name",
@@ -32,7 +36,7 @@ describe("UserSettingsTabs", () => {
       "alex@example.org",
     );
     expect(
-      within(activePanel).getByRole("heading", { name: "Account details" }),
+      within(activePanel).getByTestId("settings-panel-heading"),
     ).toBeTruthy();
     expect(screen.queryByTestId("theme-controls")).toBeNull();
   });
@@ -41,12 +45,16 @@ describe("UserSettingsTabs", () => {
     const user = userEvent.setup();
     render(<UserSettingsTabs email="alex@example.org" name="Alex Morgan" />);
 
-    await user.click(screen.getByRole("tab", { name: "Appearance" }));
+    await user.click(screen.getByTestId("settings-tab-appearance"));
 
+    expect(screen.getByTestId("settings-tab-appearance")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     const activePanel = screen.getByRole("tabpanel");
     expect(within(activePanel).getByTestId("theme-controls")).toBeTruthy();
     expect(
-      within(activePanel).getByRole("heading", { name: "Appearance" }),
+      within(activePanel).getByTestId("settings-panel-heading"),
     ).toBeTruthy();
     expect(screen.queryByTestId("account-form")).toBeNull();
   });

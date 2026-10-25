@@ -139,7 +139,11 @@ export function ClaimCostTable({
             Proof Documents
           </TableHead>
           {actions && (
-            <TableHead variant="accounting" scope="col">
+            <TableHead
+              data-testid="claim-cost-action-header"
+              variant="accounting"
+              scope="col"
+            >
               Action
             </TableHead>
           )}

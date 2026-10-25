@@ -64,6 +64,7 @@ function CountrySettings({
             </FieldLabel>
             <select
               id="organization-country"
+              data-testid="organization-country"
               value={country}
               required
               disabled={update.isPending}
@@ -79,7 +80,11 @@ function CountrySettings({
               ))}
             </select>
           </Field>
-          <Button disabled={update.isPending} type="submit">
+          <Button
+            data-testid="save-organization-country"
+            disabled={update.isPending}
+            type="submit"
+          >
             {update.isPending ? "Saving…" : "Save Organization country"}
           </Button>
         </form>

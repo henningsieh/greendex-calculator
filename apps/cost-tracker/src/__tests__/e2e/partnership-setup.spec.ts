@@ -317,7 +317,7 @@ async function selectAndOpenPartnerProject(
         .setupDocumentIdentity,
   );
   expect(typeof documentIdentity).toBe("string");
-  const selection = page.getByTestId("select-setup-organization");
+  const selection = page.getByTestId(/use-setup-organization-/);
   const project = page.getByTestId("open-partner-project");
   if (expectedStep === "select") {
     await expect(selection).toBeVisible();
@@ -962,7 +962,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await expect(page.locator("#setup-name")).toHaveCount(0);
     await markSetupDocument(page);
     await page.getByTestId("retry-retained-setup").click();
-    await expect(page.getByTestId("select-setup-organization")).toBeVisible();
+    await expect(page.getByTestId(/use-setup-organization-/)).toBeVisible();
     expect(bindingAttempts).toBe(2);
     const unchanged = await context.request.get("/api/auth/get-session");
     expect(

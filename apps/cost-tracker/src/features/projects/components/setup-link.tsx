@@ -218,6 +218,7 @@ export function SetupLinkCreator() {
             <Label htmlFor="setup-email">Recipient email</Label>
             <Input
               id="setup-email"
+              data-testid="setup-email"
               required
               type="email"
               value={recipientEmail}
@@ -327,7 +328,12 @@ export function SetupLinkCreator() {
         {link && (
           <div className="space-y-2">
             <Label htmlFor="recipient-link">Recipient setup link</Label>
-            <Input id="recipient-link" readOnly value={link} />
+            <Input
+              id="recipient-link"
+              data-testid="recipient-link"
+              readOnly
+              value={link}
+            />
             <Button
               data-testid="copy-setup-link"
               type="button"
@@ -425,6 +431,7 @@ function SetupOrganizationForm({
                 type="radio"
                 name="setup-kind"
                 checked={existing}
+                data-testid="setup-existing-organization"
                 onChange={() => setKind("existing")}
               />{" "}
               Existing Organization
@@ -448,6 +455,7 @@ function SetupOrganizationForm({
               <FieldLabel htmlFor="setup-name">New Organization name</FieldLabel>
               <Input
                 id="setup-name"
+                data-testid="setup-name"
                 disabled={pending}
                 maxLength={100}
                 minLength={2}
@@ -462,6 +470,7 @@ function SetupOrganizationForm({
               </FieldLabel>
               <select
                 id="setup-country"
+                data-testid="setup-country"
                 value={country}
                 required
                 disabled={pending}
@@ -736,7 +745,7 @@ export function SetupLinkRecipient({
             </Alert>
             {decision.availableActions[0].organizations.map((organization) => (
               <Button
-                data-testid="select-setup-organization"
+                data-testid={`use-setup-organization-${organization.id}`}
                 key={organization.id}
                 disabled={pending}
                 onClick={() => void select(organization.id)}

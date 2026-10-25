@@ -255,9 +255,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Complete Project" }),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("complete-project")).toHaveCount(0);
 
     // E owns another Project with the same Partner Organization B. Its editable
     // Claim must not alter Main's B readiness or appear among H's Hosted Projects.
@@ -277,9 +275,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     ).toBeVisible();
     // Text-free: no partner row carries the editable-claim state.
     await expect(page.locator('[data-claim-status="editable"]')).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: "Complete Project" }),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("complete-project")).toHaveCount(0);
   });
 
   test("N2 hides completion for a claimless Partnership; observes zero-Partnership control only", async () => {
@@ -288,9 +284,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(
       partnerRow(page, ids.partnerA).locator('[data-claim-status="none"]'),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Complete Project" }),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("complete-project")).toHaveCount(0);
 
     await openHostedProject(page, zeroURL);
     // Text-free: empty-state hook instead of visible copy.
@@ -300,8 +294,6 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(partnerRow(page, ids.partnerA)).toHaveCount(0);
     // Observation only: current UI offers an enabled button for zero Partnerships.
     // Whether completing this Project is valid is unresolved; NOT-RUN, never click.
-    await expect(
-      page.getByRole("button", { name: "Complete Project" }),
-    ).toBeEnabled();
+    await expect(page.getByTestId("complete-project")).toBeEnabled();
   });
 });

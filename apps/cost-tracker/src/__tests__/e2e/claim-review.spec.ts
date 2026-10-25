@@ -662,7 +662,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).toBeVisible();
     await partner
       .locator(`#journey-${ids.participants[0]}`)
-      .getByTestId("journey-correct")
+      .getByTestId(`correct-journey-${ids.participants[0]}`)
       .click();
     await partner
       .locator(`#journey-${ids.participants[0]} input[id$="-origin"]`)

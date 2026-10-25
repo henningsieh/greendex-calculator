@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -147,17 +147,19 @@ function expectProjectDataInvalidation(
 }
 
 async function selectAssignment(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Hosted Project" }));
-  await user.type(
-    await screen.findByLabelText("Search Hosted Project by name or ID"),
-    "New",
+  await user.click(
+    within(screen.getByTestId("hosted-project-picker")).getByTestId(
+      "entity-combobox-trigger",
+    ),
   );
+  await user.type(await screen.findByTestId("entity-search"), "New");
   await user.click(await screen.findByRole("option"));
-  await user.click(screen.getByRole("button", { name: "Partner Organization" }));
-  await user.type(
-    await screen.findByLabelText("Search Partner Organization by name or ID"),
-    "New",
+  await user.click(
+    within(screen.getByTestId("partner-organization-picker")).getByTestId(
+      "entity-combobox-trigger",
+    ),
   );
+  await user.type(await screen.findByTestId("entity-search"), "New");
   await user.click(await screen.findByRole("option"));
 }
 
@@ -199,7 +201,7 @@ describe("ProjectPartnershipManager", () => {
     const { invalidateQueries } = await renderManager([existingPartnership]);
 
     await selectAssignment(user);
-    await user.click(screen.getByRole("button", { name: "Assign" }));
+    await user.click(screen.getByTestId("assign-partnership"));
 
     await waitFor(() => {
       expect(mocks.assign).toHaveBeenCalledWith({
@@ -226,7 +228,7 @@ describe("ProjectPartnershipManager", () => {
     await renderManager([existingPartnership]);
 
     await selectAssignment(user);
-    await user.click(screen.getByRole("button", { name: "Assign" }));
+    await user.click(screen.getByTestId("assign-partnership"));
 
     expect(await screen.findByTestId("partnership-feedback")).toBeTruthy();
     expect(screen.getByTestId("partnership-feedback")).toHaveAttribute(
@@ -243,14 +245,16 @@ describe("ProjectPartnershipManager", () => {
     const user = userEvent.setup();
     await renderManager([existingPartnership]);
 
-    await user.click(screen.getByRole("button", { name: "Remove" }));
+    await user.click(
+      screen.getByTestId("remove-partnership-partnership-existing"),
+    );
     expect(await screen.findByTestId("partnership-feedback")).toHaveAttribute(
       "data-state",
       "error",
     );
 
     await selectAssignment(user);
-    await user.click(screen.getByRole("button", { name: "Assign" }));
+    await user.click(screen.getByTestId("assign-partnership"));
     await waitFor(() => {
       expect(mocks.assign).toHaveBeenCalled();
     });
@@ -267,7 +271,9 @@ describe("ProjectPartnershipManager", () => {
     const user = userEvent.setup();
     const { invalidateQueries } = await renderManager([existingPartnership]);
 
-    await user.click(screen.getByRole("button", { name: "Remove" }));
+    await user.click(
+      screen.getByTestId("remove-partnership-partnership-existing"),
+    );
 
     await waitFor(() => {
       // Red if remove succeeds without invalidating the active list query.

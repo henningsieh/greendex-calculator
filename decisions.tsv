@@ -5,3 +5,4 @@ ts	phase	decision	why	evidence	result
 2026-10-25T14:27:06Z	iteration-3	committed three ordered units and opened PR 321	sequence-verifiable-units, hooks green on each commit	commits dff127bd 4f57c578 478d617e, PR 321 open ready	predicate-met
 2026-10-25T15:07:36Z	iteration-4	committed gate fix and launched w2 w3 w4 in isolated worktrees	one writer per worktree, disjoint scopes, gate burn-down to zero	commit 82128ec4, workers b33ee211 1cf74b13 40642eaf	calculator 40 to 0 verified
 2026-10-25T15:13:28Z	iteration-5	merged w3 claim e2e, 118 findings killed	reviewed markers-only diff, fast-forward merge, gate recount	textfree/w3-claims merged, gate 682 to 564	predicate-progress
+2026-10-25T15:21:53Z	iteration-6	merged w2 onboarding e2e, resolved 4 marker collisions to merged names	one name per element, merged branch wins, duplicate props removed	merge a8bc7899, gate 564 to 347	predicate-progress

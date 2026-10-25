@@ -40,9 +40,7 @@ function renderSwitcher() {
 // composition only answers a plain click event under jsdom, so the tests
 // drive the real click handlers with fireEvent instead of userEvent.
 function openMenu() {
-  fireEvent.click(
-    screen.getByRole("button", { name: /Acting Organization: Alpha/ }),
-  );
+  fireEvent.click(screen.getByTestId("organization-switcher"));
 }
 
 describe("OrganizationSwitcher", () => {
@@ -56,11 +54,13 @@ describe("OrganizationSwitcher", () => {
     renderSwitcher();
     openMenu();
 
-    const current = await screen.findByRole("menuitem", { name: "Alpha" });
+    const current = await screen.findByTestId("switch-organization-org-a");
     expect(current.getAttribute("aria-current")).toBe("true");
     expect(current.querySelector("svg")).not.toBeNull();
     expect(
-      screen.getByRole("menuitem", { name: "Beta" }).getAttribute("aria-current"),
+      screen
+        .getByTestId("switch-organization-org-b")
+        .getAttribute("aria-current"),
     ).toBeNull();
   });
 
@@ -68,7 +68,7 @@ describe("OrganizationSwitcher", () => {
     renderSwitcher();
     openMenu();
 
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Beta" }));
+    fireEvent.click(await screen.findByTestId("switch-organization-org-b"));
 
     await waitFor(() => {
       expect(mocks.setActive).toHaveBeenCalledExactlyOnceWith({
@@ -83,7 +83,7 @@ describe("OrganizationSwitcher", () => {
     renderSwitcher();
     openMenu();
 
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Alpha" }));
+    fireEvent.click(await screen.findByTestId("switch-organization-org-a"));
 
     expect(mocks.setActive).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();
@@ -94,7 +94,7 @@ describe("OrganizationSwitcher", () => {
     renderSwitcher();
     openMenu();
 
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Beta" }));
+    fireEvent.click(await screen.findByTestId("switch-organization-org-b"));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveAttribute(

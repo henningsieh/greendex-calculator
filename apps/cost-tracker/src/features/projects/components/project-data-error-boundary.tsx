@@ -36,6 +36,7 @@ function ProjectDataErrorFallback({
       <AlertAction>
         {errorMessage.sessionExpired ? (
           <Link
+            data-testid="project-data-sign-in"
             className={buttonVariants({ size: "sm", variant: "outline" })}
             href="/login"
           >

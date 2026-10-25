@@ -235,6 +235,7 @@ export function ClaimDecisionPanel({
                   </Label>
                   <textarea
                     id="decision-reason"
+                    data-testid={`claim-decision-reason-${confirming}`}
                     className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                     maxLength={MAX_CLAIM_REASON_LENGTH}
                     required
@@ -349,6 +350,7 @@ export function ClaimReviewDetails({
                       <a
                         href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
                         download
+                        data-testid={`download-proof-${document.id}`}
                       >
                         Download Proof Document: {document.originalFileName}
                       </a>

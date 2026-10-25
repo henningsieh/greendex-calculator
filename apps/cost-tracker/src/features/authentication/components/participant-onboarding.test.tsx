@@ -70,14 +70,12 @@ describe("ParticipantJoin", () => {
   ])("joins by %s and reaches the same dashboard", async (_name, source) => {
     const user = userEvent.setup();
     render(<ParticipantJoin agreement={published} source={source} />);
-    await user.type(screen.getByLabelText("Full name"), "Alex Example");
-    await user.selectOptions(screen.getByLabelText("Country"), "DE");
-    expect(screen.getByRole("button", { name: "Join Project" })).toBeDisabled();
-    expect(
-      screen.getByLabelText("Participant agreement text"),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
-    await user.click(screen.getByRole("button", { name: "Join Project" }));
+    await user.type(screen.getByTestId("participant-name"), "Alex Example");
+    await user.selectOptions(screen.getByTestId("participant-country"), "DE");
+    expect(screen.getByTestId("join-project")).toBeDisabled();
+    expect(screen.getByTestId("participant-agreement")).toBeInTheDocument();
+    await user.click(screen.getByTestId("accept-participant-agreement"));
+    await user.click(screen.getByTestId("join-project"));
     await waitFor(() =>
       expect(mocks.join).toHaveBeenCalledWith({
         source,
@@ -97,11 +95,11 @@ describe("ParticipantJoin", () => {
         source={{ kind: "link", id: "link-1", secret: "secret-1" }}
       />,
     );
-    await user.type(screen.getByLabelText("Full name"), "Alex Example");
-    await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
-    expect(screen.getByRole("button", { name: "Join Project" })).toBeDisabled();
-    await user.selectOptions(screen.getByLabelText("Country"), "FR");
-    await user.click(screen.getByRole("button", { name: "Join Project" }));
+    await user.type(screen.getByTestId("participant-name"), "Alex Example");
+    await user.click(screen.getByTestId("accept-participant-agreement"));
+    expect(screen.getByTestId("join-project")).toBeDisabled();
+    await user.selectOptions(screen.getByTestId("participant-country"), "FR");
+    await user.click(screen.getByTestId("join-project"));
     await waitFor(() =>
       expect(mocks.join).toHaveBeenCalledWith({
         source: { kind: "link", id: "link-1", secret: "secret-1" },
@@ -122,7 +120,7 @@ describe("ParticipantJoin", () => {
       "data-agreement-state",
       "unavailable",
     );
-    expect(screen.getByRole("button", { name: "Join Project" })).toBeDisabled();
+    expect(screen.getByTestId("join-project")).toBeDisabled();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(mocks.join).not.toHaveBeenCalled();
   });
@@ -136,21 +134,19 @@ describe("ParticipantJoin", () => {
         source={{ kind: "link", id: "link-1", secret: "secret-1" }}
       />,
     );
-    await user.type(screen.getByLabelText("Full name"), "Alex Example");
-    await user.selectOptions(screen.getByLabelText("Country"), "DE");
-    await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
-    await user.click(screen.getByRole("button", { name: "Join Project" }));
+    await user.type(screen.getByTestId("participant-name"), "Alex Example");
+    await user.selectOptions(screen.getByTestId("participant-country"), "DE");
+    await user.click(screen.getByTestId("accept-participant-agreement"));
+    await user.click(screen.getByTestId("join-project"));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
-    expect(screen.getByLabelText("Full name")).toHaveValue("Alex Example");
-    expect(screen.getByLabelText("Country")).toHaveValue("DE");
+    expect(screen.getByTestId("participant-name")).toHaveValue("Alex Example");
+    expect(screen.getByTestId("participant-country")).toHaveValue("DE");
     expect(mocks.join).toHaveBeenCalledWith({
       source: { kind: "link", id: "link-1", secret: "secret-1" },
       profile: { fullName: "Alex Example", country: "DE" },
       agreement: { accepted: true },
     });
-    expect(
-      screen.getByRole("button", { name: "Join Project" }),
-    ).not.toBeDisabled();
+    expect(screen.getByTestId("join-project")).not.toBeDisabled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
@@ -160,11 +156,9 @@ describe("ParticipantJoin", () => {
       "data-entry-state",
       "incomplete",
     );
-    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("participant-name")).not.toBeInTheDocument();
     expect(mocks.join).not.toHaveBeenCalled();
-    expect(
-      screen.queryByRole("button", { name: "Join Project" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("join-project")).not.toBeInTheDocument();
   });
 });
 
@@ -215,7 +209,7 @@ describe("ParticipantDashboard", () => {
     const user = userEvent.setup();
     render(<ParticipantDashboard agreement={published} />);
     expect(
-      await screen.findByRole("textbox", { name: "Full name" }),
+      await screen.findByTestId("participant-profile-name"),
     ).toBeInTheDocument();
     expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
       "data-dashboard-state",
@@ -224,18 +218,19 @@ describe("ParticipantDashboard", () => {
     expect(
       screen.queryByTestId("participant-project-project-1"),
     ).not.toBeInTheDocument();
-    await user.type(screen.getByLabelText("Full name"), "Alex Example");
-    await user.click(screen.getByRole("button", { name: "Save profile" }));
-    expect(
-      await screen.findByRole("button", { name: "Accept agreement" }),
-    ).toBeDisabled();
+    await user.type(
+      screen.getByTestId("participant-profile-name"),
+      "Alex Example",
+    );
+    await user.click(screen.getByTestId("save-participant-profile"));
+    expect(await screen.findByTestId("accept-agreement")).toBeDisabled();
     expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
       "data-dashboard-state",
       "agreement",
     );
     expect(mocks.saveProfile).toHaveBeenCalledWith({ fullName: "Alex Example" });
-    await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
-    await user.click(screen.getByRole("button", { name: "Accept agreement" }));
+    await user.click(screen.getByTestId("accept-participant-agreement"));
+    await user.click(screen.getByTestId("accept-agreement"));
     expect(
       await screen.findByTestId("participant-project-project-1"),
     ).toHaveAttribute("data-participation-id", "participation-1");
@@ -259,10 +254,10 @@ describe("ParticipantDashboard", () => {
       "data-dashboard-state",
       "error",
     );
+    expect(screen.getByTestId("retry-participant-projects")).toBeEnabled();
     expect(
-      screen.getByRole("button", { name: "Retry loading Projects" }),
-    ).toBeEnabled();
-    expect(screen.queryByLabelText("Full name")).not.toBeInTheDocument();
+      screen.queryByTestId("participant-profile-name"),
+    ).not.toBeInTheDocument();
   });
 
   it("blocks stale agreement until accepted", async () => {
@@ -271,9 +266,7 @@ describe("ParticipantDashboard", () => {
       .mockResolvedValueOnce(projects);
     const user = userEvent.setup();
     render(<ParticipantDashboard agreement={published} />);
-    expect(
-      await screen.findByRole("button", { name: "Accept agreement" }),
-    ).toBeDisabled();
+    expect(await screen.findByTestId("accept-agreement")).toBeDisabled();
     expect(screen.getByTestId("participant-dashboard")).toHaveAttribute(
       "data-dashboard-state",
       "agreement",
@@ -281,8 +274,8 @@ describe("ParticipantDashboard", () => {
     expect(
       screen.queryByTestId("participant-project-project-1"),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("checkbox", { name: /I accept/ }));
-    await user.click(screen.getByRole("button", { name: "Accept agreement" }));
+    await user.click(screen.getByTestId("accept-participant-agreement"));
+    await user.click(screen.getByTestId("accept-agreement"));
     expect(
       await screen.findByTestId("participant-project-project-1"),
     ).toHaveAttribute("data-participation-id", "participation-1");
@@ -298,9 +291,7 @@ describe("ParticipantDashboard", () => {
       "data-agreement-state",
       "unavailable",
     );
-    expect(
-      screen.getByRole("button", { name: "Accept agreement" }),
-    ).toBeDisabled();
+    expect(screen.getByTestId("accept-agreement")).toBeDisabled();
     expect(mocks.listMyProjects).not.toHaveBeenCalled();
   });
 });

@@ -93,7 +93,10 @@ export function ClaimSubmission({
               </p>
               {item.gaps.map((gap) => (
                 <p key={`${gap.path.join(".")}-${gap.message}`}>
-                  <a href={`#${gapAnchor(gap.path)}`}>
+                  <a
+                    href={`#${gapAnchor(gap.path)}`}
+                    data-testid={`submission-gap-${gap.path.join("-")}`}
+                  >
                     {gap.message} — Go to gap
                   </a>
                 </p>

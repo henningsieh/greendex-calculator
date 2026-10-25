@@ -68,6 +68,7 @@ export function CreateProjectDialog() {
                   <Input
                     aria-invalid={!!errors.name}
                     id="new-project-name"
+                    data-testid="new-project-name"
                     {...register("name")}
                   />
                   {errors.name && <FieldError>{errors.name.message}</FieldError>}
@@ -77,6 +78,7 @@ export function CreateProjectDialog() {
                   <Input
                     aria-invalid={!!errors.startDate}
                     id="new-project-start"
+                    data-testid="new-project-start"
                     type="date"
                     {...register("startDate", {
                       setValueAs: (value: string) =>
@@ -92,6 +94,7 @@ export function CreateProjectDialog() {
                   <Input
                     aria-invalid={!!errors.endDate}
                     id="new-project-end"
+                    data-testid="new-project-end"
                     type="date"
                     {...register("endDate", {
                       setValueAs: (value: string) =>
@@ -107,6 +110,7 @@ export function CreateProjectDialog() {
                   <Input
                     aria-invalid={!!errors.location}
                     id="new-project-location"
+                    data-testid="new-project-location"
                     {...register("location")}
                   />
                   {errors.location && (
@@ -119,6 +123,7 @@ export function CreateProjectDialog() {
                     aria-invalid={!!errors.country}
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     id="new-project-country"
+                    data-testid="new-project-country"
                     defaultValue=""
                     {...register("country")}
                   >
@@ -145,6 +150,7 @@ export function CreateProjectDialog() {
                     aria-invalid={!!errors.welcomeMessage}
                     className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm"
                     id="new-project-welcome"
+                    data-testid="new-project-welcome"
                     {...register("welcomeMessage")}
                   />
                   {errors.welcomeMessage && (
@@ -158,7 +164,13 @@ export function CreateProjectDialog() {
                 )}
                 <div className="flex justify-end gap-3">
                   <Dialog.Close
-                    render={<Button type="button" variant="outline" />}
+                    render={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="cancel-new-project"
+                      />
+                    }
                   >
                     Cancel
                   </Dialog.Close>

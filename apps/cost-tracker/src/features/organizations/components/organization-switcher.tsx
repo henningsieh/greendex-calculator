@@ -95,6 +95,7 @@ export function OrganizationSwitcher({
 
               return (
                 <DropdownMenuItem
+                  data-testid={`switch-organization-${organization.id}`}
                   aria-current={current ? "true" : undefined}
                   className="rounded-md text-sm tracking-normal normal-case"
                   key={organization.id}

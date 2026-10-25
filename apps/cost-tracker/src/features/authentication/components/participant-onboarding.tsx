@@ -157,6 +157,7 @@ export function ParticipantJoin({
               <select
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 id="participant-country"
+                data-testid="participant-country"
                 required
                 value={country}
                 onChange={(event) =>
@@ -290,8 +291,8 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
               <div className="space-y-2">
                 <Label htmlFor="profile-name">Full name</Label>
                 <Input
-                  data-testid="participant-name"
                   id="profile-name"
+                  data-testid="participant-profile-name"
                   autoComplete="name"
                   maxLength={200}
                   required
@@ -331,6 +332,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
           </>
         ) : state === "error" ? (
           <Button
+            data-testid="retry-participant-projects"
             type="button"
             onClick={() => {
               setState("loading");

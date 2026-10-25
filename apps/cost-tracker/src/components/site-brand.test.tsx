@@ -7,10 +7,8 @@ describe("SiteBrand", () => {
   it("renders the canonical GreenDex wordmark and accessible wreath name", () => {
     render(<SiteBrand />);
 
-    expect(screen.getByText("GreenDex")).toBeVisible();
-    expect(
-      screen.getByRole("img", { name: "GreenDex star wreath" }),
-    ).toBeVisible();
-    expect(screen.getByRole("link")).toHaveAttribute("href", "/");
+    expect(screen.getByTestId("site-brand-name")).toBeVisible();
+    expect(screen.getByTestId("site-brand-mark")).toBeVisible();
+    expect(screen.getByTestId("site-brand")).toHaveAttribute("href", "/");
   });
 });

@@ -175,6 +175,7 @@ function ReviewTaskControls({
             <select
               className="h-9 rounded-md border bg-background px-3 text-sm"
               id={`review-decision-${task.id}`}
+              data-testid={`review-decision-${task.id}`}
               value={decision}
               onChange={(event) => {
                 const selected = reviewDecisions.find(
@@ -717,6 +718,7 @@ export function ParticipantCoordination({
                   <Link
                     className={buttonVariants({ variant: "outline" })}
                     href={`/partnerships/${encodeURIComponent(partnershipId)}/participants/${encodeURIComponent(participant.id)}`}
+                    data-testid={`participant-details-${participant.id}`}
                   >
                     Participant details for {participant.displayName}
                   </Link>
@@ -725,6 +727,7 @@ export function ParticipantCoordination({
                       type="button"
                       variant="destructive"
                       disabled={removeParticipation.isPending}
+                      data-testid={`remove-participation-${participant.id}`}
                       onClick={() => {
                         if (
                           window.confirm(
@@ -822,6 +825,7 @@ export function ParticipantCoordination({
                   </Label>
                   <input
                     id="participant-invitation-email"
+                    data-testid="participant-invitation-email"
                     className="h-9 rounded-md border bg-background px-3 text-sm"
                     type="email"
                     required
@@ -921,6 +925,7 @@ export function ParticipantCoordination({
                   )}
                   {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
+                      data-testid={`close-participant-invitation-${invitation.invitationId}`}
                       type="button"
                       variant="outline"
                       disabled={

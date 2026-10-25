@@ -64,6 +64,8 @@ publicHoistPattern:
   - next
 
 overrides:
+  # Tailwind's 1.32.0 pin warns on Fumadocs' valid ::highlight() selectors.
+  "@tailwindcss/node@4.3.3>lightningcss": 1.33.0
   react: 19.3.1
   react-dom: 19.3.1
   next: 16.4.2

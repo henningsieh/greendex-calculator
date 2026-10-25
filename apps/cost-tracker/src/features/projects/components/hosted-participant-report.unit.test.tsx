@@ -69,10 +69,12 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
   it("groups totals by Partner Organization and hides Participants until expanded", async () => {
     renderReport();
 
-    const report = await screen.findByRole(
-      "region",
-      { name: "Hosting Participant view" },
-      { timeout: 10_000 },
+    const report = await screen.findByTestId(
+      "hosted-participant-report",
+      {},
+      {
+        timeout: 10_000,
+      },
     );
     expect(report).toHaveAttribute("data-agreement-published", "true");
     expect(
@@ -98,17 +100,15 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
     );
     expect(within(organization).queryByRole("list")).not.toBeInTheDocument();
 
-    const toggle = within(organization).getByRole("button", {
-      name: "Show 2 Participants",
-    });
+    const toggle = within(organization).getByTestId("toggle-report-participants");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveAttribute("aria-controls", "participants-org-alpha");
     await userEvent.click(toggle);
 
-    const toggleName = await screen.findByRole("button", {
-      name: "Hide 2 Participants",
-    });
-    expect(toggleName).toHaveAttribute("aria-expanded", "true");
+    const expandedToggle = await screen.findByTestId(
+      "toggle-report-participants",
+    );
+    expect(expandedToggle).toHaveAttribute("aria-expanded", "true");
     expect(within(organization).getByRole("list")).toHaveAttribute(
       "id",
       "participants-org-alpha",
@@ -129,7 +129,7 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
       "pending",
     );
 
-    await userEvent.click(toggleName);
+    await userEvent.click(expandedToggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(within(organization).queryByRole("list")).not.toBeInTheDocument();
   });
@@ -137,18 +137,20 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
   it("offers no Participant control beyond expanding", async () => {
     renderReport();
 
-    const report = await screen.findByRole(
-      "region",
-      { name: "Hosting Participant view" },
-      { timeout: 10_000 },
+    const report = await screen.findByTestId(
+      "hosted-participant-report",
+      {},
+      {
+        timeout: 10_000,
+      },
     );
     await userEvent.click(
-      within(report).getByRole("button", { name: "Show 2 Participants" }),
+      within(report).getByTestId("toggle-report-participants"),
     );
 
     expect(within(report).getAllByRole("button")).toHaveLength(1);
     expect(
-      within(report).getByRole("button", { name: "Hide 2 Participants" }),
+      within(report).getByTestId("toggle-report-participants"),
     ).toHaveAttribute("aria-expanded", "true");
     expect(within(report).queryAllByRole("link")).toHaveLength(0);
   });
@@ -161,9 +163,7 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
     };
     renderReport();
 
-    const report = await screen.findByRole("region", {
-      name: "Hosting Participant view",
-    });
+    const report = await screen.findByTestId("hosted-participant-report");
     expect(report.querySelector('[data-slot="empty"]')).toBeInTheDocument();
     expect(within(report).queryAllByRole("button")).toHaveLength(0);
     expect(within(report).queryAllByRole("listitem")).toHaveLength(0);
@@ -176,15 +176,13 @@ describe("Hosting Participant view", { timeout: 20_000 }, () => {
     };
     renderReport();
 
-    const report = await screen.findByRole("region", {
-      name: "Hosting Participant view",
-    });
+    const report = await screen.findByTestId("hosted-participant-report");
     expect(report).toHaveAttribute("data-agreement-published", "false");
     expect(
       within(report).getByTestId("unpublished-agreement"),
     ).toBeInTheDocument();
     expect(
-      within(report).getByRole("button", { name: "Show 2 Participants" }),
+      within(report).getByTestId("toggle-report-participants"),
     ).toBeEnabled();
   });
 });

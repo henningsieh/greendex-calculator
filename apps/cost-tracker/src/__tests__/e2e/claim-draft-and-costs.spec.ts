@@ -394,7 +394,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       const page = await actor.newPage();
       await openPartnership(page, "participants");
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      // Text-free: the add-participation form below proves the section renders;
+      // Text-free: the participation-add form below proves the section renders;
       // participant rows are asserted by role right after.
       await expect(await participationRow(page, people[0]!.id)).toBeVisible();
       await expect(await participationRow(page, people[1]!.id)).toBeVisible();

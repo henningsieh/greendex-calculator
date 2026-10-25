@@ -37,21 +37,21 @@ describe("NoOrganizationAccess", () => {
     const user = userEvent.setup({ delay: null });
     render(<NoOrganizationAccess />);
 
+    expect(screen.getByTestId("no-organization-access")).toHaveRole("main");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Organization name")).toBeVisible();
+    expect(screen.getByTestId("organization-name")).toBeVisible();
 
-    await user.type(screen.getByLabelText("Organization name"), "Northwind");
-    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
-    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+    await user.type(screen.getByTestId("organization-name"), "Northwind");
+    await user.selectOptions(screen.getByTestId("organization-country"), "DE");
+    await user.click(screen.getByTestId("create-organization"));
 
     expect(mocks.createOrganization).toHaveBeenCalledExactlyOnceWith({
       name: "Northwind",
       slug: "northwind",
       country: "DE",
     });
-    expect(
-      screen.queryByRole("dialog", { name: "Create Organization" }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("no-organization-access")).toHaveRole("main");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mocks.refresh).toHaveBeenCalledExactlyOnceWith();
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
   });
@@ -61,16 +61,15 @@ describe("NoOrganizationAccess", () => {
     // No inter-keystroke delay: keystroke timing must not eat the timeout.
     const user = userEvent.setup({ delay: null });
     render(<NoOrganizationAccess />);
-    await user.type(screen.getByLabelText("Organization name"), "Northwind");
-    await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
-    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+    await user.type(screen.getByTestId("organization-name"), "Northwind");
+    await user.selectOptions(screen.getByTestId("organization-country"), "DE");
+    await user.click(screen.getByTestId("create-organization"));
 
     expect(await screen.findByTestId("organization-error")).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Create Organization" }),
-    ).not.toBeDisabled();
+    expect(screen.getByTestId("create-organization")).not.toBeDisabled();
+    expect(screen.getByTestId("no-organization-access")).toHaveRole("main");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Organization name")).toHaveValue("Northwind");
+    expect(screen.getByTestId("organization-name")).toHaveValue("Northwind");
     expect(mocks.refresh).not.toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });

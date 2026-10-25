@@ -20,9 +20,9 @@ test("sign-in starts only one Projects navigation and hydrates it", async ({
       projectRequests.push(`${request.method()} ${request.resourceType()}`);
     }
   });
-  await page.getByLabel("Email address").fill(SEED_USER.email);
-  await page.getByLabel("Password").fill(SEED_USER.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByTestId("email").fill(SEED_USER.email);
+  await page.getByTestId("password").fill(SEED_USER.password);
+  await page.getByTestId("auth-submit").click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
   await expectPrivateURL(page, /\/projects$/);
   await expect(

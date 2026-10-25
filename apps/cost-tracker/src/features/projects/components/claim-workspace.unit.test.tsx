@@ -247,7 +247,7 @@ describe("Claim workspace", () => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
     mount();
     await screen.findByTestId("costs-empty");
-    expect(screen.getByLabelText("Payout Account")).toBeDisabled();
+    expect(screen.getByTestId("claim-payout-select")).toBeDisabled();
     for (const name of [
       "Save cost",
       "Save journey",
@@ -277,7 +277,7 @@ describe("Claim workspace", () => {
         </QueryClientProvider>,
       );
       expect(
-        await screen.findByRole("button", { name: "Correct Robin's journey" }),
+        await screen.findByTestId("correct-journey-person"),
       ).toBeInTheDocument();
       unmount();
     }
@@ -293,9 +293,7 @@ describe("Claim workspace", () => {
           document.querySelector('li[id="journey-person"]'),
         ).toBeInTheDocument(),
       );
-      expect(
-        screen.queryByRole("button", { name: "Correct Robin's journey" }),
-      ).toBeNull();
+      expect(screen.queryByTestId("correct-journey-person")).toBeNull();
       unmount();
     }
   }, 30_000);
@@ -322,9 +320,7 @@ describe("Claim workspace", () => {
         document.querySelector('li[id="journey-person"]'),
       ).toBeInTheDocument(),
     );
-    expect(
-      screen.queryByRole("button", { name: "Correct Robin's journey" }),
-    ).toBeNull();
+    expect(screen.queryByTestId("correct-journey-person")).toBeNull();
     unmount();
     mocks.draft = {
       id: "claim",
@@ -356,50 +352,57 @@ describe("Claim workspace", () => {
       }),
     );
     mount();
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Correct Robin's journey" }),
+    await userEvent.click(await screen.findByTestId("correct-journey-person"));
+    expect(screen.getByTestId("journey-correction-person-origin")).toHaveValue(
+      "Berlin",
     );
-    expect(screen.getByLabelText("Origin for Robin")).toHaveValue("Berlin");
-    expect(screen.getByLabelText("Destination for Robin")).toHaveValue("Riga");
-    expect(screen.getByLabelText("Trip type for Robin")).toHaveValue("one-way");
-    expect(screen.getByLabelText(/distance \(km\) for Robin/)).toHaveValue(
+    expect(
+      screen.getByTestId("journey-correction-person-destination"),
+    ).toHaveValue("Riga");
+    expect(screen.getByTestId("journey-correction-person-type")).toHaveValue(
+      "one-way",
+    );
+    expect(screen.getByTestId("journey-correction-person-distance")).toHaveValue(
       "800.00",
     );
-    await userEvent.clear(screen.getByLabelText("Origin for Robin"));
-    await userEvent.type(screen.getByLabelText("Destination for Robin"), " City");
+    await userEvent.clear(screen.getByTestId("journey-correction-person-origin"));
+    await userEvent.type(
+      screen.getByTestId("journey-correction-person-destination"),
+      " City",
+    );
     await userEvent.selectOptions(
-      screen.getByLabelText("Trip type for Robin"),
+      screen.getByTestId("journey-correction-person-type"),
       "round-trip",
     );
-    await userEvent.clear(screen.getByLabelText(/distance \(km\) for Robin/));
+    await userEvent.clear(
+      screen.getByTestId("journey-correction-person-distance"),
+    );
     await userEvent.type(
-      screen.getByLabelText(/distance \(km\) for Robin/),
+      screen.getByTestId("journey-correction-person-distance"),
       "bad",
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Save correction" }),
-    );
-    for (const label of [
-      "Origin for Robin",
-      "Destination for Robin",
-      "Trip type for Robin",
-      "Erasmus Distance-Calculator distance (km) for Robin",
-    ])
+    await userEvent.click(screen.getByTestId("journey-correction-save"));
+    for (const field of ["origin", "destination", "type", "distance"])
       expect(
-        await within(screen.getByLabelText(label).parentElement!).findByRole(
-          "alert",
-        ),
+        await within(
+          screen.getByTestId(`journey-correction-person-${field}`).parentElement!,
+        ).findByRole("alert"),
       ).toBeInTheDocument();
-    expect(screen.getByLabelText(/distance \(km\) for Robin/)).toHaveValue("bad");
-    await userEvent.type(screen.getByLabelText("Origin for Robin"), "Tallinn");
-    await userEvent.clear(screen.getByLabelText(/distance \(km\) for Robin/));
+    expect(screen.getByTestId("journey-correction-person-distance")).toHaveValue(
+      "bad",
+    );
     await userEvent.type(
-      screen.getByLabelText(/distance \(km\) for Robin/),
+      screen.getByTestId("journey-correction-person-origin"),
+      "Tallinn",
+    );
+    await userEvent.clear(
+      screen.getByTestId("journey-correction-person-distance"),
+    );
+    await userEvent.type(
+      screen.getByTestId("journey-correction-person-distance"),
       "2500",
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Save correction" }),
-    );
+    await userEvent.click(screen.getByTestId("journey-correction-save"));
     await waitFor(() =>
       expect(mocks.updateJourney).toHaveBeenLastCalledWith({
         partnershipId: "own",
@@ -411,26 +414,22 @@ describe("Claim workspace", () => {
       }),
     );
     await waitFor(() =>
-      expect(
-        screen.queryByRole("button", { name: "Save correction" }),
-      ).toBeNull(),
+      expect(screen.queryByTestId("journey-correction-save")).toBeNull(),
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Correct Robin's journey" }),
+    await userEvent.click(screen.getByTestId("correct-journey-person"));
+    expect(screen.getByTestId("journey-correction-person-origin")).toHaveValue(
+      "Tallinn",
     );
-    expect(screen.getByLabelText("Origin for Robin")).toHaveValue("Tallinn");
-    expect(screen.getByLabelText("Destination for Robin")).toHaveValue(
-      "Riga City",
-    );
-    expect(screen.getByLabelText("Trip type for Robin")).toHaveValue(
+    expect(
+      screen.getByTestId("journey-correction-person-destination"),
+    ).toHaveValue("Riga City");
+    expect(screen.getByTestId("journey-correction-person-type")).toHaveValue(
       "round-trip",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await userEvent.click(screen.getByTestId("cancel-journey-correction"));
     expect(mocks.submit).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirm submission" }),
-    );
+    await userEvent.click(screen.getByTestId("claim-submit"));
+    await userEvent.click(screen.getByTestId("claim-submit-confirm"));
     await waitFor(() =>
       expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
@@ -440,10 +439,8 @@ describe("Claim workspace", () => {
       ).toBeInTheDocument(),
     );
     expect(document.querySelector('li[id="journey-person"]')).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Correct Robin's journey" }),
-    ).toBeNull();
-    expect(screen.queryByRole("button", { name: "Save correction" })).toBeNull();
+    expect(screen.queryByTestId("correct-journey-person")).toBeNull();
+    expect(screen.queryByTestId("journey-correction-save")).toBeNull();
     // Heavy render + async flows: flakes at the 5s default under full parallel load.
   }, 30_000);
 
@@ -473,8 +470,8 @@ describe("Claim workspace", () => {
     expect(
       document.querySelector('[data-draft-status="correction_requested"]'),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save cost" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
+    expect(screen.getByTestId("cost-save")).toBeInTheDocument();
+    expect(screen.getByTestId("claim-submit")).toBeDisabled();
     unmount();
     mocks.preview = null;
     mocks.draft = { id: "claim", partnershipId: "own", status: "rejected" };
@@ -493,7 +490,7 @@ describe("Claim workspace", () => {
       },
     ];
     mount();
-    const history = await screen.findByRole("region", { name: "Claim history" });
+    const history = await screen.findByTestId("claim-history");
     expect(within(history).getAllByRole("listitem")).toHaveLength(2);
     expect(
       history.querySelector('[data-history-event="rejected"]'),
@@ -504,9 +501,9 @@ describe("Claim workspace", () => {
     expect(
       document.querySelector('[data-draft-status="rejected"]'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Submit Claim" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();
+    expect(screen.queryByTestId("claim-submit")).toBeNull();
+    expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
+    expect(screen.queryByTestId("cost-save")).toBeNull();
   });
 
   it("does not create on open, selects payout then explicitly saves, and shows saved state", async () => {
@@ -518,24 +515,18 @@ describe("Claim workspace", () => {
     );
     expect(mocks.saveDraft).not.toHaveBeenCalled();
     expect(
-      within(
-        screen.getByRole("list", { name: "Submission checklist" }),
-      ).getAllByRole("listitem"),
+      within(screen.getByTestId("submission-checklist")).getAllByRole("listitem"),
     ).toHaveLength(7);
-    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: "Save Claim draft" }),
-    ).toBeDisabled();
+    expect(screen.getByTestId("claim-submit")).toBeDisabled();
+    expect(screen.getByTestId("claim-draft-save")).toBeDisabled();
     await userEvent.selectOptions(
-      screen.getByLabelText("Payout Account"),
+      screen.getByTestId("claim-payout-select"),
       "account",
     );
     await waitFor(() =>
-      expect(screen.getByLabelText("Payout Account")).toHaveValue("account"),
+      expect(screen.getByTestId("claim-payout-select")).toHaveValue("account"),
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Save Claim draft" }),
-    );
+    await userEvent.click(screen.getByTestId("claim-draft-save"));
     await waitFor(() =>
       expect(
         document.querySelector('[data-draft-status="editable"]'),
@@ -562,34 +553,25 @@ describe("Claim workspace", () => {
     mocks.saveCost.mockResolvedValue({ id: "cost" });
     mount();
     await screen.findByTestId("costs-empty");
-    await userEvent.selectOptions(
-      screen.getByLabelText("Participation"),
-      "person",
-    );
-    await userEvent.type(screen.getByLabelText("Origin"), "Mars");
-    await userEvent.type(
-      screen.getByLabelText(/Erasmus Distance-Calculator distance/),
-      "bad",
-    );
-    await userEvent.click(screen.getByRole("button", { name: "Save journey" }));
+    await userEvent.selectOptions(screen.getByTestId("journey-person"), "person");
+    await userEvent.type(screen.getByTestId("journey-origin"), "Mars");
+    await userEvent.type(screen.getByTestId("journey-distance"), "bad");
+    await userEvent.click(screen.getByTestId("journey-save"));
     expect(
-      await within(screen.getByLabelText("Origin").parentElement!).findByRole(
+      await within(
+        screen.getByTestId("journey-origin").parentElement!,
+      ).findByRole("alert"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("journey-distance").parentElement!).getByRole(
         "alert",
       ),
     ).toBeInTheDocument();
-    expect(
-      within(
-        screen.getByLabelText(/Erasmus Distance-Calculator distance/)
-          .parentElement!,
-      ).getByRole("alert"),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Origin")).toHaveValue("Mars");
-    expect(
-      screen.getByLabelText(/Erasmus Distance-Calculator distance/),
-    ).toHaveValue("bad");
-    await userEvent.type(screen.getByLabelText("Exact total (EUR)"), "10.00");
-    await userEvent.click(screen.getByRole("checkbox", { name: "Robin" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save cost" }));
+    expect(screen.getByTestId("journey-origin")).toHaveValue("Mars");
+    expect(screen.getByTestId("journey-distance")).toHaveValue("bad");
+    await userEvent.type(screen.getByTestId("cost-amount"), "10.00");
+    await userEvent.click(screen.getByTestId("cost-participation-person"));
+    await userEvent.click(screen.getByTestId("cost-save"));
     await waitFor(() =>
       expect(mocks.saveCost).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -598,7 +580,7 @@ describe("Claim workspace", () => {
         }),
       ),
     );
-    expect(screen.getByLabelText("Origin")).toHaveValue("Mars");
+    expect(screen.getByTestId("journey-origin")).toHaveValue("Mars");
   });
 
   it("surfaces the server one-journey rule at Participation without clearing the form", async () => {
@@ -610,24 +592,17 @@ describe("Claim workspace", () => {
     );
     mount();
     expect(
-      within(
-        await screen.findByRole("list", {
-          name: "Participations needing Journeys",
-        }),
-      ).getByRole("listitem"),
+      within(await screen.findByTestId("journey-gaps")).getByRole("listitem"),
     ).toHaveAttribute("id", "journey-gap-person");
-    await userEvent.selectOptions(
-      screen.getByLabelText("Participation"),
-      "person",
-    );
-    await userEvent.type(screen.getByLabelText("Origin"), "Berlin");
-    await userEvent.click(screen.getByRole("button", { name: "Save journey" }));
+    await userEvent.selectOptions(screen.getByTestId("journey-person"), "person");
+    await userEvent.type(screen.getByTestId("journey-origin"), "Berlin");
+    await userEvent.click(screen.getByTestId("journey-save"));
     expect(
       await within(
-        screen.getByLabelText("Participation").parentElement!,
+        screen.getByTestId("journey-person").parentElement!,
       ).findByRole("alert"),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Origin")).toHaveValue("Berlin");
+    expect(screen.getByTestId("journey-origin")).toHaveValue("Berlin");
   });
 
   it("shows share totals and server field errors without clearing an incomplete cost", async () => {
@@ -648,27 +623,27 @@ describe("Claim workspace", () => {
     mount();
     await screen.findByTestId("costs-empty");
     await userEvent.selectOptions(
-      screen.getByLabelText("Allocation method"),
+      screen.getByTestId("cost-method"),
       "percentage",
     );
-    await userEvent.click(screen.getByRole("checkbox", { name: "Robin" }));
-    await userEvent.type(screen.getByLabelText("Robin percentage"), "35.5");
+    await userEvent.click(screen.getByTestId("cost-participation-person"));
+    await userEvent.type(screen.getByTestId("cost-share-person"), "35.5");
     expect(document.querySelector("[data-share-total]")).toHaveAttribute(
       "data-share-total",
       "35.500000",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Save cost" }));
+    await userEvent.click(screen.getByTestId("cost-save"));
     expect(
       await within(
-        screen.getByLabelText("Robin percentage").parentElement!,
+        screen.getByTestId("cost-share-person").parentElement!,
       ).findByRole("alert"),
     ).toBeInTheDocument();
     expect(
       screen
-        .getByRole("group", { name: "Covered Participations" })
+        .getByTestId("cost-participations")
         .querySelector(':scope > [role="alert"]'),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Robin percentage")).toHaveValue("35.5");
+    expect(screen.getByTestId("cost-share-person")).toHaveValue("35.5");
   });
 
   it("shows only Claim documents as picker options, linked state and upload progress", async () => {
@@ -720,13 +695,11 @@ describe("Claim workspace", () => {
           ),
         ).toHaveLength(1),
       );
-      const picker = screen.getByLabelText("Link a Proof Document to this cost");
-      expect(
-        within(picker).getByRole("option", { name: "receipt.pdf" }),
-      ).toHaveValue("proof");
-      expect(
-        within(picker).queryByRole("option", { name: "other-claim.pdf" }),
-      ).toBeNull();
+      const picker = screen.getByTestId("link-proof-entry");
+      expect(within(picker).getByTestId("proof-option-proof")).toHaveValue(
+        "proof",
+      );
+      expect(within(picker).queryByTestId("proof-option-foreign")).toBeNull();
       await userEvent.selectOptions(picker, "proof");
       await waitFor(() =>
         expect(mocks.link).toHaveBeenCalledWith({
@@ -736,12 +709,10 @@ describe("Claim workspace", () => {
         }),
       );
       await userEvent.upload(
-        screen.getByLabelText(/Upload Proof Document/),
+        screen.getByTestId("proof-file"),
         new File(["test"], "test.pdf", { type: "application/pdf" }),
       );
-      await userEvent.click(
-        screen.getByRole("button", { name: "Upload document" }),
-      );
+      await userEvent.click(screen.getByTestId("proof-upload"));
       expect(send).toHaveBeenCalled();
       expect(screen.getByRole("progressbar")).toHaveValue(0);
       requests[0].upload.onprogress?.({
@@ -759,9 +730,7 @@ describe("Claim workspace", () => {
       expect(
         within(document.getElementById("claim-proofs")!).getByRole("status"),
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Upload document" }),
-      ).toBeEnabled();
+      expect(screen.getByTestId("proof-upload")).toBeEnabled();
     } finally {
       vi.stubGlobal("XMLHttpRequest", original);
     }
@@ -808,17 +777,13 @@ describe("Claim workspace", () => {
       calculatedPayableEur: null,
     };
     mount();
-    const checklist = await screen.findByRole("list", {
-      name: "Submission checklist",
-    });
+    const checklist = await screen.findByTestId("submission-checklist");
     expect(within(checklist).getAllByRole("listitem")).toHaveLength(7);
     expect(within(checklist).getAllByRole("link")).toHaveLength(7);
     expect(
-      within(checklist).getByRole("link", {
-        name: /Select a Partner Payout Account/,
-      }),
+      within(checklist).getByTestId("submission-gap-payoutAccount"),
     ).toHaveAttribute("href", "#claim-payout");
-    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
+    expect(screen.getByTestId("claim-submit")).toBeDisabled();
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
@@ -877,16 +842,14 @@ describe("Claim workspace", () => {
     };
     mount();
     expect(
-      await screen.findByRole("link", { name: /Fix allocation/ }),
+      await screen.findByTestId("submission-gap-entries-entry-allocations"),
     ).toHaveAttribute("href", "#cost-entry");
-    expect(screen.getByRole("link", { name: /Link document/ })).toHaveAttribute(
-      "href",
-      "#proof-entry",
-    );
-    expect(screen.getByRole("link", { name: /Add journey/ })).toHaveAttribute(
-      "href",
-      "#journey-gap-person",
-    );
+    expect(
+      screen.getByTestId("submission-gap-entries-entry-proofDocuments"),
+    ).toHaveAttribute("href", "#proof-entry");
+    expect(
+      screen.getByTestId("submission-gap-participations-person-journey"),
+    ).toHaveAttribute("href", "#journey-gap-person");
     expect(document.getElementById("cost-entry")).not.toBeNull();
     expect(document.getElementById("proof-entry")).not.toBeNull();
     expect(document.getElementById("journey-gap-person")).not.toBeNull();
@@ -920,18 +883,12 @@ describe("Claim workspace", () => {
       "data-payable",
       "726.00",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
+    await userEvent.click(screen.getByTestId("claim-submit"));
     expect(mocks.submit).not.toHaveBeenCalled();
     expect(
-      within(screen.getByRole("complementary", { name: "Submission" })).getByRole(
-        "alert",
-      ),
-    ).toContainElement(
-      screen.getByRole("button", { name: "Confirm submission" }),
-    );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirm submission" }),
-    );
+      within(screen.getByTestId("claim-submission")).getByRole("alert"),
+    ).toContainElement(screen.getByTestId("claim-submit-confirm"));
+    await userEvent.click(screen.getByTestId("claim-submit-confirm"));
     await waitFor(() =>
       expect(mocks.submit).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
@@ -942,19 +899,19 @@ describe("Claim workspace", () => {
     );
     expect(await client.query(project)).toBe("submitted");
     expect(screen.getByTestId("claim-locked")).toBeInTheDocument();
-    expect(screen.getByLabelText("Payout Account")).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Save cost" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Save journey" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Upload document" })).toBeNull();
+    expect(screen.getByTestId("claim-payout-select")).toBeDisabled();
+    expect(screen.queryByTestId("cost-save")).toBeNull();
+    expect(screen.queryByTestId("journey-save")).toBeNull();
+    expect(screen.queryByTestId("proof-upload")).toBeNull();
   });
 
   it("renders a previously submitted Claim read-only on initial load", async () => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "submitted" };
     mount();
     expect(await screen.findByTestId("claim-locked")).toBeInTheDocument();
-    expect(screen.getByLabelText("Payout Account")).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Submit Claim" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Save journey" })).toBeNull();
+    expect(screen.getByTestId("claim-payout-select")).toBeDisabled();
+    expect(screen.queryByTestId("claim-submit")).toBeNull();
+    expect(screen.queryByTestId("journey-save")).toBeNull();
   });
 
   it("leaves the Claim editable when submit revalidation rejects a stale preview", async () => {
@@ -1010,20 +967,16 @@ describe("Claim workspace", () => {
       "data-payable",
       "726.00",
     );
-    await userEvent.click(screen.getByRole("button", { name: "Submit Claim" }));
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirm submission" }),
-    );
+    await userEvent.click(screen.getByTestId("claim-submit"));
+    await userEvent.click(screen.getByTestId("claim-submit-confirm"));
     expect(
-      await within(
-        screen.getByRole("complementary", { name: "Submission" }),
-      ).findByRole("alert"),
+      await within(screen.getByTestId("claim-submission")).findByRole("alert"),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole("link", { name: /Link evidence/ }),
+      await screen.findByTestId("submission-gap-entries-entry-proofDocuments"),
     ).toHaveAttribute("href", "#proof-entry");
-    expect(screen.getByRole("button", { name: "Submit Claim" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Save cost" })).toBeInTheDocument();
+    expect(screen.getByTestId("claim-submit")).toBeDisabled();
+    expect(screen.getByTestId("cost-save")).toBeInTheDocument();
   });
 
   it("creates an account from the empty state, refreshes options, and requires selection then explicit save", async () => {
@@ -1035,34 +988,33 @@ describe("Claim workspace", () => {
     );
     mount();
     expect(
-      await screen.findByRole("button", { name: "Create Payout Account" }),
+      await screen.findByTestId("payout-account-create"),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Payout Account" })).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Save Claim draft" }),
-    ).toBeDisabled();
-    await userEvent.type(screen.getByLabelText("Account holder"), "Example");
-    await userEvent.type(screen.getByLabelText("IBAN"), "DE89370400440532013001");
-    await userEvent.click(
-      screen.getByRole("button", { name: "Create Payout Account" }),
+    expect(screen.queryByTestId("claim-payout-select")).toBeNull();
+    expect(screen.getByTestId("claim-draft-save")).toBeDisabled();
+    await userEvent.type(screen.getByTestId("account-holder"), "Example");
+    await userEvent.type(
+      screen.getByTestId("account-iban"),
+      "DE89370400440532013001",
     );
+    await userEvent.click(screen.getByTestId("payout-account-create"));
     expect(
-      await within(screen.getByLabelText("IBAN").parentElement!).findByRole(
+      await within(screen.getByTestId("account-iban").parentElement!).findByRole(
         "alert",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("IBAN")).toHaveValue("DE89370400440532013001");
+    expect(screen.getByTestId("account-iban")).toHaveValue(
+      "DE89370400440532013001",
+    );
     expect(mocks.saveDraft).not.toHaveBeenCalled();
-    await userEvent.clear(screen.getByLabelText("IBAN"));
+    await userEvent.clear(screen.getByTestId("account-iban"));
     await userEvent.type(
-      screen.getByLabelText("IBAN"),
+      screen.getByTestId("account-iban"),
       "DE89 3704 0044 0532 0130 00",
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Create Payout Account" }),
-    );
+    await userEvent.click(screen.getByTestId("payout-account-create"));
     await waitFor(() =>
-      expect(screen.getByRole("option", { name: /Example/ })).toHaveValue(
+      expect(screen.getByTestId("payout-option-new-account")).toHaveValue(
         "new-account",
       ),
     );
@@ -1072,23 +1024,17 @@ describe("Claim workspace", () => {
       iban: "DE89 3704 0044 0532 0130 00",
       bic: "",
     });
-    expect(
-      screen.getByRole("button", { name: "Save Claim draft" }),
-    ).toBeDisabled();
+    expect(screen.getByTestId("claim-draft-save")).toBeDisabled();
     expect(mocks.select).not.toHaveBeenCalled();
     await userEvent.selectOptions(
-      screen.getByLabelText("Payout Account"),
+      screen.getByTestId("claim-payout-select"),
       "new-account",
     );
     await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Save Claim draft" }),
-      ).toBeEnabled(),
+      expect(screen.getByTestId("claim-draft-save")).toBeEnabled(),
     );
     expect(mocks.saveDraft).not.toHaveBeenCalled();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Save Claim draft" }),
-    );
+    await userEvent.click(screen.getByTestId("claim-draft-save"));
     await waitFor(() =>
       expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
@@ -1108,11 +1054,11 @@ describe("Claim workspace", () => {
     ];
     mount();
     expect(
-      await screen.findByRole("button", { name: "Create Payout Account" }),
+      await screen.findByTestId("payout-account-create"),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Payout Account" })).toBeNull();
+    expect(screen.queryByTestId("claim-payout-select")).toBeNull();
     expect(document.querySelector('li[id="journey-person"]')).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: "Robin" })).toBeNull();
+    expect(screen.queryByTestId("journey-option-person")).toBeNull();
   });
 });
 
@@ -1196,10 +1142,10 @@ it.each([
       mount(client);
       const user = userEvent.setup();
       await user.upload(
-        await screen.findByLabelText(/Upload Proof Document/),
+        await screen.findByTestId("proof-file"),
         new File(["test"], "test.pdf", { type: "application/pdf" }),
       );
-      await user.click(screen.getByRole("button", { name: "Upload document" }));
+      await user.click(screen.getByTestId("proof-upload"));
       expect(requests[0].open).toHaveBeenCalledWith(
         "POST",
         "/api/proof-documents",
@@ -1212,14 +1158,9 @@ it.each([
         ),
       ).toBeInTheDocument();
       expect(invalidate).not.toHaveBeenCalled();
-      expect(
-        screen.getByRole("button", { name: "Upload document" }),
-      ).toBeEnabled();
+      expect(screen.getByTestId("proof-upload")).toBeEnabled();
       expect(screen.getByRole("progressbar")).toHaveValue(0);
-      expect(screen.getByLabelText(/Upload Proof Document/)).toHaveProperty(
-        "files.length",
-        1,
-      );
+      expect(screen.getByTestId("proof-file")).toHaveProperty("files.length", 1);
     } finally {
       vi.stubGlobal("XMLHttpRequest", original);
     }
