@@ -30,7 +30,11 @@ function CachedORPCQuery() {
       <p data-testid="cached-project" data-query-value={query.data}>
         {query.data}
       </p>
-      <button onClick={() => void query.refetch()} type="button">
+      <button
+        data-testid="refresh-query"
+        onClick={() => void query.refetch()}
+        type="button"
+      >
         Refresh
       </button>
     </>
@@ -40,9 +44,11 @@ function CachedORPCQuery() {
 function FailingCachedORPCQuery({
   error,
   label,
+  id,
 }: {
   error: Error;
   label: string;
+  id: string;
 }) {
   const query = useQuery({
     initialData: "Cached Project",
@@ -56,6 +62,7 @@ function FailingCachedORPCQuery({
 
   return (
     <button
+      data-testid={`refresh-${id}-projects`}
       disabled={query.isFetching}
       onClick={() => void query.refetch()}
       type="button"
@@ -82,7 +89,7 @@ describe("QueryProvider", () => {
         "Cached Project",
       ),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    fireEvent.click(screen.getByTestId("refresh-query"));
 
     await waitFor(() => {
       expect(mocks.add).toHaveBeenCalledExactlyOnceWith(
@@ -101,20 +108,24 @@ describe("QueryProvider", () => {
 
     render(
       <QueryProvider>
-        <FailingCachedORPCQuery error={firstError} label="Hosted Projects" />
-        <FailingCachedORPCQuery error={secondError} label="Partner Projects" />
+        <FailingCachedORPCQuery
+          id="hosted"
+          error={firstError}
+          label="Hosted Projects"
+        />
+        <FailingCachedORPCQuery
+          id="partner"
+          error={secondError}
+          label="Partner Projects"
+        />
       </QueryProvider>,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Refresh Hosted Projects" }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Refresh Partner Projects" }),
-    );
+    fireEvent.click(screen.getByTestId("refresh-hosted-projects"));
+    fireEvent.click(screen.getByTestId("refresh-partner-projects"));
 
-    await screen.findByRole("button", { name: "Refresh Hosted Projects" });
-    await screen.findByRole("button", { name: "Refresh Partner Projects" });
+    await screen.findByTestId("refresh-hosted-projects");
+    await screen.findByTestId("refresh-partner-projects");
     expect(mocks.add).toHaveBeenCalledOnce();
   });
 });

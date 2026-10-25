@@ -31,7 +31,7 @@ describe("ProjectDataErrorBoundary", () => {
     );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(screen.getByTestId("retry-project-data")).toBeTruthy();
   });
 
   it("offers retry recovery for an unavailable service", () => {
@@ -51,7 +51,7 @@ describe("ProjectDataErrorBoundary", () => {
     );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
+    expect(screen.getByTestId("retry-project-data")).toBeEnabled();
   });
 
   it("offers sign-in recovery for an expired oRPC session", () => {
@@ -65,9 +65,9 @@ describe("ProjectDataErrorBoundary", () => {
     );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Sign in" }).getAttribute("href"),
-    ).toBe("/login");
+    expect(screen.getByTestId("project-data-sign-in").getAttribute("href")).toBe(
+      "/login",
+    );
   });
 
   it("resets its boundary so Project data can be retried", async () => {
@@ -83,7 +83,7 @@ describe("ProjectDataErrorBoundary", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
 
     shouldThrow = false;
-    screen.getByRole("button", { name: "Retry" }).click();
+    screen.getByTestId("retry-project-data").click();
 
     await waitFor(() => {
       expect(screen.getByTestId("project-data-loaded")).toBeTruthy();
@@ -106,7 +106,7 @@ it.each([
     </ProjectDataErrorBoundary>,
   );
   expect(screen.getByRole("alert")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
-  expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
+  expect(screen.getByTestId("retry-project-data")).toBeTruthy();
+  expect(screen.queryByTestId("project-data-sign-in")).toBeNull();
   vi.restoreAllMocks();
 });

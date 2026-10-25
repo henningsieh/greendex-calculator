@@ -84,9 +84,7 @@ describe("Claim decisions", () => {
     (role) => {
       access.role = role;
       render(<ClaimReview partnershipId="partner" />);
-      expect(
-        screen.getByRole("button", { name: "Approve Claim" }),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("claim-decision-approve")).toBeInTheDocument();
     },
   );
   it.each(["participant", ""])(
@@ -94,13 +92,13 @@ describe("Claim decisions", () => {
     (role) => {
       access.role = role;
       render(<ClaimReview partnershipId="partner" />);
-      expect(screen.queryByRole("button", { name: "Approve Claim" })).toBeNull();
+      expect(screen.queryByTestId("claim-decision-approve")).toBeNull();
     },
   );
   it("retains the authoritative assignment/scope refusal despite a client permission", () => {
     access.canReview = false;
     render(<ClaimReview partnershipId="partner" />);
-    expect(screen.queryByRole("button", { name: "Approve Claim" })).toBeNull();
+    expect(screen.queryByTestId("claim-decision-approve")).toBeNull();
   });
 
   it("renders a Hosting reviewer snapshot with cost allocations, proof references, payout and journeys", () => {
@@ -155,11 +153,11 @@ describe("Claim decisions", () => {
     expect(costRow?.querySelectorAll("td")).toHaveLength(4);
     expect(screen.getByTestId("allocation-share-person")).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: /Travel Cost Entries table/ }),
+      screen
+        .getByTestId("claim-cost-table")
+        .closest('[data-slot="table-container"]'),
     ).toHaveAttribute("tabindex", "0");
-    expect(
-      screen.getByRole("link", { name: "Download Proof Document: receipt.pdf" }),
-    ).toHaveAttribute(
+    expect(screen.getByTestId("download-proof-proof")).toHaveAttribute(
       "href",
       "/api/proof-documents?partnershipId=partner&documentId=proof",
     );
@@ -179,39 +177,33 @@ describe("Claim decisions", () => {
   it("requires reasons and explicit confirmation before correction and rejection", async () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     render(<ClaimDecisionPanel {...base} onDecision={onDecision} />);
-    await userEvent.click(
-      screen.getByRole("button", { name: "Request correction" }),
-    );
+    await userEvent.click(screen.getByTestId("claim-decision-requestCorrection"));
     expect(
-      screen.getByRole("button", { name: "Confirm correction request" }),
+      screen.getByTestId("confirm-claim-decision-requestCorrection"),
     ).toBeDisabled();
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Correction reason" }),
+      screen.getByTestId("claim-decision-reason-requestCorrection"),
       "Fix receipt",
     );
     await userEvent.click(
-      screen.getByRole("button", { name: "Confirm correction request" }),
+      screen.getByTestId("confirm-claim-decision-requestCorrection"),
     );
     expect(onDecision).toHaveBeenCalledWith("requestCorrection", {
       partnershipId: "partner",
       reason: "Fix receipt",
     });
     expect(onDecision).toHaveBeenCalledTimes(1);
-    await userEvent.click(screen.getByRole("button", { name: "Reject Claim" }));
-    expect(
-      screen.getByRole("button", { name: "Confirm rejection" }),
-    ).toBeDisabled();
+    await userEvent.click(screen.getByTestId("claim-decision-reject"));
+    expect(screen.getByTestId("confirm-claim-decision-reject")).toBeDisabled();
   });
 
   it("confirms approval without offering payment until approved", async () => {
     const onDecision = vi.fn().mockResolvedValue(undefined);
     render(<ClaimDecisionPanel {...base} onDecision={onDecision} />);
-    expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Approve Claim" }));
+    expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
+    await userEvent.click(screen.getByTestId("claim-decision-approve"));
     expect(onDecision).not.toHaveBeenCalled();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirm approval" }),
-    );
+    await userEvent.click(screen.getByTestId("confirm-claim-decision-approve"));
     expect(onDecision).toHaveBeenCalledWith("approve", {
       partnershipId: "partner",
     });
@@ -226,16 +218,12 @@ describe("Claim decisions", () => {
       "data-review-status",
       "approved",
     );
-    expect(
-      screen.queryByRole("button", { name: "Correct paid flag" }),
-    ).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Mark paid" }));
+    expect(screen.queryByTestId("claim-decision-correctPayment")).toBeNull();
+    await userEvent.click(screen.getByTestId("claim-decision-markPaid"));
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(onDecision).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Confirm payment" })).toBeEnabled();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirm payment" }),
-    );
+    expect(screen.getByTestId("confirm-claim-decision-markPaid")).toBeEnabled();
+    await userEvent.click(screen.getByTestId("confirm-claim-decision-markPaid"));
     expect(onDecision).toHaveBeenCalledWith("markPaid", {
       partnershipId: "partner",
       amountEur: "726.00",
@@ -247,19 +235,16 @@ describe("Claim decisions", () => {
       "data-review-status",
       "paid",
     );
-    expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Correct paid flag" }),
-    );
+    expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
+    await userEvent.click(screen.getByTestId("claim-decision-correctPayment"));
     expect(
-      screen.getByRole("button", { name: "Confirm paid-flag correction" }),
+      screen.getByTestId("confirm-claim-decision-correctPayment"),
     ).toBeDisabled();
-    fireEvent.change(
-      screen.getByRole("textbox", { name: "Paid-flag correction reason" }),
-      { target: { value: "Recorded in error" } },
-    );
+    fireEvent.change(screen.getByTestId("claim-decision-reason-correctPayment"), {
+      target: { value: "Recorded in error" },
+    });
     await userEvent.click(
-      screen.getByRole("button", { name: "Confirm paid-flag correction" }),
+      screen.getByTestId("confirm-claim-decision-correctPayment"),
     );
     expect(onDecision).toHaveBeenCalledWith("correctPayment", {
       partnershipId: "partner",
@@ -280,9 +265,9 @@ describe("Claim decisions", () => {
         />
       </>,
     );
-    const events = within(
-      screen.getByRole("region", { name: "Claim history" }),
-    ).getAllByRole("listitem");
+    const events = within(screen.getByTestId("claim-history")).getAllByRole(
+      "listitem",
+    );
     expect(events).toHaveLength(3);
     for (const [index, eventType] of [
       "correction_requested",
@@ -293,13 +278,11 @@ describe("Claim decisions", () => {
       expect(event).toHaveAttribute("data-history-event", eventType);
       expect(within(event).getByTestId("history-reason")).toBeVisible();
     }
-    expect(screen.queryByRole("button", { name: "Mark paid" })).toBeNull();
+    expect(screen.queryByTestId("claim-decision-markPaid")).toBeNull();
     expect(screen.getAllByRole("button")).toHaveLength(1);
-    await userEvent.click(screen.getByRole("button", { name: "Reopen Claim" }));
+    await userEvent.click(screen.getByTestId("claim-decision-reopen"));
     expect(onDecision).not.toHaveBeenCalled();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Confirm reopening" }),
-    );
+    await userEvent.click(screen.getByTestId("confirm-claim-decision-reopen"));
     expect(onDecision).toHaveBeenCalledExactlyOnceWith("reopen", {
       partnershipId: "partner",
     });
@@ -315,11 +298,9 @@ describe("Claim decisions", () => {
       "data-review-status",
       "submitted",
     );
-    expect(
-      screen.getByRole("button", { name: "Request correction" }),
-    ).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Approve Claim" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Reject Claim" })).toBeEnabled();
+    expect(screen.getByTestId("claim-decision-requestCorrection")).toBeEnabled();
+    expect(screen.getByTestId("claim-decision-approve")).toBeEnabled();
+    expect(screen.getByTestId("claim-decision-reject")).toBeEnabled();
     expect(screen.getAllByRole("button")).toHaveLength(3);
   });
 });

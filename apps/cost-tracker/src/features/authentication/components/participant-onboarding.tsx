@@ -64,12 +64,14 @@ function AgreementAcceptance({
       <div
         className="max-h-64 overflow-auto rounded-md border p-4 whitespace-pre-wrap"
         aria-label="Participant agreement text"
+        data-testid="participant-agreement-text"
       >
         {agreement.content}
       </div>
       <label className="flex items-start gap-2">
         <input
           checked={checked}
+          data-testid="accept-participant-agreement"
           onChange={(event) => onCheckedChange(event.target.checked)}
           required
           type="checkbox"
@@ -142,6 +144,7 @@ export function ParticipantJoin({
               <Label htmlFor="participant-name">Full name</Label>
               <Input
                 id="participant-name"
+                data-testid="participant-name"
                 autoComplete="name"
                 maxLength={200}
                 required
@@ -154,6 +157,7 @@ export function ParticipantJoin({
               <select
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 id="participant-country"
+                data-testid="participant-country"
                 required
                 value={country}
                 onChange={(event) =>
@@ -176,6 +180,7 @@ export function ParticipantJoin({
               onCheckedChange={setAccepted}
             />
             <Button
+              data-testid="join-project"
               disabled={!available || !accepted || !country || pending}
               type="submit"
             >
@@ -273,7 +278,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
         {!available ? (
           <>
             <AgreementUnavailable />
-            <Button disabled type="button">
+            <Button data-testid="accept-agreement" disabled type="button">
               Accept agreement
             </Button>
           </>
@@ -287,6 +292,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                 <Label htmlFor="profile-name">Full name</Label>
                 <Input
                   id="profile-name"
+                  data-testid="participant-profile-name"
                   autoComplete="name"
                   maxLength={200}
                   required
@@ -294,7 +300,11 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                   onChange={(event) => setName(event.target.value)}
                 />
               </div>
-              <Button disabled={pending} type="submit">
+              <Button
+                data-testid="save-participant-profile"
+                disabled={pending}
+                type="submit"
+              >
                 {pending ? "Saving…" : "Save profile"}
               </Button>
             </form>
@@ -311,13 +321,18 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                 checked={accepted}
                 onCheckedChange={setAccepted}
               />
-              <Button disabled={!accepted || pending} type="submit">
+              <Button
+                data-testid="accept-agreement"
+                disabled={!accepted || pending}
+                type="submit"
+              >
                 {pending ? "Accepting…" : "Accept agreement"}
               </Button>
             </form>
           </>
         ) : state === "error" ? (
           <Button
+            data-testid="retry-participant-projects"
             type="button"
             onClick={() => {
               setState("loading");

@@ -59,6 +59,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
               <FieldLabel htmlFor={field.name}>Name</FieldLabel>
               <Input
                 {...field}
+                data-testid="account-name"
                 aria-invalid={fieldState.invalid}
                 autoComplete="name"
                 disabled={form.formState.isSubmitting}
@@ -79,7 +80,13 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
 
         <Field>
           <FieldLabel htmlFor="account-email">Email address</FieldLabel>
-          <Input disabled id="account-email" type="email" value={email} />
+          <Input
+            disabled
+            data-testid="account-email"
+            id="account-email"
+            type="email"
+            value={email}
+          />
           <FieldDescription>
             Email changes are not available in Cost Tracker yet.
           </FieldDescription>
@@ -88,6 +95,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
         {error && <FieldError data-testid="name-form-error">{error}</FieldError>}
 
         <Button
+          data-testid="save-account-name"
           className="w-fit"
           disabled={form.formState.isSubmitting || !form.formState.isDirty}
           type="submit"

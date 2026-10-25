@@ -42,9 +42,9 @@ describe("AuthForm", () => {
     const user = userEvent.setup();
     render(<AuthForm mode="sign-in" />);
 
-    await user.type(screen.getByLabelText("Email address"), "user@example.org");
-    await user.type(screen.getByLabelText("Password"), "example-password");
-    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    await user.type(screen.getByTestId("email"), "user@example.org");
+    await user.type(screen.getByTestId("password"), "example-password");
+    await user.click(screen.getByTestId("auth-submit"));
 
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
     expect(mocks.refresh).not.toHaveBeenCalled();
@@ -61,10 +61,10 @@ describe("AuthForm", () => {
       const user = userEvent.setup();
       render(<AuthForm mode="sign-up" returnTo={returnTo} />);
 
-      await user.type(screen.getByLabelText("Name"), "Alex Morgan");
-      await user.type(screen.getByLabelText("Email address"), "user@example.org");
-      await user.type(screen.getByLabelText("Password"), "example-password");
-      await user.click(screen.getByRole("button", { name: "Create account" }));
+      await user.type(screen.getByTestId("name"), "Alex Morgan");
+      await user.type(screen.getByTestId("email"), "user@example.org");
+      await user.type(screen.getByTestId("password"), "example-password");
+      await user.click(screen.getByTestId("auth-submit"));
 
       const instruction = await screen.findByTestId("auth-verification-message");
       expect(instruction).toBeVisible();
@@ -88,12 +88,12 @@ describe("AuthForm", () => {
     const user = userEvent.setup();
     render(<AuthForm mode="sign-in" />);
 
-    await user.type(screen.getByLabelText("Email address"), "user@example.org");
+    await user.type(screen.getByTestId("email"), "user@example.org");
     await user.type(
-      screen.getByLabelText("Password"),
+      screen.getByTestId("password"),
       "correct-horse-battery-staple",
     );
-    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    await user.click(screen.getByTestId("auth-submit"));
 
     expect(await screen.findByTestId("auth-form-error")).toBeTruthy();
     expect(mocks.replace).not.toHaveBeenCalled();
@@ -108,9 +108,9 @@ it.each([
   mocks.signIn.mockRejectedValue(error);
   const user = userEvent.setup();
   render(<AuthForm mode="sign-in" />);
-  await user.type(screen.getByLabelText("Email address"), "user@example.org");
-  await user.type(screen.getByLabelText("Password"), "example-password");
-  await user.click(screen.getByRole("button", { name: "Sign in" }));
+  await user.type(screen.getByTestId("email"), "user@example.org");
+  await user.type(screen.getByTestId("password"), "example-password");
+  await user.click(screen.getByTestId("auth-submit"));
   expect(await screen.findByTestId("auth-form-error")).toBeInTheDocument();
   expect(screen.queryByTestId("auth-verification-message")).toBeNull();
   expect(mocks.replace).not.toHaveBeenCalled();

@@ -131,6 +131,7 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
             className="mt-6"
             disabled={pending}
             onClick={accept}
+            data-testid="accept-organization-invitation"
             type="button"
           >
             {pending ? "Joining…" : "Accept Organization Invitation"}
@@ -150,6 +151,7 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
           className="mt-4"
           disabled={pending}
           onClick={recheck}
+          data-testid="recheck-organization-invitation"
           type="button"
         >
           Check invitation again

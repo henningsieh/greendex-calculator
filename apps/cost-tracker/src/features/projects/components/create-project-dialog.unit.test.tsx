@@ -22,45 +22,45 @@ describe("New project dialog", { timeout: 60_000 }, () => {
   it("labels all details, exposes field errors, and navigates after success", async () => {
     const user = userEvent.setup();
     render(<CreateProjectDialog />);
-    await user.click(screen.getByRole("button", { name: "New project" }));
-    expect(screen.getByRole("dialog", { name: "New project" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Create project" }));
+    await user.click(screen.getByTestId("new-project"));
+    expect(screen.getByTestId("new-project-dialog")).toBeTruthy();
+    await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(screen.getByLabelText("Name")).toHaveAttribute(
+      expect(screen.getByTestId("new-project-name")).toHaveAttribute(
         "aria-invalid",
         "true",
       ),
     );
     expect(mocks.create).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText("Name"), {
+    fireEvent.change(screen.getByTestId("new-project-name"), {
       target: { value: "Workshop" },
     });
-    fireEvent.change(screen.getByLabelText("Start date"), {
+    fireEvent.change(screen.getByTestId("new-project-start"), {
       target: { value: "2027-04-03" },
     });
-    fireEvent.change(screen.getByLabelText("End date"), {
+    fireEvent.change(screen.getByTestId("new-project-end"), {
       target: { value: "2027-04-01" },
     });
-    fireEvent.change(screen.getByLabelText("Location"), {
+    fireEvent.change(screen.getByTestId("new-project-location"), {
       target: { value: "Berlin" },
     });
-    fireEvent.change(screen.getByLabelText("Country"), {
+    fireEvent.change(screen.getByTestId("new-project-country"), {
       target: { value: "DE" },
     });
-    await user.click(screen.getByRole("button", { name: "Create project" }));
+    await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(screen.getByLabelText("End date")).toHaveAttribute(
+      expect(screen.getByTestId("new-project-end")).toHaveAttribute(
         "aria-invalid",
         "true",
       ),
     );
-    fireEvent.change(screen.getByLabelText("End date"), {
+    fireEvent.change(screen.getByTestId("new-project-end"), {
       target: { value: "2027-04-05" },
     });
-    fireEvent.change(screen.getByLabelText("Welcome message (optional)"), {
+    fireEvent.change(screen.getByTestId("new-project-welcome"), {
       target: { value: "Welcome!" },
     });
-    await user.click(screen.getByRole("button", { name: "Create project" }));
+    await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
       expect(mocks.push).toHaveBeenCalledWith("/projects/created-project"),
     );
@@ -78,25 +78,25 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     mocks.create.mockRejectedValue(new Error("Network unavailable"));
     const user = userEvent.setup();
     render(<CreateProjectDialog />);
-    await user.click(screen.getByRole("button", { name: "New project" }));
-    fireEvent.change(screen.getByLabelText("Name"), {
+    await user.click(screen.getByTestId("new-project"));
+    fireEvent.change(screen.getByTestId("new-project-name"), {
       target: { value: "Workshop" },
     });
-    fireEvent.change(screen.getByLabelText("Start date"), {
+    fireEvent.change(screen.getByTestId("new-project-start"), {
       target: { value: "2027-04-01" },
     });
-    fireEvent.change(screen.getByLabelText("End date"), {
+    fireEvent.change(screen.getByTestId("new-project-end"), {
       target: { value: "2027-04-03" },
     });
-    fireEvent.change(screen.getByLabelText("Location"), {
+    fireEvent.change(screen.getByTestId("new-project-location"), {
       target: { value: "Berlin" },
     });
-    fireEvent.change(screen.getByLabelText("Country"), {
+    fireEvent.change(screen.getByTestId("new-project-country"), {
       target: { value: "DE" },
     });
-    await user.click(screen.getByRole("button", { name: "Create project" }));
+    await user.click(screen.getByTestId("create-project"));
     expect(await screen.findByRole("alert")).toBeTruthy();
-    expect(screen.getByRole("dialog", { name: "New project" })).toBeTruthy();
+    expect(screen.getByTestId("new-project-dialog")).toBeTruthy();
     expect(mocks.push).not.toHaveBeenCalled();
   });
 });

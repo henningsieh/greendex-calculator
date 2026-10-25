@@ -34,6 +34,7 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
 
   return (
     <section
+      data-testid="hosted-participant-report"
       aria-label="Hosting Participant view"
       className="space-y-6"
       data-agreement-published={data.agreement.published}
@@ -110,6 +111,7 @@ function PartnerOrganizationParticipants({
       </CardHeader>
       <CardContent className="space-y-4">
         <Button
+          data-testid="toggle-report-participants"
           aria-controls={participantsId}
           aria-expanded={expanded}
           onClick={() => setExpanded((open) => !open)}

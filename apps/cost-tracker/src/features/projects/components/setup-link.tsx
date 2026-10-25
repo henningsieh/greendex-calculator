@@ -218,6 +218,7 @@ export function SetupLinkCreator() {
             <Label htmlFor="setup-email">Recipient email</Label>
             <Input
               id="setup-email"
+              data-testid="setup-email"
               required
               type="email"
               value={recipientEmail}
@@ -225,7 +226,11 @@ export function SetupLinkCreator() {
             />
           </div>
           <div>
-            <Button disabled={pending || !projectId} type="submit">
+            <Button
+              data-testid="create-setup-link"
+              disabled={pending || !projectId}
+              type="submit"
+            >
               {pending ? "Neuer Link…" : "Neuer Link"}
             </Button>
           </div>
@@ -321,8 +326,14 @@ export function SetupLinkCreator() {
         {link && (
           <div className="space-y-2">
             <Label htmlFor="recipient-link">Recipient setup link</Label>
-            <Input id="recipient-link" readOnly value={link} />
+            <Input
+              id="recipient-link"
+              data-testid="recipient-link"
+              readOnly
+              value={link}
+            />
             <Button
+              data-testid="copy-setup-link"
               type="button"
               variant="outline"
               onClick={async () => {
@@ -418,6 +429,7 @@ function SetupOrganizationForm({
                 type="radio"
                 name="setup-kind"
                 checked={existing}
+                data-testid="setup-existing-organization"
                 onChange={() => setKind("existing")}
               />{" "}
               Existing Organization
@@ -441,6 +453,7 @@ function SetupOrganizationForm({
               <FieldLabel htmlFor="setup-name">New Organization name</FieldLabel>
               <Input
                 id="setup-name"
+                data-testid="setup-name"
                 disabled={pending}
                 maxLength={100}
                 minLength={2}
@@ -455,6 +468,7 @@ function SetupOrganizationForm({
               </FieldLabel>
               <select
                 id="setup-country"
+                data-testid="setup-country"
                 value={country}
                 required
                 disabled={pending}
@@ -476,6 +490,7 @@ function SetupOrganizationForm({
           </>
         )}
         <Button
+          data-testid="complete-setup"
           disabled={
             pending ||
             (existing
@@ -699,14 +714,22 @@ export function SetupLinkRecipient({
                 No new Organization will be created.
               </AlertDescription>
             </Alert>
-            <Button disabled={pending} onClick={() => void consume()}>
+            <Button
+              disabled={pending}
+              onClick={() => void consume()}
+              data-testid="retry-setup-binding"
+            >
               Retry setup with retained Organization
             </Button>
           </>
         ) : decision?.nextStep === "setup-recovery" ? (
           <>
             <SetupStatus state={knownErrors[decision.reason] ?? "generic"} />
-            <Button disabled={pending} onClick={recheck}>
+            <Button
+              disabled={pending}
+              onClick={recheck}
+              data-testid="inspect-setup-result"
+            >
               Inspect setup result
             </Button>
           </>
@@ -723,6 +746,7 @@ export function SetupLinkRecipient({
                 key={organization.id}
                 disabled={pending}
                 onClick={() => void select(organization.id)}
+                data-testid={`use-setup-organization-${organization.id}`}
               >
                 Use this Organization
               </Button>
@@ -733,6 +757,7 @@ export function SetupLinkRecipient({
             className={buttonVariants()}
             prefetch={false}
             href={decision.availableActions[0].destination}
+            data-testid="open-partner-project"
           >
             Open Partner Project
           </Link>
@@ -749,7 +774,11 @@ export function SetupLinkRecipient({
         {error && (
           <>
             <SetupStatus state={error} />
-            <Button disabled={pending} onClick={recheck}>
+            <Button
+              disabled={pending}
+              onClick={recheck}
+              data-testid="inspect-setup-result"
+            >
               Inspect setup result
             </Button>
           </>

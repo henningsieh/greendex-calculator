@@ -211,6 +211,7 @@ export function OrganizationTeam({
               <Label htmlFor="staff-invite-email">Email</Label>
               <Input
                 id="staff-invite-email"
+                data-testid="staff-invite-email"
                 required
                 type="email"
                 value={email}
@@ -236,7 +237,11 @@ export function OrganizationTeam({
               </Select>
             </div>
             <div className="flex items-end sm:col-span-1">
-              <Button disabled={invite.isPending || !email} type="submit">
+              <Button
+                data-testid="send-staff-invitation"
+                disabled={invite.isPending || !email}
+                type="submit"
+              >
                 {invite.isPending ? "Sending…" : "Send invitation"}
               </Button>
             </div>
@@ -272,6 +277,7 @@ export function OrganizationTeam({
                   <TableCell>{entry.role ?? "No role"}</TableCell>
                   <TableCell className="text-right">
                     <Button
+                      data-testid={`cancel-staff-invitation-${entry.id}`}
                       disabled={cancel.isPending && cancel.variables === entry.id}
                       onClick={() => cancel.mutate(entry.id)}
                       type="button"

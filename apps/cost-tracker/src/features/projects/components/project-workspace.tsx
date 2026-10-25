@@ -98,6 +98,7 @@ export function ProjectWorkspace({
         <Link
           className={buttonVariants({ variant: "ghost" })}
           href={getProjectListReturnDestination(returnTo)}
+          data-testid="back-to-projects"
         >
           Back to Projects
         </Link>
@@ -137,7 +138,12 @@ export function ProjectWorkspace({
           </p>
         )}
         {canComplete && (
-          <Button disabled={completing} onClick={completeProject} type="button">
+          <Button
+            disabled={completing}
+            onClick={completeProject}
+            data-testid="complete-project"
+            type="button"
+          >
             {completing ? "Completing…" : "Complete Project"}
           </Button>
         )}
@@ -219,6 +225,7 @@ export function ProjectWorkspace({
               <Link
                 className={buttonVariants({ variant: "outline" })}
                 href={`/projects/${encodeURIComponent(project.id)}/participants`}
+                data-testid="hosted-participants"
               >
                 Hosting Participant view
               </Link>
@@ -231,6 +238,7 @@ export function ProjectWorkspace({
               <Link
                 className={buttonVariants({ variant: "outline" })}
                 href="/partner-organizations"
+                data-testid="manage-project-partnerships"
               >
                 Manage Project Partnerships
               </Link>
@@ -266,12 +274,14 @@ export function ProjectWorkspace({
             <Link
               className={buttonVariants({ variant: "outline" })}
               href={`/partnerships/${encodeURIComponent(project.partnership.id)}/participants`}
+              data-testid="coordinate-participants"
             >
               Coordinate Participants
             </Link>
             <Link
               className={buttonVariants({ variant: "outline" })}
               href={`/partnerships/${encodeURIComponent(project.partnership.id)}/claim`}
+              data-testid="open-claim-workspace"
             >
               Open Claim workspace
             </Link>

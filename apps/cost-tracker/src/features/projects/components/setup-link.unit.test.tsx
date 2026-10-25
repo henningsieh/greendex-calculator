@@ -177,27 +177,21 @@ describe("Setup Link UI", () => {
     await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Hosted Project" }));
-    await user.type(
-      screen.getByLabelText("Search Hosted Project by name or ID"),
-      "Host",
-    );
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    await user.type(screen.getByTestId("entity-combobox-search"), "Host");
     const projectOption = await screen.findByRole("option");
     expect(projectOption).toHaveAttribute("data-value", "project-1");
     await user.click(projectOption);
-    await user.type(
-      screen.getByLabelText("Recipient email"),
-      "partner@example.com",
-    );
-    await user.click(screen.getByRole("button", { name: "Neuer Link" }));
+    await user.type(screen.getByTestId("setup-email"), "partner@example.com");
+    await user.click(screen.getByTestId("create-setup-link"));
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(2));
     expect(mocks.create).toHaveBeenCalledWith({
       projectId: "project-1",
       recipientEmail: "partner@example.com",
     });
-    const url = screen.getByLabelText("Recipient setup link") as HTMLInputElement;
+    const url = screen.getByTestId("recipient-link") as HTMLInputElement;
     expect(url.value).toContain("/setup-links/link-1?secret=private-secret");
-    await user.click(screen.getByRole("button", { name: "Kopieren" }));
+    await user.click(screen.getByTestId("copy-setup-link"));
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
   });
 
@@ -205,19 +199,13 @@ describe("Setup Link UI", () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));
     creator();
-    await user.click(screen.getByRole("button", { name: "Hosted Project" }));
-    await user.type(
-      screen.getByLabelText("Search Hosted Project by name or ID"),
-      "Host",
-    );
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    await user.type(screen.getByTestId("entity-combobox-search"), "Host");
     const projectOption = await screen.findByRole("option");
     expect(projectOption).toHaveAttribute("data-value", "project-1");
     await user.click(projectOption);
-    await user.type(
-      screen.getByLabelText("Recipient email"),
-      "partner@example.com",
-    );
-    const submit = screen.getByRole("button", { name: "Neuer Link" });
+    await user.type(screen.getByTestId("setup-email"), "partner@example.com");
+    const submit = screen.getByTestId("create-setup-link");
     await user.click(submit);
     expect(submit).toBeDisabled();
   });

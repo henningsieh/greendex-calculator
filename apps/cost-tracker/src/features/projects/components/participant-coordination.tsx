@@ -161,6 +161,7 @@ function ReviewTaskControls({
           variant="outline"
           disabled={assign.isPending}
           onClick={() => assign.mutate()}
+          data-testid={`assign-review-task-${task.id}`}
         >
           Assign Review Task to me
         </Button>
@@ -174,6 +175,7 @@ function ReviewTaskControls({
             <select
               className="h-9 rounded-md border bg-background px-3 text-sm"
               id={`review-decision-${task.id}`}
+              data-testid={`review-decision-${task.id}`}
               value={decision}
               onChange={(event) => {
                 const selected = reviewDecisions.find(
@@ -193,6 +195,7 @@ function ReviewTaskControls({
             type="button"
             disabled={resolve.isPending}
             onClick={() => resolve.mutate()}
+            data-testid={`resolve-review-task-${task.id}`}
           >
             Resolve Review Task
           </Button>
@@ -227,7 +230,11 @@ function ReviewTasks({
     await queryClient.invalidateQueries({ queryKey: options.queryKey });
   };
   return (
-    <section aria-label="Review Tasks" className="space-y-4">
+    <section
+      aria-label="Review Tasks"
+      data-testid="review-tasks"
+      className="space-y-4"
+    >
       {tasks.isPending ? (
         <output>Loading Review Tasks…</output>
       ) : tasks.isError ? (
@@ -605,6 +612,7 @@ export function ParticipantCoordination({
     <section
       className="space-y-6"
       aria-label="Project Participations"
+      data-testid="project-participations"
       data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
     >
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
@@ -638,7 +646,11 @@ export function ParticipantCoordination({
                   disabled={create.isPending}
                 />
               </div>
-              <Button disabled={create.isPending || !userId} type="submit">
+              <Button
+                data-testid="add-participation"
+                disabled={create.isPending || !userId}
+                type="submit"
+              >
                 {create.isPending ? "Adding…" : "Add Participation"}
               </Button>
             </form>
@@ -704,6 +716,7 @@ export function ParticipantCoordination({
                   <Link
                     className={buttonVariants({ variant: "outline" })}
                     href={`/partnerships/${encodeURIComponent(partnershipId)}/participants/${encodeURIComponent(participant.id)}`}
+                    data-testid={`participant-details-${participant.id}`}
                   >
                     Participant details for {participant.displayName}
                   </Link>
@@ -712,6 +725,7 @@ export function ParticipantCoordination({
                       type="button"
                       variant="destructive"
                       disabled={removeParticipation.isPending}
+                      data-testid={`remove-participation-${participant.id}`}
                       onClick={() => {
                         if (
                           window.confirm(
@@ -768,6 +782,7 @@ export function ParticipantCoordination({
             variant="outline"
             onClick={() => setReviewsOpen((open) => !open)}
             aria-expanded={reviewsOpen}
+            data-testid="toggle-review-tasks"
           >
             {reviewsOpen ? "Hide Review Tasks" : "Show Review Tasks"}
           </Button>
@@ -807,6 +822,7 @@ export function ParticipantCoordination({
                   </Label>
                   <input
                     id="participant-invitation-email"
+                    data-testid="participant-invitation-email"
                     className="h-9 rounded-md border bg-background px-3 text-sm"
                     type="email"
                     required
@@ -814,7 +830,11 @@ export function ParticipantCoordination({
                     onChange={(event) => setEmail(event.target.value)}
                   />
                 </div>
-                <Button disabled={issueInvitation.isPending} type="submit">
+                <Button
+                  data-testid="send-participant-invitation"
+                  disabled={issueInvitation.isPending}
+                  type="submit"
+                >
                   Send Participant Invitation
                 </Button>
               </form>
@@ -822,6 +842,7 @@ export function ParticipantCoordination({
                 type="button"
                 variant="outline"
                 disabled={createLink.isPending}
+                data-testid="create-participant-registration-link"
                 onClick={() => {
                   setEntryFeedback(undefined);
                   createLink.mutate();
@@ -894,12 +915,14 @@ export function ParticipantCoordination({
                         reissueInvitation.isPending || closeInvitation.isPending
                       }
                       onClick={() => reissueInvitation.mutate(invitation.email)}
+                      data-testid={`reissue-participant-invitation-${invitation.invitationId}`}
                     >
                       Reissue invitation for {invitation.email}
                     </Button>
                   )}
                   {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
+                      data-testid={`close-participant-invitation-${invitation.invitationId}`}
                       type="button"
                       variant="outline"
                       disabled={
@@ -954,6 +977,7 @@ export function ParticipantCoordination({
                       variant="outline"
                       disabled={closeLink.isPending || reopenLink.isPending}
                       onClick={() => closeLink.mutate(link.id)}
+                      data-testid={`close-registration-link-${link.id}`}
                     >
                       Close registration link {link.id}
                     </Button>
@@ -963,6 +987,7 @@ export function ParticipantCoordination({
                       type="button"
                       variant="outline"
                       disabled={reopenLink.isPending || closeLink.isPending}
+                      data-testid={`reopen-registration-link-${link.id}`}
                       onClick={() => {
                         setEntryFeedback(undefined);
                         reopenLink.mutate(link.id);

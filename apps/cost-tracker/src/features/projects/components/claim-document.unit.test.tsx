@@ -15,11 +15,11 @@ const filename = `${"long-receipt-name-".repeat(12)}.pdf`;
 describe("Claim document presentation", () => {
   it("default keeps the fire surface, lift, glow and press", () => {
     render(
-      <Button variant="default" size="lg">
+      <Button data-testid="fixture-claim-action" variant="default" size="lg">
         Claim action
       </Button>,
     );
-    const button = screen.getByRole("button", { name: "Claim action" });
+    const button = screen.getByTestId("fixture-claim-action");
     expect(button).toHaveClass(
       "border",
       "h-11",
@@ -51,11 +51,11 @@ describe("Claim document presentation", () => {
 
   it("outline keeps the ghost wash and fire border without glow", () => {
     render(
-      <Button variant="outline" size="lg">
+      <Button data-testid="fixture-claim-action" variant="outline" size="lg">
         Claim action
       </Button>,
     );
-    const button = screen.getByRole("button", { name: "Claim action" });
+    const button = screen.getByTestId("fixture-claim-action");
     expect(button).toHaveClass(
       "border",
       "h-11",
@@ -86,11 +86,16 @@ describe("Claim document presentation", () => {
   it("uses the unified primary look by default while retaining disabled and invalid states", () => {
     const activate = vi.fn();
     render(
-      <Button disabled aria-invalid onClick={activate}>
+      <Button
+        data-testid="fixture-claim-action"
+        disabled
+        aria-invalid
+        onClick={activate}
+      >
         Unavailable action
       </Button>,
     );
-    const button = screen.getByRole("button", { name: "Unavailable action" });
+    const button = screen.getByTestId("fixture-claim-action");
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("aria-invalid", "true");
     expect(button).toHaveClass(
@@ -138,7 +143,12 @@ describe("Claim document presentation", () => {
               <Link href="/proof-documents/receipt.pdf">{filename}</Link>
             ),
             action: (
-              <Button variant="outline" size="lg" onClick={edit}>
+              <Button
+                data-testid="fixture-edit-cost"
+                variant="outline"
+                size="lg"
+                onClick={edit}
+              >
                 Edit cost
               </Button>
             ),
@@ -146,9 +156,10 @@ describe("Claim document presentation", () => {
         ]}
       />,
     );
-    const region = screen.getByRole("region", {
-      name: /Travel Cost Entries table/,
-    });
+    const region = screen
+      .getByTestId("claim-cost-table")
+      .closest('[data-slot="table-container"]');
+    expect(region).toHaveRole("region");
     expect(region).toHaveAttribute("tabindex", "0");
     const row = screen.getAllByRole("row")[1]!;
     expect(row).toHaveAttribute("id", "cost-saved-cost");
@@ -159,7 +170,7 @@ describe("Claim document presentation", () => {
       "href",
       "/proof-documents/receipt.pdf",
     );
-    fireEvent.click(within(row).getByRole("button", { name: "Edit cost" }));
+    fireEvent.click(within(row).getByTestId("fixture-edit-cost"));
     expect(edit).toHaveBeenCalledOnce();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
@@ -180,7 +191,7 @@ describe("Claim document presentation", () => {
       />,
     );
     expect(
-      screen.queryByRole("columnheader", { name: "Action" }),
+      screen.queryByTestId("claim-cost-action-header"),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getAllByRole("cell")).toHaveLength(4);

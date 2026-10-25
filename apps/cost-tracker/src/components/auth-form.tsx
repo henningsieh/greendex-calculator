@@ -119,6 +119,7 @@ export function AuthForm({
               <Input
                 autoComplete="name"
                 id="name"
+                data-testid="name"
                 minLength={2}
                 name="name"
                 placeholder="Your name"
@@ -132,6 +133,7 @@ export function AuthForm({
             <Input
               autoComplete="email"
               id="email"
+              data-testid="email"
               name="email"
               placeholder="you@example.org"
               required
@@ -144,6 +146,7 @@ export function AuthForm({
             <Input
               autoComplete={isSignIn ? "current-password" : "new-password"}
               id="password"
+              data-testid="password"
               minLength={8}
               name="password"
               required
@@ -197,7 +200,7 @@ function SubmitButton({ isSignIn }: { isSignIn: boolean }) {
       : "Create account";
 
   return (
-    <Button disabled={pending} type="submit">
+    <Button disabled={pending} data-testid="auth-submit" type="submit">
       {pending && (
         <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
       )}

@@ -374,6 +374,7 @@ function ResolvedProjectList({
           <Link
             className="font-medium text-foreground underline-offset-4 hover:underline"
             href={`/projects/${encodeURIComponent(row.original.id)}?${new URLSearchParams({ returnTo })}`}
+            data-testid={`project-link-${row.original.id}`}
           >
             {row.original.name}
           </Link>
@@ -386,6 +387,7 @@ function ResolvedProjectList({
           return (
             <Button
               aria-label="Sort by start date"
+              data-testid="sort-project-start"
               onClick={() => column.toggleSorting(sortDirection === "asc")}
               size="sm"
               type="button"
@@ -419,6 +421,7 @@ function ResolvedProjectList({
                 <Link
                   className="underline-offset-4 hover:underline"
                   href={`/projects/${encodeURIComponent(row.original.id)}/participants`}
+                  data-testid={`project-participants-${row.original.id}`}
                 >
                   View Participants
                 </Link>
@@ -548,6 +551,7 @@ function ResolvedProjectList({
       >
         <Button
           aria-selected={scope === "hosted"}
+          data-testid="project-scope-hosted"
           disabled={!availableScopes.hosted && availableScopes.partner}
           onClick={() => updateListState({ scope: "hosted" })}
           role="tab"
@@ -557,6 +561,7 @@ function ResolvedProjectList({
         </Button>
         <Button
           aria-selected={scope === "partner"}
+          data-testid="project-scope-partner"
           disabled={!availableScopes.partner}
           onClick={() => updateListState({ scope: "partner" })}
           role="tab"
@@ -609,6 +614,7 @@ function ResolvedProjectList({
               className="pl-9"
               defaultValue={urlState.search}
               id="project-search"
+              data-testid="project-search"
               key={urlState.search}
               onChange={(event) => {
                 const search = event.target.value;
@@ -632,7 +638,11 @@ function ResolvedProjectList({
             }
             value={state.window}
           >
-            <SelectTrigger className="w-full" id="project-submission-window">
+            <SelectTrigger
+              className="w-full"
+              id="project-submission-window"
+              data-testid="project-submission-window"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -657,7 +667,11 @@ function ResolvedProjectList({
             }
             value={state.sort}
           >
-            <SelectTrigger className="w-full" id="project-sort">
+            <SelectTrigger
+              className="w-full"
+              id="project-sort"
+              data-testid="project-sort"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -677,12 +691,20 @@ function ResolvedProjectList({
             onValueChange={(value) => table.setPageSize(Number(value))}
             value={String(state.pageSize)}
           >
-            <SelectTrigger className="w-full" id="project-page-size">
+            <SelectTrigger
+              className="w-full"
+              id="project-page-size"
+              data-testid="project-page-size"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {PROJECT_PAGE_SIZES.map((value) => (
-                <SelectItem key={value} value={String(value)}>
+                <SelectItem
+                  data-testid={`project-page-size-${value}`}
+                  key={value}
+                  value={String(value)}
+                >
                   {value}
                 </SelectItem>
               ))}
@@ -693,6 +715,7 @@ function ResolvedProjectList({
           <Label htmlFor="project-date-from">Active on or after</Label>
           <Input
             id="project-date-from"
+            data-testid="project-date-from"
             onChange={(event) =>
               updateProjectFilter(
                 PROJECT_FILTER_IDS.dateFrom,
@@ -709,6 +732,7 @@ function ResolvedProjectList({
           <Label htmlFor="project-date-to">Active on or before</Label>
           <Input
             id="project-date-to"
+            data-testid="project-date-to"
             onChange={(event) =>
               updateProjectFilter(
                 PROJECT_FILTER_IDS.dateTo,
@@ -733,6 +757,7 @@ function ResolvedProjectList({
                   key={partner.id}
                 >
                   <input
+                    data-testid={`project-partner-filter-${partner.id}`}
                     checked={state.partnerOrganizationIds.includes(partner.id)}
                     onChange={(event) => {
                       const ids = event.target.checked
@@ -820,6 +845,7 @@ function ResolvedProjectList({
         {data.previousCursor && (
           <Button
             onClick={() => table.previousPage()}
+            data-testid="previous-project-page"
             type="button"
             variant="outline"
           >
@@ -829,6 +855,7 @@ function ResolvedProjectList({
         <Button
           disabled={!data.nextCursor}
           onClick={() => table.nextPage()}
+          data-testid="next-project-page"
           type="button"
           variant="outline"
         >

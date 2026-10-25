@@ -113,7 +113,7 @@ export function ClaimCostTable({
   actions?: boolean;
 }) {
   return (
-    <Table variant="accounting">
+    <Table variant="accounting" data-testid="claim-cost-table">
       <TableCaption>
         Exact totals, Cost Allocations and linked Proof Documents.
       </TableCaption>
@@ -139,7 +139,11 @@ export function ClaimCostTable({
             Proof Documents
           </TableHead>
           {actions && (
-            <TableHead variant="accounting" scope="col">
+            <TableHead
+              data-testid="claim-cost-action-header"
+              variant="accounting"
+              scope="col"
+            >
               Action
             </TableHead>
           )}
