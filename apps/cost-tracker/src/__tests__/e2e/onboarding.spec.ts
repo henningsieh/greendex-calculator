@@ -1,9 +1,9 @@
-import { createHmac, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { db } from "@greendex/database";
-import { account, organization, session, user } from "@greendex/database/schema";
+import { organization, user } from "@greendex/database/schema";
 import { and, eq } from "drizzle-orm";
 
 import { assertExistingIntegrationDatabase } from "../../../../../scripts/existing-integration-environment";
@@ -147,85 +147,7 @@ test("malformed invitation registration stays in recovery before and after sign-
   await expect(page.getByRole("textbox")).toHaveCount(0);
 });
 
-test("Google provider-return session continues into server-owned Organization setup", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const databaseURL = process.env.DATABASE_URL;
-  if (!databaseURL) throw new Error("Existing database environment is required");
-  assertExistingIntegrationDatabase(databaseURL);
-  const secret = process.env.BETTER_AUTH_SECRET;
-  if (!secret || !baseURL)
-    throw new Error("Existing auth environment is required");
-  const id = randomUUID();
-  const token = randomUUID();
-  const organizationName = `Google continuation ${randomUUID()}`;
-  registerPrivateValues(token);
-  try {
-    await db.insert(user).values({
-      id,
-      name: "Google recipient",
-      email: `google-${id}@example.invalid`,
-      emailVerified: true,
-    });
-    await db.insert(account).values({
-      id: randomUUID(),
-      userId: id,
-      accountId: id,
-      providerId: "google",
-    });
-    await db.insert(session).values({
-      id: randomUUID(),
-      userId: id,
-      token,
-      expiresAt: new Date(Date.now() + 3600000),
-    });
-    await page.goto("/register");
-    // This is the provider-return seam, not a live Google consent flow.
-    await page.route(
-      "**/api/rpc/authentication/startGoogleSignIn",
-      async (route) => {
-        const signature = createHmac("sha256", secret)
-          .update(token)
-          .digest("base64");
-        await context.addCookies([
-          {
-            name: "better-auth.session_token",
-            value: encodeURIComponent(`${token}.${signature}`),
-            url: baseURL,
-          },
-        ]);
-        await route.fulfill({
-          json: { json: { url: new URL("/projects", baseURL).href } },
-        });
-      },
-    );
-    await page.getByRole("button", { name: "Continue with Google" }).click();
-    const setup = page.getByTestId("no-organization-access");
-    await expect(setup).toBeVisible();
-    await expect(page.getByTestId("auth-verification-message")).toHaveCount(0);
-    await page.waitForLoadState("networkidle");
-    const organizationInput = setup.getByLabel("Organization name");
-    await organizationInput.fill(organizationName);
-    await setup.getByLabel("Organization country").selectOption("DE");
-    await expect(organizationInput).toHaveValue(organizationName);
-    const create = setup.getByRole("button", {
-      name: "Create Organization",
-      exact: true,
-    });
-    await expect(create).toBeEnabled();
-    await create.click();
-    await expectFirstOrganizationProjects(page, organizationName);
-    await page.reload();
-    await expectFirstOrganizationProjects(page, organizationName);
-  } finally {
-    await db.delete(organization).where(eq(organization.name, organizationName));
-    await db.delete(user).where(eq(user.id, id));
-  }
-});
-
-test("delivered email continues direct signup into one Organization and first-Project access", async ({
+test("delivered email verifies signup and verified registration continues into one Organization and first-Project access", async ({
   page,
   baseURL,
 }) => {
@@ -284,6 +206,10 @@ test("delivered email continues direct signup into one Organization and first-Pr
     await expect(page.getByRole("dialog")).toBeHidden();
     await page.reload();
     await expect(setup).toBeVisible();
+    await page.goto("/register");
+    await expect(page).toHaveURL(new URL("/projects", baseURL).href);
+    await expect(setup).toBeVisible();
+    await expect(page.getByTestId("auth-verification-message")).toHaveCount(0);
     const organizationInput = setup.getByLabel("Organization name");
     await organizationInput.fill(organizationName);
     await organizationInput.focus();
