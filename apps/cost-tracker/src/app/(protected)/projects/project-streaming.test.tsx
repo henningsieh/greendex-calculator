@@ -6,6 +6,9 @@ import { renderToPipeableStream } from "react-dom/server";
 import { expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/server", () => ({
+  connection: () => Promise.resolve(),
+}));
 
 const mocks = vi.hoisted(() => ({
   resolveScopes: undefined as
