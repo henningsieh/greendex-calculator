@@ -1,10 +1,15 @@
 import { cn } from "@/lib/utils";
 
-/* StarWreath — brand mark (LOCKED 2026-10-11, never modified).
-   12 fire dots, EU symbolism. Custom SVG icon component (no shadcn slot). */
+/* StarWreath — brand mark. 12 fire dots, EU symbolism. Custom SVG icon
+   component (no shadcn slot). Coordinates are rounded to three decimals so
+   server and client serialize identical markup. */
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
 const DOTS = Array.from({ length: 12 }, (_, i) => {
   const angle = (i / 12) * Math.PI * 2 - Math.PI / 2;
-  return { x: 40 + 26 * Math.cos(angle), y: 40 + 26 * Math.sin(angle) };
+  return {
+    x: round3(40 + 26 * Math.cos(angle)),
+    y: round3(40 + 26 * Math.sin(angle)),
+  };
 });
 
 function StarWreath({
