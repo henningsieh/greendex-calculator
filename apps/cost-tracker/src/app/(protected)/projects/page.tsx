@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
@@ -16,6 +17,7 @@ export default async function ProjectsPage(
     searchParams: Promise.resolve({}),
   },
 ) {
+  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
   return (
