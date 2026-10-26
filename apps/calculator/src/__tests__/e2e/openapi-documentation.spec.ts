@@ -9,5 +9,5 @@ test("renders accessible API documentation UI", async ({ page }) => {
   const sectionTitle = page.locator("h1.section-header-label");
   await expect(sectionTitle).toBeVisible();
   await expect(sectionTitle).not.toBeEmpty();
-  await expect(page).toHaveURL(/\/api\/docs$/);
+  await expect(page).toHaveURL((url) => url.pathname === "/api/docs");
 });
