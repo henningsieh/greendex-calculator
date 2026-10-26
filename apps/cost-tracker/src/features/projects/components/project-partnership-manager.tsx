@@ -95,6 +95,23 @@ export function ProjectPartnershipManager({
     },
   });
 
+  const projectPreload = Array.from(
+    new Map(
+      partnerships.map(({ projectId: id, projectName: name }) => [
+        id,
+        { id, name },
+      ]),
+    ).values(),
+  );
+  const organizationPreload = Array.from(
+    new Map(
+      partnerships.map(({ organizationId: id, organizationName: name }) => [
+        id,
+        { id, name },
+      ]),
+    ).values(),
+  );
+
   return (
     <section className="mt-10 space-y-8">
       {canAssign && (
@@ -118,9 +135,7 @@ export function ProjectPartnershipManager({
                   value={projectId}
                   onChange={setProjectId}
                   search={searchHosted}
-                  preload={partnerships.map(
-                    ({ projectId: id, projectName: name }) => ({ id, name }),
-                  )}
+                  preload={projectPreload}
                 />
               </div>
               <div
@@ -133,12 +148,7 @@ export function ProjectPartnershipManager({
                   value={organizationId}
                   onChange={setOrganizationId}
                   search={searchOrganizations}
-                  preload={partnerships.map(
-                    ({ organizationId: id, organizationName: name }) => ({
-                      id,
-                      name,
-                    }),
-                  )}
+                  preload={organizationPreload}
                 />
               </div>
               <Button

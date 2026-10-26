@@ -193,6 +193,42 @@ describe("ProjectPartnershipManager", () => {
     vi.unstubAllGlobals();
   });
 
+  it("preloads one option per entity while retaining every partnership row", async () => {
+    const partnerships = [
+      existingPartnership,
+      {
+        ...existingPartnership,
+        id: "partnership-shared-project",
+        organizationId: assignedPartnership.organizationId,
+        organizationName: assignedPartnership.organizationName,
+      },
+      assignedPartnership,
+    ];
+    mocks.list.mockResolvedValue(partnerships);
+    const user = userEvent.setup();
+    await renderManager(partnerships);
+
+    expect(screen.getAllByTestId(/^partnership-row-/)).toHaveLength(3);
+
+    const projectPicker = within(screen.getByTestId("hosted-project-picker"));
+    await user.click(projectPicker.getByTestId("entity-combobox-trigger"));
+    expect(
+      projectPicker
+        .getAllByTestId(/^entity-option-/)
+        .map((option) => option.getAttribute("data-entity-id")),
+    ).toEqual(["project-existing", "project-new"]);
+
+    const organizationPicker = within(
+      screen.getByTestId("partner-organization-picker"),
+    );
+    await user.click(organizationPicker.getByTestId("entity-combobox-trigger"));
+    expect(
+      organizationPicker
+        .getAllByTestId(/^entity-option-/)
+        .map((option) => option.getAttribute("data-entity-id")),
+    ).toEqual(["organization-existing", "organization-new"]);
+  });
+
   it("invalidates generated Project query families and refreshes the visible list after assignment", async () => {
     mocks.list
       .mockResolvedValueOnce([existingPartnership])
