@@ -1,8 +1,9 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { Building2Icon, LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,13 +21,20 @@ import { authClient } from "@/lib/auth-client";
 type SelectOrganizationProps = {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];
   onSelected?: () => Promise<void>;
+  signOutDestination?: string;
 };
 
 export function SelectOrganization({
   organizations,
   onSelected,
+  signOutDestination,
 }: SelectOrganizationProps) {
   const router = useRouter();
+  const t = useTranslations("onboarding");
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -57,13 +65,12 @@ export function SelectOrganization({
           <EmptyMedia variant="icon">
             <Building2Icon />
           </EmptyMedia>
-          <EmptyTitle>Select an Organization</EmptyTitle>
-          <EmptyDescription>
-            Your previous Organization context is no longer available. Choose
-            which Organization to continue with — this only changes which
-            Organization you act for, never your Memberships or Project
-            Participations.
-          </EmptyDescription>
+          <EmptyTitle>
+            <h1 ref={heading} tabIndex={-1}>
+              {t("selection.heading")}
+            </h1>
+          </EmptyTitle>
+          <EmptyDescription>{t("selection.description")}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <ul className="flex w-full flex-col gap-2">
@@ -91,11 +98,10 @@ export function SelectOrganization({
           </ul>
           {failed ? (
             <p role="alert" data-select-status="failed">
-              Could not select that Organization. It may have been removed —
-              choose another one.
+              {t("selection.error")}
             </p>
           ) : null}
-          <SignOutButton />
+          <SignOutButton destination={signOutDestination} />
         </EmptyContent>
       </Empty>
     </main>

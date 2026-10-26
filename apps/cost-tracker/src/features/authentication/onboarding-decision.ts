@@ -11,6 +11,24 @@ const entryContext = z.enum([
   "organization-invitation",
   "partner-setup",
 ]);
+const otherEntryContext = z.enum(["direct", "partner-setup"]);
+const invitationDestination = z
+  .string()
+  .regex(/^\/accept-invitation\/[a-zA-Z0-9_-]{1,128}$/);
+const invitationIdentity = z
+  .object({ invitationId: identifier, organization })
+  .strict();
+const authEntry = z.enum(["register", "login"]);
+const invitationAuthenticate = z
+  .object({
+    kind: z.literal("authenticate"),
+    entry: authEntry,
+    returnTo: invitationDestination,
+  })
+  .strict();
+const invitationSignOut = z
+  .object({ kind: z.literal("sign-out"), destination: z.string() })
+  .strict();
 const signOut = z.object({ kind: z.literal("sign-out") }).strict();
 const create = z.object({ kind: z.literal("create-organization") }).strict();
 const chooseOwned = z
@@ -21,6 +39,7 @@ const recheck = z.object({ kind: z.literal("recheck") }).strict();
 export const OnboardingInputSchema = z
   .object({
     returnTo: z.string().max(2048).optional(),
+    authEntry: authEntry.optional(),
     setupRecovery: z
       .discriminatedUnion("phase", [
         z.object({ phase: z.literal("creating") }).strict(),
@@ -36,10 +55,36 @@ export const OnboardingInputSchema = z
   .strict();
 export type OnboardingInput = z.infer<typeof OnboardingInputSchema>;
 
-export const OnboardingDecisionSchema = z.discriminatedUnion("nextStep", [
+export const OnboardingDecisionSchema = z.union([
   z
     .object({
-      entryContext,
+      entryContext: z.literal("organization-invitation"),
+      nextStep: z.literal("authenticate"),
+      invitation: invitationIdentity.nullable(),
+      availableActions: z.tuple([
+        invitationAuthenticate,
+        invitationAuthenticate,
+        z
+          .object({ kind: z.literal("google"), returnTo: invitationDestination })
+          .strict(),
+      ]),
+    })
+    .strict(),
+  z
+    .object({
+      entryContext: z.literal("organization-invitation"),
+      nextStep: z.literal("verify-email"),
+      invitation: invitationIdentity,
+      email: z.email(),
+      availableActions: z.union([
+        z.tuple([invitationSignOut]),
+        z.tuple([invitationAuthenticate]),
+      ]),
+    })
+    .strict(),
+  z
+    .object({
+      entryContext: otherEntryContext,
       nextStep: z.literal("authenticate"),
       availableActions: z.tuple([
         z
@@ -53,7 +98,7 @@ export const OnboardingDecisionSchema = z.discriminatedUnion("nextStep", [
     .strict(),
   z
     .object({
-      entryContext,
+      entryContext: otherEntryContext,
       nextStep: z.literal("verify-email"),
       email: z.email(),
       availableActions: z.tuple([signOut]),
@@ -74,7 +119,7 @@ export const OnboardingDecisionSchema = z.discriminatedUnion("nextStep", [
         z
           .object({ kind: z.literal("select-organization"), organizations })
           .strict(),
-        signOut,
+        z.union([signOut, invitationSignOut]),
       ]),
     })
     .strict(),
@@ -93,6 +138,7 @@ export const OnboardingDecisionSchema = z.discriminatedUnion("nextStep", [
     .object({
       entryContext: z.literal("organization-invitation"),
       nextStep: z.literal("accept-invitation"),
+      invitation: invitationIdentity,
       availableActions: z.tuple([
         z
           .object({
@@ -100,7 +146,7 @@ export const OnboardingDecisionSchema = z.discriminatedUnion("nextStep", [
             invitationId: identifier,
           })
           .strict(),
-        signOut,
+        invitationSignOut,
       ]),
     })
     .strict(),
@@ -109,7 +155,12 @@ export const OnboardingDecisionSchema = z.discriminatedUnion("nextStep", [
       entryContext: z.literal("organization-invitation"),
       nextStep: z.literal("invitation-recovery"),
       reason: ErrorReasonSchema,
-      availableActions: z.tuple([signOut, recheck]),
+      returnTo: z.string(),
+      availableActions: z.union([
+        z.tuple([recheck]),
+        z.tuple([invitationAuthenticate, recheck]),
+        z.tuple([invitationSignOut, recheck]),
+      ]),
     })
     .strict(),
   z
@@ -149,12 +200,16 @@ export const OnboardingDecisionSchema = z.discriminatedUnion("nextStep", [
 ]);
 export type OnboardingDecision = z.infer<typeof OnboardingDecisionSchema>;
 type Organization = z.infer<typeof organization>;
-type EntryContext = z.infer<typeof entryContext>;
 type RecoveryReason = Situation["reason"];
 
 export type ValidatedOnboardingEntry =
   | { kind: "direct" }
-  | { kind: "organization-invitation"; status: "pending"; invitationId: string }
+  | {
+      kind: "organization-invitation";
+      status: "pending";
+      invitationId: string;
+      organization: Organization;
+    }
   | {
       kind: "organization-invitation";
       status: "complete";
@@ -181,16 +236,112 @@ export type ValidatedOnboardingEntry =
   | { kind: "partner-setup"; status: "recovery"; reason: RecoveryReason };
 
 export type OnboardingFacts =
-  | { account: "signed-out"; entryContext: EntryContext; returnTo?: string }
-  | { account: "unverified"; entryContext: EntryContext; email: string }
+  | {
+      account: "signed-out";
+      entryContext: "direct" | "partner-setup";
+      returnTo?: string;
+    }
+  | {
+      account: "unverified";
+      entryContext: "direct" | "partner-setup";
+      email: string;
+    }
+  | {
+      account: "signed-out" | "unverified" | "verification-requested";
+      entryContext: "organization-invitation";
+      entry: Extract<
+        ValidatedOnboardingEntry,
+        { kind: "organization-invitation"; status: "pending" | "recovery" }
+      >;
+      authEntry: "register" | "login";
+      returnTo: string;
+      email: string;
+    }
   | {
       account: "verified";
+      returnTo: string;
       organizationContext: StaffOrganizationContext;
       canCreate: boolean;
       entry: ValidatedOnboardingEntry;
     };
 
 export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
+  if (
+    facts.account !== "verified" &&
+    facts.entryContext === "organization-invitation"
+  ) {
+    const { entry, returnTo } = facts;
+    const signOutAction = {
+      kind: "sign-out" as const,
+      destination:
+        returnTo === "/accept-invitation"
+          ? returnTo
+          : `/register?next=${encodeURIComponent(returnTo)}`,
+    };
+    if (entry.status === "recovery") {
+      const canAuthenticate =
+        facts.account === "signed-out" &&
+        invitationDestination.safeParse(returnTo).success;
+      if (canAuthenticate && facts.authEntry === "login")
+        return {
+          entryContext: "organization-invitation",
+          nextStep: "authenticate",
+          invitation: null,
+          availableActions: [
+            { kind: "authenticate", entry: "login", returnTo },
+            { kind: "authenticate", entry: "register", returnTo },
+            { kind: "google", returnTo },
+          ],
+        };
+      return {
+        entryContext: "organization-invitation",
+        nextStep: "invitation-recovery",
+        reason: entry.reason,
+        returnTo,
+        availableActions:
+          facts.account === "unverified"
+            ? [signOutAction, { kind: "recheck" }]
+            : canAuthenticate
+              ? [
+                  { kind: "authenticate", entry: "login", returnTo },
+                  { kind: "recheck" },
+                ]
+              : [{ kind: "recheck" }],
+      };
+    }
+    const invitation = {
+      invitationId: entry.invitationId,
+      organization: entry.organization,
+    };
+    const login = {
+      kind: "authenticate" as const,
+      entry: "login" as const,
+      returnTo,
+    };
+    if (facts.account !== "signed-out")
+      return {
+        entryContext: "organization-invitation",
+        nextStep: "verify-email",
+        invitation,
+        email: facts.email,
+        availableActions:
+          facts.account === "unverified" ? [signOutAction] : [login],
+      };
+    const register = {
+      kind: "authenticate" as const,
+      entry: "register" as const,
+      returnTo,
+    };
+    return {
+      entryContext: "organization-invitation",
+      nextStep: "authenticate",
+      invitation,
+      availableActions:
+        facts.authEntry === "login"
+          ? [login, register, { kind: "google", returnTo }]
+          : [register, login, { kind: "google", returnTo }],
+    };
+  }
   if (facts.account === "signed-out")
     return {
       entryContext: facts.entryContext,
@@ -209,6 +360,8 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
       email: facts.email,
       availableActions: [{ kind: "sign-out" }],
     };
+  if (facts.account !== "verified")
+    throw new Error("Verification receipt requires invitation context");
   const { entry, organizationContext } = facts;
   const entryContext = entry.kind;
   if (entry.kind !== "direct") {
@@ -218,7 +371,17 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
             entryContext: entry.kind,
             nextStep: "invitation-recovery",
             reason: entry.reason,
-            availableActions: [{ kind: "sign-out" }, { kind: "recheck" }],
+            returnTo: facts.returnTo,
+            availableActions: [
+              {
+                kind: "sign-out",
+                destination:
+                  facts.returnTo === "/accept-invitation"
+                    ? facts.returnTo
+                    : `/register?next=${encodeURIComponent(facts.returnTo)}`,
+              },
+              { kind: "recheck" },
+            ],
           }
         : {
             entryContext: entry.kind,
@@ -231,9 +394,16 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
       return {
         entryContext: entry.kind,
         nextStep: "accept-invitation",
+        invitation: {
+          invitationId: entry.invitationId,
+          organization: entry.organization,
+        },
         availableActions: [
           { kind: "accept-invitation", invitationId: entry.invitationId },
-          { kind: "sign-out" },
+          {
+            kind: "sign-out",
+            destination: `/register?next=${encodeURIComponent(facts.returnTo)}`,
+          },
         ],
       };
     if (entry.status === "choose") {
@@ -269,7 +439,12 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
         nextStep: "select-organization",
         availableActions: [
           { kind: "select-organization", organizations: [entry.organization] },
-          { kind: "sign-out" },
+          entry.kind === "organization-invitation"
+            ? {
+                kind: "sign-out",
+                destination: `/register?next=${encodeURIComponent(facts.returnTo)}`,
+              }
+            : { kind: "sign-out" },
         ],
       };
     return {
@@ -313,4 +488,16 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
     nextStep: "continue",
     availableActions: [{ kind: "continue", destination: "/projects" }],
   };
+}
+
+export function onboardingReturnTo(
+  value: string | string[] | undefined,
+): string | undefined {
+  const values = Array.isArray(value) ? value : [value];
+  const invitation = values.some(
+    (item) =>
+      item === "/accept-invitation" || item?.startsWith("/accept-invitation/"),
+  );
+  if (typeof value === "string" && value.length <= 2048) return value;
+  return invitation ? "/accept-invitation" : undefined;
 }

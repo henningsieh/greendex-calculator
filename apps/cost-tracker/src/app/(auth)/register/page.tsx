@@ -1,19 +1,17 @@
-import type { Metadata } from "next";
+import { getTranslations } from "@greendex/i18n/server";
 import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/components/auth-form";
-import { InvitationRecovery } from "@/features/organizations/components/invitation-acceptance";
+import { onboardingReturnTo } from "@/features/authentication/onboarding-decision";
+import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession, safeSignInReturnTo } from "@/lib/session";
 
-const MAX_RETURN_TO_LENGTH = 2048;
+export async function generateMetadata() {
+  const t = await getTranslations("onboarding");
+  return { title: t("auth.createAccount"), description: t("auth.metadata") };
+}
 
-export const metadata: Metadata = {
-  title: "Create account",
-  description: "Create an account for the Greendex Cost Tracker.",
-};
-
-// Signed-in visitors redirect before the sign-up form paints; no wrong-audience flash.
 export const instant = false;
 
 export default async function RegisterPage({
@@ -21,19 +19,23 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
-  const rawNext = (await searchParams).next;
-  const next = safeSignInReturnTo(rawNext);
-
+  const returnTo = onboardingReturnTo((await searchParams).next);
   const decision = await orpc.authentication.onboardingNextStep({
-    returnTo:
-      typeof rawNext === "string" && rawNext.length <= MAX_RETURN_TO_LENGTH
-        ? rawNext
-        : undefined,
+    returnTo,
+    authEntry: "register",
   });
-  if (decision.entryContext === "organization-invitation" && !next)
-    return <InvitationRecovery reason="STAFF_INVITATION_NOT_FOUND" />;
+  if (decision.entryContext === "organization-invitation") {
+    if (decision.nextStep === "authenticate")
+      return <AuthForm mode="sign-up" decision={decision} />;
+    return (
+      <InvitationAcceptance
+        returnTo={safeSignInReturnTo(returnTo) ?? "/accept-invitation"}
+        initialDecision={decision}
+      />
+    );
+  }
+  const next = safeSignInReturnTo(returnTo);
   if (await getSession()) redirect(next ?? "/projects");
-
   return (
     <AuthForm
       mode="sign-up"

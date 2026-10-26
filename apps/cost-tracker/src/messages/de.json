@@ -1,1 +1,73 @@
-{}
+{
+  "onboarding": {
+    "auth": {
+      "signInHeading": "Willkommen zurück",
+      "invitationHeading": "Deiner Organisation beitreten",
+      "partnerHeading": "Vorbereitung der Partnereinrichtung",
+      "directHeading": "Starte mit deiner Organisation",
+      "invitationSignInDescription": "Melde dich mit der eingeladenen Adresse an, um dieser Organisation beizutreten.",
+      "invitationDescription": "Erstelle deinen persönlichen Zugang mit der eingeladenen Adresse. Bestätige deine E-Mail und nimm dann die Einladung an.",
+      "signInDescription": "Melde dich an, um die Reisekosten deiner Projekte zu verwalten.",
+      "partnerDescription": "Erstelle deinen persönlichen Zugang mit der Adresse, die den Einrichtungslink erhalten hat. Setze danach die Einrichtung deiner Partnerorganisation fort.",
+      "directDescription": "Erstelle deinen persönlichen Zugang, bestätige deine E-Mail und richte dann deine Organisation für Erasmus-Projekte ein.",
+      "google": "Mit Google fortfahren",
+      "emailSeparator": "oder E-Mail verwenden",
+      "name": "Name",
+      "namePlaceholder": "Dein Name",
+      "email": "E-Mail-Adresse",
+      "emailPlaceholder": "du@example.org",
+      "password": "Passwort",
+      "passwordHint": "Verwende mindestens 8 Zeichen.",
+      "newAccount": "Neu bei Cost Tracker?",
+      "existingAccount": "Du hast bereits ein Konto?",
+      "createAccount": "Konto erstellen",
+      "signIn": "Anmelden",
+      "signingIn": "Anmeldung läuft",
+      "creatingAccount": "Konto wird erstellt",
+      "home": "Zur Startseite",
+      "signOut": "Abmelden",
+      "invitationPointer": "Du möchtest einer bestehenden Organisation beitreten? Öffne den Link in deiner Einladungs-E-Mail.",
+      "metadata": "Anmelden oder einen persönlichen Zugang für Greendex Cost Tracker erstellen."
+    },
+    "invitation": {
+      "context": "Einladung zu {organization}",
+      "heading": "Deiner Organisation beitreten",
+      "checking": "Deine Einladung wird geprüft…",
+      "joining": "Beitritt läuft…",
+      "accept": "Einladung annehmen",
+      "recheck": "Einladung erneut prüfen"
+    },
+    "progress": {
+      "verify": "1. E-Mail bestätigen",
+      "verified": "1. E-Mail bestätigt",
+      "accept": "2. Einladung annehmen"
+    },
+    "inbox": {
+      "heading": "Prüfe deinen Posteingang",
+      "address": "Suche unter <address>{email}</address> nach deinem Bestätigungslink.",
+      "invitationInstruction": "Öffne den Bestätigungslink, um angemeldet hierher zurückzukehren. Nimm dann die Einladung zur Organisation an.",
+      "instruction": "Öffne den Link, um deinen persönlichen Zugang zu bestätigen und in Cost Tracker fortzufahren.",
+      "spam": "Wenn die Nachricht fehlt, prüfe auch deinen Spamordner.",
+      "signIn": "Schon bestätigt oder bereits ein Konto? Melde dich an, um mit dieser Einladung fortzufahren."
+    },
+    "recovery": {
+      "title": "Zurück zu deiner Einladung",
+      "wrongEmail": "Dieser Zugang verwendet eine andere E-Mail-Adresse. Melde dich ab und dann mit der Adresse an, die die Einladung erhalten hat.",
+      "expired": "Diese Einladung ist abgelaufen. Bitte deine Organisation um eine neue Einladung.",
+      "closed": "Diese Einladung ist nicht mehr verfügbar. Bitte deine Organisation um eine neue Einladung.",
+      "unavailable": "Diese Einladung kann nicht verwendet werden. Öffne den vollständigen Link aus deiner Einladungs-E-Mail oder bitte deine Organisation um eine neue Einladung.",
+      "recheck": "Öffne die Einladung, nachdem du deinen Zugang korrigiert oder einen neuen Link erhalten hast. Du kannst diese Einladung auch erneut prüfen."
+    },
+    "selection": {
+      "heading": "Organisation auswählen",
+      "description": "Wähle die Organisation, mit der du fortfahren möchtest. Nur deine aktive Organisation ändert sich, nicht deine Mitgliedschaften oder Projektteilnahmen.",
+      "error": "Diese Organisation konnte nicht ausgewählt werden. Prüfe deinen Zugriff und versuche es erneut."
+    },
+    "error": {
+      "request": "Die Anfrage konnte nicht abgeschlossen werden. Prüfe deine Verbindung und versuche es erneut.",
+      "credentials": "E-Mail oder Passwort falsch. Prüfe deine Angaben und versuche es erneut.",
+      "verification": "Bestätige deine E-Mail vor der Anmeldung. Öffne den Bestätigungslink in deinem Posteingang.",
+      "signOut": "Abmeldung fehlgeschlagen"
+    }
+  }
+}

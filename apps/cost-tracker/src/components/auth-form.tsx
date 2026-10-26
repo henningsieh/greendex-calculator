@@ -1,10 +1,12 @@
 "use client";
 
 import { GoogleIcon } from "@greendex/auth/oauth-icons";
+import { useTranslations } from "@greendex/i18n/client";
+import { ORPCError } from "@orpc/client";
 import { ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -18,8 +20,10 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";
 
@@ -27,17 +31,47 @@ type AuthFormProps = {
   mode: "sign-in" | "sign-up";
   returnTo?: string;
   entryContext?: OnboardingDecision["entryContext"];
+  decision?: Extract<
+    OnboardingDecision,
+    { nextStep: "authenticate"; entryContext: "organization-invitation" }
+  >;
 };
 
 export function AuthForm({
   mode,
   returnTo,
   entryContext = "direct",
+  decision,
 }: AuthFormProps) {
   const router = useRouter();
+  const t = useTranslations("onboarding");
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
   const [error, setError] = useState<string>();
   const [submittedEmail, setSubmittedEmail] = useState<string>();
-  const isSignIn = mode === "sign-in";
+  const [receipt, setReceipt] = useState<OnboardingDecision>();
+  const isSignIn = decision
+    ? decision.availableActions[0].entry === "login"
+    : mode === "sign-in";
+  const destination = decision?.availableActions[0].returnTo ?? returnTo;
+
+  function showError(error: unknown) {
+    const reason =
+      error instanceof ORPCError
+        ? getSafeErrorSituation(error)?.reason
+        : undefined;
+    setError(
+      t(
+        reason === "INVALID_CREDENTIALS"
+          ? "error.credentials"
+          : reason === "EMAIL_VERIFICATION_REQUIRED"
+            ? "error.verification"
+            : "error.request",
+      ),
+    );
+  }
 
   async function submit(formData: FormData) {
     setError(undefined);
@@ -51,7 +85,13 @@ export function AuthForm({
       if (isSignIn) {
         await orpc.authentication.signIn({ email, password });
       } else {
-        await orpc.authentication.signUp({ name, email, password, returnTo });
+        const result = await orpc.authentication.signUp({
+          name,
+          email,
+          password,
+          returnTo: destination,
+        });
+        setReceipt(result.decision);
       }
 
       if (!isSignIn) {
@@ -60,9 +100,9 @@ export function AuthForm({
       }
 
       // replace fetches the destination; a following refresh would start a second RSC request.
-      router.replace(returnTo ?? "/projects");
+      router.replace(destination ?? "/projects");
     } catch (error) {
-      setError(getORPCRequestErrorMessage(error).text);
+      showError(error);
     }
   }
 
@@ -71,36 +111,61 @@ export function AuthForm({
 
     try {
       const { url } = await orpc.authentication.startGoogleSignIn(
-        returnTo ? { returnTo } : {},
+        destination ? { returnTo: destination } : {},
       );
       window.location.assign(url);
     } catch (error) {
-      setError(getORPCRequestErrorMessage(error).text);
+      showError(error);
     }
   }
 
+  if (receipt?.nextStep === "invitation-recovery")
+    return (
+      <InvitationAcceptance
+        initialDecision={receipt}
+        returnTo={receipt.returnTo}
+      />
+    );
+  if (receipt?.nextStep === "verify-email")
+    return <CheckInbox email={receipt.email} decision={receipt} />;
   if (submittedEmail) return <CheckInbox email={submittedEmail} />;
 
   return (
-    <div className="w-full max-w-md">
-      <div className="mb-9">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          {isSignIn
-            ? "Welcome back"
-            : entryContext === "organization-invitation"
-              ? "Join your Organization"
-              : entryContext === "partner-setup"
-                ? "Get ready for Partner setup"
-                : "Let's get your Organization started"}
+    <div
+      className={cn("w-full max-w-md", decision && "pb-24")}
+      data-onboarding-state={decision ? "authenticate" : undefined}
+    >
+      <div className="mb-5">
+        <h1
+          ref={heading}
+          tabIndex={-1}
+          className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl"
+        >
+          {t(
+            isSignIn
+              ? "auth.signInHeading"
+              : decision
+                ? "auth.invitationHeading"
+                : entryContext === "partner-setup"
+                  ? "auth.partnerHeading"
+                  : "auth.directHeading",
+          )}
         </h1>
+        {decision?.invitation && (
+          <InvitationContext invitation={decision.invitation} step="verify" />
+        )}
         <p className="mt-3 leading-7 text-muted-foreground">
-          {isSignIn
-            ? "Sign in to continue managing Project travel costs."
-            : entryContext === "organization-invitation"
-              ? "Create your personal login with the invited email address. Then join the Organization from your invitation."
-              : entryContext === "partner-setup"
-                ? "Create your personal login with the email address that received the setup link. Then continue your Partner Organization setup."
-                : "First, create your personal login. After verifying your email, set up your Organization to host Erasmus Projects and manage travel costs together."}
+          {t(
+            decision
+              ? isSignIn
+                ? "auth.invitationSignInDescription"
+                : "auth.invitationDescription"
+              : isSignIn
+                ? "auth.signInDescription"
+                : entryContext === "partner-setup"
+                  ? "auth.partnerDescription"
+                  : "auth.directDescription",
+          )}
         </p>
       </div>
 
@@ -113,41 +178,41 @@ export function AuthForm({
             variant="outline"
           >
             <GoogleIcon data-icon="inline-start" />
-            Continue with Google
+            {t("auth.google")}
           </Button>
 
-          <FieldSeparator>or use email</FieldSeparator>
+          <FieldSeparator>{t("auth.emailSeparator")}</FieldSeparator>
 
           {!isSignIn && (
             <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldLabel htmlFor="name">{t("auth.name")}</FieldLabel>
               <Input
                 autoComplete="name"
                 id="name"
                 data-testid="name"
                 minLength={2}
                 name="name"
-                placeholder="Your name"
+                placeholder={t("auth.namePlaceholder")}
                 required
               />
             </Field>
           )}
 
           <Field>
-            <FieldLabel htmlFor="email">Email address</FieldLabel>
+            <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
             <Input
               autoComplete="email"
               id="email"
               data-testid="email"
               name="email"
-              placeholder="you@example.org"
+              placeholder={t("auth.emailPlaceholder")}
               required
               type="email"
             />
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <FieldLabel htmlFor="password">{t("auth.password")}</FieldLabel>
             <Input
               autoComplete={isSignIn ? "current-password" : "new-password"}
               id="password"
@@ -158,7 +223,7 @@ export function AuthForm({
               type="password"
             />
             {!isSignIn && (
-              <FieldDescription>Use at least 8 characters.</FieldDescription>
+              <FieldDescription>{t("auth.passwordHint")}</FieldDescription>
             )}
           </Field>
 
@@ -166,21 +231,37 @@ export function AuthForm({
             <FieldError data-testid="auth-form-error">{error}</FieldError>
           )}
 
-          <SubmitButton isSignIn={isSignIn} />
+          {decision ? (
+            <div className="fixed inset-x-0 bottom-0 z-10 border-t bg-background px-5 py-3 lg:left-[45%]">
+              <div className="mx-auto grid w-full max-w-md">
+                <SubmitButton isSignIn={isSignIn} />
+              </div>
+            </div>
+          ) : (
+            <SubmitButton isSignIn={isSignIn} />
+          )}
         </FieldGroup>
       </form>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        {isSignIn ? "New to Cost Tracker?" : "Already have an account?"}{" "}
+        {t(isSignIn ? "auth.newAccount" : "auth.existingAccount")}{" "}
         <Link
           data-testid="auth-account-navigation"
           className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
-          href={`${isSignIn ? "/register" : "/login"}${returnTo ? `?next=${encodeURIComponent(returnTo)}` : ""}`}
+          href={`${isSignIn ? "/register" : "/login"}${destination ? `?next=${encodeURIComponent(destination)}` : ""}`}
         >
-          {isSignIn ? "Create an account" : "Sign in"}
+          {t(isSignIn ? "auth.createAccount" : "auth.signIn")}
         </Link>
       </p>
 
+      {!isSignIn && entryContext === "direct" && !decision && (
+        <p
+          className="mt-4 text-sm text-muted-foreground"
+          data-testid="direct-invitation-pointer"
+        >
+          {t("auth.invitationPointer")}
+        </p>
+      )}
       <Link
         className={cn(
           buttonVariants({ size: "sm", variant: "ghost" }),
@@ -188,7 +269,7 @@ export function AuthForm({
         )}
         href="/"
       >
-        Back to home
+        {t("auth.home")}
       </Link>
     </div>
   );
@@ -197,13 +278,16 @@ export function AuthForm({
 function SubmitButton({ isSignIn }: { isSignIn: boolean }) {
   const { pending } = useFormStatus();
 
-  const label = pending
-    ? isSignIn
-      ? "Signing in"
-      : "Creating account"
-    : isSignIn
-      ? "Sign in"
-      : "Create account";
+  const t = useTranslations("onboarding");
+  const label = t(
+    pending
+      ? isSignIn
+        ? "auth.signingIn"
+        : "auth.creatingAccount"
+      : isSignIn
+        ? "auth.signIn"
+        : "auth.createAccount",
+  );
 
   return (
     <Button data-testid="auth-submit" disabled={pending} type="submit">

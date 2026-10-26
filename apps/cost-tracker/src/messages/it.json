@@ -1,1 +1,73 @@
-{}
+{
+  "onboarding": {
+    "auth": {
+      "signInHeading": "Bentornato",
+      "invitationHeading": "Unisciti alla tua Organizzazione",
+      "partnerHeading": "Prepara la configurazione dell'Organizzazione partner",
+      "directHeading": "Inizia con la tua Organizzazione",
+      "invitationSignInDescription": "Accedi con l'indirizzo invitato per unirti a questa Organizzazione.",
+      "invitationDescription": "Crea il tuo accesso personale con l'indirizzo invitato. Verifica l'e-mail, poi accetta l'invito.",
+      "signInDescription": "Accedi per continuare a gestire i costi di viaggio dei Progetti.",
+      "partnerDescription": "Crea il tuo accesso personale con l'indirizzo che ha ricevuto il link di configurazione. Poi continua la configurazione della tua Organizzazione partner.",
+      "directDescription": "Crea il tuo accesso personale, verifica l'e-mail e configura la tua Organizzazione per ospitare Progetti Erasmus.",
+      "google": "Continua con Google",
+      "emailSeparator": "oppure usa l'e-mail",
+      "name": "Nome",
+      "namePlaceholder": "Il tuo nome",
+      "email": "Indirizzo e-mail",
+      "emailPlaceholder": "tu@example.org",
+      "password": "Password",
+      "passwordHint": "Usa almeno 8 caratteri.",
+      "newAccount": "È la prima volta su Cost Tracker?",
+      "existingAccount": "Hai già un account?",
+      "createAccount": "Crea account",
+      "signIn": "Accedi",
+      "signingIn": "Accesso in corso",
+      "creatingAccount": "Creazione account",
+      "home": "Torna alla pagina iniziale",
+      "signOut": "Esci",
+      "invitationPointer": "Ti unisci a un'Organizzazione esistente? Apri il link nell'e-mail di invito.",
+      "metadata": "Accedi o crea un accesso personale per Greendex Cost Tracker."
+    },
+    "invitation": {
+      "context": "Invito a unirti a {organization}",
+      "heading": "Unisciti alla tua Organizzazione",
+      "checking": "Verifica dell'invito…",
+      "joining": "Adesione in corso…",
+      "accept": "Accetta invito",
+      "recheck": "Controlla di nuovo l'invito"
+    },
+    "progress": {
+      "verify": "1. Verifica e-mail",
+      "verified": "1. E-mail verificata",
+      "accept": "2. Accetta invito"
+    },
+    "inbox": {
+      "heading": "Controlla la posta in arrivo",
+      "address": "Cerca il link di verifica in <address>{email}</address>.",
+      "invitationInstruction": "Apri il link di verifica per tornare qui con l'accesso effettuato. Poi accetta l'invito per unirti all'Organizzazione.",
+      "instruction": "Apri il link per verificare il tuo accesso personale e riprendere il percorso in Cost Tracker.",
+      "spam": "Se non vedi il messaggio, controlla anche la cartella spam.",
+      "signIn": "Hai già verificato l'e-mail o hai un account? Accedi per continuare con questo invito."
+    },
+    "recovery": {
+      "title": "Torna al tuo invito",
+      "wrongEmail": "Questo accesso usa un altro indirizzo e-mail. Esci, poi accedi con l'indirizzo che ha ricevuto l'invito.",
+      "expired": "Questo invito è scaduto. Chiedi un nuovo invito alla tua Organizzazione.",
+      "closed": "Questo invito non è più disponibile. Chiedi un nuovo invito alla tua Organizzazione.",
+      "unavailable": "Non possiamo usare questo invito. Apri il link completo nell'e-mail o chiedi un nuovo invito alla tua Organizzazione.",
+      "recheck": "Dopo aver corretto l'accesso o ricevuto un nuovo link, apri quell'invito. Puoi anche controllare di nuovo questo invito."
+    },
+    "selection": {
+      "heading": "Seleziona un'Organizzazione",
+      "description": "Scegli con quale Organizzazione continuare. Cambia solo l'Organizzazione attiva, non le tue appartenenze o partecipazioni ai Progetti.",
+      "error": "Impossibile selezionare questa Organizzazione. Controlla il tuo accesso e riprova."
+    },
+    "error": {
+      "request": "Impossibile completare la richiesta. Controlla la connessione e riprova.",
+      "credentials": "E-mail o password errate. Controlla i tuoi dati e riprova.",
+      "verification": "Verifica l'e-mail prima di accedere. Apri il link di verifica nella posta in arrivo.",
+      "signOut": "Impossibile uscire"
+    }
+  }
+}

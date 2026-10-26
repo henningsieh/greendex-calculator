@@ -35,14 +35,20 @@ describe("Cost Tracker localized route facades", () => {
       const facade = readFileSync(resolve(app, "[locale]", route), "utf8");
       const exports = ["default"];
       if (source.includes("export const metadata")) exports.push("metadata");
+      if (source.includes("export async function generateMetadata"))
+        exports.push("generateMetadata");
       const reexport = `export { ${exports.join(", ")} } from "@/app/${route.slice(0, -4)}";`;
       const expected =
         identityFacades[route] ??
         (source.includes("export const instant = false")
-          ? `${reexport}\n\n// Next.js requires route configuration to be declared locally.\nexport const instant = false;\n`
+          ? `${reexport}\n\nexport const instant = false;\n`
           : `${reexport}\n`);
       const normalize = (value: string) =>
-        value.replace(/,\s*}/g, " }").replace(/\s+/g, " ").trim();
+        value
+          .replace(/^\s*\/\/[^\n]*$/gm, "")
+          .replace(/,\s*}/g, " }")
+          .replace(/\s+/g, " ")
+          .trim();
       expect(normalize(facade)).toBe(normalize(expected));
     },
   );

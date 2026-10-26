@@ -1,140 +1,147 @@
 "use client";
 
-import { organizationClient } from "better-auth/client/plugins";
-import { createAuthClient } from "better-auth/react";
+import { useTranslations } from "@greendex/i18n/client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
 import { SelectOrganization } from "@/features/organizations/components/select-organization";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
-const authClient = createAuthClient({ plugins: [organizationClient()] });
-
-export function InvitationAcceptance({ invitationId }: { invitationId: string }) {
+export function InvitationAcceptance({
+  returnTo,
+  initialDecision,
+}: {
+  returnTo: string;
+  initialDecision?: OnboardingDecision;
+}) {
   const router = useRouter();
-  const [decision, setDecision] = useState<OnboardingDecision>();
-  const [organizationName, setOrganizationName] = useState<string>();
-  const [error, setError] = useState<string>();
+  const t = useTranslations("onboarding");
+  const [decision, setDecision] = useState(initialDecision);
+  const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
-  const returnTo = `/accept-invitation/${invitationId}`;
+  const heading = useRef<HTMLHeadingElement>(null);
 
   const continueJourney = useCallback(
     (next: OnboardingDecision) => {
       setDecision(next);
       if (next.nextStep === "continue")
         router.replace(next.availableActions[0].destination);
-      if (next.nextStep === "authenticate")
+      if (next.nextStep === "authenticate") {
+        const action = next.availableActions[0];
         router.replace(
-          `/login?next=${encodeURIComponent(next.availableActions[0].returnTo ?? returnTo)}`,
+          `/${"entry" in action ? action.entry : "login"}${action.returnTo ? `?next=${encodeURIComponent(action.returnTo)}` : ""}`,
         );
+      }
     },
-    [router, returnTo],
+    [router],
   );
 
   useEffect(() => {
     let active = true;
-    void orpc.authentication
-      .onboardingNextStep({ returnTo })
-      .then(async (next) => {
-        if (!active) return;
-        continueJourney(next);
-        if (next.nextStep === "accept-invitation") {
-          // The preview supplies display data only. The server decision owns actions.
-          const { data } = await authClient.organization.getInvitation({
-            query: { id: invitationId },
-          });
-          if (active && data) setOrganizationName(data.organizationName);
-        }
-      })
-      .catch((cause: unknown) => {
-        if (active) setError(getORPCRequestErrorMessage(cause).text);
-      });
+    if (initialDecision) continueJourney(initialDecision);
+    else
+      void orpc.authentication
+        .onboardingNextStep({ returnTo })
+        .then((next) => {
+          if (active) continueJourney(next);
+        })
+        .catch(() => {
+          if (active) setError(true);
+        });
     return () => {
       active = false;
     };
-  }, [returnTo, invitationId, continueJourney]);
+  }, [returnTo, initialDecision, continueJourney]);
+
+  useEffect(() => {
+    heading.current?.focus();
+  }, [decision?.nextStep]);
 
   async function recheck() {
     setPending(true);
-    setError(undefined);
+    setError(false);
     try {
       continueJourney(await orpc.authentication.onboardingNextStep({ returnTo }));
-    } catch (cause) {
-      setError(getORPCRequestErrorMessage(cause).text);
+    } catch {
+      setError(true);
     } finally {
       setPending(false);
     }
   }
 
   async function accept() {
-    if (decision?.nextStep !== "accept-invitation") return;
+    if (decision?.nextStep !== "accept-invitation" || pending) return;
     setPending(true);
-    setError(undefined);
+    setError(false);
     try {
       await orpc.organizations.acceptInvitation({
         invitationId: decision.availableActions[0].invitationId,
       });
+    } catch {
+      setError(true);
+    }
+    try {
       continueJourney(await orpc.authentication.onboardingNextStep({ returnTo }));
-    } catch (cause) {
-      setError(getORPCRequestErrorMessage(cause).text);
-      try {
-        continueJourney(
-          await orpc.authentication.onboardingNextStep({ returnTo }),
-        );
-      } catch {
-        /* The mutation error remains visible if rechecking also fails. */
-      }
+    } catch {
+      setError(true);
     } finally {
       setPending(false);
     }
   }
 
   if (decision?.nextStep === "verify-email")
-    return (
-      <>
-        <CheckInbox email={decision.email} />
-        <SignOutButton />
-      </>
-    );
+    return <CheckInbox email={decision.email} decision={decision} />;
   if (decision?.nextStep === "select-organization")
     return (
       <SelectOrganization
         organizations={decision.availableActions[0].organizations}
         onSelected={recheck}
+        signOutDestination={
+          "destination" in decision.availableActions[1]
+            ? decision.availableActions[1].destination
+            : undefined
+        }
       />
     );
 
   return (
-    <section aria-labelledby="invitation-heading" aria-busy={pending}>
-      <h1 id="invitation-heading" className="font-heading text-3xl font-semibold">
-        Join your Organization
+    <section
+      aria-labelledby="invitation-heading"
+      aria-busy={pending}
+      data-onboarding-state={decision?.nextStep ?? "loading"}
+    >
+      <h1
+        id="invitation-heading"
+        ref={heading}
+        tabIndex={-1}
+        className="font-heading text-3xl font-semibold"
+      >
+        {t("invitation.heading")}
       </h1>
-      {!decision && !error && <output>Checking your invitation…</output>}
+      {!decision && !error && <output>{t("invitation.checking")}</output>}
       {decision?.nextStep === "accept-invitation" && (
         <>
-          <p
+          <div
             className="mt-4"
             data-testid="invitation-preview"
-            data-organization-name={organizationName}
+            data-organization-name={decision.invitation.organization.name}
           >
-            {organizationName
-              ? `You have been invited to join ${organizationName}.`
-              : "Your invitation is ready. Join the Organization to continue."}
-          </p>
+            <InvitationContext invitation={decision.invitation} step="accept" />
+          </div>
           <Button
             data-testid="accept-organization-invitation"
-            className="mt-6"
             disabled={pending}
             onClick={accept}
             type="button"
           >
-            {pending ? "Joining…" : "Accept Organization Invitation"}
+            {t(pending ? "invitation.joining" : "invitation.accept")}
           </Button>
         </>
       )}
@@ -142,11 +149,12 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
         <InvitationRecovery reason={decision.reason} />
       )}
       {error && (
-        <p className="mt-4" role="alert">
-          {error}
+        <p className="mt-4" role="alert" data-testid="invitation-error">
+          {t("error.request")}
         </p>
       )}
-      {(decision?.nextStep === "invitation-recovery" || error) && (
+      {(decision?.availableActions.some((action) => action.kind === "recheck") ||
+        error) && (
         <Button
           data-testid="recheck-organization-invitation"
           className="mt-4"
@@ -154,28 +162,58 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
           onClick={recheck}
           type="button"
         >
-          Check invitation again
+          {t("invitation.recheck")}
         </Button>
       )}
-      {decision?.availableActions.some(
-        (action) => action.kind === "sign-out",
-      ) && (
-        <div className="mt-4">
-          <SignOutButton />
-        </div>
+      {decision?.nextStep === "invitation-recovery" &&
+        decision.availableActions.map((action) =>
+          action.kind === "authenticate" ? (
+            <Link
+              className="mt-4 block underline underline-offset-4"
+              data-testid="invitation-recovery-sign-in"
+              key={action.kind}
+              href={`/login?next=${encodeURIComponent(action.returnTo)}`}
+            >
+              {t("auth.signIn")}
+            </Link>
+          ) : null,
+        )}
+      {decision?.availableActions.map((action) =>
+        action.kind === "sign-out" ? (
+          <div className="mt-4" key={action.kind}>
+            <SignOutButton
+              destination={
+                "destination" in action ? action.destination : undefined
+              }
+            />
+          </div>
+        ) : null,
       )}
     </section>
   );
 }
 
 export function InvitationRecovery({ reason }: { reason: string }) {
+  const t = useTranslations("onboarding");
+  const guidance =
+    reason === "STAFF_INVITATION_WRONG_EMAIL"
+      ? "wrongEmail"
+      : reason === "STAFF_INVITATION_EXPIRED"
+        ? "expired"
+        : reason === "STAFF_INVITATION_CLOSED"
+          ? "closed"
+          : "unavailable";
   return (
-    <Alert className="mt-6" variant="info" data-invitation-recovery={reason}>
-      <AlertTitle>Let&apos;s get you back to your invitation</AlertTitle>
+    <Alert className="mt-4" variant="info" data-invitation-recovery={reason}>
+      <AlertTitle>{t("recovery.title")}</AlertTitle>
       <AlertDescription>
-        Open the complete link from your invitation email and sign in with the
-        invited address. If it has expired or been cancelled, ask your
-        Organization for a new invitation.
+        <p
+          data-testid="invitation-recovery-guidance"
+          data-recovery-guidance={guidance}
+        >
+          {t(`recovery.${guidance}`)}
+        </p>
+        <p>{t("recovery.recheck")}</p>
       </AlertDescription>
     </Alert>
   );

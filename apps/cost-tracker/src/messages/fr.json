@@ -1,1 +1,73 @@
-{}
+{
+  "onboarding": {
+    "auth": {
+      "signInHeading": "Bon retour",
+      "invitationHeading": "Rejoignez votre Organisation",
+      "partnerHeading": "Préparez la configuration de votre Organisation partenaire",
+      "directHeading": "Démarrez avec votre Organisation",
+      "invitationSignInDescription": "Connectez-vous avec l'adresse invitée pour rejoindre cette Organisation.",
+      "invitationDescription": "Créez votre accès personnel avec l'adresse invitée. Vérifiez votre e-mail, puis acceptez l'invitation.",
+      "signInDescription": "Connectez-vous pour continuer à gérer les frais de déplacement de vos Projets.",
+      "partnerDescription": "Créez votre accès personnel avec l'adresse qui a reçu le lien de configuration. Poursuivez ensuite la configuration de votre Organisation partenaire.",
+      "directDescription": "Créez votre accès personnel, vérifiez votre e-mail, puis configurez votre Organisation pour accueillir des Projets Erasmus.",
+      "google": "Continuer avec Google",
+      "emailSeparator": "ou utiliser l'e-mail",
+      "name": "Nom",
+      "namePlaceholder": "Votre nom",
+      "email": "Adresse e-mail",
+      "emailPlaceholder": "vous@example.org",
+      "password": "Mot de passe",
+      "passwordHint": "Utilisez au moins 8 caractères.",
+      "newAccount": "Vous découvrez Cost Tracker ?",
+      "existingAccount": "Vous avez déjà un compte ?",
+      "createAccount": "Créer un compte",
+      "signIn": "Se connecter",
+      "signingIn": "Connexion en cours",
+      "creatingAccount": "Création du compte",
+      "home": "Retour à l'accueil",
+      "signOut": "Se déconnecter",
+      "invitationPointer": "Vous rejoignez une Organisation existante ? Ouvrez le lien dans votre e-mail d'invitation.",
+      "metadata": "Connectez-vous ou créez un accès personnel pour Greendex Cost Tracker."
+    },
+    "invitation": {
+      "context": "Invitation à rejoindre {organization}",
+      "heading": "Rejoignez votre Organisation",
+      "checking": "Vérification de votre invitation…",
+      "joining": "Adhésion en cours…",
+      "accept": "Accepter l'invitation",
+      "recheck": "Vérifier à nouveau"
+    },
+    "progress": {
+      "verify": "1. Vérifier l'e-mail",
+      "verified": "1. E-mail vérifié",
+      "accept": "2. Accepter l'invitation"
+    },
+    "inbox": {
+      "heading": "Consultez votre boîte de réception",
+      "address": "Cherchez votre lien de vérification dans <address>{email}</address>.",
+      "invitationInstruction": "Ouvrez le lien de vérification pour revenir ici avec votre session ouverte. Acceptez ensuite l'invitation à rejoindre l'Organisation.",
+      "instruction": "Ouvrez le lien pour vérifier votre accès personnel et reprendre votre parcours dans Cost Tracker.",
+      "spam": "Si le message n'apparaît pas, consultez aussi vos courriers indésirables.",
+      "signIn": "Déjà vérifié ou déjà un compte ? Connectez-vous pour poursuivre cette invitation."
+    },
+    "recovery": {
+      "title": "Revenez à votre invitation",
+      "wrongEmail": "Cet accès utilise une autre adresse e-mail. Déconnectez-vous, puis connectez-vous avec l'adresse qui a reçu l'invitation.",
+      "expired": "Cette invitation a expiré. Demandez une nouvelle invitation à votre Organisation.",
+      "closed": "Cette invitation n'est plus disponible. Demandez une nouvelle invitation à votre Organisation.",
+      "unavailable": "Cette invitation ne peut pas être utilisée. Ouvrez le lien complet de l'e-mail ou demandez une nouvelle invitation à votre Organisation.",
+      "recheck": "Après avoir corrigé votre connexion ou reçu un nouveau lien, ouvrez cette invitation. Vous pouvez aussi vérifier à nouveau cette invitation."
+    },
+    "selection": {
+      "heading": "Sélectionnez une Organisation",
+      "description": "Choisissez l'Organisation avec laquelle continuer. Cela change uniquement votre Organisation active, pas vos adhésions ni vos participations aux Projets.",
+      "error": "Impossible de sélectionner cette Organisation. Vérifiez votre accès et réessayez."
+    },
+    "error": {
+      "request": "La demande n'a pas pu aboutir. Vérifiez votre connexion et réessayez.",
+      "credentials": "E-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez.",
+      "verification": "Vérifiez votre e-mail avant de vous connecter. Ouvrez le lien de vérification dans votre boîte de réception.",
+      "signOut": "Déconnexion impossible"
+    }
+  }
+}

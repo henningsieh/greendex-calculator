@@ -1,1 +1,73 @@
-{}
+{
+  "onboarding": {
+    "auth": {
+      "signInHeading": "Welcome back",
+      "invitationHeading": "Join your Organization",
+      "partnerHeading": "Get ready for Partner setup",
+      "directHeading": "Let's get your Organization started",
+      "invitationSignInDescription": "Sign in with the invited address to continue joining this Organization.",
+      "invitationDescription": "Create your personal login with the invited address. Verify your email, then accept the invitation to join.",
+      "signInDescription": "Sign in to continue managing Project travel costs.",
+      "partnerDescription": "Create your personal login with the address that received the setup link. Then continue your Partner Organization setup.",
+      "directDescription": "Create your personal login, verify your email, then set up your Organization to host Erasmus Projects.",
+      "google": "Continue with Google",
+      "emailSeparator": "or use email",
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "email": "Email address",
+      "emailPlaceholder": "you@example.org",
+      "password": "Password",
+      "passwordHint": "Use at least 8 characters.",
+      "newAccount": "New to Cost Tracker?",
+      "existingAccount": "Already have an account?",
+      "createAccount": "Create account",
+      "signIn": "Sign in",
+      "signingIn": "Signing in",
+      "creatingAccount": "Creating account",
+      "home": "Back to home",
+      "signOut": "Sign out",
+      "invitationPointer": "Joining an existing Organization? Open the link in your invitation email instead.",
+      "metadata": "Sign in or create a personal login for Greendex Cost Tracker."
+    },
+    "invitation": {
+      "context": "Invitation to join {organization}",
+      "heading": "Join your Organization",
+      "checking": "Checking your invitation…",
+      "joining": "Joining…",
+      "accept": "Accept invitation",
+      "recheck": "Check invitation again"
+    },
+    "progress": {
+      "verify": "1. Verify email",
+      "verified": "1. Email verified",
+      "accept": "2. Accept invitation"
+    },
+    "inbox": {
+      "heading": "Check your inbox",
+      "address": "Check <address>{email}</address> for your verification link.",
+      "invitationInstruction": "Open the verification link to return here signed in. Then accept the invitation to join the Organization.",
+      "instruction": "Open the link to verify your personal login and continue where you left off in Cost Tracker.",
+      "spam": "If the message is not visible, check your spam folder too.",
+      "signIn": "Already verified or already have an account? Sign in to continue this invitation."
+    },
+    "recovery": {
+      "title": "Return to your invitation",
+      "wrongEmail": "This login uses a different email address. Sign out, then sign in with the address that received the invitation.",
+      "expired": "This invitation has expired. Ask your Organization for a new invitation.",
+      "closed": "This invitation is no longer available. Ask your Organization for a new invitation.",
+      "unavailable": "We cannot use this invitation. Open the complete link from your invitation email, or ask your Organization for a new invitation.",
+      "recheck": "After correcting your login or receiving a new link, open that invitation. You can also check this invitation again."
+    },
+    "selection": {
+      "heading": "Select an Organization",
+      "description": "Choose which Organization to continue with. This changes your active Organization, not your Memberships or Project Participations.",
+      "error": "Could not select that Organization. Check your access and try again."
+    },
+    "error": {
+      "request": "The request could not be completed. Check your connection and try again.",
+      "credentials": "Incorrect email or password. Check your details and try again.",
+      "verification": "Verify your email before signing in. Open the verification link in your inbox.",
+      "signOut": "Could not sign out"
+    }
+  }
+}

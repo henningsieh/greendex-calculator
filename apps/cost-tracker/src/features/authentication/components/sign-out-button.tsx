@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { LoaderCircleIcon, LogOutIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 
@@ -15,15 +16,18 @@ type SignOutButtonProps = Omit<
   "children" | "disabled" | "className" | "style"
 > & {
   compact?: boolean;
+  destination?: string;
 };
 
 export function SignOutButton({
   compact = false,
+  destination,
   size = "default",
   variant = "ghost",
   ...props
 }: SignOutButtonProps) {
-  const { pending, signOut: signOutAction } = useSignOut();
+  const { pending, signOut: signOutAction } = useSignOut(destination);
+  const t = useTranslations("onboarding");
 
   function signOut(event: ButtonClickEvent) {
     void signOutAction();
@@ -34,7 +38,7 @@ export function SignOutButton({
     <Button
       {...props}
       data-testid="sign-out"
-      aria-label={compact ? "Sign out" : undefined}
+      aria-label={compact ? t("auth.signOut") : undefined}
       disabled={pending}
       onClick={signOut}
       size={compact ? "icon-sm" : size}
@@ -45,7 +49,7 @@ export function SignOutButton({
       ) : (
         <LogOutIcon data-icon="inline-start" />
       )}
-      <span className={compact ? "sr-only" : undefined}>Sign out</span>
+      <span className={compact ? "sr-only" : undefined}>{t("auth.signOut")}</span>
     </Button>
   );
 }

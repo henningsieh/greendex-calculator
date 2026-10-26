@@ -2,7 +2,12 @@ import { hasOrganizationRole } from "@greendex/auth";
 import "server-only";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
-import { invitation, member, user } from "@greendex/database/schema";
+import {
+  invitation,
+  member,
+  organization,
+  user,
+} from "@greendex/database/schema";
 import { ORPCError } from "@orpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -237,21 +242,22 @@ export const inviteMember = authorized
     };
   });
 
-export async function readStaffInvitation(
+async function readStaffInvitationRow(
   invitationId: string,
-  email: string,
   errors: ProcedureErrors["errors"],
-  allowAccepted = false,
+  allowAccepted: boolean,
 ) {
   const [pending] = await db
     .select({
       organizationId: invitation.organizationId,
+      organizationName: organization.name,
       email: invitation.email,
       role: invitation.role,
       status: invitation.status,
       expiresAt: invitation.expiresAt,
     })
     .from(invitation)
+    .innerJoin(organization, eq(organization.id, invitation.organizationId))
     .where(eq(invitation.id, invitationId))
     .limit(1);
 
@@ -272,6 +278,31 @@ export async function readStaffInvitation(
     throw createSituationErrors(errors).staffInvitationClosed();
   if (pending.status === "pending" && pending.expiresAt < new Date())
     throw createSituationErrors(errors).staffInvitationExpired();
+  return pending;
+}
+
+export async function readStaffInvitationContext(
+  invitationId: string,
+  errors: ProcedureErrors["errors"],
+) {
+  const row = await readStaffInvitationRow(invitationId, errors, false);
+  return {
+    invitationId,
+    organization: { id: row.organizationId, name: row.organizationName },
+  };
+}
+
+export async function readStaffInvitation(
+  invitationId: string,
+  email: string,
+  errors: ProcedureErrors["errors"],
+  allowAccepted = false,
+) {
+  const pending = await readStaffInvitationRow(
+    invitationId,
+    errors,
+    allowAccepted,
+  );
   if (pending.email.toLowerCase() !== email.toLowerCase())
     throw createSituationErrors(errors).staffInvitationWrongEmail();
 
@@ -282,6 +313,8 @@ export const acceptInvitation = authorized
   .input(z.object({ invitationId: z.string().min(1).max(128) }))
   .output(z.object({ organizationId: z.string() }))
   .handler(async ({ context, errors, input }) => {
+    if (!context.user.emailVerified)
+      throw createSituationErrors(errors).verifyEmail();
     await readStaffInvitation(input.invitationId, context.user.email, errors);
 
     try {

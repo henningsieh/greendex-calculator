@@ -12,7 +12,10 @@ import type {
   ValidatedOnboardingEntry,
 } from "@/features/authentication/onboarding-decision";
 import { readOrganizationMemberships } from "@/features/organizations/procedures/memberships";
-import { readStaffInvitation } from "@/features/organizations/procedures/staff-invites";
+import {
+  readStaffInvitation,
+  readStaffInvitationContext,
+} from "@/features/organizations/procedures/staff-invites";
 import {
   isStaffOrganizationRole,
   resolveStaffOrganizationContext,
@@ -49,9 +52,32 @@ export async function loadOnboardingFacts(
   const returnTo = safeSignInReturnTo(input.returnTo);
   const entryContext = classifyEntry(input.returnTo);
   const session = await auth.api.getSession({ headers });
-  if (!session) return { account: "signed-out", entryContext, returnTo };
+  if (
+    entryContext === "organization-invitation" &&
+    (!session || !session.user.emailVerified)
+  ) {
+    const entry = await loadPublicInvitationEntry(returnTo, errors);
+    return {
+      account: session ? "unverified" : "signed-out",
+      entryContext,
+      entry,
+      authEntry: input.authEntry ?? "register",
+      returnTo: returnTo ?? "/accept-invitation",
+      email: session?.user.email ?? "",
+    };
+  }
+  if (!session)
+    return {
+      account: "signed-out",
+      entryContext: entryContext === "partner-setup" ? "partner-setup" : "direct",
+      returnTo,
+    };
   if (!session.user.emailVerified)
-    return { account: "unverified", entryContext, email: session.user.email };
+    return {
+      account: "unverified",
+      entryContext: entryContext === "partner-setup" ? "partner-setup" : "direct",
+      email: session.user.email,
+    };
 
   const [memberships, canCreate] = await Promise.all([
     readOrganizationMemberships(session.user.id),
@@ -86,7 +112,16 @@ export async function loadOnboardingFacts(
             status: "complete",
             organization: { id: membership.id, name: membership.name },
           };
-        } else entry = { kind: entryContext, status: "pending", invitationId };
+        } else
+          entry = {
+            kind: entryContext,
+            status: "pending",
+            invitationId,
+            organization: {
+              id: invitation.organizationId,
+              name: invitation.organizationName,
+            },
+          };
       } else {
         if (!returnTo) throw situations.setupLinkNotFound();
         const url = new URL(returnTo, "https://onboarding.invalid");
@@ -161,5 +196,48 @@ export async function loadOnboardingFacts(
       };
     }
   }
-  return { account: "verified", organizationContext, canCreate, entry };
+  return {
+    account: "verified",
+    organizationContext,
+    canCreate,
+    entry,
+    returnTo: returnTo ?? "/accept-invitation",
+  };
+}
+
+export async function loadPublicInvitationEntry(
+  returnTo: string | undefined,
+  errors: ProcedureErrors,
+): Promise<
+  Extract<
+    ValidatedOnboardingEntry,
+    { kind: "organization-invitation"; status: "pending" | "recovery" }
+  >
+> {
+  if (!returnTo)
+    return {
+      kind: "organization-invitation",
+      status: "recovery",
+      reason: "STAFF_INVITATION_NOT_FOUND",
+    };
+  try {
+    const invitation = await readStaffInvitationContext(
+      returnTo.slice("/accept-invitation/".length),
+      errors,
+    );
+    return { kind: "organization-invitation", status: "pending", ...invitation };
+  } catch (error) {
+    const situation =
+      error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
+    if (
+      !situation ||
+      ["INTERNAL_SERVER_ERROR", "SERVICE_UNAVAILABLE"].includes(situation.code)
+    )
+      throw error;
+    return {
+      kind: "organization-invitation",
+      status: "recovery",
+      reason: "STAFF_INVITATION_NOT_FOUND",
+    };
+  }
 }

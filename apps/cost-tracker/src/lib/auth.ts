@@ -30,6 +30,7 @@ export const auth = createServerAuth({
     autoSignInAfterVerification: true,
   },
   organization: {
+    requireEmailVerificationOnInvitation: true,
     async sendInvitationEmail(data) {
       // Participant entry never flows through Better Auth invitations
       // (ADR-0013): the app-owned email-bound invitation delivers its own

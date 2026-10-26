@@ -1,1 +1,73 @@
-{}
+{
+  "onboarding": {
+    "auth": {
+      "signInHeading": "Te damos la bienvenida de nuevo",
+      "invitationHeading": "Únete a tu Organización",
+      "partnerHeading": "Prepara la configuración de tu Organización socia",
+      "directHeading": "Empieza con tu Organización",
+      "invitationSignInDescription": "Inicia sesión con la dirección invitada para unirte a esta Organización.",
+      "invitationDescription": "Crea tu acceso personal con la dirección invitada. Verifica tu correo y después acepta la invitación.",
+      "signInDescription": "Inicia sesión para seguir gestionando los gastos de viaje de tus Proyectos.",
+      "partnerDescription": "Crea tu acceso personal con la dirección que recibió el enlace de configuración. Después continúa la configuración de tu Organización socia.",
+      "directDescription": "Crea tu acceso personal, verifica tu correo y configura tu Organización para organizar Proyectos Erasmus.",
+      "google": "Continuar con Google",
+      "emailSeparator": "o usar correo electrónico",
+      "name": "Nombre",
+      "namePlaceholder": "Tu nombre",
+      "email": "Dirección de correo electrónico",
+      "emailPlaceholder": "tu@example.org",
+      "password": "Contraseña",
+      "passwordHint": "Usa al menos 8 caracteres.",
+      "newAccount": "¿Es tu primera vez en Cost Tracker?",
+      "existingAccount": "¿Ya tienes una cuenta?",
+      "createAccount": "Crear cuenta",
+      "signIn": "Iniciar sesión",
+      "signingIn": "Iniciando sesión",
+      "creatingAccount": "Creando cuenta",
+      "home": "Volver al inicio",
+      "signOut": "Cerrar sesión",
+      "invitationPointer": "¿Vas a unirte a una Organización existente? Abre el enlace del correo de invitación.",
+      "metadata": "Inicia sesión o crea un acceso personal para Greendex Cost Tracker."
+    },
+    "invitation": {
+      "context": "Invitación para unirte a {organization}",
+      "heading": "Únete a tu Organización",
+      "checking": "Comprobando tu invitación…",
+      "joining": "Uniéndote…",
+      "accept": "Aceptar invitación",
+      "recheck": "Comprobar de nuevo"
+    },
+    "progress": {
+      "verify": "1. Verificar correo",
+      "verified": "1. Correo verificado",
+      "accept": "2. Aceptar invitación"
+    },
+    "inbox": {
+      "heading": "Revisa tu bandeja de entrada",
+      "address": "Busca tu enlace de verificación en <address>{email}</address>.",
+      "invitationInstruction": "Abre el enlace de verificación para volver aquí con la sesión iniciada. Después acepta la invitación para unirte a la Organización.",
+      "instruction": "Abre el enlace para verificar tu acceso personal y continuar donde lo dejaste en Cost Tracker.",
+      "spam": "Si no ves el mensaje, revisa también la carpeta de correo no deseado.",
+      "signIn": "¿Ya verificaste el correo o tienes cuenta? Inicia sesión para continuar con esta invitación."
+    },
+    "recovery": {
+      "title": "Vuelve a tu invitación",
+      "wrongEmail": "Este acceso usa otra dirección de correo. Cierra sesión e inicia sesión con la dirección que recibió la invitación.",
+      "expired": "Esta invitación ha caducado. Pide una nueva a tu Organización.",
+      "closed": "Esta invitación ya no está disponible. Pide una nueva a tu Organización.",
+      "unavailable": "No podemos usar esta invitación. Abre el enlace completo del correo o pide una nueva a tu Organización.",
+      "recheck": "Tras corregir tu acceso o recibir un enlace nuevo, abre esa invitación. También puedes comprobar esta invitación de nuevo."
+    },
+    "selection": {
+      "heading": "Selecciona una Organización",
+      "description": "Elige con qué Organización continuar. Solo cambia tu Organización activa, no tus membresías ni participaciones en Proyectos.",
+      "error": "No se pudo seleccionar esa Organización. Comprueba tu acceso e inténtalo de nuevo."
+    },
+    "error": {
+      "request": "No se pudo completar la solicitud. Comprueba tu conexión e inténtalo de nuevo.",
+      "credentials": "Correo o contraseña incorrectos. Comprueba tus datos e inténtalo de nuevo.",
+      "verification": "Verifica tu correo antes de iniciar sesión. Abre el enlace de verificación de tu bandeja de entrada.",
+      "signOut": "No se pudo cerrar sesión"
+    }
+  }
+}
