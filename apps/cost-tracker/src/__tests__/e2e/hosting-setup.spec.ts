@@ -33,7 +33,7 @@ let mainProjectURL: string;
 
 async function createProject(page: Page, name: string) {
   await page.goto("/projects");
-  await page.getByTestId("new-project").click();
+  await page.getByTestId("new-project").filter({ visible: true }).click();
   const dialog = page.getByTestId("create-project-dialog");
   await dialog.locator("#new-project-name").fill(name);
   await dialog.locator("#new-project-start").fill("2027-04-01");
@@ -208,7 +208,11 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       const context = await fixture.actorContext(browser, "X", baseURL!);
       const page = await context.newPage();
       await page.goto("/projects");
-      await expect(page.getByTestId("new-project")).toBeVisible();
+      const createButton = page
+        .getByTestId("new-project")
+        .filter({ visible: true });
+      await expect(createButton).toHaveCount(1);
+      await expect(createButton).toBeVisible();
       const projectURL = await createProject(page, projectName);
       const [createdMembership] = await db
         .select({ role: member.role })

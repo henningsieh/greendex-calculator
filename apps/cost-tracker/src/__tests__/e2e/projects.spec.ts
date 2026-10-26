@@ -123,8 +123,8 @@ test.describe("Cost Tracker Project production path", () => {
       .getByTestId("hosted-project-picker")
       .getByTestId("entity-combobox-trigger")
       .click();
-    await assignment
-      .getByTestId("hosted-project-picker")
+    await page
+      .locator('[data-slot="popover-content"][data-open]')
       .getByTestId("entity-search")
       .fill(fixture.projectId);
     await page
@@ -135,8 +135,8 @@ test.describe("Cost Tracker Project production path", () => {
       .getByTestId("partner-organization-picker")
       .getByTestId("entity-combobox-trigger")
       .click();
-    await assignment
-      .getByTestId("partner-organization-picker")
+    await page
+      .locator('[data-slot="popover-content"][data-open]')
       .getByTestId("entity-search")
       .fill(fixture.partnerOrganizationId);
     await page

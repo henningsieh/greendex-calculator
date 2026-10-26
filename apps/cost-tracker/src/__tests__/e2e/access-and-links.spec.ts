@@ -543,7 +543,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     const creator = h.getByTestId("setup-link-creator");
     await creator
       .getByTestId("hosted-project-picker")
-      .getByTestId("entity-trigger")
+      .getByTestId("entity-combobox-trigger")
       .click();
     await h.getByTestId("entity-search").fill(names.project);
     await h.locator(`[role="option"][data-entity-id="${projectId}"]`).click();

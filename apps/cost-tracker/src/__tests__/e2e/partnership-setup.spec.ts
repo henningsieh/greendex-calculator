@@ -192,17 +192,22 @@ async function selectEntity(
   entityId: string,
   scope: Locator = page.locator("body"),
 ) {
-  await scope.getByTestId(pickerTestId).getByTestId("entity-trigger").click();
+  await scope
+    .getByTestId(pickerTestId)
+    .getByTestId("entity-combobox-trigger")
+    .click();
   await page.getByTestId("entity-search").fill(entityId);
   await page.locator(`[role="option"][data-entity-id="${entityId}"]`).click();
   await expect(
-    scope.getByTestId(pickerTestId).getByTestId("entity-trigger"),
+    scope.getByTestId(pickerTestId).getByTestId("entity-combobox-trigger"),
   ).toHaveAttribute("aria-expanded", "false");
 }
 
 async function chooseExisting(page: Page) {
   await expect(
-    page.getByTestId("setup-organization-picker").getByTestId("entity-trigger"),
+    page
+      .getByTestId("setup-organization-picker")
+      .getByTestId("entity-combobox-trigger"),
   ).toBeVisible();
   await expect(page.locator("#setup-name")).toHaveCount(0);
 }
