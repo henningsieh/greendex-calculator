@@ -17,9 +17,11 @@ import { orpc } from "@/lib/orpc/orpc";
 export function InvitationAcceptance({
   returnTo,
   initialDecision,
+  onAuthenticate,
 }: {
   returnTo: string;
   initialDecision?: OnboardingDecision;
+  onAuthenticate?: () => void;
 }) {
   const router = useRouter();
   const t = useTranslations("onboarding");
@@ -34,13 +36,14 @@ export function InvitationAcceptance({
       if (next.nextStep === "continue")
         router.replace(next.availableActions[0].destination);
       if (next.nextStep === "authenticate") {
+        onAuthenticate?.();
         const action = next.availableActions[0];
         router.replace(
           `/${"entry" in action ? action.entry : "login"}${action.returnTo ? `?next=${encodeURIComponent(action.returnTo)}` : ""}`,
         );
       }
     },
-    [router],
+    [router, onAuthenticate],
   );
 
   useEffect(() => {

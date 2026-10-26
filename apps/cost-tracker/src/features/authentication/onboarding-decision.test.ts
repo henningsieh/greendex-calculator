@@ -206,3 +206,33 @@ it("lets an established member authenticate from generic unavailable recovery wi
     ],
   });
 });
+
+it.each(["verification-requested", "unverified"] as const)(
+  "keeps a wrong-address %s in recovery before verification without leaking an address",
+  (account) => {
+    const decision = decideOnboarding({
+      ...anonymous(account),
+      entry: {
+        kind: "organization-invitation",
+        status: "recovery",
+        reason: "STAFF_INVITATION_WRONG_EMAIL",
+      },
+    });
+    expect(OnboardingDecisionSchema.parse(decision)).toEqual({
+      entryContext: "organization-invitation",
+      nextStep: "invitation-recovery",
+      reason: "STAFF_INVITATION_WRONG_EMAIL",
+      returnTo,
+      availableActions: [
+        account === "unverified"
+          ? {
+              kind: "sign-out",
+              destination: `/register?next=${encodeURIComponent(returnTo)}`,
+            }
+          : { kind: "authenticate", entry: "login", returnTo },
+        { kind: "recheck" },
+      ],
+    });
+    expect(JSON.stringify(decision)).not.toContain("submitted@example.org");
+  },
+);

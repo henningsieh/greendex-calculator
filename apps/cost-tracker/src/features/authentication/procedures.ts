@@ -128,7 +128,7 @@ export const signUp = base
         decision: decideOnboarding({
           account: "verification-requested",
           entryContext: "organization-invitation",
-          entry: await loadPublicInvitationEntry(returnTo, errors),
+          entry: await loadPublicInvitationEntry(returnTo, errors, input.email),
           authEntry: "register",
           returnTo: returnTo ?? "/accept-invitation",
           email: input.email,

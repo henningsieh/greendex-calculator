@@ -284,8 +284,11 @@ async function readStaffInvitationRow(
 export async function readStaffInvitationContext(
   invitationId: string,
   errors: ProcedureErrors["errors"],
+  email?: string,
 ) {
   const row = await readStaffInvitationRow(invitationId, errors, false);
+  if (email !== undefined && row.email.toLowerCase() !== email.toLowerCase())
+    throw createSituationErrors(errors).staffInvitationWrongEmail();
   return {
     invitationId,
     organization: { id: row.organizationId, name: row.organizationName },

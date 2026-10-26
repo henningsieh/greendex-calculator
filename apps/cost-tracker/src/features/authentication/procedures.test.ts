@@ -368,3 +368,39 @@ it("keeps malformed signup return data in recovery without authorizing it as cal
     }),
   );
 });
+
+it("returns wrong-address recovery before verification using only the submitted email", async () => {
+  mocks.loadPublicInvitationEntry.mockResolvedValue({
+    kind: "organization-invitation",
+    status: "recovery",
+    reason: "STAFF_INVITATION_WRONG_EMAIL",
+  });
+  const returnTo = "/accept-invitation/invite_123";
+  const result = await createClient().authentication.signUp({
+    name: "Alex Morgan",
+    email: "mistyped@example.org",
+    password: "correct-horse-battery-staple",
+    returnTo,
+  });
+  expect(result).toEqual({
+    success: true,
+    decision: {
+      entryContext: "organization-invitation",
+      nextStep: "invitation-recovery",
+      reason: "STAFF_INVITATION_WRONG_EMAIL",
+      returnTo,
+      availableActions: [
+        { kind: "authenticate", entry: "login", returnTo },
+        { kind: "recheck" },
+      ],
+    },
+  });
+  expect(mocks.loadPublicInvitationEntry).toHaveBeenCalledExactlyOnceWith(
+    returnTo,
+    expect.any(Object),
+    "mistyped@example.org",
+  );
+  expect(mocks.signUpEmail).toHaveBeenCalledTimes(1);
+  expect(mocks.getSession).not.toHaveBeenCalled();
+  expect(mocks.createOrganization).not.toHaveBeenCalled();
+});

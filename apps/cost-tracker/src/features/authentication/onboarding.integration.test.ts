@@ -12,7 +12,7 @@ import {
   partnerOrganizationSetupLinksTable as links,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq, like } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mail = vi.hoisted(() => ({
@@ -135,9 +135,6 @@ afterEach(async () => {
     await db.delete(organization).where(eq(organization.id, id));
   for (const actor of users.splice(0)) {
     await db.delete(user).where(eq(user.id, actor.id));
-    await db
-      .delete(verification)
-      .where(like(verification.identifier, `%${actor.email}%`));
   }
   vi.clearAllMocks();
 });
@@ -889,4 +886,110 @@ it("enforces current verification at both acceptance doors after a verified sess
     }),
   ).rejects.toMatchObject({ statusCode: 403 });
   expect(await recipient.api.organizations.listMemberships()).toEqual([]);
+});
+
+it("returns identical wrong-address recovery for new and duplicate signup before verification", async () => {
+  const { returnTo, target, invitationId, recipient } = await invite();
+  const email = `onboarding-${randomUUID()}@example.com`;
+  const input = {
+    name: "Mistyped colleague",
+    email,
+    password: "correct-horse-battery-staple",
+    returnTo,
+  };
+  try {
+    for (const attempt of [0, 1]) {
+      const headers = new Headers();
+      const result = await client(new Headers(), headers).authentication.signUp(
+        input,
+      );
+      expect(result).toEqual({
+        success: true,
+        decision: {
+          entryContext: "organization-invitation",
+          nextStep: "invitation-recovery",
+          reason: "STAFF_INVITATION_WRONG_EMAIL",
+          returnTo,
+          availableActions: [
+            { kind: "authenticate", entry: "login", returnTo },
+            { kind: "recheck" },
+          ],
+        },
+      });
+      expect(JSON.stringify(result)).not.toContain(recipient.email);
+      expect(JSON.stringify(result)).not.toContain(email);
+      expect(headers.get("cache-control")).toBe("private, no-store");
+      expect(await auth.api.getSession({ headers })).toBeNull();
+      const created = await db.query.user.findFirst({
+        where: eq(user.email, email),
+      });
+      expect(created?.emailVerified).toBe(false);
+      if (attempt === 0 && created) users.push({ id: created.id, email });
+      expect(await recipient.api.organizations.listMemberships()).toEqual([]);
+      expect(
+        await db.query.invitation.findFirst({
+          where: eq(invitation.id, invitationId),
+        }),
+      ).toMatchObject({ status: "pending", organizationId: target.id });
+    }
+    expect(
+      await client().authentication.onboardingNextStep({ returnTo }),
+    ).toMatchObject({
+      nextStep: "authenticate",
+      availableActions: [
+        { kind: "authenticate", entry: "register", returnTo },
+        { kind: "authenticate", entry: "login", returnTo },
+        { kind: "google", returnTo },
+      ],
+    });
+  } finally {
+    const created = await db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    if (created && !users.some(({ id }) => id === created.id))
+      users.push({ id: created.id, email });
+  }
+});
+
+it("signup verification and owned User cleanup preserve pre-existing verification rows", async () => {
+  const actor = await account();
+  await auth.api.requestPasswordReset({ body: { email: actor.email } });
+  const delivered = mail.sendPasswordResetEmail.mock.calls.at(-1)?.[0];
+  if (!delivered) throw new Error("Password reset delivery missing");
+  const resetURL = new URL(delivered.url);
+  const identifier = `reset-password:${resetURL.pathname.split("/").at(-1)}`;
+  const retained = await db.query.verification.findFirst({
+    where: eq(verification.identifier, identifier),
+  });
+  if (!retained)
+    throw new Error("Supported password reset did not create a verification row");
+  try {
+    const before = await db.select().from(verification);
+    const email = `onboarding-${randomUUID()}@example.com`;
+    await client().authentication.signUp({
+      name: "Cleanup regression",
+      email,
+      password: "correct-horse-battery-staple",
+    });
+    const created = await db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    if (!created) throw new Error("Signup did not create a User");
+    users.push({ id: created.id, email });
+    expect(await db.select().from(verification)).toEqual(
+      expect.arrayContaining(before),
+    );
+    expect(await db.select().from(verification)).toHaveLength(before.length);
+    await db.delete(user).where(eq(user.id, created.id));
+    expect(await db.select().from(verification)).toEqual(
+      expect.arrayContaining(before),
+    );
+    expect(
+      await db.query.verification.findFirst({
+        where: eq(verification.id, retained.id),
+      }),
+    ).toEqual(retained);
+  } finally {
+    await db.delete(verification).where(eq(verification.id, retained.id));
+  }
 });

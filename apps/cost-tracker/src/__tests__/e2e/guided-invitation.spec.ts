@@ -9,7 +9,7 @@ import {
   verification,
 } from "@greendex/database/schema";
 import type { Locator, Page } from "@playwright/test";
-import { and, eq, like } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { assertExistingIntegrationDatabase } from "../../../../../scripts/existing-integration-environment";
 import { EmailInbox } from "../../../scripts/email-inbox";
@@ -563,6 +563,110 @@ test.describe.serial("guided Organization Invitation", () => {
     await expect(await staffRow(page, fixture.actors.A.id)).toBeVisible();
   });
 
+  test("mistyped signup recovers before verification, rechecks and retains the correct invitation", async ({
+    page,
+    baseURL,
+  }) => {
+    const environment = Object.fromEntries(
+      Object.entries(process.env).filter(
+        (entry): entry is [string, string] => entry[1] !== undefined,
+      ),
+    );
+    validateMailboxEnvironment(environment);
+    assertExistingIntegrationDatabase(environment.DATABASE_URL);
+    const recipient = environment.EMAIL_TEST_RECIPIENT;
+    const name = `Mistyped invitation ${randomUUID()}`;
+    const password = `Journey-${randomUUID()}!`;
+    registerPrivateValues(recipient, password);
+    if (await db.query.user.findFirst({ where: eq(user.email, recipient) }))
+      throw new Error(
+        "Dedicated workflow recipient is not clean; refusing signup",
+      );
+    const existingVerifications = await db
+      .select({ id: verification.id })
+      .from(verification);
+    try {
+      await page.goto(destination);
+      const responses: unknown[] = [];
+      const accepts: string[] = [];
+      page.on("request", (request) => {
+        if (
+          new URL(request.url()).pathname ===
+          "/api/rpc/organizations/acceptInvitation"
+        )
+          accepts.push(request.method());
+      });
+      const receipt = page.waitForResponse("**/api/rpc/authentication/signUp");
+      await page.getByTestId("name").fill(name);
+      await page.getByTestId("email").filter({ visible: true }).fill(recipient);
+      await page.getByTestId("password").filter({ visible: true }).fill(password);
+      await page.getByTestId("auth-submit").filter({ visible: true }).click();
+      responses.push(await (await receipt).json());
+      const guidance = page.getByTestId("invitation-recovery-guidance");
+      await expect(guidance).toHaveAttribute(
+        "data-recovery-guidance",
+        "wrongEmail",
+      );
+      await expect(page.getByTestId("auth-verification-message")).toHaveCount(0);
+      await expect(
+        page.getByTestId("accept-organization-invitation"),
+      ).toHaveCount(0);
+      await expect(page.getByTestId("verification-address")).toHaveCount(0);
+      await noCreation(page);
+      expect(JSON.stringify(responses)).not.toContain(fixture.actors.A.email);
+      expect(JSON.stringify(responses)).not.toContain(recipient);
+      expect(
+        await (await page.request.get("/api/auth/get-session")).json(),
+      ).toBeNull();
+      const created = await db.query.user.findFirst({
+        where: and(eq(user.email, recipient), eq(user.name, name)),
+      });
+      expect(created?.emailVerified).toBe(false);
+      await expect(
+        page.getByTestId("invitation-recovery-sign-in"),
+      ).toHaveAttribute("href", `/login?next=${encodeURIComponent(destination)}`);
+      await page.getByTestId("recheck-organization-invitation").click();
+      await expectPrivateURL(
+        page,
+        `/register?next=${encodeURIComponent(destination)}`,
+      );
+      await expect(
+        page.getByTestId("email").filter({ visible: true }),
+      ).toHaveValue("");
+      await noCreation(page);
+      await page
+        .getByTestId("auth-account-navigation")
+        .filter({ visible: true })
+        .click();
+      await expectPrivateURL(
+        page,
+        `/login?next=${encodeURIComponent(destination)}`,
+      );
+      await signIn(page, "A");
+      await expectPrivateURL(page, destination);
+      await expect(
+        page.getByTestId("accept-organization-invitation"),
+      ).toBeEnabled();
+      await noCreation(page);
+      expect(accepts).toEqual([]);
+      expect(
+        await db.query.invitation.findFirst({
+          where: eq(invitation.id, fixture.invitationId),
+        }),
+      ).toMatchObject({ status: "pending" });
+      expect(new URL(page.url()).origin).toBe(baseURL);
+    } finally {
+      await page.goto("about:blank");
+      const owned = await db.query.user.findFirst({
+        where: and(eq(user.email, recipient), eq(user.name, name)),
+      });
+      if (owned) await db.delete(user).where(eq(user.id, owned.id));
+      expect(await db.select({ id: verification.id }).from(verification)).toEqual(
+        expect.arrayContaining(existingVerifications),
+      );
+    }
+  });
+
   test("delivered invitation and verification resume signed in for exactly one accept and resulting access", async ({
     page,
     browser,
@@ -584,6 +688,9 @@ test.describe.serial("guided Organization Invitation", () => {
       throw new Error(
         "Dedicated workflow recipient is not clean; refusing signup",
       );
+    const existingVerifications = await db
+      .select({ id: verification.id })
+      .from(verification);
     const inbox = new EmailInbox({
       ...environment,
       DELETE_TESTMAILS_DURING_TESTRUN: "false",
@@ -705,15 +812,18 @@ test.describe.serial("guided Organization Invitation", () => {
         });
         if (owned) {
           await db.delete(user).where(eq(user.id, owned.id));
-          await db
-            .delete(verification)
-            .where(like(verification.identifier, `%${recipient}%`));
         }
         expect(
           await db.query.user.findFirst({
             where: and(eq(user.email, recipient), eq(user.name, name)),
           }),
         ).toBeUndefined();
+        const retainedVerifications = await db
+          .select({ id: verification.id })
+          .from(verification);
+        expect(retainedVerifications).toEqual(
+          expect.arrayContaining(existingVerifications),
+        );
       } finally {
         if (connected) {
           const cleanup = await inbox.cleanup();

@@ -1,9 +1,10 @@
 import { ORPCError } from "@orpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
 
 const mocks = vi.hoisted(() => ({

@@ -56,7 +56,11 @@ export async function loadOnboardingFacts(
     entryContext === "organization-invitation" &&
     (!session || !session.user.emailVerified)
   ) {
-    const entry = await loadPublicInvitationEntry(returnTo, errors);
+    const entry = await loadPublicInvitationEntry(
+      returnTo,
+      errors,
+      session?.user.email,
+    );
     return {
       account: session ? "unverified" : "signed-out",
       entryContext,
@@ -208,6 +212,7 @@ export async function loadOnboardingFacts(
 export async function loadPublicInvitationEntry(
   returnTo: string | undefined,
   errors: ProcedureErrors,
+  email?: string,
 ): Promise<
   Extract<
     ValidatedOnboardingEntry,
@@ -224,6 +229,7 @@ export async function loadPublicInvitationEntry(
     const invitation = await readStaffInvitationContext(
       returnTo.slice("/accept-invitation/".length),
       errors,
+      email,
     );
     return { kind: "organization-invitation", status: "pending", ...invitation };
   } catch (error) {
@@ -237,7 +243,10 @@ export async function loadPublicInvitationEntry(
     return {
       kind: "organization-invitation",
       status: "recovery",
-      reason: "STAFF_INVITATION_NOT_FOUND",
+      reason:
+        situation.reason === "STAFF_INVITATION_WRONG_EMAIL"
+          ? situation.reason
+          : "STAFF_INVITATION_NOT_FOUND",
     };
   }
 }

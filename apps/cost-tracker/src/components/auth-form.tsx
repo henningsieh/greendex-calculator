@@ -6,7 +6,7 @@ import { ORPCError } from "@orpc/client";
 import { ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -46,12 +46,16 @@ export function AuthForm({
   const router = useRouter();
   const t = useTranslations("onboarding");
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    heading.current?.focus();
-  }, []);
   const [error, setError] = useState<string>();
   const [submittedEmail, setSubmittedEmail] = useState<string>();
   const [receipt, setReceipt] = useState<OnboardingDecision>();
+  useEffect(() => {
+    heading.current?.focus();
+  }, [receipt]);
+  const clearReceipt = useCallback(() => {
+    setReceipt(undefined);
+    setSubmittedEmail(undefined);
+  }, []);
   const isSignIn = decision
     ? decision.availableActions[0].entry === "login"
     : mode === "sign-in";
@@ -124,6 +128,7 @@ export function AuthForm({
       <InvitationAcceptance
         initialDecision={receipt}
         returnTo={receipt.returnTo}
+        onAuthenticate={clearReceipt}
       />
     );
   if (receipt?.nextStep === "verify-email")

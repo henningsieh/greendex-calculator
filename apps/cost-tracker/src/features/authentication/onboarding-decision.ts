@@ -266,102 +266,98 @@ export type OnboardingFacts =
     };
 
 export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
-  if (
-    facts.account !== "verified" &&
-    facts.entryContext === "organization-invitation"
-  ) {
-    const { entry, returnTo } = facts;
-    const signOutAction = {
-      kind: "sign-out" as const,
-      destination:
-        returnTo === "/accept-invitation"
-          ? returnTo
-          : `/register?next=${encodeURIComponent(returnTo)}`,
-    };
-    if (entry.status === "recovery") {
-      const canAuthenticate =
-        facts.account === "signed-out" &&
-        invitationDestination.safeParse(returnTo).success;
-      if (canAuthenticate && facts.authEntry === "login")
+  if (facts.account !== "verified") {
+    if (facts.entryContext === "organization-invitation") {
+      const { entry, returnTo } = facts;
+      const signOutAction = {
+        kind: "sign-out" as const,
+        destination:
+          returnTo === "/accept-invitation"
+            ? returnTo
+            : `/register?next=${encodeURIComponent(returnTo)}`,
+      };
+      if (entry.status === "recovery") {
+        const canAuthenticate =
+          facts.account !== "unverified" &&
+          invitationDestination.safeParse(returnTo).success;
+        if (canAuthenticate && facts.authEntry === "login")
+          return {
+            entryContext: "organization-invitation",
+            nextStep: "authenticate",
+            invitation: null,
+            availableActions: [
+              { kind: "authenticate", entry: "login", returnTo },
+              { kind: "authenticate", entry: "register", returnTo },
+              { kind: "google", returnTo },
+            ],
+          };
         return {
           entryContext: "organization-invitation",
-          nextStep: "authenticate",
-          invitation: null,
-          availableActions: [
-            { kind: "authenticate", entry: "login", returnTo },
-            { kind: "authenticate", entry: "register", returnTo },
-            { kind: "google", returnTo },
-          ],
+          nextStep: "invitation-recovery",
+          reason: entry.reason,
+          returnTo,
+          availableActions:
+            facts.account === "unverified"
+              ? [signOutAction, { kind: "recheck" }]
+              : canAuthenticate
+                ? [
+                    { kind: "authenticate", entry: "login", returnTo },
+                    { kind: "recheck" },
+                  ]
+                : [{ kind: "recheck" }],
         };
+      }
+      const invitation = {
+        invitationId: entry.invitationId,
+        organization: entry.organization,
+      };
+      const login = {
+        kind: "authenticate" as const,
+        entry: "login" as const,
+        returnTo,
+      };
+      if (facts.account !== "signed-out")
+        return {
+          entryContext: "organization-invitation",
+          nextStep: "verify-email",
+          invitation,
+          email: facts.email,
+          availableActions:
+            facts.account === "unverified" ? [signOutAction] : [login],
+        };
+      const register = {
+        kind: "authenticate" as const,
+        entry: "register" as const,
+        returnTo,
+      };
       return {
         entryContext: "organization-invitation",
-        nextStep: "invitation-recovery",
-        reason: entry.reason,
-        returnTo,
+        nextStep: "authenticate",
+        invitation,
         availableActions:
-          facts.account === "unverified"
-            ? [signOutAction, { kind: "recheck" }]
-            : canAuthenticate
-              ? [
-                  { kind: "authenticate", entry: "login", returnTo },
-                  { kind: "recheck" },
-                ]
-              : [{ kind: "recheck" }],
+          facts.authEntry === "login"
+            ? [login, register, { kind: "google", returnTo }]
+            : [register, login, { kind: "google", returnTo }],
       };
     }
-    const invitation = {
-      invitationId: entry.invitationId,
-      organization: entry.organization,
-    };
-    const login = {
-      kind: "authenticate" as const,
-      entry: "login" as const,
-      returnTo,
-    };
-    if (facts.account !== "signed-out")
+    if (facts.account === "signed-out")
       return {
-        entryContext: "organization-invitation",
-        nextStep: "verify-email",
-        invitation,
-        email: facts.email,
-        availableActions:
-          facts.account === "unverified" ? [signOutAction] : [login],
+        entryContext: facts.entryContext,
+        nextStep: "authenticate",
+        availableActions: [
+          {
+            kind: "authenticate",
+            ...(facts.returnTo ? { returnTo: facts.returnTo } : {}),
+          },
+        ],
       };
-    const register = {
-      kind: "authenticate" as const,
-      entry: "register" as const,
-      returnTo,
-    };
-    return {
-      entryContext: "organization-invitation",
-      nextStep: "authenticate",
-      invitation,
-      availableActions:
-        facts.authEntry === "login"
-          ? [login, register, { kind: "google", returnTo }]
-          : [register, login, { kind: "google", returnTo }],
-    };
-  }
-  if (facts.account === "signed-out")
-    return {
-      entryContext: facts.entryContext,
-      nextStep: "authenticate",
-      availableActions: [
-        {
-          kind: "authenticate",
-          ...(facts.returnTo ? { returnTo: facts.returnTo } : {}),
-        },
-      ],
-    };
-  if (facts.account === "unverified")
     return {
       entryContext: facts.entryContext,
       nextStep: "verify-email",
       email: facts.email,
       availableActions: [{ kind: "sign-out" }],
     };
-  if (facts.account !== "verified")
-    throw new Error("Verification receipt requires invitation context");
+  }
   const { entry, organizationContext } = facts;
   const entryContext = entry.kind;
   if (entry.kind !== "direct") {

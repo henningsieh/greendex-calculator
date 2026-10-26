@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   signIn: vi.fn(),
   signUp: vi.fn(),
   startGoogleSignIn: vi.fn(),
+  onboardingNextStep: vi.fn(),
+  acceptInvitation: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -23,7 +25,9 @@ vi.mock("@/lib/orpc/orpc", () => ({
       signIn: mocks.signIn,
       signUp: mocks.signUp,
       startGoogleSignIn: mocks.startGoogleSignIn,
+      onboardingNextStep: mocks.onboardingNextStep,
     },
+    organizations: { acceptInvitation: mocks.acceptInvitation },
   },
 }));
 
@@ -197,4 +201,57 @@ it("renders the server receipt with named progress and destination-preserving si
     "/login?next=%2Faccept-invitation%2Finvite-1",
   );
   expect(screen.queryByTestId("create-organization")).toBeNull();
+});
+
+it("shows wrong-address signup recovery before inbox instructions and rechecks without accepting", async () => {
+  const returnTo = "/accept-invitation/invite-1";
+  const recovery = {
+    entryContext: "organization-invitation",
+    nextStep: "invitation-recovery",
+    reason: "STAFF_INVITATION_WRONG_EMAIL",
+    returnTo,
+    availableActions: [
+      { kind: "authenticate", entry: "login", returnTo },
+      { kind: "recheck" },
+    ],
+  };
+  mocks.signUp.mockResolvedValue({ success: true, decision: recovery });
+  mocks.onboardingNextStep.mockResolvedValue(recovery);
+  const user = userEvent.setup({ delay: null });
+  render(<AuthForm mode="sign-up" returnTo={returnTo} />);
+  await user.type(screen.getByTestId("name"), "Alex Morgan");
+  await user.type(screen.getByTestId("email"), "mistyped@example.org");
+  await user.type(screen.getByTestId("password"), "example-password");
+  await user.click(screen.getByTestId("auth-submit"));
+  expect(
+    await screen.findByTestId("invitation-recovery-guidance"),
+  ).toHaveAttribute("data-recovery-guidance", "wrongEmail");
+  expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
+  expect(screen.queryByTestId("auth-verification-message")).toBeNull();
+  expect(screen.queryByTestId("create-organization")).toBeNull();
+  expect(screen.queryByTestId("accept-organization-invitation")).toBeNull();
+  expect(screen.getByTestId("invitation-recovery-sign-in")).toHaveAttribute(
+    "href",
+    `/login?next=${encodeURIComponent(returnTo)}`,
+  );
+  mocks.onboardingNextStep.mockResolvedValue({
+    entryContext: "organization-invitation",
+    nextStep: "authenticate",
+    invitation: {
+      invitationId: "invite-1",
+      organization: { id: "org-1", name: "Example Organization" },
+    },
+    availableActions: [
+      { kind: "authenticate", entry: "register", returnTo },
+      { kind: "authenticate", entry: "login", returnTo },
+      { kind: "google", returnTo },
+    ],
+  });
+  await user.click(screen.getByTestId("recheck-organization-invitation"));
+  expect(mocks.onboardingNextStep).toHaveBeenCalledExactlyOnceWith({ returnTo });
+  expect(await screen.findByTestId("email")).toHaveValue("");
+  expect(screen.getByTestId("email")).not.toHaveAttribute("readonly");
+  expect(screen.queryByTestId("invitation-recovery-guidance")).toBeNull();
+  expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
+  expect(mocks.acceptInvitation).not.toHaveBeenCalled();
 });
