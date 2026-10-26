@@ -65,10 +65,68 @@ describe("Cost Tracker locale proxy", () => {
   });
 
   it.each([
+    "/accept-invitation",
+    "/accept-invitation/bad.token",
+    "/accept-invitation/bad.token/extra.segment",
+  ])("handles malformed invitation path %s through the locale proxy", (path) => {
+    expect(unstable_doesMiddlewareMatch({ config, url: path })).toBe(true);
+    const response = proxy(request(path));
+    expect(response.status).toBe(200);
+    expect(response.headers.has("location")).toBe(false);
+    expect(response.headers.get("x-middleware-request-x-next-intl-locale")).toBe(
+      "en",
+    );
+    expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe(
+      `/en${path}`,
+    );
+  });
+
+  it.each(LANGUAGE_CODES)(
+    "matches undotted %s invitation paths through the general matcher",
+    (locale) => {
+      const url = `/${locale}/accept-invitation/badtoken`;
+      expect(
+        unstable_doesMiddlewareMatch({
+          config: { matcher: config.matcher[0] },
+          url,
+        }),
+      ).toBe(true);
+      expect(unstable_doesMiddlewareMatch({ config, url })).toBe(true);
+      const response = proxy(request(url));
+      expect(response.status).toBe(200);
+      expect(response.headers.has("location")).toBe(false);
+      expect(
+        response.headers.get("x-middleware-request-x-next-intl-locale"),
+      ).toBe(locale);
+    },
+  );
+
+  it.each([
+    ...LANGUAGE_CODES.map((locale) => `/${locale}/accept-invitation/bad.token`),
+    ...LANGUAGE_CODES.map(
+      (locale) => `/${locale}/accept-invitation/bad.token/extra.segment`,
+    ),
+  ])("leaves dotted localized invitation %s to its locale layout", (url) => {
+    expect(
+      unstable_doesMiddlewareMatch({
+        config: { matcher: config.matcher[0] },
+        url,
+      }),
+    ).toBe(false);
+    expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false);
+  });
+
+  it.each([
     "/api/auth/get-session",
     "/api/rpc/projects",
     "/_next/static/chunk.js",
     "/favicon.ico",
+    "/projects/report.csv",
+    "/en/projects/report.csv",
+    "/accept-invitation.png",
+    "/en/accept-invitation.png",
+    "/api/accept-invitation/bad.token",
+    "/_next/accept-invitation/bad.token",
   ])("excludes %s from the proxy", (url) => {
     expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false);
   });

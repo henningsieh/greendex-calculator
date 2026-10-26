@@ -389,6 +389,7 @@ test.describe.serial("guided Organization Invitation", () => {
   for (const path of [
     "/accept-invitation",
     "/accept-invitation/bad!",
+    "/accept-invitation/bad.token",
     "/accept-invitation/bad/path",
   ]) {
     test(`malformed ${path} stays in recovery through both authentication doors before and after sign-in`, async ({
