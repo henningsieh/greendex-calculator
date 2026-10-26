@@ -84,9 +84,10 @@ describe("Host submitted Claim queue", () => {
         <ClaimReviewQueue />
       </QueryClientProvider>,
     );
-    expect(
-      await screen.findByRole("link", { name: "Forest · Partner A" }),
-    ).toHaveAttribute("href", "/claims/review/one");
-    expect(screen.queryByRole("link", { name: "Ocean · Partner B" })).toBeNull();
+    expect(await screen.findByTestId("review-claim-one")).toHaveAttribute(
+      "href",
+      "/claims/review/one",
+    );
+    expect(screen.queryByTestId("review-claim-two")).toBeNull();
   });
 });

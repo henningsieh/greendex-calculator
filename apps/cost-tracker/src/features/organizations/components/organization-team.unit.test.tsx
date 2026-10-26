@@ -113,8 +113,8 @@ describe("Organization team", () => {
     renderTeam();
     await screen.findByTestId("staff-member-member-1");
 
-    await user.type(screen.getByLabelText("Email"), "new@example.org");
-    await user.click(screen.getByRole("button", { name: "Send invitation" }));
+    await user.type(screen.getByTestId("staff-invite-email"), "new@example.org");
+    await user.click(screen.getByTestId("send-staff-invitation"));
 
     await waitFor(() =>
       expect(mocks.inviteMember).toHaveBeenCalledWith({
@@ -135,8 +135,8 @@ describe("Organization team", () => {
     renderTeam();
     await screen.findByTestId("staff-member-member-1");
 
-    await user.type(screen.getByLabelText("Email"), "new@example.org");
-    await user.click(screen.getByRole("button", { name: "Send invitation" }));
+    await user.type(screen.getByTestId("staff-invite-email"), "new@example.org");
+    await user.click(screen.getByTestId("send-staff-invitation"));
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(mocks.toastAdd).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe("Organization team", () => {
     renderTeam();
     await screen.findByTestId("staff-invitation-invitation-1");
 
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getByTestId("cancel-staff-invitation-invitation-1"));
 
     await waitFor(() =>
       expect(mocks.cancelInvitation).toHaveBeenCalledWith({

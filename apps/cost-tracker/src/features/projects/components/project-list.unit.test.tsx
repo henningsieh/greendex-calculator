@@ -116,30 +116,22 @@ beforeEach(() => {
 describe("Project list", { timeout: 20_000 }, () => {
   it("shows the creation dialog trigger only with active host membership", async () => {
     const first = renderList();
-    await screen.findByRole(
-      "link",
-      { name: "Climate Forum" },
-      { timeout: 10_000 },
-    );
-    expect(screen.queryByRole("button", { name: "New project" })).toBeNull();
+    await screen.findByTestId("project-link-project-1", {}, { timeout: 10_000 });
+    expect(screen.queryByTestId("new-project")).toBeNull();
     first.unmount();
     mocks.canCreate = true;
     renderList();
     expect(
-      await screen.findByRole(
-        "button",
-        { name: "New project" },
-        { timeout: 10_000 },
-      ),
+      await screen.findByTestId("new-project", {}, { timeout: 10_000 }),
     ).toBeTruthy();
   });
   it("renders one server-returned page without exposing deferred fields", async () => {
     renderList();
 
     expect(
-      await screen.findByRole(
-        "link",
-        { name: "Climate Forum" },
+      await screen.findByTestId(
+        "project-link-project-1",
+        {},
         { timeout: 10_000 },
       ),
     ).toBeTruthy();
@@ -163,10 +155,12 @@ describe("Project list", { timeout: 20_000 }, () => {
 
     expect(
       (
-        await screen.findByRole(
-          "link",
-          { name: "View Participants" },
-          { timeout: 10_000 },
+        await screen.findByTestId(
+          "project-participants-project-1",
+          {},
+          {
+            timeout: 10_000,
+          },
         )
       ).getAttribute("href"),
     ).toBe("/projects/project-1/participants");
@@ -177,9 +171,9 @@ describe("Project list", { timeout: 20_000 }, () => {
 
     expect(
       (
-        await screen.findByRole(
-          "link",
-          { name: "Climate Forum" },
+        await screen.findByTestId(
+          "project-link-project-1",
+          {},
           { timeout: 10_000 },
         )
       ).getAttribute("href"),
@@ -190,19 +184,15 @@ describe("Project list", { timeout: 20_000 }, () => {
 
   it("clears the cursor when scope or filters change", async () => {
     renderList();
-    await screen.findByRole(
-      "link",
-      { name: "Climate Forum" },
-      { timeout: 10_000 },
-    );
+    await screen.findByTestId("project-link-project-1", {}, { timeout: 10_000 });
 
-    fireEvent.click(screen.getByRole("tab", { name: "Partner" }));
+    fireEvent.click(screen.getByTestId("project-scope-partner"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       scope: "partner",
       cursor: null,
     });
 
-    fireEvent.click(screen.getByLabelText("Mobility Group"));
+    fireEvent.click(screen.getByTestId("project-partner-filter-partner-1"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
       dateFrom: null,
@@ -217,13 +207,9 @@ describe("Project list", { timeout: 20_000 }, () => {
     mocks.state.dateFrom = new Date("2026-01-01T00:00:00.000Z");
     mocks.state.dateTo = new Date("2026-12-31T00:00:00.000Z");
     renderList();
-    await screen.findByRole(
-      "link",
-      { name: "Climate Forum" },
-      { timeout: 10_000 },
-    );
+    await screen.findByTestId("project-link-project-1", {}, { timeout: 10_000 });
 
-    fireEvent.change(screen.getByLabelText("Active on or after"), {
+    fireEvent.change(screen.getByTestId("project-date-from"), {
       target: { value: "" },
     });
     expect(mocks.setUrlState).toHaveBeenCalledWith({
@@ -235,7 +221,7 @@ describe("Project list", { timeout: 20_000 }, () => {
       window: "all",
     });
 
-    fireEvent.change(screen.getByLabelText("Active on or before"), {
+    fireEvent.change(screen.getByTestId("project-date-to"), {
       target: { value: "" },
     });
     expect(mocks.setUrlState).toHaveBeenCalledWith({
@@ -252,19 +238,15 @@ describe("Project list", { timeout: 20_000 }, () => {
     mocks.state.cursor = "current-page";
     const browserBack = vi.spyOn(window.history, "back");
     renderList();
-    await screen.findByRole(
-      "link",
-      { name: "Climate Forum" },
-      { timeout: 10_000 },
-    );
+    await screen.findByTestId("project-link-project-1", {}, { timeout: 10_000 });
 
-    fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
+    fireEvent.click(screen.getByTestId("previous-project-page"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: "previous-page",
     });
     expect(browserBack).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    fireEvent.click(screen.getByTestId("next-project-page"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({ cursor: "next-page" });
   });
 
@@ -276,12 +258,12 @@ describe("Project list", { timeout: 20_000 }, () => {
 
     try {
       renderList();
-      await screen.findByRole(
-        "link",
-        { name: "Climate Forum" },
+      await screen.findByTestId(
+        "project-link-project-1",
+        {},
         { timeout: 10_000 },
       );
-      fireEvent.change(screen.getByLabelText("Project name"), {
+      fireEvent.change(screen.getByTestId("project-search"), {
         target: { value: "Travel" },
       });
       await waitFor(() => expect(mocks.setUrlState).toHaveBeenCalled());
@@ -297,23 +279,25 @@ describe("Project list", { timeout: 20_000 }, () => {
 
   it("coordinates table controls with URL state without processing a server page", async () => {
     renderList();
-    const projectLink = await screen.findByRole(
-      "link",
-      { name: "Climate Forum" },
-      { timeout: 10_000 },
+    const projectLink = await screen.findByTestId(
+      "project-link-project-1",
+      {},
+      {
+        timeout: 10_000,
+      },
     );
 
     expect(projectLink.closest("tr")?.getAttribute("data-project-id")).toBe(
       "project-1",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Sort by start date" }));
+    fireEvent.click(screen.getByTestId("sort-project-start"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
       sort: "start-asc",
     });
 
-    fireEvent.change(screen.getByLabelText("Project name"), {
+    fireEvent.change(screen.getByTestId("project-search"), {
       target: { value: "Travel" },
     });
     await waitFor(() =>
@@ -328,16 +312,12 @@ describe("Project list", { timeout: 20_000 }, () => {
     );
 
     const user = userEvent.setup();
-    expect(
-      screen.getByRole("combobox", { name: "Submission window" }),
-    ).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Sort" })).toBeTruthy();
+    expect(screen.getByTestId("project-submission-window")).toBeTruthy();
+    expect(screen.getByTestId("project-sort")).toBeTruthy();
 
-    const pageSizeSelect = screen.getByRole("combobox", {
-      name: "Projects per page",
-    });
+    const pageSizeSelect = screen.getByTestId("project-page-size");
     await user.click(pageSizeSelect);
-    await user.click(await screen.findByRole("option", { name: "50" }));
+    await user.click(await screen.findByTestId("project-page-size-50"));
     await waitFor(() =>
       expect(mocks.setUrlState).toHaveBeenCalledWith({
         cursor: null,

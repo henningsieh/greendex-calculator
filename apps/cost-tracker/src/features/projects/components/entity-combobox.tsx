@@ -84,6 +84,7 @@ export function EntityCombobox<T extends Entity>({
         render={
           <Button
             aria-label={label}
+            data-testid="entity-combobox-trigger"
             aria-expanded={open}
             className="w-full justify-between"
             disabled={disabled}
@@ -98,6 +99,7 @@ export function EntityCombobox<T extends Entity>({
       <PopoverContent align="start" className="w-(--anchor-width) gap-0 p-0">
         <Command shouldFilter={false}>
           <CommandInput
+            data-testid="entity-search"
             aria-label={`Search ${label} by ${searchBy}`}
             ref={(node) => node?.focus()}
             placeholder={`Search ${searchBy}…`}
@@ -121,6 +123,7 @@ export function EntityCombobox<T extends Entity>({
                 <Button
                   type="button"
                   variant="link"
+                  data-testid="retry-entity-search"
                   onClick={() => {
                     setLoading(true);
                     setRetry((count) => count + 1);
@@ -141,6 +144,7 @@ export function EntityCombobox<T extends Entity>({
                 <CommandItem
                   key={item.id}
                   data-entity-id={item.id}
+                  data-testid={`entity-option-${item.id}`}
                   value={item.id}
                   onSelect={() => {
                     setSelected(item);

@@ -43,7 +43,7 @@ test.describe("Cost Tracker Project production path", () => {
     const rpcResponse = page.waitForResponse((response) =>
       isRPCRequest(response.url()),
     );
-    await page.getByLabel("Project name").fill("Cost Tracker E2E");
+    await page.getByTestId("project-search").fill("Cost Tracker E2E");
     await rpcResponse;
     await expect(page).toHaveURL(/search=Cost\+Tracker\+E2E/);
     await expect(
@@ -56,7 +56,9 @@ test.describe("Cost Tracker Project production path", () => {
 
     const filteredListURL = listURL(page.url());
     await page.reload();
-    await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
+    await expect(page.getByTestId("project-search")).toHaveValue(
+      "Cost Tracker E2E",
+    );
     await expect(
       page.locator(
         `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
@@ -75,10 +77,12 @@ test.describe("Cost Tracker Project production path", () => {
       fixture.projectId,
     );
     const detailURL = page.url();
-    await page.getByRole("link", { name: "Back to Projects" }).click();
+    await page.getByTestId("back-to-projects").click();
     await expect(page).toHaveURL(filteredListURL);
     // Red if Project detail no longer carries the exact local list URL home.
-    await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
+    await expect(page.getByTestId("project-search")).toHaveValue(
+      "Cost Tracker E2E",
+    );
 
     await page.goBack();
     await expect(page).toHaveURL(detailURL);
@@ -88,7 +92,9 @@ test.describe("Cost Tracker Project production path", () => {
     );
     await page.goForward();
     await expect(page).toHaveURL(filteredListURL);
-    await expect(page.getByLabel("Project name")).toHaveValue("Cost Tracker E2E");
+    await expect(page.getByTestId("project-search")).toHaveValue(
+      "Cost Tracker E2E",
+    );
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
@@ -113,21 +119,25 @@ test.describe("Cost Tracker Project production path", () => {
 
     // Text-free hook: the assignment card carries a stable test id.
     const assignment = page.locator('[data-testid="organization-assignment"]');
-    await assignment.getByRole("button", { name: "Hosted Project" }).click();
-    await page
-      .getByRole("combobox", { name: "Search Hosted Project by name or ID" })
+    await assignment
+      .getByTestId("hosted-project-picker")
+      .getByTestId("entity-combobox-trigger")
+      .click();
+    await assignment
+      .getByTestId("hosted-project-picker")
+      .getByTestId("entity-search")
       .fill(fixture.projectId);
     await page
       .locator(`[role="option"][data-entity-id="${fixture.projectId}"]`)
       .click();
 
     await assignment
-      .getByRole("button", { name: "Partner Organization" })
+      .getByTestId("partner-organization-picker")
+      .getByTestId("entity-combobox-trigger")
       .click();
-    await page
-      .getByRole("combobox", {
-        name: "Search Partner Organization by name or ID",
-      })
+    await assignment
+      .getByTestId("partner-organization-picker")
+      .getByTestId("entity-search")
       .fill(fixture.partnerOrganizationId);
     await page
       .locator(
@@ -140,7 +150,7 @@ test.describe("Cost Tracker Project production path", () => {
         new URL(response.url()).pathname ===
         "/api/rpc/projectPartnerships/assign",
     );
-    await assignment.getByRole("button", { name: "Assign" }).click();
+    await assignment.getByTestId("assign-partnership").click();
     expect((await rpcResponse).ok()).toBe(true);
     // Red if the mutation does not refresh the real Partnership query after a successful assignment.
     // Text-free: the refreshed row is identified by stable organization id, not copy.

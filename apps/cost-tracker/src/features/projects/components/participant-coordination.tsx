@@ -160,6 +160,7 @@ function ReviewTaskControls({
           type="button"
           variant="outline"
           disabled={assign.isPending}
+          data-testid="review-task-assign"
           onClick={() => assign.mutate()}
         >
           Assign Review Task to me
@@ -174,6 +175,7 @@ function ReviewTaskControls({
             <select
               className="h-9 rounded-md border bg-background px-3 text-sm"
               id={`review-decision-${task.id}`}
+              data-testid={`review-decision-${task.id}`}
               value={decision}
               onChange={(event) => {
                 const selected = reviewDecisions.find(
@@ -192,6 +194,7 @@ function ReviewTaskControls({
           <Button
             type="button"
             disabled={resolve.isPending}
+            data-testid="review-task-resolve"
             onClick={() => resolve.mutate()}
           >
             Resolve Review Task
@@ -227,7 +230,11 @@ function ReviewTasks({
     await queryClient.invalidateQueries({ queryKey: options.queryKey });
   };
   return (
-    <section aria-label="Review Tasks" className="space-y-4">
+    <section
+      aria-label="Review Tasks"
+      data-testid="review-tasks"
+      className="space-y-4"
+    >
       {tasks.isPending ? (
         <output>Loading Review Tasks…</output>
       ) : tasks.isError ? (
@@ -387,6 +394,7 @@ function PartnerCoordinatorControls({
       )}
       <div className="flex flex-wrap gap-3">
         <Button
+          data-testid="assign-group-organizer"
           type="button"
           disabled={!targetUserId || assign.isPending || revoke.isPending}
           onClick={() => {
@@ -397,6 +405,7 @@ function PartnerCoordinatorControls({
           Assign Group Organizer
         </Button>
         <Button
+          data-testid="revoke-group-organizer"
           type="button"
           variant="outline"
           disabled={!targetUserId || assign.isPending || revoke.isPending}
@@ -603,6 +612,7 @@ export function ParticipantCoordination({
 
   return (
     <section
+      data-testid="project-participations"
       className="space-y-6"
       aria-label="Project Participations"
       data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
@@ -627,7 +637,7 @@ export function ParticipantCoordination({
                 create.mutate();
               }}
             >
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="participation-user-picker">
                 <span className="text-sm font-medium">Registered User</span>
                 <EntityCombobox
                   label="Registered User"
@@ -638,7 +648,11 @@ export function ParticipantCoordination({
                   disabled={create.isPending}
                 />
               </div>
-              <Button disabled={create.isPending || !userId} type="submit">
+              <Button
+                data-testid="participation-add"
+                disabled={create.isPending || !userId}
+                type="submit"
+              >
                 {create.isPending ? "Adding…" : "Add Participation"}
               </Button>
             </form>
@@ -704,6 +718,7 @@ export function ParticipantCoordination({
                   <Link
                     className={buttonVariants({ variant: "outline" })}
                     href={`/partnerships/${encodeURIComponent(partnershipId)}/participants/${encodeURIComponent(participant.id)}`}
+                    data-testid={`participant-details-${participant.id}`}
                   >
                     Participant details for {participant.displayName}
                   </Link>
@@ -712,6 +727,7 @@ export function ParticipantCoordination({
                       type="button"
                       variant="destructive"
                       disabled={removeParticipation.isPending}
+                      data-testid={`remove-participation-${participant.id}`}
                       onClick={() => {
                         if (
                           window.confirm(
@@ -739,6 +755,7 @@ export function ParticipantCoordination({
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
+              data-testid="manage-group-organizers"
               type="button"
               variant="outline"
               aria-expanded={coordinatorsOpen}
@@ -766,6 +783,7 @@ export function ParticipantCoordination({
           <Button
             type="button"
             variant="outline"
+            data-testid="review-tasks-toggle"
             onClick={() => setReviewsOpen((open) => !open)}
             aria-expanded={reviewsOpen}
           >
@@ -807,6 +825,7 @@ export function ParticipantCoordination({
                   </Label>
                   <input
                     id="participant-invitation-email"
+                    data-testid="participant-invitation-email"
                     className="h-9 rounded-md border bg-background px-3 text-sm"
                     type="email"
                     required
@@ -814,11 +833,16 @@ export function ParticipantCoordination({
                     onChange={(event) => setEmail(event.target.value)}
                   />
                 </div>
-                <Button disabled={issueInvitation.isPending} type="submit">
+                <Button
+                  data-testid="send-participant-invitation"
+                  disabled={issueInvitation.isPending}
+                  type="submit"
+                >
                   Send Participant Invitation
                 </Button>
               </form>
               <Button
+                data-testid="create-registration-link"
                 type="button"
                 variant="outline"
                 disabled={createLink.isPending}
@@ -836,6 +860,7 @@ export function ParticipantCoordination({
                   </Label>
                   <input
                     id="new-participant-link"
+                    data-testid="new-registration-link"
                     className="h-9 w-full rounded-md border bg-background px-3 text-sm"
                     readOnly
                     value={createdLink.url}
@@ -888,6 +913,7 @@ export function ParticipantCoordination({
                   </Badge>
                   {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
+                      data-testid="reissue-participant-invitation"
                       type="button"
                       variant="outline"
                       disabled={
@@ -900,6 +926,7 @@ export function ParticipantCoordination({
                   )}
                   {entryAccess.permitted && invitation.status === "pending" && (
                     <Button
+                      data-testid={`close-participant-invitation-${invitation.invitationId}`}
                       type="button"
                       variant="outline"
                       disabled={
@@ -950,6 +977,7 @@ export function ParticipantCoordination({
                   </Badge>
                   {entryAccess.permitted && link.enabled && (
                     <Button
+                      data-testid="close-registration-link"
                       type="button"
                       variant="outline"
                       disabled={closeLink.isPending || reopenLink.isPending}
@@ -960,6 +988,7 @@ export function ParticipantCoordination({
                   )}
                   {entryAccess.permitted && !link.enabled && (
                     <Button
+                      data-testid="reopen-registration-link"
                       type="button"
                       variant="outline"
                       disabled={reopenLink.isPending || closeLink.isPending}

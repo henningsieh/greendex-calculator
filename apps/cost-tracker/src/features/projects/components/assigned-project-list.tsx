@@ -16,7 +16,11 @@ export function AssignedProjectList() {
   );
 
   return (
-    <section aria-label="Assigned Projects" className="mt-10 space-y-4">
+    <section
+      aria-label="Assigned Projects"
+      className="mt-10 space-y-4"
+      data-testid="assigned-projects"
+    >
       <h2 className="font-heading text-2xl font-semibold">Your Projects</h2>
       {projects.length === 0 ? (
         <Empty data-testid="assigned-projects-empty">

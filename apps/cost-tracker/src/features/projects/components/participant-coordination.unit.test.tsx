@@ -189,24 +189,16 @@ async function renderCoordination() {
 async function selectRegisteredUser(
   user: ReturnType<typeof userEvent.setup>,
   id: string,
-  name: string,
 ) {
-  await user.click(screen.getByRole("button", { name: "Registered User" }));
-  await user.type(
-    screen.getByLabelText("Search Registered User by name, email or ID"),
-    id,
-  );
+  await user.click(screen.getByTestId("entity-combobox-trigger"));
+  await user.type(screen.getByTestId("entity-search"), id);
   await waitFor(() =>
     expect(mocks.searchOnboarded).toHaveBeenCalledWith({
       partnershipId: "own-partnership",
       search: id,
     }),
   );
-  await user.click(
-    await screen.findByRole("option", {
-      name: (label) => label.includes(name) && label.includes(id),
-    }),
-  );
+  await user.click(await screen.findByTestId(`entity-option-${id}`));
 }
 
 describe("ParticipantCoordination", () => {
@@ -304,7 +296,7 @@ describe("ParticipantCoordination", () => {
     );
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveAttribute("data-testid", "data-error-fallback");
-    expect(within(alert).getByRole("button", { name: "Retry" })).toBeEnabled();
+    expect(within(alert).getByTestId("retry-project-data")).toBeEnabled();
     expect(screen.queryByTestId("joined-participants")).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
@@ -318,8 +310,8 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await selectRegisteredUser(user, "user-existing", "Existing Candidate");
-    await user.click(screen.getByRole("button", { name: "Add Participation" }));
+    await selectRegisteredUser(user, "user-existing");
+    await user.click(screen.getByTestId("participation-add"));
     expect(mocks.create).toHaveBeenCalledWith({
       partnershipId: "own-partnership",
       userId: "user-existing",
@@ -335,13 +327,11 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await selectRegisteredUser(user, "user-existing", "Existing Candidate");
-    await user.click(screen.getByRole("button", { name: "Add Participation" }));
+    await selectRegisteredUser(user, "user-existing");
+    await user.click(screen.getByTestId("participation-add"));
     const notice = await screen.findByRole("alert");
     expect(notice).toHaveAttribute("data-feedback-outcome", "create-failed");
-    expect(
-      screen.getByRole("button", { name: "Add Participation" }),
-    ).toBeEnabled();
+    expect(screen.getByTestId("participation-add")).toBeEnabled();
   });
 
   it.each([
@@ -370,22 +360,20 @@ describe("ParticipantCoordination", () => {
       mocks.create.mockRejectedValue(error);
       const user = userEvent.setup();
       await renderCoordination();
-      await selectRegisteredUser(user, "user-existing", "Existing Candidate");
-      await user.click(screen.getByRole("button", { name: "Add Participation" }));
+      await selectRegisteredUser(user, "user-existing");
+      await user.click(screen.getByTestId("participation-add"));
       const notice = await screen.findByRole("alert");
       expect(notice).toHaveAttribute("data-feedback-outcome", outcome);
-      expect(
-        screen.getByRole("button", { name: "Add Participation" }),
-      ).toBeEnabled();
+      expect(screen.getByTestId("participation-add")).toBeEnabled();
     },
   );
 
   it("shows non-editable Claim feedback for a validated registration reopening denial", async () => {
     const user = userEvent.setup();
     await renderCoordination();
-    const closeButton = screen.getByRole("button", {
-      name: "Close registration link link-1",
-    });
+    const closeButton = within(
+      screen.getByTestId("registration-link-link-1"),
+    ).getByTestId("close-registration-link");
     mocks.list.mockResolvedValue({
       projectName: "Own Project",
       participations: [],
@@ -406,9 +394,9 @@ describe("ParticipantCoordination", () => {
       }),
     );
     await user.click(
-      await screen.findByRole("button", {
-        name: "Reopen registration link link-1",
-      }),
+      await within(screen.getByTestId("registration-link-link-1")).findByTestId(
+        "reopen-registration-link",
+      ),
     );
     expect(await screen.findByRole("alert")).toHaveAttribute(
       "data-entry-outcome",
@@ -419,7 +407,9 @@ describe("ParticipantCoordination", () => {
       "false",
     );
     expect(
-      screen.getByRole("button", { name: "Reopen registration link link-1" }),
+      within(screen.getByTestId("registration-link-link-1")).getByTestId(
+        "reopen-registration-link",
+      ),
     ).toBeEnabled();
   });
 
@@ -433,11 +423,7 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await user.click(
-      screen.getByRole("button", {
-        name: "Remove Project Participation for Own Person",
-      }),
-    );
+    await user.click(screen.getByTestId("remove-participation-person-1"));
     expect(await screen.findByRole("alert")).toHaveAttribute(
       "data-feedback-outcome",
       "remove-refused",
@@ -455,13 +441,11 @@ describe("ParticipantCoordination", () => {
     );
     const user = userEvent.setup();
     await renderCoordination();
-    await selectRegisteredUser(user, "host-user", "Host Candidate");
-    await user.click(screen.getByRole("button", { name: "Add Participation" }));
+    await selectRegisteredUser(user, "host-user");
+    await user.click(screen.getByTestId("participation-add"));
     const notice = await screen.findByRole("alert");
     expect(notice).toHaveAttribute("data-feedback-outcome", "access-denied");
-    expect(
-      screen.getByRole("button", { name: "Add Participation" }),
-    ).toBeEnabled();
+    expect(screen.getByTestId("participation-add")).toBeEnabled();
   });
 
   it("issues email invitations and distinguishes already-issued from delivery failure", async () => {
@@ -471,10 +455,11 @@ describe("ParticipantCoordination", () => {
     });
     const user = userEvent.setup();
     await renderCoordination();
-    await user.type(screen.getByLabelText("Invitee email"), "new@example.org");
-    await user.click(
-      screen.getByRole("button", { name: "Send Participant Invitation" }),
+    await user.type(
+      screen.getByTestId("participant-invitation-email"),
+      "new@example.org",
     );
+    await user.click(screen.getByTestId("send-participant-invitation"));
     await waitFor(() =>
       expect(mocks.issueInvitation).toHaveBeenCalledWith({
         partnershipId: "own-partnership",
@@ -486,9 +471,9 @@ describe("ParticipantCoordination", () => {
       "already-issued",
     );
     await user.click(
-      screen.getByRole("button", {
-        name: "Reissue invitation for pending@example.org",
-      }),
+      within(screen.getByTestId("participant-invitation-invite-1")).getByTestId(
+        "reissue-participant-invitation",
+      ),
     );
     await waitFor(() =>
       expect(mocks.reissueInvitation).toHaveBeenCalledWith({
@@ -507,26 +492,15 @@ describe("ParticipantCoordination", () => {
   it("shows a new secret URL only on creation and closes listed entry points", async () => {
     const user = userEvent.setup();
     await renderCoordination();
-    await user.click(
-      screen.getByRole("button", {
-        name: "Create Participant Registration Link",
-      }),
-    );
+    await user.click(screen.getByTestId("create-registration-link"));
     expect(mocks.createRegistrationLink).toHaveBeenCalledWith({
       partnershipId: "own-partnership",
     });
     expect(
-      (
-        (await screen.findByLabelText(
-          "New registration link (copy now)",
-        )) as HTMLInputElement
-      ).value,
+      ((await screen.findByTestId("new-registration-link")) as HTMLInputElement)
+        .value,
     ).toContain("/participant-links/new-link?secret=one-time-secret");
-    await user.click(
-      screen.getByRole("button", {
-        name: "Close invitation for pending@example.org",
-      }),
-    );
+    await user.click(screen.getByTestId("close-participant-invitation-invite-1"));
     await waitFor(() =>
       expect(mocks.setInvitationOpen).toHaveBeenCalledWith({
         invitationId: "invite-1",
@@ -534,7 +508,9 @@ describe("ParticipantCoordination", () => {
       }),
     );
     await user.click(
-      screen.getByRole("button", { name: "Close registration link link-1" }),
+      within(screen.getByTestId("registration-link-link-1")).getByTestId(
+        "close-registration-link",
+      ),
     );
     await waitFor(() =>
       expect(mocks.setRegistrationLinkOpen).toHaveBeenCalledWith({
@@ -547,26 +523,15 @@ describe("ParticipantCoordination", () => {
   it("keeps the previous link URL when creation fails", async () => {
     const user = userEvent.setup();
     await renderCoordination();
-    await user.click(
-      screen.getByRole("button", {
-        name: "Create Participant Registration Link",
-      }),
-    );
+    await user.click(screen.getByTestId("create-registration-link"));
     expect(
-      (
-        (await screen.findByLabelText(
-          "New registration link (copy now)",
-        )) as HTMLInputElement
-      ).value,
+      ((await screen.findByTestId("new-registration-link")) as HTMLInputElement)
+        .value,
     ).toContain("/participant-links/new-link?secret=one-time-secret");
     mocks.createRegistrationLink.mockRejectedValueOnce(
       new ORPCError("FORBIDDEN"),
     );
-    await user.click(
-      screen.getByRole("button", {
-        name: "Create Participant Registration Link",
-      }),
-    );
+    await user.click(screen.getByTestId("create-registration-link"));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveAttribute(
         "data-link-creation-status",
@@ -574,31 +539,19 @@ describe("ParticipantCoordination", () => {
       ),
     );
     expect(
-      (
-        screen.getByLabelText(
-          "New registration link (copy now)",
-        ) as HTMLInputElement
-      ).value,
+      (screen.getByTestId("new-registration-link") as HTMLInputElement).value,
     ).toContain("/participant-links/new-link?secret=one-time-secret");
   });
 
   it("links each Participant to its details page instead of editing inline", async () => {
     await renderCoordination();
     expect(
-      screen
-        .getByRole("link", { name: "Participant details for Own Person" })
-        .getAttribute("href"),
+      screen.getByTestId("participant-details-person-1").getAttribute("href"),
     ).toBe("/partnerships/own-partnership/participants/person-1");
     // ADR-0016: editing lives on the details page, never in a list row.
-    expect(screen.queryByLabelText("Country for Own Person")).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Save country for Own Person" }),
-    ).toBeNull();
-    expect(
-      screen.getByRole("button", {
-        name: "Remove Project Participation for Own Person",
-      }),
-    ).toBeTruthy();
+    expect(screen.queryByTestId("participant-country-person-1")).toBeNull();
+    expect(screen.queryByTestId("save-participant-country-person-1")).toBeNull();
+    expect(screen.getByTestId("remove-participation-person-1")).toBeTruthy();
   });
 
   it("retains Partner mutation controls when the shared scope gate permits", async () => {
@@ -609,14 +562,17 @@ describe("ParticipantCoordination", () => {
       "Manage Group Organizers",
     ])
       expect(screen.getByRole("button", { name })).toBeTruthy();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Show Review Tasks" }),
-    );
+    await userEvent.click(screen.getByTestId("review-tasks-toggle"));
+    const tasks = await screen.findByTestId("review-tasks");
+    const openRow = tasks.querySelector('li[data-task-status="open"]');
+    expect(openRow).not.toBeNull();
     expect(
-      await screen.findByRole("button", { name: "Assign Review Task to me" }),
+      await within(openRow as HTMLElement).findByTestId("review-task-assign"),
     ).toBeTruthy();
+    const assignedRow = tasks.querySelector('li[data-task-status="assigned"]');
+    expect(assignedRow).not.toBeNull();
     expect(
-      screen.getByRole("button", { name: "Resolve Review Task" }),
+      within(assignedRow as HTMLElement).getByTestId("review-task-resolve"),
     ).toBeTruthy();
   });
 
@@ -630,9 +586,10 @@ describe("ParticipantCoordination", () => {
       browserSession.activeOrganizationId = "host-1";
       browserSession.role = role;
       await renderCoordination();
-      expect(
-        screen.getByRole("region", { name: "Project Participations" }),
-      ).toHaveAttribute("data-entry-denial", "HOSTING_SIDE");
+      expect(screen.getByTestId("project-participations")).toHaveAttribute(
+        "data-entry-denial",
+        "HOSTING_SIDE",
+      );
       for (const name of [
         "Add Participation",
         "Remove Project Participation for Own Person",
@@ -653,13 +610,9 @@ describe("ParticipantCoordination", () => {
         "data-link-open",
         "true",
       );
-      expect(
-        screen.getByRole("link", { name: "Participant details for Own Person" }),
-      ).toBeTruthy();
-      await userEvent.click(
-        screen.getByRole("button", { name: "Show Review Tasks" }),
-      );
-      const reviews = await screen.findByRole("region", { name: "Review Tasks" });
+      expect(screen.getByTestId("participant-details-person-1")).toBeTruthy();
+      await userEvent.click(screen.getByTestId("review-tasks-toggle"));
+      const reviews = await screen.findByTestId("review-tasks");
       await waitFor(() =>
         expect(within(reviews).getAllByRole("listitem")).toHaveLength(2),
       );
@@ -673,13 +626,21 @@ describe("ParticipantCoordination", () => {
           '[data-task-status="assigned"][data-task-decision="none"]',
         ),
       ).toHaveLength(1);
+      const goneRow = reviews.querySelector(
+        'li[data-task-status="open"][data-task-decision="none"]',
+      );
+      expect(goneRow).not.toBeNull();
       expect(
-        screen.queryByRole("button", { name: "Assign Review Task to me" }),
+        within(goneRow as HTMLElement).queryByTestId("review-task-assign"),
       ).toBeNull();
+      const doneRow = reviews.querySelector(
+        'li[data-task-status="assigned"][data-task-decision="none"]',
+      );
+      expect(doneRow).not.toBeNull();
       expect(
-        screen.queryByRole("button", { name: "Resolve Review Task" }),
+        within(doneRow as HTMLElement).queryByTestId("review-task-resolve"),
       ).toBeNull();
-      expect(screen.queryByLabelText("Review Task decision")).toBeNull();
+      expect(within(doneRow as HTMLElement).queryByRole("combobox")).toBeNull();
       expect(mocks.create).not.toHaveBeenCalled();
       expect(mocks.remove).not.toHaveBeenCalled();
     },
@@ -688,9 +649,10 @@ describe("ParticipantCoordination", () => {
   it("gates all Partner controls on the same coordinator assignment", async () => {
     browserSession.role = ORGANIZATION_ROLES.ProjectCoordinator;
     await renderCoordination();
-    expect(
-      screen.getByRole("region", { name: "Project Participations" }),
-    ).toHaveAttribute("data-entry-denial", "ASSIGNMENT_MISSING");
+    expect(screen.getByTestId("project-participations")).toHaveAttribute(
+      "data-entry-denial",
+      "ASSIGNMENT_MISSING",
+    );
     for (const name of [
       "Send Participant Invitation",
       "Add Participation",
@@ -698,10 +660,8 @@ describe("ParticipantCoordination", () => {
       "Manage Group Organizers",
     ])
       expect(screen.queryByRole("button", { name })).toBeNull();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Show Review Tasks" }),
-    );
-    const reviews = await screen.findByRole("region", { name: "Review Tasks" });
+    await userEvent.click(screen.getByTestId("review-tasks-toggle"));
+    const reviews = await screen.findByTestId("review-tasks");
     await waitFor(() =>
       expect(within(reviews).getAllByRole("listitem")).toHaveLength(2),
     );
@@ -710,8 +670,12 @@ describe("ParticipantCoordination", () => {
         '[data-task-status="open"][data-task-decision="none"]',
       ),
     ).toHaveLength(1);
+    const spareRow = reviews.querySelector(
+      'li[data-task-status="open"][data-task-decision="none"]',
+    );
+    expect(spareRow).not.toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Assign Review Task to me" }),
+      within(spareRow as HTMLElement).queryByTestId("review-task-assign"),
     ).toBeNull();
   });
 
@@ -729,13 +693,13 @@ describe("ParticipantCoordination", () => {
       "data-invitation-status",
       "pending",
     );
+    expect(screen.getByTestId("project-participations")).toHaveAttribute(
+      "data-entry-denial",
+    );
     expect(
-      screen.getByRole("region", { name: "Project Participations" }),
-    ).toHaveAttribute("data-entry-denial");
-    expect(
-      screen.queryByRole("button", {
-        name: "Reissue invitation for p@example.org",
-      }),
+      within(screen.getByTestId("participant-invitation-invite-1")).queryByTestId(
+        "reissue-participant-invitation",
+      ),
     ).toBeNull();
     mocks.list.mockResolvedValue({
       projectName: "Own Project",
@@ -753,12 +717,12 @@ describe("ParticipantCoordination", () => {
     browserSession.activeOrganizationId = null;
     await renderCoordination();
     expect(
-      screen.getAllByRole("region", { name: "Project Participations" }).at(-1),
+      screen.getAllByTestId("project-participations").at(-1),
     ).toHaveAttribute("data-entry-denial", "MISSING_ACTIVE_ORGANIZATION");
     expect(
-      screen.queryByRole("button", {
-        name: "Reissue invitation for q@example.org",
-      }),
+      within(screen.getByTestId("participant-invitation-invite-2")).queryByTestId(
+        "reissue-participant-invitation",
+      ),
     ).toBeNull();
   });
 });

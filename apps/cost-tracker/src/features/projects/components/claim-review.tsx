@@ -81,6 +81,7 @@ export function ClaimHistory({ events }: { events: History }) {
   return (
     <section
       aria-label="Claim history"
+      data-testid="claim-history"
       className="min-w-0 space-y-4 px-8 py-7 max-sm:px-4"
     >
       <h2 className="font-heading text-xl font-semibold">Claim history</h2>
@@ -206,6 +207,7 @@ export function ClaimDecisionPanel({
             <Button
               size="lg"
               key={action}
+              data-testid={`claim-decision-${action}`}
               type="button"
               variant={
                 action === "approve" || action === "markPaid"
@@ -233,6 +235,7 @@ export function ClaimDecisionPanel({
                   </Label>
                   <textarea
                     id="decision-reason"
+                    data-testid={`claim-decision-reason-${confirming}`}
                     className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                     maxLength={MAX_CLAIM_REASON_LENGTH}
                     required
@@ -252,6 +255,7 @@ export function ClaimDecisionPanel({
                   (Boolean(definition?.reasonLabel) && !reason.trim()) ||
                   (confirming === "markPaid" && !approvedAmountEur)
                 }
+                data-testid={`claim-decision-confirm-${confirming}`}
                 onClick={() => void execute()}
               >
                 Confirm {definition?.confirmation}
@@ -346,6 +350,7 @@ export function ClaimReviewDetails({
                       <a
                         href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
                         download
+                        data-testid={`download-proof-${document.id}`}
                       >
                         Download Proof Document: {document.originalFileName}
                       </a>
@@ -453,7 +458,11 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
     );
   }
   return (
-    <section aria-label="Claim review" className="min-w-0 space-y-5">
+    <section
+      aria-label="Claim review"
+      data-testid="claim-review"
+      className="min-w-0 space-y-5"
+    >
       <Link href="/claims/review">Back to submitted Claims</Link>
       <div className="min-w-0">
         <ClaimBand title="Claim review" status={claim?.status} />

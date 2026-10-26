@@ -420,7 +420,11 @@ export function ProjectDetails({ id }: ProjectDetailsProps) {
             <PROJECT_ICONS.sharedTravelLegs className="size-4" />
             {t("tabs.shared-travel")}
           </TabsTrigger>
-          <TabsTrigger variant="secondary" value="participants">
+          <TabsTrigger
+            data-testid="project-participants-tab"
+            variant="secondary"
+            value="participants"
+          >
             <PROJECT_ICONS.participants className="size-4" />
             {t("tabs.participants")}
           </TabsTrigger>
@@ -436,7 +440,10 @@ export function ProjectDetails({ id }: ProjectDetailsProps) {
         </TabsContent>
 
         {/* Participants Tab */}
-        <TabsContent value="participants">
+        <TabsContent
+          data-testid="project-participants-panel"
+          value="participants"
+        >
           <ParticipantsList activeProjectId={id} />
         </TabsContent>
       </Tabs>

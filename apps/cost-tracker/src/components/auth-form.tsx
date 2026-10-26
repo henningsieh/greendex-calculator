@@ -106,7 +106,12 @@ export function AuthForm({
 
       <form action={submit}>
         <FieldGroup className="gap-6">
-          <Button onClick={signInWithGoogle} type="button" variant="outline">
+          <Button
+            data-testid="google-sign-in"
+            onClick={signInWithGoogle}
+            type="button"
+            variant="outline"
+          >
             <GoogleIcon data-icon="inline-start" />
             Continue with Google
           </Button>
@@ -119,6 +124,7 @@ export function AuthForm({
               <Input
                 autoComplete="name"
                 id="name"
+                data-testid="name"
                 minLength={2}
                 name="name"
                 placeholder="Your name"
@@ -132,6 +138,7 @@ export function AuthForm({
             <Input
               autoComplete="email"
               id="email"
+              data-testid="email"
               name="email"
               placeholder="you@example.org"
               required
@@ -144,6 +151,7 @@ export function AuthForm({
             <Input
               autoComplete={isSignIn ? "current-password" : "new-password"}
               id="password"
+              data-testid="password"
               minLength={8}
               name="password"
               required
@@ -165,6 +173,7 @@ export function AuthForm({
       <p className="mt-8 text-center text-sm text-muted-foreground">
         {isSignIn ? "New to Cost Tracker?" : "Already have an account?"}{" "}
         <Link
+          data-testid="auth-account-navigation"
           className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
           href={`${isSignIn ? "/register" : "/login"}${returnTo ? `?next=${encodeURIComponent(returnTo)}` : ""}`}
         >
@@ -197,7 +206,7 @@ function SubmitButton({ isSignIn }: { isSignIn: boolean }) {
       : "Create account";
 
   return (
-    <Button disabled={pending} type="submit">
+    <Button data-testid="auth-submit" disabled={pending} type="submit">
       {pending && (
         <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
       )}

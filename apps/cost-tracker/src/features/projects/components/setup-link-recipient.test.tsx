@@ -107,21 +107,18 @@ function recipient(
 }
 async function create() {
   const user = userEvent.setup({ delay: null });
-  await user.type(
-    await screen.findByLabelText("New Organization name"),
-    "Our Organization",
-  );
-  await user.selectOptions(screen.getByLabelText("Organization country"), "DE");
-  await user.click(screen.getByRole("button", { name: "Complete setup" }));
+  await user.type(await screen.findByTestId("setup-name"), "Our Organization");
+  await user.selectOptions(screen.getByTestId("setup-country"), "DE");
+  await user.click(screen.getByTestId("complete-setup"));
 }
 async function existing() {
   const user = userEvent.setup({ delay: null });
-  const radio = screen.queryByRole("radio", { name: "Existing Organization" });
+  const radio = screen.queryByTestId("setup-existing-organization");
   if (radio) await user.click(radio);
-  await user.click(await screen.findByRole("button", { name: /^Organization$/ }));
+  await user.click(await screen.findByTestId("entity-combobox-trigger"));
   await user.type(screen.getByRole("combobox"), "Our");
   await user.click(screen.getByRole("option"));
-  await user.click(screen.getByRole("button", { name: "Complete setup" }));
+  await user.click(screen.getByTestId("complete-setup"));
 }
 
 it.each([
@@ -150,11 +147,9 @@ it.each([
       availableActions,
     });
     recipient();
-    await screen.findByRole("button", { name: "Complete setup" });
-    expect(Boolean(screen.queryByLabelText("New Organization name"))).toBe(
-      create,
-    );
-    expect(Boolean(screen.queryByLabelText("Organization"))).toBe(owned);
+    await screen.findByTestId("complete-setup");
+    expect(Boolean(screen.queryByTestId("setup-name"))).toBe(create);
+    expect(Boolean(screen.queryByTestId("entity-combobox-trigger"))).toBe(owned);
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   },
 );
@@ -168,9 +163,7 @@ it("re-resolves after creation and binding, then selects explicitly before Proje
     .mockResolvedValue(complete);
   recipient();
   await create();
-  const action = await screen.findByRole("button", {
-    name: "Use this Organization",
-  });
+  const action = await screen.findByTestId("use-setup-organization-retained");
   expect(mocks.create).toHaveBeenCalledExactlyOnceWith({
     name: "Our Organization",
     slug: "our-organization",
@@ -186,9 +179,10 @@ it("re-resolves after creation and binding, then selects explicitly before Proje
     organizationId: "retained",
   });
   await userEvent.click(action);
-  expect(
-    await screen.findByRole("link", { name: "Open Partner Project" }),
-  ).toHaveAttribute("href", "/projects/partner-project");
+  expect(await screen.findByTestId("open-partner-project")).toHaveAttribute(
+    "href",
+    "/projects/partner-project",
+  );
   expect(mocks.select).toHaveBeenCalledExactlyOnceWith({
     organizationId: "retained",
   });
@@ -208,9 +202,7 @@ it("honors a changed server decision before either mutation", async () => {
   );
   expect(mocks.create).not.toHaveBeenCalled();
   expect(mocks.bind).not.toHaveBeenCalled();
-  expect(
-    screen.queryByLabelText("New Organization name"),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
 });
 
 it("uses the retained exact Organization after a lost binding response and remount", async () => {
@@ -221,23 +213,17 @@ it("uses the retained exact Organization after a lost binding response and remou
   mocks.bind.mockRejectedValueOnce(new Error("lost response"));
   const view = recipient();
   await create();
-  await screen.findByRole("button", { name: "Inspect setup result" });
+  await screen.findByTestId("inspect-setup");
   view.unmount();
   recipient();
-  await userEvent.click(
-    await screen.findByRole("button", {
-      name: "Retry setup with retained Organization",
-    }),
-  );
+  await userEvent.click(await screen.findByTestId("retry-retained-setup"));
   await waitFor(() => expect(mocks.bind).toHaveBeenCalledTimes(2));
   expect(mocks.bind.mock.calls.map(([input]) => input.organizationId)).toEqual([
     "retained",
     "retained",
   ]);
   expect(mocks.create).toHaveBeenCalledTimes(1);
-  expect(
-    screen.queryByLabelText("New Organization name"),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
 });
 
 it("inspects an uncertain completed binding without repeating it", async () => {
@@ -249,11 +235,9 @@ it("inspects an uncertain completed binding without repeating it", async () => {
   mocks.bind.mockRejectedValueOnce(new Error("lost response"));
   recipient();
   await create();
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Inspect setup result" }),
-  );
+  await userEvent.click(await screen.findByTestId("inspect-setup"));
   expect(
-    await screen.findByRole("button", { name: "Use this Organization" }),
+    await screen.findByTestId("use-setup-organization-retained"),
   ).toBeEnabled();
   expect(mocks.bind).toHaveBeenCalledTimes(1);
   expect(mocks.select).not.toHaveBeenCalled();
@@ -264,7 +248,7 @@ it("blocks Project access on refused Organization selection", async () => {
   mocks.select.mockResolvedValue({ error: { code: "FORBIDDEN" } });
   recipient();
   await userEvent.click(
-    await screen.findByRole("button", { name: "Use this Organization" }),
+    await screen.findByTestId("use-setup-organization-retained"),
   );
   await waitFor(() =>
     expect(document.querySelector('[data-setup-error="generic"]')).toBeVisible(),
@@ -277,9 +261,7 @@ it("holds Project access while Organization selection is pending", async () => {
   mocks.next.mockResolvedValue(select);
   mocks.select.mockReturnValue(new Promise(() => {}));
   recipient();
-  const button = await screen.findByRole("button", {
-    name: "Use this Organization",
-  });
+  const button = await screen.findByTestId("use-setup-organization-retained");
   await userEvent.click(button);
   expect(button).toBeDisabled();
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
@@ -299,7 +281,7 @@ it.each([
       expect(document.querySelector('[data-setup-error="create"]')).toBeVisible(),
     );
     expect(localStorage.getItem(key)).toBeNull();
-    expect(screen.getByLabelText("New Organization name")).toBeVisible();
+    expect(screen.getByTestId("setup-name")).toBeVisible();
     expect(mocks.next).toHaveBeenLastCalledWith({
       returnTo: "/setup-links/link-1?secret=private-secret",
       setupRecovery: undefined,
@@ -309,13 +291,10 @@ it.each([
       .mockResolvedValueOnce(bind)
       .mockResolvedValue(select);
     const user = userEvent.setup({ delay: null });
-    await user.clear(screen.getByLabelText("New Organization name"));
-    await user.type(
-      screen.getByLabelText("New Organization name"),
-      "Different name",
-    );
-    await user.click(screen.getByRole("button", { name: "Complete setup" }));
-    await screen.findByRole("button", { name: "Use this Organization" });
+    await user.clear(screen.getByTestId("setup-name"));
+    await user.type(screen.getByTestId("setup-name"), "Different name");
+    await user.click(screen.getByTestId("complete-setup"));
+    await screen.findByTestId("use-setup-organization-retained");
     expect(mocks.create).toHaveBeenCalledTimes(2);
     expect(mocks.create).toHaveBeenLastCalledWith({
       name: "Different name",
@@ -343,10 +322,8 @@ it("retains the creating checkpoint after an uncertain creation response", async
     });
   recipient();
   await create();
-  expect(await screen.findByLabelText("Organization")).toBeVisible();
-  expect(
-    screen.queryByLabelText("New Organization name"),
-  ).not.toBeInTheDocument();
+  expect(await screen.findByTestId("entity-combobox-trigger")).toBeVisible();
+  expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(key)!)).toEqual({ phase: "creating" });
   expect(mocks.bind).not.toHaveBeenCalled();
 });
@@ -358,7 +335,7 @@ it("fails closed before mutation when durable recovery cannot be written", async
   try {
     recipient();
     await create();
-    await screen.findByRole("button", { name: "Inspect setup result" });
+    await screen.findByTestId("inspect-setup");
     expect(mocks.create).not.toHaveBeenCalled();
     expect(mocks.bind).not.toHaveBeenCalled();
   } finally {
@@ -372,11 +349,7 @@ it.each(["corrupt", JSON.stringify({ phase: "invalid" })])(
     localStorage.setItem(key, raw);
     mocks.next.mockResolvedValue(bind);
     recipient();
-    expect(
-      await screen.findByRole("button", {
-        name: "Retry setup with retained Organization",
-      }),
-    ).toBeVisible();
+    expect(await screen.findByTestId("retry-retained-setup")).toBeVisible();
     expect(mocks.next).toHaveBeenCalledWith({
       returnTo: "/setup-links/link-1?secret=private-secret",
       setupRecovery: { phase: "creating" },
@@ -390,7 +363,7 @@ it("does not reuse another User's recovery checkpoint", async () => {
     JSON.stringify({ phase: "created", organizationId: "private-org" }),
   );
   recipient("user-2");
-  expect(await screen.findByLabelText("New Organization name")).toBeVisible();
+  expect(await screen.findByTestId("setup-name")).toBeVisible();
   expect(mocks.next).toHaveBeenCalledWith({
     returnTo: "/setup-links/link-1?secret=private-secret",
     setupRecovery: undefined,
@@ -422,12 +395,8 @@ it.each([
         document.querySelector(`[data-setup-error="${state}"]`),
       ).toBeVisible(),
     );
-    expect(
-      screen.getByRole("button", { name: "Inspect setup result" }),
-    ).toBeEnabled();
-    expect(
-      screen.queryByLabelText("New Organization name"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("inspect-setup")).toBeEnabled();
+    expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
     expect(mocks.create).not.toHaveBeenCalled();
   },
 );
@@ -444,9 +413,7 @@ it("uses verification instructions instead of setup actions for an unverified ac
     "role",
     "status",
   );
-  expect(
-    screen.queryByRole("button", { name: "Complete setup" }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByTestId("complete-setup")).not.toBeInTheDocument();
 });
 
 it("keeps unknown remote errors out of presentation and offers inspection", async () => {
@@ -461,7 +428,7 @@ it("keeps unknown remote errors out of presentation and offers inspection", asyn
     .mockResolvedValue(bind);
   mocks.bind.mockRejectedValue(error);
   recipient();
-  await screen.findByRole("button", { name: "Complete setup" });
+  await screen.findByTestId("complete-setup");
   await existing();
   await waitFor(() =>
     expect(document.querySelector('[data-setup-error="generic"]')).toBeVisible(),
@@ -493,13 +460,9 @@ it("lets selected ownership recovery return to the server's owned choices withou
       ],
     });
   recipient();
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Inspect setup result" }),
-  );
-  expect(await screen.findByLabelText("Organization")).toBeEnabled();
-  expect(
-    screen.queryByLabelText("New Organization name"),
-  ).not.toBeInTheDocument();
+  await userEvent.click(await screen.findByTestId("inspect-setup"));
+  expect(await screen.findByTestId("entity-combobox-trigger")).toBeEnabled();
+  expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(key)!)).toEqual({ phase: "creating" });
 });
 
@@ -518,9 +481,7 @@ it("sends missing-secret links to server recovery without offering creation", as
     returnTo: "/setup-links/link-1",
     setupRecovery: undefined,
   });
-  expect(
-    screen.queryByRole("button", { name: "Complete setup" }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByTestId("complete-setup")).not.toBeInTheDocument();
 });
 
 it("searches server-owned choices beyond the initial list and binds the selected Organization", async () => {
@@ -551,12 +512,12 @@ it("searches server-owned choices beyond the initial list and binds the selected
     .mockResolvedValue(select);
   recipient();
   const user = userEvent.setup({ delay: null });
-  await user.click(await screen.findByRole("button", { name: /^Organization$/ }));
+  await user.click(await screen.findByTestId("entity-combobox-trigger"));
   await user.type(screen.getByRole("combobox"), "Organization 24");
   await user.click(screen.getByRole("option"));
-  await user.click(screen.getByRole("button", { name: "Complete setup" }));
+  await user.click(screen.getByTestId("complete-setup"));
   expect(
-    await screen.findByRole("button", { name: "Use this Organization" }),
+    await screen.findByTestId("use-setup-organization-retained"),
   ).toBeVisible();
   expect(mocks.bind).toHaveBeenCalledExactlyOnceWith({
     id: "link-1",

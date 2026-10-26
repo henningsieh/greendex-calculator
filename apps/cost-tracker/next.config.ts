@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const testRunId = process.env.TEST_RUN_ID;
 if (testRunId && !/^[a-f0-9]{32}$/.test(testRunId)) {
@@ -28,4 +29,6 @@ const nextConfig = {
   },
 } satisfies NextConfig;
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin("./src/lib/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

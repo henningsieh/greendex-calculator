@@ -14,6 +14,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // Transform next-intl's extensionless Next.js imports for Node-based proxy tests.
+    server: { deps: { inline: ["next-intl"] } },
     globalSetup: ["./src/__tests__/global-setup.ts"],
     setupFiles: ["./src/__tests__/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}", "scripts/**/*.test.ts"],

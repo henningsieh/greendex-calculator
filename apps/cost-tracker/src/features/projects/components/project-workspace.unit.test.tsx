@@ -64,9 +64,7 @@ describe("Project workspace", () => {
     renderWorkspace("/projects?scope=partner&search=climate&cursor=opaque");
 
     expect(
-      (
-        await screen.findByRole("link", { name: "Back to Projects" })
-      ).getAttribute("href"),
+      (await screen.findByTestId("back-to-projects")).getAttribute("href"),
     ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
   });
 
@@ -79,9 +77,7 @@ describe("Project workspace", () => {
     renderWorkspace("https://attacker.example/projects");
 
     expect(
-      (
-        await screen.findByRole("link", { name: "Back to Projects" })
-      ).getAttribute("href"),
+      (await screen.findByTestId("back-to-projects")).getAttribute("href"),
     ).toBe("/projects");
   });
 
@@ -117,21 +113,13 @@ describe("Project workspace", () => {
     );
     expect(partnerships[0]).toHaveAttribute("data-organization-id", "partner-1");
     expect(
-      screen
-        .getByRole("link", { name: "Manage Project Partnerships" })
-        .getAttribute("href"),
+      screen.getByTestId("manage-project-partnerships").getAttribute("href"),
     ).toBe("/partner-organizations");
-    expect(
-      screen.queryByRole("link", { name: "Coordinate Participants" }),
-    ).toBeNull();
-    expect(
-      screen
-        .getByRole("link", { name: "Hosting Participant view" })
-        .getAttribute("href"),
-    ).toBe("/projects/project-1/participants");
-    expect(
-      screen.queryByRole("link", { name: "Open Claim workspace" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("coordinate-participants")).toBeNull();
+    expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
+      "/projects/project-1/participants",
+    );
+    expect(screen.queryByTestId("open-claim-workspace")).not.toBeInTheDocument();
   });
 
   it("renders each hosted Partnership's derived readiness independently", async () => {
@@ -203,13 +191,11 @@ describe("Project workspace", () => {
       return { projectId: "project-1", completed: true };
     });
     renderWorkspace();
-    await user.click(
-      await screen.findByRole("button", { name: "Complete Project" }),
-    );
+    await user.click(await screen.findByTestId("complete-project"));
     expect(mocks.complete).toHaveBeenCalledWith({ projectId: "project-1" });
     expect(await screen.findByRole("status")).toBeInTheDocument();
     expect(await screen.findByTestId("project-completed")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
+    expect(screen.queryByTestId("complete-project")).toBeNull();
   });
 
   it("hides completion for blocked, completed and Partner Projects", async () => {
@@ -232,7 +218,7 @@ describe("Project workspace", () => {
         await screen.findByTestId("assigned-partner-organizations"),
       ).getAllByRole("listitem"),
     ).toHaveLength(1);
-    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
+    expect(screen.queryByTestId("complete-project")).toBeNull();
   });
 
   it("shows recorded completion and no repeat action", async () => {
@@ -254,7 +240,7 @@ describe("Project workspace", () => {
       "2026-06-05T12:00:00.000Z",
     );
     expect(completion).toHaveAttribute("data-completed-by-user-id", "staff-1");
-    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
+    expect(screen.queryByTestId("complete-project")).toBeNull();
   });
 
   it("reports a completion failure without marking the Project completed", async () => {
@@ -267,14 +253,10 @@ describe("Project workspace", () => {
     };
     mocks.complete.mockRejectedValue(new Error("network"));
     renderWorkspace();
-    await user.click(
-      await screen.findByRole("button", { name: "Complete Project" }),
-    );
+    await user.click(await screen.findByTestId("complete-project"));
     expect(await screen.findByRole("status")).toBeInTheDocument();
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Complete Project" }),
-      ).toBeEnabled();
+      expect(screen.getByTestId("complete-project")).toBeEnabled();
     });
     expect(screen.queryByTestId("project-completed")).not.toBeInTheDocument();
   });
@@ -306,18 +288,12 @@ describe("Project workspace", () => {
       screen.queryByTestId("assigned-partner-organizations"),
     ).not.toBeInTheDocument();
     expect(
-      screen
-        .getByRole("link", { name: "Coordinate Participants" })
-        .getAttribute("href"),
+      screen.getByTestId("coordinate-participants").getAttribute("href"),
     ).toBe("/partnerships/partnership-1/participants");
-    expect(
-      screen
-        .getByRole("link", { name: "Open Claim workspace" })
-        .getAttribute("href"),
-    ).toBe("/partnerships/partnership-1/claim");
-    expect(
-      screen.queryByRole("link", { name: "Hosting Participant view" }),
-    ).toBeNull();
-    expect(screen.queryByRole("button", { name: "Complete Project" })).toBeNull();
+    expect(screen.getByTestId("open-claim-workspace").getAttribute("href")).toBe(
+      "/partnerships/partnership-1/claim",
+    );
+    expect(screen.queryByTestId("hosted-participants")).toBeNull();
+    expect(screen.queryByTestId("complete-project")).toBeNull();
   });
 });

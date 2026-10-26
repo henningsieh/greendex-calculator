@@ -128,6 +128,7 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
               : "Your invitation is ready. Join the Organization to continue."}
           </p>
           <Button
+            data-testid="accept-organization-invitation"
             className="mt-6"
             disabled={pending}
             onClick={accept}
@@ -147,6 +148,7 @@ export function InvitationAcceptance({ invitationId }: { invitationId: string })
       )}
       {(decision?.nextStep === "invitation-recovery" || error) && (
         <Button
+          data-testid="recheck-organization-invitation"
           className="mt-4"
           disabled={pending}
           onClick={recheck}

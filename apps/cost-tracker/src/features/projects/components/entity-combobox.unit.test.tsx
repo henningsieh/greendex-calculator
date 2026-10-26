@@ -63,9 +63,9 @@ describe("EntityCombobox", () => {
         search={search}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Organization" }));
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
     expect(screen.getByRole("option")).toBeTruthy();
-    const input = screen.getByLabelText("Search Organization by name or ID");
+    const input = screen.getByTestId("entity-search");
     await user.type(input, "p");
     expect(search).not.toHaveBeenCalled();
     await user.type(input, "artner-123");
@@ -89,13 +89,8 @@ describe("EntityCombobox", () => {
         searchBy="name, email or ID"
       />,
     );
-    await user.click(
-      screen.getByRole("button", { name: "Onboarded Participant" }),
-    );
-    await user.type(
-      screen.getByLabelText("Search Onboarded Participant by name, email or ID"),
-      "person@example.org",
-    );
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    await user.type(screen.getByTestId("entity-search"), "person@example.org");
     expect(await screen.findByRole("option")).toBeTruthy();
     expect(search).toHaveBeenCalledWith("person@example.org");
     expect(screen.getByRole("option")).toHaveAttribute(
@@ -115,7 +110,7 @@ describe("EntityCombobox", () => {
         preload={[{ id: "org-key", name: "Keyboard Org" }]}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Organization" }));
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
     await user.keyboard("{ArrowDown}{Enter}");
     expect(onChange).toHaveBeenCalledWith("org-key");
   });
@@ -134,10 +129,10 @@ describe("EntityCombobox", () => {
         search={search}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Project" }));
-    await user.type(screen.getByLabelText("Search Project by name or ID"), "zz");
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    await user.type(screen.getByTestId("entity-search"), "zz");
     expect(await screen.findByRole("alert")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Retry" }));
+    await user.click(screen.getByTestId("retry-entity-search"));
     expect(await screen.findByTestId("entity-search-empty")).toBeTruthy();
   });
 });

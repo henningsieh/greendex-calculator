@@ -93,7 +93,10 @@ export function ClaimSubmission({
               </p>
               {item.gaps.map((gap) => (
                 <p key={`${gap.path.join(".")}-${gap.message}`}>
-                  <a href={`#${gapAnchor(gap.path)}`}>
+                  <a
+                    href={`#${gapAnchor(gap.path)}`}
+                    data-testid={`submission-gap-${gap.path.join("-")}`}
+                  >
                     {gap.message} — Go to gap
                   </a>
                 </p>
@@ -125,6 +128,7 @@ export function ClaimSubmission({
             size="lg"
             type="button"
             disabled={!ready || pending}
+            data-testid="claim-submit"
             onClick={() => setConfirming(true)}
           >
             Submit Claim
@@ -142,6 +146,7 @@ export function ClaimSubmission({
                 size="lg"
                 type="button"
                 disabled={!ready || pending}
+                data-testid="claim-submit-confirm"
                 onClick={() => void submit()}
               >
                 Confirm submission

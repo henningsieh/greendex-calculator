@@ -44,6 +44,7 @@ export function ClaimReviewQueue() {
             {submitted.map((item) => (
               <li key={item.id}>
                 <Link
+                  data-testid={`review-claim-${item.id}`}
                   className="block rounded-md px-3 py-2 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                   href={`/claims/review/${encodeURIComponent(item.id)}`}
                 >

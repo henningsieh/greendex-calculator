@@ -37,6 +37,47 @@ const matchers = [
   "(text=",
 ];
 
+const copyQueryCallees = [
+  "getByRole",
+  "findByRole",
+  "queryByRole",
+  "getByLabel",
+  "findByLabel",
+  "queryByLabel",
+  "getByPlaceholder",
+  "findByPlaceholder",
+  "getByTitle",
+  "getByAltText",
+  "toHaveTitle",
+  "getByLabelText",
+  "findByLabelText",
+  "queryByLabelText",
+  "getByPlaceholderText",
+  "findByPlaceholderText",
+  "getByDisplayValue",
+  "findByDisplayValue",
+  "queryByDisplayValue",
+];
+
+const copyOptionLiteral =
+  /["']?(?:name|title|placeholder|labelText|altText)["']?\s*:\s*["'/]/;
+const bareCopyLiteral =
+  /(?:getByLabel|findByLabel|queryByLabel|getByPlaceholder|findByPlaceholder|getByTitle|getByAltText|toHaveTitle|getByLabelText|findByLabelText|queryByLabelText|getByPlaceholderText|findByPlaceholderText|getByDisplayValue|findByDisplayValue|queryByDisplayValue)\s*\(\s*["'/]/;
+
+const templatePattern = /`(?:[^`\\]|\\.)*`/g;
+const literalPattern =
+  /('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`|\/(?:[^/\\\n]|\\.)+\/[dgimsuvy]*)/g;
+
+const countParens = (line: string): number => {
+  const blanked = line.replace(literalPattern, `""`);
+  let depth = 0;
+  for (const char of blanked) {
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+  }
+  return depth;
+};
+
 const seen = new Set<string>();
 
 const violations: string[] = [];
@@ -46,11 +87,33 @@ for (const pattern of patterns) {
     exclude: ["**/node_modules/**"],
   })) {
     const source = readFileSync(resolve(root, file), "utf8");
-    source.split("\n").forEach((line, index) => {
+    const lines = source.split("\n");
+    lines.forEach((line, index) => {
       const stripped = line.replace(/^\s*(\/\/|\*)/, "");
       const hit = matchers.find((matcher) => stripped.includes(matcher));
       if (hit) {
         const key = `${file}:${index + 1}:${hit}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          violations.push(`${file}:${index + 1}: ${line.trim().slice(0, 120)}`);
+        }
+        return;
+      }
+      const trimmed = line.trim();
+      if (trimmed.startsWith("//") || trimmed.startsWith("*")) return;
+      const code = stripped.replace(templatePattern, `""`);
+      const callee = copyQueryCallees.find((name) => code.includes(name));
+      if (!callee) return;
+      let callText = code;
+      let depth = countParens(code);
+      let next = index;
+      while (depth > 0 && next + 1 < lines.length) {
+        next += 1;
+        callText += ` ${lines[next].trim().replace(templatePattern, `""`)}`;
+        depth += countParens(lines[next]);
+      }
+      if (bareCopyLiteral.test(callText) || copyOptionLiteral.test(callText)) {
+        const key = `${file}:${index + 1}:${callee}`;
         if (!seen.has(key)) {
           seen.add(key);
           violations.push(`${file}:${index + 1}: ${line.trim().slice(0, 120)}`);

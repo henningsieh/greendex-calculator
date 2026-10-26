@@ -52,9 +52,7 @@ describe("Organization Invitation acceptance", () => {
 
   it("previews without accepting until the invitee presses the button", async () => {
     render(<InvitationAcceptance invitationId="invite-1" />);
-    const button = await screen.findByRole("button", {
-      name: "Accept Organization Invitation",
-    });
+    const button = await screen.findByTestId("accept-organization-invitation");
     expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
       "data-organization-name",
       "Example Organization",
@@ -126,14 +124,10 @@ describe("Organization Invitation acceptance", () => {
     await waitFor(() =>
       expect(document.querySelector("[data-invitation-recovery]")).toBeVisible(),
     );
+    expect(screen.getByTestId("recheck-organization-invitation")).toBeEnabled();
+    expect(screen.queryByTestId("create-organization")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Check invitation again" }),
-    ).toBeEnabled();
-    expect(
-      screen.queryByRole("button", { name: "Create Organization" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Accept Organization Invitation" }),
+      screen.queryByTestId("accept-organization-invitation"),
     ).not.toBeInTheDocument();
     expect(mocks.acceptInvitation).not.toHaveBeenCalled();
   });
@@ -147,9 +141,7 @@ describe("Organization Invitation acceptance", () => {
       }),
     );
     render(<InvitationAcceptance invitationId="invite-1" />);
-    const button = await screen.findByRole("button", {
-      name: "Accept Organization Invitation",
-    });
+    const button = await screen.findByTestId("accept-organization-invitation");
     fireEvent.click(button);
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(button).toBeEnabled();

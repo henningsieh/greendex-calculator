@@ -549,6 +549,7 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                 </AnimatedGroup>
                 <Button
                   className="mt-4 w-full bg-linear-to-r from-teal-700 to-emerald-600 px-8 py-4 text-base transition-all duration-250 hover:scale-[1.02] hover:from-teal-800 hover:to-emerald-700 sm:w-auto sm:text-lg"
+                  data-testid="participate-start"
                   onClick={handleNext}
                   size="lg"
                 >
@@ -649,6 +650,8 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                           ? "border-teal-500 bg-teal-500/10 font-semibold text-teal-400 shadow-sm"
                           : "border-border text-foreground hover:border-border/50 hover:bg-accent"
                       }`}
+                      data-answer-field="accommodationCategory"
+                      data-answer-value={option}
                       key={option}
                       onClick={() =>
                         updateAnswer("accommodationCategory", option)
@@ -676,6 +679,8 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                           ? "border-teal-500 bg-teal-500/10 font-semibold text-teal-400 shadow-sm"
                           : "border-border text-foreground hover:border-border/50 hover:bg-accent"
                       }`}
+                      data-answer-field="roomOccupancy"
+                      data-answer-value={option}
                       key={option}
                       onClick={() => updateAnswer("roomOccupancy", option)}
                       type="button"
@@ -701,6 +706,8 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                           ? "border-teal-500 bg-teal-500/10 font-semibold text-teal-400 shadow-sm"
                           : "border-border text-foreground hover:border-border/50 hover:bg-accent"
                       }`}
+                      data-answer-field="electricity"
+                      data-answer-value={option}
                       key={option}
                       onClick={() => updateAnswer("electricity", option)}
                       type="button"
@@ -726,6 +733,8 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                           ? "border-teal-500 bg-teal-500/10 font-semibold text-teal-400 shadow-sm"
                           : "border-border text-foreground hover:border-border/50 hover:bg-accent"
                       }`}
+                      data-answer-field="food"
+                      data-answer-value={option}
                       key={option}
                       onClick={() => updateAnswer("food", option)}
                       type="button"
@@ -859,6 +868,8 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                           ? "border-teal-500 bg-teal-500/10 font-semibold text-teal-400 shadow-sm"
                           : "border-border text-foreground hover:border-border/50 hover:bg-accent"
                       }`}
+                      data-answer-field="carType"
+                      data-answer-value={option}
                       key={option}
                       onClick={() => updateAnswer("carType", option)}
                       type="button"
@@ -925,6 +936,8 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                           ? "border-teal-500 bg-teal-500/10 font-semibold text-teal-400 shadow-sm"
                           : "border-border text-foreground hover:border-border/50 hover:bg-accent"
                       }`}
+                      data-answer-field="gender"
+                      data-answer-value={option}
                       key={option}
                       onClick={() => updateAnswer("gender", option)}
                       type="button"
@@ -941,6 +954,7 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
               <div className="mt-6 flex gap-3">
                 <Button
                   className="h-11 flex-1 text-sm sm:text-base"
+                  data-testid="participate-back"
                   onClick={handleBack}
                   type="button"
                   variant="outline"
@@ -952,6 +966,7 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                   className={`h-11 flex-1 bg-linear-to-r from-teal-500 to-emerald-500 text-sm text-white transition-all duration-250 hover:from-teal-600 hover:to-emerald-600 hover:shadow-md sm:text-base ${
                     renderedStep === 0 ? "w-full" : ""
                   }`}
+                  data-testid="participate-next"
                   disabled={!canProceed()}
                   onClick={handleNext}
                   type="button"

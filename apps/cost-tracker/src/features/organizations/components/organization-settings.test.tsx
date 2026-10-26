@@ -51,12 +51,10 @@ describe("Organization country settings", () => {
   it("shows the current country and saves a correction", async () => {
     const user = userEvent.setup();
     renderSettings();
-    const control = await screen.findByLabelText("Organization country");
+    const control = await screen.findByTestId("organization-country");
     expect(control).toHaveValue("DE");
     await user.selectOptions(control, "FR");
-    await user.click(
-      screen.getByRole("button", { name: "Save Organization country" }),
-    );
+    await user.click(screen.getByTestId("save-organization-country"));
     await waitFor(() =>
       expect(mocks.updateCountry).toHaveBeenCalledWith({ country: "FR" }),
     );
@@ -72,10 +70,8 @@ describe("Organization country settings", () => {
     mocks.updateCountry.mockRejectedValueOnce(new Error("network unavailable"));
     const user = userEvent.setup();
     renderSettings();
-    await screen.findByLabelText("Organization country");
-    await user.click(
-      screen.getByRole("button", { name: "Save Organization country" }),
-    );
+    await screen.findByTestId("organization-country");
+    await user.click(screen.getByTestId("save-organization-country"));
     await waitFor(() =>
       expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
         title: "Could not save Organization country",
@@ -84,8 +80,6 @@ describe("Organization country settings", () => {
         type: "error",
       }),
     );
-    expect(
-      screen.getByRole("button", { name: "Save Organization country" }),
-    ).not.toBeDisabled();
+    expect(screen.getByTestId("save-organization-country")).not.toBeDisabled();
   });
 });

@@ -19,34 +19,6 @@ import { TestProjectFixture } from "./fixtures/test-project";
  * `data-co2-kg` / `data-value` attributes.
  */
 
-// Regular expressions for button matching
-const BUTTON_REGEX = {
-  start: /start/i,
-  continue: /continue/i,
-  back: /back/i,
-  complete: /complete/i,
-} as const;
-
-const COUNTRY_REGEX = {
-  germany: /germany/i,
-  austria: /austria/i,
-  belgium: /belgium/i,
-  denmark: /denmark/i,
-  france: /france/i,
-  italy: /italy/i,
-  netherlands: /netherlands/i,
-  portugal: /portugal/i,
-  spain: /spain/i,
-  sweden: /sweden/i,
-} as const;
-
-const OPTION_REGEX = {
-  greenEnergy: /green energy/i,
-  green: /green/i,
-  conventional: /conventional/i,
-  electric: /electric/i,
-} as const;
-
 async function expectStep(page: Page, step: number) {
   await expect(page.getByTestId("participate-step")).toHaveAttribute(
     "data-step",
@@ -57,7 +29,7 @@ async function expectStep(page: Page, step: number) {
 async function dismissImpactModal(page: Page) {
   const modal = page.getByTestId("impact-modal");
   await expect(modal).toBeVisible();
-  await modal.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+  await modal.getByTestId("impact-continue").click();
   await expect(modal).toBeHidden();
 }
 
@@ -82,17 +54,15 @@ test.describe("Questionnaire Form E2E Tests", () => {
     // Navigate to the test project participation page
     await page.goto(`/en/project/${projectId}/participate`);
 
-    // Wait for the form to be visible (role-based start action)
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.start }),
-    ).toBeVisible();
+    // Wait for the form start action to be visible
+    await expect(page.getByTestId("participate-start")).toBeVisible();
   });
 
   test("should complete full questionnaire with valid inputs", async ({
     page,
   }) => {
     // Step 0: Welcome - Click start
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Step 1: Participant Info
     await expectStep(page, STEP.participantInfo);
@@ -100,45 +70,57 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
     // Fill country - using CountrySelect component
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.germany }).click();
+    await page.locator('[role="option"][data-value="DE"]').click();
 
     await page.locator('input[id="email"]').fill("john.doe@example.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Step 2: Days
     await expectStep(page, STEP.days);
     let numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("7", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Step 3: Accommodation Category
     await expectStep(page, STEP.accommodationCategory);
-    await page.getByRole("button", { name: "Hostel" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="accommodationCategory"][data-answer-value="Hostel"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
     // Step 4: Room Occupancy
     await expectStep(page, STEP.roomOccupancy);
-    await page.getByRole("button", { name: "2 people" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="roomOccupancy"][data-answer-value="2 people"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
     // Step 5: Electricity - should show impact modal
     await expectStep(page, STEP.electricity);
-    await page.getByRole("button", { name: OPTION_REGEX.greenEnergy }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="electricity"][data-answer-value="green energy"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
     // Wait for and close impact modal
     await dismissImpactModal(page);
 
     // Step 6: Food - should show impact modal
     await expectStep(page, STEP.food);
-    await page.getByRole("button", { name: "sometimes" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator('[data-answer-field="food"][data-answer-value="sometimes"]')
+      .click();
+    await page.getByTestId("participate-next").click();
 
     // Wait for and close impact modal
     await dismissImpactModal(page);
@@ -148,12 +130,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("500", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Wait for and close impact modal
     await dismissImpactModal(page);
@@ -163,24 +143,20 @@ test.describe("Questionnaire Form E2E Tests", () => {
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("0", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Step 9: Train km - should show impact modal if > 0
     await expectStep(page, STEP.trainKm);
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("100", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Wait for and close impact modal
     await dismissImpactModal(page);
@@ -190,12 +166,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("0", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
     // Wait for next step content to be visible
     await expectStep(page, STEP.carKm);
 
@@ -203,23 +177,25 @@ test.describe("Questionnaire Form E2E Tests", () => {
     numberInput = page.locator('input[type="number"]').first();
     await numberInput.click();
     await numberInput.pressSequentially("200", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Step 12: Car Type (conditional - only shown if carKm > 0) - Select Electric
     await expectStep(page, STEP.carType);
     // Wait for the electric button to be stable/clickable
     await expect(
-      page.getByRole("button", { name: OPTION_REGEX.electric }),
+      page.locator(
+        '[data-answer-field="carType"][data-answer-value="electricCar"]',
+      ),
     ).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: OPTION_REGEX.electric }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator('[data-answer-field="carType"][data-answer-value="electricCar"]')
+      .click();
+    await page.getByTestId("participate-next").click();
 
     // Step 13: Car Passengers (conditional) - should show impact modal
     await expectStep(page, STEP.carPassengers);
@@ -227,12 +203,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await carPassengersInput.click();
     await carPassengersInput.clear();
     await carPassengersInput.pressSequentially("3", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 5000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Wait for and close impact modal
     await dismissImpactModal(page);
@@ -243,17 +217,17 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await ageInput.click();
     await ageInput.clear();
     await ageInput.pressSequentially("28", { delay: 50 });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Step 15: Gender - Final step
     await expectStep(page, STEP.gender);
 
     // Select gender to enable Complete button
-    await page.getByRole("button", { name: "Male", exact: true }).click();
+    await page
+      .locator('[data-answer-field="gender"][data-answer-value="Male"]')
+      .click();
 
-    const completeBtn = page.getByRole("button", {
-      name: BUTTON_REGEX.complete,
-    });
+    const completeBtn = page.getByTestId("participate-next");
     await expect(completeBtn).toBeEnabled({ timeout: 5000 });
     await completeBtn.click();
 
@@ -281,57 +255,71 @@ test.describe("Questionnaire Form E2E Tests", () => {
     page,
   }) => {
     // Start questionnaire
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Fill participant info
     await page.locator('input[id="firstName"]').fill("Jane");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.france }).click();
+    await page.locator('[role="option"][data-value="FR"]').click();
     await page.locator('input[id="email"]').fill("jane@example.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Days
     await page.locator('input[type="number"]').first().fill("5");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Accommodation
-    await page.getByRole("button", { name: "Camping" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="accommodationCategory"][data-answer-value="Camping"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
     // Room Occupancy
-    await page.getByRole("button", { name: "4+ people" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="roomOccupancy"][data-answer-value="4+ people"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
     // Electricity
-    await page.getByRole("button", { name: OPTION_REGEX.conventional }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="electricity"][data-answer-value="conventional energy"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
     await dismissImpactModal(page);
 
     // Food
-    await page.getByRole("button", { name: "never" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator('[data-answer-field="food"][data-answer-value="never"]')
+      .click();
+    await page.getByTestId("participate-next").click();
     await dismissImpactModal(page);
 
     // Flight - 0 km
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Boat - 0 km
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Train - 0 km
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Bus - 0 km
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Car - 0 km (should skip car type and passengers)
     await expectStep(page, STEP.carKm);
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Should skip to Age (not car type/passengers): the step counter lands
     // on age, and no impact modal appears for the skipped car steps.
@@ -345,12 +333,10 @@ test.describe("Questionnaire Form E2E Tests", () => {
     page,
   }) => {
     // Start questionnaire
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Step 1: Try to continue without filling required fields
-    const continueButton = page.getByRole("button", {
-      name: BUTTON_REGEX.continue,
-    });
+    const continueButton = page.getByTestId("participate-next");
 
     // Continue button should be disabled without firstName
     await expect(continueButton).toBeDisabled();
@@ -361,7 +347,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
     // Fill country
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.spain }).click();
+    await page.locator('[role="option"][data-value="ES"]').click();
     await expect(continueButton).toBeDisabled();
 
     // Fill email to enable button
@@ -383,17 +369,15 @@ test.describe("Questionnaire Form E2E Tests", () => {
   });
 
   test("should validate email format", async ({ page }) => {
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     await page.locator('input[id="firstName"]').fill("Test");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.italy }).click();
+    await page.locator('[role="option"][data-value="IT"]').click();
 
     // Try invalid email formats
     const emailInput = page.locator('input[id="email"]');
-    const continueButton = page.getByRole("button", {
-      name: BUTTON_REGEX.continue,
-    });
+    const continueButton = page.getByTestId("participate-next");
 
     // Invalid email without @
     await emailInput.fill("invalidemail");
@@ -409,20 +393,18 @@ test.describe("Questionnaire Form E2E Tests", () => {
   });
 
   test("should validate number input ranges", async ({ page }) => {
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Fill participant info quickly
     await page.locator('input[id="firstName"]').fill("Test");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.portugal }).click();
+    await page.locator('[role="option"][data-value="PT"]').click();
     await page.locator('input[id="email"]').fill("test@test.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Days - should not accept negative
     const numberInput = page.locator('input[type="number"]').first();
-    const continueButton = page.getByRole("button", {
-      name: BUTTON_REGEX.continue,
-    });
+    const continueButton = page.getByTestId("participate-next");
 
     await numberInput.fill("-10");
     await expect(continueButton).toBeDisabled();
@@ -439,7 +421,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
   });
 
   test("should show progress bar and step counter", async ({ page }) => {
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Check initial step counter (should show step 2 of 16)
     const counter = page.getByTestId("step-counter");
@@ -449,9 +431,9 @@ test.describe("Questionnaire Form E2E Tests", () => {
     // Fill and continue
     await page.locator('input[id="firstName"]').fill("Test");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.germany }).click();
+    await page.locator('[role="option"][data-value="DE"]').click();
     await page.locator('input[id="email"]').fill("test@example.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Should show step 3 of 16
     await expect(counter).toHaveAttribute("data-current", "3");
@@ -461,24 +443,24 @@ test.describe("Questionnaire Form E2E Tests", () => {
   });
 
   test("should allow back navigation", async ({ page }) => {
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Fill participant info
     await page.locator('input[id="firstName"]').fill("BackTest");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.belgium }).click();
+    await page.locator('[role="option"][data-value="BE"]').click();
     await page.locator('input[id="email"]').fill("back@test.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Days step
     await page.locator('input[type="number"]').first().fill("7");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Now at accommodation step - verify we can go back
     await expectStep(page, STEP.accommodationCategory);
 
     // Click back button
-    await page.getByRole("button", { name: BUTTON_REGEX.back }).click();
+    await page.getByTestId("participate-back").click();
 
     // Should be back at days step
     await expectStep(page, STEP.days);
@@ -489,7 +471,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
   });
 
   test("should display CO2 stats from step 2 onwards", async ({ page }) => {
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Step 1 - stats should not be visible yet
     await expect(page.getByTestId("stat-co2")).toHaveCount(0);
@@ -497,13 +479,13 @@ test.describe("Questionnaire Form E2E Tests", () => {
     // Fill participant info and continue
     await page.locator('input[id="firstName"]').fill("Stats");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.netherlands }).click();
+    await page.locator('[role="option"][data-value="NL"]').click();
     await page.locator('input[id="email"]').fill("stats@test.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Fill days
     await page.locator('input[type="number"]').first().fill("5");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Now at step 2+ - stats cards render with computed values (reword-proof attributes).
     await expect(page.locator('[data-testid="stat-co2"]')).toHaveAttribute(
@@ -517,107 +499,105 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
   test("should handle car passengers validation", async ({ page }) => {
     // Navigate through to car passengers step
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     // Quick fill to get to car steps
     await page.locator('input[id="firstName"]').fill("CarTest");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.sweden }).click();
+    await page.locator('[role="option"][data-value="SE"]').click();
     await page.locator('input[id="email"]').fill("car@test.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Days
     const daysInput1 = page.locator('input[type="number"]').first();
     await daysInput1.click();
     await daysInput1.pressSequentially("3", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Skip through accommodation/food quickly
-    await page.getByRole("button", { name: "Camping" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="accommodationCategory"][data-answer-value="Camping"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
-    await page.getByRole("button", { name: "alone" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator('[data-answer-field="roomOccupancy"][data-answer-value="alone"]')
+      .click();
+    await page.getByTestId("participate-next").click();
 
-    await page.getByRole("button", { name: OPTION_REGEX.green }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="electricity"][data-answer-value="green energy"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
     await dismissImpactModal(page);
 
-    await page.getByRole("button", { name: "never" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator('[data-answer-field="food"][data-answer-value="never"]')
+      .click();
+    await page.getByTestId("participate-next").click();
     await dismissImpactModal(page);
 
     // Skip transport to car
     let transportInput = page.locator('input[type="number"]').first();
     await transportInput.click();
     await transportInput.pressSequentially("0", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 2000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // flight
+    await page.getByTestId("participate-next").click(); // flight
 
     transportInput = page.locator('input[type="number"]').first();
     await transportInput.click();
     await transportInput.pressSequentially("0", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 2000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // boat
+    await page.getByTestId("participate-next").click(); // boat
 
     transportInput = page.locator('input[type="number"]').first();
     await transportInput.click();
     await transportInput.pressSequentially("0", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 2000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // train
+    await page.getByTestId("participate-next").click(); // train
 
     transportInput = page.locator('input[type="number"]').first();
     await transportInput.click();
     await transportInput.pressSequentially("0", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 2000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // bus
+    await page.getByTestId("participate-next").click(); // bus
 
     // Car km > 0 to trigger conditional steps
     transportInput = page.locator('input[type="number"]').first();
     await transportInput.click();
     await transportInput.pressSequentially("150", { delay: 50 });
-    await expect(
-      page.getByRole("button", { name: BUTTON_REGEX.continue }),
-    ).toBeEnabled({
+    await expect(page.getByTestId("participate-next")).toBeEnabled({
       timeout: 3000,
     });
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Car type (no impact modal for carKm, modal only appears after carPassengers)
     await expectStep(page, STEP.carType);
-    const electricBtn = page.getByRole("button", {
-      name: OPTION_REGEX.electric,
-    });
+    const electricBtn = page.locator(
+      '[data-answer-field="carType"][data-answer-value="electricCar"]',
+    );
     await expect(electricBtn).toBeVisible({ timeout: 3000 });
     await electricBtn.click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Car passengers - validate minimum of 1
     const passengersInput = page.locator('input[type="number"]').first();
-    const continueButton = page.getByRole("button", {
-      name: BUTTON_REGEX.continue,
-    });
+    const continueButton = page.getByTestId("participate-next");
 
     // 1 or more should enable
     await passengersInput.click();
@@ -633,45 +613,59 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
   test("should display final summary with breakdown", async ({ page }) => {
     // Complete full questionnaire with known values
-    await page.getByRole("button", { name: BUTTON_REGEX.start }).click();
+    await page.getByTestId("participate-start").click();
 
     await page.locator('input[id="firstName"]').fill("Summary");
     await page.locator('[role="combobox"]').first().click();
-    await page.getByRole("option", { name: COUNTRY_REGEX.denmark }).click();
+    await page.locator('[role="option"][data-value="DK"]').click();
     await page.locator('input[id="email"]').fill("summary@test.com");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     await page.locator('input[type="number"]').first().fill("7");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
-    await page.getByRole("button", { name: "Hostel" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="accommodationCategory"][data-answer-value="Hostel"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
-    await page.getByRole("button", { name: "2 people" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="roomOccupancy"][data-answer-value="2 people"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
 
-    await page.getByRole("button", { name: OPTION_REGEX.green }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator(
+        '[data-answer-field="electricity"][data-answer-value="green energy"]',
+      )
+      .click();
+    await page.getByTestId("participate-next").click();
     await dismissImpactModal(page);
 
-    await page.getByRole("button", { name: "sometimes" }).click();
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page
+      .locator('[data-answer-field="food"][data-answer-value="sometimes"]')
+      .click();
+    await page.getByTestId("participate-next").click();
     await dismissImpactModal(page);
 
     // Add some transport
     await page.locator('input[type="number"]').first().fill("100");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
     await dismissImpactModal(page);
 
     // Skip rest of transport
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // boat
+    await page.getByTestId("participate-next").click(); // boat
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // train
+    await page.getByTestId("participate-next").click(); // train
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // bus
+    await page.getByTestId("participate-next").click(); // bus
     await page.locator('input[type="number"]').first().fill("0");
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click(); // car
+    await page.getByTestId("participate-next").click(); // car
 
     // Age - final step before gender
     const ageInput = page.locator('input[type="number"]').first();
@@ -680,16 +674,16 @@ test.describe("Questionnaire Form E2E Tests", () => {
     await ageInput.pressSequentially("30", { delay: 50 });
 
     // Click continue to proceed to gender step
-    await page.getByRole("button", { name: BUTTON_REGEX.continue }).click();
+    await page.getByTestId("participate-next").click();
 
     // Gender step - select gender
     await expectStep(page, STEP.gender);
-    await page.getByRole("button", { name: "Male", exact: true }).click();
+    await page
+      .locator('[data-answer-field="gender"][data-answer-value="Male"]')
+      .click();
 
     // Now expect and click the complete button to submit and show summary
-    const completeBtn = page.getByRole("button", {
-      name: BUTTON_REGEX.complete,
-    });
+    const completeBtn = page.getByTestId("participate-next");
     await expect(completeBtn).toBeEnabled({ timeout: 5000 });
     await completeBtn.click();
 

@@ -37,6 +37,7 @@ Superseding is preferred over editing. If you find an accepted ADR that is now w
 | [0021](0021-centralized-feature-flags.md) | Centralized Feature Flags | accepted | |
 | [0022](0022-shared-auth-roles-and-factory-original.md) | Original Shared Auth Roles and Factory | **superseded by 0020** | |
 | [0023](0023-keep-known-email-participant-entry-app-owned.md) | Keep Known-Email Participant Entry App-Owned | accepted | 0005, known-email delivery only |
+| [0024](0024-app-owned-messages-shared-i18n-engine.md) | App-Owned Messages Behind a Shared i18n Engine | accepted | |
 
 [ADR-0023](0023-keep-known-email-participant-entry-app-owned.md) supersedes ADR-0005's known-email delivery mechanism only, affirming ADR-0013's app-owned Participant Invitations and #263's test governance. All other ADR-0005 requirements remain accepted.
 

@@ -195,7 +195,7 @@ export function SetupLinkCreator() {
   }
 
   return (
-    <Card>
+    <Card data-testid="setup-link-creator">
       <CardHeader>
         <CardTitle>Partner Organization Setup Link</CardTitle>
       </CardHeader>
@@ -205,7 +205,7 @@ export function SetupLinkCreator() {
           Organization membership.
         </p>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={create}>
-          <div className="space-y-2">
+          <div data-testid="hosted-project-picker" className="space-y-2">
             <span className="text-sm font-medium">Hosted Project</span>
             <EntityCombobox
               label="Hosted Project"
@@ -218,6 +218,7 @@ export function SetupLinkCreator() {
             <Label htmlFor="setup-email">Recipient email</Label>
             <Input
               id="setup-email"
+              data-testid="setup-email"
               required
               type="email"
               value={recipientEmail}
@@ -225,13 +226,18 @@ export function SetupLinkCreator() {
             />
           </div>
           <div>
-            <Button disabled={pending || !projectId} type="submit">
+            <Button
+              data-testid="create-setup-link"
+              disabled={pending || !projectId}
+              type="submit"
+            >
               {pending ? "Neuer Link…" : "Neuer Link"}
             </Button>
           </div>
         </form>
         {error && <p role="alert">{error}</p>}
         <section
+          data-testid="setup-links"
           aria-label="Existing Partner Organization Setup Links"
           className="space-y-3"
         >
@@ -302,6 +308,7 @@ export function SetupLinkCreator() {
                     </TableCell>
                     <TableCell>
                       <Button
+                        data-testid="close-setup-link"
                         type="button"
                         variant="outline"
                         disabled={!existing.enabled || !!closingId}
@@ -321,8 +328,14 @@ export function SetupLinkCreator() {
         {link && (
           <div className="space-y-2">
             <Label htmlFor="recipient-link">Recipient setup link</Label>
-            <Input id="recipient-link" readOnly value={link} />
+            <Input
+              id="recipient-link"
+              data-testid="recipient-link"
+              readOnly
+              value={link}
+            />
             <Button
+              data-testid="copy-setup-link"
               type="button"
               variant="outline"
               onClick={async () => {
@@ -418,6 +431,7 @@ function SetupOrganizationForm({
                 type="radio"
                 name="setup-kind"
                 checked={existing}
+                data-testid="setup-existing-organization"
                 onChange={() => setKind("existing")}
               />{" "}
               Existing Organization
@@ -425,7 +439,7 @@ function SetupOrganizationForm({
           </fieldset>
         )}
         {existing && owned ? (
-          <Field>
+          <Field data-testid="setup-organization-picker">
             <FieldLabel>Organization</FieldLabel>
             <EntityCombobox
               label="Organization"
@@ -441,6 +455,7 @@ function SetupOrganizationForm({
               <FieldLabel htmlFor="setup-name">New Organization name</FieldLabel>
               <Input
                 id="setup-name"
+                data-testid="setup-name"
                 disabled={pending}
                 maxLength={100}
                 minLength={2}
@@ -455,6 +470,7 @@ function SetupOrganizationForm({
               </FieldLabel>
               <select
                 id="setup-country"
+                data-testid="setup-country"
                 value={country}
                 required
                 disabled={pending}
@@ -476,6 +492,7 @@ function SetupOrganizationForm({
           </>
         )}
         <Button
+          data-testid="complete-setup"
           disabled={
             pending ||
             (existing
@@ -699,14 +716,22 @@ export function SetupLinkRecipient({
                 No new Organization will be created.
               </AlertDescription>
             </Alert>
-            <Button disabled={pending} onClick={() => void consume()}>
+            <Button
+              data-testid="retry-retained-setup"
+              disabled={pending}
+              onClick={() => void consume()}
+            >
               Retry setup with retained Organization
             </Button>
           </>
         ) : decision?.nextStep === "setup-recovery" ? (
           <>
             <SetupStatus state={knownErrors[decision.reason] ?? "generic"} />
-            <Button disabled={pending} onClick={recheck}>
+            <Button
+              data-testid="inspect-setup"
+              disabled={pending}
+              onClick={recheck}
+            >
               Inspect setup result
             </Button>
           </>
@@ -720,6 +745,7 @@ export function SetupLinkRecipient({
             </Alert>
             {decision.availableActions[0].organizations.map((organization) => (
               <Button
+                data-testid={`use-setup-organization-${organization.id}`}
                 key={organization.id}
                 disabled={pending}
                 onClick={() => void select(organization.id)}
@@ -730,6 +756,7 @@ export function SetupLinkRecipient({
           </>
         ) : decision?.nextStep === "continue" ? (
           <Link
+            data-testid="open-partner-project"
             className={buttonVariants()}
             prefetch={false}
             href={decision.availableActions[0].destination}
@@ -749,7 +776,11 @@ export function SetupLinkRecipient({
         {error && (
           <>
             <SetupStatus state={error} />
-            <Button disabled={pending} onClick={recheck}>
+            <Button
+              data-testid="inspect-setup"
+              disabled={pending}
+              onClick={recheck}
+            >
               Inspect setup result
             </Button>
           </>

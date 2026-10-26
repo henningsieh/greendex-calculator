@@ -99,6 +99,8 @@ export function OrganizationSwitcher() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
+              data-testid="organization-switcher"
+              data-organization-id={activeOrganization.id}
               className={cn(
                 "group/menubutton",
                 "border border-sidebar-accent/80 text-sidebar-foreground/80 ring-sidebar-accent",

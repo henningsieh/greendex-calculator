@@ -35,15 +35,15 @@ describe("SelectOrganization", () => {
   it("lists eligible Memberships without staff actions or redirects", () => {
     render(<SelectOrganization organizations={organizations} />);
 
-    expect(screen.getByRole("button", { name: "Alpha" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Beta" })).toBeInTheDocument();
+    expect(screen.getByTestId("select-organization-org-a")).toBeInTheDocument();
+    expect(screen.getByTestId("select-organization-org-b")).toBeInTheDocument();
   });
 
   it("re-anchors the session and refreshes the shell on selection", async () => {
     const user = userEvent.setup();
     render(<SelectOrganization organizations={organizations} />);
 
-    await user.click(screen.getByRole("button", { name: "Beta" }));
+    await user.click(screen.getByTestId("select-organization-org-b"));
 
     await waitFor(() => {
       expect(mocks.setActive).toHaveBeenCalledExactlyOnceWith({
@@ -58,7 +58,7 @@ describe("SelectOrganization", () => {
     const user = userEvent.setup();
     render(<SelectOrganization organizations={organizations} />);
 
-    await user.click(screen.getByRole("button", { name: "Beta" }));
+    await user.click(screen.getByTestId("select-organization-org-b"));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveAttribute(

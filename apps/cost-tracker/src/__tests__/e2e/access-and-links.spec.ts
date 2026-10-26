@@ -181,12 +181,12 @@ async function denied(page: Page) {
   await expect(page.getByTestId("data-error-fallback")).toBeVisible({
     timeout: 90_000,
   });
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(page.getByTestId("retry-project-data")).toBeVisible();
 }
 
 async function partnerPage(page: Page) {
   await page.goto("/projects");
-  await page.getByRole("tab", { name: "Partner" }).click();
+  await page.getByTestId("project-scope-partner").click();
   await page
     .locator(
       `a[href="/projects/${projectId}"], a[href^="/projects/${projectId}?"]`,
@@ -339,14 +339,14 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
   }) => {
     const h = await pageFor(browser, "H", baseURL!);
     await h.goto("/projects");
-    await h.getByRole("button", { name: "New project" }).click();
-    const dialog = h.getByRole("dialog", { name: "New project" });
-    await dialog.getByLabel("Name", { exact: true }).fill(names.project);
-    await dialog.getByLabel("Start date").fill("2027-04-01");
-    await dialog.getByLabel("End date").fill("2027-04-03");
-    await dialog.getByLabel("Location").fill("Berlin");
-    await dialog.getByLabel("Country").selectOption("DE");
-    await dialog.getByRole("button", { name: "Create project" }).click();
+    await h.getByTestId("new-project").click();
+    const dialog = h.getByTestId("create-project-dialog");
+    await dialog.locator("#new-project-name").fill(names.project);
+    await dialog.locator("#new-project-start").fill("2027-04-01");
+    await dialog.locator("#new-project-end").fill("2027-04-03");
+    await dialog.locator("#new-project-location").fill("Berlin");
+    await dialog.locator("#new-project-country").selectOption("DE");
+    await dialog.getByTestId("create-project").click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(h, /\/projects\/[^/]+$/, { timeout: 90_000 });
     projectId = new URL(h.url()).pathname.split("/").at(-1)!;
@@ -360,33 +360,21 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     const a = await pageFor(browser, "A", baseURL!);
     await a.goto(`/accept-invitation/${ids.invitation}`);
     await expect(a.getByRole("heading", { level: 1 })).toBeVisible();
-    await a
-      .getByRole("button", { name: "Accept Organization Invitation" })
-      .click();
+    await a.getByTestId("accept-organization-invitation").click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(a, /\/projects$/, { timeout: 90_000 });
     for (const page of [h, a]) {
       await page.goto(`/projects/${projectId}`);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(
-        page.getByRole("link", { name: "Review submitted Claims" }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole("button", {
-          name: /Assign.*(?:Project|Partnership).*Coordinator/i,
-        }),
-      ).toHaveCount(0);
+      await expect(page.locator('a[href="/claims/review"]')).toBeVisible();
+      await expect(page.getByTestId("organization-assignment")).toHaveCount(0);
     }
     const partner = await pageFor(browser, "P", baseURL!);
     await partnerPage(partner);
     await expect(
-      partner.getByRole("link", { name: "Coordinate Participants" }),
+      partner.locator('a[href^="/partnerships/"][href$="/participants"]'),
     ).toBeVisible();
-    await expect(
-      partner.getByRole("button", {
-        name: /Assign.*(?:Project|Partnership).*Coordinator/i,
-      }),
-    ).toHaveCount(0);
+    await expect(partner.getByTestId("organization-assignment")).toHaveCount(0);
     await h.goto("/organization");
     const [adminMembership] = await db
       .select({ id: member.id })
@@ -420,23 +408,21 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await expect(
         x.locator('[data-testid="no-organization-access"]'),
       ).toBeVisible();
-      await expect(
-        x.getByRole("dialog", { name: "Create Organization" }),
-      ).toBeHidden();
-      await expect(
-        x.getByRole("textbox", { name: "Organization name", exact: true }),
-      ).toBeEditable();
+      await expect(x.getByTestId("no-organization-access")).toHaveRole("main");
+      await expect(x.locator("#organization-name")).toBeEditable();
       // Text-free: no links to the protected entities leak (stable ids, not copy).
       await expect(x.locator(`a[href*="${projectId}"]`)).toHaveCount(0);
       await expect(x.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
       await expect(
-        x.getByRole("button", { name: /Save cost|Approve Claim|Submit Claim/ }),
+        x.locator(
+          '[data-testid="cost-save"], [data-testid="claim-decision-approve"], [data-testid="claim-submit"]',
+        ),
       ).toHaveCount(0);
     }
     const p = await pageFor(browser, "P", baseURL!);
     await partnerPage(p);
     await expect(
-      p.getByRole("link", { name: "Coordinate Participants" }),
+      p.locator('a[href^="/partnerships/"][href$="/participants"]'),
     ).toBeVisible();
     const f = await pageFor(browser, "F", baseURL!);
     for (const [route, _resource] of [
@@ -448,7 +434,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       // Text-free: no link to the protected partnership leaks.
       await expect(f.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
       await expect(
-        f.getByRole("button", { name: /Save cost|Approve Claim/ }),
+        f.locator(
+          '[data-testid="cost-save"], [data-testid="claim-decision-approve"]',
+        ),
       ).toHaveCount(0);
     }
   });
@@ -462,21 +450,16 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await page.goto(`/claims/review/${ids.partnership}`);
       await denied(page);
       if (actor === "P") {
-        await expect(
-          page.getByRole("button", {
-            name: /Switch Organization/,
-            exact: true,
-          }),
-        ).toBeVisible();
+        await expect(page.getByTestId("organization-switcher")).toBeVisible();
       }
       // Text-free: no link to the protected partnership leaks.
       await expect(
         page.getByRole("main").locator(`a[href*="${ids.partnership}"]`),
       ).toHaveCount(0);
       await expect(
-        page.getByRole("button", {
-          name: /Approve Claim|Confirm approval|Reject Claim/,
-        }),
+        page.locator(
+          '[data-testid="claim-decision-approve"], [data-testid="claim-decision-confirm-approve"], [data-testid="claim-decision-confirm-reject"]',
+        ),
       ).toHaveCount(0);
     });
   }
@@ -527,15 +510,15 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
         t.locator('[data-testid="no-organization-access"]'),
       ).toHaveCount(0);
       await expect(
-        t.getByRole("button", {
-          name: /Save Claim draft|Save cost|Submit Claim/,
-        }),
+        t.locator(
+          '[data-testid="claim-draft-save"], [data-testid="cost-save"], [data-testid="claim-submit"]',
+        ),
       ).toHaveCount(0);
       const h = await pageFor(browser, "H", baseURL!);
       await h.goto(`/partnerships/${ids.partnership}/claim`);
       await denied(h);
       await expect(
-        h.getByRole("button", { name: /Save cost|Save Claim draft/ }),
+        h.locator('[data-testid="cost-save"], [data-testid="claim-draft-save"]'),
       ).toHaveCount(0);
       expect(
         await db
@@ -557,21 +540,16 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
   }) => {
     const h = await pageFor(browser, "H", baseURL!);
     await h.goto("/partner-organizations");
-    const creator = h
-      .locator("section")
-      .filter({ has: h.getByLabel("Recipient email", { exact: true }) });
+    const creator = h.getByTestId("setup-link-creator");
     await creator
-      .getByRole("button", { name: "Hosted Project", exact: true })
+      .getByTestId("hosted-project-picker")
+      .getByTestId("entity-trigger")
       .click();
-    await h
-      .getByRole("combobox", { name: "Search Hosted Project by name or ID" })
-      .fill(names.project);
+    await h.getByTestId("entity-search").fill(names.project);
     await h.locator(`[role="option"][data-entity-id="${projectId}"]`).click();
-    await creator.getByLabel("Recipient email").fill(actors.X.email);
-    await creator
-      .getByRole("button", { name: "Neuer Link", exact: true })
-      .click();
-    const first = await creator.getByLabel("Recipient setup link").inputValue();
+    await creator.locator("#setup-email").fill(actors.X.email);
+    await creator.getByTestId("create-setup-link").click();
+    const first = await creator.locator("#recipient-link").inputValue();
     setupId = new URL(first).pathname.split("/").at(-1)!;
     // No setup-link closure UI: DB revocation is a test-helper precondition,
     // not evidence of a browser revocation control.
@@ -583,12 +561,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await x.goto(first);
     // Text-free: setup-error state hook proves the disabled page (subsumes page identity).
     await expect(x.locator('[data-setup-error="disabled"]')).toBeVisible();
-    await creator
-      .getByRole("button", { name: "Neuer Link", exact: true })
-      .click();
-    const replacement = await creator
-      .getByLabel("Recipient setup link")
-      .inputValue();
+    await creator.getByTestId("create-setup-link").click();
+    const replacement = await creator.locator("#recipient-link").inputValue();
     // Preserve the original pathname inequality without printing either private ID.
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
@@ -611,10 +585,8 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(
       x.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
-    await expect(
-      x.getByRole("dialog", { name: "Create Organization" }),
-    ).toBeHidden();
-    await x.getByRole("button", { name: "Sign out" }).click();
+    await expect(x.getByTestId("no-organization-access")).toHaveRole("main");
+    await x.getByTestId("sign-out").click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(x, new URL("/", baseURL!).toString());
     await x.goto(replacement);
@@ -649,7 +621,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(
       p
         .getByTestId(`participant-invitation-${ids.oldParticipantInvitation}`)
-        .getByRole("button", { name: /^Reissue invitation for / }),
+        .getByTestId("reissue-participant-invitation"),
     ).toBeVisible();
     await db
       .update(participantInvitations)
@@ -669,10 +641,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.goto(
       `/participant-invitations/${ids.oldParticipantInvitation}?secret=${encodeURIComponent(oldSecret)}`,
     );
-    await t.getByLabel("Full name").fill(actors.T.name);
-    await t.getByLabel("Country", { exact: true }).selectOption("DE");
-    await t.getByLabel("I accept the current Participant agreement").check();
-    await t.getByRole("button", { name: "Join Project" }).click();
+    await t.getByTestId("participant-name").fill(actors.T.name);
+    await t.locator("#participant-country").selectOption("DE");
+    await t.getByTestId("accept-participant-agreement").check();
+    await t.getByTestId("join-project").click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
     await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(
@@ -684,7 +656,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.goto(
       `/participant-invitations/${ids.newParticipantInvitation}?secret=${encodeURIComponent(newSecret)}`,
     );
-    await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
+    await expect(t.getByTestId("join-project")).toBeVisible();
     // Spare replacement is not redeemed; no Participation or Membership created.
   });
 
@@ -694,33 +666,25 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
   }) => {
     const p = await pageFor(browser, "P", baseURL!);
     await p.goto(`/partnerships/${ids.partnership}/participants`);
-    await expect(
-      p.getByRole("button", { name: "Send Participant Invitation" }),
-    ).toBeVisible();
-    await p
-      .getByRole("button", { name: "Create Participant Registration Link" })
-      .click();
+    await expect(p.getByTestId("send-participant-invitation")).toBeVisible();
+    await p.getByTestId("create-registration-link").click();
     // Text-free: the created link input carries a value (functional proof).
-    await expect(
-      p.getByLabel("New registration link (copy now)"),
-    ).not.toBeEmpty();
-    const link = await p
-      .getByLabel("New registration link (copy now)")
-      .inputValue();
+    await expect(p.locator("#new-participant-link")).not.toBeEmpty();
+    const link = await p.locator("#new-participant-link").inputValue();
     registrationId = new URL(link).pathname.split("/").at(-1)!;
     await p
       .getByTestId(`registration-link-${registrationId}`)
-      .getByRole("button", { name: /^Close registration link / })
+      .getByTestId("close-registration-link")
       .click();
     // Text-free: closing clears the transient link input (functional proof).
-    await expect(p.getByLabel("New registration link (copy now)")).toHaveCount(0);
+    await expect(p.locator("#new-participant-link")).toHaveCount(0);
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(link);
-    await expect(t.getByRole("button", { name: "Join Project" })).toBeVisible();
-    await t.getByLabel("Full name").fill(actors.T.name);
-    await t.getByLabel("Country", { exact: true }).selectOption("DE");
-    await t.getByLabel("I accept the current Participant agreement").check();
-    await t.getByRole("button", { name: "Join Project" }).click();
+    await expect(t.getByTestId("join-project")).toBeVisible();
+    await t.getByTestId("participant-name").fill(actors.T.name);
+    await t.locator("#participant-country").selectOption("DE");
+    await t.getByTestId("accept-participant-agreement").check();
+    await t.getByTestId("join-project").click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
     await expect(t.locator("form p[role='alert']")).toBeVisible();
     expect(

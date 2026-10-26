@@ -6,10 +6,11 @@ import {
   organization,
   projectsTable,
 } from "@greendex/database/schema";
-import de from "@greendex/i18n/locales/de.json" with { type: "json" };
-import en from "@greendex/i18n/locales/en.json" with { type: "json" };
 import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
+
+import de from "@/messages/de.json" with { type: "json" };
+import en from "@/messages/en.json" with { type: "json" };
 
 const SEED_ORGANIZATION_SLUG = "seed-org";
 const sharedTravelLegDescription = `Shared travel E2E ${randomUUID()}`;
@@ -83,7 +84,7 @@ test.describe("Project Shared Travel Legs", () => {
       .getByLabel(en.organization.projects.form.new.name)
       .fill(projectName);
     await page.getByRole("combobox").click();
-    await page.getByRole("option", { name: /Germany/ }).click();
+    await page.locator('[role="option"][data-value="DE"]').click();
     await page
       .getByRole("button", { name: en.project["shared-travel"].title })
       .click();
@@ -166,7 +167,7 @@ test.describe("Project Shared Travel Legs", () => {
     await expect(
       editDialog.getByLabel(en.organization.projects.form.new.name),
     ).toHaveValue(editedProjectName);
-    await editDialog.getByRole("button", { name: "Close", exact: true }).click();
+    await editDialog.getByTestId("dialog-close").click();
     await sharedTravelLegRow
       .getByRole("button", { name: en.project["shared-travel"].table.edit })
       .click();
@@ -254,7 +255,9 @@ test.describe("Project Shared Travel Legs", () => {
         name: en.project["shared-travel"].types.electricCar,
       }),
     ).toBeVisible();
-    await expect(page.getByRole("option", { name: "Plane" })).toHaveCount(0);
+    await expect(
+      page.locator('[role="option"][data-profile="plane"]'),
+    ).toHaveCount(0);
     await page
       .getByRole("option", {
         name: en.project["shared-travel"].types.electricCar,
@@ -306,7 +309,7 @@ test.describe("Project Shared Travel Legs", () => {
       dialog.getByLabel(en.project["shared-travel"].form.description),
     ).toHaveValue(`${sharedTravelLegDescription} updated`);
     await expect(dialog.locator("select")).toHaveValue("electricCar");
-    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await dialog.getByTestId("dialog-close").click();
 
     await sharedTravelLegRow
       .getByRole("button", { name: en.project["shared-travel"].table.delete })
@@ -366,7 +369,7 @@ test.describe("Project Shared Travel Legs", () => {
       await expect(
         dialog.getByLabel(messages.project["shared-travel"].form["travel-date"]),
       ).toBeVisible();
-      await dialog.getByRole("button", { name: "Close" }).click();
+      await dialog.getByTestId("dialog-close").click();
     }
   });
 });

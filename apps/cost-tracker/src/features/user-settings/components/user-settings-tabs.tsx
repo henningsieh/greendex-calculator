@@ -21,12 +21,14 @@ export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
         <TabsTrigger
           className="py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0"
           value="account"
+          data-testid="settings-tab-account"
         >
           Account details
         </TabsTrigger>
         <TabsTrigger
           className="py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0"
           value="appearance"
+          data-testid="settings-tab-appearance"
         >
           Appearance
         </TabsTrigger>
@@ -63,7 +65,12 @@ function SettingsPanel({ children, description, title }: SettingsPanelProps) {
   return (
     <section className="grid gap-7 border-b pb-9 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-12 lg:pb-11">
       <div>
-        <h2 className="font-heading text-xl font-semibold">{title}</h2>
+        <h2
+          data-testid="settings-panel-heading"
+          className="font-heading text-xl font-semibold"
+        >
+          {title}
+        </h2>
         <p className="mt-2 text-sm/6 text-muted-foreground">{description}</p>
       </div>
       {children}

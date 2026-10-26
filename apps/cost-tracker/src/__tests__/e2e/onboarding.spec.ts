@@ -36,12 +36,10 @@ for (const { viewport, fontSize } of [
     await page.evaluate((size) => {
       document.documentElement.style.fontSize = `${size}px`;
     }, fontSize);
-    await page.getByLabel("Name", { exact: true }).fill("Alex Morgan");
-    await page.getByLabel("Email address").fill(`${"a".repeat(64)}@example.org`);
-    await page.getByLabel("Password", { exact: true }).fill("example-password");
-    await page
-      .getByRole("button", { name: "Create account", exact: true })
-      .click();
+    await page.locator("#name").fill("Alex Morgan");
+    await page.locator("#email").fill(`${"a".repeat(64)}@example.org`);
+    await page.locator("#password").fill("example-password");
+    await page.getByTestId("auth-submit").click();
     const progress = page.getByTestId("auth-verification-message");
     await expect(progress).toBeVisible();
     await expect(progress).toHaveAttribute("role", "status");
@@ -102,9 +100,7 @@ test("invitation registration keeps its continuation on Google and account navig
   page,
 }) => {
   await page.goto("/register?next=%2Faccept-invitation%2Fexample-invitation");
-  await expect(
-    page.getByRole("link", { name: "Sign in", exact: true }),
-  ).toHaveAttribute(
+  await expect(page.getByTestId("auth-account-navigation")).toHaveAttribute(
     "href",
     "/login?next=%2Faccept-invitation%2Fexample-invitation",
   );
@@ -115,7 +111,7 @@ test("invitation registration keeps its continuation on Google and account navig
         json: { json: { url: new URL("/login", page.url()).href } },
       }),
     ),
-    page.getByRole("button", { name: "Continue with Google" }).click(),
+    page.getByTestId("google-sign-in").click(),
   ]);
   expect(request.postDataJSON()).toEqual({
     json: { returnTo: "/accept-invitation/example-invitation" },
@@ -182,12 +178,10 @@ test("delivered email verifies signup and verified registration continues into o
     connected = true;
     const boundary = await inbox.boundary();
     await page.goto("/register");
-    await page.getByLabel("Name", { exact: true }).fill(name);
-    await page.getByLabel("Email address").fill(recipient);
-    await page.getByLabel("Password", { exact: true }).fill(password);
-    await page
-      .getByRole("button", { name: "Create account", exact: true })
-      .click();
+    await page.locator("#name").fill(name);
+    await page.locator("#email").fill(recipient);
+    await page.locator("#password").fill(password);
+    await page.getByTestId("auth-submit").click();
     const progress = page.getByTestId("auth-verification-message");
     await expect(progress).toBeVisible();
     await expect(progress.locator("strong")).toBeVisible();
@@ -210,14 +204,14 @@ test("delivered email verifies signup and verified registration continues into o
     await expect(page).toHaveURL(new URL("/projects", baseURL).href);
     await expect(setup).toBeVisible();
     await expect(page.getByTestId("auth-verification-message")).toHaveCount(0);
-    const organizationInput = setup.getByLabel("Organization name");
+    const organizationInput = setup.locator("#organization-name");
     await organizationInput.fill(organizationName);
     await organizationInput.focus();
     await page.keyboard.press("Tab");
-    await expect(setup.getByLabel("Organization country")).toBeFocused();
-    await setup.getByLabel("Organization country").selectOption("DE");
+    await expect(setup.locator("#organization-country")).toBeFocused();
+    await setup.locator("#organization-country").selectOption("DE");
     await page.keyboard.press("Tab");
-    const create = setup.getByRole("button", { name: "Create Organization" });
+    const create = setup.getByTestId("create-organization");
     await expect(create).toBeFocused();
     await page.keyboard.press("Enter");
     await expectFirstOrganizationProjects(page, organizationName);

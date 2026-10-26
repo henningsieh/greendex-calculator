@@ -151,6 +151,7 @@ function JourneyCorrection({
           variant="outline"
           type="button"
           onClick={() => setEditing(true)}
+          data-testid={`correct-journey-${journey.projectParticipantId}`}
         >
           Correct {name}&apos;s journey
         </Button>
@@ -162,6 +163,7 @@ function JourneyCorrection({
             <Input
               variant="accounting"
               id={`${id}-origin`}
+              data-testid={`journey-correction-${journey.projectParticipantId}-origin`}
               value={origin}
               onChange={(event) => setOrigin(event.target.value)}
             />
@@ -172,6 +174,7 @@ function JourneyCorrection({
             <Input
               variant="accounting"
               id={`${id}-destination`}
+              data-testid={`journey-correction-${journey.projectParticipantId}-destination`}
               value={destination}
               onChange={(event) => setDestination(event.target.value)}
             />
@@ -181,6 +184,7 @@ function JourneyCorrection({
             <Label htmlFor={`${id}-type`}>Trip type for {name}</Label>
             <select
               id={`${id}-type`}
+              data-testid={`journey-correction-${journey.projectParticipantId}-type`}
               className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
               value={tripType}
               onChange={(event) =>
@@ -199,16 +203,24 @@ function JourneyCorrection({
             <Input
               variant="accounting"
               id={`${id}-distance`}
+              data-testid={`journey-correction-${journey.projectParticipantId}-distance`}
               inputMode="decimal"
               value={distance}
               onChange={(event) => setDistance(event.target.value)}
             />
             <FieldError message={errors.erasmusDistanceKm} />
           </div>
-          <Button size="lg" variant="default" type="submit" disabled={pending}>
+          <Button
+            size="lg"
+            variant="default"
+            type="submit"
+            disabled={pending}
+            data-testid="journey-correction-save"
+          >
             Save correction
           </Button>
           <Button
+            data-testid="cancel-journey-correction"
             variant="default"
             size="lg"
             type="button"
@@ -320,7 +332,10 @@ function JourneyEditor({
           </ul>
         )}
         {participants.some((item) => !existing.has(item.id)) && (
-          <ul aria-label="Participations needing Journeys">
+          <ul
+            aria-label="Participations needing Journeys"
+            data-testid="journey-gaps"
+          >
             {participants
               .filter((item) => !existing.has(item.id))
               .map((item) => (
@@ -340,6 +355,7 @@ function JourneyEditor({
               <Label htmlFor="journey-person">Participation</Label>
               <select
                 id="journey-person"
+                data-testid="journey-person"
                 className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 value={person}
                 onChange={(event) => setPerson(event.target.value)}
@@ -348,7 +364,11 @@ function JourneyEditor({
                 {participants
                   .filter((item) => !existing.has(item.id))
                   .map((item) => (
-                    <option key={item.id} value={item.id}>
+                    <option
+                      data-testid={`journey-option-${item.id}`}
+                      key={item.id}
+                      value={item.id}
+                    >
                       {item.displayName}
                     </option>
                   ))}
@@ -360,6 +380,7 @@ function JourneyEditor({
               <Input
                 variant="accounting"
                 id="journey-origin"
+                data-testid="journey-origin"
                 value={origin}
                 onChange={(event) => setOrigin(event.target.value)}
               />
@@ -397,6 +418,7 @@ function JourneyEditor({
               <Input
                 variant="figure"
                 id="journey-distance"
+                data-testid="journey-distance"
                 inputMode="decimal"
                 value={distance}
                 onChange={(event) => setDistance(event.target.value)}
@@ -408,6 +430,7 @@ function JourneyEditor({
               variant="default"
               type="submit"
               disabled={pending || !person}
+              data-testid="journey-save"
             >
               Save journey
             </Button>
@@ -526,7 +549,10 @@ function CostEditor({
               allocations: (
                 <ul className="space-y-2">
                   {entry.allocations.map((share) => (
-                    <li key={share.projectParticipantId}>
+                    <li
+                      key={share.projectParticipantId}
+                      data-amount-eur={share.amountEur}
+                    >
                       {participants.find(
                         (item) => item.id === share.projectParticipantId,
                       )?.displayName ?? "Participant"}
@@ -594,6 +620,7 @@ function CostEditor({
               <Input
                 variant="figure"
                 id="cost-amount"
+                data-testid="cost-amount"
                 inputMode="decimal"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
@@ -604,6 +631,7 @@ function CostEditor({
               <Label htmlFor="cost-method">Allocation method</Label>
               <select
                 id="cost-method"
+                data-testid="cost-method"
                 className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 value={method}
                 onChange={(event) =>
@@ -616,7 +644,7 @@ function CostEditor({
               </select>
               <FieldError message={errors.allocationMethod} />
             </div>
-            <fieldset className="space-y-2">
+            <fieldset data-testid="cost-participations" className="space-y-2">
               <legend>Covered Participations</legend>
               {participants.map((item) => {
                 const index = selected.indexOf(item.id);
@@ -624,6 +652,7 @@ function CostEditor({
                   <div key={item.id}>
                     <label>
                       <input
+                        data-testid={`cost-participation-${item.id}`}
                         type="checkbox"
                         checked={index !== -1}
                         onChange={(event) =>
@@ -655,6 +684,7 @@ function CostEditor({
                         <Input
                           variant="figure"
                           id={`share-${item.id}`}
+                          data-testid={`cost-share-${item.id}`}
                           inputMode="decimal"
                           value={shares[item.id] ?? ""}
                           onChange={(event) =>
@@ -683,7 +713,13 @@ function CostEditor({
                 ? `Equal split across ${selected.length} Participations; exact EUR shares computed by the server after save.`
                 : `Entered shares total: ${shareTotal} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
             </p>
-            <Button size="lg" variant="default" type="submit" disabled={pending}>
+            <Button
+              size="lg"
+              variant="default"
+              type="submit"
+              disabled={pending}
+              data-testid="cost-save"
+            >
               Save cost
             </Button>
           </form>
@@ -803,11 +839,18 @@ function ProofEditor({
             <Input
               variant="accounting"
               id="proof-file"
+              data-testid="proof-file"
               name="file"
               type="file"
               accept="application/pdf,image/jpeg,image/png"
             />
-            <Button size="lg" variant="default" type="submit" disabled={busy}>
+            <Button
+              size="lg"
+              variant="default"
+              type="submit"
+              disabled={busy}
+              data-testid="proof-upload"
+            >
               Upload document
             </Button>
           </form>
@@ -848,6 +891,7 @@ function ProofEditor({
                 </Label>
                 <select
                   id={`link-${entry.id}`}
+                  data-testid={`link-proof-${entry.id}`}
                   className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                   disabled={busy}
                   defaultValue=""
@@ -863,7 +907,11 @@ function ProofEditor({
                       (document) => !entry.proofDocumentIds.includes(document.id),
                     )
                     .map((document) => (
-                      <option key={document.id} value={document.id}>
+                      <option
+                        data-testid={`proof-option-${document.id}`}
+                        key={document.id}
+                        value={document.id}
+                      >
                         {document.originalFileName}
                       </option>
                     ))}
@@ -1111,6 +1159,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
             <aside
               className="min-w-0 border-b bg-muted min-[961px]:col-start-2 min-[961px]:row-start-1 min-[961px]:border-b-0 min-[961px]:border-l"
               aria-label="Submission"
+              data-testid="claim-submission"
             >
               <ClaimSubmission
                 partnershipId={partnershipId}
@@ -1135,6 +1184,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                   {payout.accounts.length ? (
                     <select
                       id="claim-payout-select"
+                      data-testid="claim-payout-select"
                       className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
                       disabled={!editable || pending}
                       value={payout.selectedPayoutAccountId ?? ""}
@@ -1142,7 +1192,11 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                     >
                       <option value="">Select account</option>
                       {payout.accounts.map((account) => (
-                        <option key={account.id} value={account.id}>
+                        <option
+                          data-testid={`payout-option-${account.id}`}
+                          key={account.id}
+                          value={account.id}
+                        >
                           {account.accountHolder} · {account.iban}
                         </option>
                       ))}
@@ -1170,6 +1224,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                         <Input
                           variant="accounting"
                           id="account-holder"
+                          data-testid="account-holder"
                           value={accountHolder}
                           onChange={(event) =>
                             setAccountHolder(event.target.value)
@@ -1183,6 +1238,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                         <Input
                           variant="figure"
                           id="account-iban"
+                          data-testid="account-iban"
                           value={iban}
                           onChange={(event) => setIban(event.target.value)}
                           disabled={pending}
@@ -1205,6 +1261,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                         variant="default"
                         type="submit"
                         disabled={pending}
+                        data-testid="payout-account-create"
                       >
                         Create Payout Account
                       </Button>
@@ -1217,6 +1274,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
                     size="lg"
                     type="button"
                     disabled={pending || !payout.selectedPayoutAccountId}
+                    data-testid="claim-draft-save"
                     onClick={() => void saveDraft()}
                   >
                     Save Claim draft

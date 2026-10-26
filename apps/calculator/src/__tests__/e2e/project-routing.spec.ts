@@ -42,22 +42,20 @@ test.describe("project routing", () => {
   test("shows an authenticated user an existing project", async ({ page }) => {
     const project = await getSeedProject();
 
-    await page.goto(`/en/org/projects/${project.id}`);
+    const response = await page.goto(`/en/org/projects/${project.id}`);
+    expect(response?.status()).toBe(200);
 
     await expect(page.getByRole("heading", { name: project.name })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "This page could not be found." }),
-    ).not.toBeVisible();
   });
 
   test("shows a public participation page for an existing project", async ({
     page,
   }) => {
-    await page.goto(`/en/project/${publicProjectId}/participate`);
+    const response = await page.goto(
+      `/en/project/${publicProjectId}/participate`,
+    );
+    expect(response?.status()).toBe(200);
 
-    await expect(page.getByRole("button", { name: /start/i })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "This page could not be found." }),
-    ).not.toBeVisible();
+    await expect(page.getByTestId("participate-start")).toBeVisible();
   });
 });

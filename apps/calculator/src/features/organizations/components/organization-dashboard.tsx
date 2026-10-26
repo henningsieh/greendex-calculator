@@ -36,6 +36,7 @@ export function OrganizationDashboard({
 
   return (
     <Tabs
+      data-testid="organization-dashboard"
       className="w-full gap-6"
       onValueChange={setActiveTab}
       value={activeTab || "dashboard"}
