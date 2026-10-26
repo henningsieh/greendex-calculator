@@ -332,6 +332,11 @@ it("returns a private server signup receipt without requiring a session", async 
           entry: "login",
           returnTo: "/accept-invitation/invite_123",
         },
+        {
+          kind: "resend-verification",
+          email: "submitted@example.org",
+          callbackURL: "/accept-invitation/invite_123",
+        },
       ],
     },
   });

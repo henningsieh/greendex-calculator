@@ -45,14 +45,20 @@
     "inbox": {
       "heading": "Check your inbox",
       "address": "Check <address>{email}</address> for your verification link.",
-      "invitationInstruction": "Open the verification link to return here signed in. Then accept the invitation to join the Organization.",
+      "invitationInstruction": "Open the verification link to return here signed in, then accept the invitation to join the Organization. If the message does not arrive, send a new link below.",
       "instruction": "Open the link to verify your personal login and continue where you left off in Cost Tracker.",
       "spam": "If the message is not visible, check your spam folder too.",
-      "signIn": "Already verified or already have an account? Sign in to continue this invitation."
+      "signIn": "Already verified or already have an account? Sign in to continue this invitation.",
+      "resend": {
+        "label": "Send a new verification link",
+        "pending": "Sending…",
+        "success": "Request received. If your account still needs verification, a new link is on its way. Check your inbox and spam folder.",
+        "error": "Could not request a new link. Please try again shortly."
+      }
     },
     "recovery": {
       "title": "Return to your invitation",
-      "wrongEmail": "This login uses a different email address. Sign out, then sign in with the address that received the invitation.",
+      "wrongEmail": "This invitation was sent to a different email address. Continue with the address that received it.",
       "expired": "This invitation has expired. Ask your Organization for a new invitation.",
       "closed": "This invitation is no longer available. Ask your Organization for a new invitation.",
       "unavailable": "We cannot use this invitation. Open the complete link from your invitation email, or ask your Organization for a new invitation.",

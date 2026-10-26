@@ -45,14 +45,20 @@
     "inbox": {
       "heading": "Controlla la posta in arrivo",
       "address": "Cerca il link di verifica in <address>{email}</address>.",
-      "invitationInstruction": "Apri il link di verifica per tornare qui con l'accesso effettuato. Poi accetta l'invito per unirti all'Organizzazione.",
+      "invitationInstruction": "Apri il link di verifica per tornare qui con accesso effettuato, poi accetta l’invito per entrare nell’Organizzazione. Se il messaggio non arriva, invia un nuovo link qui sotto.",
       "instruction": "Apri il link per verificare il tuo accesso personale e riprendere il percorso in Cost Tracker.",
       "spam": "Se non vedi il messaggio, controlla anche la cartella spam.",
-      "signIn": "Hai già verificato l'e-mail o hai un account? Accedi per continuare con questo invito."
+      "signIn": "Hai già verificato l'e-mail o hai un account? Accedi per continuare con questo invito.",
+      "resend": {
+        "label": "Invia un nuovo link di verifica",
+        "pending": "Invio in corso…",
+        "success": "Richiesta ricevuta. Se devi ancora verificare il tuo account, un nuovo link è in arrivo. Controlla la posta in arrivo e la cartella spam.",
+        "error": "Impossibile richiedere un nuovo link. Riprova tra poco."
+      }
     },
     "recovery": {
       "title": "Torna al tuo invito",
-      "wrongEmail": "Questo accesso usa un altro indirizzo e-mail. Esci, poi accedi con l'indirizzo che ha ricevuto l'invito.",
+      "wrongEmail": "Questo invito è stato inviato a un altro indirizzo e-mail. Continua con l'indirizzo che lo ha ricevuto.",
       "expired": "Questo invito è scaduto. Chiedi un nuovo invito alla tua Organizzazione.",
       "closed": "Questo invito non è più disponibile. Chiedi un nuovo invito alla tua Organizzazione.",
       "unavailable": "Non possiamo usare questo invito. Apri il link completo nell'e-mail o chiedi un nuovo invito alla tua Organizzazione.",

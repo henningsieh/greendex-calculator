@@ -146,6 +146,11 @@ describe("Organization Invitation acceptance", () => {
               kind: "sign-out",
               destination: "/register?next=%2Faccept-invitation%2Finvite-1",
             },
+            {
+              kind: "resend-verification",
+              email: "submitted@example.org",
+              callbackURL: returnTo,
+            },
           ],
         }}
       />,

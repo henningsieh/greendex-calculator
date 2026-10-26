@@ -45,14 +45,20 @@
     "inbox": {
       "heading": "Controleer je inbox",
       "address": "Zoek je verificatielink in <address>{email}</address>.",
-      "invitationInstruction": "Open de verificatielink om hier ingelogd terug te keren. Accepteer daarna de uitnodiging voor de Organisatie.",
+      "invitationInstruction": "Open de verificatielink om hier ingelogd terug te keren en accepteer daarna de uitnodiging om lid te worden van de Organisatie. Als het bericht niet aankomt, kun je hieronder een nieuwe link sturen.",
       "instruction": "Open de link om je persoonlijke login te verifiëren en verder te gaan in Cost Tracker.",
       "spam": "Zie je het bericht niet? Controleer ook je spammap.",
-      "signIn": "Al geverifieerd of al een account? Log in om verder te gaan met deze uitnodiging."
+      "signIn": "Al geverifieerd of al een account? Log in om verder te gaan met deze uitnodiging.",
+      "resend": {
+        "label": "Een nieuwe verificatielink sturen",
+        "pending": "Bezig met versturen…",
+        "success": "Verzoek ontvangen. Als je je account nog moet verifiëren, is er een nieuwe link onderweg. Controleer je inbox en spammap.",
+        "error": "Er kon geen nieuwe link worden aangevraagd. Probeer het zo opnieuw."
+      }
     },
     "recovery": {
       "title": "Terug naar je uitnodiging",
-      "wrongEmail": "Deze login gebruikt een ander e-mailadres. Log uit en log daarna in met het adres dat de uitnodiging heeft ontvangen.",
+      "wrongEmail": "Deze uitnodiging is naar een ander e-mailadres gestuurd. Ga verder met het adres dat de uitnodiging heeft ontvangen.",
       "expired": "Deze uitnodiging is verlopen. Vraag je Organisatie om een nieuwe uitnodiging.",
       "closed": "Deze uitnodiging is niet meer beschikbaar. Vraag je Organisatie om een nieuwe uitnodiging.",
       "unavailable": "We kunnen deze uitnodiging niet gebruiken. Open de volledige link in je uitnodigingsmail of vraag je Organisatie om een nieuwe uitnodiging.",

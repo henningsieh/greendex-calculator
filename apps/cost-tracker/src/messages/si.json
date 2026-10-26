@@ -45,14 +45,20 @@
     "inbox": {
       "heading": "Preverite prejeto pošto",
       "address": "Poiščite potrditveno povezavo v nabiralniku <address>{email}</address>.",
-      "invitationInstruction": "Odprite potrditveno povezavo, da se vrnete sem prijavljeni. Nato sprejmite povabilo za pridružitev organizaciji.",
+      "invitationInstruction": "Odprite povezavo za potrditev, da se vrnete sem prijavljeni, nato sprejmite povabilo za pridružitev Organizaciji. Če sporočilo ne prispe, spodaj pošljite novo povezavo.",
       "instruction": "Odprite povezavo, da potrdite osebno prijavo in nadaljujete v Cost Trackerju.",
       "spam": "Če sporočila ne vidite, preverite tudi neželeno pošto.",
-      "signIn": "Ste e-pošto že potrdili ali že imate račun? Prijavite se za nadaljevanje tega povabila."
+      "signIn": "Ste e-pošto že potrdili ali že imate račun? Prijavite se za nadaljevanje tega povabila.",
+      "resend": {
+        "label": "Pošlji novo povezavo za potrditev",
+        "pending": "Pošiljanje…",
+        "success": "Zahteva je prejeta. Če morate svoj račun še potrditi, je nova povezava na poti. Preverite svoj poštni predal in mapo z neželeno pošto.",
+        "error": "Nove povezave ni bilo mogoče zahtevati. Poskusite znova čez nekaj trenutkov."
+      }
     },
     "recovery": {
       "title": "Vrnite se k povabilu",
-      "wrongEmail": "Ta prijava uporablja drug e-poštni naslov. Odjavite se in se prijavite z naslovom, ki je prejel povabilo.",
+      "wrongEmail": "To povabilo je bilo poslano na drug e-poštni naslov. Nadaljujte z naslovom, ki ga je prejel.",
       "expired": "To povabilo je poteklo. Organizacijo prosite za novo povabilo.",
       "closed": "To povabilo ni več na voljo. Organizacijo prosite za novo povabilo.",
       "unavailable": "Tega povabila ni mogoče uporabiti. Odprite celotno povezavo iz e-poštnega povabila ali organizacijo prosite za novo povabilo.",

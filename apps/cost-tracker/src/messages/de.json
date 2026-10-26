@@ -45,14 +45,20 @@
     "inbox": {
       "heading": "Prüfe deinen Posteingang",
       "address": "Suche unter <address>{email}</address> nach deinem Bestätigungslink.",
-      "invitationInstruction": "Öffne den Bestätigungslink, um angemeldet hierher zurückzukehren. Nimm dann die Einladung zur Organisation an.",
+      "invitationInstruction": "Öffne den Bestätigungslink, um angemeldet hierher zurückzukehren. Nimm dann die Einladung zur Organisation an. Falls die Nachricht nicht ankommt, kannst du unten einen neuen Link senden.",
       "instruction": "Öffne den Link, um deinen persönlichen Zugang zu bestätigen und in Cost Tracker fortzufahren.",
       "spam": "Wenn die Nachricht fehlt, prüfe auch deinen Spamordner.",
-      "signIn": "Schon bestätigt oder bereits ein Konto? Melde dich an, um mit dieser Einladung fortzufahren."
+      "signIn": "Schon bestätigt oder bereits ein Konto? Melde dich an, um mit dieser Einladung fortzufahren.",
+      "resend": {
+        "label": "Neuen Bestätigungslink senden",
+        "pending": "Wird gesendet…",
+        "success": "Anfrage erhalten. Falls du deinen Zugang noch bestätigen musst, ist ein neuer Link unterwegs. Prüfe deinen Posteingang und Spamordner.",
+        "error": "Ein neuer Link konnte nicht angefordert werden. Bitte versuche es in Kürze erneut."
+      }
     },
     "recovery": {
       "title": "Zurück zu deiner Einladung",
-      "wrongEmail": "Dieser Zugang verwendet eine andere E-Mail-Adresse. Melde dich ab und dann mit der Adresse an, die die Einladung erhalten hat.",
+      "wrongEmail": "Diese Einladung wurde an eine andere E-Mail-Adresse gesendet. Fahre mit der Adresse fort, die sie erhalten hat.",
       "expired": "Diese Einladung ist abgelaufen. Bitte deine Organisation um eine neue Einladung.",
       "closed": "Diese Einladung ist nicht mehr verfügbar. Bitte deine Organisation um eine neue Einladung.",
       "unavailable": "Diese Einladung kann nicht verwendet werden. Öffne den vollständigen Link aus deiner Einladungs-E-Mail oder bitte deine Organisation um eine neue Einladung.",

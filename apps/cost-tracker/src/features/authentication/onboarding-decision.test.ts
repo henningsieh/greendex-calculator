@@ -71,8 +71,20 @@ describe("invitation decisions", () => {
                   kind: "sign-out",
                   destination: "/register?next=%2Faccept-invitation%2Finvite-1",
                 },
+                {
+                  kind: "resend-verification",
+                  email: "submitted@example.org",
+                  callbackURL: returnTo,
+                },
               ]
-            : [{ kind: "authenticate", entry: "login", returnTo }],
+            : [
+                { kind: "authenticate", entry: "login", returnTo },
+                {
+                  kind: "resend-verification",
+                  email: "submitted@example.org",
+                  callbackURL: returnTo,
+                },
+              ],
       });
     },
   );
@@ -236,3 +248,66 @@ it.each(["verification-requested", "unverified"] as const)(
     expect(JSON.stringify(decision)).not.toContain("submitted@example.org");
   },
 );
+
+it.each(["direct", "partner-setup"] as const)(
+  "keeps %s verification free of invitation resend actions",
+  (entryContext) => {
+    expect(
+      OnboardingDecisionSchema.parse(
+        decideOnboarding({
+          account: "unverified",
+          entryContext,
+          email: "submitted@example.org",
+        }),
+      ),
+    ).toEqual({
+      entryContext,
+      nextStep: "verify-email",
+      email: "submitted@example.org",
+      availableActions: [{ kind: "sign-out" }],
+    });
+  },
+);
+
+it("keeps the invitation sign-out destination equal across verification, recovery, acceptance and selection", () => {
+  const verified = {
+    account: "verified",
+    returnTo,
+    entry: pending,
+    canCreate: true,
+    organizationContext: { status: "no-membership" },
+  } as const;
+  const facts: OnboardingFacts[] = [
+    anonymous("unverified"),
+    {
+      ...verified,
+      entry: {
+        kind: "organization-invitation",
+        status: "recovery",
+        reason: "STAFF_INVITATION_NOT_FOUND",
+      },
+    },
+    verified,
+    {
+      ...verified,
+      entry: {
+        kind: "organization-invitation",
+        status: "complete",
+        organization: invitation.organization,
+      },
+    },
+  ];
+  expect(
+    facts.map((input) => {
+      const action = decideOnboarding(input).availableActions.find(
+        (candidate) => candidate.kind === "sign-out",
+      );
+      return action && "destination" in action ? action.destination : undefined;
+    }),
+  ).toEqual([
+    "/register?next=%2Faccept-invitation%2Finvite-1",
+    "/register?next=%2Faccept-invitation%2Finvite-1",
+    "/register?next=%2Faccept-invitation%2Finvite-1",
+    "/register?next=%2Faccept-invitation%2Finvite-1",
+  ]);
+});

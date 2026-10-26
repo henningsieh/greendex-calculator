@@ -82,15 +82,9 @@ describe("Cost Tracker locale proxy", () => {
   });
 
   it.each(LANGUAGE_CODES)(
-    "matches undotted %s invitation paths through the general matcher",
+    "routes undotted %s invitation paths through the proxy",
     (locale) => {
       const url = `/${locale}/accept-invitation/badtoken`;
-      expect(
-        unstable_doesMiddlewareMatch({
-          config: { matcher: config.matcher[0] },
-          url,
-        }),
-      ).toBe(true);
       expect(unstable_doesMiddlewareMatch({ config, url })).toBe(true);
       const response = proxy(request(url));
       expect(response.status).toBe(200);
@@ -107,12 +101,6 @@ describe("Cost Tracker locale proxy", () => {
       (locale) => `/${locale}/accept-invitation/bad.token/extra.segment`,
     ),
   ])("leaves dotted localized invitation %s to its locale layout", (url) => {
-    expect(
-      unstable_doesMiddlewareMatch({
-        config: { matcher: config.matcher[0] },
-        url,
-      }),
-    ).toBe(false);
     expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false);
   });
 

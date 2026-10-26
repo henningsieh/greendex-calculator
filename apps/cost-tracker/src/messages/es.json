@@ -45,14 +45,20 @@
     "inbox": {
       "heading": "Revisa tu bandeja de entrada",
       "address": "Busca tu enlace de verificación en <address>{email}</address>.",
-      "invitationInstruction": "Abre el enlace de verificación para volver aquí con la sesión iniciada. Después acepta la invitación para unirte a la Organización.",
+      "invitationInstruction": "Abre el enlace de verificación para volver aquí con la sesión iniciada y acepta la invitación para unirte a la Organización. Si el mensaje no llega, envía un nuevo enlace abajo.",
       "instruction": "Abre el enlace para verificar tu acceso personal y continuar donde lo dejaste en Cost Tracker.",
       "spam": "Si no ves el mensaje, revisa también la carpeta de correo no deseado.",
-      "signIn": "¿Ya verificaste el correo o tienes cuenta? Inicia sesión para continuar con esta invitación."
+      "signIn": "¿Ya verificaste el correo o tienes cuenta? Inicia sesión para continuar con esta invitación.",
+      "resend": {
+        "label": "Enviar un nuevo enlace de verificación",
+        "pending": "Enviando…",
+        "success": "Solicitud recibida. Si aún necesitas verificar tu cuenta, un nuevo enlace está en camino. Revisa tu bandeja de entrada y la carpeta de spam.",
+        "error": "No se pudo solicitar un nuevo enlace. Inténtalo de nuevo en unos momentos."
+      }
     },
     "recovery": {
       "title": "Vuelve a tu invitación",
-      "wrongEmail": "Este acceso usa otra dirección de correo. Cierra sesión e inicia sesión con la dirección que recibió la invitación.",
+      "wrongEmail": "Esta invitación se envió a otra dirección de correo. Continúa con la dirección que la recibió.",
       "expired": "Esta invitación ha caducado. Pide una nueva a tu Organización.",
       "closed": "Esta invitación ya no está disponible. Pide una nueva a tu Organización.",
       "unavailable": "No podemos usar esta invitación. Abre el enlace completo del correo o pide una nueva a tu Organización.",

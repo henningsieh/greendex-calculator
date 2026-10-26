@@ -29,6 +29,13 @@ const invitationAuthenticate = z
 const invitationSignOut = z
   .object({ kind: z.literal("sign-out"), destination: z.string() })
   .strict();
+const resendVerification = z
+  .object({
+    kind: z.literal("resend-verification"),
+    email: z.email(),
+    callbackURL: invitationDestination,
+  })
+  .strict();
 const signOut = z.object({ kind: z.literal("sign-out") }).strict();
 const create = z.object({ kind: z.literal("create-organization") }).strict();
 const chooseOwned = z
@@ -77,8 +84,8 @@ export const OnboardingDecisionSchema = z.union([
       invitation: invitationIdentity,
       email: z.email(),
       availableActions: z.union([
-        z.tuple([invitationSignOut]),
-        z.tuple([invitationAuthenticate]),
+        z.tuple([invitationSignOut, resendVerification]),
+        z.tuple([invitationAuthenticate, resendVerification]),
       ]),
     })
     .strict(),
@@ -265,16 +272,19 @@ export type OnboardingFacts =
       entry: ValidatedOnboardingEntry;
     };
 
+function invitationSignOutDestination(returnTo: string): string {
+  return returnTo === "/accept-invitation"
+    ? returnTo
+    : `/register?next=${encodeURIComponent(returnTo)}`;
+}
+
 export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
   if (facts.account !== "verified") {
     if (facts.entryContext === "organization-invitation") {
       const { entry, returnTo } = facts;
       const signOutAction = {
         kind: "sign-out" as const,
-        destination:
-          returnTo === "/accept-invitation"
-            ? returnTo
-            : `/register?next=${encodeURIComponent(returnTo)}`,
+        destination: invitationSignOutDestination(returnTo),
       };
       if (entry.status === "recovery") {
         const canAuthenticate =
@@ -316,15 +326,23 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
         entry: "login" as const,
         returnTo,
       };
-      if (facts.account !== "signed-out")
+      if (facts.account !== "signed-out") {
+        const resend = {
+          kind: "resend-verification" as const,
+          email: facts.email,
+          callbackURL: returnTo,
+        };
         return {
           entryContext: "organization-invitation",
           nextStep: "verify-email",
           invitation,
           email: facts.email,
           availableActions:
-            facts.account === "unverified" ? [signOutAction] : [login],
+            facts.account === "unverified"
+              ? [signOutAction, resend]
+              : [login, resend],
         };
+      }
       const register = {
         kind: "authenticate" as const,
         entry: "register" as const,
@@ -371,10 +389,7 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
             availableActions: [
               {
                 kind: "sign-out",
-                destination:
-                  facts.returnTo === "/accept-invitation"
-                    ? facts.returnTo
-                    : `/register?next=${encodeURIComponent(facts.returnTo)}`,
+                destination: invitationSignOutDestination(facts.returnTo),
               },
               { kind: "recheck" },
             ],
@@ -398,7 +413,7 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
           { kind: "accept-invitation", invitationId: entry.invitationId },
           {
             kind: "sign-out",
-            destination: `/register?next=${encodeURIComponent(facts.returnTo)}`,
+            destination: invitationSignOutDestination(facts.returnTo),
           },
         ],
       };
@@ -438,7 +453,7 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
           entry.kind === "organization-invitation"
             ? {
                 kind: "sign-out",
-                destination: `/register?next=${encodeURIComponent(facts.returnTo)}`,
+                destination: invitationSignOutDestination(facts.returnTo),
               }
             : { kind: "sign-out" },
         ],
