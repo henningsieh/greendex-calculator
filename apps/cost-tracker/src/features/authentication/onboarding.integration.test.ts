@@ -778,7 +778,14 @@ it("returns the same named signup receipt for new and duplicate email without gr
           nextStep: "verify-email",
           invitation: { invitationId: result.invitationId, organization: target },
           email,
-          availableActions: [{ kind: "authenticate", entry: "login", returnTo }],
+          availableActions: [
+            { kind: "authenticate", entry: "login", returnTo },
+            {
+              kind: "resend-verification",
+              email,
+              callbackURL: returnTo,
+            },
+          ],
         },
       });
       expect(headers.get("cache-control")).toBe("private, no-store");
@@ -873,6 +880,11 @@ it("enforces current verification at both acceptance doors after a verified sess
       {
         kind: "sign-out",
         destination: `/register?next=${encodeURIComponent(returnTo)}`,
+      },
+      {
+        kind: "resend-verification",
+        email: recipient.email,
+        callbackURL: returnTo,
       },
     ],
   });
