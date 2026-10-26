@@ -11,6 +11,7 @@ node_modules
 # local Pi configuration, workflows, and runtime records
 # tracked .pi/mcp.json symlink remains the repository MCP adapter
 /.pi/
+/.audit/
 
 # playwright
 apps/*/src/__tests__/e2e/.playwright/
