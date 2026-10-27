@@ -228,7 +228,6 @@ export function InvitationAcceptance({
           >
             <InvitationContext invitation={decision.invitation} step="accept" />
           </div>
-          <p className="mb-4">{t("invitation.options")}</p>
           <Button
             data-testid="accept-organization-invitation"
             disabled={pending}
@@ -249,6 +248,7 @@ export function InvitationAcceptance({
               organization: decision.invitation.organization.name,
             })}
           </Button>
+          <p className="mt-4">{t("invitation.options")}</p>
         </>
       )}
       {(decision?.nextStep === "create-organization" ||
