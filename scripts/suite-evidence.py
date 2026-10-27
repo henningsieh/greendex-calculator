@@ -57,6 +57,7 @@ LIMITATIONS = [
     "Build manifests hash regular output files. Build symlink targets are separately hashed; external dependency contents are not attested.",
     "Suite commands and log ownership are operator assertions; logs are not authenticated transcripts.",
     "Logs may contain private output. A human must review every file before transfer. No automatic SSH.",
+    "Runtime route-cache output under .next/server/route-cache is excluded from the build manifest and from stored receipts at packaging time.",
 ]
 
 
@@ -142,6 +143,7 @@ def builds():
             parts = path.relative_to(base).parts
             if (
                 parts[0] in EXCLUDED
+                or "route-cache" in parts
                 or parts[0].startswith("trace")
                 or path.name.endswith((".log", ".tmp"))
             ):
@@ -355,12 +357,18 @@ def package(folder, output_root, issue):
             "sourceFingerprint",
             "gitStatus",
             "buildIDs",
-            "buildFingerprint",
             "buildSymlinkTargets",
         ):
             if receipt[key] != current[key]:
                 raise ValueError(f"{suite} {key} does not match current post-run observation")
-        if (folder / f"{suite}.before.build-files.sha256").read_text() != manifest:
+        stored_manifest = "".join(
+            line
+            for line in (folder / f"{suite}.before.build-files.sha256")
+            .read_text()
+            .splitlines(keepends=True)
+            if "/route-cache/" not in line
+        )
+        if stored_manifest != manifest:
             raise ValueError(f"{suite} production build manifest mismatch")
         status = (folder / f"{suite}.exit").read_text()
         match = re.fullmatch(r"exit=(\d+)\n?", status)
@@ -369,6 +377,16 @@ def package(folder, output_root, issue):
         log = folder / f"{suite}.log"
         if not log.is_file() or log.is_symlink():
             raise ValueError(f"Missing regular log for {suite}")
+        if (
+            sha(
+                stored_manifest.encode()
+                + json.dumps(receipt["buildSymlinkTargets"], sort_keys=True).encode()
+            )
+            != current["buildFingerprint"]
+        ):
+            raise ValueError(
+                f"{suite} buildFingerprint does not match current post-run observation"
+            )
         receipts[suite] = receipt
         results[suite] = {
             "command": f"pnpm run test:{suite}",
