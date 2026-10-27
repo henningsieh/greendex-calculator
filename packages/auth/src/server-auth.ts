@@ -17,10 +17,11 @@ import { betterAuth, type BetterAuthOptions } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import type { OrganizationOptions } from "better-auth/plugins/organization";
-import { and, asc, desc, eq, gt, inArray, sql, ilike } from "drizzle-orm";
+import { and, asc, desc, eq, gt, sql, ilike } from "drizzle-orm";
 
 import {
   isValidOrganizationRole,
+  parseOrganizationRoles,
   ORGANIZATION_ROLES,
 } from "./organization-roles";
 import {
@@ -58,9 +59,10 @@ export async function getOrganizationCreationEligibility(
       })
     )?.email;
   if (!accountEmail) return { status: "allowed" };
-  const [blocking] = await db
+  const candidates = await db
     .select({
       invitationId: invitation.id,
+      role: invitation.role,
       organization: { id: organizationTable.id, name: organizationTable.name },
     })
     .from(invitation)
@@ -73,16 +75,22 @@ export async function getOrganizationCreationEligibility(
         eq(sql`lower(${invitation.email})`, accountEmail.toLowerCase()),
         eq(invitation.status, "pending"),
         gt(invitation.expiresAt, new Date()),
-        inArray(invitation.role, [
-          ORGANIZATION_ROLES.OrganizationOwner,
-          ORGANIZATION_ROLES.OrganizationAdmin,
-        ]),
       ),
     )
-    .orderBy(asc(invitation.expiresAt), asc(invitation.id))
-    .limit(1);
+    .orderBy(asc(invitation.expiresAt), asc(invitation.id));
+  const blocking = candidates.find(({ role }) =>
+    parseOrganizationRoles(role ?? "").some(
+      (value) =>
+        value === ORGANIZATION_ROLES.OrganizationOwner ||
+        value === ORGANIZATION_ROLES.OrganizationAdmin,
+    ),
+  );
   return blocking
-    ? { status: "denied-invitation", ...blocking }
+    ? {
+        status: "denied-invitation",
+        invitationId: blocking.invitationId,
+        organization: blocking.organization,
+      }
     : { status: "allowed" };
 }
 

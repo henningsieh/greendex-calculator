@@ -713,6 +713,7 @@ export function SetupLinkRecipient({
         {decision?.nextStep === "resolve-invitation" ? (
           <InvitationAcceptance
             returnTo={returnTo}
+            setupRecovery={recovery.current}
             initialDecision={decision}
             onDecision={setDecision}
             onRejected={setRejectedOrganization}

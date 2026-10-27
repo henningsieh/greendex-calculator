@@ -231,6 +231,12 @@ test.describe.serial("guided Organization Invitation", () => {
     } finally {
       await recipient.close();
       await other.close();
+      otherOrganizationId ??= (
+        await db.query.organization.findFirst({
+          where: eq(organization.name, otherName),
+          columns: { id: true },
+        })
+      )?.id;
       if (otherOrganizationId)
         await db
           .delete(organization)

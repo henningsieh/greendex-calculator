@@ -53,6 +53,18 @@ const ready: OnboardingDecision = {
     },
   ],
 };
+const blocked: OnboardingDecision = {
+  entryContext: "direct",
+  nextStep: "resolve-invitation",
+  invitation,
+  returnTo: "/projects",
+  availableActions: [
+    { kind: "accept-invitation", invitationId: "invite-1" },
+    { kind: "reject-invitation", invitationId: "invite-1" },
+    { kind: "recheck" },
+    { kind: "sign-out" },
+  ],
+};
 const complete: OnboardingDecision = {
   nextStep: "continue",
   entryContext: "organization-invitation",
@@ -276,18 +288,6 @@ describe("Organization Invitation acceptance", () => {
 });
 
 it("rejects the named invitation and shows the refreshed creation next step", async () => {
-  const blocked: OnboardingDecision = {
-    entryContext: "direct",
-    nextStep: "resolve-invitation",
-    invitation,
-    returnTo: "/projects",
-    availableActions: [
-      { kind: "accept-invitation", invitationId: "invite-1" },
-      { kind: "reject-invitation", invitationId: "invite-1" },
-      { kind: "recheck" },
-      { kind: "sign-out" },
-    ],
-  };
   mocks.rejectInvitation.mockResolvedValue({ success: true });
   mocks.onboardingNextStep.mockResolvedValue({
     entryContext: "direct",
@@ -310,18 +310,6 @@ it("rejects the named invitation and shows the refreshed creation next step", as
 });
 
 it("keeps another invitation actionable after rejection and never reports a failed rejection as success", async () => {
-  const blocked: OnboardingDecision = {
-    entryContext: "direct",
-    nextStep: "resolve-invitation",
-    invitation,
-    returnTo: "/projects",
-    availableActions: [
-      { kind: "accept-invitation", invitationId: "invite-1" },
-      { kind: "reject-invitation", invitationId: "invite-1" },
-      { kind: "recheck" },
-      { kind: "sign-out" },
-    ],
-  };
   const remaining = {
     ...blocked,
     invitation: {

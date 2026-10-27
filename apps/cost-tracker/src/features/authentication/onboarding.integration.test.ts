@@ -503,6 +503,45 @@ describe("authoritative onboarding next step", () => {
     ).toEqual({ status: "denied-membership" });
   });
 
+  it("denies creation for a native combined colleague-role invitation", async () => {
+    const host = await account();
+    const target = await createOrganization(host);
+    const recipient = await account();
+    const invited = await auth.api.createInvitation({
+      headers: host.headers,
+      body: {
+        email: recipient.email,
+        role: [
+          ORGANIZATION_ROLES.OrganizationOwner,
+          ORGANIZATION_ROLES.OrganizationAdmin,
+        ],
+        organizationId: target.id,
+      },
+    });
+    expect(
+      await getOrganizationCreationEligibility(recipient.id, recipient.email, {
+        singleOrganization: true,
+      }),
+    ).toEqual({
+      status: "denied-invitation",
+      invitationId: invited.id,
+      organization: target,
+    });
+    await expect(createOrganization(recipient)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      auth.api.createOrganization({
+        headers: recipient.headers,
+        body: {
+          country: "DE",
+          name: `Blocked ${randomUUID()}`,
+          slug: `blocked-${randomUUID()}`,
+        },
+      }),
+    ).rejects.toMatchObject({ statusCode: 403 });
+  });
+
   it("excludes non-colleague invitations and matches an email literally, not as a wildcard", async () => {
     const host = await account();
     const target = await createOrganization(host);

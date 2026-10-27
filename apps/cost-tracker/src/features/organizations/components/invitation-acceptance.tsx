@@ -10,18 +10,23 @@ import { Button } from "@/components/ui/button";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
-import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
+import type {
+  OnboardingDecision,
+  OnboardingInput,
+} from "@/features/authentication/onboarding-decision";
 import { SelectOrganization } from "@/features/organizations/components/select-organization";
 import { orpc } from "@/lib/orpc/orpc";
 
 export function InvitationAcceptance({
   returnTo,
+  setupRecovery,
   initialDecision,
   onAuthenticate,
   onDecision,
   onRejected,
 }: {
   returnTo: string;
+  setupRecovery?: OnboardingInput["setupRecovery"];
   initialDecision?: OnboardingDecision;
   onAuthenticate?: () => void;
   onDecision?: (decision: OnboardingDecision) => void;
@@ -57,7 +62,7 @@ export function InvitationAcceptance({
     if (initialDecision) continueJourney(initialDecision);
     else
       void orpc.authentication
-        .onboardingNextStep({ returnTo })
+        .onboardingNextStep({ returnTo, setupRecovery })
         .then((next) => {
           if (active) continueJourney(next);
         })
@@ -67,7 +72,7 @@ export function InvitationAcceptance({
     return () => {
       active = false;
     };
-  }, [returnTo, initialDecision, continueJourney]);
+  }, [returnTo, setupRecovery, initialDecision, continueJourney]);
 
   useEffect(() => {
     heading.current?.focus();
@@ -83,6 +88,7 @@ export function InvitationAcceptance({
       continueJourney(
         await orpc.authentication.onboardingNextStep({
           returnTo: currentReturnTo,
+          setupRecovery,
         }),
       );
     } catch {
@@ -112,6 +118,7 @@ export function InvitationAcceptance({
       continueJourney(
         await orpc.authentication.onboardingNextStep({
           returnTo: currentReturnTo,
+          setupRecovery,
         }),
       );
     } catch {
@@ -135,6 +142,7 @@ export function InvitationAcceptance({
         invitationId: decision.invitation.invitationId,
       });
       const next = await orpc.authentication.onboardingNextStep({
+        setupRecovery,
         returnTo:
           decision.nextStep === "resolve-invitation"
             ? decision.returnTo
@@ -149,6 +157,7 @@ export function InvitationAcceptance({
       try {
         const next = await orpc.authentication.onboardingNextStep({
           returnTo: currentReturnTo,
+          setupRecovery,
         });
         setDecision(next);
         onDecision?.(next);

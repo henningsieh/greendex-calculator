@@ -17,7 +17,7 @@ describe("feature flags", () => {
 const policyDb = vi.hoisted(() => ({
   membership: vi.fn(),
   account: vi.fn(),
-  limit: vi.fn(),
+  orderBy: vi.fn(),
 }));
 vi.mock("@greendex/database", () => ({
   db: {
@@ -28,7 +28,7 @@ vi.mock("@greendex/database", () => ({
     select: () => ({
       from: () => ({
         innerJoin: () => ({
-          where: () => ({ orderBy: () => ({ limit: policyDb.limit }) }),
+          where: () => ({ orderBy: policyDb.orderBy }),
         }),
       }),
     }),
@@ -43,7 +43,7 @@ import {
 describe("Organization creation policy", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    policyDb.limit.mockResolvedValue([]);
+    policyDb.orderBy.mockResolvedValue([]);
   });
 
   it("preserves default-off multi-Organization creation", async () => {
@@ -68,7 +68,7 @@ describe("Organization creation policy", () => {
       invitationId: "invitation",
       organization: { id: "org", name: "Colleagues" },
     };
-    policyDb.limit.mockResolvedValue([blocking]);
+    policyDb.orderBy.mockResolvedValue([{ ...blocking, role: "owner,admin" }]);
     policyDb.account.mockResolvedValue({ email: "recipient@example.org" });
     expect(
       await getOrganizationCreationEligibility("user", "recipient@example.org", {
@@ -87,4 +87,51 @@ describe("Organization creation policy", () => {
       }),
     ).toEqual({ status: "allowed" });
   });
+
+  it.each(["participant", "coordinator"])(
+    "allows creation for a %s-only invitation before a colleague invitation",
+    async (role) => {
+      policyDb.orderBy.mockResolvedValue([
+        {
+          invitationId: "non-colleague",
+          role,
+          organization: { id: "org", name: "Organization" },
+        },
+      ]);
+      expect(
+        await getOrganizationCreationEligibility(
+          "user",
+          "recipient@example.org",
+          {
+            singleOrganization: true,
+          },
+        ),
+      ).toEqual({ status: "allowed" });
+      policyDb.orderBy.mockResolvedValue([
+        {
+          invitationId: "non-colleague",
+          role,
+          organization: { id: "org", name: "Organization" },
+        },
+        {
+          invitationId: "colleague",
+          role: "admin",
+          organization: { id: "org", name: "Organization" },
+        },
+      ]);
+      expect(
+        await getOrganizationCreationEligibility(
+          "user",
+          "recipient@example.org",
+          {
+            singleOrganization: true,
+          },
+        ),
+      ).toEqual({
+        status: "denied-invitation",
+        invitationId: "colleague",
+        organization: { id: "org", name: "Organization" },
+      });
+    },
+  );
 });
