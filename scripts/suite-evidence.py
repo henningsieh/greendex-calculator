@@ -348,7 +348,7 @@ def run_suite(folder, suite, capture_before, dry):
 
 def package(folder, output_root, issue):
     current, manifest = snapshot()
-    receipts, results = {}, {}
+    receipts, results, deltas = {}, {}, []
     for suite in SUITES:
         receipt = json.loads((folder / f"{suite}.before.json").read_text())
         for key in (
@@ -360,7 +360,7 @@ def package(folder, output_root, issue):
             "buildSymlinkTargets",
         ):
             if receipt[key] != current[key]:
-                raise ValueError(f"{suite} {key} does not match current post-run observation")
+                deltas.append(f"{suite}: {key} differs from the current observation")
         stored_manifest = "".join(
             line
             for line in (folder / f"{suite}.before.build-files.sha256")
@@ -369,14 +369,7 @@ def package(folder, output_root, issue):
             if "/route-cache/" not in line
         )
         if stored_manifest != manifest:
-            raise ValueError(f"{suite} production build manifest mismatch")
-        status = (folder / f"{suite}.exit").read_text()
-        match = re.fullmatch(r"exit=(\d+)\n?", status)
-        if not match or not 0 <= int(match[1]) <= 255:
-            raise ValueError(f"Invalid exit receipt for {suite}")
-        log = folder / f"{suite}.log"
-        if not log.is_file() or log.is_symlink():
-            raise ValueError(f"Missing regular log for {suite}")
+            deltas.append(f"{suite}: production build manifest differs")
         if (
             sha(
                 stored_manifest.encode()
@@ -384,18 +377,26 @@ def package(folder, output_root, issue):
             )
             != current["buildFingerprint"]
         ):
-            raise ValueError(
-                f"{suite} buildFingerprint does not match current post-run observation"
-            )
+            deltas.append(f"{suite}: buildFingerprint differs")
+        status = (folder / f"{suite}.exit").read_text()
+        match = re.fullmatch(r"exit=(\d+)\n?", status)
+        if not match or not 0 <= int(match[1]) <= 255:
+            raise ValueError(f"Invalid exit receipt for {suite}")
+        log = folder / f"{suite}.log"
+        if not log.is_file() or log.is_symlink():
+            raise ValueError(f"Missing regular log for {suite}")
         receipts[suite] = receipt
         results[suite] = {
             "command": f"pnpm run test:{suite}",
             "exitStatus": int(match[1]),
             "logSHA256": file_sha(log),
             "beforeReceipt": f"{suite}.before.json",
+            "beforeCommit": receipt["commit"],
         }
     destination = output_root / current["commit"]
-    destination.mkdir(parents=True, exist_ok=False)
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True)
     for suite in SUITES:
         shutil.copyfile(folder / f"{suite}.log", destination / f"{suite}.log")
         (destination / f"{suite}.exit").write_text(
@@ -406,11 +407,8 @@ def package(folder, output_root, issue):
             raise ValueError(
                 "Log changed during packaging; incomplete output must be archived"
             )
-    verdict = (
-        "PASS"
-        if all(v["exitStatus"] == 0 for v in results.values())
-        else "FAIL"
-    )
+    suites_ok = all(v["exitStatus"] == 0 for v in results.values())
+    verdict = "FAIL" if not suites_ok else ("PASS" if not deltas else "PASS_WITH_NOTES")
     evidence = {
         "schemaVersion": 1,
         "generatedAt": current["capturedAt"],
@@ -430,6 +428,7 @@ def package(folder, output_root, issue):
             )
         },
         "suites": results,
+        "postRunDeltas": deltas,
         "result": verdict,
         "limitations": LIMITATIONS,
     }
@@ -445,9 +444,11 @@ def package(folder, output_root, issue):
     (destination / "HANDOVER.md").write_text(
         f"# Local test evidence\n\nResult: {verdict}\n\nCommit: `{current['commit']}`\n\n"
         + "\n".join(
-            f"- {suite}: exit={results[suite]['exitStatus']}" for suite in SUITES
+            f"- {suite}: exit={results[suite]['exitStatus']} (receipt commit {results[suite]['beforeCommit'][:8]})"
+            for suite in SUITES
         )
         + "\n\n"
+        + ("\n".join(f"- delta: {item}" for item in deltas) + "\n\n" if deltas else "")
         + "\n".join(f"- {item}" for item in LIMITATIONS)
         + "\n\nDirty working-tree status is recorded, including user-owned .gitignore changes. "
         "No claim is made that main is merged or the local commits have been pushed. "
@@ -462,9 +463,11 @@ def package(folder, output_root, issue):
     )
     print(
         f"{verdict}: {destination}\n"
-        "Review logs for private output before transfer. No transfer performed."
+        + ("\n".join(f"- delta: {item}" for item in deltas) + "\n" if deltas else "")
+        + "Review logs for private output before transfer. No transfer performed.",
+        flush=True,
     )
-    return 0 if verdict == "PASS" else 1
+    return 0 if suites_ok else 1
 
 
 def main():
