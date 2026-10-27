@@ -4,7 +4,7 @@
 Usage:
   ./scripts/suite-evidence.py run unit|integration|e2e|all [options]
   ./scripts/suite-evidence.py capture unit|integration|e2e [options]
-  ./scripts/suite-evidence.py package [options]
+  ./scripts/suite-evidence.py create-report [options]
 
 Options:
   --dir PATH      Audit directory. Default: .audit/<branch issue or slug>.
@@ -249,18 +249,6 @@ def snapshot():
     }, manifest
 
 
-SELF_PATH = "scripts/suite-evidence.py"
-
-
-def source_drift(commit):
-    """Tracked paths changed since the tested commit, excluding this tool."""
-    try:
-        out = run("git", "diff", "--name-only", f"{commit}..HEAD").decode().strip()
-    except subprocess.SubprocessError:
-        return None
-    return [line for line in out.splitlines() if line and line != SELF_PATH]
-
-
 def artifacts(folder, suite):
     return [
         folder / f"{suite}{suffix}"
@@ -363,8 +351,6 @@ def package(folder, output_root, issue):
     receipts, results, deltas = {}, {}, []
     for suite in SUITES:
         receipt = json.loads((folder / f"{suite}.before.json").read_text())
-        drifted = source_drift(receipt["commit"])
-        app_source_unchanged = drifted == []
         for key in (
             "schemaVersion",
             "commit",
@@ -373,11 +359,8 @@ def package(folder, output_root, issue):
             "buildIDs",
             "buildSymlinkTargets",
         ):
-            if receipt[key] == current[key]:
-                continue
-            if key in ("commit", "sourceFingerprint") and app_source_unchanged:
-                continue
-            deltas.append(f"{suite}: {key} differs from the current observation")
+            if receipt[key] != current[key]:
+                deltas.append(f"{suite}: {key} differs from the current observation")
         stored_manifest = "".join(
             line
             for line in (folder / f"{suite}.before.build-files.sha256")
@@ -502,7 +485,11 @@ def main():
             sub.add_argument("--no-capture", action="store_true")
             sub.add_argument("--keep-going", action="store_true")
             sub.add_argument("--dry-run", action="store_true")
-    packaged = commands.add_parser("package")
+    packaged = commands.add_parser(
+        "create-report",
+        aliases=["package"],
+        help="Seal the suite logs and receipts into a handover report.",
+    )
     packaged.add_argument("--dir", type=Path)
     packaged.add_argument("--issue")
     packaged.add_argument("--output-root", type=Path)
@@ -511,7 +498,7 @@ def main():
     folder = resolve_folder(args)
     issue = args.issue or folder.name
     try:
-        if args.action == "package":
+        if args.action in ("create-report", "package"):
             return package(folder, args.output_root or folder / "handover", issue)
         if args.action == "capture":
             capture(folder, args.suite)
