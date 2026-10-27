@@ -111,7 +111,10 @@
   "i18n-ally.displayLanguage": "de",
   "i18n-ally.keystyle": "nested",
   "i18n-ally.enabledFrameworks": ["next-intl"],
-  "i18n-ally.localesPaths": ["apps/calculator/src/messages"],
+  "i18n-ally.localesPaths": [
+    "apps/calculator/src/messages",
+    "apps/cost-tracker/src/messages"
+  ],
   "i18n-ally.ignoreFiles": ["src/test/**"],
   "i18n-ally.extract.ignoredByFiles": {
     "src/test/orpc-error-type-safety.test.ts": true
