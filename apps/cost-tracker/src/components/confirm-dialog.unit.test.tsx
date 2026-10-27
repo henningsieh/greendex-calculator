@@ -43,13 +43,9 @@ describe("confirmation request", () => {
     const user = userEvent.setup();
     render(<Harness generic />);
     await user.click(screen.getByRole("button", { name: "Request" }));
-    expect(
-      screen.getByRole("button", { name: "Confirm", exact: true }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Close", exact: true }),
-    ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Cancel", exact: true }));
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(
       "second=false,first=false",
     );
@@ -57,9 +53,7 @@ describe("confirmation request", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
     await user.click(screen.getByRole("button", { name: "Request" }));
-    await user.click(
-      screen.getByRole("button", { name: "Confirm", exact: true }),
-    );
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
     expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(
       "second=false,first=false,second=false,first=true",
     );
