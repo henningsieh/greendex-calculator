@@ -8,6 +8,7 @@ import {
   canManageOrganization,
   canViewPartnerNetwork,
 } from "@/features/organizations/access";
+import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
 import { SelectOrganization } from "@/features/organizations/components/select-organization";
 import { resolveStaffOrganizationContext } from "@/features/organizations/staff-eligibility";
 import { orpc } from "@/lib/orpc/orpc";
@@ -29,6 +30,13 @@ export async function ProtectedShell({
       </main>
     );
   }
+  if (decision.nextStep === "resolve-invitation")
+    return (
+      <main className="mx-auto w-full max-w-xl p-5">
+        <InvitationAcceptance returnTo="/projects" initialDecision={decision} />
+        <div hidden>{children}</div>
+      </main>
+    );
   if (decision.nextStep === "create-organization")
     return (
       <>

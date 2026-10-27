@@ -7,6 +7,7 @@ import type { OnboardingDecision } from "@/features/authentication/onboarding-de
 const mocks = vi.hoisted(() => ({
   onboardingNextStep: vi.fn(),
   acceptInvitation: vi.fn(),
+  rejectInvitation: vi.fn(),
   replace: vi.fn(),
   setActive: vi.fn(),
   refresh: vi.fn(),
@@ -14,7 +15,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: {
     authentication: { onboardingNextStep: mocks.onboardingNextStep },
-    organizations: { acceptInvitation: mocks.acceptInvitation },
+    organizations: {
+      acceptInvitation: mocks.acceptInvitation,
+      rejectInvitation: mocks.rejectInvitation,
+    },
   },
 }));
 vi.mock("next/navigation", () => {
@@ -58,6 +62,9 @@ const complete: OnboardingDecision = {
 function recovery(
   reason:
     | "STAFF_INVITATION_EXPIRED"
+    | "STAFF_INVITATION_REJECTED"
+    | "STAFF_INVITATION_WITHDRAWN"
+    | "STAFF_INVITATION_ACCEPTED"
     | "STAFF_INVITATION_CLOSED"
     | "STAFF_INVITATION_WRONG_EMAIL"
     | "STAFF_INVITATION_NOT_FOUND",
@@ -177,6 +184,9 @@ describe("Organization Invitation acceptance", () => {
     ["STAFF_INVITATION_WRONG_EMAIL", "wrongEmail"],
     ["STAFF_INVITATION_EXPIRED", "expired"],
     ["STAFF_INVITATION_CLOSED", "closed"],
+    ["STAFF_INVITATION_REJECTED", "rejected"],
+    ["STAFF_INVITATION_WITHDRAWN", "withdrawn"],
+    ["STAFF_INVITATION_ACCEPTED", "accepted"],
     ["STAFF_INVITATION_NOT_FOUND", "unavailable"],
   ] as const)(
     "keeps %s recovery in the journey and rechecks current identity",
@@ -263,4 +273,87 @@ describe("Organization Invitation acceptance", () => {
     render(<InvitationAcceptance returnTo={returnTo} initialDecision={ready} />);
     expect(screen.getByTestId("accept-organization-invitation")).toBeEnabled();
   });
+});
+
+it("rejects the named invitation and shows the refreshed creation next step", async () => {
+  const blocked: OnboardingDecision = {
+    entryContext: "direct",
+    nextStep: "resolve-invitation",
+    invitation,
+    returnTo: "/projects",
+    availableActions: [
+      { kind: "accept-invitation", invitationId: "invite-1" },
+      { kind: "reject-invitation", invitationId: "invite-1" },
+      { kind: "recheck" },
+      { kind: "sign-out" },
+    ],
+  };
+  mocks.rejectInvitation.mockResolvedValue({ success: true });
+  mocks.onboardingNextStep.mockResolvedValue({
+    entryContext: "direct",
+    nextStep: "create-organization",
+    availableActions: [{ kind: "create-organization" }, { kind: "sign-out" }],
+  });
+  render(<InvitationAcceptance returnTo="/projects" initialDecision={blocked} />);
+  expect(screen.getByTestId("organization-creation-blocked")).toBeVisible();
+  expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
+    "data-organization-name",
+    invitation.organization.name,
+  );
+  fireEvent.click(screen.getByTestId("reject-organization-invitation"));
+  expect(await screen.findByTestId("invitation-rejected")).toBeVisible();
+  expect(screen.getByTestId("invitation-next-step")).toHaveAttribute(
+    "href",
+    "/projects",
+  );
+  expect(screen.queryByTestId("accept-organization-invitation")).toBeNull();
+});
+
+it("keeps another invitation actionable after rejection and never reports a failed rejection as success", async () => {
+  const blocked: OnboardingDecision = {
+    entryContext: "direct",
+    nextStep: "resolve-invitation",
+    invitation,
+    returnTo: "/projects",
+    availableActions: [
+      { kind: "accept-invitation", invitationId: "invite-1" },
+      { kind: "reject-invitation", invitationId: "invite-1" },
+      { kind: "recheck" },
+      { kind: "sign-out" },
+    ],
+  };
+  const remaining = {
+    ...blocked,
+    invitation: {
+      invitationId: "invite-2",
+      organization: { id: "org-2", name: "Other Organization" },
+    },
+    availableActions: [
+      { kind: "accept-invitation", invitationId: "invite-2" },
+      { kind: "reject-invitation", invitationId: "invite-2" },
+      { kind: "recheck" },
+      { kind: "sign-out" },
+    ],
+  } satisfies OnboardingDecision;
+  mocks.rejectInvitation
+    .mockResolvedValueOnce({ success: true })
+    .mockRejectedValueOnce(new Error("offline"));
+  mocks.onboardingNextStep.mockResolvedValue(remaining);
+  render(<InvitationAcceptance returnTo="/projects" initialDecision={blocked} />);
+  fireEvent.click(screen.getByTestId("reject-organization-invitation"));
+  await waitFor(() =>
+    expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
+      "data-organization-name",
+      "Other Organization",
+    ),
+  );
+  expect(screen.getByTestId("organization-creation-blocked")).toBeVisible();
+  expect(screen.queryByTestId("invitation-next-step")).toBeNull();
+  fireEvent.click(screen.getByTestId("reject-organization-invitation"));
+  expect(await screen.findByTestId("invitation-error")).toBeVisible();
+  expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
+    "data-organization-name",
+    "Other Organization",
+  );
+  expect(screen.getByTestId("reject-organization-invitation")).not.toBeDisabled();
 });

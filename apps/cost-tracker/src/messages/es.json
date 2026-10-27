@@ -35,7 +35,12 @@
       "checking": "Comprobando tu invitación…",
       "joining": "Uniéndote…",
       "accept": "Aceptar invitación",
-      "recheck": "Comprobar de nuevo"
+      "recheck": "Comprobar de nuevo",
+      "creationBlocked": "No puedes crear una Organización mientras tengas una invitación pendiente a {organization}. Únete o rechaza la invitación abajo. Otras invitaciones o una membresía existente pueden seguir impidiendo la creación.",
+      "reject": "Rechazar invitación a {organization}",
+      "rejected": "Has rechazado la invitación a {organization}. Se ha comprobado de nuevo tu acceso actual. Sigue el siguiente paso abajo.",
+      "continue": "Continuar con el acceso actual",
+      "options": "Únete a esta Organización o rechaza su invitación abajo. Las invitaciones de colegas pendientes impiden crear una nueva Organización. El rechazo solo elimina esta invitación, no otras invitaciones ni membresías existentes."
     },
     "progress": {
       "verify": "1. Verificar correo",
@@ -45,7 +50,7 @@
     "inbox": {
       "heading": "Revisa tu bandeja de entrada",
       "address": "Busca tu enlace de verificación en <address>{email}</address>.",
-      "invitationInstruction": "Abre el enlace de verificación para volver aquí con la sesión iniciada y acepta la invitación para unirte a la Organización. Si el mensaje no llega, envía un nuevo enlace abajo.",
+      "invitationInstruction": "Primero verifica tu correo. Después podrás unirte a la Organización o rechazar la invitación. Una invitación de colega pendiente impide crear una nueva Organización. Si no llega el mensaje, solicita un nuevo enlace abajo.",
       "instruction": "Abre el enlace para verificar tu acceso personal y continuar donde lo dejaste en Cost Tracker.",
       "spam": "Si no ves el mensaje, revisa también la carpeta de correo no deseado.",
       "signIn": "¿Ya verificaste el correo o tienes cuenta? Inicia sesión para continuar con esta invitación.",
@@ -62,7 +67,10 @@
       "expired": "Esta invitación ha caducado. Pide una nueva a tu Organización.",
       "closed": "Esta invitación ya no está disponible. Pide una nueva a tu Organización.",
       "unavailable": "No podemos usar esta invitación. Abre el enlace completo del correo o pide una nueva a tu Organización.",
-      "recheck": "Tras corregir tu acceso o recibir un enlace nuevo, abre esa invitación. También puedes comprobar esta invitación de nuevo."
+      "recheck": "Tras corregir tu acceso o recibir un enlace nuevo, abre esa invitación. También puedes comprobar esta invitación de nuevo.",
+      "rejected": "Esta invitación fue rechazada. Comprueba tu acceso abajo para resolver otras invitaciones o continuar con tu Organización.",
+      "withdrawn": "La Organización retiró esta invitación. Comprueba tu acceso actual abajo para continuar.",
+      "accepted": "Esta invitación fue aceptada. Comprueba tu acceso a la Organización abajo. Si se retiró el acceso, pide ayuda a su Owner."
     },
     "selection": {
       "heading": "Selecciona una Organización",

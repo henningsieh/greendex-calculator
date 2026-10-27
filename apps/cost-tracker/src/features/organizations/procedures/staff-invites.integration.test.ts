@@ -511,6 +511,69 @@ describe("organizations staff invites (Better Auth underneath)", () => {
     // Slow auth/crypto flow: flakes at the 5s default under full parallel load.
   }, 30_000);
 
+  it("rejects only for the verified recipient and refuses repeat or expired rejection", async () => {
+    const ownerHeaders = await seedSession(SEED_CREATOR_EMAIL);
+    const created = await auth.api.createOrganization({
+      headers: ownerHeaders,
+      body: {
+        country: "DE",
+        name: `Reject ${randomUUID()}`,
+        slug: `reject-${randomUUID()}`,
+      },
+    });
+    createdOrganizationIds.push(created.id);
+    const email = uniqueEmail("reject");
+    const headers = await signUpVerified("Recipient", email);
+    const actor = (await auth.api.getSession({ headers }))!.user;
+    const recipient = createRouterClient(router, { context: { headers } });
+    const other = createRouterClient(router, {
+      context: { headers: ownerHeaders },
+    });
+    const invited = await auth.api.createInvitation({
+      headers: ownerHeaders,
+      body: { email, role: "admin", organizationId: created.id },
+    });
+    await expect(
+      other.organizations.rejectInvitation({ invitationId: invited.id }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_WRONG_EMAIL" } });
+    await db
+      .update(user)
+      .set({ emailVerified: false })
+      .where(eq(user.id, actor.id));
+    await expect(
+      recipient.organizations.rejectInvitation({ invitationId: invited.id }),
+    ).rejects.toMatchObject({ data: { reason: "EMAIL_VERIFICATION_REQUIRED" } });
+    await expect(
+      auth.api.rejectInvitation({ headers, body: { invitationId: invited.id } }),
+    ).rejects.toMatchObject({ statusCode: 403 });
+    await db
+      .update(user)
+      .set({ emailVerified: true })
+      .where(eq(user.id, actor.id));
+    await expect(
+      recipient.organizations.rejectInvitation({ invitationId: invited.id }),
+    ).resolves.toEqual({ success: true });
+    expect(
+      await db.query.invitation.findFirst({
+        where: eq(invitation.id, invited.id),
+      }),
+    ).toMatchObject({ status: "rejected" });
+    await expect(
+      recipient.organizations.rejectInvitation({ invitationId: invited.id }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_REJECTED" } });
+    const expired = await auth.api.createInvitation({
+      headers: ownerHeaders,
+      body: { email, role: "admin", organizationId: created.id },
+    });
+    await db
+      .update(invitation)
+      .set({ expiresAt: new Date(0) })
+      .where(eq(invitation.id, expired.id));
+    await expect(
+      recipient.organizations.rejectInvitation({ invitationId: expired.id }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_EXPIRED" } });
+  });
+
   it("rejects Participant Invitations through the staff acceptance action", async () => {
     const ownerHeaders = await seedSession(SEED_CREATOR_EMAIL);
     const created = await auth.api.createOrganization({

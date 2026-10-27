@@ -17,6 +17,7 @@ import {
 } from "@/features/organizations/procedures/settings";
 import {
   acceptInvitation as acceptOrganizationInvitation,
+  rejectInvitation as rejectOrganizationInvitation,
   cancelInvitation as cancelOrganizationInvitation,
   inviteMember as inviteOrganizationMember,
   listMembers as listOrganizationMembers,
@@ -131,6 +132,7 @@ export const router = {
     listPendingInvitations: listOrganizationInvitations,
     inviteMember: inviteOrganizationMember,
     acceptInvitation: acceptOrganizationInvitation,
+    rejectInvitation: rejectOrganizationInvitation,
     cancelInvitation: cancelOrganizationInvitation,
   },
   projects: {

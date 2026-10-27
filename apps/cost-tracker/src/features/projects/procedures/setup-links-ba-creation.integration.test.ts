@@ -5,6 +5,7 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
 import {
+  invitation,
   member,
   organization,
   partnerOrganizationSetupLinksTable as links,
@@ -35,6 +36,7 @@ const recipientEmail = "seed-setup-links-creator@example.org";
 const outsiderEmail = "seed-outsider@example.org";
 let projectId = "";
 const sessionIds: string[] = [];
+const invitationIds: string[] = [];
 
 let hostHeaders: Headers;
 let recipientHeaders: Headers;
@@ -87,6 +89,8 @@ beforeAll(async () => {
 }, 60_000);
 
 afterEach(async () => {
+  for (const id of invitationIds.splice(0))
+    await db.delete(invitation).where(eq(invitation.id, id));
   await db.delete(links).where(eq(links.projectId, projectId));
   if (recipientOrganizationId) {
     await db
@@ -118,6 +122,47 @@ describe("Partner setup links through supported Organization creation", () => {
     ).toEqual({
       status: "eligible",
       projectId,
+    });
+    const project = await db.query.projectsTable.findFirst({
+      where: eq(projectsTable.id, projectId),
+    });
+    if (!project) throw new Error("Seed Project missing");
+    const invited = await auth.api.createInvitation({
+      headers: hostHeaders,
+      body: {
+        email: recipientEmail,
+        role: "admin",
+        organizationId: project.organizationId,
+      },
+    });
+    invitationIds.push(invited.id);
+    await expect(
+      auth.api.createOrganization({
+        headers: recipientHeaders,
+        body: {
+          country: "DE",
+          name: `Blocked Partner ${lane}`,
+          slug: `blocked-partner-${lane}`,
+        },
+      }),
+    ).rejects.toMatchObject({ statusCode: 403 });
+    await expect(
+      client(recipientHeaders).authentication.createOrganization({
+        country: "DE",
+        name: `Blocked Partner ${lane}`,
+        slug: `blocked-partner-${lane}`,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(
+      await client(recipientHeaders).authentication.onboardingNextStep({
+        returnTo: `/setup-links/${link.id}?secret=${link.secret}`,
+      }),
+    ).toMatchObject({
+      nextStep: "resolve-invitation",
+      invitation: { invitationId: invited.id },
+    });
+    await client(recipientHeaders).organizations.rejectInvitation({
+      invitationId: invited.id,
     });
     const created = await auth.api.createOrganization({
       body: {

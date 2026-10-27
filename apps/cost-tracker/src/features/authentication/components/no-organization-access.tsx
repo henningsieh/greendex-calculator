@@ -1,6 +1,7 @@
 "use client";
 
 import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { ORPCError } from "@orpc/client";
 import { LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
@@ -10,6 +11,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import { slugifyOrganizationName as slugify } from "@/features/organizations/slug";
+import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
@@ -36,6 +38,12 @@ export function NoOrganizationAccess() {
       router.refresh();
     } catch (error) {
       setError(getORPCRequestErrorMessage(error).text);
+      if (
+        error instanceof ORPCError &&
+        getSafeErrorSituation(error)?.reason ===
+          "ORGANIZATION_CREATION_DENIED_BEFORE_CREATION"
+      )
+        router.refresh();
     } finally {
       setPending(false);
     }

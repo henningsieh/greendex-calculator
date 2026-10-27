@@ -9,6 +9,7 @@ import type { OnboardingDecision } from "@/features/authentication/onboarding-de
 
 const mocks = vi.hoisted(() => ({
   next: vi.fn(),
+  reject: vi.fn(),
   create: vi.fn(),
   bind: vi.fn(),
   select: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
       onboardingNextStep: mocks.next,
       createOrganization: mocks.create,
     },
+    organizations: { rejectInvitation: mocks.reject },
     projectPartnerships: { consumeSetupLink: mocks.bind },
   },
 }));
@@ -525,4 +527,38 @@ it("searches server-owned choices beyond the initial list and binds the selected
     secret: "private-secret",
     organizationId: "owned-24",
   });
+});
+
+it("retains the setup destination and reassesses creation after rejecting a colleague invitation", async () => {
+  const returnTo = "/setup-links/link?secret=secret";
+  mocks.next.mockResolvedValue({
+    entryContext: "partner-setup",
+    nextStep: "resolve-invitation",
+    returnTo,
+    invitation: {
+      invitationId: "invitation",
+      organization: { id: "colleagues", name: "Colleagues" },
+    },
+    availableActions: [
+      { kind: "accept-invitation", invitationId: "invitation" },
+      { kind: "reject-invitation", invitationId: "invitation" },
+      { kind: "recheck" },
+      { kind: "sign-out" },
+    ],
+  });
+  mocks.reject.mockResolvedValue({ success: true });
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <SetupLinkRecipient id="link" secret="secret" userId="recipient" />
+    </QueryClientProvider>,
+  );
+  expect(
+    await screen.findByTestId("organization-creation-blocked"),
+  ).toBeVisible();
+  expect(screen.queryByTestId("setup-name")).toBeNull();
+  mocks.next.mockResolvedValue(choose);
+  await userEvent.click(screen.getByTestId("reject-organization-invitation"));
+  expect(await screen.findByTestId("setup-name")).toBeVisible();
+  expect(screen.getByTestId("setup-invitation-rejected")).toBeVisible();
+  expect(mocks.next).toHaveBeenLastCalledWith({ returnTo });
 });

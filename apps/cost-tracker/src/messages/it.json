@@ -35,7 +35,12 @@
       "checking": "Verifica dell'invito…",
       "joining": "Adesione in corso…",
       "accept": "Accetta invito",
-      "recheck": "Controlla di nuovo l'invito"
+      "recheck": "Controlla di nuovo l'invito",
+      "creationBlocked": "Non puoi creare un’Organizzazione mentre hai un invito in sospeso a {organization}. Unisciti oppure rifiuta l’invito qui sotto. Altri inviti o un’adesione esistente possono ancora impedire la creazione.",
+      "reject": "Rifiuta invito a {organization}",
+      "rejected": "Hai rifiutato l’invito a {organization}. Il tuo accesso attuale è stato verificato di nuovo. Segui il prossimo passo qui sotto.",
+      "continue": "Continua con l’accesso attuale",
+      "options": "Unisciti a questa Organizzazione o rifiuta il suo invito qui sotto. Gli inviti di colleghi in sospeso impediscono di creare una nuova Organizzazione. Il rifiuto rimuove solo questo invito, non altri inviti o adesioni esistenti."
     },
     "progress": {
       "verify": "1. Verifica e-mail",
@@ -45,7 +50,7 @@
     "inbox": {
       "heading": "Controlla la posta in arrivo",
       "address": "Cerca il link di verifica in <address>{email}</address>.",
-      "invitationInstruction": "Apri il link di verifica per tornare qui con accesso effettuato, poi accetta l’invito per entrare nell’Organizzazione. Se il messaggio non arriva, invia un nuovo link qui sotto.",
+      "invitationInstruction": "Verifica prima il tuo indirizzo email. Poi potrai unirti all’Organizzazione o rifiutare l’invito. Un invito di collega in sospeso impedisce di creare una nuova Organizzazione. Se il messaggio non arriva, richiedi un nuovo link qui sotto.",
       "instruction": "Apri il link per verificare il tuo accesso personale e riprendere il percorso in Cost Tracker.",
       "spam": "Se non vedi il messaggio, controlla anche la cartella spam.",
       "signIn": "Hai già verificato l'e-mail o hai un account? Accedi per continuare con questo invito.",
@@ -62,7 +67,10 @@
       "expired": "Questo invito è scaduto. Chiedi un nuovo invito alla tua Organizzazione.",
       "closed": "Questo invito non è più disponibile. Chiedi un nuovo invito alla tua Organizzazione.",
       "unavailable": "Non possiamo usare questo invito. Apri il link completo nell'e-mail o chiedi un nuovo invito alla tua Organizzazione.",
-      "recheck": "Dopo aver corretto l'accesso o ricevuto un nuovo link, apri quell'invito. Puoi anche controllare di nuovo questo invito."
+      "recheck": "Dopo aver corretto l'accesso o ricevuto un nuovo link, apri quell'invito. Puoi anche controllare di nuovo questo invito.",
+      "rejected": "Questo invito è stato rifiutato. Verifica il tuo accesso qui sotto per risolvere altri inviti o continuare con la tua Organizzazione.",
+      "withdrawn": "L’Organizzazione ha ritirato questo invito. Verifica il tuo accesso attuale qui sotto per continuare.",
+      "accepted": "Questo invito è stato accettato. Verifica il tuo accesso all’Organizzazione qui sotto. Se è stato rimosso, chiedi aiuto al suo Owner."
     },
     "selection": {
       "heading": "Seleziona un'Organizzazione",

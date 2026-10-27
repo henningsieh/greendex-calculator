@@ -311,3 +311,31 @@ it("keeps the invitation sign-out destination equal across verification, recover
     "/register?next=%2Faccept-invitation%2Finvite-1",
   ]);
 });
+
+it.each(["direct", "partner-setup"] as const)(
+  "guides %s creation toward the shared blocking invitation",
+  (kind) => {
+    const decision = decideOnboarding({
+      account: "verified",
+      returnTo:
+        kind === "direct" ? "/projects" : "/setup-links/link?secret=secret",
+      organizationContext: { status: "no-membership" },
+      canCreate: false,
+      blockingInvitation: invitation,
+      entry:
+        kind === "direct"
+          ? { kind }
+          : { kind, status: "choose", organizations: [], canCreate: false },
+    });
+    expect(OnboardingDecisionSchema.parse(decision)).toMatchObject({
+      nextStep: "resolve-invitation",
+      invitation,
+      availableActions: [
+        { kind: "accept-invitation", invitationId: "invite-1" },
+        { kind: "reject-invitation", invitationId: "invite-1" },
+        { kind: "recheck" },
+        { kind: "sign-out" },
+      ],
+    });
+  },
+);

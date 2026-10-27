@@ -20,6 +20,7 @@ const authMocks = vi.hoisted(() => ({
   createInvitation: vi.fn(),
   cancelInvitation: vi.fn(),
   acceptInvitation: vi.fn(),
+  rejectInvitation: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
@@ -457,6 +458,65 @@ describe("organizations staff invites", () => {
       });
       expect(await invitationStatus(id)).toBe("pending");
     }
+  });
+
+  it("allows only the verified recipient to reject an open invitation", async () => {
+    const invitationId = seedInvitations.causeId;
+    session(outsiderId, null, "someone-else@example.org");
+    authMocks.getSession.mockResolvedValueOnce({
+      session: {
+        id: randomUUID(),
+        userId: outsiderId,
+        activeOrganizationId: null,
+      },
+      user: {
+        id: outsiderId,
+        email: "staff-invitation-cause@example.org",
+        emailVerified: false,
+      },
+    });
+    await expect(
+      client.organizations.rejectInvitation({ invitationId }),
+    ).rejects.toMatchObject({ data: { reason: "EMAIL_VERIFICATION_REQUIRED" } });
+    session(outsiderId, null, "someone-else@example.org");
+    authMocks.getSession.mockResolvedValueOnce({
+      session: {
+        id: randomUUID(),
+        userId: outsiderId,
+        activeOrganizationId: null,
+      },
+      user: {
+        id: outsiderId,
+        email: "someone-else@example.org",
+        emailVerified: true,
+      },
+    });
+    await expect(
+      client.organizations.rejectInvitation({ invitationId }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_WRONG_EMAIL" } });
+    authMocks.getSession.mockResolvedValue({
+      session: {
+        id: randomUUID(),
+        userId: outsiderId,
+        activeOrganizationId: null,
+      },
+      user: {
+        id: outsiderId,
+        email: "STAFF-INVITATION-CAUSE@example.org",
+        emailVerified: true,
+      },
+    });
+    authMocks.rejectInvitation.mockResolvedValueOnce({
+      invitation: { status: "rejected" },
+    });
+    await expect(
+      client.organizations.rejectInvitation({ invitationId }),
+    ).resolves.toEqual({ success: true });
+    await expect(
+      client.organizations.rejectInvitation({
+        invitationId: seedInvitations.acceptedId,
+      }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_ACCEPTED" } });
   });
 
   it("cancels a pending invitation and rejects unknown or settled rows", async () => {

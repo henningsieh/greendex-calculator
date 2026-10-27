@@ -166,6 +166,78 @@ test.describe.serial("guided Organization Invitation", () => {
     );
   });
 
+  test("blocks independent creation, rejects each invitation, and offers creation only after the last one", async ({
+    browser,
+    baseURL,
+  }) => {
+    const otherName = `CT ${fixture.suffix} Other`;
+    let otherOrganizationId: string | undefined;
+    const otherContext = await fixture.actorContext(browser, "X", baseURL!);
+    const other = await otherContext.newPage();
+    const recipientContext = await fixture.actorContext(browser, "A", baseURL!);
+    const recipient = await recipientContext.newPage();
+    try {
+      await other.goto("/projects");
+      await other.getByTestId("organization-name").fill(otherName);
+      await other.getByTestId("organization-country").selectOption("DE");
+      await other.getByTestId("create-organization").click();
+      await expectFirstOrganizationProjects(other, otherName);
+      const stored = await db.query.organization.findFirst({
+        where: eq(organization.name, otherName),
+      });
+      if (!stored) throw new Error("Run-owned Organization missing");
+      otherOrganizationId = stored.id;
+      const response = await otherContext.request.post(
+        "/api/auth/organization/invite-member",
+        {
+          headers: { Origin: baseURL! },
+          data: {
+            email: fixture.actors.A.email,
+            role: "admin",
+            organizationId: stored.id,
+          },
+        },
+      );
+      expect(response.ok()).toBe(true);
+      await recipient.goto("/projects");
+      await expect(
+        recipient.getByTestId("organization-creation-blocked"),
+      ).toBeVisible();
+      await expect(recipient.getByTestId("invitation-context")).toHaveAttribute(
+        "data-organization-id",
+        organizationId,
+      );
+      await expect(
+        recipient.getByTestId("accept-organization-invitation"),
+      ).toBeEnabled();
+      await noCreation(recipient);
+      await recipient.getByTestId("reject-organization-invitation").click();
+      await expect(recipient.getByTestId("invitation-rejected")).toBeVisible();
+      await expect(recipient.getByTestId("invitation-context")).toHaveAttribute(
+        "data-organization-id",
+        stored.id,
+      );
+      await expect(
+        recipient.getByTestId("organization-creation-blocked"),
+      ).toBeVisible();
+      await noCreation(recipient);
+      await recipient.getByTestId("reject-organization-invitation").click();
+      await expect(recipient.getByTestId("invitation-next-step")).toBeVisible();
+      await recipient.getByTestId("invitation-next-step").click();
+      await expect(recipient.getByTestId("create-organization")).toBeVisible();
+      await expect(
+        recipient.getByTestId("organization-creation-blocked"),
+      ).toHaveCount(0);
+    } finally {
+      await recipient.close();
+      await other.close();
+      if (otherOrganizationId)
+        await db
+          .delete(organization)
+          .where(eq(organization.id, otherOrganizationId));
+    }
+  });
+
   test("Google carries the invitation destination without contacting the provider", async ({
     page,
   }) => {
@@ -475,7 +547,7 @@ test.describe.serial("guided Organization Invitation", () => {
           ? "STAFF_INVITATION_WRONG_EMAIL"
           : state === "expired"
             ? "STAFF_INVITATION_EXPIRED"
-            : "STAFF_INVITATION_CLOSED";
+            : "STAFF_INVITATION_WITHDRAWN";
       const recovery = page.locator(`[data-invitation-recovery="${reason}"]`);
       await expect(recovery).toBeVisible();
       await expect(page.getByRole("heading", { level: 1 })).toBeFocused();

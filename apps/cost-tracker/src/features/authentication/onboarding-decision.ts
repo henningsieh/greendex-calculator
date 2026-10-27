@@ -65,6 +65,31 @@ export type OnboardingInput = z.infer<typeof OnboardingInputSchema>;
 export const OnboardingDecisionSchema = z.union([
   z
     .object({
+      entryContext: otherEntryContext,
+      nextStep: z.literal("resolve-invitation"),
+      invitation: invitationIdentity,
+      returnTo: z.string(),
+      availableActions: z.tuple([
+        z
+          .object({
+            kind: z.literal("accept-invitation"),
+            invitationId: identifier,
+          })
+          .strict(),
+        z
+          .object({
+            kind: z.literal("reject-invitation"),
+            invitationId: identifier,
+          })
+          .strict(),
+        recheck,
+        signOut,
+      ]),
+    })
+    .strict(),
+
+  z
+    .object({
       entryContext: z.literal("organization-invitation"),
       nextStep: z.literal("authenticate"),
       invitation: invitationIdentity.nullable(),
@@ -269,6 +294,7 @@ export type OnboardingFacts =
       returnTo: string;
       organizationContext: StaffOrganizationContext;
       canCreate: boolean;
+      blockingInvitation?: z.infer<typeof invitationIdentity>;
       entry: ValidatedOnboardingEntry;
     };
 
@@ -378,6 +404,33 @@ export function decideOnboarding(facts: OnboardingFacts): OnboardingDecision {
   }
   const { entry, organizationContext } = facts;
   const entryContext = entry.kind;
+  if (
+    facts.blockingInvitation &&
+    (entry.kind === "direct" ||
+      (entry.kind === "partner-setup" &&
+        entry.status === "choose" &&
+        entry.organizations.length === 0))
+  ) {
+    return {
+      entryContext: entry.kind,
+      nextStep: "resolve-invitation",
+      invitation: facts.blockingInvitation,
+      returnTo: facts.returnTo,
+      availableActions: [
+        {
+          kind: "accept-invitation",
+          invitationId: facts.blockingInvitation.invitationId,
+        },
+        {
+          kind: "reject-invitation",
+          invitationId: facts.blockingInvitation.invitationId,
+        },
+        { kind: "recheck" },
+        { kind: "sign-out" },
+      ],
+    };
+  }
+
   if (entry.kind !== "direct") {
     if (entry.status === "recovery") {
       return entry.kind === "organization-invitation"

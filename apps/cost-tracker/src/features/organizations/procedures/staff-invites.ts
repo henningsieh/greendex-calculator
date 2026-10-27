@@ -271,12 +271,18 @@ async function readStaffInvitationRow(
   // checks here, so only staff invitations may proceed.
   if (pending.role === ORGANIZATION_ROLES.Participant)
     throw createSituationErrors(errors).staffInvitationWrongKind();
+  if (pending.status === "rejected")
+    throw createSituationErrors(errors).staffInvitationRejected();
+  if (pending.status === "canceled" || pending.status === "cancelled")
+    throw createSituationErrors(errors).staffInvitationWithdrawn();
+  if (pending.status === "accepted" && !allowAccepted)
+    throw createSituationErrors(errors).staffInvitationAccepted();
   if (
     pending.status !== "pending" &&
     !(allowAccepted && pending.status === "accepted")
   )
     throw createSituationErrors(errors).staffInvitationClosed();
-  if (pending.status === "pending" && pending.expiresAt < new Date())
+  if (pending.status === "pending" && pending.expiresAt <= new Date())
     throw createSituationErrors(errors).staffInvitationExpired();
   return pending;
 }
@@ -337,6 +343,31 @@ export const acceptInvitation = authorized
         context.resHeaders,
       );
     }
+  });
+
+export const rejectInvitation = authorized
+  .input(CancelInputSchema)
+  .output(z.object({ success: z.literal(true) }))
+  .handler(async ({ context, errors, input }) => {
+    if (!context.user.emailVerified)
+      throw createSituationErrors(errors).verifyEmail();
+    await readStaffInvitation(input.invitationId, context.user.email, errors);
+    try {
+      await auth.api.rejectInvitation({
+        headers: context.headers,
+        body: { invitationId: input.invitationId },
+      });
+    } catch (error) {
+      console.error("Organization Invitation rejection failed", {
+        errorCode: error instanceof Error ? error.name : "unknown",
+      });
+      throw normalizeBetterAuthError(
+        error,
+        createSituationErrors(errors),
+        context.resHeaders,
+      );
+    }
+    return { success: true as const };
   });
 
 export const cancelInvitation = authorized

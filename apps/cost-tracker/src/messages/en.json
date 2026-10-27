@@ -35,7 +35,12 @@
       "checking": "Checking your invitation…",
       "joining": "Joining…",
       "accept": "Accept invitation",
-      "recheck": "Check invitation again"
+      "recheck": "Check invitation again",
+      "creationBlocked": "You cannot create an Organization while you have a pending invitation to {organization}. Join this Organization or reject its invitation below. Other invitations or an existing Membership may still prevent creation.",
+      "reject": "Reject invitation to {organization}",
+      "rejected": "You rejected the invitation to {organization}. Your current access has been checked again. Follow the next step below.",
+      "continue": "Continue with current access",
+      "options": "Join this Organization or reject its invitation below. Pending colleague invitations prevent creating a new Organization. Rejection removes only this invitation, not other invitations or existing Memberships."
     },
     "progress": {
       "verify": "1. Verify email",
@@ -45,7 +50,7 @@
     "inbox": {
       "heading": "Check your inbox",
       "address": "Check <address>{email}</address> for your verification link.",
-      "invitationInstruction": "Open the verification link to return here signed in, then accept the invitation to join the Organization. If the message does not arrive, send a new link below.",
+      "invitationInstruction": "Verify your email first. Then review the invitation to join the Organization or reject it. A pending colleague invitation prevents creating a new Organization. If the message does not arrive, send a new link below.",
       "instruction": "Open the link to verify your personal login and continue where you left off in Cost Tracker.",
       "spam": "If the message is not visible, check your spam folder too.",
       "signIn": "Already verified or already have an account? Sign in to continue this invitation.",
@@ -62,7 +67,10 @@
       "expired": "This invitation has expired. Ask your Organization for a new invitation.",
       "closed": "This invitation is no longer available. Ask your Organization for a new invitation.",
       "unavailable": "We cannot use this invitation. Open the complete link from your invitation email, or ask your Organization for a new invitation.",
-      "recheck": "After correcting your login or receiving a new link, open that invitation. You can also check this invitation again."
+      "recheck": "After correcting your login or receiving a new link, open that invitation. You can also check this invitation again.",
+      "rejected": "This invitation was rejected. Check your current access below to resolve any other invitation or continue with your Organization.",
+      "withdrawn": "The inviting Organization withdrew this invitation. Check your current access below for the next step.",
+      "accepted": "This invitation was accepted. Check your Organization access below. If access was removed, ask its Owner for help."
     },
     "selection": {
       "heading": "Select an Organization",

@@ -11,6 +11,8 @@ export type { Session, User } from "better-auth/types";
 
 export {
   canCreateOrganization,
+  getOrganizationCreationEligibility,
+  type OrganizationCreationEligibility,
   createServerAuth,
   type ServerAuthConfig,
 } from "./server-auth";
