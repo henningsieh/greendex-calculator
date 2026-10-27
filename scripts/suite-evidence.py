@@ -266,7 +266,7 @@ def capture(folder, suite):
     with paths[1].open("x") as stream:
         stream.write(manifest)
     dump(paths[0], receipt)
-    print(f"Captured {suite} before-suite receipt for {receipt['commit']}.")
+    print(f"Captured {suite} before-suite receipt for {receipt['commit']}.", flush=True)
 
 
 def resolve_folder(args):
@@ -332,13 +332,15 @@ def run_suite(folder, suite, capture_before, dry):
         assert process.stdout is not None
         for line in process.stdout:
             sys.stdout.write(line)
+            sys.stdout.flush()
             stream.write(line)
+            stream.flush()
         code = process.wait()
     status.write_text(f"exit={code}\n")
     if code:
-        print(f"[{suite}] FAILED exit={code}. Log: {log}", file=sys.stderr)
+        print(f"[{suite}] FAILED exit={code}. Log: {log}", file=sys.stderr, flush=True)
     else:
-        print(f"[{suite}] PASSED. Log: {log}")
+        print(f"[{suite}] PASSED. Log: {log}", flush=True)
     return code
 
 
@@ -476,7 +478,7 @@ def main():
         if args.action == "capture":
             capture(folder, args.suite)
             return 0
-        print(f"Audit directory: {rel(folder)}")
+        print(f"Audit directory: {rel(folder)}", flush=True)
         suites = SUITES if args.suite == "all" else (args.suite,)
         for suite in suites:
             code = run_suite(folder, suite, not args.no_capture, args.dry_run)

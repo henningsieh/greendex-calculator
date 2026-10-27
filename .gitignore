@@ -54,3 +54,6 @@ next-env.d.ts
 
 # turborepo
 .turbo/
+
+# Python bytecode from scripts/
+__pycache__/
