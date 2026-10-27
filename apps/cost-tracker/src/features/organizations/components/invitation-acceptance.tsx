@@ -10,29 +10,40 @@ import { Button } from "@/components/ui/button";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
-import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
+import type {
+  OnboardingDecision,
+  OnboardingInput,
+} from "@/features/authentication/onboarding-decision";
 import { SelectOrganization } from "@/features/organizations/components/select-organization";
 import { orpc } from "@/lib/orpc/orpc";
 
 export function InvitationAcceptance({
   returnTo,
+  setupRecovery,
   initialDecision,
   onAuthenticate,
+  onDecision,
+  onRejected,
 }: {
   returnTo: string;
+  setupRecovery?: OnboardingInput["setupRecovery"];
   initialDecision?: OnboardingDecision;
   onAuthenticate?: () => void;
+  onDecision?: (decision: OnboardingDecision) => void;
+  onRejected?: (organizationName: string) => void;
 }) {
   const router = useRouter();
   const t = useTranslations("onboarding");
   const [decision, setDecision] = useState(initialDecision);
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
+  const [rejectedOrganization, setRejectedOrganization] = useState<string>();
   const heading = useRef<HTMLHeadingElement>(null);
 
   const continueJourney = useCallback(
     (next: OnboardingDecision) => {
       setDecision(next);
+      onDecision?.(next);
       if (next.nextStep === "continue")
         router.replace(next.availableActions[0].destination);
       if (next.nextStep === "authenticate") {
@@ -43,7 +54,7 @@ export function InvitationAcceptance({
         );
       }
     },
-    [router, onAuthenticate],
+    [router, onAuthenticate, onDecision],
   );
 
   useEffect(() => {
@@ -51,7 +62,7 @@ export function InvitationAcceptance({
     if (initialDecision) continueJourney(initialDecision);
     else
       void orpc.authentication
-        .onboardingNextStep({ returnTo })
+        .onboardingNextStep({ returnTo, setupRecovery })
         .then((next) => {
           if (active) continueJourney(next);
         })
@@ -61,17 +72,25 @@ export function InvitationAcceptance({
     return () => {
       active = false;
     };
-  }, [returnTo, initialDecision, continueJourney]);
+  }, [returnTo, setupRecovery, initialDecision, continueJourney]);
 
   useEffect(() => {
     heading.current?.focus();
   }, [decision?.nextStep]);
 
+  const currentReturnTo =
+    decision?.nextStep === "resolve-invitation" ? decision.returnTo : returnTo;
+
   async function recheck() {
     setPending(true);
     setError(false);
     try {
-      continueJourney(await orpc.authentication.onboardingNextStep({ returnTo }));
+      continueJourney(
+        await orpc.authentication.onboardingNextStep({
+          returnTo: currentReturnTo,
+          setupRecovery,
+        }),
+      );
     } catch {
       setError(true);
     } finally {
@@ -80,7 +99,12 @@ export function InvitationAcceptance({
   }
 
   async function accept() {
-    if (decision?.nextStep !== "accept-invitation" || pending) return;
+    if (
+      (decision?.nextStep !== "accept-invitation" &&
+        decision?.nextStep !== "resolve-invitation") ||
+      pending
+    )
+      return;
     setPending(true);
     setError(false);
     try {
@@ -91,9 +115,55 @@ export function InvitationAcceptance({
       setError(true);
     }
     try {
-      continueJourney(await orpc.authentication.onboardingNextStep({ returnTo }));
+      continueJourney(
+        await orpc.authentication.onboardingNextStep({
+          returnTo: currentReturnTo,
+          setupRecovery,
+        }),
+      );
     } catch {
       setError(true);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function reject() {
+    if (
+      (decision?.nextStep !== "accept-invitation" &&
+        decision?.nextStep !== "resolve-invitation") ||
+      pending
+    )
+      return;
+    setPending(true);
+    setError(false);
+    try {
+      await orpc.organizations.rejectInvitation({
+        invitationId: decision.invitation.invitationId,
+      });
+      const next = await orpc.authentication.onboardingNextStep({
+        setupRecovery,
+        returnTo:
+          decision.nextStep === "resolve-invitation"
+            ? decision.returnTo
+            : undefined,
+      });
+      setRejectedOrganization(decision.invitation.organization.name);
+      onRejected?.(decision.invitation.organization.name);
+      setDecision(next);
+      onDecision?.(next);
+    } catch {
+      setError(true);
+      try {
+        const next = await orpc.authentication.onboardingNextStep({
+          returnTo: currentReturnTo,
+          setupRecovery,
+        });
+        setDecision(next);
+        onDecision?.(next);
+      } catch {
+        // Keep the last authoritative state until a successful retry.
+      }
     } finally {
       setPending(false);
     }
@@ -103,15 +173,22 @@ export function InvitationAcceptance({
     return <CheckInbox email={decision.email} decision={decision} />;
   if (decision?.nextStep === "select-organization")
     return (
-      <SelectOrganization
-        organizations={decision.availableActions[0].organizations}
-        onSelected={recheck}
-        signOutDestination={
-          "destination" in decision.availableActions[1]
-            ? decision.availableActions[1].destination
-            : undefined
-        }
-      />
+      <div>
+        {rejectedOrganization && (
+          <output data-testid="invitation-rejected">
+            {t("invitation.rejected", { organization: rejectedOrganization })}
+          </output>
+        )}
+        <SelectOrganization
+          organizations={decision.availableActions[0].organizations}
+          onSelected={recheck}
+          signOutDestination={
+            "destination" in decision.availableActions[1]
+              ? decision.availableActions[1].destination
+              : undefined
+          }
+        />
+      </div>
     );
 
   return (
@@ -129,7 +206,20 @@ export function InvitationAcceptance({
         {t("invitation.heading")}
       </h1>
       {!decision && !error && <output>{t("invitation.checking")}</output>}
-      {decision?.nextStep === "accept-invitation" && (
+      {rejectedOrganization && (
+        <output data-testid="invitation-rejected">
+          {t("invitation.rejected", { organization: rejectedOrganization })}
+        </output>
+      )}
+      {decision?.nextStep === "resolve-invitation" && (
+        <p className="mt-4" data-testid="organization-creation-blocked">
+          {t("invitation.creationBlocked", {
+            organization: decision.invitation.organization.name,
+          })}
+        </p>
+      )}
+      {(decision?.nextStep === "accept-invitation" ||
+        decision?.nextStep === "resolve-invitation") && (
         <>
           <div
             className="mt-4"
@@ -146,7 +236,30 @@ export function InvitationAcceptance({
           >
             {t(pending ? "invitation.joining" : "invitation.accept")}
           </Button>
+          <Button
+            className="mt-4"
+            variant="outline"
+            data-testid="reject-organization-invitation"
+            disabled={pending}
+            onClick={reject}
+            type="button"
+          >
+            {t("invitation.reject", {
+              organization: decision.invitation.organization.name,
+            })}
+          </Button>
+          <p className="mt-4">{t("invitation.options")}</p>
         </>
+      )}
+      {(decision?.nextStep === "create-organization" ||
+        decision?.nextStep === "continue") && (
+        <Link
+          href="/projects"
+          onClick={() => router.refresh()}
+          data-testid="invitation-next-step"
+        >
+          {t("invitation.continue")}
+        </Link>
       )}
       {decision?.nextStep === "invitation-recovery" && (
         <InvitationRecovery reason={decision.reason} />
@@ -192,6 +305,11 @@ export function InvitationAcceptance({
           </div>
         ) : null,
       )}
+      {decision?.nextStep === "invitation-recovery" && (
+        <Link href="/projects" data-testid="invitation-current-access">
+          {t("invitation.continue")}
+        </Link>
+      )}
     </section>
   );
 }
@@ -203,9 +321,15 @@ export function InvitationRecovery({ reason }: { reason: string }) {
       ? "wrongEmail"
       : reason === "STAFF_INVITATION_EXPIRED"
         ? "expired"
-        : reason === "STAFF_INVITATION_CLOSED"
-          ? "closed"
-          : "unavailable";
+        : reason === "STAFF_INVITATION_REJECTED"
+          ? "rejected"
+          : reason === "STAFF_INVITATION_WITHDRAWN"
+            ? "withdrawn"
+            : reason === "STAFF_INVITATION_ACCEPTED"
+              ? "accepted"
+              : reason === "STAFF_INVITATION_CLOSED"
+                ? "closed"
+                : "unavailable";
   return (
     <Alert className="mt-4" variant="info" data-invitation-recovery={reason}>
       <AlertTitle>{t("recovery.title")}</AlertTitle>

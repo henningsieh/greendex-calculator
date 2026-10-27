@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/client";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -73,4 +74,19 @@ describe("NoOrganizationAccess", () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
+});
+
+it("refreshes authoritative guidance when a stale creation attempt is refused", async () => {
+  mocks.createOrganization.mockRejectedValue(
+    new ORPCError("FORBIDDEN", {
+      data: { reason: "ORGANIZATION_CREATION_DENIED_BEFORE_CREATION" },
+    }),
+  );
+  render(<NoOrganizationAccess />);
+  const actor = userEvent.setup({ delay: null });
+  await actor.type(screen.getByTestId("organization-name"), "New Organization");
+  await actor.selectOptions(screen.getByTestId("organization-country"), "DE");
+  await actor.click(screen.getByTestId("create-organization"));
+  expect(await screen.findByTestId("organization-error")).toBeVisible();
+  expect(mocks.refresh).toHaveBeenCalled();
 });

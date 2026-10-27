@@ -3,6 +3,8 @@ import { type FeatureFlags, resolveFlags } from "@greendex/config/feature-flags"
 import { organizationCountryFields } from "@greendex/config/organization-country";
 import { db } from "@greendex/database";
 import {
+  invitation,
+  user as userTable,
   member,
   organization as organizationTable,
 } from "@greendex/database/schema";
@@ -15,10 +17,11 @@ import { betterAuth, type BetterAuthOptions } from "better-auth/minimal";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import type { OrganizationOptions } from "better-auth/plugins/organization";
-import { desc, eq, ilike } from "drizzle-orm";
+import { and, asc, desc, eq, gt, sql, ilike } from "drizzle-orm";
 
 import {
   isValidOrganizationRole,
+  parseOrganizationRoles,
   ORGANIZATION_ROLES,
 } from "./organization-roles";
 import {
@@ -27,16 +30,79 @@ import {
   costTrackerOrganizationRoles,
 } from "./permissions";
 
-export async function canCreateOrganization(
+export type OrganizationCreationEligibility =
+  | { status: "allowed" }
+  | { status: "denied-membership" }
+  | {
+      status: "denied-invitation";
+      invitationId: string;
+      organization: { id: string; name: string };
+    };
+
+export async function getOrganizationCreationEligibility(
   userId: string,
+  email: string | undefined,
   flags: Pick<FeatureFlags, "singleOrganization">,
-): Promise<boolean> {
-  if (!flags.singleOrganization) return true;
+): Promise<OrganizationCreationEligibility> {
+  if (!flags.singleOrganization) return { status: "allowed" };
   const membership = await db.query.member.findFirst({
     where: eq(member.userId, userId),
     columns: { id: true },
   });
-  return !membership;
+  if (membership) return { status: "denied-membership" };
+  const accountEmail =
+    email ??
+    (
+      await db.query.user.findFirst({
+        where: eq(userTable.id, userId),
+        columns: { email: true },
+      })
+    )?.email;
+  if (!accountEmail) return { status: "allowed" };
+  const candidates = await db
+    .select({
+      invitationId: invitation.id,
+      role: invitation.role,
+      organization: { id: organizationTable.id, name: organizationTable.name },
+    })
+    .from(invitation)
+    .innerJoin(
+      organizationTable,
+      eq(organizationTable.id, invitation.organizationId),
+    )
+    .where(
+      and(
+        eq(sql`lower(${invitation.email})`, accountEmail.toLowerCase()),
+        eq(invitation.status, "pending"),
+        gt(invitation.expiresAt, new Date()),
+      ),
+    )
+    .orderBy(asc(invitation.expiresAt), asc(invitation.id));
+  const blocking = candidates.find(({ role }) =>
+    parseOrganizationRoles(role ?? "").some(
+      (value) =>
+        value === ORGANIZATION_ROLES.OrganizationOwner ||
+        value === ORGANIZATION_ROLES.OrganizationAdmin,
+    ),
+  );
+  return blocking
+    ? {
+        status: "denied-invitation",
+        invitationId: blocking.invitationId,
+        organization: blocking.organization,
+      }
+    : { status: "allowed" };
+}
+
+export async function canCreateOrganization(
+  userId: string,
+  flags: Pick<FeatureFlags, "singleOrganization">,
+  email?: string,
+): Promise<boolean> {
+  return (
+    (await getOrganizationCreationEligibility(userId, email, flags)).status ===
+    "allowed"
+  );
 }
 
 type EmailVerificationOptions = NonNullable<
@@ -163,7 +229,7 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
           },
         },
         allowUserToCreateOrganization: flags.singleOrganization
-          ? (user) => canCreateOrganization(user.id, flags)
+          ? (user) => canCreateOrganization(user.id, flags, user.email)
           : undefined,
         organizationHooks: {
           ...config.organizationHooks,

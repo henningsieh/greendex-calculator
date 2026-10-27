@@ -35,7 +35,12 @@
       "checking": "Vérification de votre invitation…",
       "joining": "Adhésion en cours…",
       "accept": "Accepter l'invitation",
-      "recheck": "Vérifier à nouveau"
+      "recheck": "Vérifier à nouveau",
+      "creationBlocked": "Vous ne pouvez pas créer une Organisation tant qu’une invitation à {organization} est en attente. Rejoignez cette Organisation ou refusez son invitation ci-dessous. D’autres invitations ou une adhésion existante peuvent encore empêcher la création.",
+      "reject": "Refuser l’invitation à {organization}",
+      "rejected": "Vous avez refusé l’invitation à {organization}. Votre accès actuel a été vérifié à nouveau. Suivez la prochaine étape ci-dessous.",
+      "continue": "Continuer avec l’accès actuel",
+      "options": "Rejoignez cette Organisation ou refusez son invitation ci-dessous. Les invitations de collègues en attente empêchent de créer une nouvelle Organisation. Le refus ne supprime que cette invitation, pas les autres invitations ni les adhésions existantes."
     },
     "progress": {
       "verify": "1. Vérifier l'e-mail",
@@ -45,7 +50,7 @@
     "inbox": {
       "heading": "Consultez votre boîte de réception",
       "address": "Cherchez votre lien de vérification dans <address>{email}</address>.",
-      "invitationInstruction": "Ouvrez le lien de vérification pour revenir ici avec une session ouverte, puis acceptez l’invitation pour rejoindre l’Organisation. Si le message n’arrive pas, envoyez un nouveau lien ci-dessous.",
+      "invitationInstruction": "Vérifiez d’abord votre adresse e-mail. Vous pourrez ensuite rejoindre l’Organisation ou refuser l’invitation. Si le message n’arrive pas, demandez un nouveau lien ci-dessous.",
       "instruction": "Ouvrez le lien pour vérifier votre accès personnel et reprendre votre parcours dans Cost Tracker.",
       "spam": "Si le message n'apparaît pas, consultez aussi vos courriers indésirables.",
       "signIn": "Déjà vérifié ou déjà un compte ? Connectez-vous pour poursuivre cette invitation.",
@@ -62,7 +67,10 @@
       "expired": "Cette invitation a expiré. Demandez une nouvelle invitation à votre Organisation.",
       "closed": "Cette invitation n'est plus disponible. Demandez une nouvelle invitation à votre Organisation.",
       "unavailable": "Cette invitation ne peut pas être utilisée. Ouvrez le lien complet de l'e-mail ou demandez une nouvelle invitation à votre Organisation.",
-      "recheck": "Après avoir corrigé votre connexion ou reçu un nouveau lien, ouvrez cette invitation. Vous pouvez aussi vérifier à nouveau cette invitation."
+      "recheck": "Après avoir corrigé votre connexion ou reçu un nouveau lien, ouvrez cette invitation. Vous pouvez aussi vérifier à nouveau cette invitation.",
+      "rejected": "Cette invitation a été refusée. Vérifiez votre accès ci-dessous pour traiter d’autres invitations ou continuer avec votre Organisation.",
+      "withdrawn": "L’Organisation a retiré cette invitation. Vérifiez votre accès actuel ci-dessous pour la suite.",
+      "accepted": "Cette invitation a été acceptée. Vérifiez votre accès à l’Organisation ci-dessous. Si l’accès a été retiré, contactez son Owner."
     },
     "selection": {
       "heading": "Sélectionnez une Organisation",

@@ -34,6 +34,9 @@ function mapFailure(status: number, body: unknown, errors: Situations) {
       return errors.selectOrganization();
     case "INVALID_EMAIL_OR_PASSWORD":
       return errors.invalidCredentials();
+    case "YOU_ARE_NOT_ALLOWED_TO_CREATE_A_NEW_ORGANIZATION":
+      return errors.organizationCreationDeniedBeforeCreation();
+    case "EMAIL_VERIFICATION_REQUIRED_BEFORE_ACCEPTING_OR_REJECTING_INVITATION":
     case "EMAIL_NOT_VERIFIED":
       return errors.verifyEmail();
   }

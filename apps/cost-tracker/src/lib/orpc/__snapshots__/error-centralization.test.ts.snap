@@ -248,6 +248,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "ORGANIZATION_MEMBERSHIP_REQUIRED",
     "status": 403,
   },
+  "organizationCreationDeniedBeforeCreation": {
+    "code": "FORBIDDEN",
+    "message": "Organization creation is unavailable. Check your invitations and Organization Memberships before continuing.",
+    "reason": "ORGANIZATION_CREATION_DENIED_BEFORE_CREATION",
+    "status": 403,
+  },
   "organizationManagementRequired": {
     "code": "FORBIDDEN",
     "message": "You need Organization Owner or Admin access to manage this Organization.",
@@ -699,6 +705,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "SETUP_LINK_WRONG_EMAIL",
     "status": 403,
   },
+  "staffInvitationAccepted": {
+    "code": "BAD_REQUEST",
+    "message": "Organization Invitation was accepted. Check your current Organization access.",
+    "reason": "STAFF_INVITATION_ACCEPTED",
+    "status": 400,
+  },
   "staffInvitationClosed": {
     "code": "BAD_REQUEST",
     "message": "Organization Invitation is no longer pending.",
@@ -717,11 +729,23 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "STAFF_INVITATION_NOT_FOUND",
     "status": 404,
   },
+  "staffInvitationRejected": {
+    "code": "BAD_REQUEST",
+    "message": "Organization Invitation was rejected.",
+    "reason": "STAFF_INVITATION_REJECTED",
+    "status": 400,
+  },
   "staffInvitationRoleTooHigh": {
     "code": "FORBIDDEN",
     "message": "This invitation would grant a role above your own.",
     "reason": "STAFF_INVITATION_ROLE_TOO_HIGH",
     "status": 403,
+  },
+  "staffInvitationWithdrawn": {
+    "code": "BAD_REQUEST",
+    "message": "Organization Invitation was withdrawn.",
+    "reason": "STAFF_INVITATION_WITHDRAWN",
+    "status": 400,
   },
   "staffInvitationWrongEmail": {
     "code": "FORBIDDEN",

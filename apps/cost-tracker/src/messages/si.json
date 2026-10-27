@@ -35,7 +35,12 @@
       "checking": "Preverjanje povabila…",
       "joining": "Pridruževanje…",
       "accept": "Sprejmi povabilo",
-      "recheck": "Znova preveri povabilo"
+      "recheck": "Znova preveri povabilo",
+      "creationBlocked": "Organizacije ne morete ustvariti, dokler imate čakajoče vabilo v {organization}. Pridružite se ali spodaj zavrnite vabilo. Druga vabila ali obstoječe članstvo lahko še vedno preprečujejo ustvarjanje.",
+      "reject": "Zavrni vabilo v {organization}",
+      "rejected": "Zavrnili ste vabilo v {organization}. Vaš trenutni dostop je bil znova preverjen. Sledite naslednjemu koraku spodaj.",
+      "continue": "Nadaljuj s trenutnim dostopom",
+      "options": "Pridružite se tej Organizaciji ali spodaj zavrnite njeno vabilo. Čakajoča vabila za sodelavce preprečujejo ustvarjanje nove Organizacije. Zavrnitev odstrani le to vabilo, ne drugih vabil ali obstoječih članstev."
     },
     "progress": {
       "verify": "1. Potrditev e-pošte",
@@ -45,7 +50,7 @@
     "inbox": {
       "heading": "Preverite prejeto pošto",
       "address": "Poiščite potrditveno povezavo v nabiralniku <address>{email}</address>.",
-      "invitationInstruction": "Odprite povezavo za potrditev, da se vrnete sem prijavljeni, nato sprejmite povabilo za pridružitev Organizaciji. Če sporočilo ne prispe, spodaj pošljite novo povezavo.",
+      "invitationInstruction": "Najprej potrdite e-poštni naslov. Nato se lahko pridružite Organizaciji ali zavrnete vabilo. Če sporočilo ne prispe, spodaj zahtevajte novo povezavo.",
       "instruction": "Odprite povezavo, da potrdite osebno prijavo in nadaljujete v Cost Trackerju.",
       "spam": "Če sporočila ne vidite, preverite tudi neželeno pošto.",
       "signIn": "Ste e-pošto že potrdili ali že imate račun? Prijavite se za nadaljevanje tega povabila.",
@@ -62,7 +67,10 @@
       "expired": "To povabilo je poteklo. Organizacijo prosite za novo povabilo.",
       "closed": "To povabilo ni več na voljo. Organizacijo prosite za novo povabilo.",
       "unavailable": "Tega povabila ni mogoče uporabiti. Odprite celotno povezavo iz e-poštnega povabila ali organizacijo prosite za novo povabilo.",
-      "recheck": "Ko popravite prijavo ali prejmete novo povezavo, odprite tisto povabilo. Lahko tudi znova preverite to povabilo."
+      "recheck": "Ko popravite prijavo ali prejmete novo povezavo, odprite tisto povabilo. Lahko tudi znova preverite to povabilo.",
+      "rejected": "To vabilo je bilo zavrnjeno. Spodaj preverite trenutni dostop, da razrešite druga vabila ali nadaljujete z Organizacijo.",
+      "withdrawn": "Organizacija je umaknila to vabilo. Spodaj preverite trenutni dostop za naslednji korak.",
+      "accepted": "To vabilo je bilo sprejeto. Spodaj preverite dostop do Organizacije. Če je bil odstranjen, prosite njenega Ownerja za pomoč."
     },
     "selection": {
       "heading": "Izberite organizacijo",

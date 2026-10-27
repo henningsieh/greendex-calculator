@@ -5,7 +5,13 @@ import { beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
+  eligibility: vi.fn(),
+  memberships: vi.fn(),
   readStaffInvitationContext: vi.fn(),
+}));
+vi.mock("@greendex/auth", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@greendex/auth")>()),
+  getOrganizationCreationEligibility: mocks.eligibility,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({
@@ -17,7 +23,7 @@ vi.mock("@/features/organizations/procedures/staff-invites", () => ({
   readStaffInvitationContext: mocks.readStaffInvitationContext,
 }));
 vi.mock("@/features/organizations/procedures/memberships", () => ({
-  readOrganizationMemberships: vi.fn(),
+  readOrganizationMemberships: mocks.memberships,
 }));
 vi.mock("@/features/projects/procedures/setup-links", () => ({
   readSetupBindingEligibility: vi.fn(),
@@ -88,4 +94,40 @@ it("does not compare an address or discover an account before authentication", a
     undefined,
   );
   expect(decideOnboarding(facts)).toMatchObject({ nextStep: "authenticate" });
+});
+
+it("uses the shared policy identity for direct onboarding instead of discovering a different invitation", async () => {
+  mocks.getSession.mockResolvedValue({
+    user: {
+      id: "recipient",
+      email: "recipient@example.org",
+      emailVerified: true,
+    },
+    session: { activeOrganizationId: null },
+  });
+  mocks.memberships.mockResolvedValue([]);
+  mocks.eligibility.mockResolvedValue({
+    status: "denied-invitation",
+    invitationId: "stable",
+    organization: { id: "org", name: "Colleagues" },
+  });
+  const readDirectFacts = createRouterClient(
+    base.handler(({ context, errors }) =>
+      loadOnboardingFacts(context.headers, {}, errors),
+    ),
+    { context: { headers: new Headers() } },
+  );
+  const facts = await readDirectFacts();
+  expect(facts).toMatchObject({
+    canCreate: false,
+    blockingInvitation: {
+      invitationId: "stable",
+      organization: { id: "org", name: "Colleagues" },
+    },
+  });
+  expect(decideOnboarding(facts)).toMatchObject({
+    nextStep: "resolve-invitation",
+    invitation: { invitationId: "stable" },
+    returnTo: "/projects",
+  });
 });

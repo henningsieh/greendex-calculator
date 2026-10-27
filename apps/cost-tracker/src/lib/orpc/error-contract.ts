@@ -18,6 +18,12 @@ export const situationCatalog = {
     reason: "ORGANIZATION_NAME_TAKEN_BEFORE_CREATION",
     message: "This Organization name is already in use. Choose another name.",
   },
+  organizationCreationDeniedBeforeCreation: {
+    code: "FORBIDDEN",
+    reason: "ORGANIZATION_CREATION_DENIED_BEFORE_CREATION",
+    message:
+      "Organization creation is unavailable. Check your invitations and Organization Memberships before continuing.",
+  },
   invalidCredentials: {
     code: "UNAUTHORIZED",
     reason: "INVALID_CREDENTIALS",
@@ -199,6 +205,22 @@ export const situationCatalog = {
     code: "BAD_REQUEST",
     reason: "STAFF_INVITATION_CLOSED",
     message: "Organization Invitation is no longer pending.",
+  },
+  staffInvitationRejected: {
+    code: "BAD_REQUEST",
+    reason: "STAFF_INVITATION_REJECTED",
+    message: "Organization Invitation was rejected.",
+  },
+  staffInvitationWithdrawn: {
+    code: "BAD_REQUEST",
+    reason: "STAFF_INVITATION_WITHDRAWN",
+    message: "Organization Invitation was withdrawn.",
+  },
+  staffInvitationAccepted: {
+    code: "BAD_REQUEST",
+    reason: "STAFF_INVITATION_ACCEPTED",
+    message:
+      "Organization Invitation was accepted. Check your current Organization access.",
   },
   staffInvitationExpired: {
     code: "BAD_REQUEST",

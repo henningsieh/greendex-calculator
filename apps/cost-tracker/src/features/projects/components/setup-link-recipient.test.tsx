@@ -9,6 +9,7 @@ import type { OnboardingDecision } from "@/features/authentication/onboarding-de
 
 const mocks = vi.hoisted(() => ({
   next: vi.fn(),
+  reject: vi.fn(),
   create: vi.fn(),
   bind: vi.fn(),
   select: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
       onboardingNextStep: mocks.next,
       createOrganization: mocks.create,
     },
+    organizations: { rejectInvitation: mocks.reject },
     projectPartnerships: { consumeSetupLink: mocks.bind },
   },
 }));
@@ -526,3 +528,67 @@ it("searches server-owned choices beyond the initial list and binds the selected
     organizationId: "owned-24",
   });
 });
+
+it.each([false, true])(
+  "retains the setup destination and recovery %s after rejecting a colleague invitation",
+  async (retained) => {
+    if (retained)
+      localStorage.setItem(
+        "partner-setup:recipient:link",
+        JSON.stringify({ phase: "creating" }),
+      );
+    const returnTo = "/setup-links/link?secret=secret";
+    mocks.next.mockResolvedValue({
+      entryContext: "partner-setup",
+      nextStep: "resolve-invitation",
+      returnTo,
+      invitation: {
+        invitationId: "invitation",
+        organization: { id: "colleagues", name: "Colleagues" },
+      },
+      availableActions: [
+        { kind: "accept-invitation", invitationId: "invitation" },
+        { kind: "reject-invitation", invitationId: "invitation" },
+        { kind: "recheck" },
+        { kind: "sign-out" },
+      ],
+    });
+    mocks.reject.mockResolvedValue({ success: true });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SetupLinkRecipient id="link" secret="secret" userId="recipient" />
+      </QueryClientProvider>,
+    );
+    expect(
+      await screen.findByTestId("organization-creation-blocked"),
+    ).toBeVisible();
+    expect(screen.queryByTestId("setup-name")).toBeNull();
+    await userEvent.click(screen.getByTestId("recheck-organization-invitation"));
+    await waitFor(() =>
+      expect(mocks.next).toHaveBeenLastCalledWith({
+        returnTo,
+        setupRecovery: retained ? { phase: "creating" } : undefined,
+      }),
+    );
+    mocks.next.mockImplementation(async (input) =>
+      input.setupRecovery
+        ? {
+            entryContext: "partner-setup",
+            nextStep: "choose-organization",
+            availableActions: [choose.availableActions[1], { kind: "sign-out" }],
+          }
+        : choose,
+    );
+    mocks.next.mockClear();
+    await userEvent.click(screen.getByTestId("reject-organization-invitation"));
+    if (retained) {
+      expect(await screen.findByTestId("entity-combobox-trigger")).toBeVisible();
+      expect(screen.queryByTestId("setup-name")).toBeNull();
+    } else expect(await screen.findByTestId("setup-name")).toBeVisible();
+    expect(screen.getByTestId("setup-invitation-rejected")).toBeVisible();
+    expect(mocks.next).toHaveBeenLastCalledWith({
+      returnTo,
+      setupRecovery: retained ? { phase: "creating" } : undefined,
+    });
+  },
+);

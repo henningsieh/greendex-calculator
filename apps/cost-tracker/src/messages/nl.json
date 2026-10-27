@@ -35,7 +35,12 @@
       "checking": "Je uitnodiging wordt gecontroleerd…",
       "joining": "Lidmaatschap wordt aangemaakt…",
       "accept": "Uitnodiging accepteren",
-      "recheck": "Uitnodiging opnieuw controleren"
+      "recheck": "Uitnodiging opnieuw controleren",
+      "creationBlocked": "Je kunt geen Organisatie maken zolang je een openstaande uitnodiging voor {organization} hebt. Word lid of wijs de uitnodiging hieronder af. Andere uitnodigingen of een bestaand lidmaatschap kunnen het maken nog steeds verhinderen.",
+      "reject": "Uitnodiging voor {organization} afwijzen",
+      "rejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder.",
+      "continue": "Doorgaan met huidige toegang",
+      "options": "Word lid van deze Organisatie of wijs de uitnodiging hieronder af. Openstaande uitnodigingen voor collega’s verhinderen het maken van een nieuwe Organisatie. Afwijzen verwijdert alleen deze uitnodiging, geen andere uitnodigingen of bestaande lidmaatschappen."
     },
     "progress": {
       "verify": "1. E-mail verifiëren",
@@ -45,7 +50,7 @@
     "inbox": {
       "heading": "Controleer je inbox",
       "address": "Zoek je verificatielink in <address>{email}</address>.",
-      "invitationInstruction": "Open de verificatielink om hier ingelogd terug te keren en accepteer daarna de uitnodiging om lid te worden van de Organisatie. Als het bericht niet aankomt, kun je hieronder een nieuwe link sturen.",
+      "invitationInstruction": "Verifieer eerst je e-mailadres. Daarna kun je lid worden van de Organisatie of de uitnodiging afwijzen. Vraag hieronder een nieuwe link aan als het bericht niet aankomt.",
       "instruction": "Open de link om je persoonlijke login te verifiëren en verder te gaan in Cost Tracker.",
       "spam": "Zie je het bericht niet? Controleer ook je spammap.",
       "signIn": "Al geverifieerd of al een account? Log in om verder te gaan met deze uitnodiging.",
@@ -62,7 +67,10 @@
       "expired": "Deze uitnodiging is verlopen. Vraag je Organisatie om een nieuwe uitnodiging.",
       "closed": "Deze uitnodiging is niet meer beschikbaar. Vraag je Organisatie om een nieuwe uitnodiging.",
       "unavailable": "We kunnen deze uitnodiging niet gebruiken. Open de volledige link in je uitnodigingsmail of vraag je Organisatie om een nieuwe uitnodiging.",
-      "recheck": "Open de uitnodiging nadat je je login hebt gecorrigeerd of een nieuwe link hebt ontvangen. Je kunt deze uitnodiging ook opnieuw controleren."
+      "recheck": "Open de uitnodiging nadat je je login hebt gecorrigeerd of een nieuwe link hebt ontvangen. Je kunt deze uitnodiging ook opnieuw controleren.",
+      "rejected": "Deze uitnodiging is afgewezen. Controleer hieronder je toegang om andere uitnodigingen af te handelen of door te gaan met je Organisatie.",
+      "withdrawn": "De Organisatie heeft deze uitnodiging ingetrokken. Controleer hieronder je huidige toegang voor de volgende stap.",
+      "accepted": "Deze uitnodiging is geaccepteerd. Controleer hieronder je toegang tot de Organisatie. Vraag de Owner om hulp als je toegang is verwijderd."
     },
     "selection": {
       "heading": "Selecteer een Organisatie",

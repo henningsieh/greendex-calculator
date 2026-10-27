@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  canCreateOrganization,
+  getOrganizationCreationEligibility,
   hasOrganizationRole,
   ORGANIZATION_ROLES,
 } from "@greendex/auth";
@@ -83,10 +83,15 @@ export async function loadOnboardingFacts(
       email: session.user.email,
     };
 
-  const [memberships, canCreate] = await Promise.all([
+  const [memberships, creationEligibility] = await Promise.all([
     readOrganizationMemberships(session.user.id),
-    canCreateOrganization(session.user.id, costTrackerAuthFlags),
+    getOrganizationCreationEligibility(
+      session.user.id,
+      session.user.email,
+      costTrackerAuthFlags,
+    ),
   ]);
+  const canCreate = creationEligibility.status === "allowed";
   const organizationContext = resolveStaffOrganizationContext({
     memberships,
     activeOrganizationId: session.session.activeOrganizationId ?? null,
@@ -110,7 +115,7 @@ export async function loadOnboardingFacts(
             ({ id, role }) =>
               id === invitation.organizationId && isStaffOrganizationRole(role),
           );
-          if (!membership) throw situations.staffInvitationClosed();
+          if (!membership) throw situations.staffInvitationAccepted();
           entry = {
             kind: entryContext,
             status: "complete",
@@ -175,7 +180,11 @@ export async function loadOnboardingFacts(
           entry = { kind: entryContext, status: "bind", organizationId };
         } else {
           const allowCreation = canCreate && !input.setupRecovery;
-          if (!allowCreation && owned.length === 0)
+          if (
+            !allowCreation &&
+            owned.length === 0 &&
+            creationEligibility.status !== "denied-invitation"
+          )
             throw situations.organizationOwnerRequired();
           entry = {
             kind: entryContext,
@@ -204,8 +213,20 @@ export async function loadOnboardingFacts(
     account: "verified",
     organizationContext,
     canCreate,
+    ...(creationEligibility.status === "denied-invitation"
+      ? {
+          blockingInvitation: {
+            invitationId: creationEligibility.invitationId,
+            organization: creationEligibility.organization,
+          },
+        }
+      : {}),
     entry,
-    returnTo: returnTo ?? "/accept-invitation",
+    returnTo:
+      returnTo ??
+      (entryContext === "organization-invitation"
+        ? "/accept-invitation"
+        : "/projects"),
   };
 }
 

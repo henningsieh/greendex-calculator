@@ -35,7 +35,12 @@
       "checking": "Deine Einladung wird geprüft…",
       "joining": "Beitritt läuft…",
       "accept": "Einladung annehmen",
-      "recheck": "Einladung erneut prüfen"
+      "recheck": "Einladung erneut prüfen",
+      "creationBlocked": "Du kannst keine Organisation erstellen, solange eine Einladung zu {organization} aussteht. Tritt dieser Organisation bei oder lehne die Einladung unten ab. Weitere Einladungen oder eine bestehende Mitgliedschaft können die Erstellung weiterhin verhindern.",
+      "reject": "Einladung zu {organization} ablehnen",
+      "rejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten.",
+      "continue": "Mit aktuellem Zugriff fortfahren",
+      "options": "Tritt dieser Organisation bei oder lehne ihre Einladung unten ab. Ausstehende Kollegeneinladungen verhindern die Erstellung einer neuen Organisation. Die Ablehnung entfernt nur diese Einladung, keine weiteren Einladungen oder bestehenden Mitgliedschaften."
     },
     "progress": {
       "verify": "1. E-Mail bestätigen",
@@ -45,7 +50,7 @@
     "inbox": {
       "heading": "Prüfe deinen Posteingang",
       "address": "Suche unter <address>{email}</address> nach deinem Bestätigungslink.",
-      "invitationInstruction": "Öffne den Bestätigungslink, um angemeldet hierher zurückzukehren. Nimm dann die Einladung zur Organisation an. Falls die Nachricht nicht ankommt, kannst du unten einen neuen Link senden.",
+      "invitationInstruction": "Bestätige zuerst deine E-Mail-Adresse. Danach kannst du der Organisation beitreten oder die Einladung ablehnen. Wenn keine Nachricht ankommt, fordere unten einen neuen Link an.",
       "instruction": "Öffne den Link, um deinen persönlichen Zugang zu bestätigen und in Cost Tracker fortzufahren.",
       "spam": "Wenn die Nachricht fehlt, prüfe auch deinen Spamordner.",
       "signIn": "Schon bestätigt oder bereits ein Konto? Melde dich an, um mit dieser Einladung fortzufahren.",
@@ -62,7 +67,10 @@
       "expired": "Diese Einladung ist abgelaufen. Bitte deine Organisation um eine neue Einladung.",
       "closed": "Diese Einladung ist nicht mehr verfügbar. Bitte deine Organisation um eine neue Einladung.",
       "unavailable": "Diese Einladung kann nicht verwendet werden. Öffne den vollständigen Link aus deiner Einladungs-E-Mail oder bitte deine Organisation um eine neue Einladung.",
-      "recheck": "Öffne die Einladung, nachdem du deinen Zugang korrigiert oder einen neuen Link erhalten hast. Du kannst diese Einladung auch erneut prüfen."
+      "recheck": "Öffne die Einladung, nachdem du deinen Zugang korrigiert oder einen neuen Link erhalten hast. Du kannst diese Einladung auch erneut prüfen.",
+      "rejected": "Diese Einladung wurde abgelehnt. Prüfe unten deinen aktuellen Zugriff, um weitere Einladungen zu klären oder mit deiner Organisation fortzufahren.",
+      "withdrawn": "Die einladende Organisation hat diese Einladung zurückgezogen. Prüfe unten deinen aktuellen Zugriff für den nächsten Schritt.",
+      "accepted": "Diese Einladung wurde angenommen. Prüfe unten deinen Organisationszugriff. Wurde der Zugriff entfernt, bitte den Owner um Hilfe."
     },
     "selection": {
       "heading": "Organisation auswählen",

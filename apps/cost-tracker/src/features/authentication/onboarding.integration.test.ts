@@ -2,6 +2,10 @@
 
 import { randomUUID } from "node:crypto";
 
+import {
+  getOrganizationCreationEligibility,
+  ORGANIZATION_ROLES,
+} from "@greendex/auth";
 import { db } from "@greendex/database";
 import {
   invitation,
@@ -113,10 +117,10 @@ it("maps case-insensitive name refusal before creation and permits a corrected n
   await createOrganization(recipient);
 });
 
-async function invite() {
+async function invite(existingRecipient?: Awaited<ReturnType<typeof account>>) {
   const host = await account();
   const target = await createOrganization(host);
-  const recipient = await account();
+  const recipient = existingRecipient ?? (await account());
   const result = await host.api.organizations.inviteMember({
     email: recipient.email,
     role: "admin",
@@ -252,8 +256,9 @@ describe("authoritative onboarding next step", () => {
   );
 
   it("preserves colleague acceptance and recovers exact selection after acceptance", async () => {
-    const { recipient, host, target, invitationId, returnTo } = await invite();
+    const recipient = await account();
     const existing = await createOrganization(recipient);
+    const { host, target, invitationId, returnTo } = await invite(recipient);
     expect(
       await recipient.api.authentication.onboardingNextStep({ returnTo }),
     ).toEqual({
@@ -308,7 +313,7 @@ describe("authoritative onboarding next step", () => {
     ).toEqual({
       entryContext: "organization-invitation",
       nextStep: "invitation-recovery",
-      reason: "STAFF_INVITATION_CLOSED",
+      reason: "STAFF_INVITATION_ACCEPTED",
       returnTo,
       availableActions: [
         {
@@ -370,7 +375,7 @@ describe("authoritative onboarding next step", () => {
           ],
         });
         await host.api.organizations.cancelInvitation({ invitationId });
-        reason = "STAFF_INVITATION_CLOSED";
+        reason = "STAFF_INVITATION_WITHDRAWN";
       }
       if (invalid === "wrong-recipient") {
         actor = await account();
@@ -401,22 +406,206 @@ describe("authoritative onboarding next step", () => {
     },
   );
 
-  it("does not add an account-wide pending invitation creation block", async () => {
-    const { recipient } = await invite();
-    expect(await recipient.api.authentication.onboardingNextStep({})).toEqual({
-      entryContext: "direct",
+  it("blocks current creation through the app and Better Auth, then reassesses every remaining invitation", async () => {
+    const { host, target, recipient, invitationId } = await invite();
+    await db
+      .update(invitation)
+      .set({ email: recipient.email.toUpperCase() })
+      .where(eq(invitation.id, invitationId));
+    const restriction = {
+      nextStep: "resolve-invitation",
+      invitation: { invitationId, organization: target },
+    };
+    expect(
+      await recipient.api.authentication.onboardingNextStep({}),
+    ).toMatchObject(restriction);
+    await expect(createOrganization(recipient)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      auth.api.createOrganization({
+        headers: recipient.headers,
+        body: {
+          country: "DE",
+          name: `Blocked ${randomUUID()}`,
+          slug: `blocked-${randomUUID()}`,
+        },
+      }),
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(
+      await getOrganizationCreationEligibility(
+        recipient.id,
+        recipient.email.toUpperCase(),
+        { singleOrganization: true },
+      ),
+    ).toMatchObject({ status: "denied-invitation", invitationId });
+    expect(
+      await getOrganizationCreationEligibility(recipient.id, recipient.email, {
+        singleOrganization: false,
+      }),
+    ).toEqual({ status: "allowed" });
+    const other = await account();
+    expect(await other.api.authentication.onboardingNextStep({})).toMatchObject({
       nextStep: "create-organization",
+    });
+    await expect(
+      other.api.organizations.rejectInvitation({ invitationId }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_WRONG_EMAIL" } });
+    const anotherHost = await account();
+    await createOrganization(anotherHost);
+    const second = await anotherHost.api.organizations.inviteMember({
+      email: recipient.email,
+      role: "owner",
+    });
+    expect(
+      await recipient.api.authentication.onboardingNextStep({}),
+    ).toMatchObject(restriction);
+    await recipient.api.organizations.rejectInvitation({ invitationId });
+    expect(
+      await recipient.api.authentication.onboardingNextStep({}),
+    ).toMatchObject({
+      nextStep: "resolve-invitation",
+      invitation: { invitationId: second.invitationId },
+    });
+    await expect(
+      recipient.api.organizations.rejectInvitation({ invitationId }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_REJECTED" } });
+    await anotherHost.api.organizations.cancelInvitation({
+      invitationId: second.invitationId,
+    });
+    expect(
+      await recipient.api.authentication.onboardingNextStep({}),
+    ).toMatchObject({ nextStep: "create-organization" });
+    const expiring = await host.api.organizations.inviteMember({
+      email: recipient.email,
+      role: "admin",
+    });
+    await db
+      .update(invitation)
+      .set({ expiresAt: new Date(0) })
+      .where(eq(invitation.id, expiring.invitationId));
+    expect(
+      await recipient.api.authentication.onboardingNextStep({}),
+    ).toMatchObject({ nextStep: "create-organization" });
+    await expect(
+      recipient.api.organizations.rejectInvitation({
+        invitationId: expiring.invitationId,
+      }),
+    ).rejects.toMatchObject({ data: { reason: "STAFF_INVITATION_EXPIRED" } });
+    await createOrganization(recipient);
+    expect(
+      await recipient.api.authentication.onboardingNextStep({}),
+    ).toMatchObject({ nextStep: "continue" });
+    expect(
+      await getOrganizationCreationEligibility(recipient.id, recipient.email, {
+        singleOrganization: true,
+      }),
+    ).toEqual({ status: "denied-membership" });
+  });
+
+  it("denies creation for a native combined colleague-role invitation", async () => {
+    const host = await account();
+    const target = await createOrganization(host);
+    const recipient = await account();
+    const invited = await auth.api.createInvitation({
+      headers: host.headers,
+      body: {
+        email: recipient.email,
+        role: [
+          ORGANIZATION_ROLES.OrganizationOwner,
+          ORGANIZATION_ROLES.OrganizationAdmin,
+        ],
+        organizationId: target.id,
+      },
+    });
+    expect(
+      await getOrganizationCreationEligibility(recipient.id, recipient.email, {
+        singleOrganization: true,
+      }),
+    ).toEqual({
+      status: "denied-invitation",
+      invitationId: invited.id,
+      organization: target,
+    });
+    await expect(createOrganization(recipient)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      auth.api.createOrganization({
+        headers: recipient.headers,
+        body: {
+          country: "DE",
+          name: `Blocked ${randomUUID()}`,
+          slug: `blocked-${randomUUID()}`,
+        },
+      }),
+    ).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it("excludes non-colleague invitations and matches an email literally, not as a wildcard", async () => {
+    const host = await account();
+    const target = await createOrganization(host);
+    const recipient = await account();
+    for (const role of [
+      ORGANIZATION_ROLES.Participant,
+      ORGANIZATION_ROLES.ProjectCoordinator,
+    ] as const) {
+      const invited = await auth.api.createInvitation({
+        headers: host.headers,
+        body: { email: recipient.email, role, organizationId: target.id },
+      });
+      expect(
+        await getOrganizationCreationEligibility(recipient.id, recipient.email, {
+          singleOrganization: true,
+        }),
+      ).toEqual({ status: "allowed" });
+      await auth.api.cancelInvitation({
+        headers: host.headers,
+        body: { invitationId: invited.id },
+      });
+    }
+    await host.api.organizations.inviteMember({
+      email: recipient.email,
+      role: "admin",
+    });
+    expect(
+      await getOrganizationCreationEligibility(
+        recipient.id,
+        recipient.email.replace("onboarding", "%"),
+        { singleOrganization: true },
+      ),
+    ).toEqual({ status: "allowed" });
+  });
+
+  it("retains Partner setup while an invitation is rejected and rechecks before offering creation", async () => {
+    const { host, recipient, returnTo } = await setup();
+    const initially = await recipient.api.authentication.onboardingNextStep({
+      returnTo,
+    });
+    expect(initially).toMatchObject({ nextStep: "choose-organization" });
+    const invited = await host.api.organizations.inviteMember({
+      email: recipient.email,
+      role: "admin",
+    });
+    expect(
+      await recipient.api.authentication.onboardingNextStep({ returnTo }),
+    ).toMatchObject({
+      nextStep: "resolve-invitation",
+      returnTo,
+      invitation: { invitationId: invited.invitationId },
+    });
+    await expect(createOrganization(recipient)).rejects.toMatchObject({
+      data: { reason: "ORGANIZATION_CREATION_DENIED_BEFORE_CREATION" },
+    });
+    await recipient.api.organizations.rejectInvitation({
+      invitationId: invited.invitationId,
+    });
+    expect(
+      await recipient.api.authentication.onboardingNextStep({ returnTo }),
+    ).toMatchObject({
+      nextStep: "choose-organization",
       availableActions: [{ kind: "create-organization" }, { kind: "sign-out" }],
     });
-    const created = await createOrganization(recipient);
-    expect(await recipient.api.authentication.onboardingNextStep({})).toEqual({
-      entryContext: "direct",
-      nextStep: "continue",
-      availableActions: [{ kind: "continue", destination: "/projects" }],
-    });
-    expect(await recipient.api.organizations.listMemberships()).toEqual([
-      { ...created, role: "owner" },
-    ]);
   });
 
   it("separates Partner creation, exact binding, explicit selection, and completion", async () => {

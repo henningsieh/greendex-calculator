@@ -1,6 +1,7 @@
 "use client";
 
 import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -29,6 +30,7 @@ import {
   type OnboardingInput,
 } from "@/features/authentication/onboarding-decision";
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
+import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
 import { authClient } from "@/lib/auth-client";
@@ -518,6 +520,8 @@ export function SetupLinkRecipient({
   userId: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("onboarding");
+  const [rejectedOrganization, setRejectedOrganization] = useState<string>();
   const queryClient = useQueryClient();
   const [decision, setDecision] = useState<OnboardingDecision>();
   const [error, setError] = useState<SetupError>();
@@ -608,6 +612,7 @@ export function SetupLinkRecipient({
                 ? getSafeErrorSituation(cause)?.reason
                 : undefined;
             if (
+              reason === "ORGANIZATION_CREATION_DENIED_BEFORE_CREATION" ||
               reason === "ORGANIZATION_SLUG_TAKEN_BEFORE_CREATION" ||
               reason === "ORGANIZATION_NAME_TAKEN_BEFORE_CREATION"
             ) {
@@ -700,7 +705,20 @@ export function SetupLinkRecipient({
           connects your Organization to the Project; it does not grant Hosting
           Organization membership.
         </p>
-        {decision?.nextStep === "choose-organization" ? (
+        {rejectedOrganization && (
+          <output data-testid="setup-invitation-rejected">
+            {t("invitation.rejected", { organization: rejectedOrganization })}
+          </output>
+        )}
+        {decision?.nextStep === "resolve-invitation" ? (
+          <InvitationAcceptance
+            returnTo={returnTo}
+            setupRecovery={recovery.current}
+            initialDecision={decision}
+            onDecision={setDecision}
+            onRejected={setRejectedOrganization}
+          />
+        ) : decision?.nextStep === "choose-organization" ? (
           <SetupOrganizationForm
             key={JSON.stringify(decision.availableActions)}
             decision={decision}
