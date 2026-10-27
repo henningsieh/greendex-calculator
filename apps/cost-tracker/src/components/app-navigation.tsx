@@ -165,6 +165,7 @@ function AccountMenu({
           render={
             <Button
               ref={trigger}
+              data-testid="account-menu-trigger"
               aria-label={compact ? `Open account menu for ${name}` : undefined}
               className={cn(
                 "group h-11 gap-3 rounded-lg px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
@@ -219,6 +220,7 @@ function AccountMenu({
               Account settings
             </DropdownMenuItem>
             <DropdownMenuItem
+              data-testid="account-menu-sign-out"
               disabled={pending}
               onClick={() => void signOut()}
               variant="destructive"

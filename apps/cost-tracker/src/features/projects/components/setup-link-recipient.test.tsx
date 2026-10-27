@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -581,6 +581,8 @@ it.each([false, true])(
     );
     mocks.next.mockClear();
     await userEvent.click(screen.getByTestId("reject-organization-invitation"));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByTestId("confirm-dialog-execute"));
     if (retained) {
       expect(await screen.findByTestId("entity-combobox-trigger")).toBeVisible();
       expect(screen.queryByTestId("setup-name")).toBeNull();

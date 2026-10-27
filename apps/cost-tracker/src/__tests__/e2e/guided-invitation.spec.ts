@@ -214,7 +214,7 @@ test.describe.serial("guided Organization Invitation", () => {
       await recipient.getByTestId("reject-organization-invitation").click();
       await recipient
         .getByRole("dialog")
-        .getByRole("button", { name: "Reject invitation", exact: true })
+        .getByTestId("confirm-dialog-execute")
         .click();
       await expect(recipient.getByTestId("invitation-rejected")).toBeVisible();
       await expect(recipient.getByTestId("invitation-context")).toHaveAttribute(
@@ -228,7 +228,7 @@ test.describe.serial("guided Organization Invitation", () => {
       await recipient.getByTestId("reject-organization-invitation").click();
       await recipient
         .getByRole("dialog")
-        .getByRole("button", { name: "Reject invitation", exact: true })
+        .getByTestId("confirm-dialog-execute")
         .click();
       await expect(recipient.getByTestId("invitation-next-step")).toBeVisible();
       await recipient.getByTestId("invitation-next-step").click();
@@ -578,7 +578,7 @@ test.describe.serial("guided Organization Invitation", () => {
       await page.getByTestId("sign-out").click();
       await page
         .getByRole("dialog")
-        .getByRole("button", { name: "Sign out", exact: true })
+        .getByTestId("confirm-dialog-execute")
         .click();
       await expectPrivateURL(
         page,

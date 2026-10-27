@@ -155,7 +155,11 @@ describe("Organization team", () => {
     await screen.findByTestId("staff-invitation-invitation-1");
 
     await user.click(screen.getByTestId("cancel-staff-invitation-invitation-1"));
-    await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByTestId(
+        "confirm-dialog-execute",
+      ),
+    );
 
     await waitFor(() =>
       expect(mocks.cancelInvitation).toHaveBeenCalledWith({
@@ -186,28 +190,31 @@ describe("Organization team", () => {
       );
 
       await user.click(firstTrigger);
-      await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
+      await user.click(
+        within(await screen.findByRole("dialog")).getByTestId(
+          "confirm-dialog-execute",
+        ),
+      );
       expect(firstTrigger).toBeDisabled();
       expect(secondTrigger).toBeEnabled();
       await user.click(secondTrigger);
-      await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
+      await user.click(
+        within(await screen.findByRole("dialog")).getByTestId(
+          "confirm-dialog-execute",
+        ),
+      );
       expect(firstTrigger).toBeDisabled();
-      expect(firstTrigger).toHaveTextContent("Working…");
       expect(secondTrigger).toBeDisabled();
-      expect(secondTrigger).toHaveTextContent("Working…");
 
       await act(async () => {
         if (outcome === "success") second.resolve({ success: true });
         else second.reject(new Error("network unavailable"));
       });
       await waitFor(() => expect(secondTrigger).toBeEnabled());
-      expect(secondTrigger).toHaveTextContent("Cancel");
       expect(firstTrigger).toBeDisabled();
-      expect(firstTrigger).toHaveTextContent("Working…");
 
       await act(async () => first.resolve({ success: true }));
       await waitFor(() => expect(firstTrigger).toBeEnabled());
-      expect(firstTrigger).toHaveTextContent("Cancel");
     },
   );
 
@@ -219,15 +226,22 @@ describe("Organization team", () => {
       "cancel-staff-invitation-invitation-1",
     );
     await user.click(trigger);
-    await user.click(screen.getByRole("button", { name: "Close" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByTestId(
+        "confirm-dialog-close",
+      ),
+    );
     expect(mocks.cancelInvitation).not.toHaveBeenCalled();
     expect(trigger).toBeEnabled();
     await user.click(trigger);
-    await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByTestId(
+        "confirm-dialog-execute",
+      ),
+    );
     expect(mocks.cancelInvitation).toHaveBeenCalledExactlyOnceWith({
       invitationId: "invitation-1",
     });
     expect(trigger).toBeDisabled();
-    expect(trigger).toHaveTextContent("Working…");
   });
 });

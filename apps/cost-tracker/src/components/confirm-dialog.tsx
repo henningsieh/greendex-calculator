@@ -56,6 +56,7 @@ export function ConfirmDialog({
         showCloseButton={false}
       >
         <DialogClose
+          data-testid="confirm-dialog-close"
           render={
             <Button
               variant="secondary"
@@ -72,10 +73,14 @@ export function ConfirmDialog({
           <DialogDescription>{options.description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose render={<Button ref={cancel} variant="outline" />}>
+          <DialogClose
+            data-testid="confirm-dialog-cancel"
+            render={<Button ref={cancel} variant="outline" />}
+          >
             {options.cancelText ?? t("cancel")}
           </DialogClose>
           <Button
+            data-testid="confirm-dialog-execute"
             variant={options.isDestructive ? "destructive" : "default"}
             onClick={() => onResolve(true)}
           >

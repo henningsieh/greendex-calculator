@@ -1327,21 +1327,15 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
     await selectEntity(page, "partner-organization-picker", partnerId, section);
     await section.getByTestId("assign-partnership").click();
     const row = page.getByTestId(`partnership-row-${partnerId}`);
-    const trigger = row.getByRole("button", { name: "Remove", exact: true });
+    const trigger = row.getByRole("button");
     await trigger.click();
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Cancel", exact: true })
-      .click();
+    await page.getByRole("dialog").getByTestId("confirm-dialog-cancel").click();
     await expect(trigger).toBeVisible();
     expect(
       await partnershipCount(removalFixture.projectNames[0]!, partnerName),
     ).toBe(1);
     await trigger.click();
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Remove Project Partnership", exact: true })
-      .click();
+    await page.getByRole("dialog").getByTestId("confirm-dialog-execute").click();
     await expect(page.getByRole("dialog")).toBeHidden();
     await expect(row).toHaveCount(0);
     await expect(page.getByTestId("partnership-feedback")).toHaveAttribute(

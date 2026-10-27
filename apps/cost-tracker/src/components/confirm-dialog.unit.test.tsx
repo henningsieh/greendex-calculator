@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
@@ -31,30 +31,54 @@ function Harness({ generic = false }: { generic?: boolean }) {
   }
   return (
     <>
-      <button onClick={request}>Request</button>
-      <output>{results.join(",")}</output>
+      <button data-testid="confirm-harness-request" onClick={request}>
+        Request
+      </button>
+      <output
+        data-testid="confirm-harness-status"
+        data-results={results.join(",")}
+      />
       {dialog}
     </>
   );
+}
+
+function requestDialog() {
+  return screen.getByTestId("confirm-harness-request");
+}
+
+function dialogButtons() {
+  const dialog = screen.getByRole("dialog");
+  return {
+    dialog,
+    execute: within(dialog).getByTestId("confirm-dialog-execute"),
+    cancel: within(dialog).getByTestId("confirm-dialog-cancel"),
+    close: within(dialog).getByTestId("confirm-dialog-close"),
+  };
+}
+
+function status() {
+  return screen.getByTestId("confirm-harness-status");
 }
 
 describe("confirmation request", () => {
   it("uses generic labels when none are supplied", async () => {
     const user = userEvent.setup();
     render(<Harness generic />);
-    await user.click(screen.getByRole("button", { name: "Request" }));
-    expect(screen.getByRole("button", { name: "Confirm" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Close" })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(
-      "second=false,first=false",
-    );
+    await user.click(requestDialog());
+    const first = dialogButtons();
+    expect(first.execute).toBeVisible();
+    expect(first.close).toBeVisible();
+    await user.click(first.cancel);
+    expect(status()).toHaveAttribute("data-results", "second=false,first=false");
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
-    await user.click(screen.getByRole("button", { name: "Request" }));
-    await user.click(screen.getByRole("button", { name: "Confirm" }));
-    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(
+    await user.click(requestDialog());
+    const second = dialogButtons();
+    await user.click(second.execute);
+    expect(status()).toHaveAttribute(
+      "data-results",
       "second=false,first=false,second=false,first=true",
     );
   });
@@ -62,47 +86,45 @@ describe("confirmation request", () => {
   it("rejects a concurrent request without replacing the first and executes once", async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(screen.getByRole("button", { name: "Request" }));
-    expect(screen.getByRole("dialog", { name: "Remove item?" })).toBeVisible();
-    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(
-      "second=false",
-    );
+    await user.click(requestDialog());
+    const { cancel, execute } = dialogButtons();
+    expect(status()).toHaveAttribute("data-results", "second=false");
+    await waitFor(() => expect(cancel).toHaveFocus());
+    await user.click(execute);
+    expect(status()).toHaveAttribute("data-results", "second=false,first=true");
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus(),
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
-    await user.click(screen.getByRole("button", { name: "Execute" }));
-    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(
-      "second=false,first=true",
+    await waitFor(() => expect(requestDialog()).toHaveFocus());
+  });
+
+  it.each([
+    ["cancel", "confirm-dialog-cancel"],
+    ["close", "confirm-dialog-close"],
+    ["Escape", "keyboard"],
+    ["backdrop", "overlay"],
+  ] as const)("resolves false on %s", async (dismiss, target) => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(requestDialog());
+    if (target === "keyboard") await user.keyboard("{Escape}");
+    else if (target === "overlay") {
+      const backdrop = document.querySelector('[data-slot="dialog-overlay"]')!;
+      fireEvent.mouseDown(backdrop);
+      fireEvent.mouseUp(backdrop);
+      fireEvent.click(backdrop);
+    } else {
+      const dialog = screen.getByRole("dialog");
+      await user.click(within(dialog).getByTestId(target));
+    }
+    await waitFor(() =>
+      expect(status()).toHaveAttribute(
+        "data-results",
+        "second=false,first=false",
+      ),
     );
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Request" })).toHaveFocus(),
-    );
   });
-
-  it.each(["Cancel", "Close", "Escape", "backdrop"])(
-    "resolves false on %s",
-    async (dismiss) => {
-      const user = userEvent.setup();
-      render(<Harness />);
-      await user.click(screen.getByRole("button", { name: "Request" }));
-      if (dismiss === "Escape") await user.keyboard("{Escape}");
-      else if (dismiss === "backdrop") {
-        const backdrop = document.querySelector('[data-slot="dialog-overlay"]')!;
-        fireEvent.mouseDown(backdrop);
-        fireEvent.mouseUp(backdrop);
-        fireEvent.click(backdrop);
-      } else await user.click(screen.getByRole("button", { name: dismiss }));
-      await waitFor(() =>
-        expect(screen.getByRole("status", { hidden: true })).toHaveTextContent(
-          "second=false,first=false",
-        ),
-      );
-      await waitFor(() =>
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
-      );
-    },
-  );
 });

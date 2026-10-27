@@ -37,7 +37,9 @@ describe("SignOutButton", () => {
     const user = userEvent.setup();
     render(<SignOutButton />);
     await user.click(screen.getByTestId("sign-out"));
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-cancel"),
+    );
     expect(mocks.signOut).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByTestId("sign-out")).toHaveFocus());
     expect(screen.getByTestId("sign-out")).toBeEnabled();
@@ -52,9 +54,7 @@ describe("SignOutButton", () => {
     render(<SignOutButton />);
     await user.click(screen.getByTestId("sign-out"));
     await user.click(
-      within(screen.getByRole("dialog")).getByRole("button", {
-        name: "Sign out",
-      }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
     expect(mocks.signOut).toHaveBeenCalledExactlyOnceWith();
     expect(screen.getByTestId("sign-out")).toBeDisabled();
@@ -67,9 +67,7 @@ describe("SignOutButton", () => {
 
     await user.click(screen.getByTestId("sign-out"));
     await user.click(
-      within(screen.getByRole("dialog")).getByRole("button", {
-        name: "Sign out",
-      }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
 
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
@@ -84,9 +82,7 @@ describe("SignOutButton", () => {
     const button = screen.getByTestId("sign-out");
     await user.click(button);
     await user.click(
-      within(screen.getByRole("dialog")).getByRole("button", {
-        name: "Sign out",
-      }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
 
     expect(await screen.findByTestId("sign-out")).toBeEnabled();
@@ -104,7 +100,7 @@ it("returns invitation sign-out to the retained journey", async () => {
   );
   await userEvent.click(screen.getByTestId("sign-out"));
   await userEvent.click(
-    within(screen.getByRole("dialog")).getByRole("button", { name: "Sign out" }),
+    within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
   );
   expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
     "/register?next=%2Faccept-invitation%2Finvite-1",

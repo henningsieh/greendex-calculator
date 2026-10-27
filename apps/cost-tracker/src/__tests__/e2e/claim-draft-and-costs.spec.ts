@@ -46,13 +46,7 @@ import {
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 async function confirmRemoveParticipation(page: Page) {
-  await page
-    .getByRole("dialog")
-    .getByRole("button", {
-      name: "Remove Project Participation",
-      exact: true,
-    })
-    .click();
+  await page.getByRole("dialog").getByTestId("confirm-dialog-execute").click();
 }
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -500,10 +494,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           ),
         );
       await row.getByRole("button").click();
-      await page
-        .getByRole("dialog")
-        .getByRole("button", { name: "Cancel", exact: true })
-        .click();
+      await page.getByRole("dialog").getByTestId("confirm-dialog-cancel").click();
       await expect(row).toBeVisible();
       expect(
         await db

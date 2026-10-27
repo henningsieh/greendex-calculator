@@ -24,14 +24,13 @@ it("closes the account menu before confirmation and returns focus after cancella
   renderWithMessages(
     <AppNavigation name="Example User" email="user@example.org" />,
   );
-  const trigger = screen.getByRole("button", {
-    name: "Open account menu for Example User",
-  });
+  const trigger = screen.getAllByTestId("account-menu-trigger")[0]!;
   await user.click(trigger);
-  await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
+  const signOut = await screen.findByTestId("account-menu-sign-out");
+  await user.click(signOut);
   const dialog = await screen.findByRole("dialog");
   await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
-  const cancel = within(dialog).getByRole("button", { name: "Cancel" });
+  const cancel = within(dialog).getByTestId("confirm-dialog-cancel");
   await waitFor(() => expect(cancel).toHaveFocus());
   await user.click(cancel);
   await waitFor(() => expect(trigger).toHaveFocus());
@@ -40,5 +39,5 @@ it("closes the account menu before confirmation and returns focus after cancella
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
   );
   await user.click(trigger);
-  expect(await screen.findByRole("menuitem", { name: "Sign out" })).toBeEnabled();
+  expect(await screen.findByTestId("account-menu-sign-out")).toBeEnabled();
 });

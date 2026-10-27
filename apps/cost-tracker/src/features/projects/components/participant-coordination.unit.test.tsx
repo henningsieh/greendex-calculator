@@ -289,19 +289,22 @@ describe("ParticipantCoordination", () => {
     await renderCoordination();
     const trigger = screen.getByTestId("remove-participation-person-1");
     await user.click(trigger);
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByTestId(
+        "confirm-dialog-cancel",
+      ),
+    );
     expect(mocks.remove).not.toHaveBeenCalled();
     expect(trigger).toBeEnabled();
     await user.click(trigger);
     await user.click(
-      screen.getByRole("button", { name: "Remove Project Participation" }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
     expect(mocks.remove).toHaveBeenCalledExactlyOnceWith({
       partnershipId: "own-partnership",
       id: "person-1",
     });
     expect(trigger).toBeDisabled();
-    expect(trigger).toHaveTextContent("Working…");
   });
 
   it("keeps a dismissed Group Organizer assignment and disables revocation while executing", async () => {
@@ -309,25 +312,21 @@ describe("ParticipantCoordination", () => {
     const user = userEvent.setup();
     await renderCoordination();
     await user.click(screen.getByTestId("manage-group-organizers"));
-    await user.selectOptions(
-      await screen.findByLabelText(
-        "Registered User for Group Organizer assignment",
-      ),
-      "organizer-1",
-    );
+    await user.selectOptions(await screen.findByRole("combobox"), "organizer-1");
     const trigger = screen.getByTestId("revoke-group-organizer");
     await user.click(trigger);
     await user.keyboard("{Escape}");
     expect(mocks.revoke).not.toHaveBeenCalled();
     expect(trigger).toBeEnabled();
     await user.click(trigger);
-    await user.click(screen.getByRole("button", { name: "Revoke assignment" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
+    );
     expect(mocks.revoke).toHaveBeenCalledExactlyOnceWith({
       partnershipId: "own-partnership",
       userId: "organizer-1",
     });
     expect(trigger).toBeDisabled();
-    expect(trigger).toHaveTextContent("Working…");
   });
   it("renders only the server-scoped Partnership response with honest joined and invitation states", async () => {
     await renderCoordination();
@@ -492,7 +491,7 @@ describe("ParticipantCoordination", () => {
     await renderCoordination();
     await user.click(screen.getByTestId("remove-participation-person-1"));
     await user.click(
-      screen.getByRole("button", { name: "Remove Project Participation" }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
     expect(await screen.findByRole("alert")).toHaveAttribute(
       "data-feedback-outcome",

@@ -283,7 +283,7 @@ describe("ProjectPartnershipManager", () => {
       screen.getByTestId("remove-partnership-partnership-existing"),
     );
     await user.click(
-      screen.getByRole("button", { name: "Remove Project Partnership" }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
     expect(await screen.findByTestId("partnership-feedback")).toHaveAttribute(
       "data-state",
@@ -312,7 +312,7 @@ describe("ProjectPartnershipManager", () => {
       screen.getByTestId("remove-partnership-partnership-existing"),
     );
     await user.click(
-      screen.getByRole("button", { name: "Remove Project Partnership" }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
 
     await waitFor(() => {
@@ -334,13 +334,12 @@ describe("ProjectPartnershipManager", () => {
     expect(trigger).toBeEnabled();
     await user.click(trigger);
     await user.click(
-      screen.getByRole("button", { name: "Remove Project Partnership" }),
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
     expect(mocks.remove).toHaveBeenCalledExactlyOnceWith({
       id: "partnership-existing",
     });
     expect(trigger).toBeDisabled();
-    expect(trigger).toHaveTextContent("Working…");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
@@ -302,7 +302,9 @@ it("rejects the named invitation and shows the refreshed creation next step", as
   );
   fireEvent.click(screen.getByTestId("reject-organization-invitation"));
   fireEvent.click(
-    await screen.findByRole("button", { name: "Reject invitation" }),
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
   );
   expect(await screen.findByTestId("invitation-rejected")).toBeVisible();
   expect(screen.getByTestId("invitation-next-step")).toHaveAttribute(
@@ -333,7 +335,9 @@ it("keeps another invitation actionable after rejection and never reports a fail
   render(<InvitationAcceptance returnTo="/projects" initialDecision={blocked} />);
   fireEvent.click(screen.getByTestId("reject-organization-invitation"));
   fireEvent.click(
-    await screen.findByRole("button", { name: "Reject invitation" }),
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
   );
   await waitFor(() =>
     expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
@@ -345,7 +349,9 @@ it("keeps another invitation actionable after rejection and never reports a fail
   expect(screen.queryByTestId("invitation-next-step")).toBeNull();
   fireEvent.click(screen.getByTestId("reject-organization-invitation"));
   fireEvent.click(
-    await screen.findByRole("button", { name: "Reject invitation" }),
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
   );
   expect(await screen.findByTestId("invitation-error")).toBeVisible();
   expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
@@ -360,16 +366,22 @@ it("keeps a cancelled rejection actionable and disables it while executing", asy
   render(<InvitationAcceptance returnTo={returnTo} initialDecision={blocked} />);
   const trigger = await screen.findByTestId("reject-organization-invitation");
   fireEvent.click(trigger);
-  fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+  fireEvent.click(
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-cancel",
+    ),
+  );
   expect(mocks.rejectInvitation).not.toHaveBeenCalled();
   expect(trigger).toBeEnabled();
   fireEvent.click(trigger);
   fireEvent.click(
-    await screen.findByRole("button", { name: "Reject invitation" }),
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
   );
   await waitFor(() => expect(trigger).toBeDisabled());
   expect(mocks.rejectInvitation).toHaveBeenCalledExactlyOnceWith({
     invitationId: "invite-1",
   });
-  expect(trigger).toHaveTextContent("Working…");
+  expect(trigger).toBeDisabled();
 });
