@@ -523,6 +523,10 @@ test.describe.serial("guided Organization Invitation", () => {
       await page.keyboard.press("Tab");
       await expect(page.getByTestId("sign-out")).toBeFocused();
       await page.keyboard.press("Enter");
+      await page
+        .getByRole("dialog")
+        .getByTestId("confirm-dialog-execute")
+        .click();
       await expectPrivateURL(page, "/accept-invitation");
       await noCreation(page);
     });
