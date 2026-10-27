@@ -50,7 +50,7 @@
     "inbox": {
       "heading": "Controleer je inbox",
       "address": "Zoek je verificatielink in <address>{email}</address>.",
-      "invitationInstruction": "Verifieer eerst je e-mailadres. Daarna kun je lid worden van de Organisatie of de uitnodiging afwijzen. Een openstaande uitnodiging voor een collega verhindert het maken van een nieuwe Organisatie. Vraag hieronder een nieuwe link aan als het bericht niet aankomt.",
+      "invitationInstruction": "Verifieer eerst je e-mailadres. Daarna kun je lid worden van de Organisatie of de uitnodiging afwijzen. Vraag hieronder een nieuwe link aan als het bericht niet aankomt.",
       "instruction": "Open de link om je persoonlijke login te verifiëren en verder te gaan in Cost Tracker.",
       "spam": "Zie je het bericht niet? Controleer ook je spammap.",
       "signIn": "Al geverifieerd of al een account? Log in om verder te gaan met deze uitnodiging.",

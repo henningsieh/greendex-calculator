@@ -50,7 +50,7 @@
     "inbox": {
       "heading": "Revisa tu bandeja de entrada",
       "address": "Busca tu enlace de verificación en <address>{email}</address>.",
-      "invitationInstruction": "Primero verifica tu correo. Después podrás unirte a la Organización o rechazar la invitación. Una invitación de colega pendiente impide crear una nueva Organización. Si no llega el mensaje, solicita un nuevo enlace abajo.",
+      "invitationInstruction": "Primero verifica tu correo. Después podrás unirte a la Organización o rechazar la invitación. Si no llega el mensaje, solicita un nuevo enlace abajo.",
       "instruction": "Abre el enlace para verificar tu acceso personal y continuar donde lo dejaste en Cost Tracker.",
       "spam": "Si no ves el mensaje, revisa también la carpeta de correo no deseado.",
       "signIn": "¿Ya verificaste el correo o tienes cuenta? Inicia sesión para continuar con esta invitación.",

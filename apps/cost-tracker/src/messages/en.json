@@ -50,7 +50,7 @@
     "inbox": {
       "heading": "Check your inbox",
       "address": "Check <address>{email}</address> for your verification link.",
-      "invitationInstruction": "Verify your email first. Then review the invitation to join the Organization or reject it. A pending colleague invitation prevents creating a new Organization. If the message does not arrive, send a new link below.",
+      "invitationInstruction": "Verify your email first. Then review the invitation to join the Organization or reject it. If the message does not arrive, send a new link below.",
       "instruction": "Open the link to verify your personal login and continue where you left off in Cost Tracker.",
       "spam": "If the message is not visible, check your spam folder too.",
       "signIn": "Already verified or already have an account? Sign in to continue this invitation.",

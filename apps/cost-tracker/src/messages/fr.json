@@ -50,7 +50,7 @@
     "inbox": {
       "heading": "Consultez votre boîte de réception",
       "address": "Cherchez votre lien de vérification dans <address>{email}</address>.",
-      "invitationInstruction": "Vérifiez d’abord votre adresse e-mail. Vous pourrez ensuite rejoindre l’Organisation ou refuser l’invitation. Une invitation de collègue en attente empêche de créer une nouvelle Organisation. Si le message n’arrive pas, demandez un nouveau lien ci-dessous.",
+      "invitationInstruction": "Vérifiez d’abord votre adresse e-mail. Vous pourrez ensuite rejoindre l’Organisation ou refuser l’invitation. Si le message n’arrive pas, demandez un nouveau lien ci-dessous.",
       "instruction": "Ouvrez le lien pour vérifier votre accès personnel et reprendre votre parcours dans Cost Tracker.",
       "spam": "Si le message n'apparaît pas, consultez aussi vos courriers indésirables.",
       "signIn": "Déjà vérifié ou déjà un compte ? Connectez-vous pour poursuivre cette invitation.",

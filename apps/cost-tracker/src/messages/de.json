@@ -50,7 +50,7 @@
     "inbox": {
       "heading": "Prüfe deinen Posteingang",
       "address": "Suche unter <address>{email}</address> nach deinem Bestätigungslink.",
-      "invitationInstruction": "Bestätige zuerst deine E-Mail-Adresse. Danach kannst du der Organisation beitreten oder die Einladung ablehnen. Eine ausstehende Kollegeneinladung verhindert die Erstellung einer neuen Organisation. Wenn keine Nachricht ankommt, fordere unten einen neuen Link an.",
+      "invitationInstruction": "Bestätige zuerst deine E-Mail-Adresse. Danach kannst du der Organisation beitreten oder die Einladung ablehnen. Wenn keine Nachricht ankommt, fordere unten einen neuen Link an.",
       "instruction": "Öffne den Link, um deinen persönlichen Zugang zu bestätigen und in Cost Tracker fortzufahren.",
       "spam": "Wenn die Nachricht fehlt, prüfe auch deinen Spamordner.",
       "signIn": "Schon bestätigt oder bereits ein Konto? Melde dich an, um mit dieser Einladung fortzufahren.",

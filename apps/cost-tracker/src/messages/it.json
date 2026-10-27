@@ -50,7 +50,7 @@
     "inbox": {
       "heading": "Controlla la posta in arrivo",
       "address": "Cerca il link di verifica in <address>{email}</address>.",
-      "invitationInstruction": "Verifica prima il tuo indirizzo email. Poi potrai unirti all’Organizzazione o rifiutare l’invito. Un invito di collega in sospeso impedisce di creare una nuova Organizzazione. Se il messaggio non arriva, richiedi un nuovo link qui sotto.",
+      "invitationInstruction": "Verifica prima il tuo indirizzo email. Poi potrai unirti all’Organizzazione o rifiutare l’invito. Se il messaggio non arriva, richiedi un nuovo link qui sotto.",
       "instruction": "Apri il link per verificare il tuo accesso personale e riprendere il percorso in Cost Tracker.",
       "spam": "Se non vedi il messaggio, controlla anche la cartella spam.",
       "signIn": "Hai già verificato l'e-mail o hai un account? Accedi per continuare con questo invito.",

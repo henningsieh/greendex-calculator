@@ -50,7 +50,7 @@
     "inbox": {
       "heading": "Preverite prejeto pošto",
       "address": "Poiščite potrditveno povezavo v nabiralniku <address>{email}</address>.",
-      "invitationInstruction": "Najprej potrdite e-poštni naslov. Nato se lahko pridružite Organizaciji ali zavrnete vabilo. Čakajoče vabilo za sodelavca preprečuje ustvarjanje nove Organizacije. Če sporočilo ne prispe, spodaj zahtevajte novo povezavo.",
+      "invitationInstruction": "Najprej potrdite e-poštni naslov. Nato se lahko pridružite Organizaciji ali zavrnete vabilo. Če sporočilo ne prispe, spodaj zahtevajte novo povezavo.",
       "instruction": "Odprite povezavo, da potrdite osebno prijavo in nadaljujete v Cost Trackerju.",
       "spam": "Če sporočila ne vidite, preverite tudi neželeno pošto.",
       "signIn": "Ste e-pošto že potrdili ali že imate račun? Prijavite se za nadaljevanje tega povabila.",
