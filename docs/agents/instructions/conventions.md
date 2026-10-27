@@ -88,6 +88,24 @@ For final verification:
 4. Record the exact candidate, runtime targets, selected suites, results, timings, and blockers without secrets. Source/build-affecting changes invalidate relevant evidence. No fixed count of repeated green full runs is required.
 5. Retain final `pnpm run format`, `pnpm run lint` including design-system checks, applicable `pnpm run type-check`, affected SSR regressions, persistence checks, instruction-policy checks and diff review. Account for overlap without omitting a gate. Honor explicit user restrictions on command execution and report unrun gates rather than inventing evidence.
 
+### Suite evidence runner
+
+`scripts/suite-evidence.py` runs one full suite per invocation and keeps a receipt that binds the run to the candidate. The suites themselves remain the root commands above; the runner only supplies the receipt, the live log and the exit receipt.
+
+```bash
+./scripts/suite-evidence.py run unit
+./scripts/suite-evidence.py run integration
+./scripts/suite-evidence.py run e2e
+./scripts/suite-evidence.py create-report
+```
+
+- `run <suite>` captures `<suite>.before.json` and `<suite>.before.build-files.sha256` first, then runs exactly `pnpm run test:<suite>` with no added flags, streams output live to `<suite>.log`, and writes `exit=<code>` to `<suite>.exit`. It deletes that suite's previous four files, so a re-run overwrites one attempt.
+- `create-report` runs nothing. It seals the three suites into `handover/<commit>/` with the logs, exit receipts, before-receipts, build manifest, `evidence.json`, `HANDOVER.md` and `SHA256SUMS`. A re-run replaces that directory. Any suite exit other than 0 makes it `FAIL` and exits nonzero; a receipt that no longer matches the current observation is reported as a named delta under `PASS_WITH_NOTES` instead of aborting.
+- The audit directory defaults to `.audit/<issue from the branch name>`; `--dir` or `--issue` override it. `.audit/` is gitignored, so evidence stays local.
+- `--dry-run` prints the plan, `--no-capture` runs a suite without a receipt (no report is possible), and `--keep-going` lets `run all` continue after a failure.
+- The before-suite receipt needs both production builds and the production listeners on ports 3000, 3002 and 4000; a development server is refused. Runtime route-cache files under `.next/server/route-cache` are excluded from the build manifest because the running server writes them.
+- Evidence invalidates when the candidate moves. Capture all three suites after the final build and commit for a plain `PASS`; later source changes appear as deltas.
+
 ## Database changes
 
 Schemas and migrations live in `packages/database/src/`.

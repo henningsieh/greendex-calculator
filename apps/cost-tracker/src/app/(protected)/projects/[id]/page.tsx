@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { ProjectWorkspaceSkeleton } from "@/features/projects/components/project-loading-states";
@@ -16,6 +17,7 @@ export default async function ProjectPage({
   params,
   searchParams,
 }: ProjectPageProps) {
+  await connection();
   if (!(await hasOrganizationMembership())) return null;
 
   return (

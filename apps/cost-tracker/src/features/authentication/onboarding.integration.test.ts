@@ -12,7 +12,7 @@ import {
   partnerOrganizationSetupLinksTable as links,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq, like } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mail = vi.hoisted(() => ({
@@ -135,9 +135,6 @@ afterEach(async () => {
     await db.delete(organization).where(eq(organization.id, id));
   for (const actor of users.splice(0)) {
     await db.delete(user).where(eq(user.id, actor.id));
-    await db
-      .delete(verification)
-      .where(like(verification.identifier, `%${actor.email}%`));
   }
   vi.clearAllMocks();
 });
@@ -149,17 +146,10 @@ describe("authoritative onboarding next step", () => {
     ["//foreign.example/setup-links/id", "direct", undefined],
     ["/projects?next=https://foreign.example", "direct", undefined],
     [
-      "/accept-invitation/invite_123",
-      "organization-invitation",
-      "/accept-invitation/invite_123",
-    ],
-    [
       "/setup-links/setup_123?secret=abc_DEF-123",
       "partner-setup",
       "/setup-links/setup_123?secret=abc_DEF-123",
     ],
-    ["/accept-invitation/bad/path", "organization-invitation", undefined],
-    ["/accept-invitation/bad!", "organization-invitation", undefined],
     ["/setup-links/id?secret=bad&extra=value", "partner-setup", undefined],
   ])(
     "only discloses authentication guidance for signed-out continuation %s",
@@ -237,11 +227,7 @@ describe("authoritative onboarding next step", () => {
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
-  it.each([
-    undefined,
-    "/accept-invitation/missing",
-    "/setup-links/missing?secret=abc",
-  ])(
+  it.each([undefined, "/setup-links/missing?secret=abc"])(
     "requires current verification before protected entry %s",
     async (returnTo) => {
       const actor = await account();
@@ -273,9 +259,13 @@ describe("authoritative onboarding next step", () => {
     ).toEqual({
       entryContext: "organization-invitation",
       nextStep: "accept-invitation",
+      invitation: { invitationId, organization: target },
       availableActions: [
         { kind: "accept-invitation", invitationId },
-        { kind: "sign-out" },
+        {
+          kind: "sign-out",
+          destination: `/register?next=${encodeURIComponent(returnTo)}`,
+        },
       ],
     });
     expect(
@@ -292,7 +282,10 @@ describe("authoritative onboarding next step", () => {
       nextStep: "select-organization",
       availableActions: [
         { kind: "select-organization", organizations: [target] },
-        { kind: "sign-out" },
+        {
+          kind: "sign-out",
+          destination: `/register?next=${encodeURIComponent(returnTo)}`,
+        },
       ],
     });
     await auth.api.setActiveOrganization({
@@ -316,7 +309,14 @@ describe("authoritative onboarding next step", () => {
       entryContext: "organization-invitation",
       nextStep: "invitation-recovery",
       reason: "STAFF_INVITATION_CLOSED",
-      availableActions: [{ kind: "sign-out" }, { kind: "recheck" }],
+      returnTo,
+      availableActions: [
+        {
+          kind: "sign-out",
+          destination: `/register?next=${encodeURIComponent(returnTo)}`,
+        },
+        { kind: "recheck" },
+      ],
     });
   });
 
@@ -330,7 +330,7 @@ describe("authoritative onboarding next step", () => {
   ])(
     "keeps %s invitations in recovery and refuses forged acceptance",
     async (invalid) => {
-      const { host, recipient, invitationId, returnTo } = await invite();
+      const { host, target, recipient, invitationId, returnTo } = await invite();
       let actor = recipient;
       let input = returnTo;
       let id = invitationId;
@@ -360,9 +360,13 @@ describe("authoritative onboarding next step", () => {
         ).toEqual({
           entryContext: "organization-invitation",
           nextStep: "accept-invitation",
+          invitation: { invitationId, organization: target },
           availableActions: [
             { kind: "accept-invitation", invitationId },
-            { kind: "sign-out" },
+            {
+              kind: "sign-out",
+              destination: `/register?next=${encodeURIComponent(returnTo)}`,
+            },
           ],
         });
         await host.api.organizations.cancelInvitation({ invitationId });
@@ -378,7 +382,18 @@ describe("authoritative onboarding next step", () => {
         entryContext: "organization-invitation",
         nextStep: "invitation-recovery",
         reason,
-        availableActions: [{ kind: "sign-out" }, { kind: "recheck" }],
+        returnTo: input.startsWith("/accept-invitation/bad")
+          ? "/accept-invitation"
+          : input,
+        availableActions: [
+          {
+            kind: "sign-out",
+            destination: input.startsWith("/accept-invitation/bad")
+              ? "/accept-invitation"
+              : `/register?next=${encodeURIComponent(input)}`,
+          },
+          { kind: "recheck" },
+        ],
       });
       await expect(
         actor.api.organizations.acceptInvitation({ invitationId: id }),
@@ -681,4 +696,312 @@ describe("authoritative onboarding next step", () => {
       availableActions: [{ kind: "authenticate" }],
     });
   });
+});
+
+it("names only a usable staff invitation before authentication and retains both entry doors", async () => {
+  const { host, target, invitationId, returnTo } = await invite();
+  expect(await client().authentication.onboardingNextStep({ returnTo })).toEqual({
+    entryContext: "organization-invitation",
+    nextStep: "authenticate",
+    invitation: { invitationId, organization: target },
+    availableActions: [
+      { kind: "authenticate", entry: "register", returnTo },
+      { kind: "authenticate", entry: "login", returnTo },
+      { kind: "google", returnTo },
+    ],
+  });
+  expect(
+    await client().authentication.onboardingNextStep({
+      returnTo,
+      authEntry: "login",
+    }),
+  ).toMatchObject({
+    availableActions: [
+      { kind: "authenticate", entry: "login", returnTo },
+      { kind: "authenticate", entry: "register", returnTo },
+      { kind: "google", returnTo },
+    ],
+  });
+  await host.api.organizations.cancelInvitation({ invitationId });
+  for (const destination of [
+    returnTo,
+    "/accept-invitation/missing",
+    "/accept-invitation/bad!",
+    "/accept-invitation/bad/path",
+    "/accept-invitation",
+  ]) {
+    expect(
+      await client().authentication.onboardingNextStep({ returnTo: destination }),
+    ).toEqual({
+      entryContext: "organization-invitation",
+      nextStep: "invitation-recovery",
+      reason: "STAFF_INVITATION_NOT_FOUND",
+      returnTo:
+        destination.includes("bad") || destination === "/accept-invitation"
+          ? "/accept-invitation"
+          : destination,
+      availableActions:
+        destination.includes("bad") || destination === "/accept-invitation"
+          ? [{ kind: "recheck" }]
+          : [
+              { kind: "authenticate", entry: "login", returnTo: destination },
+              { kind: "recheck" },
+            ],
+    });
+  }
+});
+
+it("returns the same named signup receipt for new and duplicate email without granting a session", async () => {
+  const host = await account();
+  const target = await createOrganization(host);
+  const email = `onboarding-${randomUUID()}@example.com`;
+  const result = await host.api.organizations.inviteMember({
+    email,
+    role: "admin",
+  });
+  const returnTo = `/accept-invitation/${result.invitationId}`;
+  const input = {
+    name: "New colleague",
+    email,
+    password: "correct-horse-battery-staple",
+    returnTo,
+  };
+  try {
+    for (const attempt of [0, 1]) {
+      const headers = new Headers();
+      expect(
+        await client(new Headers(), headers).authentication.signUp(input),
+      ).toEqual({
+        success: true,
+        decision: {
+          entryContext: "organization-invitation",
+          nextStep: "verify-email",
+          invitation: { invitationId: result.invitationId, organization: target },
+          email,
+          availableActions: [
+            { kind: "authenticate", entry: "login", returnTo },
+            {
+              kind: "resend-verification",
+              email,
+              callbackURL: returnTo,
+            },
+          ],
+        },
+      });
+      expect(headers.get("cache-control")).toBe("private, no-store");
+      expect(
+        await auth.api.getSession({
+          headers: new Headers({
+            cookie: headers
+              .getSetCookie()
+              .map((cookie) => cookie.split(";")[0])
+              .join("; "),
+          }),
+        }),
+      ).toBeNull();
+      if (attempt === 0) {
+        const created = await db.query.user.findFirst({
+          where: eq(user.email, email),
+        });
+        if (!created) throw new Error("Signup did not create a User");
+        users.push({ id: created.id, email });
+      }
+    }
+    const delivered = mail.sendEmailVerificationEmail.mock.calls.at(-1)?.[0];
+    if (!delivered) throw new Error("Verification delivery missing");
+    const verified = await auth.handler(new Request(delivered.url));
+    expect(verified.status).toBe(302);
+    const location = new URL(
+      verified.headers.get("location") ?? "",
+      delivered.url,
+    );
+    expect(location.pathname).toBe(returnTo);
+    const headers = new Headers({
+      cookie: verified.headers
+        .getSetCookie()
+        .map((cookie) => cookie.split(";")[0])
+        .join("; "),
+    });
+    const api = client(headers);
+    expect((await auth.api.getSession({ headers }))?.user.emailVerified).toBe(
+      true,
+    );
+    expect(
+      await api.authentication.onboardingNextStep({ returnTo }),
+    ).toMatchObject({
+      nextStep: "accept-invitation",
+      invitation: { invitationId: result.invitationId, organization: target },
+    });
+    expect(
+      await api.organizations.acceptInvitation({
+        invitationId: result.invitationId,
+      }),
+    ).toEqual({ organizationId: target.id });
+    expect(await api.organizations.listMemberships()).toEqual([
+      { ...target, role: "admin" },
+    ]);
+    const replay = await auth.handler(new Request(delivered.url));
+    expect(
+      await auth.api.getSession({
+        headers: new Headers({
+          cookie: replay.headers
+            .getSetCookie()
+            .map((cookie) => cookie.split(";")[0])
+            .join("; "),
+        }),
+      }),
+    ).toBeNull();
+  } finally {
+    const created = await db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    if (created && !users.some(({ id }) => id === created.id))
+      users.push({ id: created.id, email });
+  }
+});
+
+it("enforces current verification at both acceptance doors after a verified session is revoked", async () => {
+  const { recipient, invitationId, returnTo, target } = await invite();
+  expect(
+    await recipient.api.authentication.onboardingNextStep({ returnTo }),
+  ).toMatchObject({ nextStep: "accept-invitation" });
+  await db
+    .update(user)
+    .set({ emailVerified: false })
+    .where(eq(user.id, recipient.id));
+  expect(
+    await recipient.api.authentication.onboardingNextStep({ returnTo }),
+  ).toEqual({
+    entryContext: "organization-invitation",
+    nextStep: "verify-email",
+    invitation: { invitationId, organization: target },
+    email: recipient.email,
+    availableActions: [
+      {
+        kind: "sign-out",
+        destination: `/register?next=${encodeURIComponent(returnTo)}`,
+      },
+      {
+        kind: "resend-verification",
+        email: recipient.email,
+        callbackURL: returnTo,
+      },
+    ],
+  });
+  await expect(
+    recipient.api.organizations.acceptInvitation({ invitationId }),
+  ).rejects.toMatchObject({ data: { reason: "EMAIL_VERIFICATION_REQUIRED" } });
+  await expect(
+    auth.api.acceptInvitation({
+      headers: recipient.headers,
+      body: { invitationId },
+    }),
+  ).rejects.toMatchObject({ statusCode: 403 });
+  expect(await recipient.api.organizations.listMemberships()).toEqual([]);
+});
+
+it("returns identical wrong-address recovery for new and duplicate signup before verification", async () => {
+  const { returnTo, target, invitationId, recipient } = await invite();
+  const email = `onboarding-${randomUUID()}@example.com`;
+  const input = {
+    name: "Mistyped colleague",
+    email,
+    password: "correct-horse-battery-staple",
+    returnTo,
+  };
+  try {
+    for (const attempt of [0, 1]) {
+      const headers = new Headers();
+      const result = await client(new Headers(), headers).authentication.signUp(
+        input,
+      );
+      expect(result).toEqual({
+        success: true,
+        decision: {
+          entryContext: "organization-invitation",
+          nextStep: "invitation-recovery",
+          reason: "STAFF_INVITATION_WRONG_EMAIL",
+          returnTo,
+          availableActions: [
+            { kind: "authenticate", entry: "login", returnTo },
+            { kind: "recheck" },
+          ],
+        },
+      });
+      expect(JSON.stringify(result)).not.toContain(recipient.email);
+      expect(JSON.stringify(result)).not.toContain(email);
+      expect(headers.get("cache-control")).toBe("private, no-store");
+      expect(await auth.api.getSession({ headers })).toBeNull();
+      const created = await db.query.user.findFirst({
+        where: eq(user.email, email),
+      });
+      expect(created?.emailVerified).toBe(false);
+      if (attempt === 0 && created) users.push({ id: created.id, email });
+      expect(await recipient.api.organizations.listMemberships()).toEqual([]);
+      expect(
+        await db.query.invitation.findFirst({
+          where: eq(invitation.id, invitationId),
+        }),
+      ).toMatchObject({ status: "pending", organizationId: target.id });
+    }
+    expect(
+      await client().authentication.onboardingNextStep({ returnTo }),
+    ).toMatchObject({
+      nextStep: "authenticate",
+      availableActions: [
+        { kind: "authenticate", entry: "register", returnTo },
+        { kind: "authenticate", entry: "login", returnTo },
+        { kind: "google", returnTo },
+      ],
+    });
+  } finally {
+    const created = await db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    if (created && !users.some(({ id }) => id === created.id))
+      users.push({ id: created.id, email });
+  }
+});
+
+it("signup verification and owned User cleanup preserve pre-existing verification rows", async () => {
+  const actor = await account();
+  await auth.api.requestPasswordReset({ body: { email: actor.email } });
+  const delivered = mail.sendPasswordResetEmail.mock.calls.at(-1)?.[0];
+  if (!delivered) throw new Error("Password reset delivery missing");
+  const resetURL = new URL(delivered.url);
+  const identifier = `reset-password:${resetURL.pathname.split("/").at(-1)}`;
+  const retained = await db.query.verification.findFirst({
+    where: eq(verification.identifier, identifier),
+  });
+  if (!retained)
+    throw new Error("Supported password reset did not create a verification row");
+  try {
+    const before = await db.select().from(verification);
+    const email = `onboarding-${randomUUID()}@example.com`;
+    await client().authentication.signUp({
+      name: "Cleanup regression",
+      email,
+      password: "correct-horse-battery-staple",
+    });
+    const created = await db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    if (!created) throw new Error("Signup did not create a User");
+    users.push({ id: created.id, email });
+    expect(await db.select().from(verification)).toEqual(
+      expect.arrayContaining(before),
+    );
+    expect(await db.select().from(verification)).toHaveLength(before.length);
+    await db.delete(user).where(eq(user.id, created.id));
+    expect(await db.select().from(verification)).toEqual(
+      expect.arrayContaining(before),
+    );
+    expect(
+      await db.query.verification.findFirst({
+        where: eq(verification.id, retained.id),
+      }),
+    ).toEqual(retained);
+  } finally {
+    await db.delete(verification).where(eq(verification.id, retained.id));
+  }
 });

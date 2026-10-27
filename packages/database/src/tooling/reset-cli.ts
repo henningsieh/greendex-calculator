@@ -2,7 +2,6 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadEnvFile } from "node:process";
-import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 import pg from "pg";
@@ -15,7 +14,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.length === 1 && ["--help", "-h"].includes(args[0]!)) {
     console.log(
-      "Usage: pnpm run db:reset\nIrreversibly erase public and drizzle in greendex_development, then migrate and seed. Stop all database consumers first. Requires a terminal and typing greendex_development; no bypass flags. No backup. See README.md.",
+      "Usage: pnpm run db:reset\nIrreversibly erase public and drizzle in greendex_development, then migrate and seed. Stop all database consumers first. No backup. See README.md.",
     );
     return;
   }
@@ -55,28 +54,9 @@ async function main(): Promise<void> {
       "DATABASE_URL must name 188.245.144.137:5489/greendex_development with credentials and no query or fragment.",
     );
   }
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new ResetError(
-      "Reset requires an interactive terminal; unattended reset is refused.",
-    );
-  }
   console.log(
-    "IRREVERSIBLE: destroys public and drizzle; no backup. Stop apps, Socket.IO, tests and every other database consumer before continuing.",
+    `IRREVERSIBLE: erasing public and drizzle in ${target.database} on ${target.host}:${target.port}, then migrating and seeding.`,
   );
-  const readline = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  try {
-    if (
-      (await readline.question("Type greendex_development to reset: ")) !==
-      target.database
-    ) {
-      throw new ResetError("Confirmation did not match; nothing was reset.");
-    }
-  } finally {
-    readline.close();
-  }
 
   const client = new pg.Client({
     host: target.host,

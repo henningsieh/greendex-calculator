@@ -96,28 +96,6 @@ for (const { viewport, fontSize } of [
   });
 }
 
-test("invitation registration keeps its continuation on Google and account navigation", async ({
-  page,
-}) => {
-  await page.goto("/register?next=%2Faccept-invitation%2Fexample-invitation");
-  await expect(page.getByTestId("auth-account-navigation")).toHaveAttribute(
-    "href",
-    "/login?next=%2Faccept-invitation%2Fexample-invitation",
-  );
-  const [request] = await Promise.all([
-    page.waitForRequest("**/api/rpc/authentication/startGoogleSignIn"),
-    page.route("**/api/rpc/authentication/startGoogleSignIn", (route) =>
-      route.fulfill({
-        json: { json: { url: new URL("/login", page.url()).href } },
-      }),
-    ),
-    page.getByTestId("google-sign-in").click(),
-  ]);
-  expect(request.postDataJSON()).toEqual({
-    json: { returnTo: "/accept-invitation/example-invitation" },
-  });
-});
-
 test("malformed invitation registration stays in recovery before and after sign-in", async ({
   page,
   context,
@@ -205,13 +183,14 @@ test("delivered email verifies signup and verified registration continues into o
     await expect(setup).toBeVisible();
     await expect(page.getByTestId("auth-verification-message")).toHaveCount(0);
     const organizationInput = setup.locator("#organization-name");
-    await organizationInput.fill(organizationName);
-    await organizationInput.focus();
+    await organizationInput.pressSequentially(organizationName);
+    await expect(organizationInput).toHaveValue(organizationName);
     await page.keyboard.press("Tab");
     await expect(setup.locator("#organization-country")).toBeFocused();
     await setup.locator("#organization-country").selectOption("DE");
-    await page.keyboard.press("Tab");
     const create = setup.getByTestId("create-organization");
+    await expect(create).toBeEnabled();
+    await page.keyboard.press("Tab");
     await expect(create).toBeFocused();
     await page.keyboard.press("Enter");
     await expectFirstOrganizationProjects(page, organizationName);

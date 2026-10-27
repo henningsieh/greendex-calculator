@@ -486,7 +486,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
   }) => {
     const page = await pageFor(browser, "T", baseURL!);
     await page.goto("/participant");
-    await page.getByTestId("participant-name").fill(actors.T.name);
+    await page.getByTestId("participant-profile-name").fill(actors.T.name);
     await page.getByTestId("save-participant-profile").click();
     await expect(page.getByTestId("participant-dashboard")).toHaveAttribute(
       "data-dashboard-state",

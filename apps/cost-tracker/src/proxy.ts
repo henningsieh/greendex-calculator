@@ -26,5 +26,5 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|.*\\..*).*)"],
+  matcher: ["/((?!api|_next|.*\\..*).*)", "/accept-invitation/:path*"],
 };

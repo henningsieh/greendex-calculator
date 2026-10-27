@@ -1,1 +1,79 @@
-{}
+{
+  "onboarding": {
+    "auth": {
+      "signInHeading": "Dobrodošli nazaj",
+      "invitationHeading": "Pridružite se svoji organizaciji",
+      "partnerHeading": "Pripravite nastavitev partnerske organizacije",
+      "directHeading": "Začnite s svojo organizacijo",
+      "invitationSignInDescription": "Prijavite se s povabljenim naslovom, da se pridružite tej organizaciji.",
+      "invitationDescription": "Ustvarite osebno prijavo s povabljenim naslovom. Potrdite e-pošto in nato sprejmite povabilo.",
+      "signInDescription": "Prijavite se za nadaljnje upravljanje potnih stroškov projektov.",
+      "partnerDescription": "Ustvarite osebno prijavo z naslovom, ki je prejel povezavo za nastavitev. Nato nadaljujte nastavitev partnerske organizacije.",
+      "directDescription": "Ustvarite osebno prijavo, potrdite e-pošto in nastavite organizacijo za gostovanje projektov Erasmus.",
+      "google": "Nadaljujte z Googlom",
+      "emailSeparator": "ali uporabite e-pošto",
+      "name": "Ime",
+      "namePlaceholder": "Vaše ime",
+      "email": "E-poštni naslov",
+      "emailPlaceholder": "vi@example.org",
+      "password": "Geslo",
+      "passwordHint": "Uporabite vsaj 8 znakov.",
+      "newAccount": "Ste novi v Cost Trackerju?",
+      "existingAccount": "Že imate račun?",
+      "createAccount": "Ustvari račun",
+      "signIn": "Prijava",
+      "signingIn": "Prijavljanje",
+      "creatingAccount": "Ustvarjanje računa",
+      "home": "Nazaj na začetno stran",
+      "signOut": "Odjava",
+      "invitationPointer": "Se pridružujete obstoječi organizaciji? Odprite povezavo v e-poštnem povabilu.",
+      "metadata": "Prijavite se ali ustvarite osebno prijavo za Greendex Cost Tracker."
+    },
+    "invitation": {
+      "context": "Povabilo za pridružitev organizaciji {organization}",
+      "heading": "Pridružite se svoji organizaciji",
+      "checking": "Preverjanje povabila…",
+      "joining": "Pridruževanje…",
+      "accept": "Sprejmi povabilo",
+      "recheck": "Znova preveri povabilo"
+    },
+    "progress": {
+      "verify": "1. Potrditev e-pošte",
+      "verified": "1. E-pošta potrjena",
+      "accept": "2. Sprejem povabila"
+    },
+    "inbox": {
+      "heading": "Preverite prejeto pošto",
+      "address": "Poiščite potrditveno povezavo v nabiralniku <address>{email}</address>.",
+      "invitationInstruction": "Odprite povezavo za potrditev, da se vrnete sem prijavljeni, nato sprejmite povabilo za pridružitev Organizaciji. Če sporočilo ne prispe, spodaj pošljite novo povezavo.",
+      "instruction": "Odprite povezavo, da potrdite osebno prijavo in nadaljujete v Cost Trackerju.",
+      "spam": "Če sporočila ne vidite, preverite tudi neželeno pošto.",
+      "signIn": "Ste e-pošto že potrdili ali že imate račun? Prijavite se za nadaljevanje tega povabila.",
+      "resend": {
+        "label": "Pošlji novo povezavo za potrditev",
+        "pending": "Pošiljanje…",
+        "success": "Zahteva je prejeta. Če morate svoj račun še potrditi, je nova povezava na poti. Preverite svoj poštni predal in mapo z neželeno pošto.",
+        "error": "Nove povezave ni bilo mogoče zahtevati. Poskusite znova čez nekaj trenutkov."
+      }
+    },
+    "recovery": {
+      "title": "Vrnite se k povabilu",
+      "wrongEmail": "To povabilo je bilo poslano na drug e-poštni naslov. Nadaljujte z naslovom, ki ga je prejel.",
+      "expired": "To povabilo je poteklo. Organizacijo prosite za novo povabilo.",
+      "closed": "To povabilo ni več na voljo. Organizacijo prosite za novo povabilo.",
+      "unavailable": "Tega povabila ni mogoče uporabiti. Odprite celotno povezavo iz e-poštnega povabila ali organizacijo prosite za novo povabilo.",
+      "recheck": "Ko popravite prijavo ali prejmete novo povezavo, odprite tisto povabilo. Lahko tudi znova preverite to povabilo."
+    },
+    "selection": {
+      "heading": "Izberite organizacijo",
+      "description": "Izberite organizacijo za nadaljevanje. Spremeni se samo aktivna organizacija, ne vaša članstva ali udeležbe v projektih.",
+      "error": "Te organizacije ni bilo mogoče izbrati. Preverite dostop in poskusite znova."
+    },
+    "error": {
+      "request": "Zahteve ni bilo mogoče dokončati. Preverite povezavo in poskusite znova.",
+      "credentials": "Napačna e-pošta ali geslo. Preverite podatke in poskusite znova.",
+      "verification": "Pred prijavo potrdite e-pošto. Odprite potrditveno povezavo v prejeti pošti.",
+      "signOut": "Odjava ni uspela"
+    }
+  }
+}

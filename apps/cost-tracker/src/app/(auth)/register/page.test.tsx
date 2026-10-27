@@ -1,12 +1,17 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
+
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
 const mocks = vi.hoisted(() => ({
   next: vi.fn(),
   session: vi.fn(),
   redirect: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
+vi.mock("next/navigation", () => {
+  const router = { replace: mocks.redirect };
+  return { redirect: mocks.redirect, useRouter: () => router };
+});
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { authentication: { onboardingNextStep: mocks.next } },
 }));
@@ -33,7 +38,7 @@ it.each([
   {
     label: "array",
     next: ["/accept-invitation/invite_123"],
-    expected: undefined,
+    expected: "/accept-invitation",
   },
   { label: "missing value", next: undefined, expected: undefined },
 ])(
@@ -45,7 +50,10 @@ it.each([
       nextStep: "authenticate",
     });
     await RegisterPage({ searchParams: Promise.resolve({ next }) });
-    expect(mocks.next).toHaveBeenCalledExactlyOnceWith({ returnTo: expected });
+    expect(mocks.next).toHaveBeenCalledExactlyOnceWith({
+      returnTo: expected,
+      authEntry: "register",
+    });
   },
 );
 
@@ -57,13 +65,15 @@ it.each([false, true])(
     );
     mocks.next.mockResolvedValue({
       entryContext: "organization-invitation",
-      nextStep: signedIn ? "invitation-recovery" : "authenticate",
-      ...(signedIn
-        ? {
-            reason: "STAFF_INVITATION_NOT_FOUND",
-            availableActions: [{ kind: "sign-out" }, { kind: "recheck" }],
-          }
-        : { availableActions: [{ kind: "authenticate" }] }),
+      nextStep: "invitation-recovery",
+      reason: "STAFF_INVITATION_NOT_FOUND",
+      returnTo: "/accept-invitation",
+      availableActions: signedIn
+        ? [
+            { kind: "sign-out", destination: "/accept-invitation" },
+            { kind: "recheck" },
+          ]
+        : [{ kind: "recheck" }],
     });
     render(
       await RegisterPage({
@@ -79,6 +89,7 @@ it.each([false, true])(
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(mocks.next).toHaveBeenCalledWith({
       returnTo: "/accept-invitation/bad!",
+      authEntry: "register",
     });
   },
 );

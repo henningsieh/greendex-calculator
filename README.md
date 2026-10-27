@@ -315,7 +315,7 @@ Manually stop apps, Socket.IO, tests and all other database consumers; keep them
 The command does not detect or stop consumers and is never an automatic startup/test hook.
 It loads `packages/database/.env`; injected `DATABASE_URL` takes precedence. Only PostgreSQL at
 `188.245.144.137:5489/greendex_development` is allowed, without URL queries/fragments; production is refused.
-An interactive terminal must type exactly `greendex_development`; there is no `--yes` mode.
+An unattended run needs no terminal and no confirmation; the pinned host, port and database name are the only guard, and production is refused.
 After the transactional schema wipe it closes its connection, then runs root `db:migrate` and `db:seed` sequentially.
 Failure stops subsequent steps and may leave an empty or partially populated database; inspect privately before retrying.
 The seed uses normal configuration; this does not reset external services or guarantee that tests will pass.

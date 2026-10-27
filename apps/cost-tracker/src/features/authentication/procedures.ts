@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { loadOnboardingFacts } from "@/features/authentication/onboarding-context";
+import {
+  loadOnboardingFacts,
+  loadPublicInvitationEntry,
+} from "@/features/authentication/onboarding-context";
 import {
   decideOnboarding,
   OnboardingInputSchema,
@@ -32,6 +35,10 @@ const GoogleSignInInputSchema = z.object({
   returnTo: z.string().optional(),
 });
 const SuccessSchema = z.object({ success: z.literal(true) });
+const SignUpResultSchema = z.object({
+  success: z.literal(true),
+  decision: OnboardingDecisionSchema.optional(),
+});
 const SocialSignInSchema = z.object({ url: z.url() });
 const BetterAuthSocialResponseSchema = z.object({
   redirect: z.literal(true),
@@ -95,7 +102,7 @@ export const signIn = base
 
 export const signUp = base
   .input(SignUpInputSchema)
-  .output(SuccessSchema)
+  .output(SignUpResultSchema)
   .handler(async ({ context, errors, input }) => {
     await callBetterAuth(context, errors, () =>
       auth.api.signUpEmail({
@@ -110,6 +117,24 @@ export const signUp = base
       }),
     );
 
+    const returnTo = safeSignInReturnTo(input.returnTo);
+    if (
+      input.returnTo === "/accept-invitation" ||
+      input.returnTo?.startsWith("/accept-invitation/")
+    ) {
+      context.resHeaders?.set("cache-control", "private, no-store");
+      return {
+        success: true,
+        decision: decideOnboarding({
+          account: "verification-requested",
+          entryContext: "organization-invitation",
+          entry: await loadPublicInvitationEntry(returnTo, errors, input.email),
+          authEntry: "register",
+          returnTo: returnTo ?? "/accept-invitation",
+          email: input.email,
+        }),
+      };
+    }
     return { success: true };
   });
 

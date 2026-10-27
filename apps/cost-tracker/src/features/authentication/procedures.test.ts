@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  loadPublicInvitationEntry: vi.fn(),
   createOrganization: vi.fn(),
   getSession: vi.fn(),
   signInEmail: vi.fn(),
@@ -13,6 +14,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/features/authentication/onboarding-context", () => ({
+  loadPublicInvitationEntry: mocks.loadPublicInvitationEntry,
+  loadOnboardingFacts: vi.fn(),
+}));
 
 vi.mock("@/lib/auth", () => ({
   auth: {
@@ -52,6 +57,12 @@ function createClient(resHeaders = new Headers()) {
 describe("Cost Tracker authentication procedures", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.loadPublicInvitationEntry.mockResolvedValue({
+      kind: "organization-invitation",
+      status: "pending",
+      invitationId: "invite_123",
+      organization: { id: "org-1", name: "Example Organization" },
+    });
     mocks.getSession.mockResolvedValue({
       session: { activeOrganizationId: "organization-id", id: "session-id" },
       user: { id: "user-id" },
@@ -293,4 +304,108 @@ describe("Cost Tracker authentication procedures", () => {
       createClient().authentication.startGoogleSignIn(),
     ).resolves.toEqual({ url: "https://accounts.google.com/o/oauth2/auth" });
   });
+});
+
+it("returns a private server signup receipt without requiring a session", async () => {
+  const resHeaders = new Headers();
+  mocks.signUpEmail.mockResolvedValue(response());
+  expect(
+    await createClient(resHeaders).authentication.signUp({
+      name: "Alex Morgan",
+      email: "submitted@example.org",
+      password: "correct-horse-battery-staple",
+      returnTo: "/accept-invitation/invite_123",
+    }),
+  ).toEqual({
+    success: true,
+    decision: {
+      entryContext: "organization-invitation",
+      nextStep: "verify-email",
+      invitation: {
+        invitationId: "invite_123",
+        organization: { id: "org-1", name: "Example Organization" },
+      },
+      email: "submitted@example.org",
+      availableActions: [
+        {
+          kind: "authenticate",
+          entry: "login",
+          returnTo: "/accept-invitation/invite_123",
+        },
+        {
+          kind: "resend-verification",
+          email: "submitted@example.org",
+          callbackURL: "/accept-invitation/invite_123",
+        },
+      ],
+    },
+  });
+  expect(resHeaders.get("cache-control")).toBe("private, no-store");
+  expect(mocks.getSession).not.toHaveBeenCalled();
+});
+
+it("keeps malformed signup return data in recovery without authorizing it as callback", async () => {
+  mocks.loadPublicInvitationEntry.mockResolvedValue({
+    kind: "organization-invitation",
+    status: "recovery",
+    reason: "STAFF_INVITATION_NOT_FOUND",
+  });
+  expect(
+    await createClient().authentication.signUp({
+      name: "Alex Morgan",
+      email: "submitted@example.org",
+      password: "correct-horse-battery-staple",
+      returnTo: "/accept-invitation/bad!",
+    }),
+  ).toEqual({
+    success: true,
+    decision: {
+      entryContext: "organization-invitation",
+      nextStep: "invitation-recovery",
+      reason: "STAFF_INVITATION_NOT_FOUND",
+      returnTo: "/accept-invitation",
+      availableActions: [{ kind: "recheck" }],
+    },
+  });
+  expect(mocks.signUpEmail).toHaveBeenCalledWith(
+    expect.objectContaining({
+      body: expect.objectContaining({ callbackURL: "/projects" }),
+    }),
+  );
+});
+
+it("returns wrong-address recovery before verification using only the submitted email", async () => {
+  mocks.loadPublicInvitationEntry.mockResolvedValue({
+    kind: "organization-invitation",
+    status: "recovery",
+    reason: "STAFF_INVITATION_WRONG_EMAIL",
+  });
+  const returnTo = "/accept-invitation/invite_123";
+  const result = await createClient().authentication.signUp({
+    name: "Alex Morgan",
+    email: "mistyped@example.org",
+    password: "correct-horse-battery-staple",
+    returnTo,
+  });
+  expect(result).toEqual({
+    success: true,
+    decision: {
+      entryContext: "organization-invitation",
+      nextStep: "invitation-recovery",
+      reason: "STAFF_INVITATION_WRONG_EMAIL",
+      returnTo,
+      availableActions: [
+        { kind: "authenticate", entry: "login", returnTo },
+        { kind: "recheck" },
+      ],
+    },
+  });
+  expect(mocks.loadPublicInvitationEntry).toHaveBeenCalledExactlyOnceWith(
+    returnTo,
+    expect.any(Object),
+    "mistyped@example.org",
+  );
+  expect(mocks.signUpEmail).toHaveBeenCalledTimes(1);
+  expect(mocks.getSession).not.toHaveBeenCalled();
+  expect(mocks.createOrganization).not.toHaveBeenCalled();
 });

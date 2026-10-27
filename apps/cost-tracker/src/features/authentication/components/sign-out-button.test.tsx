@@ -1,6 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -61,13 +63,21 @@ describe("SignOutButton", () => {
     const button = screen.getByTestId("sign-out");
     await user.click(button);
 
-    expect(await screen.findByTestId("sign-out")).toBeTruthy();
-    expect(mocks.toastAdd).toHaveBeenCalledWith({
-      description:
-        "The server or network is unreachable. Check your connection and try again.",
-      title: "Could not sign out",
-      type: "error",
-    });
+    expect(await screen.findByTestId("sign-out")).toBeEnabled();
+    expect(mocks.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "error" }),
+    );
     expect(mocks.replace).not.toHaveBeenCalled();
   });
+});
+
+it("returns invitation sign-out to the retained journey", async () => {
+  mocks.signOut.mockResolvedValue({});
+  render(
+    <SignOutButton destination="/register?next=%2Faccept-invitation%2Finvite-1" />,
+  );
+  await userEvent.click(screen.getByTestId("sign-out"));
+  expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+    "/register?next=%2Faccept-invitation%2Finvite-1",
+  );
 });

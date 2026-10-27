@@ -74,7 +74,10 @@ export interface ServerAuthConfig<
     "sendEmailVerificationEmail" | "sendPasswordResetEmail"
   >;
   emailVerification?: Omit<EmailVerificationOptions, "sendOnSignUp">;
-  organization?: Pick<OrganizationOptions, "sendInvitationEmail">;
+  organization?: Pick<
+    OrganizationOptions,
+    "sendInvitationEmail" | "requireEmailVerificationOnInvitation"
+  >;
   organizationHooks?: Omit<
     NonNullable<OrganizationOptions["organizationHooks"]>,
     "beforeCreateOrganization"

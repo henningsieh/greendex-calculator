@@ -145,6 +145,9 @@ vi.mock("@/lib/orpc/orpc", () => ({
 vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
 }));
+vi.mock("next/server", () => ({
+  connection: () => Promise.resolve(),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/features/projects/procedures/assigned-partnerships", () => ({
   assignedPartnershipIds: vi.fn(async () => []),

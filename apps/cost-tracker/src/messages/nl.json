@@ -1,1 +1,79 @@
-{}
+{
+  "onboarding": {
+    "auth": {
+      "signInHeading": "Welkom terug",
+      "invitationHeading": "Word lid van je Organisatie",
+      "partnerHeading": "Bereid de inrichting van je Partnerorganisatie voor",
+      "directHeading": "Begin met je Organisatie",
+      "invitationSignInDescription": "Log in met het uitgenodigde adres om lid te worden van deze Organisatie.",
+      "invitationDescription": "Maak je persoonlijke login met het uitgenodigde adres. Verifieer je e-mail en accepteer daarna de uitnodiging.",
+      "signInDescription": "Log in om de reiskosten van je Projecten te blijven beheren.",
+      "partnerDescription": "Maak je persoonlijke login met het adres dat de instellink heeft ontvangen. Ga daarna verder met het instellen van je Partnerorganisatie.",
+      "directDescription": "Maak je persoonlijke login, verifieer je e-mail en stel je Organisatie in om Erasmus-projecten te organiseren.",
+      "google": "Doorgaan met Google",
+      "emailSeparator": "of gebruik e-mail",
+      "name": "Naam",
+      "namePlaceholder": "Je naam",
+      "email": "E-mailadres",
+      "emailPlaceholder": "jij@example.org",
+      "password": "Wachtwoord",
+      "passwordHint": "Gebruik minimaal 8 tekens.",
+      "newAccount": "Nieuw bij Cost Tracker?",
+      "existingAccount": "Heb je al een account?",
+      "createAccount": "Account maken",
+      "signIn": "Inloggen",
+      "signingIn": "Bezig met inloggen",
+      "creatingAccount": "Account wordt gemaakt",
+      "home": "Terug naar de startpagina",
+      "signOut": "Uitloggen",
+      "invitationPointer": "Word je lid van een bestaande Organisatie? Open de link in je uitnodigingsmail.",
+      "metadata": "Log in of maak een persoonlijke login voor Greendex Cost Tracker."
+    },
+    "invitation": {
+      "context": "Uitnodiging voor {organization}",
+      "heading": "Word lid van je Organisatie",
+      "checking": "Je uitnodiging wordt gecontroleerd…",
+      "joining": "Lidmaatschap wordt aangemaakt…",
+      "accept": "Uitnodiging accepteren",
+      "recheck": "Uitnodiging opnieuw controleren"
+    },
+    "progress": {
+      "verify": "1. E-mail verifiëren",
+      "verified": "1. E-mail geverifieerd",
+      "accept": "2. Uitnodiging accepteren"
+    },
+    "inbox": {
+      "heading": "Controleer je inbox",
+      "address": "Zoek je verificatielink in <address>{email}</address>.",
+      "invitationInstruction": "Open de verificatielink om hier ingelogd terug te keren en accepteer daarna de uitnodiging om lid te worden van de Organisatie. Als het bericht niet aankomt, kun je hieronder een nieuwe link sturen.",
+      "instruction": "Open de link om je persoonlijke login te verifiëren en verder te gaan in Cost Tracker.",
+      "spam": "Zie je het bericht niet? Controleer ook je spammap.",
+      "signIn": "Al geverifieerd of al een account? Log in om verder te gaan met deze uitnodiging.",
+      "resend": {
+        "label": "Een nieuwe verificatielink sturen",
+        "pending": "Bezig met versturen…",
+        "success": "Verzoek ontvangen. Als je je account nog moet verifiëren, is er een nieuwe link onderweg. Controleer je inbox en spammap.",
+        "error": "Er kon geen nieuwe link worden aangevraagd. Probeer het zo opnieuw."
+      }
+    },
+    "recovery": {
+      "title": "Terug naar je uitnodiging",
+      "wrongEmail": "Deze uitnodiging is naar een ander e-mailadres gestuurd. Ga verder met het adres dat de uitnodiging heeft ontvangen.",
+      "expired": "Deze uitnodiging is verlopen. Vraag je Organisatie om een nieuwe uitnodiging.",
+      "closed": "Deze uitnodiging is niet meer beschikbaar. Vraag je Organisatie om een nieuwe uitnodiging.",
+      "unavailable": "We kunnen deze uitnodiging niet gebruiken. Open de volledige link in je uitnodigingsmail of vraag je Organisatie om een nieuwe uitnodiging.",
+      "recheck": "Open de uitnodiging nadat je je login hebt gecorrigeerd of een nieuwe link hebt ontvangen. Je kunt deze uitnodiging ook opnieuw controleren."
+    },
+    "selection": {
+      "heading": "Selecteer een Organisatie",
+      "description": "Kies met welke Organisatie je wilt doorgaan. Dit verandert alleen je actieve Organisatie, niet je lidmaatschappen of deelnames aan Projecten.",
+      "error": "Deze Organisatie kon niet worden geselecteerd. Controleer je toegang en probeer het opnieuw."
+    },
+    "error": {
+      "request": "Het verzoek kon niet worden voltooid. Controleer je verbinding en probeer het opnieuw.",
+      "credentials": "Onjuist e-mailadres of wachtwoord. Controleer je gegevens en probeer het opnieuw.",
+      "verification": "Verifieer je e-mail voordat je inlogt. Open de verificatielink in je inbox.",
+      "signOut": "Uitloggen mislukt"
+    }
+  }
+}
