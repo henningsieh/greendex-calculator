@@ -765,7 +765,8 @@ export function ParticipantCoordination({
                         }
                       }}
                     >
-                      {removeParticipation.isPending
+                      {removeParticipation.isPending &&
+                      removeParticipation.variables === participant.id
                         ? t("pending")
                         : `Remove Project Participation for ${participant.displayName}`}
                     </Button>

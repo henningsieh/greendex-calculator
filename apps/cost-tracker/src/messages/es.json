@@ -38,7 +38,7 @@
         "close": "Cerrar",
         "pending": "Procesando…",
         "title": "¿Cerrar sesión?",
-        "description": "¿Cerrar sesión en Cost Tracker? Puede volver a iniciar sesión en cualquier momento."
+        "description": "¿Cerrar sesión en Cost Tracker? Puedes volver a iniciar sesión en cualquier momento."
       }
     },
     "invitation": {
@@ -58,7 +58,7 @@
         "close": "Cerrar",
         "pending": "Procesando…",
         "title": "¿Rechazar la invitación a la Organización?",
-        "description": "¿Rechazar la invitación para unirse a {organization}? Necesitará una nueva invitación para unirse más adelante.",
+        "description": "¿Rechazar la invitación para unirte a {organization}? Necesitarás una nueva invitación para unirte más adelante.",
         "execute": "Rechazar invitación"
       }
     },

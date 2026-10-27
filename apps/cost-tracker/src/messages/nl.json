@@ -38,7 +38,7 @@
         "close": "Sluiten",
         "pending": "Bezig…",
         "title": "Afmelden?",
-        "description": "Afmelden bij Cost Tracker? U kunt op elk moment opnieuw inloggen."
+        "description": "Afmelden bij Cost Tracker? Je kunt op elk moment opnieuw inloggen."
       }
     },
     "invitation": {
@@ -58,7 +58,7 @@
         "close": "Sluiten",
         "pending": "Bezig…",
         "title": "Organisatie-uitnodiging weigeren?",
-        "description": "De uitnodiging om lid te worden van {organization} weigeren? U heeft een nieuwe uitnodiging nodig om later lid te worden.",
+        "description": "De uitnodiging om lid te worden van {organization} weigeren? Je hebt een nieuwe uitnodiging nodig om later lid te worden.",
         "execute": "Uitnodiging weigeren"
       }
     },

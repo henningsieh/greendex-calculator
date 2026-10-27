@@ -38,7 +38,7 @@
         "close": "Schließen",
         "pending": "Wird ausgeführt…",
         "title": "Abmelden?",
-        "description": "Von Cost Tracker abmelden? Sie können sich jederzeit erneut anmelden."
+        "description": "Von Cost Tracker abmelden? Du kannst dich jederzeit erneut anmelden."
       }
     },
     "invitation": {
@@ -58,7 +58,7 @@
         "close": "Schließen",
         "pending": "Wird ausgeführt…",
         "title": "Organisationseinladung ablehnen?",
-        "description": "Die Einladung zu {organization} ablehnen? Für einen späteren Beitritt benötigen Sie eine neue Einladung.",
+        "description": "Die Einladung zu {organization} ablehnen? Für einen späteren Beitritt brauchst du eine neue Einladung.",
         "execute": "Einladung ablehnen"
       }
     },

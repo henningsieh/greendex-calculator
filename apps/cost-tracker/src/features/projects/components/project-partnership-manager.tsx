@@ -240,7 +240,10 @@ export function ProjectPartnershipManager({
                     variant="destructive"
                   >
                     <Trash2Icon aria-hidden="true" />
-                    {removeMutation.isPending ? t("pending") : "Remove"}
+                    {removeMutation.isPending &&
+                    removeMutation.variables === partnership.id
+                      ? t("pending")
+                      : "Remove"}
                   </Button>
                 )}
               </li>
