@@ -93,10 +93,10 @@ For final verification:
 `scripts/suite-evidence.py` runs one full suite per invocation and keeps a receipt that binds the run to the candidate. The suites themselves remain the root commands above; the runner only supplies the receipt, the live log and the exit receipt.
 
 ```bash
-./scripts/suite-evidence.py run unit         --dir .audit/277-rerun
-./scripts/suite-evidence.py run integration  --dir .audit/277-rerun
-./scripts/suite-evidence.py run e2e          --dir .audit/277-rerun
-./scripts/suite-evidence.py create-report    --dir .audit/277-rerun
+./scripts/suite-evidence.py run unit
+./scripts/suite-evidence.py run integration
+./scripts/suite-evidence.py run e2e
+./scripts/suite-evidence.py create-report
 ```
 
 - `run <suite>` captures `<suite>.before.json` and `<suite>.before.build-files.sha256` first, then runs exactly `pnpm run test:<suite>` with no added flags, streams output live to `<suite>.log`, and writes `exit=<code>` to `<suite>.exit`. It deletes that suite's previous four files, so a re-run overwrites one attempt.
