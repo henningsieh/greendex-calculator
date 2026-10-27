@@ -1,14 +1,14 @@
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
   assign: vi.fn(),
-  confirm: vi.fn(() => true),
   list: vi.fn(),
   remove: vi.fn(),
   searchHosted: vi.fn(),
@@ -165,7 +165,6 @@ async function selectAssignment(user: ReturnType<typeof userEvent.setup>) {
 
 describe("ProjectPartnershipManager", () => {
   beforeEach(() => {
-    vi.stubGlobal("confirm", mocks.confirm);
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -176,7 +175,6 @@ describe("ProjectPartnershipManager", () => {
     );
     Element.prototype.scrollIntoView = vi.fn();
     mocks.assign.mockReset().mockResolvedValue(assignedPartnership);
-    mocks.confirm.mockClear();
     mocks.list.mockReset();
     mocks.searchHosted
       .mockReset()
@@ -284,6 +282,9 @@ describe("ProjectPartnershipManager", () => {
     await user.click(
       screen.getByTestId("remove-partnership-partnership-existing"),
     );
+    await user.click(
+      screen.getByRole("button", { name: "Remove Project Partnership" }),
+    );
     expect(await screen.findByTestId("partnership-feedback")).toHaveAttribute(
       "data-state",
       "error",
@@ -310,6 +311,9 @@ describe("ProjectPartnershipManager", () => {
     await user.click(
       screen.getByTestId("remove-partnership-partnership-existing"),
     );
+    await user.click(
+      screen.getByRole("button", { name: "Remove Project Partnership" }),
+    );
 
     await waitFor(() => {
       // Red if remove succeeds without invalidating the active list query.
@@ -317,5 +321,26 @@ describe("ProjectPartnershipManager", () => {
     });
     expect(mocks.remove).toHaveBeenCalledWith({ id: existingPartnership.id });
     expectProjectDataInvalidation(invalidateQueries);
+  });
+  it("keeps a cancelled removal intact and disables removal while executing", async () => {
+    mocks.list.mockResolvedValue([existingPartnership]);
+    mocks.remove.mockImplementation(() => new Promise(() => {}));
+    const user = userEvent.setup();
+    await renderManager([existingPartnership]);
+    const trigger = screen.getByTestId("remove-partnership-partnership-existing");
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+    expect(mocks.remove).not.toHaveBeenCalled();
+    expect(trigger).toBeEnabled();
+    await user.click(trigger);
+    await user.click(
+      screen.getByRole("button", { name: "Remove Project Partnership" }),
+    );
+    expect(mocks.remove).toHaveBeenCalledExactlyOnceWith({
+      id: "partnership-existing",
+    });
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveTextContent("Working…");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

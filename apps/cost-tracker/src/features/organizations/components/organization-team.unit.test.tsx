@@ -1,9 +1,10 @@
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
 const mocks = vi.hoisted(() => ({
   toastAdd: vi.fn(),
@@ -61,6 +62,13 @@ vi.mock("@/lib/orpc/orpc", () => ({
                 expiresAt: new Date("2026-02-01T00:00:00.000Z").toISOString(),
                 createdAt: new Date("2026-01-03T00:00:00.000Z").toISOString(),
               },
+              {
+                id: "invitation-2",
+                email: "second@example.org",
+                role: ORGANIZATION_ROLES.OrganizationAdmin,
+                expiresAt: new Date("2026-02-01T00:00:00.000Z").toISOString(),
+                createdAt: new Date("2026-01-03T00:00:00.000Z").toISOString(),
+              },
             ],
           }),
         }),
@@ -76,12 +84,11 @@ function renderTeam() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-  }
-  return render(<OrganizationTeam currentUserEmail="owner@example.org" />, {
-    wrapper: Wrapper,
-  });
+  return render(
+    <QueryClientProvider client={client}>
+      <OrganizationTeam currentUserEmail="owner@example.org" />
+    </QueryClientProvider>,
+  );
 }
 
 beforeEach(() => {
@@ -148,6 +155,7 @@ describe("Organization team", () => {
     await screen.findByTestId("staff-invitation-invitation-1");
 
     await user.click(screen.getByTestId("cancel-staff-invitation-invitation-1"));
+    await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
 
     await waitFor(() =>
       expect(mocks.cancelInvitation).toHaveBeenCalledWith({
@@ -159,5 +167,67 @@ describe("Organization team", () => {
         expect.objectContaining({ type: "success" }),
       ),
     );
+  });
+  it.each(["success", "failure"])(
+    "keeps each revocation pending when the second request settles with %s",
+    async (outcome) => {
+      const first = Promise.withResolvers<{ success: boolean }>();
+      const second = Promise.withResolvers<{ success: boolean }>();
+      mocks.cancelInvitation
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise);
+      const user = userEvent.setup();
+      renderTeam();
+      const firstTrigger = await screen.findByTestId(
+        "cancel-staff-invitation-invitation-1",
+      );
+      const secondTrigger = screen.getByTestId(
+        "cancel-staff-invitation-invitation-2",
+      );
+
+      await user.click(firstTrigger);
+      await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
+      expect(firstTrigger).toBeDisabled();
+      expect(secondTrigger).toBeEnabled();
+      await user.click(secondTrigger);
+      await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
+      expect(firstTrigger).toBeDisabled();
+      expect(firstTrigger).toHaveTextContent("Working…");
+      expect(secondTrigger).toBeDisabled();
+      expect(secondTrigger).toHaveTextContent("Working…");
+
+      await act(async () => {
+        if (outcome === "success") second.resolve({ success: true });
+        else second.reject(new Error("network unavailable"));
+      });
+      await waitFor(() => expect(secondTrigger).toBeEnabled());
+      expect(secondTrigger).toHaveTextContent("Cancel");
+      expect(firstTrigger).toBeDisabled();
+      expect(firstTrigger).toHaveTextContent("Working…");
+
+      await act(async () => first.resolve({ success: true }));
+      await waitFor(() => expect(firstTrigger).toBeEnabled());
+      expect(firstTrigger).toHaveTextContent("Cancel");
+    },
+  );
+
+  it("leaves a dismissed invitation active and disables cancellation while executing", async () => {
+    mocks.cancelInvitation.mockImplementation(() => new Promise(() => {}));
+    const user = userEvent.setup();
+    renderTeam();
+    const trigger = await screen.findByTestId(
+      "cancel-staff-invitation-invitation-1",
+    );
+    await user.click(trigger);
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(mocks.cancelInvitation).not.toHaveBeenCalled();
+    expect(trigger).toBeEnabled();
+    await user.click(trigger);
+    await user.click(screen.getByRole("button", { name: "Cancel invitation" }));
+    expect(mocks.cancelInvitation).toHaveBeenCalledExactlyOnceWith({
+      invitationId: "invitation-1",
+    });
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveTextContent("Working…");
   });
 });

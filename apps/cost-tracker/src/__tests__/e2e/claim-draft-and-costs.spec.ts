@@ -45,6 +45,16 @@ import {
 } from "./fixtures/artifact-privacy";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
+async function confirmRemoveParticipation(page: Page) {
+  await page
+    .getByRole("dialog")
+    .getByRole("button", {
+      name: "Remove Project Participation",
+      exact: true,
+    })
+    .click();
+}
+
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
@@ -489,8 +499,20 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
             eq(projectParticipantsTable.userId, people[2]!.id),
           ),
         );
-      page.once("dialog", (dialog) => dialog.accept());
       await row.getByRole("button").click();
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
+      await expect(row).toBeVisible();
+      expect(
+        await db
+          .select()
+          .from(projectParticipantsTable)
+          .where(eq(projectParticipantsTable.id, original!.id)),
+      ).toHaveLength(1);
+      await row.getByRole("button").click();
+      await confirmRemoveParticipation(page);
       // Text-free: vanished row + DB deletion below prove removal (no toast copy).
       await expect(row).toHaveCount(0);
       expect(
@@ -623,8 +645,8 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       // Resolved Review Tasks retain their survivor references; the removal
       // control must surface that refusal rather than deleting the survivor.
       const survivor = await participationRow(page, people[0]!.id);
-      page.once("dialog", (dialog) => dialog.accept());
       await survivor.getByRole("button").click();
+      await confirmRemoveParticipation(page);
       await expect(
         page.locator('[data-feedback-outcome="remove-refused"]'),
       ).toBeVisible();
@@ -756,8 +778,8 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.goto(participantsURL);
       const row = await participationRow(page, people[0]!.id);
       await expect(row).toBeVisible();
-      page.once("dialog", (dialog) => dialog.accept());
       await row.getByRole("button").click();
+      await confirmRemoveParticipation(page);
       await expect(
         page.locator('[data-feedback-outcome="remove-refused"]'),
       ).toBeVisible();
@@ -989,8 +1011,8 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.goto(participantsURL);
       const row = await participationRow(page, people[0]!.id);
       await expect(row).toBeVisible();
-      page.once("dialog", (dialog) => dialog.accept());
       await row.getByRole("button").click();
+      await confirmRemoveParticipation(page);
       await expect(
         page.locator('[data-feedback-outcome="remove-refused"]'),
       ).toBeVisible();

@@ -1,4 +1,9 @@
 {
+  "confirmDialog": {
+    "confirm": "Conferma",
+    "cancel": "Annulla",
+    "close": "Chiudi"
+  },
   "onboarding": {
     "auth": {
       "signInHeading": "Bentornato",
@@ -27,7 +32,14 @@
       "home": "Torna alla pagina iniziale",
       "signOut": "Esci",
       "invitationPointer": "Ti unisci a un'Organizzazione esistente? Apri il link nell'e-mail di invito.",
-      "metadata": "Accedi o crea un accesso personale per Greendex Cost Tracker."
+      "metadata": "Accedi o crea un accesso personale per Greendex Cost Tracker.",
+      "confirmSignOut": {
+        "cancel": "Annulla",
+        "close": "Chiudi",
+        "pending": "Operazione in corso…",
+        "title": "Uscire?",
+        "description": "Uscire da Cost Tracker? Puoi accedere di nuovo in qualsiasi momento."
+      }
     },
     "invitation": {
       "context": "Invito a unirti a {organization}",
@@ -40,7 +52,15 @@
       "reject": "Rifiuta invito a {organization}",
       "rejected": "Hai rifiutato l’invito a {organization}. Il tuo accesso attuale è stato verificato di nuovo. Segui il prossimo passo qui sotto.",
       "continue": "Continua con l’accesso attuale",
-      "options": "Unisciti a questa Organizzazione o rifiuta il suo invito qui sotto. Gli inviti di colleghi in sospeso impediscono di creare una nuova Organizzazione. Il rifiuto rimuove solo questo invito, non altri inviti o adesioni esistenti."
+      "options": "Unisciti a questa Organizzazione o rifiuta il suo invito qui sotto. Gli inviti di colleghi in sospeso impediscono di creare una nuova Organizzazione. Il rifiuto rimuove solo questo invito, non altri inviti o adesioni esistenti.",
+      "confirmReject": {
+        "cancel": "Annulla",
+        "close": "Chiudi",
+        "pending": "Operazione in corso…",
+        "title": "Rifiutare l’invito all’Organizzazione?",
+        "description": "Rifiutare l’invito a unirsi a {organization}? Servirà un nuovo invito per unirsi in seguito.",
+        "execute": "Rifiuta invito"
+      }
     },
     "progress": {
       "verify": "1. Verifica e-mail",
@@ -82,6 +102,40 @@
       "credentials": "E-mail o password errate. Controlla i tuoi dati e riprova.",
       "verification": "Verifica l'e-mail prima di accedere. Apri il link di verifica nella posta in arrivo.",
       "signOut": "Impossibile uscire"
+    }
+  },
+  "projects": {
+    "confirmations": {
+      "cancel": "Annulla",
+      "close": "Chiudi",
+      "pending": "Operazione in corso…",
+      "removePartnership": {
+        "title": "Rimuovere il Partenariato di Progetto?",
+        "description": "Rimuovere {organization} da {project}? Questa rimozione è irreversibile.",
+        "execute": "Rimuovi Partenariato di Progetto"
+      },
+      "removeParticipation": {
+        "title": "Rimuovere la Partecipazione al Progetto?",
+        "description": "Rimuovere la Partecipazione al Progetto di {participant}? Questa rimozione è irreversibile.",
+        "execute": "Rimuovi Partecipazione al Progetto"
+      },
+      "revokeOrganizer": {
+        "title": "Revocare l’assegnazione di Organizzatore di Gruppo?",
+        "description": "Revocare l’assegnazione di Organizzatore di Gruppo per {user}? I ruoli di appartenenza all’Organizzazione non cambieranno.",
+        "execute": "Revoca assegnazione"
+      }
+    }
+  },
+  "organizations": {
+    "confirmations": {
+      "cancel": "Annulla",
+      "close": "Chiudi",
+      "pending": "Operazione in corso…",
+      "cancelInvitation": {
+        "title": "Annullare l’invito all’Organizzazione?",
+        "description": "Annullare l’invito all’Organizzazione per {email}? Non potrà più essere accettato.",
+        "execute": "Annulla invito"
+      }
     }
   }
 }

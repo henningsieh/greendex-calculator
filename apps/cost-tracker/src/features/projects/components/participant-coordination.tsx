@@ -1,6 +1,7 @@
 "use client";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import {
   useMutation,
@@ -11,6 +12,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
+import { useConfirmDialog } from "@/components/confirm-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -281,6 +283,8 @@ function PartnerCoordinatorControls({
 }: {
   partnershipId: string;
 }) {
+  const t = useTranslations("projects.confirmations");
+  const { confirm, dialog } = useConfirmDialog();
   const queryClient = useQueryClient();
   const [targetUserId, setTargetUserId] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -361,6 +365,7 @@ function PartnerCoordinatorControls({
   );
   return (
     <div className="space-y-4">
+      {dialog}
       <p className="text-sm text-muted-foreground">
         Organization Owners and Organization Admins may assign or revoke a Group
         Organizer for this Project Partnership. Assignment does not change
@@ -409,12 +414,25 @@ function PartnerCoordinatorControls({
           type="button"
           variant="outline"
           disabled={!targetUserId || assign.isPending || revoke.isPending}
-          onClick={() => {
-            setFeedback("");
-            revoke.mutate();
+          onClick={async () => {
+            if (
+              await confirm({
+                title: t("revokeOrganizer.title"),
+                description: t("revokeOrganizer.description", {
+                  user:
+                    eligible.find((entry) => entry.userId === targetUserId)
+                      ?.name ?? targetUserId,
+                }),
+                confirmText: t("revokeOrganizer.execute"),
+                isDestructive: true,
+              })
+            ) {
+              setFeedback("");
+              revoke.mutate();
+            }
           }}
         >
-          Revoke Group Organizer assignment
+          {revoke.isPending ? t("pending") : "Revoke Group Organizer assignment"}
         </Button>
       </div>
       {feedback && (
@@ -433,6 +451,8 @@ export function ParticipantCoordination({
 }: {
   partnershipId: string;
 }) {
+  const t = useTranslations("projects.confirmations");
+  const { confirm, dialog } = useConfirmDialog();
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(
     orpcQuery.participations.listPartnership.queryOptions({
@@ -617,6 +637,7 @@ export function ParticipantCoordination({
       aria-label="Project Participations"
       data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
     >
+      {dialog}
       <p className="text-sm text-muted-foreground">Project: {data.projectName}</p>
       {entryAccess.permitted && (
         <Card>
@@ -728,18 +749,25 @@ export function ParticipantCoordination({
                       variant="destructive"
                       disabled={removeParticipation.isPending}
                       data-testid={`remove-participation-${participant.id}`}
-                      onClick={() => {
+                      onClick={async () => {
                         if (
-                          window.confirm(
-                            `Remove the Project Participation for ${participant.displayName}?`,
-                          )
+                          await confirm({
+                            title: t("removeParticipation.title"),
+                            description: t("removeParticipation.description", {
+                              participant: participant.displayName,
+                            }),
+                            confirmText: t("removeParticipation.execute"),
+                            isDestructive: true,
+                          })
                         ) {
                           setFeedback(undefined);
                           removeParticipation.mutate(participant.id);
                         }
                       }}
                     >
-                      Remove Project Participation for {participant.displayName}
+                      {removeParticipation.isPending
+                        ? t("pending")
+                        : `Remove Project Participation for ${participant.displayName}`}
                     </Button>
                   )}
                 </li>

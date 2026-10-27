@@ -1277,3 +1277,82 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     expect(await partnershipCount(fixture.projectNames[0]!, names.E)).toBe(0);
   });
 });
+
+test("confirms irreversible Project Partnership removal and leaves cancellation unchanged", async ({
+  browser,
+  baseURL,
+}) => {
+  const removalFixture = new HostingJourneyFixture();
+  const partnerId = randomUUID();
+  const partnerName = `CT ${removalFixture.suffix} Removal Partner`;
+  await removalFixture.setup();
+  try {
+    await db.insert(organization).values({
+      id: partnerId,
+      name: partnerName,
+      slug: `removal-${removalFixture.suffix}`,
+      country: "DE",
+      createdAt: new Date(),
+    });
+    const context = await removalFixture.actorContext(browser, "H", baseURL!);
+    const page = await context.newPage();
+    await page.goto("/projects");
+    const setup = await organizationSetup(page);
+    await setup
+      .locator("#organization-name")
+      .fill(removalFixture.organizationName);
+    await setup.locator("#organization-country").selectOption("DE");
+    await setup.getByTestId("create-organization").click();
+    await expect(setup).toBeHidden();
+    await db.insert(projectsTable).values({
+      id: randomUUID(),
+      name: removalFixture.projectNames[0]!,
+      organizationId: await entityId(
+        organization,
+        removalFixture.organizationName,
+      ),
+      startDate: new Date("2027-04-01"),
+      endDate: new Date("2027-04-03"),
+      location: "Berlin",
+      country: "DE",
+    });
+    await page.goto("/partner-organizations");
+    const section = page.getByTestId("organization-assignment");
+    await selectEntity(
+      page,
+      "hosted-project-picker",
+      await entityId(projectsTable, removalFixture.projectNames[0]!),
+      section,
+    );
+    await selectEntity(page, "partner-organization-picker", partnerId, section);
+    await section.getByTestId("assign-partnership").click();
+    const row = page.getByTestId(`partnership-row-${partnerId}`);
+    const trigger = row.getByRole("button", { name: "Remove", exact: true });
+    await trigger.click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Cancel", exact: true })
+      .click();
+    await expect(trigger).toBeVisible();
+    expect(
+      await partnershipCount(removalFixture.projectNames[0]!, partnerName),
+    ).toBe(1);
+    await trigger.click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Remove Project Partnership", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(row).toHaveCount(0);
+    await expect(page.getByTestId("partnership-feedback")).toHaveAttribute(
+      "data-state",
+      "success",
+    );
+    expect(
+      await partnershipCount(removalFixture.projectNames[0]!, partnerName),
+    ).toBe(0);
+  } finally {
+    await removalFixture.teardown();
+    await db.delete(organization).where(eq(organization.id, partnerId));
+  }
+});

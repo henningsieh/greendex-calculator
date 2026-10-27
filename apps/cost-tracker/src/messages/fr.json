@@ -1,4 +1,9 @@
 {
+  "confirmDialog": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "close": "Fermer"
+  },
   "onboarding": {
     "auth": {
       "signInHeading": "Bon retour",
@@ -27,7 +32,14 @@
       "home": "Retour à l'accueil",
       "signOut": "Se déconnecter",
       "invitationPointer": "Vous rejoignez une Organisation existante ? Ouvrez le lien dans votre e-mail d'invitation.",
-      "metadata": "Connectez-vous ou créez un accès personnel pour Greendex Cost Tracker."
+      "metadata": "Connectez-vous ou créez un accès personnel pour Greendex Cost Tracker.",
+      "confirmSignOut": {
+        "cancel": "Annuler",
+        "close": "Fermer",
+        "pending": "Traitement…",
+        "title": "Se déconnecter ?",
+        "description": "Se déconnecter de Cost Tracker ? Vous pourrez vous reconnecter à tout moment."
+      }
     },
     "invitation": {
       "context": "Invitation à rejoindre {organization}",
@@ -40,7 +52,15 @@
       "reject": "Refuser l’invitation à {organization}",
       "rejected": "Vous avez refusé l’invitation à {organization}. Votre accès actuel a été vérifié à nouveau. Suivez la prochaine étape ci-dessous.",
       "continue": "Continuer avec l’accès actuel",
-      "options": "Rejoignez cette Organisation ou refusez son invitation ci-dessous. Les invitations de collègues en attente empêchent de créer une nouvelle Organisation. Le refus ne supprime que cette invitation, pas les autres invitations ni les adhésions existantes."
+      "options": "Rejoignez cette Organisation ou refusez son invitation ci-dessous. Les invitations de collègues en attente empêchent de créer une nouvelle Organisation. Le refus ne supprime que cette invitation, pas les autres invitations ni les adhésions existantes.",
+      "confirmReject": {
+        "cancel": "Annuler",
+        "close": "Fermer",
+        "pending": "Traitement…",
+        "title": "Refuser l’invitation à l’Organisation ?",
+        "description": "Refuser l’invitation à rejoindre {organization} ? Une nouvelle invitation sera nécessaire pour rejoindre plus tard.",
+        "execute": "Refuser l’invitation"
+      }
     },
     "progress": {
       "verify": "1. Vérifier l'e-mail",
@@ -82,6 +102,40 @@
       "credentials": "E-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez.",
       "verification": "Vérifiez votre e-mail avant de vous connecter. Ouvrez le lien de vérification dans votre boîte de réception.",
       "signOut": "Déconnexion impossible"
+    }
+  },
+  "projects": {
+    "confirmations": {
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "pending": "Traitement…",
+      "removePartnership": {
+        "title": "Supprimer le Partenariat de Projet ?",
+        "description": "Supprimer {organization} de {project} ? Cette suppression est irréversible.",
+        "execute": "Supprimer le Partenariat de Projet"
+      },
+      "removeParticipation": {
+        "title": "Supprimer la Participation au Projet ?",
+        "description": "Supprimer la Participation au Projet de {participant} ? Cette suppression est irréversible.",
+        "execute": "Supprimer la Participation au Projet"
+      },
+      "revokeOrganizer": {
+        "title": "Révoquer l’affectation d’Organisateur de Groupe ?",
+        "description": "Révoquer l’affectation d’Organisateur de Groupe de {user} ? Les rôles d’adhésion à l’Organisation ne changeront pas.",
+        "execute": "Révoquer l’affectation"
+      }
+    }
+  },
+  "organizations": {
+    "confirmations": {
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "pending": "Traitement…",
+      "cancelInvitation": {
+        "title": "Annuler l’invitation à l’Organisation ?",
+        "description": "Annuler l’invitation à l’Organisation pour {email} ? Elle ne pourra plus être acceptée.",
+        "execute": "Annuler l’invitation"
+      }
     }
   }
 }

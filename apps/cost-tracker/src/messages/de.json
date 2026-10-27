@@ -1,4 +1,9 @@
 {
+  "confirmDialog": {
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen",
+    "close": "Schließen"
+  },
   "onboarding": {
     "auth": {
       "signInHeading": "Willkommen zurück",
@@ -27,7 +32,14 @@
       "home": "Zur Startseite",
       "signOut": "Abmelden",
       "invitationPointer": "Du möchtest einer bestehenden Organisation beitreten? Öffne den Link in deiner Einladungs-E-Mail.",
-      "metadata": "Anmelden oder einen persönlichen Zugang für Greendex Cost Tracker erstellen."
+      "metadata": "Anmelden oder einen persönlichen Zugang für Greendex Cost Tracker erstellen.",
+      "confirmSignOut": {
+        "cancel": "Abbrechen",
+        "close": "Schließen",
+        "pending": "Wird ausgeführt…",
+        "title": "Abmelden?",
+        "description": "Von Cost Tracker abmelden? Sie können sich jederzeit erneut anmelden."
+      }
     },
     "invitation": {
       "context": "Einladung zu {organization}",
@@ -40,7 +52,15 @@
       "reject": "Einladung zu {organization} ablehnen",
       "rejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten.",
       "continue": "Mit aktuellem Zugriff fortfahren",
-      "options": "Tritt dieser Organisation bei oder lehne ihre Einladung unten ab. Ausstehende Kollegeneinladungen verhindern die Erstellung einer neuen Organisation. Die Ablehnung entfernt nur diese Einladung, keine weiteren Einladungen oder bestehenden Mitgliedschaften."
+      "options": "Tritt dieser Organisation bei oder lehne ihre Einladung unten ab. Ausstehende Kollegeneinladungen verhindern die Erstellung einer neuen Organisation. Die Ablehnung entfernt nur diese Einladung, keine weiteren Einladungen oder bestehenden Mitgliedschaften.",
+      "confirmReject": {
+        "cancel": "Abbrechen",
+        "close": "Schließen",
+        "pending": "Wird ausgeführt…",
+        "title": "Organisationseinladung ablehnen?",
+        "description": "Die Einladung zu {organization} ablehnen? Für einen späteren Beitritt benötigen Sie eine neue Einladung.",
+        "execute": "Einladung ablehnen"
+      }
     },
     "progress": {
       "verify": "1. E-Mail bestätigen",
@@ -82,6 +102,40 @@
       "credentials": "E-Mail oder Passwort falsch. Prüfe deine Angaben und versuche es erneut.",
       "verification": "Bestätige deine E-Mail vor der Anmeldung. Öffne den Bestätigungslink in deinem Posteingang.",
       "signOut": "Abmeldung fehlgeschlagen"
+    }
+  },
+  "projects": {
+    "confirmations": {
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "pending": "Wird ausgeführt…",
+      "removePartnership": {
+        "title": "Projektpartnerschaft entfernen?",
+        "description": "{organization} aus {project} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektpartnerschaft entfernen"
+      },
+      "removeParticipation": {
+        "title": "Projektteilnahme entfernen?",
+        "description": "Die Projektteilnahme von {participant} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektteilnahme entfernen"
+      },
+      "revokeOrganizer": {
+        "title": "Gruppenorganisator-Zuweisung widerrufen?",
+        "description": "Die Gruppenorganisator-Zuweisung für {user} widerrufen? Die Rollen der Organisationsmitgliedschaft bleiben unverändert.",
+        "execute": "Zuweisung widerrufen"
+      }
+    }
+  },
+  "organizations": {
+    "confirmations": {
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "pending": "Wird ausgeführt…",
+      "cancelInvitation": {
+        "title": "Organisationseinladung stornieren?",
+        "description": "Die Organisationseinladung für {email} stornieren? Sie kann danach nicht mehr angenommen werden.",
+        "execute": "Einladung stornieren"
+      }
     }
   }
 }

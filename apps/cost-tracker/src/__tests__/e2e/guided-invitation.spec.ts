@@ -212,6 +212,10 @@ test.describe.serial("guided Organization Invitation", () => {
       ).toBeEnabled();
       await noCreation(recipient);
       await recipient.getByTestId("reject-organization-invitation").click();
+      await recipient
+        .getByRole("dialog")
+        .getByRole("button", { name: "Reject invitation", exact: true })
+        .click();
       await expect(recipient.getByTestId("invitation-rejected")).toBeVisible();
       await expect(recipient.getByTestId("invitation-context")).toHaveAttribute(
         "data-organization-id",
@@ -222,6 +226,10 @@ test.describe.serial("guided Organization Invitation", () => {
       ).toBeVisible();
       await noCreation(recipient);
       await recipient.getByTestId("reject-organization-invitation").click();
+      await recipient
+        .getByRole("dialog")
+        .getByRole("button", { name: "Reject invitation", exact: true })
+        .click();
       await expect(recipient.getByTestId("invitation-next-step")).toBeVisible();
       await recipient.getByTestId("invitation-next-step").click();
       await expect(recipient.getByTestId("create-organization")).toBeVisible();
@@ -568,6 +576,10 @@ test.describe.serial("guided Organization Invitation", () => {
         page.getByTestId("recheck-organization-invitation"),
       ).toBeEnabled();
       await page.getByTestId("sign-out").click();
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Sign out", exact: true })
+        .click();
       await expectPrivateURL(
         page,
         `/register?next=${encodeURIComponent(destination)}`,

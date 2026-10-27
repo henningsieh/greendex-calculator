@@ -2,6 +2,7 @@
 
 /* eslint-disable shadcn/no-restyle -- Account-menu bespoke treatments: none of the shared Button/DropdownMenu variants provide this screen's exact shape, spacing, typography, and color. Zero visual change intended; revisit with a variant if the pattern repeats. */
 
+import { useTranslations } from "@greendex/i18n/client";
 import {
   Building2Icon,
   ChevronDownIcon,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef } from "react";
 
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -150,77 +152,83 @@ function AccountMenu({
   name,
   pathname,
 }: AccountMenuProps) {
+  const t = useTranslations("onboarding");
   const active = pathname === "/user-settings";
-  const { pending, signOut } = useSignOut();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const { pending, signOut, dialog } = useSignOut("/", trigger);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            aria-label={compact ? `Open account menu for ${name}` : undefined}
-            className={cn(
-              "group h-11 gap-3 rounded-lg px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
-              active && "bg-muted",
-              compact &&
-                "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
-            )}
-            size={compact ? "icon-sm" : "sm"}
-            variant="outline"
-          />
-        }
-      >
-        <span
-          aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-xs font-semibold text-primary"
+    <>
+      {dialog}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              ref={trigger}
+              aria-label={compact ? `Open account menu for ${name}` : undefined}
+              className={cn(
+                "group h-11 gap-3 rounded-lg px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
+                active && "bg-muted",
+                compact &&
+                  "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
+              )}
+              size={compact ? "icon-sm" : "sm"}
+              variant="outline"
+            />
+          }
         >
-          {getInitials(name)}
-        </span>
-        <span className={cn("min-w-0", compact && "sr-only")}>
-          <span className="block max-w-44 truncate text-sm/5 font-semibold">
-            {name}
+          <span
+            aria-hidden="true"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-xs font-semibold text-primary"
+          >
+            {getInitials(name)}
           </span>
-          <span className="block max-w-44 truncate text-xs/4 text-muted-foreground">
-            {email}
-          </span>
-        </span>
-        {!compact && <ChevronDownIcon aria-hidden="true" />}
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="px-3 py-2">
-            <span className="block truncate text-sm font-semibold text-foreground">
+          <span className={cn("min-w-0", compact && "sr-only")}>
+            <span className="block max-w-44 truncate text-sm/5 font-semibold">
               {name}
             </span>
-            <span className="block truncate text-xs font-normal tracking-normal text-muted-foreground normal-case">
+            <span className="block max-w-44 truncate text-xs/4 text-muted-foreground">
               {email}
             </span>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="rounded-md text-sm tracking-normal normal-case"
-            render={
-              <Link
-                aria-current={active ? "page" : undefined}
-                href="/user-settings"
-              />
-            }
-          >
-            Account settings
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={pending}
-            onClick={() => void signOut()}
-            variant="destructive"
-          >
-            <LogOutIcon />
-            Sign out
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          </span>
+          {!compact && <ChevronDownIcon aria-hidden="true" />}
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="px-3 py-2">
+              <span className="block truncate text-sm font-semibold text-foreground">
+                {name}
+              </span>
+              <span className="block truncate text-xs font-normal tracking-normal text-muted-foreground normal-case">
+                {email}
+              </span>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              className="rounded-md text-sm tracking-normal normal-case"
+              render={
+                <Link
+                  aria-current={active ? "page" : undefined}
+                  href="/user-settings"
+                />
+              }
+            >
+              Account settings
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={pending}
+              onClick={() => void signOut()}
+              variant="destructive"
+            >
+              <LogOutIcon />
+              {t(pending ? "auth.confirmSignOut.pending" : "auth.signOut")}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

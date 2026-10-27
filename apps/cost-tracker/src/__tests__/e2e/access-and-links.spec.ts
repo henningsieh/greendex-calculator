@@ -587,6 +587,10 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     ).toBeVisible();
     await expect(x.getByTestId("no-organization-access")).toHaveRole("main");
     await x.getByTestId("sign-out").click();
+    await x
+      .getByRole("dialog")
+      .getByRole("button", { name: "Sign out", exact: true })
+      .click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(x, new URL("/", baseURL!).toString());
     await x.goto(replacement);

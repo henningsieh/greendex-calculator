@@ -1,4 +1,9 @@
 {
+  "confirmDialog": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "close": "Close"
+  },
   "onboarding": {
     "auth": {
       "signInHeading": "Welcome back",
@@ -27,7 +32,14 @@
       "home": "Back to home",
       "signOut": "Sign out",
       "invitationPointer": "Joining an existing Organization? Open the link in your invitation email instead.",
-      "metadata": "Sign in or create a personal login for Greendex Cost Tracker."
+      "metadata": "Sign in or create a personal login for Greendex Cost Tracker.",
+      "confirmSignOut": {
+        "cancel": "Cancel",
+        "close": "Close",
+        "pending": "Working…",
+        "title": "Sign out?",
+        "description": "Sign out of Cost Tracker? You can sign in again at any time."
+      }
     },
     "invitation": {
       "context": "Invitation to join {organization}",
@@ -40,7 +52,15 @@
       "reject": "Reject invitation to {organization}",
       "rejected": "You rejected the invitation to {organization}. Your current access has been checked again. Follow the next step below.",
       "continue": "Continue with current access",
-      "options": "Join this Organization or reject its invitation below. Pending colleague invitations prevent creating a new Organization. Rejection removes only this invitation, not other invitations or existing Memberships."
+      "options": "Join this Organization or reject its invitation below. Pending colleague invitations prevent creating a new Organization. Rejection removes only this invitation, not other invitations or existing Memberships.",
+      "confirmReject": {
+        "cancel": "Cancel",
+        "close": "Close",
+        "pending": "Working…",
+        "title": "Reject Organization Invitation?",
+        "description": "Reject the invitation to join {organization}? You will need a new invitation to join later.",
+        "execute": "Reject invitation"
+      }
     },
     "progress": {
       "verify": "1. Verify email",
@@ -82,6 +102,40 @@
       "credentials": "Incorrect email or password. Check your details and try again.",
       "verification": "Verify your email before signing in. Open the verification link in your inbox.",
       "signOut": "Could not sign out"
+    }
+  },
+  "projects": {
+    "confirmations": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "pending": "Working…",
+      "removePartnership": {
+        "title": "Remove Project Partnership?",
+        "description": "Remove {organization} from {project}? This removal cannot be undone.",
+        "execute": "Remove Project Partnership"
+      },
+      "removeParticipation": {
+        "title": "Remove Project Participation?",
+        "description": "Remove the Project Participation for {participant}? This removal cannot be undone.",
+        "execute": "Remove Project Participation"
+      },
+      "revokeOrganizer": {
+        "title": "Revoke Group Organizer assignment?",
+        "description": "Revoke the Group Organizer assignment for {user}? Organization Membership roles will not change.",
+        "execute": "Revoke assignment"
+      }
+    }
+  },
+  "organizations": {
+    "confirmations": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "pending": "Working…",
+      "cancelInvitation": {
+        "title": "Cancel Organization Invitation?",
+        "description": "Cancel the Organization Invitation for {email}? It can no longer be accepted.",
+        "execute": "Cancel invitation"
+      }
     }
   }
 }
