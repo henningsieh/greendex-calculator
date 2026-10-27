@@ -26,7 +26,7 @@ export function SignOutButton({
   variant = "ghost",
   ...props
 }: SignOutButtonProps) {
-  const { pending, signOut: signOutAction } = useSignOut(destination);
+  const { pending, signOut: signOutAction, dialog } = useSignOut(destination);
   const t = useTranslations("onboarding");
 
   function signOut(event: ButtonClickEvent) {
@@ -35,21 +35,26 @@ export function SignOutButton({
   }
 
   return (
-    <Button
-      {...props}
-      data-testid="sign-out"
-      aria-label={compact ? t("auth.signOut") : undefined}
-      disabled={pending}
-      onClick={signOut}
-      size={compact ? "icon-sm" : size}
-      variant={variant}
-    >
-      {pending ? (
-        <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
-      ) : (
-        <LogOutIcon data-icon="inline-start" />
-      )}
-      <span className={compact ? "sr-only" : undefined}>{t("auth.signOut")}</span>
-    </Button>
+    <>
+      {dialog}
+      <Button
+        {...props}
+        data-testid="sign-out"
+        aria-label={compact ? t("auth.signOut") : undefined}
+        disabled={pending}
+        onClick={signOut}
+        size={compact ? "icon-sm" : size}
+        variant={variant}
+      >
+        {pending ? (
+          <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
+        ) : (
+          <LogOutIcon data-icon="inline-start" />
+        )}
+        <span className={compact ? "sr-only" : undefined}>
+          {t("auth.signOut")}
+        </span>
+      </Button>
+    </>
   );
 }

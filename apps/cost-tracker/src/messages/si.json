@@ -1,4 +1,9 @@
 {
+  "confirmDialog": {
+    "confirm": "Potrdi",
+    "cancel": "Prekliči",
+    "close": "Zapri"
+  },
   "onboarding": {
     "auth": {
       "signInHeading": "Dobrodošli nazaj",
@@ -27,7 +32,14 @@
       "home": "Nazaj na začetno stran",
       "signOut": "Odjava",
       "invitationPointer": "Se pridružujete obstoječi organizaciji? Odprite povezavo v e-poštnem povabilu.",
-      "metadata": "Prijavite se ali ustvarite osebno prijavo za Greendex Cost Tracker."
+      "metadata": "Prijavite se ali ustvarite osebno prijavo za Greendex Cost Tracker.",
+      "confirmSignOut": {
+        "cancel": "Prekliči",
+        "close": "Zapri",
+        "pending": "Obdelovanje…",
+        "title": "Odjava?",
+        "description": "Se želite odjaviti iz Cost Tracker? Kadar koli se lahko znova prijavite."
+      }
     },
     "invitation": {
       "context": "Povabilo za pridružitev organizaciji {organization}",
@@ -40,7 +52,15 @@
       "reject": "Zavrni vabilo v {organization}",
       "rejected": "Zavrnili ste vabilo v {organization}. Vaš trenutni dostop je bil znova preverjen. Sledite naslednjemu koraku spodaj.",
       "continue": "Nadaljuj s trenutnim dostopom",
-      "options": "Pridružite se tej Organizaciji ali spodaj zavrnite njeno vabilo. Čakajoča vabila za sodelavce preprečujejo ustvarjanje nove Organizacije. Zavrnitev odstrani le to vabilo, ne drugih vabil ali obstoječih članstev."
+      "options": "Pridružite se tej Organizaciji ali spodaj zavrnite njeno vabilo. Čakajoča vabila za sodelavce preprečujejo ustvarjanje nove Organizacije. Zavrnitev odstrani le to vabilo, ne drugih vabil ali obstoječih članstev.",
+      "confirmReject": {
+        "cancel": "Prekliči",
+        "close": "Zapri",
+        "pending": "Obdelovanje…",
+        "title": "Zavrniti povabilo v organizacijo?",
+        "description": "Zavrniti povabilo v organizacijo {organization}? Za poznejšo pridružitev boste potrebovali novo povabilo.",
+        "execute": "Zavrni povabilo"
+      }
     },
     "progress": {
       "verify": "1. Potrditev e-pošte",
@@ -82,6 +102,40 @@
       "credentials": "Napačna e-pošta ali geslo. Preverite podatke in poskusite znova.",
       "verification": "Pred prijavo potrdite e-pošto. Odprite potrditveno povezavo v prejeti pošti.",
       "signOut": "Odjava ni uspela"
+    }
+  },
+  "projects": {
+    "confirmations": {
+      "cancel": "Prekliči",
+      "close": "Zapri",
+      "pending": "Obdelovanje…",
+      "removePartnership": {
+        "title": "Odstraniti projektno partnerstvo?",
+        "description": "Odstraniti {organization} iz projekta {project}? Tega dejanja ni mogoče razveljaviti.",
+        "execute": "Odstrani projektno partnerstvo"
+      },
+      "removeParticipation": {
+        "title": "Odstraniti udeležbo v projektu?",
+        "description": "Odstraniti udeležbo osebe {participant} v projektu? Tega dejanja ni mogoče razveljaviti.",
+        "execute": "Odstrani udeležbo v projektu"
+      },
+      "revokeOrganizer": {
+        "title": "Preklicati dodelitev organizatorja skupine?",
+        "description": "Preklicati dodelitev organizatorja skupine za {user}? Vloge članstva v organizaciji se ne bodo spremenile.",
+        "execute": "Prekliči dodelitev"
+      }
+    }
+  },
+  "organizations": {
+    "confirmations": {
+      "cancel": "Prekliči",
+      "close": "Zapri",
+      "pending": "Obdelovanje…",
+      "cancelInvitation": {
+        "title": "Preklicati povabilo v organizacijo?",
+        "description": "Preklicati povabilo v organizacijo za {email}? Povabila ne bo več mogoče sprejeti.",
+        "execute": "Prekliči povabilo"
+      }
     }
   }
 }

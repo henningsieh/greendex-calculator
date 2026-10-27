@@ -32,11 +32,14 @@ function candidateLine(): string {
 const root = resolve(dirname(process.argv[1]), "..");
 const mode = process.argv[2];
 const modes = ["unit", "integration", "e2e"] as const;
+const filter = process.argv[3];
 if (
-  process.argv.length !== 3 ||
+  !(process.argv.length === 3 || (process.argv.length === 4 && mode === "e2e")) ||
   ![...modes, "full"].some((value) => value === mode)
 ) {
-  console.error("Usage: pnpm run test:<unit|integration|e2e|full>");
+  console.error(
+    "Usage: pnpm run test:<unit|integration|e2e|full> [e2e-file-filter]",
+  );
   process.exit(1);
 }
 const pattern = "src/**/*.{test,spec}.{ts,tsx,js,jsx}";
@@ -370,6 +373,7 @@ async function main(): Promise<void> {
                   `--config=${config}`,
                   "--workers=1",
                   "--retries=0",
+                  ...(filter ? [filter] : []),
                 ],
                 {
                   ...context.apps[app]!.environment,

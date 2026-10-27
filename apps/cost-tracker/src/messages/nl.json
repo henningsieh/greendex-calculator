@@ -1,4 +1,9 @@
 {
+  "confirmDialog": {
+    "confirm": "Bevestigen",
+    "cancel": "Annuleren",
+    "close": "Sluiten"
+  },
   "onboarding": {
     "auth": {
       "signInHeading": "Welkom terug",
@@ -27,7 +32,14 @@
       "home": "Terug naar de startpagina",
       "signOut": "Uitloggen",
       "invitationPointer": "Word je lid van een bestaande Organisatie? Open de link in je uitnodigingsmail.",
-      "metadata": "Log in of maak een persoonlijke login voor Greendex Cost Tracker."
+      "metadata": "Log in of maak een persoonlijke login voor Greendex Cost Tracker.",
+      "confirmSignOut": {
+        "cancel": "Annuleren",
+        "close": "Sluiten",
+        "pending": "Bezig…",
+        "title": "Afmelden?",
+        "description": "Afmelden bij Cost Tracker? Je kunt op elk moment opnieuw inloggen."
+      }
     },
     "invitation": {
       "context": "Uitnodiging voor {organization}",
@@ -40,7 +52,15 @@
       "reject": "Uitnodiging voor {organization} afwijzen",
       "rejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder.",
       "continue": "Doorgaan met huidige toegang",
-      "options": "Word lid van deze Organisatie of wijs de uitnodiging hieronder af. Openstaande uitnodigingen voor collega’s verhinderen het maken van een nieuwe Organisatie. Afwijzen verwijdert alleen deze uitnodiging, geen andere uitnodigingen of bestaande lidmaatschappen."
+      "options": "Word lid van deze Organisatie of wijs de uitnodiging hieronder af. Openstaande uitnodigingen voor collega’s verhinderen het maken van een nieuwe Organisatie. Afwijzen verwijdert alleen deze uitnodiging, geen andere uitnodigingen of bestaande lidmaatschappen.",
+      "confirmReject": {
+        "cancel": "Annuleren",
+        "close": "Sluiten",
+        "pending": "Bezig…",
+        "title": "Organisatie-uitnodiging weigeren?",
+        "description": "De uitnodiging om lid te worden van {organization} weigeren? Je hebt een nieuwe uitnodiging nodig om later lid te worden.",
+        "execute": "Uitnodiging weigeren"
+      }
     },
     "progress": {
       "verify": "1. E-mail verifiëren",
@@ -82,6 +102,40 @@
       "credentials": "Onjuist e-mailadres of wachtwoord. Controleer je gegevens en probeer het opnieuw.",
       "verification": "Verifieer je e-mail voordat je inlogt. Open de verificatielink in je inbox.",
       "signOut": "Uitloggen mislukt"
+    }
+  },
+  "projects": {
+    "confirmations": {
+      "cancel": "Annuleren",
+      "close": "Sluiten",
+      "pending": "Bezig…",
+      "removePartnership": {
+        "title": "Projectpartnerschap verwijderen?",
+        "description": "{organization} uit {project} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "execute": "Projectpartnerschap verwijderen"
+      },
+      "removeParticipation": {
+        "title": "Projectdeelname verwijderen?",
+        "description": "De Projectdeelname van {participant} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "execute": "Projectdeelname verwijderen"
+      },
+      "revokeOrganizer": {
+        "title": "Toewijzing als Groepsorganisator intrekken?",
+        "description": "De toewijzing als Groepsorganisator van {user} intrekken? De rollen van het Organisatielidmaatschap blijven ongewijzigd.",
+        "execute": "Toewijzing intrekken"
+      }
+    }
+  },
+  "organizations": {
+    "confirmations": {
+      "cancel": "Annuleren",
+      "close": "Sluiten",
+      "pending": "Bezig…",
+      "cancelInvitation": {
+        "title": "Organisatie-uitnodiging annuleren?",
+        "description": "De Organisatie-uitnodiging voor {email} annuleren? Deze kan daarna niet meer worden geaccepteerd.",
+        "execute": "Uitnodiging annuleren"
+      }
     }
   }
 }

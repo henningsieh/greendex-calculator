@@ -2,6 +2,7 @@
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { parseOrganizationRoles } from "@greendex/auth/permissions";
+import { useTranslations } from "@greendex/i18n/client";
 import {
   useMutation,
   useQueryClient,
@@ -9,6 +10,7 @@ import {
 } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
 
+import { useConfirmDialog } from "@/components/confirm-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,6 +81,8 @@ export function OrganizationTeam({
   currentUserEmail: string;
 }) {
   const queryClient = useQueryClient();
+  const t = useTranslations("organizations.confirmations");
+  const { confirm, dialog } = useConfirmDialog();
   const [members, pending] = useSuspenseQueries({
     queries: [membersOptions, pendingOptions],
   });
@@ -87,6 +91,9 @@ export function OrganizationTeam({
     ORGANIZATION_ROLES.OrganizationAdmin,
   );
   const [formError, setFormError] = useState("");
+  const [pendingInvitationIds, setPendingInvitationIds] = useState(
+    () => new Set<string>(),
+  );
 
   const memberRows = members.data.members;
   const invitationRows = pending.data.invitations;
@@ -140,6 +147,13 @@ export function OrganizationTeam({
     onError: (error) => {
       setFormError(getORPCRequestErrorMessage(error).text);
     },
+    onSettled: (_data, _error, invitationId) => {
+      setPendingInvitationIds((current) => {
+        const next = new Set(current);
+        next.delete(invitationId);
+        return next;
+      });
+    },
   });
 
   function sendInvite(event: SyntheticEvent<HTMLFormElement>) {
@@ -151,6 +165,7 @@ export function OrganizationTeam({
 
   return (
     <div className="space-y-10">
+      {dialog}
       {error && (
         <Alert variant="destructive">
           <AlertTitle>Organization staff is unavailable</AlertTitle>
@@ -278,13 +293,29 @@ export function OrganizationTeam({
                   <TableCell className="text-right">
                     <Button
                       data-testid={`cancel-staff-invitation-${entry.id}`}
-                      disabled={cancel.isPending && cancel.variables === entry.id}
-                      onClick={() => cancel.mutate(entry.id)}
+                      disabled={pendingInvitationIds.has(entry.id)}
+                      onClick={async () => {
+                        if (
+                          await confirm({
+                            title: t("cancelInvitation.title"),
+                            description: t("cancelInvitation.description", {
+                              email: entry.email,
+                            }),
+                            confirmText: t("cancelInvitation.execute"),
+                            isDestructive: true,
+                          })
+                        ) {
+                          setPendingInvitationIds((current) =>
+                            new Set(current).add(entry.id),
+                          );
+                          cancel.mutate(entry.id);
+                        }
+                      }}
                       type="button"
                       variant="outline"
                     >
-                      {cancel.isPending && cancel.variables === entry.id
-                        ? "Cancelling…"
+                      {pendingInvitationIds.has(entry.id)
+                        ? t("pending")
                         : "Cancel"}
                     </Button>
                   </TableCell>

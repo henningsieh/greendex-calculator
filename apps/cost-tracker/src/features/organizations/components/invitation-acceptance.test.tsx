@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
@@ -301,6 +301,11 @@ it("rejects the named invitation and shows the refreshed creation next step", as
     invitation.organization.name,
   );
   fireEvent.click(screen.getByTestId("reject-organization-invitation"));
+  fireEvent.click(
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
+  );
   expect(await screen.findByTestId("invitation-rejected")).toBeVisible();
   expect(screen.getByTestId("invitation-next-step")).toHaveAttribute(
     "href",
@@ -329,6 +334,11 @@ it("keeps another invitation actionable after rejection and never reports a fail
   mocks.onboardingNextStep.mockResolvedValue(remaining);
   render(<InvitationAcceptance returnTo="/projects" initialDecision={blocked} />);
   fireEvent.click(screen.getByTestId("reject-organization-invitation"));
+  fireEvent.click(
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
+  );
   await waitFor(() =>
     expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
       "data-organization-name",
@@ -338,10 +348,40 @@ it("keeps another invitation actionable after rejection and never reports a fail
   expect(screen.getByTestId("organization-creation-blocked")).toBeVisible();
   expect(screen.queryByTestId("invitation-next-step")).toBeNull();
   fireEvent.click(screen.getByTestId("reject-organization-invitation"));
+  fireEvent.click(
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
+  );
   expect(await screen.findByTestId("invitation-error")).toBeVisible();
   expect(screen.getByTestId("invitation-preview")).toHaveAttribute(
     "data-organization-name",
     "Other Organization",
   );
   expect(screen.getByTestId("reject-organization-invitation")).not.toBeDisabled();
+});
+
+it("keeps a cancelled rejection actionable and disables it while executing", async () => {
+  mocks.rejectInvitation.mockImplementation(() => new Promise(() => {}));
+  render(<InvitationAcceptance returnTo={returnTo} initialDecision={blocked} />);
+  const trigger = await screen.findByTestId("reject-organization-invitation");
+  fireEvent.click(trigger);
+  fireEvent.click(
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-cancel",
+    ),
+  );
+  expect(mocks.rejectInvitation).not.toHaveBeenCalled();
+  expect(trigger).toBeEnabled();
+  fireEvent.click(trigger);
+  fireEvent.click(
+    within(await screen.findByRole("dialog")).getByTestId(
+      "confirm-dialog-execute",
+    ),
+  );
+  await waitFor(() => expect(trigger).toBeDisabled());
+  expect(mocks.rejectInvitation).toHaveBeenCalledExactlyOnceWith({
+    invitationId: "invite-1",
+  });
+  expect(trigger).toBeDisabled();
 });

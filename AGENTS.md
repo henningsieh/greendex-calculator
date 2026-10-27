@@ -73,6 +73,8 @@ Direct work and authorized delegation are both valid. Follow the [delegation gui
 
 Conventional Commits 1.0.0: `<type>[optional scope]: <description>`, imperative, no trailing period. One logical change per commit; breaking changes take `!` plus a `BREAKING CHANGE:` footer.
 
+Before every commit, run `pnpm run format && pnpm run lint` from the repository root and ensure both pass. These commands can modify files; review their changes before committing.
+
 ## Scoped Instruction Index
 
 The instruction files below live under [`docs/agents/instructions/`](docs/agents/instructions/).

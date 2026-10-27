@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import {
   useMutation,
   useQueryClient,
@@ -8,6 +9,7 @@ import {
 import { Building2Icon, LinkIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
+import { useConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EntityCombobox } from "@/features/projects/components/entity-combobox";
@@ -38,6 +40,8 @@ export function ProjectPartnershipManager({
   canAssign?: boolean;
 }) {
   const queryClient = useQueryClient();
+  const t = useTranslations("projects.confirmations");
+  const { confirm, dialog } = useConfirmDialog();
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
       meta: { costTrackerORPC: true },
@@ -114,6 +118,7 @@ export function ProjectPartnershipManager({
 
   return (
     <section className="mt-10 space-y-8">
+      {dialog}
       {canAssign && (
         <Card data-testid="organization-assignment">
           <CardHeader>
@@ -215,11 +220,17 @@ export function ProjectPartnershipManager({
                   <Button
                     disabled={removeMutation.isPending}
                     data-testid={`remove-partnership-${partnership.id}`}
-                    onClick={() => {
+                    onClick={async () => {
                       if (
-                        window.confirm(
-                          `Remove ${partnership.organizationName} from ${partnership.projectName}?`,
-                        )
+                        await confirm({
+                          title: t("removePartnership.title"),
+                          description: t("removePartnership.description", {
+                            organization: partnership.organizationName,
+                            project: partnership.projectName,
+                          }),
+                          confirmText: t("removePartnership.execute"),
+                          isDestructive: true,
+                        })
                       ) {
                         setFeedback(undefined);
                         removeMutation.mutate(partnership.id);
@@ -229,7 +240,10 @@ export function ProjectPartnershipManager({
                     variant="destructive"
                   >
                     <Trash2Icon aria-hidden="true" />
-                    Remove
+                    {removeMutation.isPending &&
+                    removeMutation.variables === partnership.id
+                      ? t("pending")
+                      : "Remove"}
                   </Button>
                 )}
               </li>

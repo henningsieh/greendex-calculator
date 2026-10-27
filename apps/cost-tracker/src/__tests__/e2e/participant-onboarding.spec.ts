@@ -871,6 +871,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ).toBeVisible();
     await expect(c.getByTestId("assign-group-organizer")).toHaveCount(0);
     await p.getByTestId("revoke-group-organizer").click();
+    await p.getByRole("dialog").getByTestId("confirm-dialog-execute").click();
     await expect(
       p.locator('[role="alert"]:not(#__next-route-announcer__)'),
     ).toBeVisible();

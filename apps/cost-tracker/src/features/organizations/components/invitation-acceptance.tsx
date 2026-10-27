@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useConfirmDialog } from "@/components/confirm-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
@@ -32,6 +33,7 @@ export function InvitationAcceptance({
   onDecision?: (decision: OnboardingDecision) => void;
   onRejected?: (organizationName: string) => void;
 }) {
+  const { confirm, dialog } = useConfirmDialog();
   const router = useRouter();
   const t = useTranslations("onboarding");
   const [decision, setDecision] = useState(initialDecision);
@@ -135,6 +137,17 @@ export function InvitationAcceptance({
       pending
     )
       return;
+    if (
+      !(await confirm({
+        title: t("invitation.confirmReject.title"),
+        description: t("invitation.confirmReject.description", {
+          organization: decision.invitation.organization.name,
+        }),
+        confirmText: t("invitation.confirmReject.execute"),
+        isDestructive: true,
+      }))
+    )
+      return;
     setPending(true);
     setError(false);
     try {
@@ -197,6 +210,7 @@ export function InvitationAcceptance({
       aria-busy={pending}
       data-onboarding-state={decision?.nextStep ?? "loading"}
     >
+      {dialog}
       <h1
         id="invitation-heading"
         ref={heading}
@@ -244,9 +258,11 @@ export function InvitationAcceptance({
             onClick={reject}
             type="button"
           >
-            {t("invitation.reject", {
-              organization: decision.invitation.organization.name,
-            })}
+            {pending
+              ? t("invitation.confirmReject.pending")
+              : t("invitation.reject", {
+                  organization: decision.invitation.organization.name,
+                })}
           </Button>
           <p className="mt-4">{t("invitation.options")}</p>
         </>

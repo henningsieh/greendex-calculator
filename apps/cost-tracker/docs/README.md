@@ -7,6 +7,7 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Cost Tracking glossary](../GLOSSARY.md)
 - Other contexts: [Calculator](../../../apps/calculator/GLOSSARY.md) · [Documentation](../../../apps/documentation/GLOSSARY.md) — overview in [Glossary map](../../../GLOSSARY-MAP.md)
 - [Cost Tracker architecture](architecture.md)
+- [Confirm an action](confirm-dialog.md)
 - [HTTP API and real-HTTP test prerequisites](openapi.md)
 - [Live email verification for both managed apps](live-email-verification.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes

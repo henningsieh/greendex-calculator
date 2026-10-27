@@ -1,11 +1,12 @@
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
@@ -13,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   searchOnboarded: vi.fn(),
   remove: vi.fn(),
+  revoke: vi.fn(),
   issueInvitation: vi.fn(),
   reissueInvitation: vi.fn(),
   createRegistrationLink: vi.fn(),
@@ -68,6 +70,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   return {
     ...original,
     orpc: {
+      projectPartnerships: { removePartnerCoordinator: mocks.revoke },
       participantOnboarding: {
         issueInvitation: mocks.issueInvitation,
         reissueInvitation: mocks.reissueInvitation,
@@ -82,6 +85,24 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       },
     },
     orpcQuery: {
+      organizations: {
+        listMembers: {
+          queryOptions: () => ({
+            queryKey: ["organizer-members"],
+            queryFn: async () => ({
+              members: [
+                {
+                  userId: "organizer-1",
+                  name: "Organizer One",
+                  email: "organizer@example.org",
+                  role: "admin",
+                },
+              ],
+            }),
+          }),
+        },
+      },
+      projects: original.orpcQuery.projects,
       duplicateReviews: {
         list: {
           queryOptions: (
@@ -248,6 +269,7 @@ describe("ParticipantCoordination", () => {
       { id: "host-user", name: "Host Candidate" },
     ]);
     mocks.remove.mockReset();
+    mocks.revoke.mockReset();
     mocks.issueInvitation
       .mockReset()
       .mockResolvedValue({ invitationId: "invite-2", delivery: "sent" });
@@ -261,6 +283,51 @@ describe("ParticipantCoordination", () => {
     mocks.setRegistrationLinkOpen.mockReset().mockResolvedValue({ open: false });
   });
 
+  it("keeps a cancelled Participation and disables removal while executing", async () => {
+    mocks.remove.mockImplementation(() => new Promise(() => {}));
+    const user = userEvent.setup();
+    await renderCoordination();
+    const trigger = screen.getByTestId("remove-participation-person-1");
+    await user.click(trigger);
+    await user.click(
+      within(await screen.findByRole("dialog")).getByTestId(
+        "confirm-dialog-cancel",
+      ),
+    );
+    expect(mocks.remove).not.toHaveBeenCalled();
+    expect(trigger).toBeEnabled();
+    await user.click(trigger);
+    await user.click(
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
+    );
+    expect(mocks.remove).toHaveBeenCalledExactlyOnceWith({
+      partnershipId: "own-partnership",
+      id: "person-1",
+    });
+    expect(trigger).toBeDisabled();
+  });
+
+  it("keeps a dismissed Group Organizer assignment and disables revocation while executing", async () => {
+    mocks.revoke.mockImplementation(() => new Promise(() => {}));
+    const user = userEvent.setup();
+    await renderCoordination();
+    await user.click(screen.getByTestId("manage-group-organizers"));
+    await user.selectOptions(await screen.findByRole("combobox"), "organizer-1");
+    const trigger = screen.getByTestId("revoke-group-organizer");
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+    expect(mocks.revoke).not.toHaveBeenCalled();
+    expect(trigger).toBeEnabled();
+    await user.click(trigger);
+    await user.click(
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
+    );
+    expect(mocks.revoke).toHaveBeenCalledExactlyOnceWith({
+      partnershipId: "own-partnership",
+      userId: "organizer-1",
+    });
+    expect(trigger).toBeDisabled();
+  });
   it("renders only the server-scoped Partnership response with honest joined and invitation states", async () => {
     await renderCoordination();
     expect(mocks.list).toHaveBeenCalledOnce();
@@ -414,7 +481,6 @@ describe("ParticipantCoordination", () => {
   });
 
   it("retains the Participation for a validated Journey/Cost Allocation removal refusal", async () => {
-    vi.spyOn(window, "confirm").mockReturnValueOnce(true);
     mocks.remove.mockRejectedValueOnce(
       new ORPCError("BAD_REQUEST", {
         message: "private SQL",
@@ -424,6 +490,9 @@ describe("ParticipantCoordination", () => {
     const user = userEvent.setup();
     await renderCoordination();
     await user.click(screen.getByTestId("remove-participation-person-1"));
+    await user.click(
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
+    );
     expect(await screen.findByRole("alert")).toHaveAttribute(
       "data-feedback-outcome",
       "remove-refused",

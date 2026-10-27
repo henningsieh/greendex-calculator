@@ -53,6 +53,11 @@ git diff --cached --name-only -z --diff-filter=ACMR \
 # on drift. Bypass with --no-verify when appropriate.
 pnpm run check:agent-instructions
 
+# Tests must never assert visible copy: rewording or translation must not
+# break suites. This scan is a build-free read (~1s) over test sources and
+# blocks the commit on violation. Bypass with --no-verify when appropriate.
+pnpm run check:no-copy-assertions
+
 # Only re-stage files that were selected from the original staged snapshot.
 # Uses the same two filters as the format step above, so exactly the files
 # the formatter may have rewritten get re-staged — nothing more.
