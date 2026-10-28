@@ -1,7 +1,8 @@
 import { ORPCError } from "@orpc/client";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { createSituationErrors } from "@/lib/orpc/errors";
 

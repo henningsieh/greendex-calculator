@@ -2,6 +2,7 @@
 
 /* eslint-disable shadcn/no-restyle -- Header-dropdown bespoke treatment, shared with AccountMenu + OrganizationSwitcher: same w-64 rounded-xl p-2 content + normal-case items for identical header look. Extract a ui variant post-MVP. */
 
+import { useTranslations } from "@greendex/i18n/client";
 import { CheckIcon, ChevronDownIcon, PaletteIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import * as React from "react";
@@ -24,6 +25,7 @@ const subscribeToHydration = () => () => undefined;
    Content: w-64 rounded-xl p-2 + label + check items (same as AccountMenu).
    All 7 themes from lib/themes, semantic tokens only. */
 export function ThemeSwitcher() {
+  const t = useTranslations("shell.themeSwitcher");
   const mounted = React.useSyncExternalStore(
     subscribeToHydration,
     () => true,
@@ -40,19 +42,19 @@ export function ThemeSwitcher() {
       <DropdownMenuTrigger
         render={
           <Button
-            aria-label={`Color theme: ${current?.label ?? "system"}. Switch theme`}
+            aria-label={t("ariaLabel", { theme: current?.label ?? t("system") })}
             size="sm"
             variant="outline"
           />
         }
       >
         <PaletteIcon aria-hidden="true" data-icon="inline-start" />
-        {current?.label ?? "Theme"}
+        {current?.label ?? t("triggerFallback")}
         <ChevronDownIcon aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Color theme</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("label")}</DropdownMenuLabel>
           {THEMES.map((entry) => {
             const active = mounted && theme === entry.value;
 

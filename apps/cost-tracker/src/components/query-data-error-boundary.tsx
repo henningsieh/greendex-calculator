@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import Link from "next/link";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
@@ -27,11 +28,12 @@ function ProjectDataErrorFallback({
   resetErrorBoundary,
   resource,
 }: ProjectDataErrorFallbackProps) {
+  const t = useTranslations("shell");
   const errorMessage = getORPCRequestErrorMessage(error);
 
   return (
     <Alert data-testid="data-error-fallback" variant="destructive">
-      <AlertTitle>Unable to load {resource}</AlertTitle>
+      <AlertTitle>{t("errorBoundary.unableToLoad", { resource })}</AlertTitle>
       <AlertDescription>{errorMessage.text}</AlertDescription>
       <AlertAction>
         {errorMessage.sessionExpired ? (
@@ -40,7 +42,7 @@ function ProjectDataErrorFallback({
             className={buttonVariants({ size: "sm", variant: "outline" })}
             href="/login"
           >
-            Sign in
+            {t("common.signIn")}
           </Link>
         ) : (
           <Button
@@ -50,7 +52,7 @@ function ProjectDataErrorFallback({
             type="button"
             variant="outline"
           >
-            Retry
+            {t("common.retry")}
           </Button>
         )}
       </AlertAction>

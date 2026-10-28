@@ -31,20 +31,20 @@ import { OrganizationSwitcher } from "@/features/organizations/components/organi
 import { cn } from "@/lib/utils";
 
 const baseNavigationItems = [
-  { href: "/projects", icon: FolderKanbanIcon, label: "Projects" },
-];
+  { href: "/projects", icon: FolderKanbanIcon, labelKey: "nav.projects" },
+] as const;
 
 const partnerOrganizationsNavigationItem = {
   href: "/partner-organizations",
   icon: Building2Icon,
-  label: "Partner organizations",
-};
+  labelKey: "nav.partnerOrganizations",
+} as const;
 
 const organizationNavigationItem = {
   href: "/organization",
   icon: UsersIcon,
-  label: "Organization",
-};
+  labelKey: "nav.organization",
+} as const;
 
 type AppNavigationProps = {
   email: string;
@@ -65,6 +65,7 @@ export function AppNavigation({
   staffOrganizations = [],
   activeOrganizationId,
 }: AppNavigationProps) {
+  const t = useTranslations("shell");
   const pathname = usePathname();
   // Presentation-only: each page and its procedures gate access. The Partner
   // Organizations tab hides for people who cannot use that page.
@@ -94,7 +95,7 @@ export function AppNavigation({
 
       <div className="flex min-w-0 items-end justify-between gap-6">
         <nav
-          aria-label="Primary navigation"
+          aria-label={t("nav.primaryLabel")}
           className="-ml-2 flex min-w-0 overflow-x-auto sm:-ml-3"
         >
           {navigationItems.map((item) => {
@@ -114,7 +115,7 @@ export function AppNavigation({
                 key={item.href}
               >
                 <Icon aria-hidden="true" className="hidden size-4 sm:block" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -152,7 +153,8 @@ function AccountMenu({
   name,
   pathname,
 }: AccountMenuProps) {
-  const t = useTranslations("onboarding");
+  const t = useTranslations("shell");
+  const tAuth = useTranslations("onboarding");
   const active = pathname === "/user-settings";
   const trigger = useRef<HTMLButtonElement>(null);
   const { pending, signOut, dialog } = useSignOut("/", trigger);
@@ -166,7 +168,7 @@ function AccountMenu({
             <Button
               ref={trigger}
               data-testid="account-menu-trigger"
-              aria-label={compact ? `Open account menu for ${name}` : undefined}
+              aria-label={compact ? t("account.openMenu", { name }) : undefined}
               className={cn(
                 "group h-11 gap-3 rounded-lg px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
                 active && "bg-muted",
@@ -217,7 +219,7 @@ function AccountMenu({
                 />
               }
             >
-              Account settings
+              {t("account.settings")}
             </DropdownMenuItem>
             <DropdownMenuItem
               data-testid="account-menu-sign-out"
@@ -226,7 +228,7 @@ function AccountMenu({
               variant="destructive"
             >
               <LogOutIcon />
-              {t(pending ? "auth.confirmSignOut.pending" : "auth.signOut")}
+              {tAuth(pending ? "auth.confirmSignOut.pending" : "auth.signOut")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

@@ -1,1 +1,205 @@
-{}
+{
+  "shell": {
+    "brand": {
+      "name": "GreenDex",
+      "product": "Cost Tracker",
+      "markLabel": "GreenDex star wreath",
+      "edition": "GreenDex Cost Tracker · Erasmus Edition"
+    },
+    "common": {
+      "signIn": "Sign in",
+      "retry": "Retry"
+    },
+    "nav": {
+      "primaryLabel": "Primary navigation",
+      "projects": "Projects",
+      "partnerOrganizations": "Partner organizations",
+      "organization": "Organization"
+    },
+    "account": {
+      "openMenu": "Open account menu for {name}",
+      "settings": "Account settings"
+    },
+    "themeSwitcher": {
+      "label": "Color theme",
+      "triggerFallback": "Theme",
+      "ariaLabel": "Color theme: {theme}. Switch theme",
+      "system": "system"
+    },
+    "combobox": {
+      "defaultSearchBy": "name or ID",
+      "select": "Select {label}",
+      "searchLabel": "Search {label} by {searchBy}",
+      "searchPlaceholder": "Search {searchBy}…",
+      "searching": "Searching",
+      "searchFailed": "Search failed.",
+      "noMatches": "No matches — refine or paste full ID"
+    },
+    "errorBoundary": {
+      "unableToLoad": "Unable to load {resource}"
+    },
+    "loading": "Loading Cost Tracker",
+    "landing": {
+      "accountNav": "Account",
+      "createAccount": "Create account",
+      "hero": {
+        "titleLead": "Receipts in.",
+        "titleAccent": "Money out.",
+        "description": "Settle Erasmus travel costs without the spreadsheet struggle. Snap a photo of the ticket, share the cost, file the claim — every number stays traceable to its receipt.",
+        "start": "Start tracking costs",
+        "seeHow": "See how it works",
+        "trustLine": "Free to start · No credit card · Demo data below"
+      },
+      "stats": {
+        "disbursed": {
+          "label": "Disbursed",
+          "detail": "calculated · not editable"
+        },
+        "documented": {
+          "label": "Documented",
+          "detail": "zero open gaps"
+        },
+        "avgReview": {
+          "label": "Avg. review time",
+          "detail": "hosting review",
+          "unit": "h"
+        }
+      },
+      "process": {
+        "eyebrow": "The process",
+        "title": "One claim. Zero follow-up questions.",
+        "description": "The workspace checks everything before you submit: payout account, cost entries, receipt links, frozen funding rates. What is missing shows up as a checklist — not as an email three weeks later.",
+        "record": {
+          "title": "Record",
+          "description": "Choose the project and enter the exact journey cost."
+        },
+        "support": {
+          "title": "Support",
+          "description": "Add receipts, invoices, or tickets as proof documents."
+        },
+        "allocate": {
+          "title": "Allocate",
+          "description": "Assign the cost to the participants it covered."
+        }
+      },
+      "terminal": {
+        "payoutAccount": "Payout account · Green Routes e.V.",
+        "train": "Train · €428.60 · receipt linked",
+        "bus": "Bus · €86.40 · receipt linked",
+        "openUpload": "Local bus tickets · upload open",
+        "status": "€515.00 ready for submission"
+      },
+      "values": {
+        "proof": {
+          "title": "Proof stays with the cost",
+          "description": "Attach the document once and connect it to the costs it supports."
+        },
+        "group": {
+          "title": "Group travel stays legible",
+          "description": "Split a ticket equally, by percentage, or by exact EUR amount."
+        },
+        "partners": {
+          "title": "Partners stay aligned",
+          "description": "Hosting and Partner Organizations see one project-specific record."
+        }
+      },
+      "cta": {
+        "eyebrow": "Free to start",
+        "title": "Ready for your next claim?",
+        "description": "Upload the photo. Share the cost. Get the money back."
+      },
+      "footer": {
+        "product": "Greendex Cost Tracker",
+        "tagline": "Clear records for shared travel."
+      },
+      "journey": {
+        "project": "Spring workshop",
+        "subtitle": "Travel cost trail",
+        "windowOpen": "Window open",
+        "train": {
+          "title": "Train to Utrecht",
+          "detail": "Berlin · 2 participants"
+        },
+        "receipt": {
+          "title": "Receipt attached",
+          "detail": "bahn-ticket.pdf",
+          "status": "Ready"
+        },
+        "allocation": {
+          "title": "Cost allocated",
+          "detail": "Equal share"
+        },
+        "submissionComplete": "Submission complete"
+      }
+    },
+    "designSystem": {
+      "titleLead": "Ember",
+      "titleAccent": "design",
+      "titleTail": "system",
+      "intro": "Seven themes, one fire accent. Tokens, button matrix, cards, type specimen, and the locked brand extensions — rendered live.",
+      "themes": {
+        "eyebrow": "Themes · 7 slots",
+        "title": "Theme switcher",
+        "active": "active:",
+        "system": "system"
+      },
+      "tokens": {
+        "eyebrow": "Tokens · roles",
+        "title": "Color roles",
+        "sample": "Aa"
+      },
+      "buttons": {
+        "eyebrow": "Buttons · matrix",
+        "title": "Button variants and states",
+        "primary": "Primary",
+        "ghost": "Ghost",
+        "outline": "Outline",
+        "secondary": "Secondary",
+        "mainCta": "Main CTA",
+        "link": "Link",
+        "destructive": "Destructive",
+        "disabledPrimary": "Disabled primary",
+        "disabledGhost": "Disabled ghost",
+        "saving": "saving…",
+        "small": "Small",
+        "large": "Large",
+        "spinnerNote": "spinner pattern — composed, never an isPending prop"
+      },
+      "cards": {
+        "eyebrow": "Cards · states",
+        "title": "Card hover and active",
+        "hoverTitle": "Hover card",
+        "hoverDescription": "Lifts −2px with a fire border. Hover-gated, static under reduced motion.",
+        "hoverAction": "Enabled action",
+        "activeTitle": "Active card",
+        "activeDescription": "Permanent fire border with the amber wash from above.",
+        "exemptTitle": "Exempt card",
+        "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
+        "exemptAction": "working…"
+      },
+      "type": {
+        "eyebrow": "Type · specimen",
+        "title": "Typography",
+        "headline": "Riesen-Headline",
+        "label": "Cost Tracker · Ember C",
+        "body": "Body copy stays quiet: warm white on plum-black, lavender-grey for secondary text. One fire accent everywhere — interaction, highlights, focus."
+      },
+      "brand": {
+        "eyebrow": "Brand · locked",
+        "title": "Brand extensions",
+        "heroLabel": "Hero stat",
+        "heroDetail": "amber wash · fire unit",
+        "claimsLabel": "Claims",
+        "claimsDetail": "seamless raster · 1px lines",
+        "conformityLabel": "Conformity",
+        "conformityDetail": "tabular numbers · mono labels"
+      },
+      "terminal": {
+        "tokens": "tokens mapped — 7 themes",
+        "buttons": "buttons rebuilt — spinner pending",
+        "landing": "landing page — next section",
+        "status": "ember-c · all systems nominal"
+      }
+    }
+  }
+}

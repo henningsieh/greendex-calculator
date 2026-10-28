@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
+
 import { cn } from "@/lib/utils";
 
 /* StarWreath — brand mark. 12 fire dots, EU symbolism. Custom SVG icon
@@ -17,6 +21,8 @@ function StarWreath({
   size = 34,
   ...props
 }: React.ComponentProps<"svg"> & { size?: number }) {
+  const t = useTranslations("shell.brand");
+
   return (
     <svg
       data-slot="star-wreath"
@@ -25,7 +31,7 @@ function StarWreath({
       viewBox="0 0 80 80"
       // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- Inline SVG needs a named image role; img cannot preserve its brand CSS variables and SVG props. Maintainer-approved exception.
       role="img"
-      aria-label="GreenDex star wreath"
+      aria-label={t("markLabel")}
       className={cn("shrink-0", className)}
       {...props}
     >
