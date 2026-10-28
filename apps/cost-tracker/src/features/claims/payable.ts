@@ -1,3 +1,10 @@
+/**
+ * These structural DTOs keep this pure module browser-safe without importing
+ * database or Zod schemas. Band mirrors projectFundingBandsTable; Entry combines
+ * travelCostEntriesTable with participant IDs from costAllocationsTable; Journey
+ * adapts participantJourneysTable. Decimal strings preserve exact persisted
+ * values for scaled-integer arithmetic without floating-point rounding.
+ */
 type Band = {
   minKm: string;
   maxKm: string;
