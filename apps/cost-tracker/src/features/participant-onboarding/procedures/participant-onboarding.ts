@@ -3,16 +3,22 @@ import {
   CURRENT_PARTICIPANT_AGREEMENT_VERSION,
   type ParticipantAgreementVersion,
 } from "@/features/participant-onboarding/participant-agreement";
-import { buildAcceptAgreement } from "@/features/participant-onboarding/procedures/accept-agreement";
-import { buildCreateRegistrationLink } from "@/features/participant-onboarding/procedures/create-registration-link";
-import { deliverParticipantInvitation as deliverInvitation } from "@/features/participant-onboarding/procedures/invitation-delivery";
-import { buildIssueInvitation } from "@/features/participant-onboarding/procedures/issue-invitation";
-import { buildJoin } from "@/features/participant-onboarding/procedures/join";
+import {
+  deliverParticipantInvitation as deliverInvitation,
+  buildIssueInvitation,
+  buildReissueInvitation,
+  buildSetInvitationOpen,
+} from "@/features/participant-onboarding/procedures/invitations";
+import {
+  buildAcceptAgreement,
+  buildJoin,
+  buildSaveProfile,
+} from "@/features/participant-onboarding/procedures/join";
 import { buildListMyProjects } from "@/features/participant-onboarding/procedures/list-my-projects";
-import { buildReissueInvitation } from "@/features/participant-onboarding/procedures/reissue-invitation";
-import { buildSaveProfile } from "@/features/participant-onboarding/procedures/save-profile";
-import { buildSetInvitationOpen } from "@/features/participant-onboarding/procedures/set-invitation-open";
-import { buildSetRegistrationLinkOpen } from "@/features/participant-onboarding/procedures/set-registration-link-open";
+import {
+  buildCreateRegistrationLink,
+  buildSetRegistrationLinkOpen,
+} from "@/features/participant-onboarding/procedures/registration-links";
 import { makeRequirePublishedAgreement } from "@/features/participant-onboarding/procedures/shared";
 
 // The persistence-seam scanner treats re-export syntax as exposing the DB through

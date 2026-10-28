@@ -5,10 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ select: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/auth", () => ({ auth: { api: {} } }));
 vi.mock("@greendex/database", () => ({ db: { select: mocks.select } }));
 vi.mock("@/lib/email", () => ({ sendParticipantInvitation: vi.fn() }));
 
-import { deliverParticipantInvitation } from "@/features/participant-onboarding/procedures/invitation-delivery";
+import { deliverParticipantInvitation } from "@/features/participant-onboarding/procedures/invitations";
 
 beforeEach(() => vi.clearAllMocks());
 

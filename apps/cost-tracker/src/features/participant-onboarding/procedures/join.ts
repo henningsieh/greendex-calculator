@@ -22,6 +22,9 @@ import {
   resolveEntryToken,
 } from "@/features/participant-onboarding/procedures/entry-tokens";
 import {
+  agreementInput,
+  profileInput,
+  success,
   shouldGrantParticipantRole,
   joinInput,
   type RequirePublishedAgreement,
@@ -260,4 +263,43 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
       });
     });
   return join;
+}
+
+export function buildSaveProfile() {
+  const saveProfile = authorized
+    .input(profileInput)
+    .output(success)
+    .handler(async ({ context, input }) => {
+      await db
+        .insert(profiles)
+        .values({ userId: context.user.id, fullName: input.fullName })
+        .onConflictDoUpdate({
+          target: profiles.userId,
+          set: { fullName: input.fullName, updatedAt: new Date() },
+        });
+      return { success: true as const };
+    });
+  return saveProfile;
+}
+
+export function buildAcceptAgreement(
+  requirePublishedAgreement: RequirePublishedAgreement,
+) {
+  const acceptAgreement = authorized
+    .input(agreementInput)
+    .output(z.object({ version: z.string() }))
+    .handler(async ({ context, errors }) => {
+      const version = requirePublishedAgreement(errors);
+      await db
+        .insert(acceptances)
+        .values({
+          userId: context.user.id,
+          version: version.id,
+          contentHash: version.contentHash,
+          answers: JSON.stringify({ accepted: true }),
+        })
+        .onConflictDoNothing();
+      return { version: version.id };
+    });
+  return acceptAgreement;
 }
