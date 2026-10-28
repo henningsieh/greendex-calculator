@@ -28,6 +28,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
+import { canCompleteProject } from "@/features/claims/claim-lifecycle";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import {
   decodeProjectListCursor,
@@ -937,11 +938,13 @@ export const complete = authorized
         )
         .where(eq(projectPartnerOrganizationsTable.projectId, project.id))
         .orderBy(asc(organization.name), asc(organization.id));
-      const blockers = partnerships.filter(
-        ({ status }) => status !== "paid" && status !== "rejected",
-      );
-      if (blockers.length)
+      const statuses = partnerships.map(({ status }) => status);
+      if (!canCompleteProject(statuses)) {
+        const blockers = partnerships.filter(
+          ({ status }) => status !== "paid" && status !== "rejected",
+        );
         throw createSituationErrors(errors).projectCompletionBlocked(blockers);
+      }
       const [completed] = await tx
         .update(projectsTable)
         .set({ completedAt: new Date(), completedByUserId: context.user.id })

@@ -121,3 +121,18 @@ export function isClaimAwaitingReview(
 ): boolean {
   return status === "submitted";
 }
+
+/**
+ * The one Project completion rule. A Project completes only when every
+ * Partnership Claim is settled: paid or rejected. Anything else — including a
+ * missing Claim — still blocks completion.
+ *
+ * The workspace gate and the `projects.complete` procedure both evaluate this
+ * table; neither side keeps its own settled-status rule (same pattern as
+ * `canPartnerEditClaim` shared by screens + procedures).
+ */
+export function canCompleteProject(
+  statuses: readonly (ClaimStatus | null | undefined)[],
+): boolean {
+  return statuses.every((status) => status === "paid" || status === "rejected");
+}

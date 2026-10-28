@@ -8,7 +8,10 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { type ClaimStatus } from "@/features/claims/claim-lifecycle";
+import {
+  type ClaimStatus,
+  canCompleteProject,
+} from "@/features/claims/claim-lifecycle";
 import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
@@ -61,8 +64,8 @@ export function ProjectWorkspace({
     project.relationship === "hosted" &&
     !project.archived &&
     !project.completedAt &&
-    project.partnerOrganizations.every(
-      ({ claimStatus }) => claimStatus === "paid" || claimStatus === "rejected",
+    canCompleteProject(
+      project.partnerOrganizations.map(({ claimStatus }) => claimStatus),
     );
 
   async function completeProject() {
