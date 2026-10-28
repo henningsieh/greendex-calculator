@@ -1,9 +1,4 @@
 {
-  "confirmDialog": {
-    "confirm": "Conferma",
-    "cancel": "Annulla",
-    "close": "Chiudi"
-  },
   "onboarding": {
     "auth": {
       "signInHeading": "Bentornato",
@@ -102,40 +97,6 @@
       "credentials": "E-mail o password errate. Controlla i tuoi dati e riprova.",
       "verification": "Verifica l'e-mail prima di accedere. Apri il link di verifica nella posta in arrivo.",
       "signOut": "Impossibile uscire"
-    }
-  },
-  "projects": {
-    "confirmations": {
-      "cancel": "Annulla",
-      "close": "Chiudi",
-      "pending": "Operazione in corso…",
-      "removePartnership": {
-        "title": "Rimuovere il Partenariato di Progetto?",
-        "description": "Rimuovere {organization} da {project}? Questa rimozione è irreversibile.",
-        "execute": "Rimuovi Partenariato di Progetto"
-      },
-      "removeParticipation": {
-        "title": "Rimuovere la Partecipazione al Progetto?",
-        "description": "Rimuovere la Partecipazione al Progetto di {participant}? Questa rimozione è irreversibile.",
-        "execute": "Rimuovi Partecipazione al Progetto"
-      },
-      "revokeOrganizer": {
-        "title": "Revocare l’assegnazione di Organizzatore di Gruppo?",
-        "description": "Revocare l’assegnazione di Organizzatore di Gruppo per {user}? I ruoli di appartenenza all’Organizzazione non cambieranno.",
-        "execute": "Revoca assegnazione"
-      }
-    }
-  },
-  "organizations": {
-    "confirmations": {
-      "cancel": "Annulla",
-      "close": "Chiudi",
-      "pending": "Operazione in corso…",
-      "cancelInvitation": {
-        "title": "Annullare l’invito all’Organizzazione?",
-        "description": "Annullare l’invito all’Organizzazione per {email}? Non potrà più essere accettato.",
-        "execute": "Annulla invito"
-      }
     }
   }
 }

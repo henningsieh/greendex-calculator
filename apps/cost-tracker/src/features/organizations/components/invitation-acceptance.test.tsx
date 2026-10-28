@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
-import messages from "@/messages/en.json";
+import messages from "@/messages/en";
 
 const mocks = vi.hoisted(() => ({
   onboardingNextStep: vi.fn(),

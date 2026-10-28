@@ -2,7 +2,7 @@ import { NextIntlClientProvider } from "@greendex/i18n/client";
 import { render } from "@testing-library/react";
 import type { ReactElement } from "react";
 
-import messages from "@/messages/en.json";
+import messages from "@/messages/en";
 
 export function renderWithMessages(ui: ReactElement) {
   return render(

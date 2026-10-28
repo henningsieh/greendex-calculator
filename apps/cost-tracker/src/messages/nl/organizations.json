@@ -1,0 +1,14 @@
+{
+  "organizations": {
+    "confirmations": {
+      "cancel": "Annuleren",
+      "close": "Sluiten",
+      "pending": "Bezig…",
+      "cancelInvitation": {
+        "title": "Organisatie-uitnodiging annuleren?",
+        "description": "De Organisatie-uitnodiging voor {email} annuleren? Deze kan daarna niet meer worden geaccepteerd.",
+        "execute": "Uitnodiging annuleren"
+      }
+    }
+  }
+}

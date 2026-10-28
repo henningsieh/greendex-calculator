@@ -1,0 +1,24 @@
+{
+  "projects": {
+    "confirmations": {
+      "cancel": "Annuleren",
+      "close": "Sluiten",
+      "pending": "Bezig…",
+      "removePartnership": {
+        "title": "Projectpartnerschap verwijderen?",
+        "description": "{organization} uit {project} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "execute": "Projectpartnerschap verwijderen"
+      },
+      "removeParticipation": {
+        "title": "Projectdeelname verwijderen?",
+        "description": "De Projectdeelname van {participant} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "execute": "Projectdeelname verwijderen"
+      },
+      "revokeOrganizer": {
+        "title": "Toewijzing als Groepsorganisator intrekken?",
+        "description": "De toewijzing als Groepsorganisator van {user} intrekken? De rollen van het Organisatielidmaatschap blijven ongewijzigd.",
+        "execute": "Toewijzing intrekken"
+      }
+    }
+  }
+}

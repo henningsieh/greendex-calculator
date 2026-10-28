@@ -1,0 +1,14 @@
+{
+  "organizations": {
+    "confirmations": {
+      "cancel": "Annulla",
+      "close": "Chiudi",
+      "pending": "Operazione in corso…",
+      "cancelInvitation": {
+        "title": "Annullare l’invito all’Organizzazione?",
+        "description": "Annullare l’invito all’Organizzazione per {email}? Non potrà più essere accettato.",
+        "execute": "Annulla invito"
+      }
+    }
+  }
+}

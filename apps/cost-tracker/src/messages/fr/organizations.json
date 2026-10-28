@@ -1,0 +1,14 @@
+{
+  "organizations": {
+    "confirmations": {
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "pending": "Traitement…",
+      "cancelInvitation": {
+        "title": "Annuler l’invitation à l’Organisation ?",
+        "description": "Annuler l’invitation à l’Organisation pour {email} ? Elle ne pourra plus être acceptée.",
+        "execute": "Annuler l’invitation"
+      }
+    }
+  }
+}

@@ -1,10 +1,10 @@
 // global.d.ts
 
-import messages from "./src/messages/en.json";
+import type { Messages } from "./src/messages/en";
 
 declare module "next-intl" {
   interface AppConfig {
-    Messages: typeof messages;
+    Messages: Messages;
   }
 }
 

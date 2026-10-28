@@ -1,0 +1,14 @@
+{
+  "organizations": {
+    "confirmations": {
+      "cancel": "Prekliči",
+      "close": "Zapri",
+      "pending": "Obdelovanje…",
+      "cancelInvitation": {
+        "title": "Preklicati povabilo v organizacijo?",
+        "description": "Preklicati povabilo v organizacijo za {email}? Povabila ne bo več mogoče sprejeti.",
+        "execute": "Prekliči povabilo"
+      }
+    }
+  }
+}

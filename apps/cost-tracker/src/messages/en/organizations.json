@@ -1,0 +1,14 @@
+{
+  "organizations": {
+    "confirmations": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "pending": "Working…",
+      "cancelInvitation": {
+        "title": "Cancel Organization Invitation?",
+        "description": "Cancel the Organization Invitation for {email}? It can no longer be accepted.",
+        "execute": "Cancel invitation"
+      }
+    }
+  }
+}

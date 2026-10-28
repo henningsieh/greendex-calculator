@@ -1,0 +1,24 @@
+{
+  "projects": {
+    "confirmations": {
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "pending": "Wird ausgeführt…",
+      "removePartnership": {
+        "title": "Projektpartnerschaft entfernen?",
+        "description": "{organization} aus {project} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektpartnerschaft entfernen"
+      },
+      "removeParticipation": {
+        "title": "Projektteilnahme entfernen?",
+        "description": "Die Projektteilnahme von {participant} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektteilnahme entfernen"
+      },
+      "revokeOrganizer": {
+        "title": "Gruppenorganisator-Zuweisung widerrufen?",
+        "description": "Die Gruppenorganisator-Zuweisung für {user} widerrufen? Die Rollen der Organisationsmitgliedschaft bleiben unverändert.",
+        "execute": "Zuweisung widerrufen"
+      }
+    }
+  }
+}

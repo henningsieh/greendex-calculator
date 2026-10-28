@@ -1,0 +1,14 @@
+{
+  "organizations": {
+    "confirmations": {
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "pending": "Wird ausgeführt…",
+      "cancelInvitation": {
+        "title": "Organisationseinladung stornieren?",
+        "description": "Die Organisationseinladung für {email} stornieren? Sie kann danach nicht mehr angenommen werden.",
+        "execute": "Einladung stornieren"
+      }
+    }
+  }
+}

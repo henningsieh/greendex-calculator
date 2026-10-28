@@ -1,9 +1,4 @@
 {
-  "confirmDialog": {
-    "confirm": "Confirmer",
-    "cancel": "Annuler",
-    "close": "Fermer"
-  },
   "onboarding": {
     "auth": {
       "signInHeading": "Bon retour",
@@ -102,40 +97,6 @@
       "credentials": "E-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez.",
       "verification": "Vérifiez votre e-mail avant de vous connecter. Ouvrez le lien de vérification dans votre boîte de réception.",
       "signOut": "Déconnexion impossible"
-    }
-  },
-  "projects": {
-    "confirmations": {
-      "cancel": "Annuler",
-      "close": "Fermer",
-      "pending": "Traitement…",
-      "removePartnership": {
-        "title": "Supprimer le Partenariat de Projet ?",
-        "description": "Supprimer {organization} de {project} ? Cette suppression est irréversible.",
-        "execute": "Supprimer le Partenariat de Projet"
-      },
-      "removeParticipation": {
-        "title": "Supprimer la Participation au Projet ?",
-        "description": "Supprimer la Participation au Projet de {participant} ? Cette suppression est irréversible.",
-        "execute": "Supprimer la Participation au Projet"
-      },
-      "revokeOrganizer": {
-        "title": "Révoquer l’affectation d’Organisateur de Groupe ?",
-        "description": "Révoquer l’affectation d’Organisateur de Groupe de {user} ? Les rôles d’adhésion à l’Organisation ne changeront pas.",
-        "execute": "Révoquer l’affectation"
-      }
-    }
-  },
-  "organizations": {
-    "confirmations": {
-      "cancel": "Annuler",
-      "close": "Fermer",
-      "pending": "Traitement…",
-      "cancelInvitation": {
-        "title": "Annuler l’invitation à l’Organisation ?",
-        "description": "Annuler l’invitation à l’Organisation pour {email} ? Elle ne pourra plus être acceptée.",
-        "execute": "Annuler l’invitation"
-      }
     }
   }
 }

@@ -1,9 +1,4 @@
 {
-  "confirmDialog": {
-    "confirm": "Confirm",
-    "cancel": "Cancel",
-    "close": "Close"
-  },
   "onboarding": {
     "auth": {
       "signInHeading": "Welcome back",
@@ -102,40 +97,6 @@
       "credentials": "Incorrect email or password. Check your details and try again.",
       "verification": "Verify your email before signing in. Open the verification link in your inbox.",
       "signOut": "Could not sign out"
-    }
-  },
-  "projects": {
-    "confirmations": {
-      "cancel": "Cancel",
-      "close": "Close",
-      "pending": "Working…",
-      "removePartnership": {
-        "title": "Remove Project Partnership?",
-        "description": "Remove {organization} from {project}? This removal cannot be undone.",
-        "execute": "Remove Project Partnership"
-      },
-      "removeParticipation": {
-        "title": "Remove Project Participation?",
-        "description": "Remove the Project Participation for {participant}? This removal cannot be undone.",
-        "execute": "Remove Project Participation"
-      },
-      "revokeOrganizer": {
-        "title": "Revoke Group Organizer assignment?",
-        "description": "Revoke the Group Organizer assignment for {user}? Organization Membership roles will not change.",
-        "execute": "Revoke assignment"
-      }
-    }
-  },
-  "organizations": {
-    "confirmations": {
-      "cancel": "Cancel",
-      "close": "Close",
-      "pending": "Working…",
-      "cancelInvitation": {
-        "title": "Cancel Organization Invitation?",
-        "description": "Cancel the Organization Invitation for {email}? It can no longer be accepted.",
-        "execute": "Cancel invitation"
-      }
     }
   }
 }
