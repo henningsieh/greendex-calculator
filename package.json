@@ -6,6 +6,7 @@
     "auth:generate": "turbo run auth:generate",
     "build": "turbo run build --concurrency=1",
     "check:agent-instructions": "tsx scripts/check-agent-instructions.ts && vitest run scripts/check-agent-instructions.policy.test.ts",
+    "check:check-i18n": "tsx scripts/check-cost-tracker-i18n.ts",
     "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
     "clean": "turbo run clean && rm -rf node_modules",
@@ -16,7 +17,7 @@
     "db:studio": "turbo run db:studio",
     "dev": "turbo run dev",
     "format": "turbo run format && oxfmt scripts turbo.json tsconfig.json tsconfig.base.json vitest.config.mts package.json pnpm-workspace.yaml",
-    "lint": "turbo run lint --concurrency 1 && pnpm run lint:design-system && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam && pnpm run check:no-copy-assertions",
+    "lint": "turbo run lint --concurrency 1 && pnpm run lint:design-system && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam && pnpm run check:no-copy-assertions && pnpm run check:check-i18n",
     "lint:design-system": "pnpm --filter @greendex/calculator --filter @greendex/cost-tracker --filter @greendex/documentation run lint:design-system",
     "predev": "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     "prepare": "husky",
@@ -33,6 +34,7 @@
     "turbo": "^2.11.10"
   },
   "devDependencies": {
+    "@babel/parser": "7.29.9",
     "@shadcn/lint": "^0.2.3",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
