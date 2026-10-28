@@ -1,6 +1,6 @@
 # EMBER C — Component Spec (Cost Tracker dark)
 
-Quelle: `docs/design/prototype/ember-c.html` (freigegeben 2026-10-11).
+Quelle: `docs/archive/design/prototype/ember-c.html` (freigegeben 2026-10-11).
 Verbindlich für alle künftigen Ember-Komponenten. Politur (Motion/Animation)
 durch Design-Skills läuft später über den Mini-Site-Schritt — die Spec hier
 ist das Fundament, kein Ersatz dafür.

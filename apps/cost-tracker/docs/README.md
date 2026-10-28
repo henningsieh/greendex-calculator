@@ -38,6 +38,7 @@ Deferred decisions and follow-ups live as [GitHub issues](https://github.com/hen
 Finished work. These files describe the codebase as it stood in September 2026. Do not follow them as instructions.
 
 - [Archived architecture reviews](archive/) — the completed Phase 0–8 migration review, its findings, its fix plan, and its final verdict. The architecture migration is accepted and closed.
+- [Archived design explorations](archive/design/) — mini-site, prototypes, and screenshots.
 - [Historical Cost Submission blueprint](archive/cost-submission-blueprint.md) — superseded aggregate, entry, and submission-window design; not implementation guidance.
 
 ## Decisions

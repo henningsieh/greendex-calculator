@@ -20,6 +20,7 @@ Keeping them beside the live documentation made them look authoritative. A reade
 | [Final Cost Tracker migration review](architecture-migration-final-review.md)             | The verdict on issue #121. Accepts the six delivery areas.                                                                                                                           |
 | [Phase 0 – kurze Erklärung](phase-0-erklaerung.md)                                        | German-language note on the missing Phase 0 coordination record. States that no product-code change is missing, and that the record cannot honestly be reconstructed after the fact. |
 | [Maintenance architecture](maintenance-architecture.md)                                   | Approved Cost Tracker capability-ownership refactor plan and #329 cleanup scope. Implemented; kept here as a point-in-time record.                                                   |
+| [Design explorations](design/)                                                            | Archived mini-site, prototypes, and screenshots.                                                                                                                                     |
 
 ## Where the live material went
 

@@ -28,7 +28,7 @@ App-owned behavior details stay in `apps/cost-tracker/docs/`; this file tracks t
 | P   | Preflight              | done       | 13 agents executable; quota 5h 88% (reset 21:00 CEST), weekly 24% — above 15% gate                                                                                                                                                                                                                                           |
 | 1   | Scout audit            | done       | Handoff logged below; start-here: `claim-workspace.tsx`; risks: pink primary token, no-restyle, table density, IBAN narrow, states                                                                                                                                                                                           |
 | 2   | Theme plan (no code)   | done       | Plan at subagent artifact `…/ff1fda3c-…/artifacts/erasmus-theme-plan.md` (161 lines); digest logged below; awaiting human approval                                                                                                                                                                                           |
-| 2B  | Static prototype       | done       | `worker [460499b1-…]` complete; `prototype/` (2 pages + css); 6 verified screenshots in `screenshots/`; critique logged below                                                                                                                                                                                                |
+| 2B  | Static prototype       | done       | `worker [460499b1-…]` complete; `../archive/design/prototype/` (2 pages + css); 6 verified screenshots in `../archive/design/screenshots/`; critique logged below                                                                                                                                                            |
 | 2C  | Prototype revision     | done       | `worker [3becd11a-…]` on `gpt-6-astra:medium` complete; theme switch, charcoal dark, 3 font candidates; human picked Geist + JetBrains Mono figures, font switcher to go                                                                                                                                                     |
 | 2D  | Final prototype        | done       | `worker [df7bb46d-…]` on `gpt-6-astra:high` complete; font switcher removed, Geist + JetBrains Mono figures locked, theme switcher kept; verified no dangling font refs                                                                                                                                                      |
 | 2E  | Gloss pass (hovers)    | done       | `worker [ceeb475c-…]` + Emil steer complete; css-only hover/accent layer, contrasts logged below                                                                                                                                                                                                                             |
@@ -121,7 +121,7 @@ Backgrounds, text contrasts, 3px focus outline, motion guards all preserved.
 - **Dark v2:** charcoal page `#09090B`, surface `#18181B`, inset `#27272A`, border `#3F3F46`, text `#E4E4E7`, muted `#A1A1AA`, primary `#2563EB`, links `#93B4FF` — familiar shadcn/zinc universe, blue as action color, navy band + yellow edge kept as identity. Much calmer than full-navy v1.
 - **Fonts live to compare:** Geist (Sans + Mono figures), Mono (JetBrains Mono figures), Slab (Roboto Slab headings + Source Sans 3 body). Screenshots show Geist default; try `?font=mono` / `?font=slab` in the browser yourself.
 - **Still open (unchanged):** raw `correction_requested` string in Claim-draft line; `Pass: …` checklist copy tone; muted-text WCAG measurement in real build.
-- **Files:** `prototype/{claim-partner.html,claim-review.html,erasmus.css}`; 6 screenshots refreshed in `screenshots/`.
+- **Files:** `../archive/design/prototype/{claim-partner.html,claim-review.html,erasmus.css}`; 6 screenshots refreshed in `../archive/design/screenshots/`.
 
 ## Prototype review (my fresh-eyes pass)
 
@@ -129,7 +129,7 @@ Backgrounds, text contrasts, 3px focus outline, motion guards all preserved.
 - **Dark desktop:** navy planes hold together; Quiet-blue buttons stay visible (EU-blue-on-navy avoided as planned). Muted helper text needs measured WCAG AA check in real build.
 - **Narrow (390px):** stacks band → decision/submission → evidence in coherent focus order; cost table keeps a labelled horizontal-scroll region, no page-wide overflow.
 - **Nits for the real build:** (1) raw `correction_requested` snake_case leaks into the "Claim draft" line — render human status text; (2) sidebar `Pass: …` labels read technical — confirm copy; (3) cross-page "View … prototype" links are prototype chrome, not app UI.
-- **Files:** `prototype/{claim-partner.html,claim-review.html,erasmus.css}`; `screenshots/{claim-partner,claim-review}-{light,dark}-desktop.png` + `*-light-narrow.png` (dark-narrow omitted, same tokens as dark-desktop).
+- **Files:** `../archive/design/prototype/{claim-partner.html,claim-review.html,erasmus.css}`; `../archive/design/screenshots/{claim-partner,claim-review}-{light,dark}-desktop.png` + `*-light-narrow.png` (dark-narrow omitted, same tokens as dark-desktop).
 
 ## Decisions
 
