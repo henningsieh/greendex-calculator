@@ -1,4 +1,6 @@
-import { getTranslations } from "@greendex/i18n/server";
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
 
 import {
   CardSkeleton,
@@ -26,8 +28,8 @@ function ListRowsSkeleton({ count = 3 }: { count?: number }) {
   );
 }
 
-export async function ProjectsSkeleton() {
-  const t = await getTranslations("projects.loading");
+export function ProjectsSkeleton() {
+  const t = useTranslations("projects.loading");
   return (
     <LoadingRegion label={t("projects")}>
       <HeaderSkeleton />
@@ -40,8 +42,8 @@ export async function ProjectsSkeleton() {
  * List-only fallback for the inner Suspense boundary on the Projects page.
  * The page shell already renders the real header, so only rows are sketched.
  */
-export async function ProjectListSkeleton() {
-  const t = await getTranslations("projects.loading");
+export function ProjectListSkeleton() {
+  const t = useTranslations("projects.loading");
   return (
     <LoadingRegion label={t("list")}>
       <ListRowsSkeleton />
@@ -49,8 +51,8 @@ export async function ProjectListSkeleton() {
   );
 }
 
-export async function ProjectWorkspaceSkeleton() {
-  const t = await getTranslations("projects.loading");
+export function ProjectWorkspaceSkeleton() {
+  const t = useTranslations("projects.loading");
   return (
     <LoadingRegion label={t("workspace")}>
       <div className="flex flex-col gap-8">

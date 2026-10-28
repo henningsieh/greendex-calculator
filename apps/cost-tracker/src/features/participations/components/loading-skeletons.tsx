@@ -1,10 +1,12 @@
-import { getTranslations } from "@greendex/i18n/server";
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
 
 import { CardSkeleton, LoadingRegion } from "@/components/loading-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export async function PartnershipParticipantsSkeleton() {
-  const t = await getTranslations("participations.loading");
+export function PartnershipParticipantsSkeleton() {
+  const t = useTranslations("participations.loading");
   return (
     <LoadingRegion label={t("projectParticipations")}>
       <div className="flex flex-col gap-6">
@@ -18,8 +20,8 @@ export async function PartnershipParticipantsSkeleton() {
   );
 }
 
-export async function ParticipantDetailsSkeleton() {
-  const t = await getTranslations("participations.loading");
+export function ParticipantDetailsSkeleton() {
+  const t = useTranslations("participations.loading");
   return (
     <LoadingRegion label={t("details")}>
       <div className="flex flex-col gap-6">
@@ -32,8 +34,8 @@ export async function ParticipantDetailsSkeleton() {
   );
 }
 
-export async function HostedParticipantsSkeleton() {
-  const t = await getTranslations("participations.loading");
+export function HostedParticipantsSkeleton() {
+  const t = useTranslations("participations.loading");
   return (
     <LoadingRegion label={t("report")}>
       <div className="flex flex-col gap-6">

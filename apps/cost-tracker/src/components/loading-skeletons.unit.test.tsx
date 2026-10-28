@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import ClaimReviewLoading from "@/app/(protected)/claims/review/[id]/loading";
 import ClaimReviewQueueLoading from "@/app/(protected)/claims/review/loading";
 import PartnerOrganizationsLoading from "@/app/(protected)/partner-organizations/loading";
