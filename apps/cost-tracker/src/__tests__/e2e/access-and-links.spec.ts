@@ -33,7 +33,7 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
-// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
+// deep guard is dormant. See #338 (E2E artifact privacy follow-up).
 // API-setup exceptions: verified disposable Users, credential accounts, Partner
 // Organizations and Partnerships are DB preconditions. A's Organization Invitation
 // is DB-issued (never submitted through real SMTP); acceptance and Project creation
