@@ -1,1 +1,32 @@
-{}
+{
+  "settings": {
+    "page": {
+      "title": "Benutzereinstellungen",
+      "description": "Wähle, wie Cost Tracker aussieht, und halte deine Kontodaten aktuell."
+    },
+    "tabs": {
+      "sections": "Benutzereinstellungen-Bereiche",
+      "account": "Kontodetails",
+      "accountDescription": "Halte die Identität, die anderen Projektmitgliedern angezeigt wird, korrekt.",
+      "appearance": "Darstellung",
+      "appearanceDescription": "Deine Auswahl wird in diesem Browser gespeichert."
+    },
+    "name": {
+      "label": "Name",
+      "description": "Dieser Name erscheint in der Navigation und in gemeinsamer Projektarbeit.",
+      "emailLabel": "E-Mail-Adresse",
+      "emailDescription": "E-Mail-Änderungen sind in Cost Tracker noch nicht verfügbar.",
+      "save": "Namen speichern",
+      "saving": "Name wird gespeichert",
+      "success": "Dein Name wurde aktualisiert."
+    },
+    "theme": {
+      "title": "Farbschema",
+      "description": "Alle sieben Themes nebeneinander — EU Erasmus hell, fünf Ember-Varianten und das Legacy-Dark-Theme.",
+      "ariaLabel": "Farbschema",
+      "use": "{theme} verwenden",
+      "shortcutTitle": "Überall wechseln",
+      "shortcutDescription": "Drücke {key} an einer beliebigen Stelle in Cost Tracker, um zwischen hell und dunkel zu wechseln. Die Tastenkombination bleibt inaktiv, während du tippst."
+    }
+  }
+}

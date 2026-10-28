@@ -9,6 +9,47 @@
         "description": "Die Organisationseinladung für {email} stornieren? Sie kann danach nicht mehr angenommen werden.",
         "execute": "Einladung stornieren"
       }
+    },
+    "page": {
+      "eyebrow": "Organisation",
+      "title": "Organisation",
+      "restricted": "Die Verwaltung des Organisationsteams ist für Owner und Admins verfügbar.",
+      "description": "Verwalte Teammitglieder und ausstehende Einladungen für die aktive Organisation."
+    },
+    "loading": {
+      "label": "Organisation wird geladen",
+      "staff": "Organisationsteam wird geladen"
+    },
+    "team": {
+      "membersTitle": "Mitglieder",
+      "membersDescription": "Alle mit einer Organisationsteam-Rolle. Kombinierte Rollen wie Participant bleiben sichtbar und behalten ihren eigenen Zugriff.",
+      "noMembers": "Noch keine Mitglieder.",
+      "inviteTitle": "Team einladen",
+      "inviteDescription": "Owner können Owner und Admins einladen. Admins können Admins einladen. Coordination bleibt zuweisungsbasiert und wird hier nie vergeben.",
+      "unavailable": "Organisationsteam ist nicht verfügbar",
+      "invitationSent": "Einladung an {email} gesendet.",
+      "invitationCancelled": "Einladung storniert.",
+      "sendInvitation": "Einladung senden",
+      "sending": "Senden…",
+      "pendingTitle": "Ausstehende Einladungen",
+      "pendingDescription": "Storniere eine Einladung, um sie vor der Annahme zu widerrufen.",
+      "noPending": "Keine ausstehenden Einladungen.",
+      "noRole": "Keine Rolle",
+      "cancel": "Stornieren"
+    },
+    "settings": {
+      "title": "{organization} Einstellungen",
+      "country": "Land der Organisation",
+      "saved": "Land der Organisation gespeichert.",
+      "saveError": "Land der Organisation konnte nicht gespeichert werden",
+      "save": "Land der Organisation speichern",
+      "saving": "Speichern…"
+    },
+    "switcher": {
+      "acting": "Aktive Organisation",
+      "select": "Organisation auswählen",
+      "aria": "Aktive Organisation: {organization}. Organisation wechseln",
+      "failed": "Organisation konnte nicht gewechselt werden. Versuche es erneut."
     }
   }
 }

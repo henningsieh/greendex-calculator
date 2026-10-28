@@ -1,3 +1,4 @@
+import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -59,18 +60,18 @@ async function OrganizationTeamSection({ email }: { email: string }) {
 export default async function OrganizationPage() {
   if (!(await hasOrganizationMembership())) return null;
   const session = await requireSession();
+  const t = await getTranslations("organizations.page");
+  const tLoading = await getTranslations("organizations.loading");
 
   // Presentation-only gating; every procedure re-enforces owner/admin access.
   if (!(await canManageOrganization())) {
     return (
       <div className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">Organization</p>
+        <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          Organization
+          {t("title")}
         </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">
-          Organization staff management is available to owners and admins.
-        </p>
+        <p className="mt-4 text-lg/8 text-muted-foreground">{t("restricted")}</p>
       </div>
     );
   }
@@ -78,21 +79,16 @@ export default async function OrganizationPage() {
   return (
     <div>
       <header className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">Organization</p>
+        <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          Organization
+          {t("title")}
         </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">
-          Manage staff members and pending invitations for the active
-          Organization.
-        </p>
+        <p className="mt-4 text-lg/8 text-muted-foreground">{t("description")}</p>
       </header>
 
       <section className="mt-10">
         <Suspense
-          fallback={
-            <PrefetchedSectionSkeleton label="Loading Organization staff" />
-          }
+          fallback={<PrefetchedSectionSkeleton label={tLoading("staff")} />}
         >
           <OrganizationTeamSection email={session.user.email} />
         </Suspense>

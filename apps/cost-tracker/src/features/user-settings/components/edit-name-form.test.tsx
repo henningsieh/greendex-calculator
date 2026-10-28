@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { EditNameForm } from "@/features/user-settings/components/edit-name-form";
 
 const mocks = vi.hoisted(() => ({

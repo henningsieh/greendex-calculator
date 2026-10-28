@@ -1,6 +1,7 @@
 "use client";
 
 import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { useTranslations } from "@greendex/i18n/client";
 import {
   useMutation,
   useQueryClient,
@@ -30,17 +31,18 @@ function CountrySettings({
   organization: Outputs["organizations"]["getSettings"];
 }) {
   const queryClient = useQueryClient();
+  const t = useTranslations("organizations.settings");
   const [country, setCountry] = useState(organization.country);
   const update = useMutation({
     mutationFn: () => orpc.organizations.updateCountry({ country }),
     onSuccess: async () => {
-      toast.add({ title: "Organization country saved.", type: "success" });
+      toast.add({ title: t("saved"), type: "success" });
       await queryClient.invalidateQueries();
     },
     onError: (error) => {
       toast.add({
         description: getORPCRequestErrorMessage(error).text,
-        title: "Could not save Organization country",
+        title: t("saveError"),
         type: "error",
       });
     },
@@ -54,14 +56,12 @@ function CountrySettings({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{organization.name} settings</CardTitle>
+        <CardTitle>{t("title", { organization: organization.name })}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={save}>
           <Field>
-            <FieldLabel htmlFor="organization-country">
-              Organization country
-            </FieldLabel>
+            <FieldLabel htmlFor="organization-country">{t("country")}</FieldLabel>
             <select
               id="organization-country"
               data-testid="organization-country"
@@ -85,7 +85,7 @@ function CountrySettings({
             disabled={update.isPending}
             type="submit"
           >
-            {update.isPending ? "Saving…" : "Save Organization country"}
+            {update.isPending ? t("saving") : t("save")}
           </Button>
         </form>
       </CardContent>

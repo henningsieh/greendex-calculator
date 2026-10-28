@@ -9,6 +9,47 @@
         "description": "Annullare l’invito all’Organizzazione per {email}? Non potrà più essere accettato.",
         "execute": "Annulla invito"
       }
+    },
+    "page": {
+      "eyebrow": "Organization",
+      "title": "Organization",
+      "restricted": "Organization staff management is available to owners and admins.",
+      "description": "Manage staff members and pending invitations for the active Organization."
+    },
+    "loading": {
+      "label": "Loading Organization",
+      "staff": "Loading Organization staff"
+    },
+    "team": {
+      "membersTitle": "Members",
+      "membersDescription": "Everyone with an Organization staff role. Combined roles such as participant stay visible and keep their own access.",
+      "noMembers": "No members yet.",
+      "inviteTitle": "Invite staff",
+      "inviteDescription": "Owners can invite owners and admins. Admins can invite admins. Coordination stays assignment-based and is never granted here.",
+      "unavailable": "Organization staff is unavailable",
+      "invitationSent": "Invitation sent to {email}.",
+      "invitationCancelled": "Invitation cancelled.",
+      "sendInvitation": "Send invitation",
+      "sending": "Sending…",
+      "pendingTitle": "Pending invitations",
+      "pendingDescription": "Cancel an invitation to revoke it before it is accepted.",
+      "noPending": "No pending invitations.",
+      "noRole": "No role",
+      "cancel": "Cancel"
+    },
+    "settings": {
+      "title": "{organization} settings",
+      "country": "Organization country",
+      "saved": "Organization country saved.",
+      "saveError": "Could not save Organization country",
+      "save": "Save Organization country",
+      "saving": "Saving…"
+    },
+    "switcher": {
+      "acting": "Acting Organization",
+      "select": "Select Organization",
+      "aria": "Acting Organization: {organization}. Switch Organization",
+      "failed": "Could not switch Organization. Try again."
     }
   }
 }

@@ -1,7 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { UserSettingsTabs } from "@/features/user-settings/components/user-settings-tabs";
 
 vi.mock("@/features/user-settings/components/theme-settings", () => ({

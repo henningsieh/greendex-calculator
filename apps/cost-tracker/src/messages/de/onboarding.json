@@ -97,6 +97,23 @@
       "credentials": "E-Mail oder Passwort falsch. Prüfe deine Angaben und versuche es erneut.",
       "verification": "Bestätige deine E-Mail vor der Anmeldung. Öffne den Bestätigungslink in deinem Posteingang.",
       "signOut": "Abmeldung fehlgeschlagen"
+    },
+    "layout": {
+      "tagline": "Verwandle verstreute Reisekosten in einen verlässlichen Projektnachweis.",
+      "benefitTotals": "Exakte EUR-Summen bleiben erhalten",
+      "benefitDocuments": "Jeder Eintrag ist mit seinen Belegdokumenten verbunden",
+      "benefitAllocations": "Gemeinsame Tickets ohne Rätselraten aufteilen",
+      "footer": "Greendex · Kostenverfolgung für gemeinsame Reisen"
+    },
+    "createOrganization": {
+      "eyebrow": "Deine Organisation",
+      "heading": "Ein Zuhause für deine Projekte",
+      "description": "Dein persönlicher Login ist bereit. Füge jetzt deine Organisation hinzu, um Erasmus-Projekte zu hosten. Du wirst ihr Owner. Du kannst als Nächstes dein erstes Projekt anlegen, wann immer du bereit bist.",
+      "nameLabel": "Name der Organisation",
+      "countryLabel": "Land der Organisation",
+      "countryPlaceholder": "EU-Land auswählen",
+      "submit": "Organisation erstellen",
+      "invitationHint": "Erwartest du eine Einladung? Öffne stattdessen den Link in deiner Einladungs-E-Mail, um der richtigen Organisation beizutreten."
     }
   }
 }

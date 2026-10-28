@@ -3,5 +3,19 @@
     "confirm": "Confirmer",
     "cancel": "Annuler",
     "close": "Fermer"
+  },
+  "common": {
+    "name": "Name",
+    "email": "Email",
+    "emailAddress": "Email address",
+    "role": "Role",
+    "roles": "Roles",
+    "actions": "Actions",
+    "members": "Members",
+    "use": "Use",
+    "saving": "Saving…",
+    "send": "Send",
+    "loadingOrganization": "Loading Organization",
+    "loadingOrganizationStaff": "Loading Organization staff"
   }
 }

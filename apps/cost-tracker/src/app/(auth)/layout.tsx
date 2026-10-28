@@ -1,10 +1,13 @@
+import { getTranslations } from "@greendex/i18n/server";
 import { CheckIcon } from "lucide-react";
 
 import { SiteBrand } from "@/components/site-brand";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const t = await getTranslations("onboarding.layout");
+
   return (
     <main className="grid min-h-svh lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <section className="relative hidden overflow-hidden bg-primary p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between xl:p-16">
@@ -14,18 +17,16 @@ export default function AuthLayout({
 
         <div className="relative max-w-lg">
           <p className="font-heading text-4xl font-semibold tracking-tight text-balance xl:text-5xl">
-            Turn scattered travel costs into one trusted Project record.
+            {t("tagline")}
           </p>
           <ul className="mt-9 flex flex-col gap-4 text-sm text-primary-foreground/80">
-            <AuthBenefit>Keep exact EUR totals intact</AuthBenefit>
-            <AuthBenefit>Connect every entry to its Proof Documents</AuthBenefit>
-            <AuthBenefit>Allocate shared tickets without guesswork</AuthBenefit>
+            <AuthBenefit>{t("benefitTotals")}</AuthBenefit>
+            <AuthBenefit>{t("benefitDocuments")}</AuthBenefit>
+            <AuthBenefit>{t("benefitAllocations")}</AuthBenefit>
           </ul>
         </div>
 
-        <p className="text-sm text-primary-foreground/65">
-          Greendex · Cost tracking for shared journeys
-        </p>
+        <p className="text-sm text-primary-foreground/65">{t("footer")}</p>
       </section>
 
       <section className="flex min-h-svh flex-col bg-background p-5 sm:px-8 lg:px-14 xl:px-20">
