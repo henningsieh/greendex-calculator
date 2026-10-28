@@ -41,6 +41,7 @@ export function ProjectPartnershipManager({
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.confirmations");
+  const tManager = useTranslations("partnerships.manager");
   const { confirm, dialog } = useConfirmDialog();
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
@@ -122,7 +123,7 @@ export function ProjectPartnershipManager({
       {canAssign && (
         <Card data-testid="organization-assignment">
           <CardHeader>
-            <CardTitle>Assign an existing Organization</CardTitle>
+            <CardTitle>{tManager("assignExisting")}</CardTitle>
           </CardHeader>
           <CardContent>
             <form
@@ -134,9 +135,11 @@ export function ProjectPartnershipManager({
               }}
             >
               <div data-testid="hosted-project-picker" className="space-y-2">
-                <span className="text-sm font-medium">Hosted Project</span>
+                <span className="text-sm font-medium">
+                  {tManager("hostedProject")}
+                </span>
                 <EntityCombobox
-                  label="Hosted Project"
+                  label={tManager("hostedProject")}
                   value={projectId}
                   onChange={setProjectId}
                   search={searchHosted}
@@ -147,9 +150,11 @@ export function ProjectPartnershipManager({
                 data-testid="partner-organization-picker"
                 className="space-y-2"
               >
-                <span className="text-sm font-medium">Partner Organization</span>
+                <span className="text-sm font-medium">
+                  {tManager("partnerOrganization")}
+                </span>
                 <EntityCombobox
-                  label="Partner Organization"
+                  label={tManager("partnerOrganization")}
                   value={organizationId}
                   onChange={setOrganizationId}
                   search={searchOrganizations}
@@ -183,14 +188,14 @@ export function ProjectPartnershipManager({
 
       <div className="space-y-4">
         <h2 className="font-heading text-2xl font-semibold">
-          Current Project Partnerships
+          {tManager("current")}
         </h2>
         {partnerships.length === 0 ? (
           <p
             data-testid="partnerships-empty"
             className="rounded-xl border p-8 text-center text-muted-foreground"
           >
-            No Partner Organizations are assigned to hosted Projects.
+            {tManager("none")}
           </p>
         ) : (
           <ul className="grid gap-4">
@@ -211,8 +216,10 @@ export function ProjectPartnershipManager({
                       {partnership.projectName}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Assigned {dateTimeFormatter.format(partnership.assignedAt)}{" "}
-                      · Updated {dateTimeFormatter.format(partnership.updatedAt)}
+                      {tManager("assigned")}{" "}
+                      {dateTimeFormatter.format(partnership.assignedAt)}{" "}
+                      {tManager("updated")}{" "}
+                      {dateTimeFormatter.format(partnership.updatedAt)}
                     </p>
                   </div>
                 </div>

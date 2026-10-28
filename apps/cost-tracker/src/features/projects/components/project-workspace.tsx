@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Building2Icon, CalendarDaysIcon, MapPinIcon } from "lucide-react";
 import Link from "next/link";
@@ -51,6 +52,7 @@ export function ProjectWorkspace({
   returnTo?: string;
 }) {
   const queryClient = useQueryClient();
+  const t = useTranslations("projects.workspace");
   const [completing, setCompleting] = useState(false);
   const [feedback, setFeedback] = useState("");
   const { data: project } = useSuspenseQuery(
@@ -98,7 +100,7 @@ export function ProjectWorkspace({
           href={getProjectListReturnDestination(returnTo)}
           data-testid="back-to-projects"
         >
-          Back to Projects
+          {t("back")}
         </Link>
         <div className="flex flex-wrap items-center gap-3">
           <p
@@ -106,13 +108,13 @@ export function ProjectWorkspace({
             data-relationship={project.relationship}
           >
             {project.relationship === "hosted"
-              ? "Hosted Project"
-              : "Partner Project"}
+              ? t("hostedProject")
+              : t("partnerProject")}
           </p>
-          {project.archived && <Badge variant="secondary">Archived</Badge>}
+          {project.archived && <Badge variant="secondary">{t("archived")}</Badge>}
           {project.completedAt && (
             <Badge data-testid="project-completed" variant="secondary">
-              Completed
+              {t("completed")}
             </Badge>
           )}
         </div>
@@ -122,7 +124,7 @@ export function ProjectWorkspace({
         <Badge
           variant={project.costSubmissionWindowOpen ? "default" : "secondary"}
         >
-          Cost Submission Window{" "}
+          {t("submissionWindow")}{" "}
           {project.costSubmissionWindowOpen ? "open" : "closed"}
         </Badge>
         {project.completedAt && (
@@ -131,8 +133,8 @@ export function ProjectWorkspace({
             data-completed-at={project.completedAt.toISOString()}
             data-completed-by-user-id={project.completedByUserId}
           >
-            Completed {dateTimeFormatter.format(project.completedAt)} by{" "}
-            {project.completedByUserId}
+            {t("completed")} {dateTimeFormatter.format(project.completedAt)}{" "}
+            {t("by")} {project.completedByUserId}
           </p>
         )}
         {canComplete && (
@@ -151,7 +153,7 @@ export function ProjectWorkspace({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Schedule</CardTitle>
+            <CardTitle>{t("schedule")}</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-3">
             <CalendarDaysIcon
@@ -166,7 +168,7 @@ export function ProjectWorkspace({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Location</CardTitle>
+            <CardTitle>{t("location")}</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-3">
             <MapPinIcon
@@ -183,7 +185,7 @@ export function ProjectWorkspace({
       {project.relationship === "hosted" ? (
         <Card data-testid="assigned-partner-organizations">
           <CardHeader>
-            <CardTitle>Assigned Partner Organizations</CardTitle>
+            <CardTitle>{t("assignedPartners")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             {project.partnerOrganizations.length === 0 ? (
@@ -191,7 +193,7 @@ export function ProjectWorkspace({
                 className="text-sm text-muted-foreground"
                 data-testid="assigned-partnerships-empty"
               >
-                No Partner Organizations are assigned.
+                {t("noPartners")}
               </p>
             ) : (
               <ul className="divide-y">
@@ -212,7 +214,8 @@ export function ProjectWorkspace({
                     <span className="flex flex-wrap items-center gap-3">
                       <ClaimReadiness status={partner.claimStatus} />
                       <span className="text-sm text-muted-foreground">
-                        Assigned {dateTimeFormatter.format(partner.assignedAt)}
+                        {t("assigned")}{" "}
+                        {dateTimeFormatter.format(partner.assignedAt)}
                       </span>
                     </span>
                   </li>
@@ -225,20 +228,20 @@ export function ProjectWorkspace({
                 href={`/projects/${encodeURIComponent(project.id)}/participants`}
                 data-testid="hosted-participants"
               >
-                Hosting Participant view
+                {t("participantView")}
               </Link>
               <Link
                 className={buttonVariants({ variant: "outline" })}
                 href="/claims/review"
               >
-                Review submitted Claims
+                {t("reviewClaims")}
               </Link>
               <Link
                 className={buttonVariants({ variant: "outline" })}
                 href="/partner-organizations"
                 data-testid="manage-project-partnerships"
               >
-                Manage Project Partnerships
+                {t("managePartnerships")}
               </Link>
             </div>
           </CardContent>
@@ -246,11 +249,11 @@ export function ProjectWorkspace({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Project Partnership</CardTitle>
+            <CardTitle>{t("partnership")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm">
-              <span className="text-muted-foreground">Claim readiness:</span>{" "}
+              <span className="text-muted-foreground">{t("claimReadiness")}</span>{" "}
               <ClaimReadiness status={project.partnership.claimStatus} />
             </p>
             <p
@@ -258,15 +261,19 @@ export function ProjectWorkspace({
               data-organization-id={project.hostingOrganization.id}
               data-testid="hosting-organization"
             >
-              <span className="text-muted-foreground">Hosting Organization:</span>{" "}
+              <span className="text-muted-foreground">
+                {t("hostingOrganization")}
+              </span>{" "}
               {project.hostingOrganization.name}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Assigned:</span>{" "}
+              <span className="text-muted-foreground">{t("assignedLabel")}</span>{" "}
               {dateTimeFormatter.format(project.partnership.assignedAt)}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Assignment updated:</span>{" "}
+              <span className="text-muted-foreground">
+                {t("assignmentUpdated")}
+              </span>{" "}
               {dateTimeFormatter.format(project.partnership.updatedAt)}
             </p>
             <Link
@@ -274,14 +281,14 @@ export function ProjectWorkspace({
               href={`/partnerships/${encodeURIComponent(project.partnership.id)}/participants`}
               data-testid="coordinate-participants"
             >
-              Coordinate Participants
+              {t("coordinateParticipants")}
             </Link>
             <Link
               className={buttonVariants({ variant: "outline" })}
               href={`/partnerships/${encodeURIComponent(project.partnership.id)}/claim`}
               data-testid="open-claim-workspace"
             >
-              Open Claim workspace
+              {t("openClaim")}
             </Link>
           </CardContent>
         </Card>

@@ -1,1 +1,62 @@
-{}
+{
+  "partnerships": {
+    "loading": {
+      "partnerOrganizations": "Loading Partner Organizations",
+      "projectPartnerships": "Loading Project Partnerships"
+    },
+    "manager": {
+      "assignExisting": "Assign an existing Organization",
+      "hostedProject": "Hosted Project",
+      "partnerOrganization": "Partner Organization",
+      "current": "Current Project Partnerships",
+      "none": "No Partner Organizations are assigned to hosted Projects.",
+      "assigned": "Assigned",
+      "updated": "· Updated"
+    },
+    "setup": {
+      "title": "Partner Organization Setup Link",
+      "description": "Share this recipient-bound link privately. It does not grant Hosting Organization access.",
+      "hostedProject": "Hosted Project",
+      "recipientEmail": "Recipient email",
+      "existingLinks": "Existing Partner Organization Setup Links",
+      "existingLinksHint": "Only the newly created link can be copied. Existing link secrets are not stored.",
+      "loading": "Loading Partner Organization Setup Links…",
+      "loadError": "Unable to load Partner Organization Setup Links",
+      "retry": "Retry",
+      "empty": "No Partner Organization Setup Links yet.",
+      "status": "Status",
+      "expires": "Expires",
+      "action": "Action",
+      "recipientLink": "Recipient setup link",
+      "copy": "Copy",
+      "copied": "Link copied. Share it only with the invited person.",
+      "chooseOrganization": "Choose an Organization",
+      "newOrganization": "New Organization",
+      "existingOrganization": "Existing Organization",
+      "organization": "Organization",
+      "newOrganizationName": "New Organization name",
+      "organizationCountry": "Organization country",
+      "countryPlaceholder": "Select an EU country",
+      "created": "Project Partnership created",
+      "selectOrganization": "Select your Organization before opening its Project.",
+      "useOrganization": "Use this Organization",
+      "openPartnerProject": "Open Partner Project",
+      "signIn": "Sign in to continue",
+      "checking": "Checking setup link…",
+      "partnerSetup": "Partner Organization setup",
+      "continueEmail": "Continue with the email address this setup link was sent to. This connects your Organization to the Project.",
+      "retained": "Organization retained",
+      "retainedDescription": "Your Organization is ready. Continue to connect it to the Project. No new Organization is created.",
+      "retryRetained": "Retry setup with retained Organization",
+      "inspect": "Inspect setup result"
+    }
+  },
+  "partnerOrganizations": {
+    "page": {
+      "eyebrow": "Project network",
+      "title": "Partner Organizations",
+      "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
+      "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+    }
+  }
+}

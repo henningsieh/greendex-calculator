@@ -2,6 +2,7 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { EU_COUNTRIES } from "@greendex/config/eu-countries";
+import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -19,6 +20,7 @@ type Details = z.input<typeof ProjectCreateInputSchema>;
 
 export function CreateProjectDialog() {
   const router = useRouter();
+  const t = useTranslations("projects.create");
   const [open, setOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   const {
@@ -46,7 +48,7 @@ export function CreateProjectDialog() {
   return (
     <Dialog.Root onOpenChange={setOpen} open={open}>
       <Dialog.Trigger data-testid="new-project" render={<Button type="button" />}>
-        New project
+        {t("title")}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 bg-foreground/20 backdrop-blur-sm" />
@@ -56,15 +58,15 @@ export function CreateProjectDialog() {
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border bg-background p-6 shadow-xl outline-none"
           >
             <Dialog.Title className="font-heading text-2xl font-semibold">
-              New project
+              {t("title")}
             </Dialog.Title>
             <Dialog.Description className="mt-2 text-sm text-muted-foreground">
-              Add the Project details. Travel can be added later with Claims.
+              {t("description")}
             </Dialog.Description>
             <form className="mt-6" noValidate onSubmit={submit}>
               <FieldGroup>
                 <Field data-invalid={!!errors.name}>
-                  <FieldLabel htmlFor="new-project-name">Name</FieldLabel>
+                  <FieldLabel htmlFor="new-project-name">{t("name")}</FieldLabel>
                   <Input
                     aria-invalid={!!errors.name}
                     id="new-project-name"
@@ -74,7 +76,9 @@ export function CreateProjectDialog() {
                   {errors.name && <FieldError>{errors.name.message}</FieldError>}
                 </Field>
                 <Field data-invalid={!!errors.startDate}>
-                  <FieldLabel htmlFor="new-project-start">Start date</FieldLabel>
+                  <FieldLabel htmlFor="new-project-start">
+                    {t("startDate")}
+                  </FieldLabel>
                   <Input
                     aria-invalid={!!errors.startDate}
                     id="new-project-start"
@@ -90,7 +94,9 @@ export function CreateProjectDialog() {
                   )}
                 </Field>
                 <Field data-invalid={!!errors.endDate}>
-                  <FieldLabel htmlFor="new-project-end">End date</FieldLabel>
+                  <FieldLabel htmlFor="new-project-end">
+                    {t("endDate")}
+                  </FieldLabel>
                   <Input
                     aria-invalid={!!errors.endDate}
                     id="new-project-end"
@@ -106,7 +112,9 @@ export function CreateProjectDialog() {
                   )}
                 </Field>
                 <Field data-invalid={!!errors.location}>
-                  <FieldLabel htmlFor="new-project-location">Location</FieldLabel>
+                  <FieldLabel htmlFor="new-project-location">
+                    {t("location")}
+                  </FieldLabel>
                   <Input
                     aria-invalid={!!errors.location}
                     id="new-project-location"
@@ -118,7 +126,9 @@ export function CreateProjectDialog() {
                   )}
                 </Field>
                 <Field data-invalid={!!errors.country}>
-                  <FieldLabel htmlFor="new-project-country">Country</FieldLabel>
+                  <FieldLabel htmlFor="new-project-country">
+                    {t("country")}
+                  </FieldLabel>
                   <select
                     aria-invalid={!!errors.country}
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -128,7 +138,7 @@ export function CreateProjectDialog() {
                     {...register("country")}
                   >
                     <option disabled value="">
-                      Select an EU country
+                      {t("countryPlaceholder")}
                     </option>
                     {EU_COUNTRIES.map(({ code }) => (
                       <option key={code} value={code}>
@@ -144,7 +154,7 @@ export function CreateProjectDialog() {
                 </Field>
                 <Field data-invalid={!!errors.welcomeMessage}>
                   <FieldLabel htmlFor="new-project-welcome">
-                    Welcome message (optional)
+                    {t("welcomeMessage")}
                   </FieldLabel>
                   <textarea
                     aria-invalid={!!errors.welcomeMessage}
@@ -172,7 +182,7 @@ export function CreateProjectDialog() {
                       />
                     }
                   >
-                    Cancel
+                    {t("cancel")}
                   </Dialog.Close>
                   <Button
                     data-testid="create-project"

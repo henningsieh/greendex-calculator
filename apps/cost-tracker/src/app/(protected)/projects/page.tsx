@@ -1,3 +1,4 @@
+import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -19,17 +20,16 @@ export default async function ProjectsPage(
 ) {
   await connection();
   if (!(await hasOrganizationMembership())) return null;
+  const t = await getTranslations("projects.page");
 
   return (
     <div>
       <header className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">Project workspace</p>
+        <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          Projects
+          {t("title")}
         </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">
-          Review Projects hosted by or assigned to your active Organization.
-        </p>
+        <p className="mt-4 text-lg/8 text-muted-foreground">{t("description")}</p>
       </header>
 
       <Suspense fallback={<ProjectListSkeleton />}>
