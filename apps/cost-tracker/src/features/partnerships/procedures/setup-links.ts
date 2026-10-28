@@ -12,20 +12,27 @@ import {
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  CoordinationIdSchema,
+  SetupLinkEmailSchema,
+} from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
 
-const identifier = z.string().trim().min(1).max(128);
 // Setup links stay redeemable for seven days from creation.
 const SETUP_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const email = z.email().transform((value) => value.toLowerCase());
 const hash = (secret: string) =>
   createHash("sha256").update(secret).digest("hex");
 
 /** The caller delivers the returned secret through a private channel; it is never persisted raw. */
 export const createSetupLink = authorized
-  .input(z.object({ projectId: identifier, recipientEmail: email }))
+  .input(
+    z.object({
+      projectId: CoordinationIdSchema,
+      recipientEmail: SetupLinkEmailSchema,
+    }),
+  )
   .output(z.object({ id: z.string(), secret: z.string(), expiresAt: z.date() }))
   .handler(async ({ input, context, errors }) => {
     const secret = randomBytes(32).toString("base64url");
@@ -109,7 +116,7 @@ export const listSetupLinks = authorized
 
 export const disableSetupLink = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
-  .input(z.object({ id: identifier }))
+  .input(z.object({ id: CoordinationIdSchema }))
   .output(z.object({ disabled: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
     const [link] = await db
@@ -128,7 +135,10 @@ export const disableSetupLink = authorized
     return { disabled: true as const };
   });
 
-const setupLinkInput = z.object({ id: identifier, secret: z.string().min(1) });
+const setupLinkInput = z.object({
+  id: CoordinationIdSchema,
+  secret: z.string().min(1),
+});
 const redemptionResult = z.object({
   partnershipId: z.string(),
   organizationId: z.string(),
@@ -290,7 +300,7 @@ export async function readSetupBindingEligibility(
 
 /** Binds only. Better Auth owns Organization creation and Memberships (ADR-0013). */
 export const consumeSetupLink = authorized
-  .input(setupLinkInput.extend({ organizationId: identifier }))
+  .input(setupLinkInput.extend({ organizationId: CoordinationIdSchema }))
   .output(redemptionResult)
   .handler(async ({ input, context, errors }) => {
     return db.transaction(async (tx) => {

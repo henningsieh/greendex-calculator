@@ -28,7 +28,10 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
-import { canCompleteProject } from "@/features/claims/claim-lifecycle";
+import {
+  canCompleteProject,
+  isSettledClaimStatus,
+} from "@/features/claims/claim-lifecycle";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import {
   decodeProjectListCursor,
@@ -941,7 +944,7 @@ export const complete = authorized
       const statuses = partnerships.map(({ status }) => status);
       if (!canCompleteProject(statuses)) {
         const blockers = partnerships.filter(
-          ({ status }) => status !== "paid" && status !== "rejected",
+          ({ status }) => !isSettledClaimStatus(status),
         );
         throw createSituationErrors(errors).projectCompletionBlocked(blockers);
       }

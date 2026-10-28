@@ -13,6 +13,7 @@ import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
 import {
   ClaimDraftSchema,
   ClaimPartnershipInputSchema,
+  ClaimStatusSchema,
 } from "@/features/claims/validation-schemas";
 import {
   coordinationId,
@@ -91,14 +92,7 @@ export const getDraft = authorized
         id: z.string(),
         partnershipId: z.string(),
         approvedAmountEur: z.string().nullable(),
-        status: z.enum([
-          "editable",
-          "submitted",
-          "correction_requested",
-          "approved",
-          "rejected",
-          "paid",
-        ]),
+        status: ClaimStatusSchema,
       })
       .nullable(),
   )

@@ -11,6 +11,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireCostTrackerRole } from "@/features/organizations/roles";
+import { CoordinationIdSchema } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import {
   createSituationErrors,
@@ -18,7 +19,7 @@ import {
 } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-export const coordinationId = z.string().trim().min(1).max(128);
+export const coordinationId = CoordinationIdSchema;
 
 type Denial = ScopeErrorConstructors;
 

@@ -11,6 +11,7 @@ import {
   claimReviewTransition,
   isClaimAwaitingReview,
   isPartnerEditLocked,
+  isSettledClaimStatus,
   type ClaimStatus,
 } from "@/features/claims/claim-lifecycle";
 
@@ -147,6 +148,20 @@ describe("review surfaces", () => {
 });
 
 describe("Project completion", () => {
+  it("identifies only paid and rejected Claims as settled", () => {
+    expect(isSettledClaimStatus("paid")).toBe(true);
+    expect(isSettledClaimStatus("rejected")).toBe(true);
+    for (const status of [
+      "editable",
+      "submitted",
+      "correction_requested",
+      "approved",
+      null,
+      undefined,
+    ] as const)
+      expect(isSettledClaimStatus(status)).toBe(false);
+  });
+
   it("completes only when every Claim is paid or rejected", () => {
     // No Partnerships means no open Claim blocks completion; this preserves
     // the long-standing every/blockers semantics on both call sites.

@@ -122,6 +122,12 @@ export function isClaimAwaitingReview(
   return status === "submitted";
 }
 
+export function isSettledClaimStatus(
+  status: ClaimStatus | null | undefined,
+): boolean {
+  return status === "paid" || status === "rejected";
+}
+
 /**
  * The one Project completion rule. A Project completes only when every
  * Partnership Claim is settled: paid or rejected. Anything else — including a
@@ -134,5 +140,5 @@ export function isClaimAwaitingReview(
 export function canCompleteProject(
   statuses: readonly (ClaimStatus | null | undefined)[],
 ): boolean {
-  return statuses.every((status) => status === "paid" || status === "rejected");
+  return statuses.every(isSettledClaimStatus);
 }
