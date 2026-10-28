@@ -7,9 +7,8 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { CostTrackerServerEnvironmentSchema } from "@greendex/cost-tracker/environment-schemas";
 import type { z } from "zod";
-
-import { CostTrackerServerEnvironmentSchema } from "../src/environment-schemas";
 
 export class GarageCleanupError extends Error {
   constructor(

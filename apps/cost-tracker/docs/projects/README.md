@@ -1,6 +1,6 @@
 # Cost Tracker Projects
 
-Cost Tracker extends the shared [Project model](../../../../docs/projects/model.md) with Project Partnerships and a Cost Submission Window. It does not own Project identity, Project Participation, or shared permissions.
+Cost Tracker extends the shared [Project model](../../../../docs/projects/model.md) with Project Partnerships and Claim workflows. Project identity, Project Participation identity, and shared permissions remain repository-level concerns.
 
 ## Project Partnerships
 
@@ -20,7 +20,7 @@ Each Partner Organization assignment belongs only to that Project. The same Orga
 - `/projects/[id]` is the relationship-derived workspace. Hosted staff see Project context, the read-only Cost Submission Window, and assigned Partner Organizations. Partner staff see Project context, Hosting Organization identity, the window state, and their assignment metadata.
 - `/partner-organizations` manages Project Partnerships for Projects hosted by the active Organization. Assign/remove procedures remain authoritative and refuse foreign Projects, self-Partnerships, duplicates, and removal that would invalidate represented Project Participations.
 
-Partner projections never expose financial data, individual submissions, Proof Documents, allocations, Participant identity, or other Partner Organizations. Those persistence models are not implemented.
+The Project detail's Partner projection does not expose financial data, Proof Documents, allocations, Participant identity, or other Partner Organizations. Dedicated Claim and Participant procedures authorize their own reads and writes; these workflows and their persistence are implemented.
 
 ## List state and performance
 
@@ -28,16 +28,16 @@ The Project list stores scope, normalized name search, window state, overlap dat
 
 ## Cost Submission Window
 
-Each Project has one open/closed Cost Submission Window. Phase 8 displays that state read-only. The complete future [editing and authorization rules](../domain-model.md#editing-and-authorization) remain approved design; window changes never alter Better Auth Memberships or roles.
+The legacy Project-wide Cost Submission Window flag is read-only and does not gate Claim work. Claims follow their own [lifecycle and authorization rules](../claim-workflow.md). The flag does not change Organization Memberships or roles.
 
 ## Deferred decisions
 
-Recently-closed filtering requires a persisted transition timestamp and duration. Existing-Organization discovery requires a directory disclosure policy; the management surface currently accepts an exact known Organization ID. Cost-derived metrics, latest operational activity, and Cost Submission workspace sections wait for their persistence and authorization designs.
+Recently-closed filtering requires a persisted transition timestamp and duration. Existing-Organization discovery requires a directory disclosure policy; the management surface currently accepts an exact known Organization ID. Cost-derived Project-list metrics and latest operational activity remain separate from the existing Claim workspace.
 
 ## Related documentation
 
 - [Project list query-plan validation](list-query-plan-validation.md)
-- [Cost Tracker domain and cost schema](../domain-model.md)
+- [Current Cost Tracker domain model sources](../domain-model.md)
 - [Shared Project permissions](../../../../docs/projects/permissions.md)
 - [ADR-0001](../../../../docs/adr/0001-model-project-organizations-and-participation.md)
 - [ADR-0003](../../../../docs/adr/0003-model-cost-submissions-and-travel-costs.md)

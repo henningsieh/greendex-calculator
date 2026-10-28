@@ -19,9 +19,11 @@ Keeping them beside the live documentation made them look authoritative. A reade
 | [Architecture migration fix plan](architecture-migration-fix-plan.md)                     | Which of those 13 findings were fixed now, and which moved to follow-up issues.                                                                                                      |
 | [Final Cost Tracker migration review](architecture-migration-final-review.md)             | The verdict on issue #121. Accepts the six delivery areas.                                                                                                                           |
 | [Phase 0 – kurze Erklärung](phase-0-erklaerung.md)                                        | German-language note on the missing Phase 0 coordination record. States that no product-code change is missing, and that the record cannot honestly be reconstructed after the fact. |
+| [Maintenance architecture](maintenance-architecture.md)                                   | Approved Cost Tracker capability-ownership refactor plan and #329 cleanup scope. Implemented; kept here as a point-in-time record.                                                   |
+| [Design explorations](design/)                                                            | Archived mini-site, prototypes, and screenshots.                                                                                                                                     |
 
 ## Where the live material went
 
 - **Decisions** → [ADRs](../../../../docs/adr/). These are the durable record of _why_ the design has its current shape.
-- **Open questions** → [the backlog](../backlog/). The six questions retained by the plan are now tracked in [architecture-review-open-questions.md](../backlog/architecture-review-open-questions.md). They are no longer open inside an archived file.
+- **Open questions** → [GitHub issues](https://github.com/henningsieh/greendex-calculator/issues). The six questions retained by the plan were migrated from the former `../backlog/` folder to issues; they are no longer open inside an archived file.
 - **Current rules** → [Cost Tracker architecture](../architecture.md), [the cost model](../domain-model.md), and the scoped instructions in [`docs/agents/instructions/`](../../../../docs/agents/instructions/).

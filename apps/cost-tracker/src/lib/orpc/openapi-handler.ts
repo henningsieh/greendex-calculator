@@ -51,21 +51,21 @@ export const openapiHandler = new OpenAPIHandler(router, {
     }),
   ],
   routingInterceptors: [
-    async ({ next, request }) => {
-      const result = await next();
+    async (context) => {
+      const result = await context.next();
       if (result.matched)
         console.info(
           "[Cost Tracker OpenAPI]",
-          request.method,
-          request.url.split(/[?#]/)[0],
+          context.request.method,
+          context.request.url.split(/[?#]/)[0],
         );
       return result;
     },
   ],
   interceptors: [
-    async ({ next }) => {
+    async (context) => {
       try {
-        return await next();
+        return await context.next();
       } catch (error) {
         const errors = createSituationErrors();
         const normalized =

@@ -6,9 +6,10 @@ import { db } from "@greendex/database";
 import { organization, user } from "@greendex/database/schema";
 import { and, eq } from "drizzle-orm";
 
-import { assertExistingIntegrationDatabase } from "../../../../../scripts/existing-integration-environment";
-import { EmailInbox } from "../../../scripts/email-inbox";
-import { validateMailboxEnvironment } from "../../../scripts/email-run-safety";
+import { EmailInbox } from "#cost-tracker-scripts/email-inbox";
+import { validateMailboxEnvironment } from "#cost-tracker-scripts/email-run-safety";
+import { assertExistingIntegrationDatabase } from "#repo/scripts/existing-integration-environment";
+
 import { expect, registerPrivateValues, test } from "./fixtures/artifact-privacy";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 

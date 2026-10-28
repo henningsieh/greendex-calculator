@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SetupLinkRecipient } from "@/features/projects/components/setup-link";
+import { SetupLinkRecipient } from "@/features/partnerships/components/setup-link";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Partner Organization setup" };

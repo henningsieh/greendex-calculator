@@ -1,6 +1,6 @@
 # shadcn-Konformitäts-Report — Ember C
 
-Quelle: `ember-c-spec.md` (LOCKED 2026-10-11) + `mini-site/index.html` + `globals.css` (`design/eu-erasmus-theme`).
+Quelle: `ember-c-spec.md` (LOCKED 2026-10-11) + `../archive/design/mini-site/index.html` + `globals.css` (`design/eu-erasmus-theme`).
 Skill-Maßstab: shadcn `design-system.md` Steps 3–5 (Extraktion → Token-Mapping → CVA-Recipes).
 
 ## a) Locked-Entscheide → shadcn-Slot (Step-4-Mapping)

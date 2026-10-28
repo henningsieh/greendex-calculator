@@ -4,7 +4,7 @@ import { env } from "@/env";
 import {
   downloadProofDocument,
   uploadProofDocument,
-} from "@/features/projects/procedures/documents";
+} from "@/features/claims/procedures/documents";
 import { auth } from "@/lib/auth";
 import {
   getSafeErrorSituation,

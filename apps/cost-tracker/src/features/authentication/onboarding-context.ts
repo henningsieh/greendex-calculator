@@ -23,7 +23,7 @@ import {
 import {
   readSetupBindingEligibility,
   readSetupLinkEligibility,
-} from "@/features/projects/procedures/setup-links";
+} from "@/features/partnerships/procedures/setup-links";
 import { auth, costTrackerAuthFlags } from "@/lib/auth";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -44,6 +44,152 @@ function classifyEntry(
   return "direct";
 }
 
+type VerifiedOnboardingSession = NonNullable<
+  Awaited<ReturnType<typeof auth.api.getSession>>
+>;
+type OnboardingMemberships = Awaited<
+  ReturnType<typeof readOrganizationMemberships>
+>;
+type OrganizationCreationEligibility = Awaited<
+  ReturnType<typeof getOrganizationCreationEligibility>
+>;
+type OnboardingSituations = ReturnType<typeof createSituationErrors>;
+
+async function resolveStaffInvitationEntry(
+  returnTo: string | undefined,
+  session: VerifiedOnboardingSession,
+  memberships: OnboardingMemberships,
+  errors: ProcedureErrors,
+  situations: OnboardingSituations,
+): Promise<ValidatedOnboardingEntry> {
+  const entryContext = "organization-invitation";
+  let entry: ValidatedOnboardingEntry;
+  if (!returnTo) throw situations.staffInvitationNotFound();
+  const invitationId = returnTo.slice("/accept-invitation/".length);
+  const invitation = await readStaffInvitation(
+    invitationId,
+    session.user.email,
+    errors,
+    true,
+  );
+  if (invitation.status === "accepted") {
+    const membership = memberships.find(
+      ({ id, role }) =>
+        id === invitation.organizationId && isStaffOrganizationRole(role),
+    );
+    if (!membership) throw situations.staffInvitationAccepted();
+    entry = {
+      kind: entryContext,
+      status: "complete",
+      organization: { id: membership.id, name: membership.name },
+    };
+  } else
+    entry = {
+      kind: entryContext,
+      status: "pending",
+      invitationId,
+      organization: {
+        id: invitation.organizationId,
+        name: invitation.organizationName,
+      },
+    };
+  return entry;
+}
+
+async function resolvePartnerSetupEntry(
+  returnTo: string | undefined,
+  session: VerifiedOnboardingSession,
+  memberships: OnboardingMemberships,
+  input: OnboardingInput,
+  canCreate: boolean,
+  creationEligibility: OrganizationCreationEligibility,
+  situations: OnboardingSituations,
+): Promise<ValidatedOnboardingEntry> {
+  const entryContext = "partner-setup";
+  let entry: ValidatedOnboardingEntry;
+  if (!returnTo) throw situations.setupLinkNotFound();
+  const url = new URL(returnTo, "https://onboarding.invalid");
+  const secret = url.searchParams.get("secret");
+  if (!secret) throw situations.setupLinkNotFound();
+  const setupInput = {
+    id: url.pathname.slice("/setup-links/".length),
+    secret,
+  };
+  const eligibility = await readSetupLinkEligibility(
+    setupInput,
+    session.user,
+    situations,
+  );
+  const owned = memberships
+    .filter(({ role }) =>
+      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner),
+    )
+    .map(({ id, name }) => ({ id, name }));
+  if (eligibility.status === "redeemed") {
+    const organization = owned.find(
+      ({ id }) => id === eligibility.organizationId,
+    );
+    if (!organization) throw situations.organizationOwnerRequired();
+    if (
+      input.setupRecovery &&
+      input.setupRecovery.phase !== "creating" &&
+      input.setupRecovery.organizationId !== organization.id
+    )
+      throw situations.setupLinkUsed();
+    entry = {
+      kind: entryContext,
+      status: "complete",
+      organization,
+      destination: `/projects/${encodeURIComponent(eligibility.projectId)}`,
+    };
+  } else if (input.setupRecovery && input.setupRecovery.phase !== "creating") {
+    const organizationId = input.setupRecovery.organizationId;
+    await readSetupBindingEligibility(
+      { ...setupInput, organizationId },
+      session.user,
+      situations,
+    );
+    entry = { kind: entryContext, status: "bind", organizationId };
+  } else {
+    const allowCreation = canCreate && !input.setupRecovery;
+    if (
+      !allowCreation &&
+      owned.length === 0 &&
+      creationEligibility.status !== "denied-invitation"
+    )
+      throw situations.organizationOwnerRequired();
+    entry = {
+      kind: entryContext,
+      status: "choose",
+      organizations: owned,
+      canCreate: allowCreation,
+    };
+  }
+  return entry;
+}
+
+async function loadUnverifiedInvitationFacts(
+  returnTo: string | undefined,
+  session: Awaited<ReturnType<typeof auth.api.getSession>>,
+  input: OnboardingInput,
+  errors: ProcedureErrors,
+): Promise<OnboardingFacts> {
+  const entryContext = "organization-invitation";
+  const entry = await loadPublicInvitationEntry(
+    returnTo,
+    errors,
+    session?.user.email,
+  );
+  return {
+    account: session ? "unverified" : "signed-out",
+    entryContext,
+    entry,
+    authEntry: input.authEntry ?? "register",
+    returnTo: returnTo ?? "/accept-invitation",
+    email: session?.user.email ?? "",
+  };
+}
+
 export async function loadOnboardingFacts(
   headers: Headers,
   input: OnboardingInput,
@@ -56,19 +202,7 @@ export async function loadOnboardingFacts(
     entryContext === "organization-invitation" &&
     (!session || !session.user.emailVerified)
   ) {
-    const entry = await loadPublicInvitationEntry(
-      returnTo,
-      errors,
-      session?.user.email,
-    );
-    return {
-      account: session ? "unverified" : "signed-out",
-      entryContext,
-      entry,
-      authEntry: input.authEntry ?? "register",
-      returnTo: returnTo ?? "/accept-invitation",
-      email: session?.user.email ?? "",
-    };
+    return loadUnverifiedInvitationFacts(returnTo, session, input, errors);
   }
   if (!session)
     return {
@@ -102,97 +236,23 @@ export async function loadOnboardingFacts(
   else {
     try {
       if (entryContext === "organization-invitation") {
-        if (!returnTo) throw situations.staffInvitationNotFound();
-        const invitationId = returnTo.slice("/accept-invitation/".length);
-        const invitation = await readStaffInvitation(
-          invitationId,
-          session.user.email,
+        entry = await resolveStaffInvitationEntry(
+          returnTo,
+          session,
+          memberships,
           errors,
-          true,
-        );
-        if (invitation.status === "accepted") {
-          const membership = memberships.find(
-            ({ id, role }) =>
-              id === invitation.organizationId && isStaffOrganizationRole(role),
-          );
-          if (!membership) throw situations.staffInvitationAccepted();
-          entry = {
-            kind: entryContext,
-            status: "complete",
-            organization: { id: membership.id, name: membership.name },
-          };
-        } else
-          entry = {
-            kind: entryContext,
-            status: "pending",
-            invitationId,
-            organization: {
-              id: invitation.organizationId,
-              name: invitation.organizationName,
-            },
-          };
-      } else {
-        if (!returnTo) throw situations.setupLinkNotFound();
-        const url = new URL(returnTo, "https://onboarding.invalid");
-        const secret = url.searchParams.get("secret");
-        if (!secret) throw situations.setupLinkNotFound();
-        const setupInput = {
-          id: url.pathname.slice("/setup-links/".length),
-          secret,
-        };
-        const eligibility = await readSetupLinkEligibility(
-          setupInput,
-          session.user,
           situations,
         );
-        const owned = memberships
-          .filter(({ role }) =>
-            hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner),
-          )
-          .map(({ id, name }) => ({ id, name }));
-        if (eligibility.status === "redeemed") {
-          const organization = owned.find(
-            ({ id }) => id === eligibility.organizationId,
-          );
-          if (!organization) throw situations.organizationOwnerRequired();
-          if (
-            input.setupRecovery &&
-            input.setupRecovery.phase !== "creating" &&
-            input.setupRecovery.organizationId !== organization.id
-          )
-            throw situations.setupLinkUsed();
-          entry = {
-            kind: entryContext,
-            status: "complete",
-            organization,
-            destination: `/projects/${encodeURIComponent(eligibility.projectId)}`,
-          };
-        } else if (
-          input.setupRecovery &&
-          input.setupRecovery.phase !== "creating"
-        ) {
-          const organizationId = input.setupRecovery.organizationId;
-          await readSetupBindingEligibility(
-            { ...setupInput, organizationId },
-            session.user,
-            situations,
-          );
-          entry = { kind: entryContext, status: "bind", organizationId };
-        } else {
-          const allowCreation = canCreate && !input.setupRecovery;
-          if (
-            !allowCreation &&
-            owned.length === 0 &&
-            creationEligibility.status !== "denied-invitation"
-          )
-            throw situations.organizationOwnerRequired();
-          entry = {
-            kind: entryContext,
-            status: "choose",
-            organizations: owned,
-            canCreate: allowCreation,
-          };
-        }
+      } else {
+        entry = await resolvePartnerSetupEntry(
+          returnTo,
+          session,
+          memberships,
+          input,
+          canCreate,
+          creationEligibility,
+          situations,
+        );
       }
     } catch (error) {
       const situation =

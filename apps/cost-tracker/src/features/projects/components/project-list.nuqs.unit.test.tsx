@@ -13,40 +13,37 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/components/ui/toast", () => ({
   toast: { add: mocks.toastAdd },
 }));
-vi.mock(
-  "@/features/projects/project-list-query-options",
-  async (importOriginal) => ({
-    ...((await importOriginal()) as Record<string, unknown>),
-    getProjectAvailableScopesQueryOptions: () => ({
-      queryKey: ["projects", "available-scopes"],
-      queryFn: async () => mocks.availableScopes,
-    }),
-    getProjectListQueryOptions: mocks.getListOptions.mockImplementation(
-      (scope: "hosted" | "partner", state: { cursor?: string }) => ({
-        queryKey: ["projects", scope, state],
-        queryFn: async () => ({
-          scope,
-          rows: [],
-          previousCursor: state.cursor ? "previous-page" : undefined,
-          nextCursor: "next-page",
-          metrics: {
-            whole: {
-              projectCount: 0,
-              openWindowCount: 0,
-              partnerOrganizationCount: 0,
-            },
-            filtered: {
-              projectCount: 0,
-              openWindowCount: 0,
-              partnerOrganizationCount: 0,
-            },
-          },
-          partnerOptions: [],
-        }),
-      }),
-    ),
+vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
+  getProjectAvailableScopesQueryOptions: () => ({
+    queryKey: ["projects", "available-scopes"],
+    queryFn: async () => mocks.availableScopes,
   }),
-);
+  getProjectListQueryOptions: mocks.getListOptions.mockImplementation(
+    (scope: "hosted" | "partner", state: { cursor?: string }) => ({
+      queryKey: ["projects", scope, state],
+      queryFn: async () => ({
+        scope,
+        rows: [],
+        previousCursor: state.cursor ? "previous-page" : undefined,
+        nextCursor: "next-page",
+        metrics: {
+          whole: {
+            projectCount: 0,
+            openWindowCount: 0,
+            partnerOrganizationCount: 0,
+          },
+          filtered: {
+            projectCount: 0,
+            openWindowCount: 0,
+            partnerOrganizationCount: 0,
+          },
+        },
+        partnerOptions: [],
+      }),
+    }),
+  ),
+}));
 
 import { ProjectList } from "@/features/projects/components/project-list";
 

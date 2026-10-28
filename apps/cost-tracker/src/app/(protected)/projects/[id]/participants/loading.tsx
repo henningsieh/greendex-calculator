@@ -1,7 +1,5 @@
-import {
-  HostedParticipantsSkeleton,
-  ProjectDataPageSkeleton,
-} from "@/features/projects/components/project-loading-states";
+import { ProjectDataPageSkeleton } from "@/components/loading-skeletons";
+import { HostedParticipantsSkeleton } from "@/features/participations/components/loading-skeletons";
 
 export default function Loading() {
   return (

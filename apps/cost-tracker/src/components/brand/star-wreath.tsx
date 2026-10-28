@@ -23,6 +23,7 @@ function StarWreath({
       width={size}
       height={size}
       viewBox="0 0 80 80"
+      // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- Inline SVG needs a named image role; img cannot preserve its brand CSS variables and SVG props. Maintainer-approved exception.
       role="img"
       aria-label="GreenDex star wreath"
       className={cn("shrink-0", className)}

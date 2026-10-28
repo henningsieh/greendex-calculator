@@ -39,7 +39,7 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
-// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
+// deep guard is dormant. See #338 (E2E artifact privacy follow-up).
 // API-setup exceptions: beforeAll seeds verified recipient Users and credential
 // accounts, then signs each into its own browser context through the auth API.
 // The nested beforeAll hooks issue fresh 07/11 setup links directly in the DB;
@@ -48,7 +48,7 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // H's verified User is supplied by HostingJourneyFixture. No registration,
 // verification, or mail-sending invitation form is submitted in a browser.
 // Setup-link creation (05/08/09/13) is UI-only: createSetupLink in
-// features/projects/procedures/setup-links.ts persists a hash and returns a
+// features/partnerships/procedures/setup-links.ts persists a hash and returns a
 // secret; it does not invoke mail delivery. Artifact protection is described above.
 // Mail delivery is covered by setup-links.integration.test.ts and manual testing.
 // AUTOMATED-ONLY: 07 wrong-email server denial, 11 forged Owner-selection

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   requireSession: vi.fn().mockResolvedValue({ user: { id: "user-1" } }),
 }));
 vi.mock("@/lib/session", () => ({ requireSession: mocks.requireSession }));
-vi.mock("@/features/projects/components/setup-link", () => ({
+vi.mock("@/features/partnerships/components/setup-link", () => ({
   SetupLinkRecipient: ({ id, secret }: { id: string; secret?: string }) => (
     <p data-testid="setup-recipient" data-link-id={id} data-secret={secret} />
   ),

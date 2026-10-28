@@ -20,6 +20,10 @@ src/
 
 Create only the subdirectories a feature uses; do not add empty architecture placeholders. Keep route files focused on authorization, server data loading, metadata, and feature composition. Shared application-shell components belong in `src/components/`; behavior used by one feature belongs under that feature.
 
+## Claim ownership
+
+Claim lifecycle, UI components, procedures, limits, and payable calculation live in `src/features/claims`. Participant Journeys belong to `src/features/participations`; Claim-affecting writes still use the one Claim lifecycle policy and lock implementation. Existing oRPC router groups and URLs remain unchanged.
+
 ## Persistence seam
 
 Runtime route and view modules consume oRPC interfaces. Feature procedure modules own application database-client access, including authorization, active Organization scoping, persistence, and DTO projection. Integration-test fixtures, Better Auth integration, and schema-derived validation are separate seams. `pnpm run check:cost-tracker-persistence-seam` rejects direct database-client package roots and subpaths, dynamic imports, and local alias or re-export chains in route and view modules; it intentionally permits the separate seams. Run it after changing Cost Tracker routes or views.
@@ -32,7 +36,7 @@ Persisted form schemas start from the owning Drizzle table with `drizzle-zod`, t
 
 `/projects` is the canonical Project list. Its Server Component parses the shared nuqs contract, resolves the available Hosted/Partner scope through oRPC, and prefetches exactly one generated list query. The hydrated client view keeps scope, filters, sort, cursor, and page size in shallow URL state; TanStack Query requests each authoritative page and TanStack Table renders that page without client filtering, sorting, or pagination.
 
-`/projects/[id]` accepts only Project identity. `project-relationship-procedure.ts` derives Hosted, Partner, or inaccessible access from the active Organization, and the detail procedure projects relationship-specific safe data. URL scope is never authorization input.
+`/projects/[id]` accepts only Project identity. `features/projects/procedures/core.ts` derives Hosted, Partner, or inaccessible access from the active Organization, and the detail procedure projects relationship-specific safe data. URL scope is never authorization input.
 
 `/partner-organizations` owns Hosting-side Project Partnership management. Procedures validate Better Auth actions, prove Hosting ownership, and preserve represented-Organization invariants. Existing Organization discovery remains deliberately limited to exact known IDs until a directory disclosure policy is approved.
 
@@ -88,6 +92,21 @@ Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh
 
 ## Current feature ownership
 
-Project list state, relationship policy, reads, Project Partnership mutations, and views belong to `src/features/projects/`. User appearance and account-name behavior belong to `src/features/user-settings/`. Protected routes compose those features; shared navigation and provider mechanics remain in `src/components/`.
+| Feature                  | Ownership                                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `authentication`         | Login, sessions, and general account onboarding                                                      |
+| `organizations`          | Organization settings, Memberships, colleague invitations, and Organization switching                |
+| `projects`               | Project listing, creation, details, completion, and Hosting scope                                    |
+| `partnerships`           | Project Partnership assignments, setup links, coordinator administration, and Partnership scope      |
+| `participations`         | Participant management, reports, duplicate review, and Participant Journeys                          |
+| `participant-onboarding` | Participant Invitations, Registration Links, required information, Agreement acceptance, and joining |
+| `claims`                 | Claim lifecycle, costs, allocations, documents, payout workflow, submission, review, and payment     |
+| `user-settings`          | Personal preferences                                                                                 |
+
+Within each feature, `components/` owns UI and `procedures/` owns server operations. The nested Participant Onboarding workflow follows the same convention. Tests stay beside their implementation. Pure policies, calculations, schemas, and inferred types live with their owner rather than being presented as procedures.
+
+Routes compose these features without changing URL structure. Cross-feature imports are explicit through `@/`; do not add forwarding barrels or duplicate policies to make features artificially independent. Shared query error recovery, entity selection, skeleton building blocks, navigation, and provider mechanics live in `src/components/`. Each feature owns its own loading-state composition. Infrastructure stays in `src/lib/`.
+
+Folder ownership does not alter domain relationships. Project Participation belongs to the Project, Agreement acceptance belongs to the User, and Payout Accounts belong to an Organization with selection by Project Partnership. The existing combined payout workflow remains within Claims.
 
 See [Cost Tracker Projects](projects/README.md) and [User settings](user-settings.md) for behavior and integration details.

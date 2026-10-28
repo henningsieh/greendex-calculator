@@ -34,55 +34,52 @@ vi.mock("@/lib/orpc/orpc", () => ({
 vi.mock("nuqs", () => ({
   useQueryStates: () => [mocks.state, mocks.setUrlState],
 }));
-vi.mock(
-  "@/features/projects/project-list-query-options",
-  async (importOriginal) => ({
-    ...((await importOriginal()) as Record<string, unknown>),
-    getProjectAvailableScopesQueryOptions: () => ({
-      queryKey: ["projects", "available-scopes"],
-      queryFn: async () => ({
-        hosted: true,
-        partner: true,
-        canCreate: mocks.canCreate,
-      }),
-    }),
-    getProjectListQueryOptions: (
-      scope: "hosted" | "partner",
-      state: { cursor?: string },
-    ) => ({
-      queryKey: ["projects", scope, state],
-      queryFn: async () => ({
-        scope: "hosted" as const,
-        rows: [
-          {
-            id: "project-1",
-            name: "Climate Forum",
-            startDate: new Date("2026-06-01T00:00:00.000Z"),
-            endDate: new Date("2026-06-03T00:00:00.000Z"),
-            location: "Berlin",
-            country: "DE",
-            costSubmissionWindowOpen: true,
-          },
-        ],
-        nextCursor: "next-page",
-        previousCursor: state.cursor ? "previous-page" : undefined,
-        metrics: {
-          whole: {
-            projectCount: 3,
-            openWindowCount: 2,
-            partnerOrganizationCount: 2,
-          },
-          filtered: {
-            projectCount: 1,
-            openWindowCount: 1,
-            partnerOrganizationCount: 1,
-          },
-        },
-        partnerOptions: [{ id: "partner-1", name: "Mobility Group" }],
-      }),
+vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
+  getProjectAvailableScopesQueryOptions: () => ({
+    queryKey: ["projects", "available-scopes"],
+    queryFn: async () => ({
+      hosted: true,
+      partner: true,
+      canCreate: mocks.canCreate,
     }),
   }),
-);
+  getProjectListQueryOptions: (
+    scope: "hosted" | "partner",
+    state: { cursor?: string },
+  ) => ({
+    queryKey: ["projects", scope, state],
+    queryFn: async () => ({
+      scope: "hosted" as const,
+      rows: [
+        {
+          id: "project-1",
+          name: "Climate Forum",
+          startDate: new Date("2026-06-01T00:00:00.000Z"),
+          endDate: new Date("2026-06-03T00:00:00.000Z"),
+          location: "Berlin",
+          country: "DE",
+          costSubmissionWindowOpen: true,
+        },
+      ],
+      nextCursor: "next-page",
+      previousCursor: state.cursor ? "previous-page" : undefined,
+      metrics: {
+        whole: {
+          projectCount: 3,
+          openWindowCount: 2,
+          partnerOrganizationCount: 2,
+        },
+        filtered: {
+          projectCount: 1,
+          openWindowCount: 1,
+          partnerOrganizationCount: 1,
+        },
+      },
+      partnerOptions: [{ id: "partner-1", name: "Mobility Group" }],
+    }),
+  }),
+}));
 
 import { ProjectList } from "@/features/projects/components/project-list";
 

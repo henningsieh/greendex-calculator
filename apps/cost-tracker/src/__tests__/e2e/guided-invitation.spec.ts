@@ -11,9 +11,10 @@ import {
 import type { Locator, Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 
-import { assertExistingIntegrationDatabase } from "../../../../../scripts/existing-integration-environment";
-import { EmailInbox } from "../../../scripts/email-inbox";
-import { validateMailboxEnvironment } from "../../../scripts/email-run-safety";
+import { EmailInbox } from "#cost-tracker-scripts/email-inbox";
+import { validateMailboxEnvironment } from "#cost-tracker-scripts/email-run-safety";
+import { assertExistingIntegrationDatabase } from "#repo/scripts/existing-integration-environment";
+
 import {
   expect,
   expectPrivateURL,

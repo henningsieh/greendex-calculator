@@ -1,7 +1,7 @@
 ---
 name: "nuqs"
 description: "Type-safe URL search-parameter state, parsers, Next.js adapter, and server parsing"
-applyTo: "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/components/nuqs-provider.tsx,apps/cost-tracker/src/features/**/project-list-query-options.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx"
+applyTo: "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/components/nuqs-provider.tsx,apps/cost-tracker/src/features/**/list-query-options.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx"
 ---
 
 # nuqs
@@ -24,7 +24,7 @@ No official `SKILL.md` is available. The maintainer-authored [nuqs contributor A
 | App Router adapter boundary | Owning app's Nuqs provider component |
 | Calculator adapter | `apps/calculator/src/components/providers/nuqs-adapter.tsx`, scoped `NuqsProvider` around each consuming subtree (dashboard, projects, workshops) |
 | Cost Tracker adapter | `apps/cost-tracker/src/components/nuqs-provider.tsx`, `NuqsProvider` once around the root descendants in `apps/cost-tracker/src/app/layout.tsx` |
-| Client URL state | Owning feature component (Cost Tracker: `apps/cost-tracker/src/features/**/project-list-query-options.ts` and feature components) |
+| Client URL state | Owning feature component (Cost Tracker: `apps/cost-tracker/src/features/**/list-query-options.ts` and feature components) |
 | Server URL parsing | Owning page with `nuqs/server` |
 
 Both apps use the App Router adapter, `NuqsAdapter` from `nuqs/adapters/next/app`. The Calculator scopes the provider to the subtrees that use client URL state: the provider itself only stores the adapter (consumers invoke the search-param hook, and its navigation spy carries its own Suspense boundary), so this scoping is policy, not a rendering requirement — keep URL-state context with its consumers instead of implying global availability. The Cost Tracker wraps its root descendants once. Do not use a Pages Router/unified adapter.

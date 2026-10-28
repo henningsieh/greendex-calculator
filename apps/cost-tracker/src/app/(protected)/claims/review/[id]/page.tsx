@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { ClaimReview } from "@/features/projects/components/claim-review";
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
-import { ClaimReviewSkeleton } from "@/features/projects/components/project-loading-states";
+import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { ClaimReviewSkeleton } from "@/features/claims/components/claim-loading-states";
+import { ClaimReview } from "@/features/claims/components/claim-review";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership } from "@/lib/session";
 import {

@@ -3,28 +3,29 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { SEED_USER } from "@greendex/auth/seed-user";
+import type { Router } from "@greendex/cost-tracker/lib/orpc/router";
 import * as schema from "@greendex/database/schema";
 import { createTransporter } from "@greendex/email";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
 import { and, eq, inArray, like, or } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import {
+  SEED_SCENARIOS,
+  SEED_ORGANIZATION,
+  SEED_SECOND_PARTNER_ORGANIZATION,
+} from "#repo/apps/calculator/scripts/seed";
 import {
   assertExistingIntegrationDatabase,
   existingIntegrationApp,
   type ExistingIntegrationContext,
   type ExistingIntegrationSeed,
   type IntegrationApp,
-} from "../../../scripts/existing-integration-environment";
-import {
-  SEED_SCENARIOS,
-  SEED_ORGANIZATION,
-  SEED_SECOND_PARTNER_ORGANIZATION,
-} from "../../calculator/scripts/seed";
-import type { Router } from "../src/lib/orpc/router";
+} from "#repo/scripts/existing-integration-environment";
+
 import { EmailInbox } from "./email-inbox";
 import { validateMailboxEnvironment } from "./email-run-safety";
 
@@ -267,6 +268,217 @@ export async function resolveExistingIntegrationSeed(
   }
 }
 
+function resolveEmailWorkflowEnvironments(
+  existing: ExistingEmailRun,
+  apps: readonly IntegrationApp[],
+  bases: Partial<Record<IntegrationApp, string>>,
+) {
+  const environments: Partial<Record<IntegrationApp, Record<string, string>>> =
+    {};
+  if (!apps.length || new Set(apps).size !== apps.length)
+    throw new Error(
+      "Required email application inventory is empty or duplicated.",
+    );
+  for (const app of apps) {
+    const target = existing.context.apps[app];
+    if (!target) throw new Error("Existing email application is unavailable.");
+    const environment = {
+      ...target.environment,
+      DELETE_TESTMAILS_DURING_TESTRUN: "false",
+    };
+    if (existingIntegrationApp(environment).baseUrl !== target.baseUrl)
+      throw new Error("Existing email application URL mismatch.");
+    bases[app] = target.baseUrl;
+    validateMailboxEnvironment(environment);
+    environments[app] = environment;
+  }
+  return environments;
+}
+
+async function cleanupEmailWorkflowFixtures({
+  app,
+  base,
+  db,
+  seed,
+  results,
+  sessions,
+  name,
+  userId,
+  recipientWasClean,
+  organizationInvitationIds,
+  participantInvitationIds,
+  verificationIdsBefore,
+}: {
+  app: IntegrationApp;
+  base: string;
+  db: NodePgDatabase<typeof schema>;
+  seed: ExistingIntegrationSeed;
+  results: Result[];
+  sessions: HttpSession[];
+  name: string;
+  userId: string | undefined;
+  recipientWasClean: boolean;
+  organizationInvitationIds: string[];
+  participantInvitationIds: string[];
+  verificationIdsBefore: Set<string>;
+}) {
+  const clean = async (action: () => Promise<void>) => {
+    try {
+      await action();
+    } catch {
+      results.push({
+        workflow: `${app}/fixture-cleanup`,
+        status: "failed",
+        failureStage: "cleanup",
+        durationMs: 0,
+      });
+    }
+  };
+  {
+    for (const session of sessions) {
+      if (!session.cookie) continue;
+      await clean(async () => {
+        const response = await fetch(`${base}/api/auth/sign-out`, {
+          method: "POST",
+          redirect: "manual",
+          headers: {
+            origin: base,
+            cookie: session.cookie,
+            "content-type": "application/json",
+          },
+          body: "{}",
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!response.ok) throw new Error("Workflow session cleanup failed.");
+      });
+    }
+    await clean(async () => {
+      if (!userId) {
+        const created = await db.query.user.findFirst({
+          where: and(
+            eq(schema.user.email, recipient),
+            eq(schema.user.name, name),
+          ),
+        });
+        userId = created?.id;
+      }
+      if (recipientWasClean) {
+        const invitations = await db
+          .select({ id: schema.invitation.id })
+          .from(schema.invitation)
+          .where(
+            and(
+              eq(schema.invitation.email, recipient),
+              eq(schema.invitation.organizationId, seed.organizationId),
+            ),
+          );
+        organizationInvitationIds.push(...invitations.map(({ id }) => id));
+        const entries = await db
+          .select({ id: schema.participantEntryTokensTable.id })
+          .from(schema.participantEntryTokensTable)
+          .where(eq(schema.participantEntryTokensTable.email, recipient));
+        participantInvitationIds.push(...entries.map(({ id }) => id));
+      }
+    });
+    if (userId)
+      await clean(async () => {
+        const verifications = await db
+          .select()
+          .from(schema.verification)
+          .where(
+            or(
+              eq(schema.verification.value, userId!),
+              eq(schema.verification.identifier, recipient),
+              like(schema.verification.value, `%${recipient}%`),
+            ),
+          );
+        const owned = verifications.filter(({ id, value, identifier }) => {
+          if (verificationIdsBefore.has(id)) return false;
+          if (value === userId || identifier === recipient) return true;
+          try {
+            const parsed: unknown = JSON.parse(value);
+            return isRecord(parsed) && parsed.email === recipient;
+          } catch {
+            return false;
+          }
+        });
+        if (owned.length)
+          await db.delete(schema.verification).where(
+            inArray(
+              schema.verification.id,
+              owned.map(({ id }) => id),
+            ),
+          );
+      });
+  }
+  const tokens = sessions.flatMap((session) => [...session.sessionTokens]);
+  if (tokens.length)
+    await clean(async () => {
+      await db
+        .delete(schema.session)
+        .where(inArray(schema.session.token, tokens));
+    });
+  if (organizationInvitationIds.length)
+    await clean(async () => {
+      await db
+        .delete(schema.invitation)
+        .where(
+          and(
+            inArray(schema.invitation.id, organizationInvitationIds),
+            eq(schema.invitation.email, recipient),
+          ),
+        );
+    });
+  if (participantInvitationIds.length)
+    await clean(async () => {
+      await db
+        .delete(schema.participantEntryTokensTable)
+        .where(
+          and(
+            inArray(
+              schema.participantEntryTokensTable.id,
+              participantInvitationIds,
+            ),
+            eq(schema.participantEntryTokensTable.email, recipient),
+          ),
+        );
+    });
+  if (userId)
+    await clean(async () => {
+      await db
+        .delete(schema.projectParticipantsTable)
+        .where(eq(schema.projectParticipantsTable.userId, userId!));
+      await db
+        .delete(schema.user)
+        .where(
+          and(eq(schema.user.id, userId!), eq(schema.user.email, recipient)),
+        );
+    });
+}
+
+async function closeEmailWorkflowResources(
+  inboxes: { app: string; inbox: EmailInbox }[],
+  pool: Pool | undefined,
+  results: Result[],
+) {
+  for (const { app, inbox } of inboxes) {
+    try {
+      await inbox.cleanup();
+    } catch {
+      results.push({
+        workflow: `${app}/mail-cleanup`,
+        status: "failed",
+        durationMs: 0,
+      });
+    }
+  }
+  try {
+    await pool?.end();
+  } catch {
+    results.push({ workflow: "pool-cleanup", status: "failed", durationMs: 0 });
+  }
+}
+
 export async function verifyEmailWorkflows(
   existing: ExistingEmailRun,
   signal?: AbortSignal,
@@ -318,25 +530,7 @@ export async function verifyEmailWorkflows(
     }
   };
   try {
-    const environments: Partial<Record<IntegrationApp, Record<string, string>>> =
-      {};
-    if (!apps.length || new Set(apps).size !== apps.length)
-      throw new Error(
-        "Required email application inventory is empty or duplicated.",
-      );
-    for (const app of apps) {
-      const target = existing.context.apps[app];
-      if (!target) throw new Error("Existing email application is unavailable.");
-      const environment = {
-        ...target.environment,
-        DELETE_TESTMAILS_DURING_TESTRUN: "false",
-      };
-      if (existingIntegrationApp(environment).baseUrl !== target.baseUrl)
-        throw new Error("Existing email application URL mismatch.");
-      bases[app] = target.baseUrl;
-      validateMailboxEnvironment(environment);
-      environments[app] = environment;
-    }
+    const environments = resolveEmailWorkflowEnvironments(existing, apps, bases);
     assertExistingIntegrationDatabase(existing.context.databaseUrl);
     const seed = existing.context.seed;
     pool = new Pool({
@@ -712,142 +906,20 @@ export async function verifyEmailWorkflows(
           });
         }
       } finally {
-        const clean = async (action: () => Promise<void>) => {
-          try {
-            await action();
-          } catch {
-            results.push({
-              workflow: `${app}/fixture-cleanup`,
-              status: "failed",
-              failureStage: "cleanup",
-              durationMs: 0,
-            });
-          }
-        };
-        {
-          for (const session of sessions) {
-            if (!session.cookie) continue;
-            await clean(async () => {
-              const response = await fetch(`${base}/api/auth/sign-out`, {
-                method: "POST",
-                redirect: "manual",
-                headers: {
-                  origin: base,
-                  cookie: session.cookie,
-                  "content-type": "application/json",
-                },
-                body: "{}",
-                signal: AbortSignal.timeout(10_000),
-              });
-              if (!response.ok)
-                throw new Error("Workflow session cleanup failed.");
-            });
-          }
-          await clean(async () => {
-            if (!userId) {
-              const created = await db.query.user.findFirst({
-                where: and(
-                  eq(schema.user.email, recipient),
-                  eq(schema.user.name, name),
-                ),
-              });
-              userId = created?.id;
-            }
-            if (recipientWasClean) {
-              const invitations = await db
-                .select({ id: schema.invitation.id })
-                .from(schema.invitation)
-                .where(
-                  and(
-                    eq(schema.invitation.email, recipient),
-                    eq(schema.invitation.organizationId, seed.organizationId),
-                  ),
-                );
-              organizationInvitationIds.push(...invitations.map(({ id }) => id));
-              const entries = await db
-                .select({ id: schema.participantEntryTokensTable.id })
-                .from(schema.participantEntryTokensTable)
-                .where(eq(schema.participantEntryTokensTable.email, recipient));
-              participantInvitationIds.push(...entries.map(({ id }) => id));
-            }
-          });
-          if (userId)
-            await clean(async () => {
-              const verifications = await db
-                .select()
-                .from(schema.verification)
-                .where(
-                  or(
-                    eq(schema.verification.value, userId!),
-                    eq(schema.verification.identifier, recipient),
-                    like(schema.verification.value, `%${recipient}%`),
-                  ),
-                );
-              const owned = verifications.filter(({ id, value, identifier }) => {
-                if (verificationIdsBefore.has(id)) return false;
-                if (value === userId || identifier === recipient) return true;
-                try {
-                  const parsed: unknown = JSON.parse(value);
-                  return isRecord(parsed) && parsed.email === recipient;
-                } catch {
-                  return false;
-                }
-              });
-              if (owned.length)
-                await db.delete(schema.verification).where(
-                  inArray(
-                    schema.verification.id,
-                    owned.map(({ id }) => id),
-                  ),
-                );
-            });
-        }
-        const tokens = sessions.flatMap((session) => [...session.sessionTokens]);
-        if (tokens.length)
-          await clean(async () => {
-            await db
-              .delete(schema.session)
-              .where(inArray(schema.session.token, tokens));
-          });
-        if (organizationInvitationIds.length)
-          await clean(async () => {
-            await db
-              .delete(schema.invitation)
-              .where(
-                and(
-                  inArray(schema.invitation.id, organizationInvitationIds),
-                  eq(schema.invitation.email, recipient),
-                ),
-              );
-          });
-        if (participantInvitationIds.length)
-          await clean(async () => {
-            await db
-              .delete(schema.participantEntryTokensTable)
-              .where(
-                and(
-                  inArray(
-                    schema.participantEntryTokensTable.id,
-                    participantInvitationIds,
-                  ),
-                  eq(schema.participantEntryTokensTable.email, recipient),
-                ),
-              );
-          });
-        if (userId)
-          await clean(async () => {
-            await db
-              .delete(schema.projectParticipantsTable)
-              .where(eq(schema.projectParticipantsTable.userId, userId!));
-            await db
-              .delete(schema.user)
-              .where(
-                and(
-                  eq(schema.user.id, userId!),
-                  eq(schema.user.email, recipient),
-                ),
-              );
-          });
+        await cleanupEmailWorkflowFixtures({
+          app,
+          base,
+          db,
+          seed,
+          results,
+          sessions,
+          name,
+          userId,
+          recipientWasClean,
+          organizationInvitationIds,
+          participantInvitationIds,
+          verificationIdsBefore,
+        });
       }
     }
   } catch {
@@ -857,22 +929,7 @@ export async function verifyEmailWorkflows(
       durationMs: Date.now() - startedAt,
     });
   } finally {
-    for (const { app, inbox } of inboxes) {
-      try {
-        await inbox.cleanup();
-      } catch {
-        results.push({
-          workflow: `${app}/mail-cleanup`,
-          status: "failed",
-          durationMs: 0,
-        });
-      }
-    }
-    try {
-      await pool?.end();
-    } catch {
-      results.push({ workflow: "pool-cleanup", status: "failed", durationMs: 0 });
-    }
+    await closeEmailWorkflowResources(inboxes, pool, results);
   }
   reportBlockedWorkflows(results, apps);
   const passed =

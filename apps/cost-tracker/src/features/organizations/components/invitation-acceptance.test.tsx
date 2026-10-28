@@ -1,8 +1,10 @@
+import { NextIntlClientProvider } from "@greendex/i18n/client";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
+import messages from "@/messages/en.json";
 
 const mocks = vi.hoisted(() => ({
   onboardingNextStep: vi.fn(),
@@ -30,7 +32,9 @@ vi.mock("@/lib/auth-client", () => ({
 }));
 vi.mock("@/features/authentication/components/sign-out-button", () => ({
   SignOutButton: ({ destination }: { destination?: string }) => (
-    <button type="button" data-testid="sign-out" data-destination={destination} />
+    <button type="button" data-testid="sign-out" data-destination={destination}>
+      Sign out
+    </button>
   ),
 }));
 
@@ -384,4 +388,88 @@ it("keeps a cancelled rejection actionable and disables it while executing", asy
     invitationId: "invite-1",
   });
   expect(trigger).toBeDisabled();
+});
+
+it("applies changed initial decisions without fetching and preserves callbacks and redirects", async () => {
+  const onDecision = vi.fn();
+  const onAuthenticate = vi.fn();
+  const view = render(
+    <InvitationAcceptance
+      returnTo={returnTo}
+      initialDecision={ready}
+      onDecision={onDecision}
+    />,
+  );
+  await screen.findByTestId("accept-organization-invitation");
+  expect(onDecision).toHaveBeenLastCalledWith(ready);
+  view.rerender(
+    <NextIntlClientProvider locale="en" messages={messages}>
+      <InvitationAcceptance
+        returnTo={returnTo}
+        initialDecision={complete}
+        onDecision={onDecision}
+      />
+    </NextIntlClientProvider>,
+  );
+  await waitFor(() =>
+    expect(mocks.replace).toHaveBeenLastCalledWith("/projects"),
+  );
+  expect(onDecision).toHaveBeenLastCalledWith(complete);
+  const signedOut: OnboardingDecision = {
+    entryContext: "organization-invitation",
+    nextStep: "authenticate",
+    invitation,
+    availableActions: [
+      { kind: "authenticate", entry: "register", returnTo },
+      { kind: "authenticate", entry: "login", returnTo },
+      { kind: "google", returnTo },
+    ],
+  };
+  view.rerender(
+    <NextIntlClientProvider locale="en" messages={messages}>
+      <InvitationAcceptance
+        returnTo={returnTo}
+        initialDecision={signedOut}
+        onDecision={onDecision}
+        onAuthenticate={onAuthenticate}
+      />
+    </NextIntlClientProvider>,
+  );
+  await waitFor(() =>
+    expect(mocks.replace).toHaveBeenLastCalledWith(
+      "/register?next=%2Faccept-invitation%2Finvite-1",
+    ),
+  );
+  expect(onAuthenticate).toHaveBeenCalledTimes(1);
+  expect(onDecision).toHaveBeenLastCalledWith(signedOut);
+  expect(mocks.onboardingNextStep).not.toHaveBeenCalled();
+});
+
+it("ignores an old fetched decision when an initial decision replaces it", async () => {
+  let resolveOld: ((next: OnboardingDecision) => void) | undefined;
+  mocks.onboardingNextStep.mockImplementationOnce(
+    () =>
+      new Promise<OnboardingDecision>((resolve) => {
+        resolveOld = resolve;
+      }),
+  );
+  const onDecision = vi.fn();
+  const view = render(
+    <InvitationAcceptance returnTo={returnTo} onDecision={onDecision} />,
+  );
+  view.rerender(
+    <NextIntlClientProvider locale="en" messages={messages}>
+      <InvitationAcceptance
+        returnTo={returnTo}
+        initialDecision={ready}
+        onDecision={onDecision}
+      />
+    </NextIntlClientProvider>,
+  );
+  await screen.findByTestId("accept-organization-invitation");
+  await act(async () => {
+    resolveOld?.(complete);
+  });
+  expect(mocks.replace).not.toHaveBeenCalled();
+  expect(onDecision).toHaveBeenLastCalledWith(ready);
 });

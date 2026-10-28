@@ -28,6 +28,10 @@ _Avoid_: Rules, Project-specific agreement
 A person targeted by a Participant Invitation or Participant Registration Link before a Project Participation exists for them in that Project.
 _Avoid_: Participant, Project Participation
 
+**Participant Onboarding**:
+The workflow through which an Invitee becomes a Participant in a Project using a Participant Invitation or Participant Registration Link, including authentication, required information, and acceptance of the current Participant Agreement.
+_Avoid_: Participant Entry (when naming the complete workflow), Organization Onboarding
+
 **Participant Invitation**:
 An app-owned invitation bound to one email address, issued by the Partner Organization administering a Project Partnership.
 _Avoid_: Participant Registration Link, Organization Invitation, Better Auth invitation

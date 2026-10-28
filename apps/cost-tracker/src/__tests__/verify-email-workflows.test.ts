@@ -9,7 +9,7 @@ const fixtures = vi.hoisted(() => ({
   end: vi.fn(),
   environments: [] as Record<string, string>[],
 }));
-vi.mock("../../scripts/email-inbox", () => ({
+vi.mock("#cost-tracker-scripts/email-inbox", () => ({
   EmailInbox: class {
     constructor(environment: Record<string, string>) {
       fixtures.environments.push(environment);
@@ -25,16 +25,16 @@ vi.mock("pg", () => ({
   },
 }));
 vi.mock("drizzle-orm/node-postgres", () => ({ drizzle: () => ({}) }));
-vi.mock("../../scripts/email-run-safety", () => ({
+vi.mock("#cost-tracker-scripts/email-run-safety", () => ({
   validateMailboxEnvironment: vi.fn(),
 }));
 
-import { sharedDevelopmentDatabaseUrl } from "../../../../scripts/existing-integration-environment";
 import {
   HttpSession,
   resolveExistingIntegrationSeed,
   verifyEmailWorkflows,
-} from "../../scripts/verify-email-workflows";
+} from "#cost-tracker-scripts/verify-email-workflows";
+import { sharedDevelopmentDatabaseUrl } from "#repo/scripts/existing-integration-environment";
 
 beforeEach(() => {
   vi.clearAllMocks();

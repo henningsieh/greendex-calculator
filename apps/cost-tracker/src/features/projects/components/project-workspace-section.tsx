@@ -1,6 +1,6 @@
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
+import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
-import { getProjectListReturnDestination } from "@/features/projects/project-list-query-options";
+import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import {
   getQueryClient,

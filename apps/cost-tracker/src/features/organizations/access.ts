@@ -3,7 +3,7 @@ import "server-only";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { headers } from "next/headers";
 
-import { assignedPartnershipIds } from "@/features/projects/procedures/assigned-partnerships";
+import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { getSession } from "@/lib/session";
 

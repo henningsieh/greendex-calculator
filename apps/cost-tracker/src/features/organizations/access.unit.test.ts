@@ -16,7 +16,7 @@ vi.mock("@/lib/session", () => ({ getSession: mocks.getSession }));
 vi.mock("@/lib/orpc/middleware", () => ({
   hasCostTrackerPermissions: mocks.hasPermissions,
 }));
-vi.mock("@/features/projects/procedures/assigned-partnerships", () => ({
+vi.mock("@/features/partnerships/procedures/assigned-partnerships", () => ({
   assignedPartnershipIds: mocks.assigned,
 }));
 

@@ -37,7 +37,7 @@ the [Husky pre-commit research](../research/husky-pre-commit.md).
 
 - Oxfmt configuration, import sorting, and Tailwind sorting live in `.oxfmtrc.json`.
 - Oxlint configuration lives in `.oxlintrc.json`; lint scripts may apply fixes.
-- The root `.oxlintrc.json` also loads the `@shadcn/lint` Oxlint JS plugin (declared as a root devDependency) and carries the design-system rules; because workspaces resolve that single config, every workspace lint run includes them. `pnpm run lint:design-system` is the focused check-only pass. Read [UI components](shadcn.md) before changing those rules.
+- The root `.oxlintrc.json` also loads the `@shadcn/lint` Oxlint JS plugin (declared as a root devDependency) and carries the design-system rules; because workspaces resolve that single config, every workspace lint run includes them. `pnpm run lint:design-system` is the focused check-only pass, fanning out to each app's own `lint:design-system` script. Read [UI components](shadcn.md) before changing those rules.
 - `ignorePatterns` and `overrides` entries are resolved relative to the config file directory, so keep them repository-root-relative.
 - Tailwind-resolving lint rules run in the apps, auth, and email packages that ship class strings. Config, database, and i18n ship no Tailwind class strings and retain the scoped override. Oxlint overrides do not support `comment` keys; keep rationale here, not in configuration fields.
 - Use Vitest for unit/integration tests and Playwright for browser flows.

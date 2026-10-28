@@ -11,8 +11,7 @@ import {
 
 export { expect } from "@playwright/test";
 
-// The deep guard is dormant for MVP. See the follow-up backlog item at
-// apps/cost-tracker/docs/backlog/e2e-artifact-privacy-followup.md.
+// The deep guard is dormant for MVP. See #338 (E2E artifact privacy follow-up).
 const require = createRequire(import.meta.url);
 
 const privateValues = new Set<string>([SEED_USER.password]);
@@ -103,7 +102,7 @@ export function installArtifactPrivacy(_testInfo: TestInfo): () => void {
 }
 
 // Retained experimental implementation, NEVER called by the default test export.
-// Re-enabling requires the backlog validation, not just switching this function.
+// Re-enabling requires the #338 validation, not just switching this function.
 export function installExperimentalArtifactPrivacy(
   testInfo: TestInfo,
 ): () => void {

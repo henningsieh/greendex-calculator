@@ -38,7 +38,7 @@ import { hashPassword } from "better-auth/crypto";
 import { and, count, eq, inArray } from "drizzle-orm";
 
 import { env } from "@/env";
-import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/authentication/participant-agreement";
+import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/participant-onboarding/participant-agreement";
 
 import {
   expectPrivateURL,
@@ -51,7 +51,7 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
-// deep guard is dormant. See docs/backlog/e2e-artifact-privacy-followup.md.
+// deep guard is dormant. See #338 (E2E artifact privacy follow-up).
 // API-setup exceptions: beforeAll inserts verified disposable Users and credentials,
 // Hosting/Partner Organizations and memberships, one Project, two Project Partnerships,
 // joined Project Participations, frozen funding rules, Participant Journeys, Payout

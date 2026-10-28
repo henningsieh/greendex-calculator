@@ -19,6 +19,7 @@
     "format": "oxfmt",
     "generate:sri": "node scripts/generate-sri.js",
     "lint": "oxlint --fix --fix-suggestions --fix-dangerously",
+    "lint:design-system": "oxlint -A all -D shadcn/no-restyle src",
     "prebuild": "pnpm run generate:sri && pnpm run check:sri",
     "prestart": "dotenv -e ../../packages/database/.env -e .env -- pnpm run start:prepare",
     "serve": "concurrently --kill-others \"next start --port $PORT\" \"tsx src/socket-server.ts\"",

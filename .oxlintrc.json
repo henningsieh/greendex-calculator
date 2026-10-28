@@ -258,6 +258,12 @@
       }
     },
     {
+      "files": ["apps/cost-tracker/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
+      "rules": {
+        "complexity": ["warn", 20]
+      }
+    },
+    {
       "files": ["apps/cost-tracker/src/**"],
       "rules": {
         "shadcn/no-restyle": [

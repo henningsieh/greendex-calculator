@@ -36,14 +36,14 @@ Documentation has five kinds with different rules. Placing a statement in the wr
 | **Decision**    | Immutable. Reversal means a new ADR that supersedes the old one.                                    | [`docs/adr/`](docs/adr/README.md)                                                      | Why this shape, and what was rejected |
 | **Instruction** | Mutable current rules. Rewrite when the practice changes.                                           | [`docs/agents/instructions/`](docs/agents/instructions/)                               | How to work here now                  |
 | **Model**       | Mutable domain descriptions: glossaries define names; behavior docs describe rules and persistence. | [Glossaries](GLOSSARY-MAP.md), [shared Projects](docs/projects/README.md), app `docs/` | What the things are                   |
-| **Open work**   | Mutable. Needs a decision or an implementation.                                                     | [GitHub issues](docs/agents/issue-tracker.md); app `docs/backlog/`                     | What still needs doing                |
+| **Open work**   | Mutable. Needs a decision or an implementation.                                                     | [GitHub issues](docs/agents/issue-tracker.md)                                          | What still needs doing                |
 | **Archive**     | Frozen. Never follow as instructions.                                                               | app `docs/archive/`                                                                    | What was true at a past review        |
 
 Rules that follow from this:
 
 - An archived document states what was true at its review. It is not a decision record and never regains authority. When its content describes a codebase that no longer exists, move it to `archive/` and link the live replacement from the index.
 - A "Q" numbered entry in an archived review is a closed decision unless the surrounding section says otherwise. Do not read a binding decision log as a work list.
-- Deferred work belongs in an issue or the backlog, never inside an archived file. Keep the backlog linked from the app's documentation index; an unindexed backlog is a backlog nobody reads.
+- Deferred work belongs in an issue, never inside an archived file.
 - Never link from a live document to a file that does not exist on the current branch. Check directory links too, not only file links.
 
 ## Read Conditionally (Default: Read Nothing Up Front)

@@ -25,7 +25,7 @@ vi.mock("@/features/organizations/procedures/staff-invites", () => ({
 vi.mock("@/features/organizations/procedures/memberships", () => ({
   readOrganizationMemberships: mocks.memberships,
 }));
-vi.mock("@/features/projects/procedures/setup-links", () => ({
+vi.mock("@/features/partnerships/procedures/setup-links", () => ({
   readSetupBindingEligibility: vi.fn(),
   readSetupLinkEligibility: vi.fn(),
 }));

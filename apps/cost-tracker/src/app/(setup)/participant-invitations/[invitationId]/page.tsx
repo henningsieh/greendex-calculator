@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-import { ParticipantJoin } from "@/features/authentication/components/participant-onboarding";
+import { ParticipantJoin } from "@/features/participant-onboarding/components/participant-onboarding";
 import {
   AGREEMENT_COPY,
   CURRENT_PARTICIPANT_AGREEMENT_VERSION,
-} from "@/features/authentication/participant-agreement";
+} from "@/features/participant-onboarding/participant-agreement";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Accept Project invitation" };

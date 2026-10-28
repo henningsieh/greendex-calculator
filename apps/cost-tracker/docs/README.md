@@ -6,36 +6,40 @@ These documents describe behavior owned by the Cost Tracker application.
 
 - [Cost Tracking glossary](../GLOSSARY.md)
 - Other contexts: [Calculator](../../../apps/calculator/GLOSSARY.md) · [Documentation](../../../apps/documentation/GLOSSARY.md) — overview in [Glossary map](../../../GLOSSARY-MAP.md)
+- [Shared Greendex language](../../../GLOSSARY.md)
 - [Cost Tracker architecture](architecture.md)
+- [Current domain model sources](domain-model.md)
+- [Current domain behavior](domain-behavior.md) — participation, invitations, agreements, transport, and Claim invariants extracted from the former app context
+- [Claim workflow](claim-workflow.md)
+- [Shared Projects documentation](../../../docs/projects/README.md)
+- [Cost Tracker Projects](projects/README.md)
+- [User settings](user-settings.md)
+
+## Specialist references
+
+Open only when the task touches them; not required reading.
+
 - [Confirm an action](confirm-dialog.md)
 - [HTTP API and real-HTTP test prerequisites](openapi.md)
 - [Live email verification for both managed apps](live-email-verification.md)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
-- [Shared Greendex language](../../../GLOSSARY.md)
-- [Shared Projects documentation](../../../docs/projects/README.md)
-- [Cost Tracker Projects](projects/README.md)
-- [User settings](user-settings.md)
-- [Cost model and schema blueprint](domain-model.md)
-- [Claim workflow](claim-workflow.md)
-- [Current domain behavior](domain-behavior.md) — participation, invitations, agreements, transport, and Claim invariants extracted from the former app context
 - [Clickdummy use-case traceability](clickdummy/requirements-traceability.md)
 - [Garage S3 infrastructure](infrastructure/garage.md)
 - [Manual pair-testing (journey script, run logs, session protocol)](manual-testing/)
 
 ## Open work
 
-Start here when you need to know what still needs a decision. Nothing in this list is history.
+Deferred decisions and follow-ups live as [GitHub issues](https://github.com/henningsieh/greendex-calculator/issues) — the canonical surface for issues and specs (see [`docs/agents/issue-tracker.md`](../../../docs/agents/issue-tracker.md)). This index stays generic and does not list individual issues.
 
-- [Backlog](backlog/) — deferred questions and follow-ups. Begin with the [six open questions from the Phase 0–8 architecture review](backlog/architecture-review-open-questions.md).
 - [Erasmus re-theme tracking](design/erasmus-billing-accounting-theme.md) — Billing/Accounting redesign chain: approved prototype, palette, fonts, hover language, and lint migration.
-- [Project/Partner cardinality](backlog/project-partner-cardinality.md) — can one Project have more than one Partner Organization, or is one Partner Organization per Project the real rule?
-- [GitHub issues](https://github.com/henningsieh/greendex-calculator/issues) — canonical surface for issues and specs; see [`docs/agents/issue-tracker.md`](../../../docs/agents/issue-tracker.md).
 
 ## Archive
 
 Finished work. These files describe the codebase as it stood in September 2026. Do not follow them as instructions.
 
 - [Archived architecture reviews](archive/) — the completed Phase 0–8 migration review, its findings, its fix plan, and its final verdict. The architecture migration is accepted and closed.
+- [Archived design explorations](archive/design/) — mini-site, prototypes, and screenshots.
+- [Historical Cost Submission blueprint](archive/cost-submission-blueprint.md) — superseded aggregate, entry, and submission-window design; not implementation guidance.
 
 ## Decisions
 

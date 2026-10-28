@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
-import { ParticipantDetailsSection } from "@/features/projects/components/participant-details-section";
-import { ParticipantDetailsSkeleton } from "@/features/projects/components/project-loading-states";
+import { ParticipantDetailsSkeleton } from "@/features/participations/components/loading-skeletons";
+import { ParticipantDetailsSection } from "@/features/participations/components/participant-details-section";
 import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Participant details" };
