@@ -24,10 +24,8 @@ import {
   TOTAL_ALLOCATION_PERCENTAGE_UNITS,
 } from "@/features/claims/payable";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
-import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+import { ClaimScopeInputSchema } from "@/features/claims/validation-schemas";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -383,7 +381,7 @@ async function evaluateSubmission(
 }
 
 export const previewSubmission = authorized
-  .input(z.object({ partnershipId: coordinationId }))
+  .input(ClaimScopeInputSchema)
   .output(
     z
       .object({
@@ -431,7 +429,7 @@ export const previewSubmission = authorized
 
 /** Project → Partnership → Claim: journey creation and payout selection share this ordering. */
 export const submit = authorized
-  .input(z.object({ partnershipId: coordinationId }))
+  .input(ClaimScopeInputSchema)
   .output(
     z.object({
       id: z.string(),

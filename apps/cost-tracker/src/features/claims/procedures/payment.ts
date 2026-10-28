@@ -14,14 +14,11 @@ import {
 } from "@/features/claims/claim-lifecycle";
 import { decimalUnits } from "@/features/claims/payable";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
-import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+import { ClaimInputSchema } from "@/features/claims/validation-schemas";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const claimInput = z.object({ partnershipId: coordinationId });
 const result = z.object({
   id: z.string(),
   status: z.enum(["approved", "paid"]),
@@ -31,7 +28,7 @@ const result = z.object({
 /** Call only after the bank confirms one full transfer; a failed transfer is not a Claim event. */
 export const markPaid = authorized
   .input(
-    claimInput.extend({
+    ClaimInputSchema.extend({
       amountEur: z
         .string()
         .regex(/^\d+(?:\.\d{1,2})?$/, "Enter exact EUR cents."),
@@ -98,7 +95,7 @@ export const markPaid = authorized
 /** Corrects an application flag, not the bank transfer; the original paid event remains. */
 export const correctPayment = authorized
   .input(
-    claimInput.extend({
+    ClaimInputSchema.extend({
       reason: z.string().trim().min(1).max(MAX_CLAIM_REASON_LENGTH),
     }),
   )

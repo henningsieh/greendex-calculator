@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { ClaimScopeInputSchema } from "@/features/claims/validation-schemas";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -19,7 +20,6 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 import { getProofFile, putProofFile } from "@/lib/proof-storage";
 
-const scopeInput = z.object({ partnershipId: coordinationId });
 const documentOutput = z.object({
   id: z.string(),
   originalFileName: z.string(),
@@ -51,7 +51,7 @@ async function requirePartner(
 }
 
 export const list = authorized
-  .input(scopeInput)
+  .input(ClaimScopeInputSchema)
   .output(z.array(documentOutput))
   .handler(async ({ input, context, errors }) => {
     await requirePartner(
@@ -82,7 +82,8 @@ export async function downloadProofDocument(input: {
   activeOrganizationId: string | null | undefined;
 }) {
   if (
-    !scopeInput.safeParse({ partnershipId: input.partnershipId }).success ||
+    !ClaimScopeInputSchema.safeParse({ partnershipId: input.partnershipId })
+      .success ||
     !coordinationId.safeParse(input.documentId).success
   ) {
     throw proofErrors.proofNotFound();
@@ -129,7 +130,9 @@ export async function uploadProofDocument(input: {
   actorId: string;
   activeOrganizationId: string | null | undefined;
 }) {
-  const parsed = scopeInput.safeParse({ partnershipId: input.partnershipId });
+  const parsed = ClaimScopeInputSchema.safeParse({
+    partnershipId: input.partnershipId,
+  });
   if (!parsed.success || !(input.file instanceof File))
     throw proofErrors.proofSelectionRequired();
   if (!allowedMediaTypes.has(input.file.type))

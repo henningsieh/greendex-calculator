@@ -11,13 +11,16 @@ import { z } from "zod";
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
 import {
+  ClaimDraftSchema,
+  ClaimPartnershipInputSchema,
+} from "@/features/claims/validation-schemas";
+import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const partnershipInput = z.object({ partnershipId: coordinationId });
 const accountSchema = z.object({
   id: z.string(),
   accountHolder: z.string(),
@@ -60,11 +63,6 @@ const bicSchema = z
   )
   .optional()
   .transform((value) => value ?? null);
-const draftSchema = z.object({
-  id: z.string(),
-  partnershipId: z.string(),
-  status: z.enum(["editable", "correction_requested"]),
-});
 
 async function requirePartnerSide(
   partnershipId: string,
@@ -86,7 +84,7 @@ async function requirePartnerSide(
 
 /** Reading the workspace never starts a Claim. */
 export const getDraft = authorized
-  .input(partnershipInput)
+  .input(ClaimPartnershipInputSchema)
   .output(
     z
       .object({
@@ -126,7 +124,7 @@ export const getDraft = authorized
 
 /** List only this Partner's accounts and the Partnership's current selection. */
 export const listPayoutAccounts = authorized
-  .input(partnershipInput)
+  .input(ClaimPartnershipInputSchema)
   .output(
     z.object({
       accounts: z.array(
@@ -179,7 +177,7 @@ export const listPayoutAccounts = authorized
 /** Create an Organization-owned account without selecting it or starting a Claim. */
 export const createPayoutAccount = authorized
   .input(
-    partnershipInput.extend({
+    ClaimPartnershipInputSchema.extend({
       accountHolder: accountHolderSchema,
       iban: ibanSchema,
       bic: bicSchema,
@@ -212,7 +210,7 @@ export const createPayoutAccount = authorized
 
 /** Select by reference on the Partnership, without starting a Claim. */
 export const selectPayoutAccount = authorized
-  .input(partnershipInput.extend({ payoutAccountId: coordinationId }))
+  .input(ClaimPartnershipInputSchema.extend({ payoutAccountId: coordinationId }))
   .output(z.object({ partnershipId: z.string(), payoutAccountId: z.string() }))
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
@@ -261,8 +259,8 @@ export const selectPayoutAccount = authorized
 
 /** Explicit first save: unique Partnership key and row lock make retries idempotent. */
 export const saveDraft = authorized
-  .input(partnershipInput)
-  .output(draftSchema)
+  .input(ClaimPartnershipInputSchema)
+  .output(ClaimDraftSchema)
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,
@@ -298,7 +296,7 @@ export const saveDraft = authorized
       if (claim) {
         if (!canPartnerEditClaim(claim.status))
           throw createSituationErrors(errors).claimNotEditable();
-        return draftSchema.parse(claim);
+        return ClaimDraftSchema.parse(claim);
       }
       const [created] = await tx
         .insert(claims)
@@ -323,7 +321,7 @@ export const saveDraft = authorized
         console.error("Claim insert conflict returned no scoped Claim");
         throw createSituationErrors(errors).internalFailure();
       }
-      if (canPartnerEditClaim(raced.status)) return draftSchema.parse(raced);
+      if (canPartnerEditClaim(raced.status)) return ClaimDraftSchema.parse(raced);
       throw createSituationErrors(errors).claimNotEditable();
     });
   });

@@ -21,15 +21,12 @@ import {
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
-import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+import { ClaimInputSchema } from "@/features/claims/validation-schemas";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const claimInput = z.object({ partnershipId: coordinationId });
-const reviewInput = claimInput.extend({
+const reviewInput = ClaimInputSchema.extend({
   reason: z.string().trim().max(MAX_CLAIM_REASON_LENGTH).optional(),
 });
 const result = z.object({
@@ -124,7 +121,7 @@ function decision(action: ClaimReviewDecision) {
 
 // Rendering hint only. Mutations independently repeat the authoritative scope check.
 export const reviewerAccess = authorized
-  .input(claimInput)
+  .input(ClaimInputSchema)
   .output(z.object({ canReview: z.boolean() }))
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerCoordination(
@@ -138,7 +135,7 @@ export const reviewerAccess = authorized
 
 /** Hosting-only, read-only snapshot for Claim review; no editable drafts or storage keys leave this boundary. */
 export const getReviewDetails = authorized
-  .input(claimInput)
+  .input(ClaimInputSchema)
   .output(
     z.object({
       payoutAccount: z
@@ -324,7 +321,7 @@ export const getReviewDetails = authorized
   });
 
 export const getHistory = authorized
-  .input(claimInput)
+  .input(ClaimInputSchema)
   .output(
     z.array(
       z.object({
