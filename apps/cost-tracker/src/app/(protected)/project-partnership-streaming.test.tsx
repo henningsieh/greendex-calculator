@@ -55,35 +55,35 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   HydrateClient: ({ children }: { children: React.ReactNode }) => children,
   swallowPrefetchError: vi.fn(),
 }));
-vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
+vi.mock("@/components/query-data-error-boundary", () => ({
   ProjectDataErrorBoundary: ({ children }: { children: React.ReactNode }) =>
     children,
 }));
-vi.mock("@/features/projects/components/claim-workspace", () => ({
+vi.mock("@/features/claims/components/claim-workspace", () => ({
   ClaimWorkspace: () => <p>Resolved Claim workspace</p>,
 }));
-vi.mock("@/features/projects/components/claim-review", () => ({
+vi.mock("@/features/claims/components/claim-review", () => ({
   ClaimReview: () => <p>Resolved Claim review</p>,
 }));
-vi.mock("@/features/projects/components/claim-review-queue", () => ({
+vi.mock("@/features/claims/components/claim-review-queue", () => ({
   ClaimReviewQueue: () => <p>Resolved Claim queue</p>,
 }));
-vi.mock("@/features/projects/components/participant-coordination", () => ({
+vi.mock("@/features/participations/components/participant-coordination", () => ({
   ParticipantCoordination: () => <p>Resolved Participations</p>,
 }));
-vi.mock("@/features/projects/components/participant-details", () => ({
+vi.mock("@/features/participations/components/participant-details", () => ({
   ParticipantDetails: () => <p>Resolved Participant details</p>,
 }));
-vi.mock("@/features/projects/components/hosted-participant-report", () => ({
+vi.mock("@/features/participations/components/hosted-participant-report", () => ({
   HostedParticipantReport: () => <p>Resolved Hosted report</p>,
 }));
-vi.mock("@/features/projects/components/project-partnership-manager", () => ({
+vi.mock("@/features/partnerships/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: () => <p>Resolved Partnerships</p>,
 }));
 vi.mock("@/features/projects/components/project-workspace", () => ({
   ProjectWorkspace: () => <p>Resolved Project workspace</p>,
 }));
-vi.mock("@/features/projects/components/setup-link", () => ({
+vi.mock("@/features/partnerships/components/setup-link", () => ({
   SetupLinkCreator: () => <p>Setup link creator</p>,
 }));
 

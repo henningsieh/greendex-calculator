@@ -5,12 +5,15 @@ const mocks = vi.hoisted(() => ({
   requireSession: vi.fn().mockResolvedValue({ user: { id: "user-1" } }),
 }));
 vi.mock("@/lib/session", () => ({ requireSession: mocks.requireSession }));
-vi.mock("@/features/authentication/components/participant-onboarding", () => ({
-  ParticipantJoin: ({ source }: { source: unknown }) => (
-    <p data-testid="participant-join" data-source={JSON.stringify(source)} />
-  ),
-  ParticipantDashboard: () => <p data-testid="participant-dashboard" />,
-}));
+vi.mock(
+  "@/features/participant-onboarding/components/participant-onboarding",
+  () => ({
+    ParticipantJoin: ({ source }: { source: unknown }) => (
+      <p data-testid="participant-join" data-source={JSON.stringify(source)} />
+    ),
+    ParticipantDashboard: () => <p data-testid="participant-dashboard" />,
+  }),
+);
 
 import ParticipantInvitationPage from "@/app/(setup)/participant-invitations/[invitationId]/page";
 import ParticipantLinkPage from "@/app/(setup)/participant-links/[id]/page";

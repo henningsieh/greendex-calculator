@@ -21,6 +21,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { type UseQueryStatesReturn, useQueryStates } from "nuqs";
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
+import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,11 +51,10 @@ import {
 import { toast } from "@/components/ui/toast";
 import { AssignedProjectList } from "@/features/projects/components/assigned-project-list";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import {
   getProjectAvailableScopesQueryOptions,
   getProjectListQueryOptions,
-} from "@/features/projects/project-list-query-options";
+} from "@/features/projects/list-query-options";
 import {
   getProjectListReturnDestination,
   normalizeProjectListState,
@@ -65,8 +65,8 @@ import {
   PROJECT_WINDOW_FILTERS,
   resolveProjectListState,
   type ProjectListScopeAvailability,
-} from "@/features/projects/project-list-query-options";
-import type { ProjectListRow } from "@/features/projects/types";
+} from "@/features/projects/list-query-options";
+import type { ProjectListRow, ProjectListData } from "@/features/projects/types";
 
 const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -281,6 +281,81 @@ function AvailableProjectList({
       state={resolution.state}
       urlState={urlState}
     />
+  );
+}
+
+function ProjectListOverview({
+  scope,
+  availableScopes,
+  updateListState,
+  data,
+}: {
+  scope: "hosted" | "partner";
+  availableScopes: ProjectListScopeAvailability;
+  updateListState: (patch: Parameters<ProjectListQueryState[1]>[0]) => void;
+  data: ProjectListData;
+}) {
+  const filtered = data.metrics.filtered;
+  const whole = data.metrics.whole;
+  return (
+    <>
+      <div
+        className="flex flex-wrap gap-2"
+        role="tablist"
+        aria-label="Project relationship"
+      >
+        <Button
+          aria-selected={scope === "hosted"}
+          data-testid="project-scope-hosted"
+          disabled={!availableScopes.hosted && availableScopes.partner}
+          onClick={() => updateListState({ scope: "hosted" })}
+          role="tab"
+          variant={scope === "hosted" ? "default" : "outline"}
+        >
+          Hosted
+        </Button>
+        <Button
+          data-testid="project-scope-partner"
+          aria-selected={scope === "partner"}
+          disabled={!availableScopes.partner}
+          onClick={() => updateListState({ scope: "partner" })}
+          role="tab"
+          variant={scope === "partner" ? "default" : "outline"}
+        >
+          Partner
+        </Button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <MetricCard
+          label={
+            filtered.projectCount === whole.projectCount
+              ? "Projects"
+              : `Projects (${whole.projectCount} total)`
+          }
+          value={filtered.projectCount}
+        />
+        <MetricCard
+          label={
+            filtered.openWindowCount === whole.openWindowCount
+              ? "Open windows"
+              : `Open windows (${whole.openWindowCount} total)`
+          }
+          value={filtered.openWindowCount}
+        />
+        {data.scope === "hosted" && (
+          <MetricCard
+            label={
+              data.metrics.filtered.partnerOrganizationCount ===
+              data.metrics.whole.partnerOrganizationCount
+                ? "Partner Organizations"
+                : `Partner Organizations (${data.metrics.whole.partnerOrganizationCount} total)`
+            }
+            value={data.metrics.filtered.partnerOrganizationCount}
+          />
+        )}
+      </div>
+    </>
   );
 }
 
@@ -544,63 +619,12 @@ function ResolvedProjectList({
       data-project-count={whole.projectCount}
       data-filtered-project-count={filtered.projectCount}
     >
-      <div
-        className="flex flex-wrap gap-2"
-        role="tablist"
-        aria-label="Project relationship"
-      >
-        <Button
-          aria-selected={scope === "hosted"}
-          data-testid="project-scope-hosted"
-          disabled={!availableScopes.hosted && availableScopes.partner}
-          onClick={() => updateListState({ scope: "hosted" })}
-          role="tab"
-          variant={scope === "hosted" ? "default" : "outline"}
-        >
-          Hosted
-        </Button>
-        <Button
-          data-testid="project-scope-partner"
-          aria-selected={scope === "partner"}
-          disabled={!availableScopes.partner}
-          onClick={() => updateListState({ scope: "partner" })}
-          role="tab"
-          variant={scope === "partner" ? "default" : "outline"}
-        >
-          Partner
-        </Button>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MetricCard
-          label={
-            filtered.projectCount === whole.projectCount
-              ? "Projects"
-              : `Projects (${whole.projectCount} total)`
-          }
-          value={filtered.projectCount}
-        />
-        <MetricCard
-          label={
-            filtered.openWindowCount === whole.openWindowCount
-              ? "Open windows"
-              : `Open windows (${whole.openWindowCount} total)`
-          }
-          value={filtered.openWindowCount}
-        />
-        {data.scope === "hosted" && (
-          <MetricCard
-            label={
-              data.metrics.filtered.partnerOrganizationCount ===
-              data.metrics.whole.partnerOrganizationCount
-                ? "Partner Organizations"
-                : `Partner Organizations (${data.metrics.whole.partnerOrganizationCount} total)`
-            }
-            value={data.metrics.filtered.partnerOrganizationCount}
-          />
-        )}
-      </div>
-
+      <ProjectListOverview
+        scope={scope}
+        availableScopes={availableScopes}
+        updateListState={updateListState}
+        data={data}
+      />
       <div className="grid gap-5 rounded-xl border p-5 md:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-2">
           <Label htmlFor="project-search">Project name</Label>

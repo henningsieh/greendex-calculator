@@ -1,1 +1,1 @@
-export { default } from "@/app/(protected)/partnerships/[id]/participants/loading";
+export { default } from "@/app/(protected)/partnerships/[id]/participants/loading-skeletons";

@@ -1,4 +1,4 @@
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
+import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { ProjectList } from "@/features/projects/components/project-list";
 import {
   getProjectAvailableScopesQueryOptions,
@@ -6,7 +6,7 @@ import {
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
-} from "@/features/projects/project-list-query-options";
+} from "@/features/projects/list-query-options";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import {
   getQueryClient,

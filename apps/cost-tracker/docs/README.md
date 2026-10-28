@@ -15,7 +15,7 @@ These documents describe behavior owned by the Cost Tracker application.
 - [Shared Projects documentation](../../../docs/projects/README.md)
 - [Cost Tracker Projects](projects/README.md)
 - [User settings](user-settings.md)
-- [Cost model and schema blueprint](domain-model.md)
+- [Current domain model sources](domain-model.md)
 - [Claim workflow](claim-workflow.md)
 - [Current domain behavior](domain-behavior.md) — participation, invitations, agreements, transport, and Claim invariants extracted from the former app context
 - [Clickdummy use-case traceability](clickdummy/requirements-traceability.md)
@@ -27,6 +27,7 @@ These documents describe behavior owned by the Cost Tracker application.
 Start here when you need to know what still needs a decision. Nothing in this list is history.
 
 - [Backlog](backlog/) — deferred questions and follow-ups. Begin with the [six open questions from the Phase 0–8 architecture review](backlog/architecture-review-open-questions.md).
+- [Maintenance architecture plan](backlog/maintenance-architecture.md) — approved Cost Tracker-only ownership refactor and #329 cleanup, preserving existing functionality.
 - [Erasmus re-theme tracking](design/erasmus-billing-accounting-theme.md) — Billing/Accounting redesign chain: approved prototype, palette, fonts, hover language, and lint migration.
 - [Project/Partner cardinality](backlog/project-partner-cardinality.md) — can one Project have more than one Partner Organization, or is one Partner Organization per Project the real rule?
 - [GitHub issues](https://github.com/henningsieh/greendex-calculator/issues) — canonical surface for issues and specs; see [`docs/agents/issue-tracker.md`](../../../docs/agents/issue-tracker.md).
@@ -36,6 +37,7 @@ Start here when you need to know what still needs a decision. Nothing in this li
 Finished work. These files describe the codebase as it stood in September 2026. Do not follow them as instructions.
 
 - [Archived architecture reviews](archive/) — the completed Phase 0–8 migration review, its findings, its fix plan, and its final verdict. The architecture migration is accepted and closed.
+- [Historical Cost Submission blueprint](archive/cost-submission-blueprint.md) — superseded aggregate, entry, and submission-window design; not implementation guidance.
 
 ## Decisions
 

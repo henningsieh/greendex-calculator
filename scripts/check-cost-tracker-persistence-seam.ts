@@ -25,7 +25,9 @@ const isDatabaseClientPackage = (specifier: string) =>
     !specifier.startsWith("@greendex/database/schema/"));
 
 const isRuntimeSourceFile = (relativePath: string) =>
-  sourceFilePattern.test(relativePath) && !testFilePattern.test(relativePath);
+  sourceFilePattern.test(relativePath) &&
+  !testFilePattern.test(relativePath) &&
+  !relativePath.split("/").includes(".playwright");
 
 const isFeatureProcedure = (relativePath: string) =>
   /\/features\/[^/]+\/(?:[^/]*procedure(?:s)?|procedures\/[^/]+)\.[jt]sx?$/u.test(
@@ -53,6 +55,7 @@ const findFiles = async (directoryPath: string): Promise<string[]> => {
   const files = [];
 
   for (const entry of entries) {
+    if (entry.isDirectory() && entry.name === ".playwright") continue;
     const entryPath = path.join(directoryPath, entry.name);
     if (entry.isDirectory()) files.push(...(await findFiles(entryPath)));
     else if (isRuntimeSourceFile(entry.name)) files.push(entryPath);
@@ -267,26 +270,32 @@ export const findForbiddenDatabaseImports = (
       .filter(({ relativePath }) => isRuntimeSourceFile(relativePath))
       .map((file) => [normalizePath(file.relativePath), file]),
   );
+  const specifiersByModule = new Map(
+    [...modules].map(([relativePath, file]) => [
+      relativePath,
+      getModuleSpecifiers(file.content),
+    ]),
+  );
 
   const hasDatabaseClientAccess = (
     relativePath: string,
     seen = new Set<string>(),
     exposesClient = false,
   ) => {
-    if (seen.has(relativePath)) return false;
+    const visit = `${relativePath}:${exposesClient}`;
+    if (seen.has(visit)) return false;
 
     const module = modules.get(relativePath);
     if (!module) return false;
 
-    seen.add(relativePath);
-    for (const specifier of getModuleSpecifiers(module.content)) {
+    seen.add(visit);
+    for (const specifier of specifiersByModule.get(relativePath) ?? []) {
       if (
         isDatabaseClientPackage(specifier.value) &&
         (!isPermittedPersistenceOwner(relativePath) ||
           exposesClient ||
           specifier.isReExport)
       ) {
-        seen.delete(relativePath);
         return true;
       }
 
@@ -303,12 +312,9 @@ export const findForbiddenDatabaseImports = (
           exposesClient || specifier.isReExport,
         )
       ) {
-        seen.delete(relativePath);
         return true;
       }
     }
-    seen.delete(relativePath);
-
     return false;
   };
 

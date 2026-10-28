@@ -16,9 +16,8 @@ import type { RouterClient } from "@orpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { assertExistingHttpTarget } from "#repo/scripts/existing-integration-environment";
 import type { Router } from "@/lib/orpc/router";
-
-import { assertExistingHttpTarget } from "../../../../scripts/existing-integration-environment";
 
 const baseURL = process.env.COST_TRACKER_TEST_BASE_URL ?? "";
 const suffix = randomUUID();

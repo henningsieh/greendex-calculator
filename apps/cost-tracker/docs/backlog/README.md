@@ -4,6 +4,10 @@ Manually curated, and linked from the [Cost Tracker documentation index](../READ
 
 An item here is deferred work that still needs a decision or an implementation. It is **not** finished history — see [archive/](../archive/) for that.
 
+## Approved implementation
+
+- [Cost Tracker maintenance architecture](maintenance-architecture.md) — approved capability ownership refactor and the Cost Tracker portion of #329; behavior must remain unchanged.
+
 ## Needs a decision
 
 - [Architecture review open questions](architecture-review-open-questions.md) — six questions deferred by the Phase 0–8 architecture review, including the definition of "recently closed" and the production volume budget.
@@ -28,8 +32,8 @@ Items still tracked only in this folder:
 
 ## 4. Refine submission validation and Oxlint safety defaults
 
-- Context: `evaluateSubmission` in `apps/cost-tracker/src/features/projects/procedures/submission.ts:118` reports cyclomatic complexity 38 against `.oxlintrc.json`'s warning threshold of 25. It combines database loading, Participation/Journey checks, frozen funding-rule checks, Travel Cost Entry/allocation/proof validation, and payable calculation. The diagnostic concerns production code, not `submission.integration.test.ts`.
-- Keep `complexity: ["warn", 25]` as an advisory signal; do not raise the global threshold or make it a hard architectural gate. Cyclomatic complexity counts branching constructs, including short-circuit expressions and optional chaining, rather than measuring readability directly.
+- Context: `evaluateSubmission` in `apps/cost-tracker/src/features/claims/procedures/submission.ts:118` initially reported cyclomatic complexity 38. It combines database loading, Participation/Journey checks, frozen funding-rule checks, Travel Cost Entry/allocation/proof validation, and payable calculation. The diagnostic concerns production code, not `submission.integration.test.ts`.
+- The approved maintenance refactor uses an advisory threshold of 20 for Cost Tracker; the repository-wide threshold remains 25. Do not raise either threshold to hide findings. Cyclomatic complexity counts branching constructs, including short-circuit expressions and optional chaining, rather than measuring readability directly. Extract cohesive responsibilities rather than splitting code mechanically to satisfy a score.
 - Extract cohesive Journey and allocation validation into pure, independently testable helpers, leaving `evaluateSubmission` as the coordinator. Preserve identical validation for preview and locked submission, issue paths/messages, and payable results. Avoid arbitrary helper extraction merely to lower the score; allow narrowly documented exceptions where keeping checks together is clearer.
 - Add focused unit coverage for extracted validation and retain integration coverage for preview/submission behavior.
 - Review the globally disabled `no-unsafe-optional-chaining` rule; enable it unless a concrete compatibility problem justifies a scoped exception.

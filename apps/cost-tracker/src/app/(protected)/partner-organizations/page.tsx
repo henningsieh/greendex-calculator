@@ -3,9 +3,9 @@ import { headers } from "next/headers";
 import { Suspense } from "react";
 
 import { canViewPartnerNetwork } from "@/features/organizations/access";
-import { ProjectPartnershipsSkeleton } from "@/features/projects/components/project-loading-states";
-import { ProjectPartnershipSection } from "@/features/projects/components/project-partnership-section";
-import { SetupLinkCreator } from "@/features/projects/components/setup-link";
+import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/partnership-loading-states";
+import { ProjectPartnershipSection } from "@/features/partnerships/components/project-partnership-section";
+import { SetupLinkCreator } from "@/features/partnerships/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { hasOrganizationMembership } from "@/lib/session";
 

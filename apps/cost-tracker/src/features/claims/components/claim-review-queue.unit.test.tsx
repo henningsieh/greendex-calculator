@@ -1,0 +1,93 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen } from "@testing-library/react";
+import { ErrorBoundary } from "react-error-boundary";
+import { describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({ failDraft: false }));
+
+vi.mock("@/lib/orpc/orpc", () => ({
+  orpcQuery: {
+    projectPartnerships: {
+      list: {
+        queryOptions: () => ({
+          queryKey: ["partnerships"],
+          queryFn: async () => [
+            { id: "one", projectName: "Forest", organizationName: "Partner A" },
+            { id: "two", projectName: "Ocean", organizationName: "Partner B" },
+          ],
+        }),
+      },
+    },
+    claims: {
+      getDraft: {
+        queryOptions: ({ input }: { input: { partnershipId: string } }) => ({
+          queryKey: ["claims", input.partnershipId],
+          queryFn: async () => {
+            if (mocks.failDraft && input.partnershipId === "one") {
+              throw new Error("Could not load draft");
+            }
+            return {
+              status: input.partnershipId === "one" ? "submitted" : "paid",
+            };
+          },
+        }),
+      },
+    },
+  },
+}));
+
+import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
+
+describe("Host submitted Claim queue", () => {
+  it("does not present failed draft requests as an empty successful queue", async () => {
+    mocks.failDraft = true;
+    // React logs errors caught by boundaries; verify only this deliberate
+    // query failure was logged instead of emitting expected stderr in CI.
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      render(
+        <QueryClientProvider
+          client={
+            new QueryClient({ defaultOptions: { queries: { retry: false } } })
+          }
+        >
+          <ErrorBoundary fallback={<p data-testid="claim-queue-failed" />}>
+            <ClaimReviewQueue />
+          </ErrorBoundary>
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByTestId("claim-queue-failed")).toBeTruthy();
+      expect(screen.queryByTestId("review-queue-empty")).toBeNull();
+      expect(consoleError.mock.calls).toEqual([
+        [
+          "%o\n\n%s\n\n%s\n",
+          expect.objectContaining({ message: "Could not load draft" }),
+          "The above error occurred in the <ClaimReviewQueue> component.",
+          expect.stringContaining(
+            "React will try to recreate this component tree",
+          ),
+        ],
+      ]);
+    } finally {
+      consoleError.mockRestore();
+      mocks.failDraft = false;
+    }
+  });
+
+  it("links only submitted Claims to their single-request review", async () => {
+    render(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ClaimReviewQueue />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByTestId("review-claim-one")).toHaveAttribute(
+      "href",
+      "/claims/review/one",
+    );
+    expect(screen.queryByTestId("review-claim-two")).toBeNull();
+  });
+});

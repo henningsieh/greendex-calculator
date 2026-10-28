@@ -48,7 +48,7 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // H's verified User is supplied by HostingJourneyFixture. No registration,
 // verification, or mail-sending invitation form is submitted in a browser.
 // Setup-link creation (05/08/09/13) is UI-only: createSetupLink in
-// features/projects/procedures/setup-links.ts persists a hash and returns a
+// features/partnerships/procedures/setup-links.ts persists a hash and returns a
 // secret; it does not invoke mail delivery. Artifact protection is described above.
 // Mail delivery is covered by setup-links.integration.test.ts and manual testing.
 // AUTOMATED-ONLY: 07 wrong-email server denial, 11 forged Owner-selection

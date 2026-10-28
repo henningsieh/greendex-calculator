@@ -8,6 +8,100 @@ const fixture = (relativePath: string, content: string) => ({
 });
 
 describe("Cost Tracker persistence seam", () => {
+  it("permits the owned Participant Onboarding procedures without allowing nested views", () => {
+    expect(
+      findForbiddenDatabaseImports([
+        fixture(
+          "features/participant-onboarding/procedures/join.ts",
+          'import { db } from "@greendex/database";',
+        ),
+        fixture(
+          "app/participant/page.tsx",
+          'import { join } from "@/features/participant-onboarding/procedures/join";',
+        ),
+        fixture(
+          "features/participant-onboarding/components/form.tsx",
+          'import { db } from "@greendex/database";',
+        ),
+        fixture(
+          "features/claims/onboarding/procedures/join.ts",
+          'import { db } from "@greendex/database";',
+        ),
+        fixture(
+          "features/participant-onboarding/procedures/nested/join.ts",
+          'import { db } from "@greendex/database";',
+        ),
+      ]),
+    ).toEqual([
+      "apps/cost-tracker/src/features/claims/onboarding/procedures/join.ts",
+      "apps/cost-tracker/src/features/participant-onboarding/components/form.tsx",
+      "apps/cost-tracker/src/features/participant-onboarding/procedures/nested/join.ts",
+    ]);
+  });
+
+  it("still rejects a nested procedure that exposes the database client to a route", () => {
+    expect(
+      findForbiddenDatabaseImports([
+        fixture(
+          "features/participant-onboarding/procedures/join.ts",
+          'export { db } from "@greendex/database";',
+        ),
+        fixture(
+          "app/participant/page.tsx",
+          'import { db } from "@/features/participant-onboarding/procedures/join";',
+        ),
+      ]),
+    ).toEqual(["apps/cost-tracker/src/app/participant/page.tsx"]);
+  });
+
+  it("checks shared dependencies once per module and exposure state", () => {
+    const files = [fixture("lib/leaf.ts", "export const value = 1;")];
+    for (let depth = 17; depth >= 0; depth -= 1) {
+      const content =
+        depth === 17
+          ? 'import { value } from "@/lib/leaf";'
+          : `import "@/lib/left-${depth + 1}"; import "@/lib/right-${depth + 1}";`;
+      files.push(
+        fixture(`lib/left-${depth}.ts`, content),
+        fixture(`lib/right-${depth}.ts`, content),
+      );
+    }
+    files.push(fixture("app/page.tsx", 'import "@/lib/left-0";'));
+
+    expect(findForbiddenDatabaseImports(files)).toEqual([]);
+  });
+
+  it("detects client exposure through a cycle after visiting the ordinary import", () => {
+    expect(
+      findForbiddenDatabaseImports([
+        fixture(
+          "features/projects/procedures/read.ts",
+          'import { db } from "@greendex/database"; import "@/lib/cycle";',
+        ),
+        fixture(
+          "lib/cycle.ts",
+          'export * from "@/features/projects/procedures/read";',
+        ),
+        fixture("app/page.tsx", 'import "@/features/projects/procedures/read";'),
+      ]),
+    ).toEqual(["apps/cost-tracker/src/app/page.tsx"]);
+  });
+
+  it("ignores generated Playwright reports rather than treating them as application source", () => {
+    expect(
+      findForbiddenDatabaseImports([
+        fixture(
+          "__tests__/e2e/.playwright/report/trace/sw.bundle.js",
+          'import { db } from "@greendex/database";',
+        ),
+        fixture(
+          "app/page.tsx",
+          'import { user } from "@greendex/database/schema";',
+        ),
+      ]),
+    ).toEqual([]);
+  });
+
   it("rejects database-client package roots, subpaths, and dynamic imports in routes and feature views", () => {
     expect(
       findForbiddenDatabaseImports([
@@ -74,7 +168,7 @@ describe("Cost Tracker persistence seam", () => {
           "app/(protected)/projects/page.tsx",
           [
             '// import { db } from "@greendex/database";',
-            'const example = \'export { db } from "@greendex/database/client";\';',
+            "const example = 'export { db } from \"@greendex/database/client\";';",
             'const dynamicExample = `import("@greendex/database")`;',
             "export { example, dynamicExample };",
           ].join("\n"),

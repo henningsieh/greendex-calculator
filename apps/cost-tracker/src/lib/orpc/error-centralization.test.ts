@@ -16,14 +16,14 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 // Only these pre-existing private invariant exceptions remain raw. Their exact
 // expressions are pinned, not entire files; the procedure boundary sanitizes them.
 const privateInvariantThrows: Record<string, string[]> = {
-  "features/projects/procedures/projects.ts": [
+  "features/projects/procedures/core.ts": [
     'new Error("Expected at least one SQL condition.")',
     'new Error("Expected at least one SQL condition.")',
   ],
-  "features/projects/procedures/partnerships.ts": [
+  "features/partnerships/procedures/core.ts": [
     'new Error("Project Partnership insert returned no row")',
   ],
-  "features/projects/procedures/payable.ts": [
+  "features/claims/payable.ts": [
     'new Error("Invalid exact decimal")',
     'new Error("Unsupported decimal precision")',
     "new Error( `No frozen funding band for Participation ${journey.participantId}.`, )",

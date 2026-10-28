@@ -12,12 +12,12 @@ import { ORPCError } from "@orpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { normalizedEmail } from "@/features/authentication/procedures/shared";
 import {
   INVALID_ROLE_MESSAGE,
   hasInvalidOrganizationRole,
   requireCostTrackerRole,
 } from "@/features/organizations/roles";
+import { normalizedEmail } from "@/features/participant-onboarding/procedures/shared";
 import { auth } from "@/lib/auth";
 import {
   normalizeBetterAuthError,

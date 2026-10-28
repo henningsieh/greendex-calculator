@@ -23,11 +23,11 @@ vi.mock("@/lib/session", () => ({
 vi.mock("@/features/projects/components/project-list", () => ({
   ProjectList: () => <p>Hydrated Project list</p>,
 }));
-vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
+vi.mock("@/components/query-data-error-boundary", () => ({
   ProjectDataErrorBoundary: ({ children }: { children: React.ReactNode }) =>
     children,
 }));
-vi.mock("@/features/projects/project-list-query-options", () => ({
+vi.mock("@/features/projects/list-query-options", () => ({
   getProjectAvailableScopesQueryOptions: () => ({ queryKey: ["scopes"] }),
   getProjectListQueryOptions: () => ({ queryKey: ["list"] }),
   loadProjectListSearchParams: async () => ({}),

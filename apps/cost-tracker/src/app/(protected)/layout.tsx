@@ -16,11 +16,10 @@ export default function ProtectedLayout({
 
 function ProtectedShellSkeleton() {
   return (
-    <div
-      className="min-h-svh bg-muted/35"
-      role="status"
-      aria-label="Loading Cost Tracker"
-    >
+    <div className="min-h-svh bg-muted/35">
+      <output className="sr-only" aria-label="Loading Cost Tracker">
+        Loading Cost Tracker
+      </output>
       <header className="border-b bg-background">
         <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="flex h-18 items-center justify-between">

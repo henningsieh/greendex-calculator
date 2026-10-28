@@ -10,6 +10,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(import.meta.dirname, "./src"),
+      "@greendex/cost-tracker": resolve(import.meta.dirname, "./src"),
+      "#repo": resolve(import.meta.dirname, "../.."),
+      "#cost-tracker-scripts": resolve(import.meta.dirname, "./scripts"),
     },
   },
   test: {

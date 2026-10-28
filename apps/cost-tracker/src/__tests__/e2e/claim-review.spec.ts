@@ -38,7 +38,7 @@ import { hashPassword } from "better-auth/crypto";
 import { and, count, eq, inArray } from "drizzle-orm";
 
 import { env } from "@/env";
-import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/authentication/participant-agreement";
+import { CURRENT_PARTICIPANT_AGREEMENT_VERSION } from "@/features/participant-onboarding/participant-agreement";
 
 import {
   expectPrivateURL,

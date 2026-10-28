@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/env", () => ({ env: { NEXT_PUBLIC_BASE_URL: "http://localhost" } }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
-vi.mock("@/features/projects/procedures/documents", () => ({
+vi.mock("@/features/claims/procedures/documents", () => ({
   downloadProofDocument: mocks.download,
   uploadProofDocument: mocks.upload,
 }));

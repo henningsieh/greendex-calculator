@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
+import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { canManageOrganization } from "@/features/organizations/access";
 import { OrganizationSettings } from "@/features/organizations/components/organization-settings";
 import { OrganizationTeam } from "@/features/organizations/components/organization-team";
-import { ProjectDataErrorBoundary } from "@/features/projects/components/project-data-error-boundary";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { hasOrganizationMembership, requireSession } from "@/lib/session";
 import {

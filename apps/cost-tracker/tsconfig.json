@@ -22,6 +22,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@greendex/cost-tracker/*": ["./src/*"],
+      "#repo/*": ["../../*"],
+      "#cost-tracker-scripts/*": ["./scripts/*"],
       "#next-routes/*": ["./.next/dev/types/*", "./.next/types/*"]
     }
   },

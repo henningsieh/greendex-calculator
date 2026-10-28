@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import {
   appAgentFileNames,
   designSystemDeferredScopes,
+  designSystemLintWorkspaces,
   designSystemPlugin,
   designSystemStrictScope,
   expectedScopes,
@@ -422,11 +423,23 @@ const checkDesignSystemLint = async (): Promise<void> => {
     rootManifest.devDependencies?.[designSystemPlugin],
     `package.json: declare ${designSystemPlugin} as a root devDependency so one version serves the workspace`,
   );
+  const rootLintDesignSystem = rootManifest.scripts?.["lint:design-system"] ?? "";
+  for (const workspace of designSystemLintWorkspaces) {
+    assert(
+      rootLintDesignSystem.includes(workspace) &&
+        rootLintDesignSystem.includes("run lint:design-system"),
+      `package.json: the root \`lint:design-system\` script must fan out to the ${workspace} workspace implementation`,
+    );
+  }
+  const costTrackerManifest = (await readJson(
+    resolveRoot("apps/cost-tracker/package.json"),
+  )) as { scripts?: Record<string, string> };
+  const costTrackerLintDesignSystem =
+    costTrackerManifest.scripts?.["lint:design-system"] ?? "";
   assert(
-    rootManifest.scripts?.["lint:design-system"]?.includes(
-      designSystemStrictScope.replace("/**", ""),
-    ),
-    "package.json: keep the focused `lint:design-system` script for the design-system rules, scoped to the enforced app",
+    costTrackerLintDesignSystem.includes("shadcn/no-restyle") &&
+      costTrackerLintDesignSystem.includes("src"),
+    "apps/cost-tracker/package.json: keep the focused `lint:design-system` script for the design-system rules, scoped to the enforced app source",
   );
 
   const turboConfig = (await readJson(resolveRoot("turbo.json"))) as {

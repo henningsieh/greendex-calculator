@@ -30,7 +30,7 @@ vi.mock("@/features/projects/components/project-list-section", () => ({
     <p data-testid="project-list-section">Project list section</p>
   ),
 }));
-vi.mock("@/features/projects/components/project-partnership-section", () => ({
+vi.mock("@/features/partnerships/components/project-partnership-section", () => ({
   ProjectPartnershipSection: ({ canAssign }: { canAssign: boolean }) => (
     <p data-can-assign={canAssign} data-testid="project-partnership-section">
       Project Partnership manager
@@ -38,7 +38,7 @@ vi.mock("@/features/projects/components/project-partnership-section", () => ({
   ),
 }));
 vi.mock(
-  "@/features/projects/components/partnership-participants-section",
+  "@/features/participations/components/partnership-participants-section",
   () => ({
     PartnershipParticipantsSection: () => (
       <p data-testid="partnership-participants-section">
@@ -47,12 +47,15 @@ vi.mock(
     ),
   }),
 );
-vi.mock("@/features/projects/components/hosted-participants-section", () => ({
-  HostedParticipantsSection: () => (
-    <p data-testid="hosted-participants-section">Hosted participants section</p>
-  ),
-}));
-vi.mock("@/features/projects/components/hosted-participant-report", () => ({
+vi.mock(
+  "@/features/participations/components/hosted-participants-section",
+  () => ({
+    HostedParticipantsSection: () => (
+      <p data-testid="hosted-participants-section">Hosted participants section</p>
+    ),
+  }),
+);
+vi.mock("@/features/participations/components/hosted-participant-report", () => ({
   HostedParticipantReport: () => (
     <p data-testid="hosted-participant-report">Hosted participant report</p>
   ),
@@ -62,14 +65,14 @@ vi.mock("@/features/projects/components/project-workspace-section", () => ({
     <p data-testid="project-workspace-section">Project workspace section</p>
   ),
 }));
-vi.mock("@/features/projects/components/project-partnership-manager", () => ({
+vi.mock("@/features/partnerships/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: ({ canAssign }: { canAssign: boolean }) => (
     <p data-can-assign={canAssign} data-testid="project-partnership-manager">
       Project Partnership manager
     </p>
   ),
 }));
-vi.mock("@/features/projects/components/participant-coordination", () => ({
+vi.mock("@/features/participations/components/participant-coordination", () => ({
   ParticipantCoordination: ({ partnershipId }: { partnershipId: string }) => (
     <p data-partnership-id={partnershipId} data-testid="participant-coordination">
       Coordination for {partnershipId}
@@ -93,7 +96,7 @@ vi.mock("@/features/projects/components/project-workspace", () => ({
     </p>
   ),
 }));
-vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
+vi.mock("@/components/query-data-error-boundary", () => ({
   ProjectDataErrorBoundary: ({
     children,
     resource,
@@ -102,16 +105,13 @@ vi.mock("@/features/projects/components/project-data-error-boundary", () => ({
     resource: string;
   }) => <div data-resource={resource}>{children}</div>,
 }));
-vi.mock(
-  "@/features/projects/project-list-query-options",
-  async (importOriginal) => ({
-    ...((await importOriginal()) as Record<string, unknown>),
-    getProjectAvailableScopesQueryOptions: () => ({
-      queryKey: ["projects", "available-scopes"],
-    }),
-    getProjectListQueryOptions: mocks.getListOptions,
+vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
+  getProjectAvailableScopesQueryOptions: () => ({
+    queryKey: ["projects", "available-scopes"],
   }),
-);
+  getProjectListQueryOptions: mocks.getListOptions,
+}));
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { scopes: mocks.availableScopes } },
   orpcQuery: {
@@ -149,7 +149,7 @@ vi.mock("next/server", () => ({
   connection: () => Promise.resolve(),
 }));
 vi.mock("server-only", () => ({}));
-vi.mock("@/features/projects/procedures/assigned-partnerships", () => ({
+vi.mock("@/features/partnerships/procedures/assigned-partnerships", () => ({
   assignedPartnershipIds: vi.fn(async () => []),
 }));
 vi.mock("@/lib/orpc/middleware", () => ({
@@ -176,20 +176,20 @@ const { ProjectListSection: RealProjectListSection } = await vi.importActual<
 >("@/features/projects/components/project-list-section");
 const { ProjectPartnershipSection: RealProjectPartnershipSection } =
   await vi.importActual<
-    typeof import("@/features/projects/components/project-partnership-section")
-  >("@/features/projects/components/project-partnership-section");
+    typeof import("@/features/partnerships/components/project-partnership-section")
+  >("@/features/partnerships/components/project-partnership-section");
 const { PartnershipParticipantsSection: RealPartnershipParticipantsSection } =
   await vi.importActual<
-    typeof import("@/features/projects/components/partnership-participants-section")
-  >("@/features/projects/components/partnership-participants-section");
+    typeof import("@/features/participations/components/partnership-participants-section")
+  >("@/features/participations/components/partnership-participants-section");
 const { ProjectWorkspaceSection: RealProjectWorkspaceSection } =
   await vi.importActual<
     typeof import("@/features/projects/components/project-workspace-section")
   >("@/features/projects/components/project-workspace-section");
 const { HostedParticipantsSection: RealHostedParticipantsSection } =
   await vi.importActual<
-    typeof import("@/features/projects/components/hosted-participants-section")
-  >("@/features/projects/components/hosted-participants-section");
+    typeof import("@/features/participations/components/hosted-participants-section")
+  >("@/features/participations/components/hosted-participants-section");
 
 describe("Cost Tracker Project data routes", () => {
   it("shows the manager without assignment tools when readable but not assignable", async () => {
