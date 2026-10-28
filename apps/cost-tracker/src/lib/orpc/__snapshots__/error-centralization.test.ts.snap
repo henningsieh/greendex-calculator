@@ -518,6 +518,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "PROJECT_ALREADY_COMPLETED",
     "status": 400,
   },
+  "projectAlreadyHasPartner": {
+    "code": "BAD_REQUEST",
+    "message": "This Project already has a Partner Organization.",
+    "reason": "PROJECT_ALREADY_HAS_PARTNER",
+    "status": 400,
+  },
   "projectCompletionBlocked": {
     "code": "BAD_REQUEST",
     "composedCopy": true,

@@ -61,6 +61,36 @@ export const SUBMISSION_PAYOUT_ACCOUNT_IDS = [
  * calendar; metadata is run-anchored. Inserts converge without overwriting
  * developer changes. Proof Documents are synthetic metadata for mocked storage
  * coverage: seeding never writes a remote object. */
+async function ensurePartnershipIsolationProject(
+  db: SeedDatabase,
+  sourceProjectId: string,
+  partnershipId: string,
+): Promise<string> {
+  const source = await db.query.projectsTable.findFirst({
+    where: (row, { eq }) => eq(row.id, sourceProjectId),
+  });
+  if (!source) throw new Error(`Missing seed Project ${sourceProjectId}`);
+  const projectId = `${partnershipId}-project`;
+  await ensureSeedProjects(db, [
+    {
+      ...source,
+      id: projectId,
+      name:
+        partnershipId === "list-link-alpha-second-canonical"
+          ? "Alpha Second Open Workshop"
+          : `Seed Partnership Isolation ${partnershipId}`,
+    },
+  ]);
+  const sourceAssignments = await db.query.hostProjectAssignmentsTable.findMany({
+    where: (row, { eq }) => eq(row.projectId, sourceProjectId),
+  });
+  await ensureSeedHostAssignments(
+    db,
+    sourceAssignments.map(({ userId }) => ({ projectId, userId })),
+  );
+  return projectId;
+}
+
 async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
   // Claims: named Partner authorization and payout scenarios.
   {
@@ -191,7 +221,15 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
     {
       const rows = [
         { id: own, projectId: project, organizationId: partner },
-        { id: foreign, projectId: project, organizationId: other },
+        {
+          id: foreign,
+          projectId: await ensurePartnershipIsolationProject(
+            db,
+            project,
+            foreign,
+          ),
+          organizationId: other,
+        },
       ] satisfies (typeof partnerships.$inferInsert)[];
       await ensureSeedPartnerships(db, rows);
     }
@@ -404,7 +442,15 @@ async function ensureCostScenarios(db: SeedDatabase): Promise<void> {
     {
       const rows = [
         { id: own, projectId: project, organizationId: partner },
-        { id: foreign, projectId: project, organizationId: other },
+        {
+          id: foreign,
+          projectId: await ensurePartnershipIsolationProject(
+            db,
+            project,
+            foreign,
+          ),
+          organizationId: other,
+        },
         { id: next, projectId: secondProject, organizationId: partner },
       ] satisfies (typeof partnerships.$inferInsert)[];
       await ensureSeedPartnerships(db, rows);
@@ -427,7 +473,7 @@ async function ensureCostScenarios(db: SeedDatabase): Promise<void> {
         {
           id: outside,
           projectId: project,
-          representedOrganizationId: other,
+          representedOrganizationId: host,
           displayName: "Outside",
         },
         {
@@ -644,7 +690,15 @@ async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void>
     {
       const rows = [
         { id: own, projectId: project, organizationId: partner },
-        { id: foreign, projectId: project, organizationId: other },
+        {
+          id: foreign,
+          projectId: await ensurePartnershipIsolationProject(
+            db,
+            project,
+            foreign,
+          ),
+          organizationId: other,
+        },
       ] satisfies (typeof partnerships.$inferInsert)[];
       await ensureSeedPartnerships(db, rows);
     }
@@ -699,7 +753,7 @@ async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void>
         {
           projectId: project,
           id: "progress-outsider-participation-canonical",
-          representedOrganizationId: other,
+          representedOrganizationId: host,
           userId: outsider,
           email: mail(outsider),
           displayName: "Outsider",
@@ -1054,7 +1108,11 @@ async function ensurePartnershipScenarios(db: SeedDatabase): Promise<string[]> {
       },
       {
         id: id("removable"),
-        projectId: project,
+        projectId: await ensurePartnershipIsolationProject(
+          db,
+          project,
+          id("removable"),
+        ),
         organizationId: id("removable-org"),
       },
       {
@@ -1181,7 +1239,15 @@ async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
     {
       const rows = [
         { id: own, projectId: project, organizationId: partner },
-        { id: foreign, projectId: project, organizationId: other },
+        {
+          id: foreign,
+          projectId: await ensurePartnershipIsolationProject(
+            db,
+            project,
+            foreign,
+          ),
+          organizationId: other,
+        },
         { id: next, projectId: secondProject, organizationId: partner },
       ] satisfies (typeof partnerships.$inferInsert)[];
       await ensureSeedPartnerships(db, rows);
@@ -1210,7 +1276,7 @@ async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
         {
           id: scenarioId("outside"),
           projectId: project,
-          representedOrganizationId: other,
+          representedOrganizationId: host,
           displayName: "Outside",
         },
         {
@@ -1489,10 +1555,13 @@ async function ensureProjectReadinessScenarios(
       await ensureSeedHostAssignments(db, rows);
     }
     {
+      for (const link of partnershipIds.slice(1)) {
+        await ensurePartnershipIsolationProject(db, projectId, link);
+      }
       const rows = [
         ...partnershipIds.map((link, index) => ({
           id: link,
-          projectId,
+          projectId: index === 0 ? projectId : `${link}-project`,
           organizationId: partnerIds[index]!,
         })),
         {
@@ -1822,7 +1891,11 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
       { id: partnershipIds[0]!, projectId: alphaId, organizationId: partnerId },
       {
         id: partnershipIds[1]!,
-        projectId: alphaId,
+        projectId: await ensurePartnershipIsolationProject(
+          db,
+          alphaId,
+          partnershipIds[1]!,
+        ),
         organizationId: secondPartnerId,
       },
       { id: partnershipIds[2]!, projectId: betaId, organizationId: partnerId },
@@ -2291,7 +2364,15 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
     {
       const rows = [
         { id: own, projectId: project, organizationId: partner },
-        { id: foreign, projectId: project, organizationId: other },
+        {
+          id: foreign,
+          projectId: await ensurePartnershipIsolationProject(
+            db,
+            project,
+            foreign,
+          ),
+          organizationId: other,
+        },
       ] satisfies (typeof partnerships.$inferInsert)[];
       await ensureSeedPartnerships(db, rows);
     }
@@ -2338,7 +2419,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
             {
               id: rowId,
               projectId: project,
-              representedOrganizationId: other,
+              representedOrganizationId: host,
               displayName: name === "old-email" ? "Earlier email" : "Existing",
               userId: name === "old-email" ? candidate : null,
               email:
@@ -2357,7 +2438,8 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
           const rows = [
             {
               id: `coord-${name}-token-${s}`,
-              projectId: project,
+              projectId:
+                name === "own-invitation" ? project : `${foreign}-project`,
               partnershipId: name === "own-invitation" ? own : foreign,
               email,
               secretHash: createHash("sha256").update(randomUUID()).digest("hex"),
@@ -2436,7 +2518,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
             {
               id: `coord-old-row-${s}`,
               projectId: project,
-              representedOrganizationId: other,
+              representedOrganizationId: host,
               displayName: "Yan Outdated",
               userId: oldAcceptor,
               email: `old-${s}@x.org`,
@@ -2793,7 +2875,15 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
     {
       const rows = [
         { id: own, projectId: project, organizationId: partner },
-        { id: foreign, projectId: project, organizationId: other },
+        {
+          id: foreign,
+          projectId: await ensurePartnershipIsolationProject(
+            db,
+            project,
+            foreign,
+          ),
+          organizationId: other,
+        },
         { id: elsewhere, projectId: secondProject, organizationId: partner },
       ] satisfies (typeof partnerships.$inferInsert)[];
       await ensureSeedPartnerships(db, rows);
@@ -2823,7 +2913,7 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
         {
           id: outsider,
           projectId: project,
-          representedOrganizationId: other,
+          representedOrganizationId: host,
           displayName: "Outsider",
         },
         {

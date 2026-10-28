@@ -16,7 +16,7 @@ Every Project has exactly one owning Organization. Applications may present that
 
 - Calculator presents the owning Organization without a Hosting/Partner distinction.
 - Cost Tracker calls it the Hosting Organization when contrasting it with Project-specific Partner Organizations.
-- Cost Tracker may assign zero or more Partner Organizations to a Project.
+- Cost Tracker may assign zero or one Partner Organization to a Project.
 - When a Partner-side Project Coordinator first saves a Participant Journey for a Project, Cost Tracker copies its configurable travel-funding rules and rates into immutable Project-owned historical data in the same operation. Later configuration changes affect only future Projects.
 - A Project Partnership is Project-specific. Assignment to one Project does not apply to another.
 - The Hosting Organization remains `project.organizationId` and is not duplicated in a Project Partnership row.
@@ -46,7 +46,7 @@ Project Participation
 The represented Organization is required and must be either:
 
 1. the Project's owning Organization; or
-2. one of that Project's Partner Organizations.
+2. that Project's Partner Organization (if assigned).
 
 One Project Participation represents only one Organization. A Travel Cost Entry may cover several Project Participations, but that does not change their individual representation.
 

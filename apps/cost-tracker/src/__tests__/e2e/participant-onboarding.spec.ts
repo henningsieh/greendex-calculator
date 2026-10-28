@@ -49,6 +49,7 @@ const names = {
   foreign: `CT ${suffix} Partner B`,
   main: `CT ${suffix} Main`,
   other: `CT ${suffix} Other`,
+  foreignProject: `CT ${suffix} Foreign`,
 };
 const ids = {
   host: randomUUID(),
@@ -56,6 +57,7 @@ const ids = {
   foreign: randomUUID(),
   main: randomUUID(),
   other: randomUUID(),
+  foreignProject: randomUUID(),
   partnership: randomUUID(),
   foreignPartnership: randomUUID(),
   otherPartnership: randomUUID(),
@@ -104,7 +106,7 @@ const participantsURL = `/partnerships/${ids.partnership}/participants`;
 async function counts() {
   const actorIds = Object.values(actors).map((actor) => actor.id);
   const organizationIds = [ids.host, ids.partner, ids.foreign];
-  const projectIds = [ids.main, ids.other];
+  const projectIds = [ids.main, ids.other, ids.foreignProject];
   const partnershipIds = [
     ids.partnership,
     ids.foreignPartnership,
@@ -210,7 +212,7 @@ async function openPartnerParticipants(page: Page, projectName: string) {
   await page.getByTestId("project-scope-partner").click();
   await page
     .locator(
-      `a[href="/projects/${projectName === names.main ? ids.main : ids.other}"], a[href^="/projects/${projectName === names.main ? ids.main : ids.other}?"]`,
+      `a[href="/projects/${projectName === names.main ? ids.main : projectName === names.foreignProject ? ids.foreignProject : ids.other}"], a[href^="/projects/${projectName === names.main ? ids.main : projectName === names.foreignProject ? ids.foreignProject : ids.other}?"]`,
     )
     .click();
   await page.locator('a[href^="/partnerships/"][href$="/participants"]').click();
@@ -372,6 +374,15 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
         country: "DE",
       },
       {
+        id: ids.foreignProject,
+        name: names.foreignProject,
+        organizationId: ids.host,
+        startDate: now,
+        endDate: now,
+        location: "Berlin",
+        country: "DE",
+      },
+      {
         id: ids.other,
         name: names.other,
         organizationId: ids.host,
@@ -385,7 +396,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       { id: ids.partnership, projectId: ids.main, organizationId: ids.partner },
       {
         id: ids.foreignPartnership,
-        projectId: ids.main,
+        projectId: ids.foreignProject,
         organizationId: ids.foreign,
       },
       {
@@ -439,10 +450,18 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       );
     await db
       .delete(participants)
-      .where(inArray(participants.projectId, [ids.main, ids.other]));
+      .where(
+        inArray(participants.projectId, [
+          ids.main,
+          ids.other,
+          ids.foreignProject,
+        ]),
+      );
     await db
       .delete(entryTokens)
-      .where(inArray(entryTokens.projectId, [ids.main, ids.other]));
+      .where(
+        inArray(entryTokens.projectId, [ids.main, ids.other, ids.foreignProject]),
+      );
     await db
       .delete(partnerships)
       .where(
@@ -452,7 +471,9 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
           ids.otherPartnership,
         ]),
       );
-    await db.delete(projects).where(inArray(projects.id, [ids.main, ids.other]));
+    await db
+      .delete(projects)
+      .where(inArray(projects.id, [ids.main, ids.other, ids.foreignProject]));
     await db
       .delete(member)
       .where(
@@ -717,7 +738,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       joined.locator('li[data-testid^="joined-participant-"]'),
     ).toHaveCount(3);
     const f = await pageFor(browser, "F", baseURL!);
-    await openPartnerParticipants(f, names.main);
+    await openPartnerParticipants(f, names.foreignProject);
     // Text-free: empty-state hook proves F sees nobody (denied scope).
     await expect(
       f.locator('[data-testid="joined-participants-empty"]'),
@@ -731,48 +752,14 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     // Text-free: the scope-denied alert above proves F sees no participant data.
   });
 
-  test("19 cross-Partnership refusal, distinct Project, and Q Hosting coordinator role preservation", async ({
+  test("19 distinct Project and Q Hosting coordinator role preservation", async ({
     browser,
     baseURL,
   }) => {
     test.setTimeout(120_000); // Three independent actor flows and the Organization Invitation handshake.
-    const f = await pageFor(browser, "F", baseURL!);
-    await openPartnerParticipants(f, names.main);
-    await f.getByTestId("create-registration-link").click();
-    // Text-free: the created link input carries a value (functional proof).
-    await expect(f.locator("#new-participant-link")).not.toBeEmpty();
-    const foreignLink = await f.locator("#new-participant-link").inputValue();
+    // #337: same-Project cross-Partner join refusal is unconstructible.
+    // Keep distinct-Project joins and role preservation below.
     const t = await pageFor(browser, "T", baseURL!);
-    await t.goto(foreignLink);
-    await t.getByTestId("participant-name").fill(actors.T.name);
-    await t.locator("#participant-country").selectOption("DE");
-    await t.getByTestId("accept-participant-agreement").check();
-    await t.getByTestId("join-project").click();
-    // Error centralization: join uses the joinedOtherPartner factory copy.
-    await expect(t.locator("form p[role='alert']")).toBeVisible();
-    expect(
-      await db
-        .select()
-        .from(participants)
-        .where(
-          and(
-            eq(participants.userId, actors.T.id),
-            eq(participants.projectId, ids.main),
-            eq(participants.representedOrganizationId, ids.partner),
-          ),
-        ),
-    ).toHaveLength(1);
-    expect(
-      await db
-        .select()
-        .from(participants)
-        .where(
-          and(
-            eq(participants.userId, actors.T.id),
-            eq(participants.representedOrganizationId, ids.foreign),
-          ),
-        ),
-    ).toHaveLength(0);
 
     // Separate Project's shareable link: P creates it in the browser, T joins it.
     const p = await pageFor(browser, "P", baseURL!);

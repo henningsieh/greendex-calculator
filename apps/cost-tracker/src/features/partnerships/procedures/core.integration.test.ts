@@ -9,6 +9,7 @@ import {
 import { createRouterClient } from "@orpc/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import {
+  afterAll,
   afterEach,
   beforeAll,
   beforeEach,
@@ -38,7 +39,9 @@ const raceOrganizationId = `partnership-race-org-${suffix}`;
 const projectId = `partnership-project-${suffix}`;
 const foreignProjectId = `partnership-foreign-project-${suffix}`;
 const assignedPartnershipId = `partnership-assigned-${suffix}`;
-const removablePartnershipId = `partnership-removable-${suffix}`;
+const fixtureId = randomUUID();
+const removableProjectId = `partnership-removable-project-${fixtureId}`;
+const removablePartnershipId = `partnership-removable-${fixtureId}`;
 let removableBaseline: typeof projectPartnerOrganizationsTable.$inferSelect;
 const createdPartnershipIds: string[] = [];
 const headers = new Headers();
@@ -75,14 +78,32 @@ function useActiveOrganization(activeOrganizationId: string) {
 }
 
 beforeAll(async () => {
-  const row = await db.query.projectPartnerOrganizationsTable.findFirst({
-    where: eq(projectPartnerOrganizationsTable.id, removablePartnershipId),
+  await db.insert(projectsTable).values({
+    id: removableProjectId,
+    name: "Removable Project",
+    organizationId: hostId,
+    startDate: new Date(),
+    endDate: new Date(),
+    location: "Tallinn",
+    country: "EE",
   });
-  if (!row)
-    throw new Error(
-      "Canonical seed required: run the isolated seeded lifecycle.",
-    );
+  const [row] = await db
+    .insert(projectPartnerOrganizationsTable)
+    .values({
+      id: removablePartnershipId,
+      projectId: removableProjectId,
+      organizationId: `partnership-removable-org-${suffix}`,
+    })
+    .returning();
+  if (!row) throw new Error("Test Partnership insert returned no row");
   removableBaseline = row;
+});
+
+afterAll(async () => {
+  await db
+    .delete(projectPartnerOrganizationsTable)
+    .where(eq(projectPartnerOrganizationsTable.id, removablePartnershipId));
+  await db.delete(projectsTable).where(eq(projectsTable.id, removableProjectId));
 });
 
 beforeEach(() => {
@@ -116,6 +137,7 @@ describe("Project Partnership procedures", () => {
     expect(partnerships.map((partnership) => partnership.id)).toEqual([
       assignedPartnershipId,
       removablePartnershipId,
+      "partnership-removable-canonical",
     ]);
     expect(partnerships[0]).toMatchObject({
       projectId,
@@ -126,23 +148,36 @@ describe("Project Partnership procedures", () => {
   });
 
   it("assigns an existing Organization once to a hosted Project", async () => {
+    await client.projectPartnerships.remove({ id: removablePartnershipId });
     const partnership = await client.projectPartnerships.assign({
-      projectId,
+      projectId: removableProjectId,
       organizationId: candidateOrganizationId,
     });
     createdPartnershipIds.push(partnership.id);
 
     expect(partnership).toMatchObject({
-      projectId,
+      projectId: removableProjectId,
       organizationId: candidateOrganizationId,
       organizationName: "Candidate Organization",
     });
     await expect(
       client.projectPartnerships.assign({
-        projectId,
+        projectId: removableProjectId,
         organizationId: candidateOrganizationId,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { reason: "PARTNERSHIP_ALREADY_ASSIGNED" },
+    });
+    await expect(
+      client.projectPartnerships.assign({
+        projectId: removableProjectId,
+        organizationId: assignedOrganizationId,
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      data: { reason: "PROJECT_ALREADY_HAS_PARTNER" },
+    });
   });
 
   it("rejects self-Partnership and foreign hosted Projects", async () => {

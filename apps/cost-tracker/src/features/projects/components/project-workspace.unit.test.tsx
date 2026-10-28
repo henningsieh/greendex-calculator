@@ -122,49 +122,44 @@ describe("Project workspace", () => {
     expect(screen.queryByTestId("open-claim-workspace")).not.toBeInTheDocument();
   });
 
-  it("renders each hosted Partnership's derived readiness independently", async () => {
-    mocks.detail = {
-      ...baseProject,
-      relationship: "hosted",
-      partnerOrganizations: [
-        ["Mobility Group", "correction_requested"],
-        ["Civic Union", "approved"],
-        ["Green Society", "paid"],
-        ["Arts Circle", "rejected"],
-        ["Future Collective", "submitted"],
-        ["Open Partnership", null],
-        ["New Claim", "editable"],
-      ].map(([organizationName, claimStatus], index) => ({
-        id: `partnership-${index}`,
-        organizationName,
-        claimStatus,
-        assignedAt: new Date("2026-05-01T10:00:00.000Z"),
-      })),
-    };
-    renderWorkspace();
-    const partnerships = within(
-      await screen.findByTestId("assigned-partner-organizations"),
-    ).getAllByRole("listitem");
-    expect(partnerships).toHaveLength(7);
-    for (const [id, status] of [
-      ["partnership-0", "correction_requested"],
-      ["partnership-1", "approved"],
-      ["partnership-2", "paid"],
-      ["partnership-3", "rejected"],
-      ["partnership-4", "submitted"],
-      ["partnership-5", "none"],
-      ["partnership-6", "editable"],
-    ]) {
-      const partnership = partnerships.find(
-        (row) => row.getAttribute("data-partnership-id") === id,
+  // #337: render every Claim state on a single-Partnership Project, not seven Partners on one.
+  it.each([
+    "correction_requested",
+    "approved",
+    "paid",
+    "rejected",
+    "submitted",
+    null,
+    "editable",
+  ])(
+    "renders the hosted Partnership's derived readiness: %s",
+    async (claimStatus) => {
+      mocks.detail = {
+        ...baseProject,
+        relationship: "hosted",
+        partnerOrganizations: [
+          {
+            id: "partnership-0",
+            organizationName: "Mobility Group",
+            claimStatus,
+            assignedAt: new Date("2026-05-01T10:00:00.000Z"),
+          },
+        ],
+      };
+      renderWorkspace();
+      const partnerships = within(
+        await screen.findByTestId("assigned-partner-organizations"),
+      ).getAllByRole("listitem");
+      expect(partnerships).toHaveLength(1);
+      expect(partnerships[0]).toHaveAttribute(
+        "data-partnership-id",
+        "partnership-0",
       );
-      expect(partnership).toBeInTheDocument();
-      expect(partnership?.querySelector("[data-claim-status]")).toHaveAttribute(
-        "data-claim-status",
-        status,
-      );
-    }
-  });
+      expect(
+        partnerships[0]?.querySelector("[data-claim-status]"),
+      ).toHaveAttribute("data-claim-status", claimStatus ?? "none");
+    },
+  );
 
   it("completes an eligible Hosted Project and refreshes its workspace", async () => {
     const user = userEvent.setup();

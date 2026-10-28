@@ -84,7 +84,22 @@ const actors = Object.fromEntries(
 >;
 registerPrivateValues(...Object.values(actors).map((actor) => actor.password));
 const adminProjectName = `CT ${suffix} Admin disposable`;
-const ownedProjectNames = [...fixture.projectNames, adminProjectName];
+// One project per setup journey: at most one Partner Organization per Project.
+// P stays on Main; every other setup flow gets its own project so each
+// partnership creation remains the first on its project.
+const extraProjectNames = [
+  "Second",
+  "Third",
+  "Fourth",
+  "Fifth",
+  "Sixth",
+  "Seventh",
+].map((name) => `CT ${suffix} ${name}`);
+const ownedProjectNames = [
+  ...fixture.projectNames,
+  ...extraProjectNames,
+  adminProjectName,
+];
 const invitationId = randomUUID();
 const contexts: BrowserContext[] = [];
 const issuedLinks: string[] = [];
@@ -334,6 +349,9 @@ async function selectAndOpenPartnerProject(
   }
   await expect(project).toBeVisible();
   await project.click();
+  // Wait for the claim route itself: the project page shares the same h1
+  // pattern, so heading visibility alone cannot prove the navigation landed.
+  await page.waitForURL("**/partnerships/*/claim");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator('[data-relationship="partner"]')).toBeVisible();
   const [selectedOrganization] = await db
@@ -471,6 +489,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     projectURLs = [];
     for (const name of fixture.projectNames)
       projectURLs.push(await createProject(page, name));
+    for (const name of extraProjectNames) await createProject(page, name);
     setupURL = await issueThroughUI(
       page,
       fixture.projectNames[0]!,
@@ -527,7 +546,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     browser,
     baseURL,
   }) => {
-    const url = await issueInSetup(fixture.projectNames[0]!, actors.D.email);
+    const url = await issueInSetup(extraProjectNames[0]!, actors.D.email);
     const context = await actorContext(browser, "D", baseURL!);
     const page = await context.newPage();
     await page.goto("/projects");
@@ -545,16 +564,16 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .from(member)
       .where(eq(member.userId, actors.D.id));
     expect(membership!.value).toBe(0);
-    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(0);
+    expect(await partnershipCount(extraProjectNames[0]!, names.D)).toBe(0);
     await expect(page.locator("#setup-name")).toBeVisible();
     await page.locator("#setup-name").fill(names.D);
     await markSetupDocument(page);
     await page.getByTestId("complete-setup").click();
     await expect(page.getByTestId("open-partner-project")).toBeVisible();
-    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
+    expect(await partnershipCount(extraProjectNames[0]!, names.D)).toBe(1);
     await selectAndOpenPartnerProject(
       page,
-      fixture.projectNames[0]!,
+      extraProjectNames[0]!,
       names.D,
       "continue",
     );
@@ -571,14 +590,14 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .from(member)
       .where(eq(member.userId, actors.D.id));
     expect(owned).toEqual([{ organizationId: created!.id }]);
-    expect(await partnershipCount(fixture.projectNames[0]!, names.D)).toBe(1);
+    expect(await partnershipCount(extraProjectNames[0]!, names.D)).toBe(1);
   });
 
   test("06a a real creation survives binding refusal and exact retry, revisit and reload", async ({
     browser,
     baseURL,
   }) => {
-    const url = await issueInSetup(fixture.projectNames[0]!, actors.R.email);
+    const url = await issueInSetup(extraProjectNames[1]!, actors.R.email);
     const id = new URL(url, baseURL).pathname.split("/").at(-1)!;
     const context = await actorContext(browser, "R", baseURL!);
     const page = await context.newPage();
@@ -608,7 +627,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .where(eq(organization.name, names.R));
     expect(created).toBeDefined();
     const organizationId = created!.id;
-    expect(await partnershipCount(fixture.projectNames[0]!, names.R)).toBe(0);
+    expect(await partnershipCount(extraProjectNames[1]!, names.R)).toBe(0);
     await db
       .update(setupLinks)
       .set({ enabled: true })
@@ -636,11 +655,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await assertRecipientPersistence(
       "R",
       organizationId,
-      fixture.projectNames[0]!,
+      extraProjectNames[1]!,
     );
     await selectAndOpenPartnerProject(
       page,
-      fixture.projectNames[0]!,
+      extraProjectNames[1]!,
       names.R,
       "continue",
     );
@@ -650,7 +669,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await assertRecipientPersistence(
       "R",
       organizationId,
-      fixture.projectNames[0]!,
+      extraProjectNames[1]!,
     );
   });
 
@@ -658,7 +677,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     browser,
     baseURL,
   }) => {
-    const url = await issueInSetup(fixture.projectNames[0]!, actors.U.email);
+    const url = await issueInSetup(extraProjectNames[2]!, actors.U.email);
     const context = await actorContext(browser, "U", baseURL!);
     const page = await context.newPage();
     let attempts = 0;
@@ -677,7 +696,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await markSetupDocument(page);
     await page.getByTestId("complete-setup").click();
     await expect(page.getByTestId("inspect-setup")).toBeEnabled();
-    expect(await partnershipCount(fixture.projectNames[0]!, names.U)).toBe(1);
+    expect(await partnershipCount(extraProjectNames[2]!, names.U)).toBe(1);
     await expect(page.getByTestId("complete-setup")).toHaveCount(0);
     await page.getByTestId("inspect-setup").click();
     await expect(page.getByTestId("open-partner-project")).toBeVisible();
@@ -686,17 +705,17 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .select({ id: organization.id })
       .from(organization)
       .where(eq(organization.name, names.U));
-    await assertRecipientPersistence("U", created!.id, fixture.projectNames[0]!);
+    await assertRecipientPersistence("U", created!.id, extraProjectNames[2]!);
     await selectAndOpenPartnerProject(
       page,
-      fixture.projectNames[0]!,
+      extraProjectNames[2]!,
       names.U,
       "continue",
     );
     await page.goto(url);
     // Text-free: creation proven by the adjacent DB/navigation assertions (no toast copy).
     expect(attempts).toBe(1);
-    await assertRecipientPersistence("U", created!.id, fixture.projectNames[0]!);
+    await assertRecipientPersistence("U", created!.id, extraProjectNames[2]!);
   });
 
   test("known-invalid links refuse before any Organization or Partnership mutation", async ({
@@ -827,23 +846,23 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     });
   });
 
-  test("08 F creates a separate Main Project Partnership without P's workspace", async ({
+  test("08 F creates a separate Project Partnership without P's workspace", async ({
     browser,
     baseURL,
   }) => {
     const host = await fixture.actorContext(browser, "H", baseURL!);
     const url = await issueThroughUI(
       await host.newPage(),
-      fixture.projectNames[0]!,
+      extraProjectNames[3]!,
       actors.F.email,
     );
     const partner = await actorContext(browser, "F", baseURL!);
     const page = await partner.newPage();
     await completeNew(page, url, names.F);
-    expect(await partnershipCount(fixture.projectNames[0]!, names.F)).toBe(1);
+    expect(await partnershipCount(extraProjectNames[3]!, names.F)).toBe(1);
     await selectAndOpenPartnerProject(
       page,
-      fixture.projectNames[0]!,
+      extraProjectNames[3]!,
       names.F,
       "continue",
     );
@@ -931,7 +950,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       .from(member)
       .where(eq(member.userId, "picker-user-canonical"));
     const url = await issueInSetup(
-      fixture.projectNames[0]!,
+      extraProjectNames[4]!,
       "picker-user-canonical@example.com",
     );
     const page = await context.newPage();
@@ -957,7 +976,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.getByTestId("complete-setup").click();
     await expect(page.locator('[data-setup-error="disabled"]')).toBeVisible();
     expect(bindingAttempts).toBe(1);
-    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(0);
+    expect(await partnershipCount(extraProjectNames[4]!, targetName)).toBe(0);
     await db
       .update(setupLinks)
       .set({ enabled: true })
@@ -974,10 +993,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       actingSessionSchema.parse(await unchanged.json()).session
         .activeOrganizationId,
     ).toBe(unrelatedId);
-    expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(1);
+    expect(await partnershipCount(extraProjectNames[4]!, targetName)).toBe(1);
     await selectAndOpenPartnerProject(
       page,
-      fixture.projectNames[0]!,
+      extraProjectNames[4]!,
       targetName,
       "select",
     );
@@ -1156,9 +1175,11 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       fixture.projectNames[2]!,
       actors.P.email,
     );
+    // Sibling links live on different projects: at most one Partner Organization
+    // per Project, so only one of them could ever redeem on Isolation.
     siblingSetupURLs = [
       await issueThroughUI(page, fixture.projectNames[2]!, actors.P.email),
-      await issueThroughUI(page, fixture.projectNames[2]!, actors.F.email),
+      await issueThroughUI(page, extraProjectNames[5]!, actors.F.email),
     ];
     const idFrom = (url: string) => new URL(url).pathname.split("/").at(-1)!;
     await page.reload();
@@ -1194,6 +1215,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[2]!, names.P)).toBe(0);
     for (const [index, actor] of (["P", "F"] as const).entries()) {
+      // F's sibling link lives on its own project (see test 13): the
+      // partnership lands where the link was issued, one per project.
+      const project =
+        actor === "F" ? extraProjectNames[5]! : fixture.projectNames[2]!;
       const sibling = await actorContext(browser, actor, baseURL!);
       const siblingPage = await sibling.newPage();
       await siblingPage.goto(siblingSetupURLs[index]!);
@@ -1205,9 +1230,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       );
       await siblingPage.getByTestId("complete-setup").click();
       await expect(siblingPage.getByTestId("open-partner-project")).toBeVisible();
-      expect(await partnershipCount(fixture.projectNames[2]!, names[actor])).toBe(
-        1,
-      );
+      expect(await partnershipCount(project, names[actor])).toBe(1);
     }
     const otherHosting = await actorContext(browser, "E", baseURL!);
     const otherPage = await otherHosting.newPage();
@@ -1219,7 +1242,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       );
   });
 
-  test("section-2 checkpoint: H sees both Main Partnerships; P/F isolated; E is Project-specific", async ({
+  test("section-2 checkpoint: H sees Main Partnership; P/F/E isolated per project", async ({
     browser,
     baseURL,
   }) => {
@@ -1232,13 +1255,14 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     // Text-free: per-actor claim hrefs below (DB-anchored) prove exactly whose data renders.
     await expect(assigned).toBeVisible();
     const workspacePaths: string[] = [];
-    for (const [actor, own] of [
-      ["P", names.P],
-      ["F", names.F],
+    // One partnership per project: P on Main, F on its own project.
+    for (const [actor, own, project] of [
+      ["P", names.P, fixture.projectNames[0]!],
+      ["F", names.F, extraProjectNames[3]!],
     ] as const) {
       const context = await actorContext(browser, actor, baseURL!);
       const page = await context.newPage();
-      await openPartnerProject(page, fixture.projectNames[0]!);
+      await openPartnerProject(page, project);
       const claimLink = page.locator('a[href^="/partnerships/"][href$="/claim"]');
       await expect(claimLink).toBeVisible();
       const href = await claimLink.getAttribute("href");
@@ -1252,7 +1276,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         .where(
           and(
             eq(organization.name, own),
-            eq(projectsTable.name, fixture.projectNames[0]!),
+            eq(projectsTable.name, project),
           ),
         );
       expect(ownPartnerships).toHaveLength(1);
@@ -1260,9 +1284,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       expect(href).toBe(`/partnerships/${ownPartnership!.id}/claim`);
       // Text-free: own-partnership href equality above proves isolation (no name copy).
       await page.goto("/projects");
-      await expect(
-        await projectLink(page, fixture.projectNames[0]!),
-      ).toBeVisible();
+      await expect(await projectLink(page, project)).toBeVisible();
       // Text-free: own-partnership href equality above proves isolation (no name copy).
     }
     expect(new Set(workspacePaths).size).toBe(2);

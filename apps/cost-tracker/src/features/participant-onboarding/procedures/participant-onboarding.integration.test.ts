@@ -65,7 +65,7 @@ import { createParticipationProcedures } from "@/features/participations/procedu
 
 /**
  * Canonical seed identities for the onboarding Project (Climate Action
- * Workshop) with Partnerships to the second and third Partner Organizations. The Owner
+ * Workshop) with one Partnership. The Owner
  * issues; the seeded Invitee joins. Issuance and redemption go through the
  * procedures under test; per-test tokens, Participations, claims, profiles,
  * acceptances, and Memberships are removed afterwards without deleting
@@ -73,7 +73,6 @@ import { createParticipationProcedures } from "@/features/participations/procedu
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_PARTNER_SLUG = "seed-second-partner-org";
-const SEED_SECOND_PARTNER_SLUG = "seed-third-partner-org";
 const SEED_ONBOARDING_PROJECT_NAME = "Climate Action Workshop";
 const SEED_OWNER_EMAIL = "owner@sieh.org";
 const recipientEmail = "seed-onboarding-invitee@example.org";
@@ -81,10 +80,12 @@ const secondInviteeEmail = "seed-second-onboarding-invitee@example.org";
 const suffix = randomUUID();
 let host = "";
 let partner = "";
-let otherPartner = "";
+const otherPartner = `onboarding-other-org-${suffix}`;
+const otherProject = `onboarding-other-project-${suffix}`;
+const otherMember = `onboarding-other-member-${suffix}`;
 let project = "";
 let partnership = "";
-let otherPartnership = "";
+const otherPartnership = `onboarding-other-partnership-${suffix}`;
 let owner = "";
 let recipient = "";
 let secondInvitee = "";
@@ -150,11 +151,6 @@ beforeAll(async () => {
   });
   if (!seedPartner)
     throw new Error("Canonical seed Partner Organization is missing");
-  const seedSecond = await db.query.organization.findFirst({
-    where: eq(organization.slug, SEED_SECOND_PARTNER_SLUG),
-  });
-  if (!seedSecond)
-    throw new Error("Canonical second Partner Organization is missing");
   const seedProject = await db.query.projectsTable.findFirst({
     where: and(
       eq(projectsTable.organizationId, seedHost.id),
@@ -171,15 +167,6 @@ beforeAll(async () => {
     });
   if (!mainPartnership)
     throw new Error("Canonical onboarding Partnership is missing");
-  const secondPartnership =
-    await db.query.projectPartnerOrganizationsTable.findFirst({
-      where: and(
-        eq(partnerships.projectId, seedProject.id),
-        eq(partnerships.organizationId, seedSecond.id),
-      ),
-    });
-  if (!secondPartnership)
-    throw new Error("Canonical onboarding second Partnership is missing");
   async function userIdFor(email: string): Promise<string> {
     const stored = await db.query.user.findFirst({
       where: eq(user.email, email),
@@ -189,11 +176,37 @@ beforeAll(async () => {
   }
   host = seedHost.id;
   partner = seedPartner.id;
-  otherPartner = seedSecond.id;
   project = seedProject.id;
   partnership = mainPartnership.id;
-  otherPartnership = secondPartnership.id;
   owner = await userIdFor(SEED_OWNER_EMAIL);
+  await db.insert(organization).values({
+    id: otherPartner,
+    name: "Other Partner",
+    slug: otherPartner,
+    country: "EE",
+    createdAt: new Date(),
+  });
+  await db.insert(projectsTable).values({
+    id: otherProject,
+    name: "Other Project",
+    organizationId: host,
+    startDate: new Date(),
+    endDate: new Date(),
+    location: "Tallinn",
+    country: "EE",
+  });
+  await db.insert(member).values({
+    id: otherMember,
+    organizationId: otherPartner,
+    userId: owner,
+    role: ORGANIZATION_ROLES.OrganizationOwner,
+    createdAt: new Date(),
+  });
+  await db.insert(partnerships).values({
+    id: otherPartnership,
+    projectId: otherProject,
+    organizationId: otherPartner,
+  });
   recipient = await userIdFor(recipientEmail);
   secondInvitee = await userIdFor(secondInviteeEmail);
   coordinator = await userIdFor("seed-coordinator@example.org");
@@ -367,6 +380,11 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  await db.delete(entryTokens).where(eq(entryTokens.projectId, otherProject));
+  await db.delete(partnerships).where(eq(partnerships.id, otherPartnership));
+  await db.delete(member).where(eq(member.id, otherMember));
+  await db.delete(projectsTable).where(eq(projectsTable.id, otherProject));
+  await db.delete(organization).where(eq(organization.id, otherPartner));
   await db.delete(acceptances).where(eq(acceptances.userId, recipient));
   await db.delete(acceptances).where(eq(acceptances.userId, secondInvitee));
   await db.delete(profiles).where(eq(profiles.userId, recipient));
@@ -659,7 +677,7 @@ describe("Participant onboarding procedures", () => {
     ).toHaveLength(2);
   });
 
-  it("blocks a second join through another Partner Organization and closes/reopens registration", async () => {
+  it("closes and reopens registration", async () => {
     actor = owner;
     activeOrganizationId = partner;
     const created = await client.participantOnboarding.createRegistrationLink({
@@ -688,30 +706,6 @@ describe("Participant onboarding procedures", () => {
       profile: { fullName: "Recipient", country: "LV" as const },
       agreement: { accepted: true },
     });
-    // A second partner's link is never authority to replace a previous Participation.
-    // The canonical Owner also owns the third Partner Organization.
-    actor = owner;
-    activeOrganizationId = otherPartner;
-    const second = await client.participantOnboarding.createRegistrationLink({
-      partnershipId: otherPartnership,
-    });
-    actor = recipient;
-    activeOrganizationId = partner;
-    try {
-      await expect(
-        client.participantOnboarding.join({
-          source: { kind: "link", id: second.id, secret: second.secret },
-          profile: { fullName: "Recipient", country: "LV" as const },
-          agreement: { accepted: true },
-        }),
-      ).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-        message:
-          "You already joined this Project through another Partner Organization.",
-      });
-    } finally {
-      activeOrganizationId = partner;
-    }
   });
 
   it("creates additional independent links and closes only the selected link", async () => {
@@ -1116,12 +1110,17 @@ describe("Participant onboarding procedures", () => {
     ).toBe("pending");
     activeOrganizationId = otherPartner;
     try {
+      // #337 makes the other Partnership a different Project, so lookup now
+      // rejects before the former cross-Partnership authority check.
       await expect(
         client.participantOnboarding.reissueInvitation({
           partnershipId: otherPartnership,
           email: recipientEmail,
         }),
-      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        data: { reason: "PARTICIPANT_INVITATION_NOT_FOUND" },
+      });
       expect(
         (
           await db

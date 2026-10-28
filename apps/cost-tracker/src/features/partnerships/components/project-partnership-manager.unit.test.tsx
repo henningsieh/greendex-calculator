@@ -196,7 +196,9 @@ describe("ProjectPartnershipManager", () => {
       existingPartnership,
       {
         ...existingPartnership,
-        id: "partnership-shared-project",
+        id: "partnership-shared-organization",
+        projectId: "project-third",
+        projectName: "Third Project",
         organizationId: assignedPartnership.organizationId,
         organizationName: assignedPartnership.organizationName,
       },
@@ -214,7 +216,7 @@ describe("ProjectPartnershipManager", () => {
       projectPicker
         .getAllByTestId(/^entity-option-/)
         .map((option) => option.getAttribute("data-entity-id")),
-    ).toEqual(["project-existing", "project-new"]);
+    ).toEqual(["project-existing", "project-third", "project-new"]);
 
     const organizationPicker = within(
       screen.getByTestId("partner-organization-picker"),

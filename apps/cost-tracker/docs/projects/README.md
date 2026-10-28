@@ -4,12 +4,12 @@ Cost Tracker extends the shared [Project model](../../../../docs/projects/model.
 
 ## Project Partnerships
 
-A Project has one Hosting Organization, derived from the Project's owning Organization, and zero or more Partner Organizations.
+A Project has one Hosting Organization, derived from the Project's owning Organization, and zero or one Partner Organization.
 
 ```text
 Project
 ├── one Hosting Organization
-└── zero or more Partner Organizations
+└── zero or one Partner Organization
 ```
 
 Each Partner Organization assignment belongs only to that Project. The same Organization may host a different Project. A Project Participation's represented Organization must be the host or one assigned partner.

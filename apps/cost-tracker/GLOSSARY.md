@@ -5,7 +5,7 @@ Cost Tracker records journey-ticket costs for Project Participants through Proje
 ## Language
 
 **Project Partnership**:
-The assignment of one Partner Organization to one Project, not a global relationship between Organizations.
+The assignment of one Partner Organization to one Project, not a global relationship between Organizations. One Project has at most one Partner Organization.
 _Avoid_: Organization Partnership, Organization role
 
 **Hosting Organization**:

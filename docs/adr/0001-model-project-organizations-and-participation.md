@@ -4,7 +4,7 @@ status: accepted
 
 # Model Project Organizations and Project Participation
 
-Greendex will keep one identity for every real Organization and represent Hosting/Partner distinctions through Project-specific relationships. A Project has exactly one owning Organization and zero or more Partner Organizations; Project Participation, rather than Organization Membership, records one person's involvement in one Project and the Organization represented there.
+Greendex will keep one identity for every real Organization and represent Hosting/Partner distinctions through Project-specific relationships. A Project has exactly one owning Organization and zero or one Partner Organization (#337); Project Participation, rather than Organization Membership, records one person's involvement in one Project and the Organization represented there.
 
 ## Context
 
@@ -22,9 +22,9 @@ Participants introduce a second ambiguity. The person may participate in several
 - The Hosting Organization is derived from the Project's existing Organization reference and is not duplicated in a partnership record.
 - Reversing Hosting and Partner positions requires a separate Project relationship. Both directions may exist simultaneously across Projects.
 - Project Participation is the canonical Project-scoped concept. It identifies one Project, the participating person, and exactly one represented Organization.
-- The represented Organization must be the Project's Hosting Organization or one of that Project's Partner Organizations.
+- The represented Organization must be the Project's Hosting Organization or that Project's Partner Organization (if assigned).
 - The MVP introduces no global Person table. A Project Participation stores a display name, optional normalized email, and optional link to a Better Auth User.
-- A non-empty normalized email identifies at most one Project Participation per Project. The same email cannot represent two Partner Organizations in that Project.
+- A non-empty normalized email identifies at most one Project Participation per Project. The former cross-partner case is no longer possible under the at-most-one Partner Organization rule.
 - Email remains optional, so email-less duplicate records remain possible.
 - A linked User identifies at most one retained Project Participation per Project.
 - Strong User/email conflicts and manual staff flags create required but non-blocking duplicate-review tasks; name similarity alone does not.

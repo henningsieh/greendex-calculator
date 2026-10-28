@@ -34,7 +34,7 @@ Participant profile data and agreement answers must be one centralized User-owne
 - Every valid Participant access combines:
   - a Better Auth Membership in the Project's Hosting Organization with the custom `participant` role; and
   - one Project Participation linked to that User and representing one Organization in that Project.
-- A User may retain at most one Project Participation per Project. A second attempt to join that Project through another Partner Organization is blocked.
+- A User may retain at most one Project Participation per Project. The former second-Partner join case is unconstructible under #337; the join guard remains defense in depth.
 - A Participant dashboard lists only the User's Project Participations. A Hosting-Organization Membership alone never exposes unrelated Projects.
 
 ### Delivery paths

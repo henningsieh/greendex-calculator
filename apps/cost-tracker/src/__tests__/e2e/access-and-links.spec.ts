@@ -56,6 +56,7 @@ const ids = {
   foreign: randomUUID(),
   partnership: randomUUID(),
   foreignPartnership: randomUUID(),
+  foreignProject: randomUUID(),
   invitation: randomUUID(),
   oldParticipantInvitation: randomUUID(),
   newParticipantInvitation: randomUUID(),
@@ -118,7 +119,9 @@ async function counts() {
     db
       .select({ value: count() })
       .from(projectsTable)
-      .where(eq(projectsTable.name, names.project)),
+      .where(
+        inArray(projectsTable.name, [names.project, `${names.project} Foreign`]),
+      ),
     db
       .select({ value: count() })
       .from(partnerships)
@@ -307,8 +310,14 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await db
       .delete(partnerships)
       .where(inArray(partnerships.id, [ids.partnership, ids.foreignPartnership]));
-    if (projectId)
-      await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
+    await db
+      .delete(projectsTable)
+      .where(
+        inArray(projectsTable.id, [
+          projectId ?? "no-project",
+          ids.foreignProject,
+        ]),
+      );
     await db
       .delete(participantInvitations)
       .where(
@@ -353,9 +362,23 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(h.getByRole("heading", { level: 1 })).toBeVisible({
       timeout: 90_000,
     });
+    // #337: foreign-Organization isolation uses a separate Project.
+    await db.insert(projectsTable).values({
+      id: ids.foreignProject,
+      name: `${names.project} Foreign`,
+      organizationId: ids.host,
+      startDate: new Date("2027-04-01"),
+      endDate: new Date("2027-04-03"),
+      location: "Berlin",
+      country: "DE",
+    });
     await db.insert(partnerships).values([
       { id: ids.partnership, projectId, organizationId: ids.partner },
-      { id: ids.foreignPartnership, projectId, organizationId: ids.foreign },
+      {
+        id: ids.foreignPartnership,
+        projectId: ids.foreignProject,
+        organizationId: ids.foreign,
+      },
     ]);
     const a = await pageFor(browser, "A", baseURL!);
     await a.goto(`/accept-invitation/${ids.invitation}`);

@@ -32,7 +32,8 @@ async function duplicates(client: Pool) {
     SELECT (
       (SELECT count(*) FROM (SELECT slug FROM organization GROUP BY slug HAVING count(*) > 1) AS o) +
       (SELECT count(*) FROM (SELECT email FROM "user" GROUP BY email HAVING count(*) > 1) AS u) +
-      (SELECT count(*) FROM (SELECT organization_id, name FROM project GROUP BY organization_id, name HAVING count(*) > 1) AS p)
+      (SELECT count(*) FROM (SELECT organization_id, name FROM project GROUP BY organization_id, name HAVING count(*) > 1) AS p) +
+      (SELECT count(*) FROM (SELECT project_id FROM project_partner_organization GROUP BY project_id HAVING count(*) > 1) AS partnerships)
     )::int AS duplicates
   `);
   return result.rows[0]!.duplicates;

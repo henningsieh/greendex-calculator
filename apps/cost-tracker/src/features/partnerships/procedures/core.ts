@@ -31,6 +31,14 @@ function getPostgresErrorCode(error: unknown): string | undefined {
   return undefined;
 }
 
+function getPostgresConstraint(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  if ("constraint" in error && typeof error.constraint === "string")
+    return error.constraint;
+  if ("cause" in error) return getPostgresConstraint(error.cause);
+  return undefined;
+}
+
 /** Identifies typed request errors that can pass through persistence handling. */
 function isExpectedORPCError(error: unknown): boolean {
   return error instanceof ORPCError;
@@ -142,6 +150,19 @@ export const assignPartnership = authorized
           throw createSituationErrors(errors).partnerOrganizationNotFound();
         }
 
+        const [existing] = await transaction
+          .select({
+            organizationId: projectPartnerOrganizationsTable.organizationId,
+          })
+          .from(projectPartnerOrganizationsTable)
+          .where(eq(projectPartnerOrganizationsTable.projectId, hostedProject.id))
+          .limit(1);
+        if (existing) {
+          throw existing.organizationId === candidate.id
+            ? createSituationErrors(errors).partnershipAlreadyAssigned()
+            : createSituationErrors(errors).projectAlreadyHasPartner();
+        }
+
         const [created] = await transaction
           .insert(projectPartnerOrganizationsTable)
           .values({
@@ -168,7 +189,38 @@ export const assignPartnership = authorized
     } catch (error) {
       const code = getPostgresErrorCode(error);
       if (code === "23505") {
-        throw createSituationErrors(errors).partnershipAlreadyAssigned();
+        const constraint = getPostgresConstraint(error);
+        if (
+          constraint !== "project_partner_organization_project_unique" &&
+          constraint !== "project_partner_organization_project_org_unique"
+        ) {
+          throw createSituationErrors(errors).internalFailure();
+        }
+        // Both unique indexes can reject the same Organization, so the reported
+        // index alone cannot distinguish the two situations.
+        try {
+          const [existing] = await db
+            .select({
+              organizationId: projectPartnerOrganizationsTable.organizationId,
+            })
+            .from(projectPartnerOrganizationsTable)
+            .where(
+              eq(projectPartnerOrganizationsTable.projectId, input.projectId),
+            )
+            .limit(1);
+          if (existing) {
+            throw existing.organizationId === input.organizationId
+              ? createSituationErrors(errors).partnershipAlreadyAssigned()
+              : createSituationErrors(errors).projectAlreadyHasPartner();
+          }
+        } catch (lookupError) {
+          if (isExpectedORPCError(lookupError)) throw lookupError;
+          console.error(
+            "Failed to classify Project Partnership conflict",
+            lookupError,
+          );
+        }
+        throw createSituationErrors(errors).internalFailure();
       }
       if (code === "23514") {
         throw createSituationErrors(errors).partnershipInvariant();

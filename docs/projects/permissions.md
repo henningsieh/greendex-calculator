@@ -68,7 +68,7 @@ Both routes end identically:
 - the User has one Project Participation for that Project;
 - that Project Participation identifies the represented Partner Organization through its Project Partnership.
 
-A User may have several Hosting-Organization Memberships and several Project Participations. A User may retain only one Project Participation per Project; attempting to join the same Project through a second Partner Organization is blocked.
+A User may have several Hosting-Organization Memberships and several Project Participations. A User may retain only one Project Participation per Project; the Project has at most one Partner Organization (#337).
 
 A Participant dashboard lists only the User's Project Participations. A Hosting-Organization Membership alone never exposes unrelated Projects.
 

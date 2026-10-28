@@ -134,9 +134,8 @@ export const SEED_SECOND_PARTNER_ORGANIZATION = {
   country: "IT",
 } as const;
 
-/** Third Partner Organization for second-join checks (#268).
- * Assigned to the onboarding Project alongside the second Partner Organization
- * so second-join and cross-Partnership scenarios resolve seeded rows. */
+/** Third Partner Organization has its own Project for isolation checks (#337).
+ * Same-Project cross-Partner joins cannot be constructed. */
 export const SEED_THIRD_PARTNER_ORGANIZATION = {
   name: "Seed Third Partner Organization",
   slug: "seed-third-partner-org",
@@ -395,6 +394,52 @@ export const SEED_PARTICIPANT_ONBOARDING_PROJECT = {
   scenarioId: "seed-project-4",
 } as const;
 
+/** #337: exact additional Project inventory used by seed-only reset. */
+const PARTNERSHIP_ISOLATION_IDS = [
+  "claim-foreign-canonical",
+  "cost-foreign-canonical",
+  "progress-foreign-canonical",
+  "partnership-removable-canonical",
+  ...["editable", "submitted", "rejected", "approved", "paid", "correction"].map(
+    (name) => `submit-${name}-foreign-canonical`,
+  ),
+  ...[
+    "empty",
+    "email",
+    "mixed",
+    "old-email",
+    "foreign-invitation",
+    "own-invitation",
+    "referenced",
+    "submitted",
+    "correction",
+    "report",
+    "report-empty",
+  ].map((name) => `coord-${name}-foreign-canonical`),
+  ...[
+    "empty",
+    "editable",
+    "legacy",
+    "correction_requested",
+    "submitted",
+    "approved",
+    "rejected",
+    "paid",
+  ].map((name) => `journey-${name}-foreign-canonical`),
+  ...[
+    "empty",
+    "mixed",
+    "claimless-partial",
+    "terminal",
+    "editable",
+    "submitted",
+    "correction_requested",
+    "approved",
+  ].flatMap((name) =>
+    ["b", "c"].map((part) => `readiness-${name}-link-${part}-canonical`),
+  ),
+];
+
 /** Stable identity for the seeded Participation without a login (Calculator #267). */
 export const SEED_UNLINKED_PARTICIPANT = {
   displayName: "Seed Participation without login",
@@ -431,6 +476,14 @@ export const SEED_SHOWCASE = {
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
+  partnershipIsolation: {
+    projectNames: [
+      ...PARTNERSHIP_ISOLATION_IDS.map(
+        (id) => `Seed Partnership Isolation ${id}`,
+      ),
+      "Alpha Second Open Workshop",
+    ],
+  },
   reviewFixes: SEED_REVIEW_SCENARIOS,
   costTrackerSetupLinks: {
     userIds: [
@@ -985,7 +1038,7 @@ export const SEED_SCENARIOS = {
     name: SEED_THIRD_PARTNER_ORGANIZATION.name,
     country: SEED_THIRD_PARTNER_ORGANIZATION.country,
     description:
-      "Third Partner Organization for second-join checks on the onboarding Project.",
+      "Third Partner Organization on a separate Project for isolation checks (#337).",
   },
   inviteeUser: {
     kind: "user",
@@ -1086,7 +1139,7 @@ export const SEED_SCENARIOS = {
     scenarioId: SEED_PARTICIPANT_ONBOARDING_PROJECT.scenarioId,
     name: SEED_PARTICIPANT_ONBOARDING_PROJECT.name,
     description:
-      "Isolated Project for onboarding checks; Partnerships to the second and third Partner Organizations.",
+      "Isolated Project for onboarding checks; one Partnership to the second Partner Organization (#337).",
   },
 } as const;
 
@@ -1348,7 +1401,8 @@ async function ensureSeedProject(
  * Participant-entry preconditions (#268): isolated Partnerships plus Partner-side
  * role Memberships. Each file owns one Project so per-test token,
  * Participation, and assignment cleanup never touches the showcase slice or
- * another file's rows. Partnerships target only the second/third Partner
+ * another file's rows. #337 gives the third Partner its own empty Project.
+ * Partnerships target only the second/third Partner
  * Organizations, never the primary one, so the showcase single-row read keeps
  * converging on one row. Entry-only assignment, staff-invitation and details
  * preconditions are named in SEED_SCENARIOS; no Participant entry tokens,
@@ -1429,7 +1483,7 @@ async function ensureParticipantEntryState(
       organizationId: secondPartnerId,
     },
     {
-      projectName: SEED_PARTICIPANT_ONBOARDING_PROJECT.name,
+      projectName: SEED_PROJECTS[4]!.name,
       organizationId: thirdPartnerId,
     },
   ];
@@ -2020,6 +2074,7 @@ export async function resetSeedData(
   const seedOrgIds = seedOrganizations.map((org) => org.id);
   const canonicalNames = [
     ...SEED_PROJECTS.map((project) => project.name),
+    ...SEED_SCENARIOS.partnershipIsolation.projectNames,
     SEED_PARTNER_PROJECT.name,
     ...SEED_REVIEW_SCENARIOS.restProjects.map(({ name }) => name),
     "Seed Submitted Registration Project",

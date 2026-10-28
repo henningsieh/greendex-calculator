@@ -10,7 +10,7 @@ status: accepted
 
 ## Context
 
-ADR-0001 models Hosting and Partner positions as Project-specific relationships: a Project has exactly one owning Organization and zero or more Partner Organizations joined through a Project Partnership. ADR-0002 integrates Participants with Better Auth by keeping Organization Membership roles separate from Project Participation, which remains the authority for Project-specific access.
+ADR-0001 models Hosting and Partner positions as Project-specific relationships: a Project has exactly one owning Organization and zero or more Partner Organizations joined through a Project Partnership (historical cardinality; #337 now limits this to zero or one). ADR-0002 integrates Participants with Better Auth by keeping Organization Membership roles separate from Project Participation, which remains the authority for Project-specific access.
 
 Project coordination needs the same separation. A coordinator must be restricted to one Project or one Project Partnership, while Organization Owners and Organization Admins keep Organization-wide authority. Introducing separate Host-coordinator and Partner-coordinator roles would duplicate role definitions and misplace Project-relative scope onto Organization Membership.
 
@@ -41,7 +41,7 @@ Ambitia Institute
 
 - Karmen (`owner`) manages Ambitia itself: users, settings, and all hosted Projects.
 - Lena (`admin`) has Organization-wide staff authority across all Projects hosted by Ambitia, but is not the Owner.
-- Max (`project-coordinator`) may work only on Erasmus 2026: manage its Partner Organizations, see its Participants, review its Claims, and similar Project-scoped tasks. Max cannot access Ambitia's other Projects unless explicitly assigned.
+- Max (`project-coordinator`) may work only on Erasmus 2026: manage its Partner Organization, see its Participants, review its Claim, and similar Project-scoped tasks. Max cannot access Ambitia's other Projects unless explicitly assigned.
 
 ### Partner Organization example
 

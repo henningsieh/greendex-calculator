@@ -206,6 +206,9 @@ export const projectPartnerOrganizationsTable = pgTable(
       table.organizationId,
     ),
     index("project_partner_organization_project_idx").on(table.projectId),
+    uniqueIndex("project_partner_organization_project_unique").on(
+      table.projectId,
+    ),
     index("project_partner_organization_organization_idx").on(
       table.organizationId,
     ),

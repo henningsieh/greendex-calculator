@@ -53,7 +53,7 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
 // deep guard is dormant. See #338 (E2E artifact privacy follow-up).
 // API-setup exceptions: beforeAll inserts verified disposable Users and credentials,
-// Hosting/Partner Organizations and memberships, one Project, two Project Partnerships,
+// Hosting/Partner Organizations and memberships, two Projects, one Project Partnership each,
 // joined Project Participations, frozen funding rules, Participant Journeys, Payout
 // Account references, submitted Claims, exact Travel Cost Entries/Cost Allocations,
 // synthetic Proof Document metadata and submission history. These are prerequisites,
@@ -66,6 +66,7 @@ const suffix = randomUUID();
 const ids = {
   host: randomUUID(),
   project: randomUUID(),
+  foreignProject: randomUUID(),
   partners: [randomUUID(), randomUUID()],
   partnerships: [randomUUID(), randomUUID()],
   participants: [randomUUID(), randomUUID()],
@@ -142,7 +143,7 @@ async function counts() {
     db
       .select({ value: count() })
       .from(projects)
-      .where(eq(projects.id, ids.project)),
+      .where(inArray(projects.id, [ids.project, ids.foreignProject])),
     db
       .select({ value: count() })
       .from(partnerships)
@@ -166,11 +167,11 @@ async function counts() {
     db
       .select({ value: count() })
       .from(snapshots)
-      .where(eq(snapshots.projectId, ids.project)),
+      .where(inArray(snapshots.projectId, [ids.project, ids.foreignProject])),
     db
       .select({ value: count() })
       .from(bands)
-      .where(eq(bands.projectId, ids.project)),
+      .where(inArray(bands.projectId, [ids.project, ids.foreignProject])),
     db
       .select({ value: count() })
       .from(payoutAccounts)
@@ -322,19 +323,22 @@ test.describe.serial("Claim review journey 25–26", () => {
         createdAt: now,
       })),
     ]);
-    await db.insert(projects).values({
-      id: ids.project,
-      name: projectName,
-      organizationId: ids.host,
-      startDate: now,
-      endDate: now,
-      location: "Riga",
-      country: "LV",
-    });
+    // #337: each review Claim retains its own Project Partnership and Project.
+    await db.insert(projects).values(
+      [ids.project, ids.foreignProject].map((id) => ({
+        id,
+        name: id === ids.project ? projectName : `${projectName} Foreign`,
+        organizationId: ids.host,
+        startDate: now,
+        endDate: now,
+        location: "Riga",
+        country: "LV" as const,
+      })),
+    );
     await db.insert(partnerships).values(
       ids.partnerships.map((id, index) => ({
         id,
-        projectId: ids.project,
+        projectId: index === 0 ? ids.project : ids.foreignProject,
         organizationId: ids.partners[index]!,
       })),
     );
@@ -355,28 +359,32 @@ test.describe.serial("Claim review journey 25–26", () => {
     await db.insert(participants).values(
       ids.participants.map((id, index) => ({
         id,
-        projectId: ids.project,
+        projectId: index === 0 ? ids.project : ids.foreignProject,
         representedOrganizationId: ids.partners[index]!,
         userId: ids.participantUsers[index]!,
         displayName: personNames[index]!,
         email: `ct-${suffix}-participant-${index}@example.invalid`,
       })),
     );
-    await db.insert(snapshots).values({
-      projectId: ids.project,
-      rulesVersion: TRAVEL_FUNDING_RULES.version,
-      participantTransportProfiles: [
-        ...TRAVEL_FUNDING_RULES.participantTransportProfiles,
-      ],
-    });
-    await db.insert(bands).values(
-      TRAVEL_FUNDING_RULES.bands.map((band) => ({
-        projectId: ids.project,
-        minKm: String(band.minKm),
-        maxKm: String(band.maxKm),
-        standardEur: String(band.standardEur),
-        greenEur: String(band.greenEur),
+    await db.insert(snapshots).values(
+      [ids.project, ids.foreignProject].map((projectId) => ({
+        projectId,
+        rulesVersion: TRAVEL_FUNDING_RULES.version,
+        participantTransportProfiles: [
+          ...TRAVEL_FUNDING_RULES.participantTransportProfiles,
+        ],
       })),
+    );
+    await db.insert(bands).values(
+      [ids.project, ids.foreignProject].flatMap((projectId) =>
+        TRAVEL_FUNDING_RULES.bands.map((band) => ({
+          projectId,
+          minKm: String(band.minKm),
+          maxKm: String(band.maxKm),
+          standardEur: String(band.standardEur),
+          greenEur: String(band.greenEur),
+        })),
+      ),
     );
     await db.insert(journeys).values(
       ids.participants.map((id) => ({
@@ -466,14 +474,14 @@ test.describe.serial("Claim review journey 25–26", () => {
       0,
       3,
       5,
-      1,
       2,
       2,
       2,
       2,
       2,
-      1,
-      TRAVEL_FUNDING_RULES.bands.length,
+      2,
+      2,
+      TRAVEL_FUNDING_RULES.bands.length * 2,
       2,
       2,
       2,
@@ -527,11 +535,15 @@ test.describe.serial("Claim review journey 25–26", () => {
       await db
         .delete(payoutAccounts)
         .where(inArray(payoutAccounts.id, ids.payoutAccounts));
-      await db.delete(snapshots).where(eq(snapshots.projectId, ids.project));
+      await db
+        .delete(snapshots)
+        .where(inArray(snapshots.projectId, [ids.project, ids.foreignProject]));
       await db
         .delete(partnerships)
         .where(inArray(partnerships.id, ids.partnerships));
-      await db.delete(projects).where(eq(projects.id, ids.project));
+      await db
+        .delete(projects)
+        .where(inArray(projects.id, [ids.project, ids.foreignProject]));
       await db
         .delete(member)
         .where(inArray(member.organizationId, [ids.host, ...ids.partners]));

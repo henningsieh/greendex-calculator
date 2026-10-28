@@ -44,6 +44,7 @@ const s = "canonical";
 const host = `coord-host-${s}`;
 const partner = `coord-partner-${s}`;
 const other = `coord-other-${s}`;
+
 let project: string;
 let own: string;
 let foreign: string;
@@ -623,7 +624,7 @@ describe("read-only Hosting Participant view", () => {
     });
 
     expect(report.organizations.map(({ country }) => country)).toEqual([
-      "IT",
+      "DE",
       "FR",
     ]);
     expect(report.agreement).toEqual({
@@ -631,7 +632,7 @@ describe("read-only Hosting Participant view", () => {
       published: true,
     });
     expect(report.organizations.map((group) => group.id)).toEqual([
-      other,
+      host,
       partner,
     ]);
     expect(
@@ -644,7 +645,7 @@ describe("read-only Hosting Participant view", () => {
         }),
       ),
     ).toEqual([
-      { name: "Other", participantCount: 1, completedCount: 0, pendingCount: 1 },
+      { name: "Host", participantCount: 1, completedCount: 0, pendingCount: 1 },
       {
         name: "Partner",
         participantCount: 2,

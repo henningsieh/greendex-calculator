@@ -46,6 +46,7 @@ const ids = {
   partnerA: randomUUID(),
   partnerB: randomUUID(),
   main: randomUUID(),
+  claimless: randomUUID(),
   isolation: randomUUID(),
   zero: randomUUID(),
   other: randomUUID(),
@@ -56,6 +57,7 @@ const ids = {
 };
 const names = {
   main: `CT ${suffix} Main`,
+  claimless: `CT ${suffix} Claimless`,
   isolation: `CT ${suffix} Isolation`,
   zero: `CT ${suffix} Zero Partnerships`,
   other: `CT ${suffix} E Other Project`,
@@ -65,7 +67,7 @@ const names = {
 const password = randomUUID();
 registerPrivateValues(password);
 const hostEmail = `ct-${suffix}-h@example.invalid`;
-const projectIds = [ids.main, ids.isolation, ids.zero, ids.other];
+const projectIds = [ids.main, ids.claimless, ids.isolation, ids.zero, ids.other];
 const partnershipIds = [ids.mainA, ids.mainB, ids.isolationA, ids.otherB];
 const organizationIds = [ids.host, ids.existing, ids.partnerA, ids.partnerB];
 const userIds = [ids.hostUser, ids.existingUser];
@@ -188,19 +190,21 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       },
     ]);
     await db.insert(projectsTable).values(
-      (["main", "isolation", "zero", "other"] as const).map((key) => ({
-        id: ids[key],
-        name: names[key],
-        startDate: now,
-        endDate: now,
-        location: "Riga",
-        country: "LV" as const,
-        organizationId: key === "other" ? ids.existing : ids.host,
-      })),
+      (["main", "claimless", "isolation", "zero", "other"] as const).map(
+        (key) => ({
+          id: ids[key],
+          name: names[key],
+          startDate: now,
+          endDate: now,
+          location: "Riga",
+          country: "LV" as const,
+          organizationId: key === "other" ? ids.existing : ids.host,
+        }),
+      ),
     );
     await db.insert(projectPartnerOrganizationsTable).values([
       { id: ids.mainA, projectId: ids.main, organizationId: ids.partnerA },
-      { id: ids.mainB, projectId: ids.main, organizationId: ids.partnerB },
+      { id: ids.mainB, projectId: ids.claimless, organizationId: ids.partnerB },
       {
         id: ids.isolationA,
         projectId: ids.isolation,
@@ -213,7 +217,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       { partnershipId: ids.mainA, status: "rejected" },
       { partnershipId: ids.otherB, status: "editable" },
     ]);
-    expect(await ownedCounts()).toEqual([2, 4, 4, 4, 2]);
+    expect(await ownedCounts()).toEqual([2, 4, 5, 4, 2]);
   });
 
   test.afterAll(async () => {
@@ -244,21 +248,23 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     expect(response.ok(), "H setup sign-in failed").toBe(true);
   });
 
-  test("28 shows independent terminal and claimless readiness without offering completion", async () => {
+  test("28 shows independent terminal and claimless readiness on separate Projects", async () => {
     const page = await hostContext!.newPage();
     await openHostedProject(page, mainURL);
     const assigned = page.getByRole("listitem");
-    await expect(assigned).toHaveCount(2);
+    await expect(assigned).toHaveCount(1);
     await expect(
       partnerRow(page, ids.partnerA).locator('[data-claim-status="rejected"]'),
     ).toBeVisible();
+    // #337: terminal and claimless Partnerships live on separate Projects.
+    await openHostedProject(page, `/projects/${ids.claimless}`);
     await expect(
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
     await expect(page.getByTestId("complete-project")).toHaveCount(0);
 
     // E owns another Project with the same Partner Organization B. Its editable
-    // Claim must not alter Main's B readiness or appear among H's Hosted Projects.
+    // Claim must not alter the claimless Project's B readiness or appear among H's Hosted Projects.
     await page.goto("/projects");
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
@@ -269,7 +275,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
         `a[href="/projects/${ids.other}"], a[href^="/projects/${ids.other}?"]`,
       ),
     ).toHaveCount(0);
-    await openHostedProject(page, mainURL);
+    await openHostedProject(page, `/projects/${ids.claimless}`);
     await expect(
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();

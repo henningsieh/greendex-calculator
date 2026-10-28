@@ -90,9 +90,22 @@ describe("projects procedures", () => {
         ]),
       ).toEqual([
         [partnerIds[0], "correction_requested"],
-        [partnerIds[1], "approved"],
-        [partnerIds[2], "paid"],
+        // #337: the other Claim states belong to separate Projects.
       ]);
+      for (const [part, status] of [
+        ["b", "approved"],
+        ["c", "paid"],
+      ] as const) {
+        const isolated = await client.projects.get({
+          projectId: `${id(`mixed-link-${part}`)}-project`,
+        });
+        expect(isolated.relationship).toBe("hosted");
+        if (isolated.relationship !== "hosted")
+          throw new Error("Expected hosted Project");
+        expect(
+          isolated.partnerOrganizations.map(({ claimStatus }) => claimStatus),
+        ).toEqual([status]);
+      }
       useSession(partnerIds[0]!);
       const partner = await client.projects.get({ projectId });
       expect(partner.relationship).toBe("partner");
@@ -139,22 +152,18 @@ describe("projects procedures", () => {
       });
     });
 
-    it("names claimless Partnerships even alongside non-terminal Claims", async () => {
+    it("names the claimless Partnership independently of other Projects' Claims", async () => {
+      // #337: claimless and non-terminal Claims cannot coexist on one Project.
       const claimless = await client.projects.get({ projectId });
       expect(claimless.relationship).toBe("hosted");
       if (claimless.relationship !== "hosted")
         throw new Error("Expected hosted Project");
       expect(
         claimless.partnerOrganizations.map(({ claimStatus }) => claimStatus),
-      ).toEqual([null, null, null]);
-      useScenario("claimless-partial");
+      ).toEqual([null]);
       await expect(complete()).rejects.toMatchObject({
         code: "BAD_REQUEST",
         message: expect.stringContaining(partnerIds[0]),
-      });
-      await expect(complete()).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-        message: expect.stringContaining(partnerIds[2]),
       });
       await expect(complete()).rejects.toMatchObject({
         code: "BAD_REQUEST",
@@ -359,6 +368,7 @@ describe("projects procedures", () => {
     const secondPartnerId = `list-second-partner-${suffix}`;
     const unrelatedId = `list-unrelated-${suffix}`;
     const alphaId = `list-alpha-${suffix}`;
+    const secondAlphaId = `list-link-alpha-second-${suffix}-project`;
     const betaId = `list-beta-${suffix}`;
     const climateId = `list-climate-${suffix}`;
     const foreignId = `list-foreign-${suffix}`;
@@ -388,15 +398,15 @@ describe("projects procedures", () => {
       expect(result.rows).toHaveLength(25);
       expect(result.nextCursor).toEqual(expect.any(String));
       expect(result.metrics.whole).toEqual({
-        projectCount: 29,
-        openWindowCount: 2,
+        projectCount: 30,
+        openWindowCount: 3,
         partnerOrganizationCount: 2,
       });
       expect(result.metrics.filtered).toEqual(result.metrics.whole);
       expect(result.rows.slice(0, 3).map((project) => project.id)).toEqual([
         alphaId,
+        secondAlphaId,
         climateId,
-        betaId,
       ]);
       expect(result.rows[0]).not.toHaveProperty("organizationId");
 
@@ -421,14 +431,14 @@ describe("projects procedures", () => {
 
           expect(first.previousCursor).toBeUndefined();
           expect(first.nextCursor).toEqual(expect.any(String));
-          expect(second.rows).toHaveLength(4);
+          expect(second.rows).toHaveLength(scope === "hosted" ? 5 : 4);
           expect(second.previousCursor).toEqual(expect.any(String));
           expect(second.nextCursor).toBeUndefined();
           expect(second.metrics).toEqual(first.metrics);
           expect(
             new Set([...first.rows, ...second.rows].map((project) => project.id))
               .size,
-          ).toBe(29);
+          ).toBe(scope === "hosted" ? 30 : 29);
 
           const previous = await getListPage(second.previousCursor);
           expect(previous.rows.map((project) => project.id)).toEqual(
@@ -527,13 +537,13 @@ describe("projects procedures", () => {
         partnerOrganizationIds: [secondPartnerId, unrelatedId],
       });
 
-      expect(result.rows.map((project) => project.id)).toEqual([alphaId]);
+      expect(result.rows.map((project) => project.id)).toEqual([secondAlphaId]);
       expect(result.metrics.filtered).toEqual({
         projectCount: 1,
         openWindowCount: 1,
-        partnerOrganizationCount: 2,
+        partnerOrganizationCount: 1,
       });
-      expect(result.metrics.whole.projectCount).toBe(29);
+      expect(result.metrics.whole.projectCount).toBe(30);
       expect(result.partnerOptions.map((partner) => partner.id)).toEqual([
         partnerId,
         secondPartnerId,

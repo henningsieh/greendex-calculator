@@ -131,6 +131,11 @@ export const situationCatalog = {
     reason: "PARTNERSHIP_ALREADY_ASSIGNED",
     message: "This Organization is already assigned to the Project.",
   },
+  projectAlreadyHasPartner: {
+    code: "BAD_REQUEST",
+    reason: "PROJECT_ALREADY_HAS_PARTNER",
+    message: "This Project already has a Partner Organization.",
+  },
   partnershipInvariant: {
     code: "BAD_REQUEST",
     reason: "PARTNERSHIP_INVARIANT",
