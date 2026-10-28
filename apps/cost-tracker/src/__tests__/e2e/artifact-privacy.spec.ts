@@ -13,7 +13,7 @@ import {
 } from "./fixtures/artifact-privacy";
 
 // Safe MVP probes use synthetic URLs and never navigate to a private link.
-// Deep-hook probes below are retained but NOT registered/executed; see backlog.
+// Deep-hook probes below are retained but NOT registered/executed; see #338.
 // Trace/video/screenshots are off; automatic DOM snapshots remain a known risk.
 test.use({ trace: "off", screenshot: "off", video: "off" });
 
