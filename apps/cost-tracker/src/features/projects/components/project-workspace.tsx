@@ -8,10 +8,10 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { type ClaimStatus } from "@/features/claims/claim-lifecycle";
 import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
-import type { Outputs } from "@/lib/orpc/router";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "long",
@@ -23,12 +23,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-type ClaimStatus = Extract<
-  Outputs["projects"]["get"],
-  { relationship: "hosted" }
->["partnerOrganizations"][number]["claimStatus"];
-
-const readinessLabels: Record<NonNullable<ClaimStatus>, string> = {
+const readinessLabels: Record<ClaimStatus, string> = {
   editable: "Active Claim · editable",
   submitted: "Submitted",
   correction_requested: "Correction requested",
@@ -37,7 +32,7 @@ const readinessLabels: Record<NonNullable<ClaimStatus>, string> = {
   paid: "Paid",
 };
 
-function ClaimReadiness({ status }: { status: ClaimStatus }) {
+function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   return (
     <Badge data-claim-status={status ?? "none"} variant="secondary">
       {status ? readinessLabels[status] : "No Claim"}
