@@ -1,10 +1,11 @@
 // global.d.ts
 
+import apiErrors from "./src/messages/api-errors/en.json";
 import messages from "./src/messages/en.json";
 
 declare module "next-intl" {
   interface AppConfig {
-    Messages: typeof messages;
+    Messages: typeof messages & { apiErrors: typeof apiErrors };
   }
 }
 
