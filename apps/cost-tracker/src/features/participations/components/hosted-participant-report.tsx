@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Building2Icon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
@@ -25,6 +26,7 @@ function pluralize(count: number, singular: string) {
  * the Partner workspace keeps its own controls unchanged.
  */
 export function HostedParticipantReport({ projectId }: { projectId: string }) {
+  const t = useTranslations("participations.report");
   const { data } = useSuspenseQuery(
     orpcQuery.participations.listHostedReport.queryOptions({
       input: { projectId },
@@ -35,31 +37,24 @@ export function HostedParticipantReport({ projectId }: { projectId: string }) {
   return (
     <section
       data-testid="hosted-participant-report"
-      aria-label="Hosting Participant view"
+      aria-label={t("label")}
       className="space-y-6"
       data-agreement-published={data.agreement.published}
     >
-      <p className="text-sm text-muted-foreground">
-        Totals count the Project Participations that exist, each in the Partner
-        Organization it represents. Invitees who have not joined and unknown
-        holders of a Participant Registration Link are not counted, so this is not
-        a pre-join funnel.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("description")}</p>
       {!data.agreement.published && (
         <p
           className="text-sm text-muted-foreground"
           data-testid="unpublished-agreement"
         >
-          Agreement version {data.agreement.versionId} is not published, so no
-          Participant counts as completed.
+          {t("agreementVersion")} {data.agreement.versionId}{" "}
+          {t("agreementUnpublished")}
         </p>
       )}
       {data.organizations.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>
-              No Project Participations have joined this Project yet.
-            </EmptyTitle>
+            <EmptyTitle>{t("empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -76,6 +71,7 @@ function PartnerOrganizationParticipants({
 }: {
   group: PartnerOrganizationGroup;
 }) {
+  const t = useTranslations("participations.report");
   const [expanded, setExpanded] = useState(false);
   const participantsId = `participants-${group.id}`;
 
@@ -95,18 +91,18 @@ function PartnerOrganizationParticipants({
           <Badge
             variant="secondary"
             data-country={group.country}
-          >{`Country: ${group.country}`}</Badge>
+          >{`${t("country")} ${group.country}`}</Badge>
           <Badge data-participant-count={group.participantCount}>
             {pluralize(group.participantCount, "Participant")}
           </Badge>
           <Badge
             variant="secondary"
             data-completed-count={group.completedCount}
-          >{`${group.completedCount} completed`}</Badge>
+          >{`${group.completedCount} ${t("completed")}`}</Badge>
           <Badge
             variant="secondary"
             data-pending-count={group.pendingCount}
-          >{`${group.pendingCount} pending`}</Badge>
+          >{`${group.pendingCount} ${t("pending")}`}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -154,7 +150,7 @@ function PartnerOrganizationParticipants({
                   {participant.email ?? "No email recorded"}
                 </p>
                 <p className="flex flex-wrap items-center gap-3 text-sm">
-                  <span>Country</span>
+                  <span>{t("countryHeader")}</span>
                   <Badge variant="secondary">
                     {participant.country ?? "Not set"}
                   </Badge>

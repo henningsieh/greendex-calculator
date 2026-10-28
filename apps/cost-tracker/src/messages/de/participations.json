@@ -1,1 +1,140 @@
-{}
+{
+  "participations": {
+    "report": {
+      "label": "Hosting-Teilnehmendenansicht",
+      "description": "Die Summen zählen die vorhandenen Project Participations, jeweils in der Partnerorganisation, die sie vertritt. Der Agreement-Status ist unabhängig von der Mitgliedschaft.",
+      "agreementVersion": "Agreement-Version",
+      "agreementUnpublished": "ist nicht veröffentlicht, daher zählt keine teilnehmende Person als abgeschlossen.",
+      "empty": "Noch keine Project Participations sind diesem Projekt beigetreten.",
+      "country": "Land:",
+      "completed": "abgeschlossen",
+      "pending": "ausstehend",
+      "countryHeader": "Land"
+    },
+    "loading": {
+      "projectParticipations": "Project Participations werden geladen",
+      "details": "Teilnehmendendetails werden geladen",
+      "report": "Teilnehmendenbericht wird geladen"
+    },
+    "review": {
+      "registeredUser": "Registrierte Person:",
+      "task": "Review Task",
+      "existingParticipation": "Bestehende Project Participation:",
+      "assignedUser": "Zugewiesene registrierte Person:",
+      "assignToMe": "Review Task mir zuweisen",
+      "decision": "Review-Task-Entscheidung",
+      "resolve": "Review Task auflösen",
+      "decisionLabel": "Entscheidung:",
+      "tasksLabel": "Review Tasks",
+      "loading": "Review Tasks werden geladen…",
+      "loadError": "Review Tasks konnten nicht geladen werden",
+      "retry": "Review Tasks erneut laden",
+      "empty": "Für diese Projektpartnerschaft sind keine Review Tasks erfasst.",
+      "update": "Review-Task-Aktualisierung"
+    },
+    "groupOrganizer": {
+      "loadingUsers": "Registrierte Personen werden geladen…",
+      "unavailable": "Group-Organizer-Verwaltung nicht verfügbar",
+      "retryUsers": "Registrierte Personen erneut laden",
+      "description": "Organization Owners und Organization Admins können Group Organizer zuweisen oder entziehen.",
+      "registeredUserLabel": "Registrierte Person für Group-Organizer-Zuweisung",
+      "selectUser": "Registrierte Person auswählen",
+      "noEligible": "Keine geeigneten registrierten Personen in dieser Organisation.",
+      "assign": "Group Organizer zuweisen",
+      "update": "Group-Organizer-Aktualisierung"
+    },
+    "invitations": {
+      "title": "E-Mail-gebundene Teilnehmendeneinladungen",
+      "description": "Nur die eingeladene E-Mail-Adresse kann eine Einladung einlösen. Weitergeleitete Links gewähren keinen Zugriff.",
+      "empty": "Für diese Partnerschaft sind keine Einladungen erfasst.",
+      "reissue": "Einladung erneut ausstellen für",
+      "close": "Einladung schließen für",
+      "statusHint": "Der Einladungsstatus zeigt keinen Profil- oder Agreement-Fortschritt."
+    },
+    "links": {
+      "title": "Teilbare Teilnehmenden-Registrierungslinks",
+      "description": "Jede Person mit dem Link kann ihn mit ihrem eigenen Konto einlösen. Schließe einen Link, wenn er nicht mehr benötigt wird.",
+      "empty": "Für diese Partnerschaft sind keine Registrierungslinks erfasst.",
+      "link": "Link",
+      "close": "Registrierungslink schließen",
+      "reopen": "Registrierungslink wieder öffnen"
+    },
+    "joined": {
+      "title": "Beigetretene Teilnehmende",
+      "empty": "Noch keine Teilnehmenden sind dieser Partnerschaft beigetreten.",
+      "joined": "Beigetreten",
+      "country": "Land",
+      "detailsFor": "Teilnehmendendetails für"
+    },
+    "page": {
+      "label": "Project Participations",
+      "project": "Projekt:",
+      "addUser": "Registrierte Person zu diesem Projekt hinzufügen",
+      "addUserDescription": "Füge nur eine registrierte Person hinzu, die Profil und Agreement akzeptiert hat.",
+      "registeredUser": "Registrierte Person",
+      "registeredUserLabel": "Registrierte Person",
+      "groupOrganizers": "Group Organizers",
+      "reviewTasks": "Review Tasks",
+      "reviewTasksDescription": "Prüfe doppelte Identitäten registrierter Personen. Die Auflösung behält die bestehende Project Participation.",
+      "invitationsTitle": "Teilnehmendeneinladungen und Registrierungslinks",
+      "invitationsDescription": "E-Mail-gebundene Einladungen erreichen eine Adresse; nur dieses verifizierte Konto kann sie einlösen.",
+      "inviteeEmail": "E-Mail der eingeladenen Person",
+      "sendInvitation": "Teilnehmendeneinladung senden",
+      "createLink": "Teilnehmenden-Registrierungslink erstellen",
+      "newLink": "Neuer Registrierungslink (jetzt kopieren)"
+    },
+    "details": {
+      "countryFor": "Land für",
+      "notSet": "Nicht gesetzt",
+      "saveCountry": "Land speichern für",
+      "label": "Teilnehmendendetails",
+      "back": "Zurück zu Project Participations",
+      "project": "Projekt:",
+      "participation": "Project Participation",
+      "country": "Land",
+      "correctCountry": "Land korrigieren",
+      "correctCountryDescription": "Die teilnehmende Person setzt das beim Beitritt. Nur die Partnerorganisation darf es korrigieren."
+    },
+    "app": {
+      "backToProjects": "Zurück zu Projekten",
+      "reportTitle": "Teilnehmendenbericht",
+      "reportDescription": "Lies, wie das Onboarding in diesem Projekt voranschreitet, gruppiert nach Partnerorganisation.",
+      "projectParticipations": "Project Participations",
+      "coordinateDescription": "Koordiniere Teilnehmende für diese Projektpartnerschaft.",
+      "participantDetails": "Teilnehmendendetails",
+      "participantDetailsDescription": "Lies diese Project Participation und korrigiere die Daten, die du korrigieren darfst."
+    }
+  },
+  "participantOnboarding": {
+    "agreementUnavailable": {
+      "title": "Teilnehmenden-Agreement ist noch nicht verfügbar",
+      "description": "Beitritt und Teilnehmendenaktionen sind pausiert, bis das freigegebene Agreement veröffentlicht ist."
+    },
+    "agreement": {
+      "label": "EU–Erasmus-Teilnehmenden-Agreement (",
+      "aria": "Text des Teilnehmenden-Agreements",
+      "accept": "Ich akzeptiere das aktuelle Teilnehmenden-Agreement"
+    },
+    "join": {
+      "title": "Als Projektteilnehmer:in beitreten",
+      "description": "Dein Konto muss eine verifizierte E-Mail-Adresse verwenden. Der Server prüft die Einladung oder den Registrierungslink.",
+      "invitationRequiredTitle": "Vollständige Teilnehmendeneinladung oder Registrierungslink erforderlich",
+      "invitationRequiredDescription": "Öffne den vollständigen Link, den du erhalten hast. Wenn er nicht funktioniert, bitte die sendende Person um einen neuen.",
+      "fullName": "Vollständiger Name",
+      "country": "Land",
+      "countryPlaceholder": "EU-Land auswählen"
+    },
+    "dashboard": {
+      "title": "Meine Project Participations",
+      "acceptAgreement": "Agreement akzeptieren",
+      "loading": "Deine Projekte werden geladen…",
+      "profileRequired": "Vervollständige dein Profil, bevor Teilnehmendenaktionen verfügbar sind.",
+      "fullName": "Vollständiger Name",
+      "agreementRequired": "Akzeptiere das aktuelle Agreement, bevor Teilnehmendenaktionen verfügbar sind.",
+      "retry": "Projekte erneut laden",
+      "empty": "Noch keine Projekte. Tritt über eine Teilnehmendeneinladung oder einen Registrierungslink bei.",
+      "representing": "Vertritt:",
+      "hostedBy": "Gehostet von:"
+    }
+  }
+}

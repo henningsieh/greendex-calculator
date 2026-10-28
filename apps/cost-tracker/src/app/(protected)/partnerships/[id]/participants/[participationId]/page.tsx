@@ -1,3 +1,4 @@
+import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -15,19 +16,19 @@ export default async function ParticipantDetailsPage({
   params: Promise<{ id: string; participationId: string }>;
 }) {
   if (!(await hasOrganizationMembership())) return null;
+  const t = await getTranslations("participations.app");
 
   return (
     <div className="space-y-8">
       <header className="space-y-3">
         <Link className={buttonVariants({ variant: "ghost" })} href="/projects">
-          Back to Projects
+          {t("backToProjects")}
         </Link>
         <h1 className="font-heading text-4xl font-semibold">
-          Participant details
+          {t("participantDetails")}
         </h1>
         <p className="text-muted-foreground">
-          Read this Project Participation and correct the data you are permitted
-          to correct.
+          {t("participantDetailsDescription")}
         </p>
       </header>
       <Suspense fallback={<ParticipantDetailsSkeleton />}>
