@@ -3,6 +3,7 @@ import { defineI18nUI } from "fumadocs-ui/i18n";
 import { RootProvider } from "fumadocs-ui/provider/next";
 
 import "src/app/globals.css";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
 
@@ -30,6 +31,16 @@ const { provider } = defineI18nUI(
 );
 
 // export default function Layout({ children }: LayoutProps<"">) {
+/**
+ * Resolve relative Open Graph image URLs against the docs origin so
+ * crawlers receive an absolute `og:image` instead of localhost.
+ */
+export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.greendex.apps.sieh.org",
+  ),
+};
+
 /**
  * Return one route parameter set per configured documentation language
  * for prerendering.
