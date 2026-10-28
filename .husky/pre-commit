@@ -2,7 +2,8 @@
 set -eu
 
 # Default: check only files in this commit. Use PRE_COMMIT_FULL=1 for the
-# repository-wide checks, or HUSKY=0 / git commit --no-verify when appropriate.
+# repository-wide checks. Never bypass this hook with HUSKY=0 or
+# git commit --no-verify: fix the failure instead and re-run the commit.
 if [ "${PRE_COMMIT_FULL:-0}" = "1" ]; then
   pnpm run format
   pnpm run lint
@@ -50,12 +51,13 @@ git diff --cached --name-only -z --diff-filter=ACMR \
 
 # Keep agent-context quality high: the drift guard and its policy tests are
 # build-free reads (node + single-file vitest, ~seconds) and block the commit
-# on drift. Bypass with --no-verify when appropriate.
+# on drift. Never bypass with --no-verify; fix the drift instead.
 pnpm run check:agent-instructions
 
 # Tests must never assert visible copy: rewording or translation must not
 # break suites. This scan is a build-free read (~1s) over test sources and
-# blocks the commit on violation. Bypass with --no-verify when appropriate.
+# blocks the commit on violation. Never bypass with --no-verify;
+# reword the test instead.
 pnpm run check:no-copy-assertions
 
 # Only re-stage files that were selected from the original staged snapshot.

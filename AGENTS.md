@@ -75,6 +75,8 @@ Conventional Commits 1.0.0: `<type>[optional scope]: <description>`, imperative,
 
 Before every commit, run `pnpm run format && pnpm run lint` from the repository root and ensure both pass. These commands can modify files; review their changes before committing.
 
+Never bypass the pre-commit hook with `HUSKY=0` or `git commit --no-verify`. Always commit normally so the hook runs; if it fails, fix the reported issue and commit again. The manual `format`/`lint` run does not replace the hook — the hook additionally runs the drift guard, the copy-assertion scan, and re-stages formatted files.
+
 ## Scoped Instruction Index
 
 The instruction files below live under [`docs/agents/instructions/`](docs/agents/instructions/).
@@ -110,6 +112,7 @@ Before final delivery (the main agent owns these gates after shared-worktree chi
 - [ ] Tests updated for changed functionality; focused selection, rationale, runtime target, evidence, and blockers reported
 - [ ] Coordinator-owned final existing-environment suites and independent Standards/Spec review completed under the two-loop policy; planned tooling is not a passed gate
 - [ ] `pnpm run format && pnpm run lint` executed and passing
+- [ ] Pre-commit hook ran un-bypassed (no `HUSKY=0`, no `--no-verify`)
 - [ ] `pnpm run check:agent-instructions` passes after instruction changes
 
 **The developer is always in control. Agents are assistants, not controllers.**

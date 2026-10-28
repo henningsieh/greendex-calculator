@@ -128,4 +128,5 @@ Better Auth schema generation uses the calculator's `auth:generate` script and w
 
 - Keep commits focused and use descriptive conventional-style messages.
 - Review `git diff` and `git status` before committing.
+- Never bypass the pre-commit hook with `HUSKY=0` or `git commit --no-verify`. If the hook fails, fix the reported issue and commit again.
 - Include tests and documentation when behavior or an operational invariant changes.
