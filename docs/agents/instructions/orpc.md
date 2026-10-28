@@ -27,7 +27,7 @@ No official oRPC project skill is adopted. Use the versioned official pages and 
 | HTTP error statuses | Owning app's `src/lib/orpc/error-status.ts` |
 | Authentication and permissions | Owning app's `src/lib/orpc/middleware.ts` |
 | Shared procedures | Owning app's `src/lib/orpc/procedures.ts`, when present |
-| Feature procedures | Owning app's `src/features/<feature>/procedures/` directory (one short-named file per procedure) or a single `procedures.ts` for small features |
+| Feature procedures | Owning app's `src/features/<feature>/procedures/` directory (one short-named file per procedure by default) or a single `procedures.ts` for small features. When many tiny procedures share one seam, cohesive groups may share a file. Keep the group aggregator on the same procedure builders and preserve each procedure's contract and the router surface. |
 | Direct server client | Owning app's `src/lib/orpc/client.server.ts` |
 | Universal client and Query utilities | Owning app's `src/lib/orpc/orpc.ts` |
 | OpenAPI configuration | Calculator's `src/lib/orpc/openapi-handler.ts` |
