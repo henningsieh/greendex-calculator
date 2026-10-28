@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -49,6 +50,7 @@ export function ClaimSubmission({
   preview: Preview;
   refresh: () => Promise<void>;
 }) {
+  const t = useTranslations("claims.submission");
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -73,11 +75,11 @@ export function ClaimSubmission({
   return (
     <Card variant="action">
       <CardHeader>
-        <CardTitle as="h2">Submission</CardTitle>
+        <CardTitle as="h2">{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <ul
-          aria-label="Submission checklist"
+          aria-label={t("checklistLabel")}
           data-testid="submission-checklist"
           className="space-y-3"
         >
@@ -85,9 +87,9 @@ export function ClaimSubmission({
             <li key={item.key}>
               <p>
                 {item.passed ? (
-                  <Badge variant="status-pass">Pass</Badge>
+                  <Badge variant="status-pass">{t("pass")}</Badge>
                 ) : (
-                  <Badge variant="destructive">Fail</Badge>
+                  <Badge variant="destructive">{t("fail")}</Badge>
                 )}{" "}
                 {labels[item.key]}
               </p>
@@ -97,18 +99,18 @@ export function ClaimSubmission({
                     href={`#${gapAnchor(gap.path)}`}
                     data-testid={`submission-gap-${gap.path.join("-")}`}
                   >
-                    {gap.message} — Go to gap
+                    {gap.message} {t("goToGap")}
                   </a>
                 </p>
               ))}
               {item.passed && (
-                <a href={`#${gapAnchor([item.key])}`}>View section</a>
+                <a href={`#${gapAnchor([item.key])}`}>{t("viewSection")}</a>
               )}
             </li>
           ))}
         </ul>
         <p className="border-t pt-5">
-          Calculated payable:{" "}
+          {t("calculatedPayable")}{" "}
           {preview.calculatedPayableEur === null ? (
             "Not available until the checklist passes"
           ) : (
@@ -117,10 +119,10 @@ export function ClaimSubmission({
               data-testid="calculated-payable"
               data-payable={String(preview.calculatedPayableEur)}
             >
-              {preview.calculatedPayableEur} EUR
+              {preview.calculatedPayableEur} {t("currencyEur")}
             </span>
           )}{" "}
-          (computed by the server; not editable)
+          {t("notEditable")}
         </p>
         {!confirming ? (
           <Button
@@ -131,15 +133,11 @@ export function ClaimSubmission({
             data-testid="claim-submit"
             onClick={() => setConfirming(true)}
           >
-            Submit Claim
+            {t("submit")}
           </Button>
         ) : (
           <Alert>
-            <AlertDescription>
-              Confirm submission: submission locks the Claim and selected Payout
-              Account for Partner editing until the Hosting side requests a
-              correction.
-            </AlertDescription>
+            <AlertDescription>{t("confirmDescription")}</AlertDescription>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="default"
@@ -149,7 +147,7 @@ export function ClaimSubmission({
                 data-testid="claim-submit-confirm"
                 onClick={() => void submit()}
               >
-                Confirm submission
+                {t("confirm")}
               </Button>
               <Button
                 size="lg"
@@ -158,7 +156,7 @@ export function ClaimSubmission({
                 disabled={pending}
                 onClick={() => setConfirming(false)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
             </div>
           </Alert>

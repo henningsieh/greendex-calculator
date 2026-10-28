@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
@@ -9,6 +10,7 @@ import { isClaimAwaitingReview } from "@/features/claims/claim-lifecycle";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 export function ClaimReviewQueue() {
+  const t = useTranslations("claims.queue");
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
       meta: { costTrackerORPC: true },
@@ -30,13 +32,13 @@ export function ClaimReviewQueue() {
   return (
     <Card data-testid="review-queue">
       <CardHeader>
-        <CardTitle>Submitted Claims awaiting review</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardContent>
         {submitted.length === 0 ? (
           <Empty data-testid="review-queue-empty">
             <EmptyHeader>
-              <EmptyTitle>No submitted Claims available for review.</EmptyTitle>
+              <EmptyTitle>{t("empty")}</EmptyTitle>
             </EmptyHeader>
           </Empty>
         ) : (

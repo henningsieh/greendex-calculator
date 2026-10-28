@@ -2,6 +2,7 @@
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PROJECT_PARTICIPATION_CREATE } from "@greendex/auth/project-authorization";
+import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
@@ -78,17 +79,19 @@ const historyLabels: Record<History[number]["eventType"], string> = {
 };
 
 export function ClaimHistory({ events }: { events: History }) {
+  const t = useTranslations("claims.review");
+
   return (
     <section
-      aria-label="Claim history"
+      aria-label={t("historyLabel")}
       data-testid="claim-history"
       className="min-w-0 space-y-4 px-8 py-7 max-sm:px-4"
     >
-      <h2 className="font-heading text-xl font-semibold">Claim history</h2>
+      <h2 className="font-heading text-xl font-semibold">{t("historyTitle")}</h2>
       {events.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>No review events yet.</EmptyTitle>
+            <EmptyTitle>{t("historyEmpty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -107,7 +110,8 @@ export function ClaimHistory({ events }: { events: History }) {
                 {event.occurredAt.toLocaleString()}
               </time>
               <span className="min-w-0 wrap-anywhere">
-                Actor: <span className="font-mono">{event.actorUserId}</span>
+                {t("actor")}{" "}
+                <span className="font-mono">{event.actorUserId}</span>
               </span>
               {event.reason && (
                 <p
@@ -132,6 +136,8 @@ function ClaimDecisionSummary({
   status: Claim["status"];
   approvedAmountEur: string | null;
 }) {
+  const t = useTranslations("claims.review");
+
   return (
     <>
       <p data-review-status={status}>
@@ -149,11 +155,11 @@ function ClaimDecisionSummary({
       </p>
       {approvedAmountEur && (
         <p data-testid="approved-payable">
-          Calculated payable:{" "}
+          {t("calculatedPayable")}{" "}
           <span className="block font-mono tabular-nums">
-            {approvedAmountEur} EUR
+            {approvedAmountEur} {t("currencyEur")}
           </span>{" "}
-          (server-approved amount)
+          {t("serverApprovedAmount")}
         </p>
       )}
     </>
@@ -173,6 +179,7 @@ export function ClaimDecisionPanel({
   canReview: boolean;
   onDecision: (decision: Decision, input: DecisionInput) => Promise<void>;
 }) {
+  const t = useTranslations("claims.review");
   const [confirming, setConfirming] = useState<Decision | null>(null);
   const [reason, setReason] = useState("");
   const [pending, setPending] = useState(false);
@@ -212,7 +219,7 @@ export function ClaimDecisionPanel({
   return (
     <Card variant="action">
       <CardHeader>
-        <CardTitle as="h2">Review decision</CardTitle>
+        <CardTitle as="h2">{t("decisionTitle")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <ClaimDecisionSummary
@@ -275,7 +282,7 @@ export function ClaimDecisionPanel({
                 data-testid={`claim-decision-confirm-${confirming}`}
                 onClick={() => void execute()}
               >
-                Confirm {definition?.confirmation}
+                {t("confirm")} {definition?.confirmation}
               </Button>
               <Button
                 size="lg"
@@ -284,7 +291,7 @@ export function ClaimDecisionPanel({
                 disabled={pending}
                 onClick={() => setConfirming(null)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
             </div>
           </Alert>
@@ -302,32 +309,32 @@ export function ClaimReviewDetails({
   details: ReviewDetails;
   partnershipId: string;
 }) {
+  const t = useTranslations("claims.review");
+
   return (
     <Card variant="document">
       <CardHeader>
-        <CardTitle as="h2">Submitted Claim details</CardTitle>
+        <CardTitle as="h2">{t("detailsTitle")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {details.payoutAccount ? (
           <PayoutAccountLines account={details.payoutAccount} />
         ) : (
-          <p>No Payout Account</p>
+          <p>{t("noPayoutAccount")}</p>
         )}
         <p>
-          Calculated payable:{" "}
+          {t("calculatedPayable")}{" "}
           <span
             className="font-mono tabular-nums"
             data-testid="review-approved-payable"
             data-amount-eur={details.approvedAmountEur}
           >
-            {details.approvedAmountEur ?? "Unavailable"} EUR
+            {details.approvedAmountEur ?? "Unavailable"} {t("currencyEur")}
           </span>
         </p>
-        <h3 className="text-xl font-semibold">
-          Travel Cost Entries and Proof Documents
-        </h3>
+        <h3 className="text-xl font-semibold">{t("costsAndDocuments")}</h3>
         {details.entries.length === 0 ? (
-          <p>No costs recorded.</p>
+          <p>{t("noCosts")}</p>
         ) : (
           <ClaimCostTable
             rows={details.entries.map((entry) => ({
@@ -358,18 +365,20 @@ export function ClaimReviewDetails({
                 <ul className="space-y-3">
                   {entry.documents.map((document) => (
                     <li key={document.id}>
-                      <p>Proof Document: {document.originalFileName}</p>
+                      <p>
+                        {t("proofDocument")} {document.originalFileName}
+                      </p>
                       <p className="text-muted-foreground">
                         {document.mediaType},{" "}
                         <span className="font-mono">{document.byteSize}</span>{" "}
-                        bytes
+                        {t("bytes")}
                       </p>
                       <a
                         href={`/api/proof-documents?${new URLSearchParams({ partnershipId, documentId: document.id })}`}
                         download
                         data-testid={`download-proof-${document.id}`}
                       >
-                        Download Proof Document: {document.originalFileName}
+                        {t("download")} {document.originalFileName}
                       </a>
                     </li>
                   ))}
@@ -380,9 +389,9 @@ export function ClaimReviewDetails({
             }))}
           />
         )}
-        <h3 className="font-semibold">Participant Journeys</h3>
+        <h3 className="font-semibold">{t("journeysTitle")}</h3>
         {details.journeys.length === 0 ? (
-          <p>No journeys recorded.</p>
+          <p>{t("noJourneys")}</p>
         ) : (
           <ul>
             {details.journeys.map((journey) => (
@@ -394,7 +403,7 @@ export function ClaimReviewDetails({
               >
                 {journey.participantName}: {journey.origin} →{" "}
                 {journey.destination} · {journey.tripType} ·{" "}
-                {journey.erasmusDistanceKm} km
+                {journey.erasmusDistanceKm} {t("km")}
               </li>
             ))}
           </ul>
@@ -405,6 +414,7 @@ export function ClaimReviewDetails({
 }
 
 export function ClaimReview({ partnershipId }: { partnershipId: string }) {
+  const t = useTranslations("claims.review");
   const client = useQueryClient();
   const { data: session } = authClient.useSession();
   const { data: organization } = authClient.useActiveOrganization();
@@ -476,21 +486,21 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
   }
   return (
     <section
-      aria-label="Claim review"
+      aria-label={t("sectionLabel")}
       data-testid="claim-review"
       className="min-w-0 space-y-5"
     >
-      <Link href="/claims/review">Back to submitted Claims</Link>
+      <Link href="/claims/review">{t("back")}</Link>
       <div className="min-w-0">
-        <ClaimBand title="Claim review" status={claim?.status} />
+        <ClaimBand title={t("bandTitle")} status={claim?.status} />
         <div className="min-w-0 border border-t-0 bg-card">
           <div className="grid min-w-0 min-[961px]:grid-cols-[minmax(0,1fr)_340px]">
             <aside
-              aria-label="Review decision"
+              aria-label={t("decisionLabel")}
               className="min-w-0 border-b bg-muted min-[961px]:col-start-2 min-[961px]:row-start-1 min-[961px]:border-b-0 min-[961px]:border-l"
             >
               {!claim ? (
-                <p>No Claim has been created for this Partnership.</p>
+                <p>{t("noClaim")}</p>
               ) : (
                 <ClaimDecisionPanel
                   partnershipId={partnershipId}

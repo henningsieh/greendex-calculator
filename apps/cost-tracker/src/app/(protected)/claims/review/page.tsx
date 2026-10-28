@@ -1,3 +1,4 @@
+import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -48,12 +49,11 @@ async function ClaimReviewQueueSection() {
 
 export default async function ClaimReviewQueuePage() {
   if (!(await hasOrganizationMembership())) return null;
+  const t = await getTranslations("claims.review");
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-4xl font-semibold">
-        Hosting Claim review
-      </h1>
+      <h1 className="font-heading text-4xl font-semibold">{t("hostingTitle")}</h1>
       <Suspense fallback={<ClaimReviewQueueSkeleton />}>
         <ClaimReviewQueueSection />
       </Suspense>

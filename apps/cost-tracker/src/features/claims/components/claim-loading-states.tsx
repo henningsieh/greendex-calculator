@@ -1,18 +1,24 @@
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
+
 import { CardSkeleton, LoadingRegion } from "@/components/loading-skeletons";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ClaimWorkspaceSkeleton() {
+  const t = useTranslations("claims.loading");
   return (
-    <LoadingRegion label="Loading Claim workspace">
+    <LoadingRegion label={t("workspace")}>
       <ClaimDocumentSkeleton review={false} />
     </LoadingRegion>
   );
 }
 
 export function ClaimReviewSkeleton() {
+  const t = useTranslations("claims.loading");
   return (
-    <LoadingRegion label="Loading Claim review">
+    <LoadingRegion label={t("review")}>
       <div className="flex flex-col gap-5">
         <Skeleton className="h-5 w-48" />
         <ClaimDocumentSkeleton review />
@@ -50,8 +56,9 @@ function ClaimDocumentSkeleton({ review }: { review: boolean }) {
 }
 
 export function ClaimReviewQueueSkeleton() {
+  const t = useTranslations("claims.loading");
   return (
-    <LoadingRegion label="Loading submitted Claims">
+    <LoadingRegion label={t("submitted")}>
       <CardSkeleton />
     </LoadingRegion>
   );
