@@ -8,6 +8,7 @@
  * Allowed: {t("key")} and values derived from expressions.
  * Ignored: technical attributes, test files, shadcn primitives, punctuation.
  */
+import { execFileSync } from "node:child_process";
 import { globSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -23,6 +24,25 @@ const excludes = [
   "**/*.spec.*",
   "**/*.stories.*",
 ];
+
+function isScopedFile(file: string): boolean {
+  return (
+    file.startsWith("apps/cost-tracker/src/") &&
+    (file.endsWith(".tsx") || file.endsWith(".jsx")) &&
+    !file.includes("/components/ui/") &&
+    !file.includes("/__tests__/") &&
+    !/\.(test|spec|stories)\.[^.]+$/.test(file)
+  );
+}
+
+function stagedFiles(): string[] {
+  const output = execFileSync(
+    "git",
+    ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"],
+    { cwd: root, encoding: "utf8" },
+  );
+  return output.split("\0").filter((file) => file && isScopedFile(file));
+}
 
 const visibleAttributes = new Set([
   "alt",
@@ -208,7 +228,17 @@ function walk(
   }
 }
 
-for (const file of globSync(patterns, { cwd: root, exclude: excludes })) {
+const staged = process.argv.includes("--staged");
+const files = staged
+  ? stagedFiles()
+  : globSync(patterns, { cwd: root, exclude: excludes });
+
+if (staged && files.length === 0) {
+  console.log("check:check-i18n — no staged Cost Tracker UI files.");
+  process.exit(0);
+}
+
+for (const file of files) {
   const absolute = resolve(root, file);
   const source = readFileSync(absolute, "utf8");
   const allowed = allowedLines(source);
@@ -291,7 +321,7 @@ for (const failure of parseFailures) {
 }
 
 console.log(
-  `\ncheck:check-i18n — ${violations.length} warning(s) across ${parsedFiles.size} Cost Tracker UI file(s).`,
+  `\ncheck:check-i18n — ${violations.length} warning(s) across ${parsedFiles.size} ${staged ? "staged " : ""}Cost Tracker UI file(s).`,
 );
 
 if (parseFailures.length > 0) process.exitCode = 1;
