@@ -2,8 +2,15 @@
 
 import { PassThrough } from "node:stream";
 
+import { NextIntlClientProvider } from "next-intl";
 import { renderToPipeableStream } from "react-dom/server";
 import { expect, it, vi } from "vitest";
+
+import { messages } from "@/__tests__/i18n";
+
+vi.mock("@greendex/i18n/server", async () => ({
+  getTranslations: (await import("@/__tests__/i18n")).getTranslations,
+}));
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({
@@ -61,7 +68,11 @@ it("streams the Projects header and list fallback before scope prefetch finishes
   });
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const { pipe } = renderToPipeableStream(
-    <ProjectsPage searchParams={Promise.resolve({})} />,
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <div>
+        <ProjectsPage searchParams={Promise.resolve({})} />
+      </div>
+    </NextIntlClientProvider>,
     { onShellReady: () => pipe(destination) },
   );
 

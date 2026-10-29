@@ -3,8 +3,11 @@
 import { PassThrough } from "node:stream";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup, renderToPipeableStream } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { messages } from "@/__tests__/i18n";
 
 const mocks = vi.hoisted(() => ({
   onboardingNextStep: vi.fn(),
@@ -198,11 +201,13 @@ it("streams neutral chrome before the session gate resolves", async () => {
   });
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const { pipe } = renderToPipeableStream(
-    <div>
-      <ProtectedLayout>
-        <p>Private child</p>
-      </ProtectedLayout>
-    </div>,
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <div>
+        <ProtectedLayout>
+          <p>Private child</p>
+        </ProtectedLayout>
+      </div>
+    </NextIntlClientProvider>,
     { onShellReady: () => pipe(destination) },
   );
   await shell;

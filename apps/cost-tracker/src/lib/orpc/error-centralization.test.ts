@@ -13,8 +13,8 @@ import {
 import { getErrorStatus } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
 
-// Only these pre-existing private invariant exceptions remain raw. Their exact
-// expressions are pinned, not entire files; the procedure boundary sanitizes them.
+// Private invariant exceptions remain raw. Pin exact expressions, not entire
+// files; the procedure boundary sanitizes exceptions raised by procedures.
 const privateInvariantThrows: Record<string, string[]> = {
   "features/projects/procedures/core.ts": [
     'new Error("Expected at least one SQL condition.")',
@@ -29,6 +29,7 @@ const privateInvariantThrows: Record<string, string[]> = {
     "new Error( `No frozen funding band for Participation ${journey.participantId}.`, )",
   ],
   "lib/orpc/orpc.ts": ['new Error("RPCLink is not allowed on the server side.")'],
+  "messages/merge.ts": ["new Error(`Duplicate message namespace: ${namespace}`)"],
   "lib/proof-storage.ts": ['new Error("Proof file has no body.")'],
 };
 function directErrorSites(source: string) {

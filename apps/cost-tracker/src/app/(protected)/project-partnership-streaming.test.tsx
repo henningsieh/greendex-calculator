@@ -2,8 +2,15 @@
 
 import { PassThrough } from "node:stream";
 
+import { NextIntlClientProvider } from "next-intl";
 import { renderToPipeableStream } from "react-dom/server";
 import { beforeEach, expect, it, vi } from "vitest";
+
+import { messages } from "@/__tests__/i18n";
+
+vi.mock("@greendex/i18n/server", async () => ({
+  getTranslations: (await import("@/__tests__/i18n")).getTranslations,
+}));
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({
@@ -182,12 +189,16 @@ it.each(routes)(
     );
     const errors: unknown[] = [];
     const { pipe } = renderToPipeableStream(
-      <Page
-        params={Promise.resolve({
-          id: "partnership-1",
-          participationId: "participation-1",
-        })}
-      />,
+      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <div>
+          <Page
+            params={Promise.resolve({
+              id: "partnership-1",
+              participationId: "participation-1",
+            })}
+          />
+        </div>
+      </NextIntlClientProvider>,
       {
         onShellReady: () => pipe(destination),
         onError: (error) => {
@@ -247,9 +258,16 @@ it.each(routes.filter(({ path }) => path.includes("[id]")))(
     const complete = new Promise<void>((resolve) =>
       destination.on("end", resolve),
     );
-    const { pipe } = renderToPipeableStream(<Page params={params} />, {
-      onShellReady: () => pipe(destination),
-    });
+    const { pipe } = renderToPipeableStream(
+      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <div>
+          <Page params={params} />
+        </div>
+      </NextIntlClientProvider>,
+      {
+        onShellReady: () => pipe(destination),
+      },
+    );
     try {
       await shell;
       expect(mocks.query).not.toHaveBeenCalled();

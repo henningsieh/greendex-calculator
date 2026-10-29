@@ -37,10 +37,14 @@ describe("Cost Tracker localized route facades", () => {
       if (source.includes("export const metadata")) exports.push("metadata");
       if (source.includes("export async function generateMetadata"))
         exports.push("generateMetadata");
+      // The unprefixed landing page alone opts out of instant validation.
+      if (route === "page.tsx") {
+        expect(source).toContain("export const instant = false");
+      }
       const reexport = `export { ${exports.join(", ")} } from "@/app/${route.slice(0, -4)}";`;
       const expected =
         identityFacades[route] ??
-        (source.includes("export const instant = false")
+        (route !== "page.tsx" && source.includes("export const instant = false")
           ? `${reexport}\n\nexport const instant = false;\n`
           : `${reexport}\n`);
       const normalize = (value: string) =>

@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@greendex/i18n/server", async () => ({
+  getTranslations: (await import("@/__tests__/i18n")).getTranslations,
+}));
+
 const mocks = vi.hoisted(() => ({
   availableScopes: vi.fn(),
   getListOptions: vi.fn((scope: string) => ({
