@@ -128,6 +128,7 @@ test.describe("Cost Tracker Project production path", () => {
       .getByTestId("entity-search")
       .fill(fixture.projectId);
     await page
+      .locator('[data-slot="popover-content"][data-open]')
       .locator(`[role="option"][data-entity-id="${fixture.projectId}"]`)
       .click();
 
@@ -140,6 +141,7 @@ test.describe("Cost Tracker Project production path", () => {
       .getByTestId("entity-search")
       .fill(fixture.partnerOrganizationId);
     await page
+      .locator('[data-slot="popover-content"][data-open]')
       .locator(
         `[role="option"][data-entity-id="${fixture.partnerOrganizationId}"]`,
       )

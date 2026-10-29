@@ -545,8 +545,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       .getByTestId("hosted-project-picker")
       .getByTestId("entity-combobox-trigger")
       .click();
-    await h.getByTestId("entity-search").fill(names.project);
-    await h.locator(`[role="option"][data-entity-id="${projectId}"]`).click();
+    const popup = h.locator('[data-slot="popover-content"][data-open]');
+    await popup.getByTestId("entity-search").fill(names.project);
+    await popup.locator(`[role="option"][data-entity-id="${projectId}"]`).click();
     await creator.locator("#setup-email").fill(actors.X.email);
     await creator.getByTestId("create-setup-link").click();
     const first = await creator.locator("#recipient-link").inputValue();

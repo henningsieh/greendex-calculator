@@ -196,8 +196,9 @@ async function selectEntity(
     .getByTestId(pickerTestId)
     .getByTestId("entity-combobox-trigger")
     .click();
-  await page.getByTestId("entity-search").fill(entityId);
-  await page.locator(`[role="option"][data-entity-id="${entityId}"]`).click();
+  const popup = page.locator('[data-slot="popover-content"][data-open]');
+  await popup.getByTestId("entity-search").fill(entityId);
+  await popup.locator(`[role="option"][data-entity-id="${entityId}"]`).click();
   await expect(
     scope.getByTestId(pickerTestId).getByTestId("entity-combobox-trigger"),
   ).toHaveAttribute("aria-expanded", "false");
@@ -1317,6 +1318,17 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
       country: "DE",
     });
     await page.goto("/partner-organizations");
+    // Keep outgoing pickers mounted through the confirmation assertions.
+    await page.evaluate(() => {
+      document.addEventListener("animationstart", ({ target }) => {
+        if (
+          target instanceof HTMLElement &&
+          target.matches('[data-slot="popover-content"][data-closed]')
+        ) {
+          for (const animation of target.getAnimations()) animation.pause();
+        }
+      });
+    });
     const section = page.getByTestId("organization-assignment");
     await selectEntity(
       page,
@@ -1325,18 +1337,27 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
       section,
     );
     await selectEntity(page, "partner-organization-picker", partnerId, section);
+    const closingPickers = page.locator(
+      '[data-slot="popover-content"][data-closed]',
+    );
+    await expect(closingPickers).toHaveCount(2);
     await section.getByTestId("assign-partnership").click();
     const row = page.getByTestId(`partnership-row-${partnerId}`);
     const trigger = row.getByRole("button");
+    const confirmation = page.getByRole("dialog").filter({
+      has: page.getByTestId("confirm-dialog-execute"),
+    });
     await trigger.click();
-    await page.getByRole("dialog").getByTestId("confirm-dialog-cancel").click();
+    await confirmation.getByTestId("confirm-dialog-cancel").click();
+    await expect(confirmation).toBeHidden();
     await expect(trigger).toBeVisible();
     expect(
       await partnershipCount(removalFixture.projectNames[0]!, partnerName),
     ).toBe(1);
     await trigger.click();
-    await page.getByRole("dialog").getByTestId("confirm-dialog-execute").click();
-    await expect(page.getByRole("dialog")).toBeHidden();
+    await confirmation.getByTestId("confirm-dialog-execute").click();
+    await expect(confirmation).toBeHidden();
+    await expect(closingPickers).toHaveCount(2);
     await expect(row).toHaveCount(0);
     await expect(page.getByTestId("partnership-feedback")).toHaveAttribute(
       "data-state",
