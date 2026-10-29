@@ -111,6 +111,8 @@
   "i18n-ally.displayLanguage": "de",
   "i18n-ally.keystyle": "nested",
   "i18n-ally.enabledFrameworks": ["next-intl"],
+  "i18n-ally.namespace": false,
+  "i18n-ally.pathMatcher": "{locale}(/[^/]+)?.json",
   "i18n-ally.localesPaths": [
     "apps/calculator/src/messages",
     "apps/cost-tracker/src/messages"

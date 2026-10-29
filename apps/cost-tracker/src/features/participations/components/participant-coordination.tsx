@@ -289,8 +289,8 @@ function PartnerCoordinatorControls({
 }: {
   partnershipId: string;
 }) {
-  const t = useTranslations("projects.confirmations");
   const tPart = useTranslations("participations");
+  const t = useTranslations("projects.confirmations");
   const { confirm, dialog } = useConfirmDialog();
   const queryClient = useQueryClient();
   const [targetUserId, setTargetUserId] = useState("");
@@ -629,8 +629,8 @@ function JoinedParticipants({
   confirm: ReturnType<typeof useConfirmDialog>["confirm"];
   setFeedback: (value: undefined) => void;
 }) {
-  const t = useTranslations("projects.confirmations");
   const tPart = useTranslations("participations");
+  const t = useTranslations("projects.confirmations");
   return (
     <Card data-testid="joined-participants">
       <CardHeader>

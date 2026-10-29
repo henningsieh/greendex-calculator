@@ -6,7 +6,7 @@
     "auth:generate": "turbo run auth:generate",
     "build": "turbo run build --concurrency=1",
     "check:agent-instructions": "tsx scripts/check-agent-instructions.ts && vitest run scripts/check-agent-instructions.policy.test.ts",
-    "check:check-i18n": "tsx scripts/check-cost-tracker-i18n.ts",
+    "check:check-i18n": "tsx scripts/check-cost-tracker-i18n.ts --strict",
     "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
     "clean": "turbo run clean && rm -rf node_modules",
