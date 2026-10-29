@@ -44,7 +44,9 @@
       "country": "Land",
       "countryPlaceholder": "EU-Land auswählen",
       "welcomeMessage": "Willkommensnachricht (optional)",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "creating": "Wird erstellt…",
+      "submit": "Projekt erstellen"
     },
     "list": {
       "label": "Projektliste",
@@ -76,7 +78,19 @@
       "project": "Projekt",
       "location": "Ort",
       "participants": "Teilnehmende",
-      "allWindows": "Alle Fenster"
+      "allWindows": "Alle Fenster",
+      "open": "Offen",
+      "closed": "Geschlossen",
+      "refreshing": "Projekte werden aktualisiert…",
+      "updatedAt": "Aktualisiert um {time} UTC",
+      "metrics": {
+        "projects": "Projekte",
+        "projectsTotal": "Projekte ({count} insgesamt)",
+        "windows": "Offene Einreichungszeiträume",
+        "windowsTotal": "Offene Einreichungszeiträume ({count} insgesamt)",
+        "partners": "Partnerorganisationen",
+        "partnersTotal": "Partnerorganisationen ({count} insgesamt)"
+      }
     },
     "loading": {
       "projects": "Projekte werden geladen",
@@ -105,7 +119,12 @@
       "coordinateParticipants": "Teilnehmende koordinieren",
       "openClaim": "Claim-Arbeitsbereich öffnen",
       "hostedProject": "Gehostetes Projekt",
-      "partnerProject": "Partnerprojekt"
+      "partnerProject": "Partnerprojekt",
+      "noClaim": "Kein Erstattungsantrag",
+      "open": "offen",
+      "closed": "geschlossen",
+      "completing": "Wird abgeschlossen…",
+      "complete": "Projekt abschließen"
     }
   }
 }

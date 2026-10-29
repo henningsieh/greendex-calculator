@@ -153,8 +153,8 @@ function AccountMenu({
   name,
   pathname,
 }: AccountMenuProps) {
-  const t = useTranslations("shell");
   const tAuth = useTranslations("onboarding");
+  const t = useTranslations("shell");
   const active = pathname === "/user-settings";
   const trigger = useRef<HTMLButtonElement>(null);
   const { pending, signOut, dialog } = useSignOut("/", trigger);

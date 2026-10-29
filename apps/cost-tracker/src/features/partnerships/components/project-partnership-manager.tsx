@@ -40,8 +40,8 @@ export function ProjectPartnershipManager({
   canAssign?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const t = useTranslations("projects.confirmations");
   const tManager = useTranslations("partnerships.manager");
+  const t = useTranslations("projects.confirmations");
   const { confirm, dialog } = useConfirmDialog();
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
@@ -169,7 +169,9 @@ export function ProjectPartnershipManager({
                 type="submit"
               >
                 <LinkIcon aria-hidden="true" />
-                {assignMutation.isPending ? "Assigning…" : "Assign"}
+                {assignMutation.isPending
+                  ? tManager("assigning")
+                  : tManager("assign")}
               </Button>
             </form>
             {feedback && (
@@ -250,7 +252,7 @@ export function ProjectPartnershipManager({
                     {removeMutation.isPending &&
                     removeMutation.variables === partnership.id
                       ? t("pending")
-                      : "Remove"}
+                      : tManager("remove")}
                   </Button>
                 )}
               </li>

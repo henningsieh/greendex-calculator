@@ -8,7 +8,8 @@
     },
     "common": {
       "signIn": "Sign in",
-      "retry": "Retry"
+      "retry": "Retry",
+      "loading": "Chargement"
     },
     "nav": {
       "primaryLabel": "Primary navigation",

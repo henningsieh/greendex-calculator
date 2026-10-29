@@ -42,10 +42,6 @@
     "complexity": ["warn", 25],
     "curly": "off",
     "import/no-relative-parent-imports": "error",
-    "better-tailwindcss/no-conflicting-classes": "error",
-    "better-tailwindcss/no-duplicate-classes": "error",
-    "better-tailwindcss/enforce-canonical-classes": "error",
-    "better-tailwindcss/no-deprecated-classes": "error",
     "no-unsafe-finally": "error",
     "no-unsafe-optional-chaining": "off",
     "react/no-array-index-key": "off",
@@ -300,15 +296,23 @@
     },
     {
       "files": [
-        "packages/config/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
-        "packages/database/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
-        "packages/i18n/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
+        "apps/calculator/src/**/*.{jsx,tsx}",
+        "apps/cost-tracker/src/**/*.{jsx,tsx}",
+        "apps/documentation/src/**/*.{jsx,tsx}",
+        "packages/auth/src/**/*.{jsx,tsx}",
+        "packages/email/src/**/*.{jsx,tsx}"
+      ],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.stories.*"
       ],
       "rules": {
-        "better-tailwindcss/no-conflicting-classes": "off",
-        "better-tailwindcss/no-deprecated-classes": "off",
-        "better-tailwindcss/no-duplicate-classes": "off",
-        "better-tailwindcss/enforce-canonical-classes": "off"
+        "better-tailwindcss/no-conflicting-classes": "error",
+        "better-tailwindcss/no-deprecated-classes": "error",
+        "better-tailwindcss/no-duplicate-classes": "error",
+        "better-tailwindcss/enforce-canonical-classes": "error"
       }
     },
     {
@@ -331,7 +335,24 @@
         "jsx-a11y",
         "nextjs"
       ]
+    },
+    {
+      "files": ["apps/cost-tracker/src/**/*.{jsx,tsx}"],
+      "excludeFiles": [
+        "**/components/ui/**",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.stories.*"
+      ],
+      "rules": {
+        "greendex/no-hardcoded-ui-copy": "error"
+      }
     }
   ],
-  "jsPlugins": ["@shadcn/lint", "eslint-plugin-better-tailwindcss"]
+  "jsPlugins": [
+    "@shadcn/lint",
+    "eslint-plugin-better-tailwindcss",
+    "./scripts/oxlint-i18n.mjs"
+  ]
 }

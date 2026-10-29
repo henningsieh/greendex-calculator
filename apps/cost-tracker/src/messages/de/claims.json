@@ -17,7 +17,10 @@
       "totalEur": "Summe (EUR)",
       "costAllocations": "Cost Allocations",
       "proofDocuments": "Proof Documents",
-      "action": "Aktion"
+      "action": "Aktion",
+      "allocationAmount": "Betrag (EUR)",
+      "allocationPercentage": "Prozentual",
+      "allocationEqual": "Gleichmäßig"
     },
     "queue": {
       "title": "Eingereichte Claims zur Prüfung",
@@ -53,7 +56,20 @@
       "noJourneys": "Keine Journeys erfasst.",
       "km": "km",
       "noClaim": "Für diese Projektpartnerschaft wurde kein Claim erstellt.",
-      "hostingTitle": "Hosting-Claim-Prüfung"
+      "hostingTitle": "Hosting-Claim-Prüfung",
+      "status": {
+        "approved": "Genehmigt · unbezahlt",
+        "paid": "Bezahlt",
+        "rejected": "Abgelehnt · unbezahlt",
+        "correctionRequested": "Korrektur angefordert · Partner muss handeln",
+        "submitted": "Eingereicht · Prüfung durch Gastgeber ausstehend",
+        "draft": "Bearbeitbarer Entwurf"
+      },
+      "confirmTransfer": "Erst bestätigen, wenn die vollständige Überweisung über {amount} EUR tatsächlich ausgeführt wurde.",
+      "confirmReopen": "Erneutes Öffnen gibt den Antrag zur Gastgeberprüfung zurück. Die Partnerbearbeitung bleibt gesperrt. Fordere bei Bedarf separat eine Korrektur an.",
+      "confirmAction": "{action} für diesen Erstattungsantrag bestätigen.",
+      "unavailable": "Nicht verfügbar",
+      "equalShare": "Gleicher Anteil (bei Einreichung berechnet)"
     },
     "submission": {
       "title": "Einreichung",
@@ -68,7 +84,8 @@
       "submit": "Claim einreichen",
       "confirmDescription": "Einreichung bestätigen: Die Einreichung sperrt den Claim und den ausgewählten Payout Account für Partner-Bearbeitung, bis die Hosting-Seite eine Korrektur anfordert.",
       "confirm": "Einreichung bestätigen",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "unavailable": "Erst verfügbar, wenn die Prüfliste erfüllt ist"
     },
     "workspace": {
       "label": "Claim-Arbeitsbereich",
@@ -151,6 +168,25 @@
       },
       "draft": {
         "title": "Claim-Entwurf"
+      },
+      "copy": {
+        "participant": "Teilnehmende Person",
+        "eurAmount": "{amount} EUR",
+        "computed": "(berechnet)",
+        "document": "Dokument",
+        "editCost": "Gespeicherte Kosten bearbeiten",
+        "addCost": "Kosten hinzufügen",
+        "percentage": "Prozentanteil",
+        "eurShare": "EUR-Anteil",
+        "equalSplit": "Gleichmäßige Aufteilung auf {count} Projektteilnahmen; genaue EUR-Anteile berechnet der Server nach dem Speichern.",
+        "percentageTotal": "Summe der eingegebenen Anteile: {total} % von 100 % (nur Anzeige; Prüfung durch den Server)",
+        "amountTotal": "Summe der eingegebenen Anteile: {total} EUR von {amount} EUR (nur Anzeige; Prüfung durch den Server)",
+        "none": "Keine",
+        "correctionHistory": "Die Korrekturanforderung steht im Antragsverlauf.",
+        "rejectionHistory": "Der Ablehnungsgrund steht im Antragsverlauf.",
+        "savedClaim": "Erstattungsantrag {status} / gespeichert",
+        "noClaim": "Es wurde kein Erstattungsantrag erstellt. Das Öffnen dieses Arbeitsbereichs speichert nichts.",
+        "payable": "Berechneter Auszahlungsbetrag: {amount} EUR (vom Server berechnet)."
       }
     }
   }

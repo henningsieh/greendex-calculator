@@ -167,10 +167,10 @@ export function ClaimCostTable({
             <TableCell variant="accounting">
               <p className="mb-2 font-semibold">
                 {row.allocationMethod === "amount"
-                  ? "Amount (EUR)"
+                  ? t("allocationAmount")
                   : row.allocationMethod === "percentage"
-                    ? "Percentage"
-                    : "Equal"}
+                    ? t("allocationPercentage")
+                    : t("allocationEqual")}
               </p>
               {row.allocations}
             </TableCell>

@@ -112,7 +112,7 @@ export function ClaimSubmission({
         <p className="border-t pt-5">
           {t("calculatedPayable")}{" "}
           {preview.calculatedPayableEur === null ? (
-            "Not available until the checklist passes"
+            t("unavailable")
           ) : (
             <span
               className="block font-mono tabular-nums"

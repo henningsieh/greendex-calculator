@@ -142,16 +142,16 @@ function ClaimDecisionSummary({
     <>
       <p data-review-status={status}>
         {status === "approved"
-          ? "Approved · unpaid"
+          ? t("status.approved")
           : status === "paid"
-            ? "Paid"
+            ? t("status.paid")
             : status === "rejected"
-              ? "Rejected · unpaid"
+              ? t("status.rejected")
               : status === "correction_requested"
-                ? "Correction requested · Partner action required"
+                ? t("status.correctionRequested")
                 : status === "submitted"
-                  ? "Submitted · awaiting Hosting review"
-                  : "Editable draft"}
+                  ? t("status.submitted")
+                  : t("status.draft")}
       </p>
       {approvedAmountEur && (
         <p data-testid="approved-payable">
@@ -248,10 +248,12 @@ export function ClaimDecisionPanel({
           <Alert>
             <AlertDescription>
               {confirming === "markPaid"
-                ? `Confirm only after one full bank transfer of ${approvedAmountEur} EUR was actually sent.`
+                ? t("confirmTransfer", { amount: approvedAmountEur ?? "" })
                 : confirming === "reopen"
-                  ? "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed."
-                  : `Confirm ${definition?.confirmation} for this Claim.`}
+                  ? t("confirmReopen")
+                  : t("confirmAction", {
+                      action: definition?.confirmation ?? "",
+                    })}
               {definition?.reasonLabel && (
                 <div>
                   <Label htmlFor="decision-reason">
@@ -329,7 +331,7 @@ export function ClaimReviewDetails({
             data-testid="review-approved-payable"
             data-amount-eur={details.approvedAmountEur}
           >
-            {details.approvedAmountEur ?? "Unavailable"} {t("currencyEur")}
+            {details.approvedAmountEur ?? t("unavailable")} {t("currencyEur")}
           </span>
         </p>
         <h3 className="text-xl font-semibold">{t("costsAndDocuments")}</h3>
@@ -352,10 +354,10 @@ export function ClaimReviewDetails({
                       {share.participantName}:{" "}
                       <span className="font-mono tabular-nums">
                         {share.amountEur
-                          ? `${share.amountEur} EUR`
+                          ? `${share.amountEur} ${t("currencyEur")}`
                           : share.percentage
                             ? `${share.percentage}%`
-                            : "Equal share (computed on submission)"}
+                            : t("equalShare")}
                       </span>
                     </li>
                   ))}

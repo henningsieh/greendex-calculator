@@ -331,16 +331,16 @@ function ProjectListOverview({
         <MetricCard
           label={
             filtered.projectCount === whole.projectCount
-              ? "Projects"
-              : `Projects (${whole.projectCount} total)`
+              ? t("metrics.projects")
+              : t("metrics.projectsTotal", { count: whole.projectCount })
           }
           value={filtered.projectCount}
         />
         <MetricCard
           label={
             filtered.openWindowCount === whole.openWindowCount
-              ? "Open windows"
-              : `Open windows (${whole.openWindowCount} total)`
+              ? t("metrics.windows")
+              : t("metrics.windowsTotal", { count: whole.openWindowCount })
           }
           value={filtered.openWindowCount}
         />
@@ -349,8 +349,10 @@ function ProjectListOverview({
             label={
               data.metrics.filtered.partnerOrganizationCount ===
               data.metrics.whole.partnerOrganizationCount
-                ? "Partner Organizations"
-                : `Partner Organizations (${data.metrics.whole.partnerOrganizationCount} total)`
+                ? t("metrics.partners")
+                : t("metrics.partnersTotal", {
+                    count: data.metrics.whole.partnerOrganizationCount,
+                  })
             }
             value={data.metrics.filtered.partnerOrganizationCount}
           />
@@ -521,7 +523,7 @@ function ResolvedProjectList({
               row.original.costSubmissionWindowOpen ? "default" : "secondary"
             }
           >
-            {row.original.costSubmissionWindowOpen ? "Open" : "Closed"}
+            {row.original.costSubmissionWindowOpen ? t("open") : t("closed")}
           </Badge>
         ),
       },
@@ -809,8 +811,8 @@ function ResolvedProjectList({
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
         <span aria-live="polite">
           {isFetching
-            ? "Refreshing Projects…"
-            : `Updated ${updatedAtFormatter.format(dataUpdatedAt)} UTC`}
+            ? t("refreshing")
+            : t("updatedAt", { time: updatedAtFormatter.format(dataUpdatedAt) })}
         </span>
         <Button
           disabled={isFetching}

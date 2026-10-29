@@ -190,11 +190,11 @@ export function ParticipantDetails({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p>{participation.email ?? "No email recorded"}</p>
+          <p>{participation.email ?? t("noEmail")}</p>
           <p className="flex flex-wrap items-center gap-3 text-sm">
             <span>{t("country")}</span>
             <Badge variant="secondary">
-              {participation.country ?? "Not set"}
+              {participation.country ?? t("notSet")}
             </Badge>
           </p>
         </CardContent>
@@ -214,7 +214,7 @@ export function ParticipantDetails({
             />
           ) : (
             <p className="text-sm text-muted-foreground">
-              {denial ?? "You cannot correct this Project Participation."}
+              {denial ?? t("cannotCorrect")}
             </p>
           )}
         </CardContent>

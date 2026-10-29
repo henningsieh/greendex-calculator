@@ -44,7 +44,9 @@
       "country": "Country",
       "countryPlaceholder": "Select an EU country",
       "welcomeMessage": "Welcome message (optional)",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "creating": "Aanmaken…",
+      "submit": "Project aanmaken"
     },
     "list": {
       "label": "Project list",
@@ -76,7 +78,19 @@
       "project": "Project",
       "location": "Location",
       "participants": "Participants",
-      "allWindows": "All windows"
+      "allWindows": "All windows",
+      "open": "Open",
+      "closed": "Gesloten",
+      "refreshing": "Projecten vernieuwen…",
+      "updatedAt": "Bijgewerkt om {time} UTC",
+      "metrics": {
+        "projects": "Projecten",
+        "projectsTotal": "Projecten ({count} totaal)",
+        "windows": "Open indieningstermijnen",
+        "windowsTotal": "Open indieningstermijnen ({count} totaal)",
+        "partners": "Partnerorganisaties",
+        "partnersTotal": "Partnerorganisaties ({count} totaal)"
+      }
     },
     "loading": {
       "projects": "Loading Projects",
@@ -105,7 +119,12 @@
       "coordinateParticipants": "Coordinate Participants",
       "openClaim": "Open Claim workspace",
       "hostedProject": "Hosted Project",
-      "partnerProject": "Partner Project"
+      "partnerProject": "Partner Project",
+      "noClaim": "Geen declaratie",
+      "open": "open",
+      "closed": "gesloten",
+      "completing": "Afronden…",
+      "complete": "Project afronden"
     }
   }
 }

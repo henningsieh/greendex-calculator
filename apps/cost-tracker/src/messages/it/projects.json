@@ -44,7 +44,9 @@
       "country": "Country",
       "countryPlaceholder": "Select an EU country",
       "welcomeMessage": "Welcome message (optional)",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "creating": "Creazione…",
+      "submit": "Crea progetto"
     },
     "list": {
       "label": "Project list",
@@ -76,7 +78,19 @@
       "project": "Project",
       "location": "Location",
       "participants": "Participants",
-      "allWindows": "All windows"
+      "allWindows": "All windows",
+      "open": "Aperta",
+      "closed": "Chiusa",
+      "refreshing": "Aggiornamento dei progetti…",
+      "updatedAt": "Aggiornato alle {time} UTC",
+      "metrics": {
+        "projects": "Progetti",
+        "projectsTotal": "Progetti ({count} totali)",
+        "windows": "Finestre aperte",
+        "windowsTotal": "Finestre aperte ({count} totali)",
+        "partners": "Organizzazioni partner",
+        "partnersTotal": "Organizzazioni partner ({count} totali)"
+      }
     },
     "loading": {
       "projects": "Loading Projects",
@@ -105,7 +119,12 @@
       "coordinateParticipants": "Coordinate Participants",
       "openClaim": "Open Claim workspace",
       "hostedProject": "Hosted Project",
-      "partnerProject": "Partner Project"
+      "partnerProject": "Partner Project",
+      "noClaim": "Nessuna richiesta",
+      "open": "aperta",
+      "closed": "chiusa",
+      "completing": "Completamento…",
+      "complete": "Completa progetto"
     }
   }
 }

@@ -44,7 +44,9 @@
       "country": "Country",
       "countryPlaceholder": "Select an EU country",
       "welcomeMessage": "Welcome message (optional)",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "creating": "Ustvarjanje…",
+      "submit": "Ustvari projekt"
     },
     "list": {
       "label": "Project list",
@@ -76,7 +78,19 @@
       "project": "Project",
       "location": "Location",
       "participants": "Participants",
-      "allWindows": "All windows"
+      "allWindows": "All windows",
+      "open": "Odprto",
+      "closed": "Zaprto",
+      "refreshing": "Osveževanje projektov…",
+      "updatedAt": "Posodobljeno ob {time} UTC",
+      "metrics": {
+        "projects": "Projekti",
+        "projectsTotal": "Projekti (skupaj {count})",
+        "windows": "Odprti roki",
+        "windowsTotal": "Odprti roki (skupaj {count})",
+        "partners": "Partnerske organizacije",
+        "partnersTotal": "Partnerske organizacije (skupaj {count})"
+      }
     },
     "loading": {
       "projects": "Loading Projects",
@@ -105,7 +119,12 @@
       "coordinateParticipants": "Coordinate Participants",
       "openClaim": "Open Claim workspace",
       "hostedProject": "Hosted Project",
-      "partnerProject": "Partner Project"
+      "partnerProject": "Partner Project",
+      "noClaim": "Ni zahtevka",
+      "open": "odprto",
+      "closed": "zaprto",
+      "completing": "Zaključevanje…",
+      "complete": "Zaključi projekt"
     }
   }
 }

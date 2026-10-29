@@ -189,7 +189,7 @@ export function CreateProjectDialog() {
                     disabled={isSubmitting}
                     type="submit"
                   >
-                    {isSubmitting ? "Creating…" : "Create project"}
+                    {isSubmitting ? t("creating") : t("submit")}
                   </Button>
                 </div>
               </FieldGroup>

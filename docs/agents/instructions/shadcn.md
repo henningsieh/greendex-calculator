@@ -34,7 +34,7 @@ Review generated dependencies and code before retaining them.
 
 ## Design-system lint
 
-`@shadcn/lint` runs as an Oxlint JS plugin. The single source of truth is the repository-root `.oxlintrc.json`, which every workspace Oxlint run discovers, so `pnpm run lint` already includes these rules. `pnpm run lint:design-system` is the focused, check-only pass (no `--fix`); the root script fans out to each app's own `lint:design-system`, and the rule bites only in the enforced app source.
+`@shadcn/lint` runs as an Oxlint JS plugin. The single source of truth is the repository-root `.oxlintrc.json`, which every workspace Oxlint run discovers, so `pnpm run lint` already includes these rules and scans those sources once; the root `lint` chain carries no separate design-system pass. `pnpm run lint:design-system` is merely another entrypoint to that same required pass: a focused, check-only alias (no `--fix`) fanning out sequentially to each app's own `oxlint src` script, which uses no `-A`/`-D` flags so it enforces exactly the same shared policy, and the rule bites only in the enforced app source. Staged-file pre-commit lint uses the same config, so staged changes get the identical policy.
 
 - The plugin is declared as a root devDependency; do not duplicate it per workspace.
 - Enforcement follows the upstream [adoption guide](https://github.com/shadcn-ui/lint/blob/main/docs/adoption.md): one rule (`shadcn/no-restyle`), strict where clean, deferred elsewhere. Cost Tracker enforces it as `error` with `allow: ["layout"]` via an `overrides` entry for `apps/cost-tracker/src/**`; layout classes such as `mt-4` and `w-full` stay allowed. Calculator and Documentation keep the rule `off` in their own `overrides` entries until each app's migration resolves its findings, then flip to the same strict shape.
@@ -42,9 +42,9 @@ Review generated dependencies and code before retaining them.
 - Config paths in `ignorePatterns` and `overrides` resolve against the config file directory, so write them repository-root-relative (`apps/calculator/src/...`), not workspace-relative.
 - The rule is enforced as `error` where the adoption reached clean; keep new exceptions explicit: use a variant for reusable appearances, a contract when callers own part of a component's API, a documented file-level disable only for dense bespoke screens, and `eslint-disable-next-line shadcn/no-restyle -- <reason>` for a single intentional treatment.
 - The cost-tracker scope currently carries four narrow contracts (callers own layout and spacing on `FieldGroup`, `CardHeader`, `CardContent`, and `PopoverContent`) and a documented single-file exception (`user-settings-tabs.tsx` owns its bespoke line-tab system). Sign-out buttons use the shared Button variants and sizes without styling overrides. Point new cases at this list first; do not grow it silently.
-- Each app's focused `lint:design-system` script uses `-D shadcn/no-restyle` and fails on new violations. Do not add a warning cap; the rule is already enforced as an error where it applies.
+- Each app's focused `lint:design-system` script is plain `oxlint src`: check-only over that app's source with the shared config, failing on new violations. Do not add rule flags or a warning cap; the rule is already enforced as an error where it applies.
 - Re-run `pnpm run format && pnpm run lint` after changing component class usage, and never edit component internals to silence a caller-side finding.
-- `lint:design-system` pins the rules adopted so far (`shadcn/no-restyle`); extend those workspace scripts when you adopt another rule.
+- The pass enforces the whole shared config, so adopting another rule means changing its `.oxlintrc.json` override, not the workspace scripts.
 
 ## Composition
 

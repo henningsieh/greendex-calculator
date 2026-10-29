@@ -17,7 +17,10 @@
       "totalEur": "Total (EUR)",
       "costAllocations": "Cost Allocations",
       "proofDocuments": "Proof Documents",
-      "action": "Action"
+      "action": "Action",
+      "allocationAmount": "Bedrag (EUR)",
+      "allocationPercentage": "Percentage",
+      "allocationEqual": "Gelijk"
     },
     "queue": {
       "title": "Submitted Claims awaiting review",
@@ -53,7 +56,20 @@
       "noJourneys": "No journeys recorded.",
       "km": "km",
       "noClaim": "No Claim has been created for this Partnership.",
-      "hostingTitle": "Hosting Claim review"
+      "hostingTitle": "Hosting Claim review",
+      "status": {
+        "approved": "Goedgekeurd · onbetaald",
+        "paid": "Betaald",
+        "rejected": "Afgewezen · onbetaald",
+        "correctionRequested": "Correctie gevraagd · actie van partner nodig",
+        "submitted": "Ingediend · wacht op beoordeling door gastorganisatie",
+        "draft": "Bewerkbaar concept"
+      },
+      "confirmTransfer": "Bevestig pas nadat één volledige bankoverschrijving van {amount} EUR is uitgevoerd.",
+      "confirmReopen": "Heropenen stuurt de declaratie terug naar beoordeling en houdt bewerken door de partner geblokkeerd. Vraag apart een correctie aan indien nodig.",
+      "confirmAction": "Bevestig {action} voor deze declaratie.",
+      "unavailable": "Niet beschikbaar",
+      "equalShare": "Gelijk aandeel (berekend bij indiening)"
     },
     "submission": {
       "title": "Submission",
@@ -68,7 +84,8 @@
       "submit": "Submit Claim",
       "confirmDescription": "Confirm submission: submission locks the Claim and selected Payout Account for Partner editing until the Hosting side requests a correction.",
       "confirm": "Confirm submission",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "unavailable": "Niet beschikbaar totdat de checklist is voltooid"
     },
     "workspace": {
       "label": "Claim workspace",
@@ -151,6 +168,25 @@
       },
       "draft": {
         "title": "Claim draft"
+      },
+      "copy": {
+        "participant": "Deelnemer",
+        "eurAmount": "{amount} EUR",
+        "computed": "(berekend)",
+        "document": "Document",
+        "editCost": "Opgeslagen kosten bewerken",
+        "addCost": "Kosten toevoegen",
+        "percentage": "percentage",
+        "eurShare": "EUR-aandeel",
+        "equalSplit": "Gelijke verdeling over {count} deelnames; de server berekent exacte EUR-aandelen na opslaan.",
+        "percentageTotal": "Totaal ingevoerde aandelen: {total} % van 100% (alleen weergave; de server valideert)",
+        "amountTotal": "Totaal ingevoerde aandelen: {total} EUR van {amount} EUR (alleen weergave; de server valideert)",
+        "none": "Geen",
+        "correctionHistory": "Zie de declaratiegeschiedenis voor het correctieverzoek.",
+        "rejectionHistory": "Zie de declaratiegeschiedenis voor de afwijsreden.",
+        "savedClaim": "Declaratie {status} / opgeslagen",
+        "noClaim": "Er is geen declaratie aangemaakt. Deze werkruimte openen slaat niets op.",
+        "payable": "Berekend uit te betalen: {amount} EUR (berekend door de server)."
       }
     }
   }

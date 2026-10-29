@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
+
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -12,6 +16,7 @@ function PendingButton({
   children,
   ...props
 }: React.ComponentProps<typeof Button>) {
+  const t = useTranslations("shell");
   return (
     <span className="calm inline-flex" data-disabled="true">
       <Button
@@ -22,7 +27,7 @@ function PendingButton({
         className={cn(className)}
       >
         <Spinner data-icon="inline-start" />
-        {children ?? "Loading"}
+        {children ?? t("common.loading")}
       </Button>
     </span>
   );

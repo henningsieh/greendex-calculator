@@ -9,7 +9,13 @@
       "country": "Country:",
       "completed": "completed",
       "pending": "pending",
-      "countryHeader": "Country"
+      "countryHeader": "Country",
+      "hideParticipants": "Skrij udeležence ({count})",
+      "showParticipants": "Prikaži udeležence ({count})",
+      "agreementCompleted": "Sporazum sprejet",
+      "agreementPending": "Sporazum še ni sprejet",
+      "noEmail": "E-poštni naslov ni zabeležen",
+      "notSet": "Ni nastavljeno"
     },
     "loading": {
       "projectParticipations": "Loading Project Participations",
@@ -41,7 +47,8 @@
       "selectUser": "Select a Registered User",
       "noEligible": "No eligible Registered Users in this Organization.",
       "assign": "Assign Group Organizer",
-      "update": "Group Organizer update"
+      "update": "Group Organizer update",
+      "revoke": "Prekliči dodelitev organizatorja skupine"
     },
     "invitations": {
       "title": "Email-bound Participant Invitations",
@@ -49,7 +56,9 @@
       "empty": "No invitations are recorded for this Partnership.",
       "reissue": "Reissue invitation for",
       "close": "Close invitation for",
-      "statusHint": "Invitation status does not show profile or agreement progress."
+      "statusHint": "Invitation status does not show profile or agreement progress.",
+      "pending": "Povabilo v čakanju",
+      "status": "Povabilo: {status}"
     },
     "links": {
       "title": "Shareable Participant Registration Links",
@@ -57,14 +66,18 @@
       "empty": "No registration links are recorded for this Partnership.",
       "link": "Link",
       "close": "Close registration link",
-      "reopen": "Reopen registration link"
+      "reopen": "Reopen registration link",
+      "open": "Odprto",
+      "closed": "Zaprto"
     },
     "joined": {
       "title": "Joined Participants",
       "empty": "No Participants have joined this Partnership yet.",
       "joined": "Joined",
       "country": "Country",
-      "detailsFor": "Participant details for"
+      "detailsFor": "Participant details for",
+      "count": "Udeleženci v projektu {project}: {count}",
+      "removeFor": "Odstrani udeležbo v projektu za {name}"
     },
     "page": {
       "label": "Project Participations",
@@ -81,7 +94,13 @@
       "inviteeEmail": "Invitee email",
       "sendInvitation": "Send Participant Invitation",
       "createLink": "Create Participant Registration Link",
-      "newLink": "New registration link (copy now)"
+      "newLink": "New registration link (copy now)",
+      "adding": "Dodajanje…",
+      "add": "Dodaj udeležbo",
+      "hideOrganizers": "Skrij upravljanje organizatorjev skupin",
+      "manageOrganizers": "Upravljaj organizatorje skupin",
+      "hideReviews": "Skrij naloge pregleda",
+      "showReviews": "Prikaži naloge pregleda"
     },
     "details": {
       "countryFor": "Country for",
@@ -93,7 +112,9 @@
       "participation": "Project Participation",
       "country": "Country",
       "correctCountry": "Correct country",
-      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it."
+      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it.",
+      "noEmail": "E-poštni naslov ni zabeležen",
+      "cannotCorrect": "Te udeležbe v projektu ne morete popraviti."
     },
     "app": {
       "backToProjects": "Back to Projects",
@@ -135,6 +156,13 @@
       "empty": "No Projects yet. Join through a Participant Invitation or Participant Registration Link.",
       "representing": "Representing:",
       "hostedBy": "Hosted by:"
+    },
+    "actions": {
+      "joining": "Pridruževanje…",
+      "join": "Pridruži se projektu",
+      "saving": "Shranjevanje…",
+      "saveProfile": "Shrani profil",
+      "accepting": "Sprejemanje…"
     }
   }
 }

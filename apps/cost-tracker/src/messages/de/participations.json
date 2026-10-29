@@ -9,7 +9,13 @@
       "country": "Land:",
       "completed": "abgeschlossen",
       "pending": "ausstehend",
-      "countryHeader": "Land"
+      "countryHeader": "Land",
+      "hideParticipants": "{count, plural, one {# teilnehmende Person} other {# teilnehmende Personen}} ausblenden",
+      "showParticipants": "{count, plural, one {# teilnehmende Person} other {# teilnehmende Personen}} anzeigen",
+      "agreementCompleted": "Vereinbarung angenommen",
+      "agreementPending": "Vereinbarung ausstehend",
+      "noEmail": "Keine E-Mail-Adresse erfasst",
+      "notSet": "Nicht angegeben"
     },
     "loading": {
       "projectParticipations": "Project Participations werden geladen",
@@ -41,7 +47,8 @@
       "selectUser": "Registrierte Person auswählen",
       "noEligible": "Keine geeigneten registrierten Personen in dieser Organisation.",
       "assign": "Group Organizer zuweisen",
-      "update": "Group-Organizer-Aktualisierung"
+      "update": "Group-Organizer-Aktualisierung",
+      "revoke": "Zuweisung als Gruppenorganisator widerrufen"
     },
     "invitations": {
       "title": "E-Mail-gebundene Teilnehmendeneinladungen",
@@ -49,7 +56,9 @@
       "empty": "Für diese Partnerschaft sind keine Einladungen erfasst.",
       "reissue": "Einladung erneut ausstellen für",
       "close": "Einladung schließen für",
-      "statusHint": "Der Einladungsstatus zeigt keinen Profil- oder Agreement-Fortschritt."
+      "statusHint": "Der Einladungsstatus zeigt keinen Profil- oder Agreement-Fortschritt.",
+      "pending": "Einladung ausstehend",
+      "status": "Einladung: {status}"
     },
     "links": {
       "title": "Teilbare Teilnehmenden-Registrierungslinks",
@@ -57,14 +66,18 @@
       "empty": "Für diese Partnerschaft sind keine Registrierungslinks erfasst.",
       "link": "Link",
       "close": "Registrierungslink schließen",
-      "reopen": "Registrierungslink wieder öffnen"
+      "reopen": "Registrierungslink wieder öffnen",
+      "open": "Offen",
+      "closed": "Geschlossen"
     },
     "joined": {
       "title": "Beigetretene Teilnehmende",
       "empty": "Noch keine Teilnehmenden sind dieser Partnerschaft beigetreten.",
       "joined": "Beigetreten",
       "country": "Land",
-      "detailsFor": "Teilnehmendendetails für"
+      "detailsFor": "Teilnehmendendetails für",
+      "count": "{count, plural, one {# teilnehmende Person} other {# teilnehmende Personen}} in {project}",
+      "removeFor": "Projektteilnahme von {name} entfernen"
     },
     "page": {
       "label": "Project Participations",
@@ -81,7 +94,13 @@
       "inviteeEmail": "E-Mail der eingeladenen Person",
       "sendInvitation": "Teilnehmendeneinladung senden",
       "createLink": "Teilnehmenden-Registrierungslink erstellen",
-      "newLink": "Neuer Registrierungslink (jetzt kopieren)"
+      "newLink": "Neuer Registrierungslink (jetzt kopieren)",
+      "adding": "Wird hinzugefügt…",
+      "add": "Projektteilnahme hinzufügen",
+      "hideOrganizers": "Gruppenorganisator-Verwaltung ausblenden",
+      "manageOrganizers": "Gruppenorganisatoren verwalten",
+      "hideReviews": "Prüfaufgaben ausblenden",
+      "showReviews": "Prüfaufgaben anzeigen"
     },
     "details": {
       "countryFor": "Land für",
@@ -93,7 +112,9 @@
       "participation": "Project Participation",
       "country": "Land",
       "correctCountry": "Land korrigieren",
-      "correctCountryDescription": "Die teilnehmende Person setzt das beim Beitritt. Nur die Partnerorganisation darf es korrigieren."
+      "correctCountryDescription": "Die teilnehmende Person setzt das beim Beitritt. Nur die Partnerorganisation darf es korrigieren.",
+      "noEmail": "Keine E-Mail-Adresse erfasst",
+      "cannotCorrect": "Du darfst diese Projektteilnahme nicht korrigieren."
     },
     "app": {
       "backToProjects": "Zurück zu Projekten",
@@ -135,6 +156,13 @@
       "empty": "Noch keine Projekte. Tritt über eine Teilnehmendeneinladung oder einen Registrierungslink bei.",
       "representing": "Vertritt:",
       "hostedBy": "Gehostet von:"
+    },
+    "actions": {
+      "joining": "Beitritt läuft…",
+      "join": "Projekt beitreten",
+      "saving": "Wird gespeichert…",
+      "saveProfile": "Profil speichern",
+      "accepting": "Wird angenommen…"
     }
   }
 }

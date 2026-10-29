@@ -9,7 +9,13 @@
       "country": "Country:",
       "completed": "completed",
       "pending": "pending",
-      "countryHeader": "Country"
+      "countryHeader": "Country",
+      "hideParticipants": "Ocultar {count, plural, one {# participante} other {# participantes}}",
+      "showParticipants": "Mostrar {count, plural, one {# participante} other {# participantes}}",
+      "agreementCompleted": "Acuerdo aceptado",
+      "agreementPending": "Acuerdo pendiente",
+      "noEmail": "Sin correo registrado",
+      "notSet": "Sin especificar"
     },
     "loading": {
       "projectParticipations": "Loading Project Participations",
@@ -41,7 +47,8 @@
       "selectUser": "Select a Registered User",
       "noEligible": "No eligible Registered Users in this Organization.",
       "assign": "Assign Group Organizer",
-      "update": "Group Organizer update"
+      "update": "Group Organizer update",
+      "revoke": "Revocar la asignación de organizador de grupo"
     },
     "invitations": {
       "title": "Email-bound Participant Invitations",
@@ -49,7 +56,9 @@
       "empty": "No invitations are recorded for this Partnership.",
       "reissue": "Reissue invitation for",
       "close": "Close invitation for",
-      "statusHint": "Invitation status does not show profile or agreement progress."
+      "statusHint": "Invitation status does not show profile or agreement progress.",
+      "pending": "Invitación pendiente",
+      "status": "Invitación: {status}"
     },
     "links": {
       "title": "Shareable Participant Registration Links",
@@ -57,14 +66,18 @@
       "empty": "No registration links are recorded for this Partnership.",
       "link": "Link",
       "close": "Close registration link",
-      "reopen": "Reopen registration link"
+      "reopen": "Reopen registration link",
+      "open": "Abierto",
+      "closed": "Cerrado"
     },
     "joined": {
       "title": "Joined Participants",
       "empty": "No Participants have joined this Partnership yet.",
       "joined": "Joined",
       "country": "Country",
-      "detailsFor": "Participant details for"
+      "detailsFor": "Participant details for",
+      "count": "{count, plural, one {# participante} other {# participantes}} en {project}",
+      "removeFor": "Eliminar la participación de {name} en el proyecto"
     },
     "page": {
       "label": "Project Participations",
@@ -81,7 +94,13 @@
       "inviteeEmail": "Invitee email",
       "sendInvitation": "Send Participant Invitation",
       "createLink": "Create Participant Registration Link",
-      "newLink": "New registration link (copy now)"
+      "newLink": "New registration link (copy now)",
+      "adding": "Añadiendo…",
+      "add": "Añadir participación",
+      "hideOrganizers": "Ocultar gestión de organizadores",
+      "manageOrganizers": "Gestionar organizadores de grupo",
+      "hideReviews": "Ocultar tareas de revisión",
+      "showReviews": "Mostrar tareas de revisión"
     },
     "details": {
       "countryFor": "Country for",
@@ -93,7 +112,9 @@
       "participation": "Project Participation",
       "country": "Country",
       "correctCountry": "Correct country",
-      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it."
+      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it.",
+      "noEmail": "Sin correo registrado",
+      "cannotCorrect": "No puedes corregir esta participación en el proyecto."
     },
     "app": {
       "backToProjects": "Back to Projects",
@@ -135,6 +156,13 @@
       "empty": "No Projects yet. Join through a Participant Invitation or Participant Registration Link.",
       "representing": "Representing:",
       "hostedBy": "Hosted by:"
+    },
+    "actions": {
+      "joining": "Uniéndose…",
+      "join": "Unirse al proyecto",
+      "saving": "Guardando…",
+      "saveProfile": "Guardar perfil",
+      "accepting": "Aceptando…"
     }
   }
 }

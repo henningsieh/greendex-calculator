@@ -330,7 +330,7 @@ function JourneyEditor({
                   <>
                     {participants.find(
                       (item) => item.id === journey.projectParticipantId,
-                    )?.displayName ?? "Participant"}
+                    )?.displayName ?? t("copy.participant")}
                     : {journey.origin} → {journey.destination}, {journey.tripType}
                     , {journey.erasmusDistanceKm}{" "}
                     {t("journey.savedDistanceSuffix")}
@@ -562,14 +562,18 @@ function CostEditor({
                     >
                       {participants.find(
                         (item) => item.id === share.projectParticipantId,
-                      )?.displayName ?? "Participant"}
+                      )?.displayName ?? t("copy.participant")}
                       :{" "}
                       <span className="font-mono tabular-nums">
                         {entry.allocationMethod === "percentage"
                           ? `${share.percentage}%`
-                          : `${share.amountEur} EUR`}
+                          : t("copy.eurAmount", {
+                              amount: String(share.amountEur),
+                            })}
                       </span>
-                      {entry.allocationMethod === "equal" && " (computed)"}
+                      {entry.allocationMethod === "equal" && (
+                        <> {t("copy.computed")}</>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -579,7 +583,7 @@ function CostEditor({
                   {entry.proofDocumentIds.map((id) => (
                     <li key={id}>
                       {documents.find((document) => document.id === id)
-                        ?.originalFileName ?? "Document"}
+                        ?.originalFileName ?? t("copy.document")}
                     </li>
                   ))}
                 </ul>
@@ -605,7 +609,7 @@ function CostEditor({
             onSubmit={save}
             noValidate
           >
-            <p>{entryId ? "Edit saved cost" : "Add cost"}</p>
+            <p>{entryId ? t("copy.editCost") : t("copy.addCost")}</p>
             <div>
               <Label htmlFor="cost-profile">{t("cost.transport")}</Label>
               <select
@@ -686,7 +690,9 @@ function CostEditor({
                       <div>
                         <Label htmlFor={`share-${item.id}`}>
                           {item.displayName}{" "}
-                          {method === "percentage" ? "percentage" : "EUR share"}
+                          {method === "percentage"
+                            ? t("copy.percentage")
+                            : t("copy.eurShare")}
                         </Label>
                         <Input
                           variant="figure"
@@ -717,8 +723,13 @@ function CostEditor({
             </fieldset>
             <p aria-live="polite" data-share-total={shareTotal}>
               {method === "equal"
-                ? `Equal split across ${selected.length} Participations; exact EUR shares computed by the server after save.`
-                : `Entered shares total: ${shareTotal} ${method === "percentage" ? "% of 100%" : `EUR of ${amount || "0"} EUR`} (display only; server validates)`}
+                ? t("copy.equalSplit", { count: selected.length })
+                : method === "percentage"
+                  ? t("copy.percentageTotal", { total: String(shareTotal) })
+                  : t("copy.amountTotal", {
+                      total: String(shareTotal),
+                      amount: amount || "0",
+                    })}
             </p>
             <Button
               size="lg"
@@ -889,7 +900,7 @@ function ProofEditor({
                     documents.find((document) => document.id === id)
                       ?.originalFileName ?? "Document",
                 )
-                .join(", ") || "None"}
+                .join(", ") || t("copy.none")}
             </p>
             {editable && (
               <div>
@@ -974,7 +985,7 @@ function ClaimStateNotice({
         <AlertDescription>
           {t("notice.correctionRequested")}{" "}
           {history.findLast((event) => event.eventType === "correction_requested")
-            ?.reason ?? "See Claim history for the correction request."}
+            ?.reason ?? t("copy.correctionHistory")}
           <p>{t("notice.correctionBody")}</p>
         </AlertDescription>
       </Alert>
@@ -985,7 +996,7 @@ function ClaimStateNotice({
         <AlertDescription>
           {t("notice.rejected")}{" "}
           {history.findLast((event) => event.eventType === "rejected")?.reason ??
-            "See Claim history for the rejection reason."}
+            t("copy.rejectionHistory")}
           <p>{t("notice.rejectedBody")}</p>
         </AlertDescription>
       </Alert>
@@ -1093,8 +1104,8 @@ function ClaimDraftEditor({
       <CardContent className="space-y-4">
         <p data-draft-status={draft?.status ?? "none"}>
           {draft
-            ? `Claim ${claimStatusLabel(draft.status)} / saved`
-            : "No Claim has been created. Opening this workspace saves nothing."}
+            ? t("copy.savedClaim", { status: claimStatusLabel(draft.status) })
+            : t("copy.noClaim")}
         </p>
         <div id="claim-payout">
           <Label htmlFor="claim-payout-select">{t("payout.title")}</Label>
@@ -1315,8 +1326,9 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
               <Alert data-testid="claim-locked">
                 <AlertDescription>
                   {t("locked")}
-                  {draft.approvedAmountEur &&
-                    ` Calculated payable: ${draft.approvedAmountEur} EUR (computed by the server).`}
+                  {draft.approvedAmountEur && (
+                    <> {t("copy.payable", { amount: draft.approvedAmountEur })}</>
+                  )}
                 </AlertDescription>
               </Alert>
             )}

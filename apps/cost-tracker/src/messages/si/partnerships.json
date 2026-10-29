@@ -11,7 +11,10 @@
       "current": "Current Project Partnerships",
       "none": "No Partner Organizations are assigned to hosted Projects.",
       "assigned": "Assigned",
-      "updated": "· Updated"
+      "updated": "· Updated",
+      "assigning": "Dodeljevanje…",
+      "assign": "Dodeli",
+      "remove": "Odstrani"
     },
     "setup": {
       "title": "Partner Organization Setup Link",
@@ -48,7 +51,17 @@
       "retained": "Organization retained",
       "retainedDescription": "Your Organization is ready. Continue to connect it to the Project. No new Organization is created.",
       "retryRetained": "Retry setup with retained Organization",
-      "inspect": "Inspect setup result"
+      "inspect": "Inspect setup result",
+      "creatingLink": "Ustvarjanje povezave…",
+      "createLink": "Ustvari povezavo",
+      "closed": "Zaprto",
+      "used": "Uporabljeno",
+      "expired": "Poteklo",
+      "open": "Odprto",
+      "closing": "Zapiranje…",
+      "closeLink": "Zapri nastavitveno povezavo partnerske organizacije",
+      "completing": "Dokončevanje…",
+      "complete": "Dokončaj nastavitev"
     }
   },
   "partnerOrganizations": {

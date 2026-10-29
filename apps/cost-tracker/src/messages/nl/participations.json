@@ -9,7 +9,13 @@
       "country": "Country:",
       "completed": "completed",
       "pending": "pending",
-      "countryHeader": "Country"
+      "countryHeader": "Country",
+      "hideParticipants": "{count, plural, one {# deelnemer} other {# deelnemers}} verbergen",
+      "showParticipants": "{count, plural, one {# deelnemer} other {# deelnemers}} tonen",
+      "agreementCompleted": "Overeenkomst geaccepteerd",
+      "agreementPending": "Overeenkomst in afwachting",
+      "noEmail": "Geen e-mailadres vastgelegd",
+      "notSet": "Niet ingesteld"
     },
     "loading": {
       "projectParticipations": "Loading Project Participations",
@@ -41,7 +47,8 @@
       "selectUser": "Select a Registered User",
       "noEligible": "No eligible Registered Users in this Organization.",
       "assign": "Assign Group Organizer",
-      "update": "Group Organizer update"
+      "update": "Group Organizer update",
+      "revoke": "Toewijzing als groepsorganisator intrekken"
     },
     "invitations": {
       "title": "Email-bound Participant Invitations",
@@ -49,7 +56,9 @@
       "empty": "No invitations are recorded for this Partnership.",
       "reissue": "Reissue invitation for",
       "close": "Close invitation for",
-      "statusHint": "Invitation status does not show profile or agreement progress."
+      "statusHint": "Invitation status does not show profile or agreement progress.",
+      "pending": "Uitnodiging in afwachting",
+      "status": "Uitnodiging: {status}"
     },
     "links": {
       "title": "Shareable Participant Registration Links",
@@ -57,14 +66,18 @@
       "empty": "No registration links are recorded for this Partnership.",
       "link": "Link",
       "close": "Close registration link",
-      "reopen": "Reopen registration link"
+      "reopen": "Reopen registration link",
+      "open": "Open",
+      "closed": "Gesloten"
     },
     "joined": {
       "title": "Joined Participants",
       "empty": "No Participants have joined this Partnership yet.",
       "joined": "Joined",
       "country": "Country",
-      "detailsFor": "Participant details for"
+      "detailsFor": "Participant details for",
+      "count": "{count, plural, one {# deelnemer} other {# deelnemers}} in {project}",
+      "removeFor": "Projectdeelname van {name} verwijderen"
     },
     "page": {
       "label": "Project Participations",
@@ -81,7 +94,13 @@
       "inviteeEmail": "Invitee email",
       "sendInvitation": "Send Participant Invitation",
       "createLink": "Create Participant Registration Link",
-      "newLink": "New registration link (copy now)"
+      "newLink": "New registration link (copy now)",
+      "adding": "Toevoegen…",
+      "add": "Deelname toevoegen",
+      "hideOrganizers": "Beheer groepsorganisatoren verbergen",
+      "manageOrganizers": "Groepsorganisatoren beheren",
+      "hideReviews": "Beoordelingstaken verbergen",
+      "showReviews": "Beoordelingstaken tonen"
     },
     "details": {
       "countryFor": "Country for",
@@ -93,7 +112,9 @@
       "participation": "Project Participation",
       "country": "Country",
       "correctCountry": "Correct country",
-      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it."
+      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it.",
+      "noEmail": "Geen e-mailadres vastgelegd",
+      "cannotCorrect": "Je kunt deze projectdeelname niet corrigeren."
     },
     "app": {
       "backToProjects": "Back to Projects",
@@ -135,6 +156,13 @@
       "empty": "No Projects yet. Join through a Participant Invitation or Participant Registration Link.",
       "representing": "Representing:",
       "hostedBy": "Hosted by:"
+    },
+    "actions": {
+      "joining": "Deelnemen…",
+      "join": "Deelnemen aan project",
+      "saving": "Opslaan…",
+      "saveProfile": "Profiel opslaan",
+      "accepting": "Accepteren…"
     }
   }
 }

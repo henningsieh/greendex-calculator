@@ -231,7 +231,7 @@ export function SetupLinkCreator() {
               disabled={pending || !projectId}
               type="submit"
             >
-              {pending ? "Neuer Link…" : "Neuer Link"}
+              {pending ? t("creatingLink") : t("createLink")}
             </Button>
           </div>
         </form>
@@ -289,12 +289,12 @@ export function SetupLinkCreator() {
                       }
                     >
                       {!existing.enabled
-                        ? "Closed"
+                        ? t("closed")
                         : existing.consumedAt
-                          ? "Used"
+                          ? t("used")
                           : existing.expired
-                            ? "Expired"
-                            : "Open"}
+                            ? t("expired")
+                            : t("open")}
                     </TableCell>
                     <TableCell>
                       {existing.expiresAt.toISOString().slice(0, 10)}
@@ -308,8 +308,8 @@ export function SetupLinkCreator() {
                         onClick={() => void closeLink(existing.id)}
                       >
                         {closingId === existing.id
-                          ? "Closing…"
-                          : "Close Partner Organization Setup Link"}
+                          ? t("closing")
+                          : t("closeLink")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -493,7 +493,7 @@ function SetupOrganizationForm({
           }
           type="submit"
         >
-          {pending ? "Completing…" : "Complete setup"}
+          {pending ? tSetup("completing") : tSetup("complete")}
         </Button>
       </FieldGroup>
     </form>
@@ -562,8 +562,8 @@ export function SetupLinkRecipient({
   userId: string;
 }) {
   const router = useRouter();
-  const t = useTranslations("onboarding");
   const tSetup = useTranslations("partnerships.setup");
+  const t = useTranslations("onboarding");
   const [rejectedOrganization, setRejectedOrganization] = useState<string>();
   const queryClient = useQueryClient();
   const [decision, setDecision] = useState<OnboardingDecision>();

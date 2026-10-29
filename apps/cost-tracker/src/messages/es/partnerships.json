@@ -11,7 +11,10 @@
       "current": "Current Project Partnerships",
       "none": "No Partner Organizations are assigned to hosted Projects.",
       "assigned": "Assigned",
-      "updated": "· Updated"
+      "updated": "· Updated",
+      "assigning": "Asignando…",
+      "assign": "Asignar",
+      "remove": "Eliminar"
     },
     "setup": {
       "title": "Partner Organization Setup Link",
@@ -48,7 +51,17 @@
       "retained": "Organization retained",
       "retainedDescription": "Your Organization is ready. Continue to connect it to the Project. No new Organization is created.",
       "retryRetained": "Retry setup with retained Organization",
-      "inspect": "Inspect setup result"
+      "inspect": "Inspect setup result",
+      "creatingLink": "Creando enlace…",
+      "createLink": "Crear enlace",
+      "closed": "Cerrado",
+      "used": "Utilizado",
+      "expired": "Caducado",
+      "open": "Abierto",
+      "closing": "Cerrando…",
+      "closeLink": "Cerrar enlace de configuración de la organización socia",
+      "completing": "Finalizando…",
+      "complete": "Completar configuración"
     }
   },
   "partnerOrganizations": {

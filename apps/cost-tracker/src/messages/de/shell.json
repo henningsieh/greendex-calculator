@@ -8,7 +8,8 @@
     },
     "common": {
       "signIn": "Anmelden",
-      "retry": "Erneut versuchen"
+      "retry": "Erneut versuchen",
+      "loading": "Wird geladen"
     },
     "nav": {
       "primaryLabel": "Hauptnavigation",

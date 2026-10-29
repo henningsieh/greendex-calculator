@@ -11,7 +11,10 @@
       "current": "Aktuelle Projektpartnerschaften",
       "none": "Keine Partnerorganisationen sind gehosteten Projekten zugewiesen.",
       "assigned": "Zugewiesen",
-      "updated": "· Aktualisiert"
+      "updated": "· Aktualisiert",
+      "assigning": "Wird zugewiesen…",
+      "assign": "Zuweisen",
+      "remove": "Entfernen"
     },
     "setup": {
       "title": "Setup-Link für Partnerorganisation",
@@ -48,7 +51,17 @@
       "retained": "Organisation beibehalten",
       "retainedDescription": "Deine Organisation ist bereit. Fahre fort, um sie mit dem Projekt zu verbinden. Es wird keine neue Organisation erstellt.",
       "retryRetained": "Setup mit beibehaltener Organisation wiederholen",
-      "inspect": "Setup-Ergebnis prüfen"
+      "inspect": "Setup-Ergebnis prüfen",
+      "creatingLink": "Neuer Link…",
+      "createLink": "Neuer Link",
+      "closed": "Geschlossen",
+      "used": "Verwendet",
+      "expired": "Abgelaufen",
+      "open": "Offen",
+      "closing": "Wird geschlossen…",
+      "closeLink": "Einrichtungslink der Partnerorganisation schließen",
+      "completing": "Wird abgeschlossen…",
+      "complete": "Einrichtung abschließen"
     }
   },
   "partnerOrganizations": {

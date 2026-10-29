@@ -17,7 +17,10 @@
       "totalEur": "Total (EUR)",
       "costAllocations": "Cost Allocations",
       "proofDocuments": "Proof Documents",
-      "action": "Action"
+      "action": "Action",
+      "allocationAmount": "Znesek (EUR)",
+      "allocationPercentage": "Odstotek",
+      "allocationEqual": "Enako"
     },
     "queue": {
       "title": "Submitted Claims awaiting review",
@@ -53,7 +56,20 @@
       "noJourneys": "No journeys recorded.",
       "km": "km",
       "noClaim": "No Claim has been created for this Partnership.",
-      "hostingTitle": "Hosting Claim review"
+      "hostingTitle": "Hosting Claim review",
+      "status": {
+        "approved": "Odobreno · neplačano",
+        "paid": "Plačano",
+        "rejected": "Zavrnjeno · neplačano",
+        "correctionRequested": "Zahtevan popravek · potrebno dejanje partnerja",
+        "submitted": "Oddano · čaka na pregled gostiteljske organizacije",
+        "draft": "Osnutek za urejanje"
+      },
+      "confirmTransfer": "Potrdite šele po dejanskem celotnem bančnem nakazilu {amount} EUR.",
+      "confirmReopen": "Ponovno odpiranje vrne zahtevek v pregled; urejanje za partnerja ostane zaklenjeno. Po potrebi ločeno zahtevajte popravek.",
+      "confirmAction": "Potrdite {action} za ta zahtevek.",
+      "unavailable": "Ni na voljo",
+      "equalShare": "Enak delež (izračunan ob oddaji)"
     },
     "submission": {
       "title": "Submission",
@@ -68,7 +84,8 @@
       "submit": "Submit Claim",
       "confirmDescription": "Confirm submission: submission locks the Claim and selected Payout Account for Partner editing until the Hosting side requests a correction.",
       "confirm": "Confirm submission",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "unavailable": "Ni na voljo, dokler kontrolni seznam ni izpolnjen"
     },
     "workspace": {
       "label": "Claim workspace",
@@ -151,6 +168,25 @@
       },
       "draft": {
         "title": "Claim draft"
+      },
+      "copy": {
+        "participant": "Udeleženec",
+        "eurAmount": "{amount} EUR",
+        "computed": "(izračunano)",
+        "document": "Dokument",
+        "editCost": "Uredi shranjeni strošek",
+        "addCost": "Dodaj strošek",
+        "percentage": "odstotek",
+        "eurShare": "delež v EUR",
+        "equalSplit": "Enaka razdelitev med {count} udeležb; strežnik po shranjevanju izračuna natančne deleže v EUR.",
+        "percentageTotal": "Vsota vnesenih deležev: {total} % od 100 % (samo prikaz; strežnik preveri)",
+        "amountTotal": "Vsota vnesenih deležev: {total} EUR od {amount} EUR (samo prikaz; strežnik preveri)",
+        "none": "Brez",
+        "correctionHistory": "Zahtevo za popravek si oglejte v zgodovini zahtevka.",
+        "rejectionHistory": "Razlog zavrnitve si oglejte v zgodovini zahtevka.",
+        "savedClaim": "Zahtevek {status} / shranjen",
+        "noClaim": "Zahtevek še ni ustvarjen. Odpiranje tega prostora ne shrani ničesar.",
+        "payable": "Izračunano izplačilo: {amount} EUR (izračuna strežnik)."
       }
     }
   }

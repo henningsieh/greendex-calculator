@@ -17,7 +17,10 @@
       "totalEur": "Total (EUR)",
       "costAllocations": "Cost Allocations",
       "proofDocuments": "Proof Documents",
-      "action": "Action"
+      "action": "Action",
+      "allocationAmount": "Montant (EUR)",
+      "allocationPercentage": "Pourcentage",
+      "allocationEqual": "À parts égales"
     },
     "queue": {
       "title": "Submitted Claims awaiting review",
@@ -53,7 +56,20 @@
       "noJourneys": "No journeys recorded.",
       "km": "km",
       "noClaim": "No Claim has been created for this Partnership.",
-      "hostingTitle": "Hosting Claim review"
+      "hostingTitle": "Hosting Claim review",
+      "status": {
+        "approved": "Approuvée · non payée",
+        "paid": "Payée",
+        "rejected": "Rejetée · non payée",
+        "correctionRequested": "Correction demandée · action du partenaire requise",
+        "submitted": "Soumise · en attente de vérification par l’organisation d’accueil",
+        "draft": "Brouillon modifiable"
+      },
+      "confirmTransfer": "Confirmez uniquement après l’envoi effectif d’un virement intégral de {amount} EUR.",
+      "confirmReopen": "La réouverture renvoie la demande en vérification et maintient le blocage des modifications du partenaire. Demandez une correction séparément si nécessaire.",
+      "confirmAction": "Confirmez {action} pour cette demande.",
+      "unavailable": "Indisponible",
+      "equalShare": "Part égale (calculée à la soumission)"
     },
     "submission": {
       "title": "Submission",
@@ -68,7 +84,8 @@
       "submit": "Submit Claim",
       "confirmDescription": "Confirm submission: submission locks the Claim and selected Payout Account for Partner editing until the Hosting side requests a correction.",
       "confirm": "Confirm submission",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "unavailable": "Indisponible tant que la liste de contrôle n’est pas validée"
     },
     "workspace": {
       "label": "Claim workspace",
@@ -151,6 +168,25 @@
       },
       "draft": {
         "title": "Claim draft"
+      },
+      "copy": {
+        "participant": "Participant",
+        "eurAmount": "{amount} EUR",
+        "computed": "(calculé)",
+        "document": "Document",
+        "editCost": "Modifier le coût enregistré",
+        "addCost": "Ajouter un coût",
+        "percentage": "pourcentage",
+        "eurShare": "part en EUR",
+        "equalSplit": "Répartition égale entre {count} participations ; le serveur calcule les parts exactes en EUR après enregistrement.",
+        "percentageTotal": "Total des parts saisies : {total} % sur 100 % (affichage uniquement ; validation par le serveur)",
+        "amountTotal": "Total des parts saisies : {total} EUR sur {amount} EUR (affichage uniquement ; validation par le serveur)",
+        "none": "Aucun",
+        "correctionHistory": "Consultez la demande de correction dans l’historique.",
+        "rejectionHistory": "Consultez le motif du rejet dans l’historique.",
+        "savedClaim": "Demande {status} / enregistrée",
+        "noClaim": "Aucune demande créée. Ouvrir cet espace n’enregistre rien.",
+        "payable": "Montant à payer calculé : {amount} EUR (calculé par le serveur)."
       }
     }
   }

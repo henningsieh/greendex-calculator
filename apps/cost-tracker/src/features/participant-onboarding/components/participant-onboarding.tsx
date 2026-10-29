@@ -178,7 +178,7 @@ export function ParticipantJoin({
               disabled={!available || !accepted || !country || pending}
               type="submit"
             >
-              {pending ? "Joining…" : "Join Project"}
+              {pending ? t("actions.joining") : t("actions.join")}
             </Button>
             {error && <p role="alert">{error}</p>}
           </form>
@@ -300,7 +300,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                 disabled={pending}
                 type="submit"
               >
-                {pending ? "Saving…" : "Save profile"}
+                {pending ? t("actions.saving") : t("actions.saveProfile")}
               </Button>
             </form>
           </>
@@ -318,7 +318,9 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                 disabled={!accepted || pending}
                 type="submit"
               >
-                {pending ? "Accepting…" : "Accept agreement"}
+                {pending
+                  ? t("actions.accepting")
+                  : t("dashboard.acceptAgreement")}
               </Button>
             </form>
           </>

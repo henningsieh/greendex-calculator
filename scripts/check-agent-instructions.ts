@@ -437,9 +437,11 @@ const checkDesignSystemLint = async (): Promise<void> => {
   const costTrackerLintDesignSystem =
     costTrackerManifest.scripts?.["lint:design-system"] ?? "";
   assert(
-    costTrackerLintDesignSystem.includes("shadcn/no-restyle") &&
-      costTrackerLintDesignSystem.includes("src"),
-    "apps/cost-tracker/package.json: keep the focused `lint:design-system` script for the design-system rules, scoped to the enforced app source",
+    costTrackerLintDesignSystem.includes("src") &&
+      !costTrackerLintDesignSystem.includes("--fix") &&
+      !costTrackerLintDesignSystem.includes("-A") &&
+      !costTrackerLintDesignSystem.includes("-D"),
+    "apps/cost-tracker/package.json: keep the focused `lint:design-system` script as a check-only `oxlint src` run so it enforces exactly the shared `.oxlintrc.json` policy, scoped to the enforced app source",
   );
 
   const turboConfig = (await readJson(resolveRoot("turbo.json"))) as {

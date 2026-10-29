@@ -17,7 +17,10 @@
       "totalEur": "Total (EUR)",
       "costAllocations": "Cost Allocations",
       "proofDocuments": "Proof Documents",
-      "action": "Action"
+      "action": "Action",
+      "allocationAmount": "Amount (EUR)",
+      "allocationPercentage": "Percentage",
+      "allocationEqual": "Equal"
     },
     "queue": {
       "title": "Submitted Claims awaiting review",
@@ -53,7 +56,20 @@
       "noJourneys": "No journeys recorded.",
       "km": "km",
       "noClaim": "No Claim has been created for this Partnership.",
-      "hostingTitle": "Hosting Claim review"
+      "hostingTitle": "Hosting Claim review",
+      "status": {
+        "approved": "Approved · unpaid",
+        "paid": "Paid",
+        "rejected": "Rejected · unpaid",
+        "correctionRequested": "Correction requested · Partner action required",
+        "submitted": "Submitted · awaiting Hosting review",
+        "draft": "Editable draft"
+      },
+      "confirmTransfer": "Confirm only after one full bank transfer of {amount} EUR was actually sent.",
+      "confirmReopen": "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed.",
+      "confirmAction": "Confirm {action} for this Claim.",
+      "unavailable": "Unavailable",
+      "equalShare": "Equal share (computed on submission)"
     },
     "submission": {
       "title": "Submission",
@@ -68,7 +84,8 @@
       "submit": "Submit Claim",
       "confirmDescription": "Confirm submission: submission locks the Claim and selected Payout Account for Partner editing until the Hosting side requests a correction.",
       "confirm": "Confirm submission",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "unavailable": "Not available until the checklist passes"
     },
     "workspace": {
       "label": "Claim workspace",
@@ -151,6 +168,25 @@
       },
       "draft": {
         "title": "Claim draft"
+      },
+      "copy": {
+        "participant": "Participant",
+        "eurAmount": "{amount} EUR",
+        "computed": "(computed)",
+        "document": "Document",
+        "editCost": "Edit saved cost",
+        "addCost": "Add cost",
+        "percentage": "percentage",
+        "eurShare": "EUR share",
+        "equalSplit": "Equal split across {count} Participations; exact EUR shares computed by the server after save.",
+        "percentageTotal": "Entered shares total: {total} % of 100% (display only; server validates)",
+        "amountTotal": "Entered shares total: {total} EUR of {amount} EUR (display only; server validates)",
+        "none": "None",
+        "correctionHistory": "See Claim history for the correction request.",
+        "rejectionHistory": "See Claim history for the rejection reason.",
+        "savedClaim": "Claim {status} / saved",
+        "noClaim": "No Claim has been created. Opening this workspace saves nothing.",
+        "payable": "Calculated payable: {amount} EUR (computed by the server)."
       }
     }
   }

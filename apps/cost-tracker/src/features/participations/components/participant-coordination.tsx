@@ -435,7 +435,7 @@ function PartnerCoordinatorControls({
             }
           }}
         >
-          {revoke.isPending ? t("pending") : "Revoke Group Organizer assignment"}
+          {revoke.isPending ? t("pending") : tPart("groupOrganizer.revoke")}
         </Button>
       </div>
       {feedback && (
@@ -484,8 +484,8 @@ function ParticipantInvitations({
                 <span>{invitation.email}</span>
                 <Badge variant="secondary">
                   {invitation.status === "pending"
-                    ? "Invitation pending"
-                    : `Invitation ${invitation.status}`}
+                    ? tPart("invitations.pending")
+                    : tPart("invitations.status", { status: invitation.status })}
                 </Badge>
                 {entryAccess.permitted && invitation.status === "pending" && (
                   <Button
@@ -568,7 +568,7 @@ function ParticipantRegistrationLinks({
                   {tPart("links.link")} {link.id}
                 </span>
                 <Badge variant="secondary">
-                  {link.enabled ? "Open" : "Closed"}
+                  {link.enabled ? tPart("links.open") : tPart("links.closed")}
                 </Badge>
                 {entryAccess.permitted && link.enabled && (
                   <Button
@@ -637,9 +637,10 @@ function JoinedParticipants({
         <CardTitle>{tPart("joined.title")}</CardTitle>
         {data.participations.length > 0 && (
           <CardDescription>
-            {data.participations.length === 1
-              ? `1 Participant in ${data.projectName}`
-              : `${data.participations.length} Participants in ${data.projectName}`}
+            {tPart("joined.count", {
+              count: data.participations.length,
+              project: data.projectName,
+            })}
           </CardDescription>
         )}
       </CardHeader>
@@ -672,7 +673,7 @@ function JoinedParticipants({
                 <p className="flex flex-wrap items-center gap-3 text-sm">
                   <span>{tPart("joined.country")}</span>
                   <Badge variant="secondary">
-                    {participant.country ?? "Not set"}
+                    {participant.country ?? tPart("details.notSet")}
                   </Badge>
                 </p>
                 {/* Editing belongs on the details page, never in a list row (ADR-0016). */}
@@ -708,7 +709,9 @@ function JoinedParticipants({
                     {removeParticipation.isPending &&
                     removeParticipation.variables === participant.id
                       ? t("pending")
-                      : `Remove Project Participation for ${participant.displayName}`}
+                      : tPart("joined.removeFor", {
+                          name: participant.displayName,
+                        })}
                   </Button>
                 )}
               </li>
@@ -950,7 +953,7 @@ export function ParticipantCoordination({
                 disabled={create.isPending || !userId}
                 type="submit"
               >
-                {create.isPending ? "Adding…" : "Add Participation"}
+                {create.isPending ? tPart("page.adding") : tPart("page.add")}
               </Button>
             </form>
             {feedback && (
@@ -988,8 +991,8 @@ export function ParticipantCoordination({
               onClick={() => setCoordinatorsOpen((open) => !open)}
             >
               {coordinatorsOpen
-                ? "Hide Group Organizer management"
-                : "Manage Group Organizers"}
+                ? tPart("page.hideOrganizers")
+                : tPart("page.manageOrganizers")}
             </Button>
             {coordinatorsOpen && (
               <PartnerCoordinatorControls partnershipId={partnershipId} />
@@ -1012,7 +1015,7 @@ export function ParticipantCoordination({
             onClick={() => setReviewsOpen((open) => !open)}
             aria-expanded={reviewsOpen}
           >
-            {reviewsOpen ? "Hide Review Tasks" : "Show Review Tasks"}
+            {reviewsOpen ? tPart("page.hideReviews") : tPart("page.showReviews")}
           </Button>
           {reviewsOpen && (
             <ReviewTasks

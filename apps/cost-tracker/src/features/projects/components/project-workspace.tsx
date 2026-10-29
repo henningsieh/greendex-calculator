@@ -37,9 +37,10 @@ const readinessLabels: Record<ClaimStatus, string> = {
 };
 
 function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
+  const t = useTranslations("projects.workspace");
   return (
     <Badge data-claim-status={status ?? "none"} variant="secondary">
-      {status ? readinessLabels[status] : "No Claim"}
+      {status ? readinessLabels[status] : t("noClaim")}
     </Badge>
   );
 }
@@ -125,7 +126,7 @@ export function ProjectWorkspace({
           variant={project.costSubmissionWindowOpen ? "default" : "secondary"}
         >
           {t("submissionWindow")}{" "}
-          {project.costSubmissionWindowOpen ? "open" : "closed"}
+          {project.costSubmissionWindowOpen ? t("open") : t("closed")}
         </Badge>
         {project.completedAt && (
           <p
@@ -144,7 +145,7 @@ export function ProjectWorkspace({
             data-testid="complete-project"
             type="button"
           >
-            {completing ? "Completing…" : "Complete Project"}
+            {completing ? t("completing") : t("complete")}
           </Button>
         )}
         {feedback && <output className="text-sm">{feedback}</output>}

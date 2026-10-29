@@ -326,9 +326,6 @@ importers:
         specifier: ^2.11.10
         version: 2.11.10
     devDependencies:
-      '@babel/parser':
-        specifier: 7.29.9
-        version: 7.29.9
       '@shadcn/lint':
         specifier: ^0.2.3
         version: 0.2.3

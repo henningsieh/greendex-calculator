@@ -120,8 +120,8 @@ function PartnerOrganizationParticipants({
             <ChevronRightIcon aria-hidden="true" />
           )}
           {expanded
-            ? `Hide ${pluralize(group.participantCount, "Participant")}`
-            : `Show ${pluralize(group.participantCount, "Participant")}`}
+            ? t("hideParticipants", { count: group.participantCount })
+            : t("showParticipants", { count: group.participantCount })}
         </Button>
         {expanded && (
           <ul className="divide-y" id={participantsId}>
@@ -142,17 +142,17 @@ function PartnerOrganizationParticipants({
                     }
                   >
                     {participant.agreement === "completed"
-                      ? "Agreement completed"
-                      : "Agreement pending"}
+                      ? t("agreementCompleted")
+                      : t("agreementPending")}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {participant.email ?? "No email recorded"}
+                  {participant.email ?? t("noEmail")}
                 </p>
                 <p className="flex flex-wrap items-center gap-3 text-sm">
                   <span>{t("countryHeader")}</span>
                   <Badge variant="secondary">
-                    {participant.country ?? "Not set"}
+                    {participant.country ?? t("notSet")}
                   </Badge>
                 </p>
               </li>
