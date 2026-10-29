@@ -24,7 +24,7 @@ type ResendAction = Extract<
 >;
 
 function ResendVerification({ action }: { action: ResendAction }) {
-  const t = useTranslations("onboarding.inbox.resend");
+  const t = useTranslations("onboarding");
   const [result, setResult] = useState<"success" | "error" | null>(null);
   const [pending, setPending] = useState(false);
   const [cooldown, setCooldown] = useState(false);
@@ -65,10 +65,10 @@ function ResendVerification({ action }: { action: ResendAction }) {
         aria-busy={pending}
         onClick={() => void resend()}
       >
-        {t(pending ? "pending" : "label")}
+        {t(pending ? "inbox.resend.pending" : "inbox.resend.label")}
       </Button>
       <output data-testid="inbox-resend-result" data-result={result}>
-        {result ? t(result) : null}
+        {result ? t(`inbox.resend.${result}`) : null}
       </output>
     </div>
   );

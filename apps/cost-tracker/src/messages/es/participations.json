@@ -124,45 +124,58 @@
       "coordinateDescription": "Coordinate Participants for this Project Partnership.",
       "participantDetails": "Participant details",
       "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct."
-    }
-  },
-  "participantOnboarding": {
-    "agreementUnavailable": {
-      "title": "Participant agreement is not yet available",
-      "description": "Joining and Participant actions are paused until the approved agreement is published."
     },
-    "agreement": {
-      "label": "EU–Erasmus Participant agreement (",
-      "aria": "Participant agreement text",
-      "accept": "I accept the current Participant agreement"
+    "participantOnboarding": {
+      "agreementUnavailable": {
+        "title": "Participant agreement is not yet available",
+        "description": "Joining and Participant actions are paused until the approved agreement is published."
+      },
+      "agreement": {
+        "label": "EU–Erasmus Participant agreement (",
+        "aria": "Participant agreement text",
+        "accept": "I accept the current Participant agreement"
+      },
+      "join": {
+        "title": "Join as a Project Participant",
+        "description": "Your account must use a verified email address. The server checks the Participant Invitation or Registration Link.",
+        "invitationRequiredTitle": "Complete Participant Invitation or Participant Registration Link required",
+        "invitationRequiredDescription": "Open the complete link shared with you. If it does not work, ask the sender for a new one.",
+        "fullName": "Full name",
+        "country": "Country",
+        "countryPlaceholder": "Select your EU country"
+      },
+      "dashboard": {
+        "title": "My Project Participations",
+        "acceptAgreement": "Accept agreement",
+        "loading": "Loading your Projects…",
+        "profileRequired": "Complete your profile before Participant actions are available.",
+        "fullName": "Full name",
+        "agreementRequired": "Accept the current agreement before Participant actions are available.",
+        "retry": "Retry loading Projects",
+        "empty": "No Projects yet. Join through a Participant Invitation or Participant Registration Link.",
+        "representing": "Representing:",
+        "hostedBy": "Hosted by:"
+      },
+      "actions": {
+        "joining": "Uniéndose…",
+        "join": "Unirse al proyecto",
+        "saving": "Guardando…",
+        "saveProfile": "Guardar perfil",
+        "accepting": "Aceptando…"
+      }
     },
-    "join": {
-      "title": "Join as a Project Participant",
-      "description": "Your account must use a verified email address. The server checks the Participant Invitation or Registration Link.",
-      "invitationRequiredTitle": "Complete Participant Invitation or Participant Registration Link required",
-      "invitationRequiredDescription": "Open the complete link shared with you. If it does not work, ask the sender for a new one.",
-      "fullName": "Full name",
-      "country": "Country",
-      "countryPlaceholder": "Select your EU country"
-    },
-    "dashboard": {
-      "title": "My Project Participations",
-      "acceptAgreement": "Accept agreement",
-      "loading": "Loading your Projects…",
-      "profileRequired": "Complete your profile before Participant actions are available.",
-      "fullName": "Full name",
-      "agreementRequired": "Accept the current agreement before Participant actions are available.",
-      "retry": "Retry loading Projects",
-      "empty": "No Projects yet. Join through a Participant Invitation or Participant Registration Link.",
-      "representing": "Representing:",
-      "hostedBy": "Hosted by:"
-    },
-    "actions": {
-      "joining": "Uniéndose…",
-      "join": "Unirse al proyecto",
-      "saving": "Guardando…",
-      "saveProfile": "Guardar perfil",
-      "accepting": "Aceptando…"
+    "confirmations": {
+      "pending": "Procesando…",
+      "revokeOrganizer": {
+        "title": "¿Revocar la asignación de Organizador de Grupo?",
+        "description": "¿Revocar la asignación de Organizador de Grupo de {user}? Los roles de pertenencia a la Organización no cambiarán.",
+        "execute": "Revocar asignación"
+      },
+      "removeParticipation": {
+        "title": "¿Eliminar la participación en el Proyecto?",
+        "description": "¿Eliminar la participación de {participant} en el Proyecto? Esta acción no se puede deshacer.",
+        "execute": "Eliminar participación"
+      }
     }
   }
 }

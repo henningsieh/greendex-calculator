@@ -40,8 +40,7 @@ export function ProjectPartnershipManager({
   canAssign?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const tManager = useTranslations("partnerships.manager");
-  const t = useTranslations("projects.confirmations");
+  const t = useTranslations("partnerships");
   const { confirm, dialog } = useConfirmDialog();
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
@@ -123,7 +122,7 @@ export function ProjectPartnershipManager({
       {canAssign && (
         <Card data-testid="organization-assignment">
           <CardHeader>
-            <CardTitle>{tManager("assignExisting")}</CardTitle>
+            <CardTitle>{t("manager.assignExisting")}</CardTitle>
           </CardHeader>
           <CardContent>
             <form
@@ -136,10 +135,10 @@ export function ProjectPartnershipManager({
             >
               <div data-testid="hosted-project-picker" className="space-y-2">
                 <span className="text-sm font-medium">
-                  {tManager("hostedProject")}
+                  {t("manager.hostedProject")}
                 </span>
                 <EntityCombobox
-                  label={tManager("hostedProject")}
+                  label={t("manager.hostedProject")}
                   value={projectId}
                   onChange={setProjectId}
                   search={searchHosted}
@@ -151,10 +150,10 @@ export function ProjectPartnershipManager({
                 className="space-y-2"
               >
                 <span className="text-sm font-medium">
-                  {tManager("partnerOrganization")}
+                  {t("manager.partnerOrganization")}
                 </span>
                 <EntityCombobox
-                  label={tManager("partnerOrganization")}
+                  label={t("manager.partnerOrganization")}
                   value={organizationId}
                   onChange={setOrganizationId}
                   search={searchOrganizations}
@@ -170,8 +169,8 @@ export function ProjectPartnershipManager({
               >
                 <LinkIcon aria-hidden="true" />
                 {assignMutation.isPending
-                  ? tManager("assigning")
-                  : tManager("assign")}
+                  ? t("manager.assigning")
+                  : t("manager.assign")}
               </Button>
             </form>
             {feedback && (
@@ -190,14 +189,14 @@ export function ProjectPartnershipManager({
 
       <div className="space-y-4">
         <h2 className="font-heading text-2xl font-semibold">
-          {tManager("current")}
+          {t("manager.current")}
         </h2>
         {partnerships.length === 0 ? (
           <p
             data-testid="partnerships-empty"
             className="rounded-xl border p-8 text-center text-muted-foreground"
           >
-            {tManager("none")}
+            {t("manager.none")}
           </p>
         ) : (
           <ul className="grid gap-4">
@@ -218,9 +217,9 @@ export function ProjectPartnershipManager({
                       {partnership.projectName}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {tManager("assigned")}{" "}
+                      {t("manager.assigned")}{" "}
                       {dateTimeFormatter.format(partnership.assignedAt)}{" "}
-                      {tManager("updated")}{" "}
+                      {t("manager.updated")}{" "}
                       {dateTimeFormatter.format(partnership.updatedAt)}
                     </p>
                   </div>
@@ -232,12 +231,17 @@ export function ProjectPartnershipManager({
                     onClick={async () => {
                       if (
                         await confirm({
-                          title: t("removePartnership.title"),
-                          description: t("removePartnership.description", {
-                            organization: partnership.organizationName,
-                            project: partnership.projectName,
-                          }),
-                          confirmText: t("removePartnership.execute"),
+                          title: t("confirmations.removePartnership.title"),
+                          description: t(
+                            "confirmations.removePartnership.description",
+                            {
+                              organization: partnership.organizationName,
+                              project: partnership.projectName,
+                            },
+                          ),
+                          confirmText: t(
+                            "confirmations.removePartnership.execute",
+                          ),
                           isDestructive: true,
                         })
                       ) {
@@ -251,8 +255,8 @@ export function ProjectPartnershipManager({
                     <Trash2Icon aria-hidden="true" />
                     {removeMutation.isPending &&
                     removeMutation.variables === partnership.id
-                      ? t("pending")
-                      : tManager("remove")}
+                      ? t("confirmations.pending")
+                      : t("manager.remove")}
                   </Button>
                 )}
               </li>

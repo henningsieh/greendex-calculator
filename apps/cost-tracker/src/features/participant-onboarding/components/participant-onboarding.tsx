@@ -36,7 +36,7 @@ function hasAgreementCopy(
 }
 
 function AgreementUnavailable() {
-  const t = useTranslations("participantOnboarding");
+  const t = useTranslations("participations.participantOnboarding");
   return (
     <Alert data-agreement-state="unavailable">
       <AlertTitle>{t("agreementUnavailable.title")}</AlertTitle>
@@ -54,7 +54,7 @@ function AgreementAcceptance({
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
-  const t = useTranslations("participantOnboarding");
+  const t = useTranslations("participations.participantOnboarding");
   if (!hasAgreementCopy(agreement)) return <AgreementUnavailable />;
   return (
     <div className="space-y-3">
@@ -91,7 +91,7 @@ export function ParticipantJoin({
   agreement: Agreement;
 }) {
   const router = useRouter();
-  const t = useTranslations("participantOnboarding");
+  const t = useTranslations("participations.participantOnboarding");
   const [name, setName] = useState("");
   const [country, setCountry] = useState<EUCountryCode | "">("");
   const [accepted, setAccepted] = useState(false);
@@ -189,7 +189,7 @@ export function ParticipantJoin({
 }
 
 export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
-  const t = useTranslations("participantOnboarding");
+  const t = useTranslations("participations.participantOnboarding");
   const [state, setState] = useState<DashboardState>("loading");
   const [projects, setProjects] = useState<Projects>([]);
   const [name, setName] = useState("");

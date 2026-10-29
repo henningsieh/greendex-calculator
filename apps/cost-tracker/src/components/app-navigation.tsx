@@ -153,7 +153,6 @@ function AccountMenu({
   name,
   pathname,
 }: AccountMenuProps) {
-  const tAuth = useTranslations("onboarding");
   const t = useTranslations("shell");
   const active = pathname === "/user-settings";
   const trigger = useRef<HTMLButtonElement>(null);
@@ -228,7 +227,7 @@ function AccountMenu({
               variant="destructive"
             >
               <LogOutIcon />
-              {tAuth(pending ? "auth.confirmSignOut.pending" : "auth.signOut")}
+              {t(pending ? "account.signingOut" : "account.signOut")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

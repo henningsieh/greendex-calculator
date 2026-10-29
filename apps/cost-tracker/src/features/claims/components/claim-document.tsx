@@ -67,15 +67,15 @@ export function PayoutAccountLines({
 }: {
   account: { accountHolder: string; iban: string; bic: string | null };
 }) {
-  const t = useTranslations("claims.document");
+  const t = useTranslations("claims");
 
   return (
     <dl className="grid min-w-0 grid-cols-[130px_minmax(0,1fr)] gap-x-5 gap-y-2 max-sm:grid-cols-1">
-      <dt className="text-muted-foreground">{t("accountHolder")}</dt>
+      <dt className="text-muted-foreground">{t("document.accountHolder")}</dt>
       <dd className="wrap-anywhere" data-testid="payout-account-holder">
         {account.accountHolder}
       </dd>
-      <dt className="text-muted-foreground">{t("iban")}</dt>
+      <dt className="text-muted-foreground">{t("document.iban")}</dt>
       <dd
         className="font-mono wrap-anywhere tabular-nums select-all"
         data-testid="payout-account-iban"
@@ -85,7 +85,7 @@ export function PayoutAccountLines({
       </dd>
       {account.bic && (
         <>
-          <dt className="text-muted-foreground">{t("bic")}</dt>
+          <dt className="text-muted-foreground">{t("document.bic")}</dt>
           <dd
             data-testid="payout-bic"
             data-bic={account.bic}
@@ -117,11 +117,11 @@ export function ClaimCostTable({
   rows: ClaimCostRow[];
   actions?: boolean;
 }) {
-  const t = useTranslations("claims.document");
+  const t = useTranslations("claims");
 
   return (
     <Table variant="accounting" data-testid="claim-cost-table">
-      <TableCaption>{t("caption")}</TableCaption>
+      <TableCaption>{t("document.caption")}</TableCaption>
       <colgroup>
         <col className="w-[12%]" />
         <col className="w-[16%]" />
@@ -132,16 +132,16 @@ export function ClaimCostTable({
       <TableHeader>
         <TableRow>
           <TableHead variant="accounting" scope="col">
-            {t("transport")}
+            {t("document.transport")}
           </TableHead>
           <TableHead variant="amount" scope="col">
-            {t("totalEur")}
+            {t("document.totalEur")}
           </TableHead>
           <TableHead variant="accounting" scope="col">
-            {t("costAllocations")}
+            {t("document.costAllocations")}
           </TableHead>
           <TableHead variant="accounting" scope="col">
-            {t("proofDocuments")}
+            {t("document.proofDocuments")}
           </TableHead>
           {actions && (
             <TableHead
@@ -149,7 +149,7 @@ export function ClaimCostTable({
               variant="accounting"
               scope="col"
             >
-              {t("action")}
+              {t("document.action")}
             </TableHead>
           )}
         </TableRow>
@@ -167,10 +167,10 @@ export function ClaimCostTable({
             <TableCell variant="accounting">
               <p className="mb-2 font-semibold">
                 {row.allocationMethod === "amount"
-                  ? t("allocationAmount")
+                  ? t("document.allocationAmount")
                   : row.allocationMethod === "percentage"
-                    ? t("allocationPercentage")
-                    : t("allocationEqual")}
+                    ? t("document.allocationPercentage")
+                    : t("document.allocationEqual")}
               </p>
               {row.allocations}
             </TableCell>

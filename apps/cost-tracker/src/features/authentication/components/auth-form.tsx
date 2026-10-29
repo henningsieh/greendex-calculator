@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
-import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";

@@ -21,7 +21,7 @@ vi.mock("@/features/authentication/components/sign-out-button", () => ({
   SignOutButton: () => <button type="button">Sign out</button>,
 }));
 
-import { SelectOrganization } from "@/features/organizations/components/select-organization";
+import { SelectOrganization } from "@/features/authentication/components/select-organization";
 
 const organizations = [
   { id: "org-a", name: "Alpha" },

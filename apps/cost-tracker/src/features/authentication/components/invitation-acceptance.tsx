@@ -10,12 +10,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
+import { SelectOrganization } from "@/features/authentication/components/select-organization";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import type {
   OnboardingDecision,
   OnboardingInput,
 } from "@/features/authentication/onboarding-decision";
-import { SelectOrganization } from "@/features/organizations/components/select-organization";
 import { orpc } from "@/lib/orpc/orpc";
 
 export function InvitationAcceptance({

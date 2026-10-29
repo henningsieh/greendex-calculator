@@ -2,8 +2,8 @@ import { getTranslations } from "@greendex/i18n/server";
 import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/features/authentication/components/auth-form";
+import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { onboardingReturnTo } from "@/features/authentication/onboarding-decision";
-import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession, safeSignInReturnTo } from "@/lib/session";
 

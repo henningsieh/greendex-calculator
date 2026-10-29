@@ -41,7 +41,7 @@ export function ConfirmDialog({
   onResolve: (confirmed: boolean) => void;
   finalFocus?: RefObject<HTMLElement | null>;
 }) {
-  const t = useTranslations("confirmDialog");
+  const t = useTranslations("common.confirmDialog");
   const cancel = useRef<HTMLButtonElement>(null);
   return (
     <Dialog

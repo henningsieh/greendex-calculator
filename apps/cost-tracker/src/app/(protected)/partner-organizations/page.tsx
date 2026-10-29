@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Partner Organizations" };
 
 export default async function PartnerOrganizationsPage() {
   if (!(await hasOrganizationMembership())) return null;
-  const t = await getTranslations("partnerOrganizations.page");
+  const t = await getTranslations("partnerships.partnerOrganizations.page");
 
   // Same gate as projectPartnerships.list: without it the section below
   // would only render a denial. Assignment holders see their own rows.

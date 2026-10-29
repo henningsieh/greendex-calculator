@@ -106,7 +106,7 @@ function ReviewTaskControls({
   refresh: () => Promise<void>;
   onFeedback: (message: string) => void;
 }) {
-  const tPart = useTranslations("participations");
+  const t = useTranslations("participations");
   const [decision, setDecision] = useState<ReviewDecision>("same_person");
   const onError = (error: unknown) =>
     onFeedback(
@@ -149,17 +149,17 @@ function ReviewTaskControls({
       data-task-decision={task.decision ?? "none"}
     >
       <p>
-        {tPart("review.registeredUser")} {task.candidateEmail}
+        {t("review.registeredUser")} {task.candidateEmail}
       </p>
       <Badge variant="secondary">
-        {tPart("review.task")} {task.status}
+        {t("review.task")} {task.status}
       </Badge>
       <p className="text-sm">
-        {tPart("review.existingParticipation")} {task.existingParticipationId}
+        {t("review.existingParticipation")} {task.existingParticipationId}
       </p>
       {task.assignedToUserId && (
         <p className="text-sm">
-          {tPart("review.assignedUser")} {task.assignedToUserId}
+          {t("review.assignedUser")} {task.assignedToUserId}
         </p>
       )}
       {canMutate && task.status === "open" && (
@@ -170,14 +170,14 @@ function ReviewTaskControls({
           data-testid="review-task-assign"
           onClick={() => assign.mutate()}
         >
-          {tPart("review.assignToMe")}
+          {t("review.assignToMe")}
         </Button>
       )}
       {canMutate && task.status === "assigned" && (
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-2">
             <Label htmlFor={`review-decision-${task.id}`}>
-              {tPart("review.decision")}
+              {t("review.decision")}
             </Label>
             <select
               className="h-9 rounded-md border bg-background px-3 text-sm"
@@ -204,13 +204,13 @@ function ReviewTaskControls({
             data-testid="review-task-resolve"
             onClick={() => resolve.mutate()}
           >
-            {tPart("review.resolve")}
+            {t("review.resolve")}
           </Button>
         </div>
       )}
       {task.decision && (
         <p>
-          {tPart("review.decisionLabel")}{" "}
+          {t("review.decisionLabel")}{" "}
           {reviewDecisions.find((entry) => entry.value === task.decision)?.label}
         </p>
       )}
@@ -225,7 +225,7 @@ function ReviewTasks({
   partnershipId: string;
   canMutate: boolean;
 }) {
-  const tPart = useTranslations("participations");
+  const t = useTranslations("participations");
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState("");
   const options = orpcQuery.duplicateReviews.list.queryOptions({
@@ -239,15 +239,15 @@ function ReviewTasks({
   };
   return (
     <section
-      aria-label={tPart("review.tasksLabel")}
+      aria-label={t("review.tasksLabel")}
       data-testid="review-tasks"
       className="space-y-4"
     >
       {tasks.isPending ? (
-        <output>{tPart("review.loading")}</output>
+        <output>{t("review.loading")}</output>
       ) : tasks.isError ? (
         <Alert>
-          <AlertTitle>{tPart("review.loadError")}</AlertTitle>
+          <AlertTitle>{t("review.loadError")}</AlertTitle>
           <AlertDescription>
             {getORPCRequestErrorMessage(tasks.error).text}
           </AlertDescription>
@@ -256,11 +256,11 @@ function ReviewTasks({
             variant="outline"
             onClick={() => void tasks.refetch()}
           >
-            {tPart("review.retry")}
+            {t("review.retry")}
           </Button>
         </Alert>
       ) : tasks.data.length === 0 ? (
-        <p>{tPart("review.empty")}</p>
+        <p>{t("review.empty")}</p>
       ) : (
         <ul className="divide-y">
           {tasks.data.map((task) => (
@@ -276,7 +276,7 @@ function ReviewTasks({
       )}
       {feedback && (
         <Alert>
-          <AlertTitle>{tPart("review.update")}</AlertTitle>
+          <AlertTitle>{t("review.update")}</AlertTitle>
           <AlertDescription>{feedback}</AlertDescription>
         </Alert>
       )}
@@ -289,8 +289,7 @@ function PartnerCoordinatorControls({
 }: {
   partnershipId: string;
 }) {
-  const tPart = useTranslations("participations");
-  const t = useTranslations("projects.confirmations");
+  const t = useTranslations("participations");
   const { confirm, dialog } = useConfirmDialog();
   const queryClient = useQueryClient();
   const [targetUserId, setTargetUserId] = useState("");
@@ -343,11 +342,11 @@ function PartnerCoordinatorControls({
     onError,
   });
   if (members.isPending)
-    return <output>{tPart("groupOrganizer.loadingUsers")}</output>;
+    return <output>{t("groupOrganizer.loadingUsers")}</output>;
   if (members.isError)
     return (
       <Alert>
-        <AlertTitle>{tPart("groupOrganizer.unavailable")}</AlertTitle>
+        <AlertTitle>{t("groupOrganizer.unavailable")}</AlertTitle>
         <AlertDescription>
           {getORPCRequestErrorMessage(members.error).text}
         </AlertDescription>
@@ -356,7 +355,7 @@ function PartnerCoordinatorControls({
           variant="outline"
           onClick={() => void members.refetch()}
         >
-          {tPart("groupOrganizer.retryUsers")}
+          {t("groupOrganizer.retryUsers")}
         </Button>
       </Alert>
     );
@@ -375,11 +374,11 @@ function PartnerCoordinatorControls({
     <div className="space-y-4">
       {dialog}
       <p className="text-sm text-muted-foreground">
-        {tPart("groupOrganizer.description")}
+        {t("groupOrganizer.description")}
       </p>
       <div className="space-y-2">
         <Label htmlFor={`group-organizer-${partnershipId}`}>
-          {tPart("groupOrganizer.registeredUserLabel")}
+          {t("groupOrganizer.registeredUserLabel")}
         </Label>
         <select
           id={`group-organizer-${partnershipId}`}
@@ -391,7 +390,7 @@ function PartnerCoordinatorControls({
             setFeedback("");
           }}
         >
-          <option value="">{tPart("groupOrganizer.selectUser")}</option>
+          <option value="">{t("groupOrganizer.selectUser")}</option>
           {eligible.map((entry) => (
             <option key={entry.userId} value={entry.userId}>
               {entry.name} ({entry.email})
@@ -399,7 +398,7 @@ function PartnerCoordinatorControls({
           ))}
         </select>
       </div>
-      {eligible.length === 0 && <p>{tPart("groupOrganizer.noEligible")}</p>}
+      {eligible.length === 0 && <p>{t("groupOrganizer.noEligible")}</p>}
       <div className="flex flex-wrap gap-3">
         <Button
           data-testid="assign-group-organizer"
@@ -410,7 +409,7 @@ function PartnerCoordinatorControls({
             assign.mutate();
           }}
         >
-          {tPart("groupOrganizer.assign")}
+          {t("groupOrganizer.assign")}
         </Button>
         <Button
           data-testid="revoke-group-organizer"
@@ -420,13 +419,13 @@ function PartnerCoordinatorControls({
           onClick={async () => {
             if (
               await confirm({
-                title: t("revokeOrganizer.title"),
-                description: t("revokeOrganizer.description", {
+                title: t("confirmations.revokeOrganizer.title"),
+                description: t("confirmations.revokeOrganizer.description", {
                   user:
                     eligible.find((entry) => entry.userId === targetUserId)
                       ?.name ?? targetUserId,
                 }),
-                confirmText: t("revokeOrganizer.execute"),
+                confirmText: t("confirmations.revokeOrganizer.execute"),
                 isDestructive: true,
               })
             ) {
@@ -435,12 +434,14 @@ function PartnerCoordinatorControls({
             }
           }}
         >
-          {revoke.isPending ? t("pending") : tPart("groupOrganizer.revoke")}
+          {revoke.isPending
+            ? t("confirmations.pending")
+            : t("groupOrganizer.revoke")}
         </Button>
       </div>
       {feedback && (
         <Alert>
-          <AlertTitle>{tPart("groupOrganizer.update")}</AlertTitle>
+          <AlertTitle>{t("groupOrganizer.update")}</AlertTitle>
           <AlertDescription>{feedback}</AlertDescription>
         </Alert>
       )}
@@ -462,16 +463,16 @@ function ParticipantInvitations({
   closeInvitation: { isPending: boolean; mutate: (id: string) => void };
   entryDenial: string | undefined;
 }) {
-  const tPart = useTranslations("participations");
+  const t = useTranslations("participations");
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{tPart("invitations.title")}</CardTitle>
-        <CardDescription>{tPart("invitations.description")}</CardDescription>
+        <CardTitle>{t("invitations.title")}</CardTitle>
+        <CardDescription>{t("invitations.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         {data.invitations.length === 0 ? (
-          <p>{tPart("invitations.empty")}</p>
+          <p>{t("invitations.empty")}</p>
         ) : (
           <ul className="divide-y">
             {data.invitations.map((invitation) => (
@@ -484,8 +485,8 @@ function ParticipantInvitations({
                 <span>{invitation.email}</span>
                 <Badge variant="secondary">
                   {invitation.status === "pending"
-                    ? tPart("invitations.pending")
-                    : tPart("invitations.status", { status: invitation.status })}
+                    ? t("invitations.pending")
+                    : t("invitations.status", { status: invitation.status })}
                 </Badge>
                 {entryAccess.permitted && invitation.status === "pending" && (
                   <Button
@@ -497,7 +498,7 @@ function ParticipantInvitations({
                     }
                     onClick={() => reissueInvitation.mutate(invitation.email)}
                   >
-                    {tPart("invitations.reissue")} {invitation.email}
+                    {t("invitations.reissue")} {invitation.email}
                   </Button>
                 )}
                 {entryAccess.permitted && invitation.status === "pending" && (
@@ -512,7 +513,7 @@ function ParticipantInvitations({
                       closeInvitation.mutate(invitation.invitationId)
                     }
                   >
-                    {tPart("invitations.close")} {invitation.email}
+                    {t("invitations.close")} {invitation.email}
                   </Button>
                 )}
               </li>
@@ -520,7 +521,7 @@ function ParticipantInvitations({
           </ul>
         )}
         <p className="mt-4 text-sm text-muted-foreground">
-          {tPart("invitations.statusHint")}
+          {t("invitations.statusHint")}
         </p>
         {entryDenial && (
           <p className="mt-2 text-sm text-muted-foreground">{entryDenial}</p>
@@ -545,16 +546,16 @@ function ParticipantRegistrationLinks({
   entryDenial: string | undefined;
   setEntryFeedback: (value: undefined) => void;
 }) {
-  const tPart = useTranslations("participations");
+  const t = useTranslations("participations");
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{tPart("links.title")}</CardTitle>
-        <CardDescription>{tPart("links.description")}</CardDescription>
+        <CardTitle>{t("links.title")}</CardTitle>
+        <CardDescription>{t("links.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         {data.registrationLinks.length === 0 ? (
-          <p>{tPart("links.empty")}</p>
+          <p>{t("links.empty")}</p>
         ) : (
           <ul className="divide-y">
             {data.registrationLinks.map((link) => (
@@ -565,10 +566,10 @@ function ParticipantRegistrationLinks({
                 className="flex flex-wrap items-center gap-3 py-3"
               >
                 <span>
-                  {tPart("links.link")} {link.id}
+                  {t("links.link")} {link.id}
                 </span>
                 <Badge variant="secondary">
-                  {link.enabled ? tPart("links.open") : tPart("links.closed")}
+                  {link.enabled ? t("links.open") : t("links.closed")}
                 </Badge>
                 {entryAccess.permitted && link.enabled && (
                   <Button
@@ -578,7 +579,7 @@ function ParticipantRegistrationLinks({
                     disabled={closeLink.isPending || reopenLink.isPending}
                     onClick={() => closeLink.mutate(link.id)}
                   >
-                    {tPart("links.close")} {link.id}
+                    {t("links.close")} {link.id}
                   </Button>
                 )}
                 {entryAccess.permitted && !link.enabled && (
@@ -592,7 +593,7 @@ function ParticipantRegistrationLinks({
                       reopenLink.mutate(link.id);
                     }}
                   >
-                    {tPart("links.reopen")} {link.id}
+                    {t("links.reopen")} {link.id}
                   </Button>
                 )}
               </li>
@@ -629,15 +630,14 @@ function JoinedParticipants({
   confirm: ReturnType<typeof useConfirmDialog>["confirm"];
   setFeedback: (value: undefined) => void;
 }) {
-  const tPart = useTranslations("participations");
-  const t = useTranslations("projects.confirmations");
+  const t = useTranslations("participations");
   return (
     <Card data-testid="joined-participants">
       <CardHeader>
-        <CardTitle>{tPart("joined.title")}</CardTitle>
+        <CardTitle>{t("joined.title")}</CardTitle>
         {data.participations.length > 0 && (
           <CardDescription>
-            {tPart("joined.count", {
+            {t("joined.count", {
               count: data.participations.length,
               project: data.projectName,
             })}
@@ -648,7 +648,7 @@ function JoinedParticipants({
         {data.participations.length === 0 ? (
           <Empty data-testid="joined-participants-empty">
             <EmptyHeader>
-              <EmptyTitle>{tPart("joined.empty")}</EmptyTitle>
+              <EmptyTitle>{t("joined.empty")}</EmptyTitle>
             </EmptyHeader>
           </Empty>
         ) : (
@@ -662,7 +662,7 @@ function JoinedParticipants({
                 <div className="flex flex-wrap items-center gap-3">
                   <strong>{participant.displayName}</strong>
                   <Badge variant="secondary" data-participation-state="joined">
-                    {tPart("joined.joined")}
+                    {t("joined.joined")}
                   </Badge>
                 </div>
                 {participant.email && (
@@ -671,9 +671,9 @@ function JoinedParticipants({
                   </p>
                 )}
                 <p className="flex flex-wrap items-center gap-3 text-sm">
-                  <span>{tPart("joined.country")}</span>
+                  <span>{t("joined.country")}</span>
                   <Badge variant="secondary">
-                    {participant.country ?? tPart("details.notSet")}
+                    {participant.country ?? t("details.notSet")}
                   </Badge>
                 </p>
                 {/* Editing belongs on the details page, never in a list row (ADR-0016). */}
@@ -682,7 +682,7 @@ function JoinedParticipants({
                   href={`/partnerships/${encodeURIComponent(partnershipId)}/participants/${encodeURIComponent(participant.id)}`}
                   data-testid={`participant-details-${participant.id}`}
                 >
-                  {tPart("joined.detailsFor")} {participant.displayName}
+                  {t("joined.detailsFor")} {participant.displayName}
                 </Link>
                 {entryAccess.permitted && (
                   <Button
@@ -693,11 +693,16 @@ function JoinedParticipants({
                     onClick={async () => {
                       if (
                         await confirm({
-                          title: t("removeParticipation.title"),
-                          description: t("removeParticipation.description", {
-                            participant: participant.displayName,
-                          }),
-                          confirmText: t("removeParticipation.execute"),
+                          title: t("confirmations.removeParticipation.title"),
+                          description: t(
+                            "confirmations.removeParticipation.description",
+                            {
+                              participant: participant.displayName,
+                            },
+                          ),
+                          confirmText: t(
+                            "confirmations.removeParticipation.execute",
+                          ),
                           isDestructive: true,
                         })
                       ) {
@@ -708,8 +713,8 @@ function JoinedParticipants({
                   >
                     {removeParticipation.isPending &&
                     removeParticipation.variables === participant.id
-                      ? t("pending")
-                      : tPart("joined.removeFor", {
+                      ? t("confirmations.pending")
+                      : t("joined.removeFor", {
                           name: participant.displayName,
                         })}
                   </Button>
@@ -728,7 +733,7 @@ export function ParticipantCoordination({
 }: {
   partnershipId: string;
 }) {
-  const tPart = useTranslations("participations");
+  const t = useTranslations("participations");
   const { confirm, dialog } = useConfirmDialog();
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(
@@ -911,21 +916,21 @@ export function ParticipantCoordination({
     <section
       data-testid="project-participations"
       className="space-y-6"
-      aria-label={tPart("page.label")}
+      aria-label={t("page.label")}
       data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
     >
       {dialog}
       <p className="text-sm text-muted-foreground">
-        {tPart("page.project")} {data.projectName}
+        {t("page.project")} {data.projectName}
       </p>
       {entryAccess.permitted && (
         <Card>
           <CardHeader>
-            <CardTitle>{tPart("page.addUser")}</CardTitle>
+            <CardTitle>{t("page.addUser")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {tPart("page.addUserDescription")}
+              {t("page.addUserDescription")}
             </p>
             <form
               className="flex flex-wrap items-end gap-3"
@@ -937,10 +942,10 @@ export function ParticipantCoordination({
             >
               <div className="space-y-2" data-testid="participation-user-picker">
                 <span className="text-sm font-medium">
-                  {tPart("page.registeredUser")}
+                  {t("page.registeredUser")}
                 </span>
                 <EntityCombobox
-                  label={tPart("page.registeredUserLabel")}
+                  label={t("page.registeredUserLabel")}
                   value={userId}
                   onChange={setUserId}
                   search={searchOnboarded}
@@ -953,7 +958,7 @@ export function ParticipantCoordination({
                 disabled={create.isPending || !userId}
                 type="submit"
               >
-                {create.isPending ? tPart("page.adding") : tPart("page.add")}
+                {create.isPending ? t("page.adding") : t("page.add")}
               </Button>
             </form>
             {feedback && (
@@ -980,7 +985,7 @@ export function ParticipantCoordination({
       {entryAccess.permitted && (
         <Card>
           <CardHeader>
-            <CardTitle>{tPart("page.groupOrganizers")}</CardTitle>
+            <CardTitle>{t("page.groupOrganizers")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
@@ -991,8 +996,8 @@ export function ParticipantCoordination({
               onClick={() => setCoordinatorsOpen((open) => !open)}
             >
               {coordinatorsOpen
-                ? tPart("page.hideOrganizers")
-                : tPart("page.manageOrganizers")}
+                ? t("page.hideOrganizers")
+                : t("page.manageOrganizers")}
             </Button>
             {coordinatorsOpen && (
               <PartnerCoordinatorControls partnershipId={partnershipId} />
@@ -1002,10 +1007,8 @@ export function ParticipantCoordination({
       )}
       <Card>
         <CardHeader>
-          <CardTitle>{tPart("page.reviewTasks")}</CardTitle>
-          <CardDescription>
-            {tPart("page.reviewTasksDescription")}
-          </CardDescription>
+          <CardTitle>{t("page.reviewTasks")}</CardTitle>
+          <CardDescription>{t("page.reviewTasksDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
@@ -1015,7 +1018,7 @@ export function ParticipantCoordination({
             onClick={() => setReviewsOpen((open) => !open)}
             aria-expanded={reviewsOpen}
           >
-            {reviewsOpen ? tPart("page.hideReviews") : tPart("page.showReviews")}
+            {reviewsOpen ? t("page.hideReviews") : t("page.showReviews")}
           </Button>
           {reviewsOpen && (
             <ReviewTasks
@@ -1027,10 +1030,8 @@ export function ParticipantCoordination({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>{tPart("page.invitationsTitle")}</CardTitle>
-          <CardDescription>
-            {tPart("page.invitationsDescription")}
-          </CardDescription>
+          <CardTitle>{t("page.invitationsTitle")}</CardTitle>
+          <CardDescription>{t("page.invitationsDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {entryDenial ? (
@@ -1047,7 +1048,7 @@ export function ParticipantCoordination({
               >
                 <div className="space-y-2">
                   <Label htmlFor="participant-invitation-email">
-                    {tPart("page.inviteeEmail")}
+                    {t("page.inviteeEmail")}
                   </Label>
                   <input
                     id="participant-invitation-email"
@@ -1064,7 +1065,7 @@ export function ParticipantCoordination({
                   disabled={issueInvitation.isPending}
                   type="submit"
                 >
-                  {tPart("page.sendInvitation")}
+                  {t("page.sendInvitation")}
                 </Button>
               </form>
               <Button
@@ -1077,12 +1078,12 @@ export function ParticipantCoordination({
                   createLink.mutate();
                 }}
               >
-                {tPart("page.createLink")}
+                {t("page.createLink")}
               </Button>
               {createdLink?.partnershipId === partnershipId && (
                 <div className="space-y-2">
                   <Label htmlFor="new-participant-link">
-                    {tPart("page.newLink")}
+                    {t("page.newLink")}
                   </Label>
                   <input
                     id="new-participant-link"

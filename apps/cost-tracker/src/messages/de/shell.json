@@ -19,7 +19,9 @@
     },
     "account": {
       "openMenu": "Kontomenü für {name} öffnen",
-      "settings": "Kontoeinstellungen"
+      "settings": "Kontoeinstellungen",
+      "signOut": "Abmelden",
+      "signingOut": "Wird ausgeführt…"
     },
     "themeSwitcher": {
       "label": "Farbschema",

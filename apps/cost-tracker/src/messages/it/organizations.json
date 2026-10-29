@@ -35,7 +35,21 @@
       "pendingDescription": "Cancel an invitation to revoke it before it is accepted.",
       "noPending": "No pending invitations.",
       "noRole": "No role",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "emailAddress": "Email address",
+        "role": "Role",
+        "roles": "Roles",
+        "actions": "Actions",
+        "members": "Members",
+        "use": "Use",
+        "saving": "Saving…",
+        "send": "Send",
+        "loadingOrganization": "Loading Organization",
+        "loadingOrganizationStaff": "Loading Organization staff"
+      }
     },
     "settings": {
       "title": "{organization} settings",

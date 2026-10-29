@@ -2,14 +2,14 @@ import { connection } from "next/server";
 
 import { AppNavigation } from "@/components/app-navigation";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
+import { SelectOrganization } from "@/features/authentication/components/select-organization";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import {
   canManageOrganization,
   canViewPartnerNetwork,
 } from "@/features/organizations/access";
-import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
-import { SelectOrganization } from "@/features/organizations/components/select-organization";
 import { resolveStaffOrganizationContext } from "@/features/organizations/staff-eligibility";
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession } from "@/lib/session";

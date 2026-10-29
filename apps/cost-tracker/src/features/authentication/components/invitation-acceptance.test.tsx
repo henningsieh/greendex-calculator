@@ -38,7 +38,7 @@ vi.mock("@/features/authentication/components/sign-out-button", () => ({
   ),
 }));
 
-import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
+import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 
 const returnTo = "/accept-invitation/invite-1";
 const invitation = {

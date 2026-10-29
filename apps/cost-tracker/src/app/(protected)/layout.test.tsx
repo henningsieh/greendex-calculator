@@ -62,7 +62,7 @@ vi.mock("@/features/authentication/components/no-organization-access", () => ({
   NoOrganizationAccess: () => <p>Create Organization recovery</p>,
 }));
 
-vi.mock("@/features/organizations/components/select-organization", () => ({
+vi.mock("@/features/authentication/components/select-organization", () => ({
   SelectOrganization: () => <p>Select Organization recovery</p>,
 }));
 

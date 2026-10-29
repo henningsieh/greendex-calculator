@@ -346,7 +346,8 @@
         "**/*.stories.*"
       ],
       "rules": {
-        "greendex/no-hardcoded-ui-copy": "error"
+        "greendex/no-hardcoded-ui-copy": "error",
+        "greendex/one-translator-source": "error"
       }
     }
   ],

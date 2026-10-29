@@ -61,15 +61,24 @@
       "closing": "Sluiten…",
       "closeLink": "Instellingslink voor partnerorganisatie sluiten",
       "completing": "Voltooien…",
-      "complete": "Instelling voltooien"
-    }
-  },
-  "partnerOrganizations": {
-    "page": {
-      "eyebrow": "Project network",
-      "title": "Partner Organizations",
-      "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
-      "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+      "complete": "Instelling voltooien",
+      "invitationRejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder."
+    },
+    "partnerOrganizations": {
+      "page": {
+        "eyebrow": "Project network",
+        "title": "Partner Organizations",
+        "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
+        "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+      }
+    },
+    "confirmations": {
+      "pending": "Bezig…",
+      "removePartnership": {
+        "title": "Projectpartnerschap verwijderen?",
+        "description": "{organization} uit {project} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "execute": "Projectpartnerschap verwijderen"
+      }
     }
   }
 }

@@ -35,7 +35,21 @@
       "pendingDescription": "Storniere eine Einladung, um sie vor der Annahme zu widerrufen.",
       "noPending": "Keine ausstehenden Einladungen.",
       "noRole": "Keine Rolle",
-      "cancel": "Stornieren"
+      "cancel": "Stornieren",
+      "columns": {
+        "name": "Name",
+        "email": "E-Mail",
+        "emailAddress": "E-Mail-Adresse",
+        "role": "Rolle",
+        "roles": "Rollen",
+        "actions": "Aktionen",
+        "members": "Mitglieder",
+        "use": "Verwenden",
+        "saving": "Speichern…",
+        "send": "Senden",
+        "loadingOrganization": "Organisation wird geladen",
+        "loadingOrganizationStaff": "Organisationsteam wird geladen"
+      }
     },
     "settings": {
       "title": "{organization} Einstellungen",

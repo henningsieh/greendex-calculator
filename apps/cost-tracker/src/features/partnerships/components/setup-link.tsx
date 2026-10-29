@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
+import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import {
   OnboardingInputSchema,
@@ -31,7 +32,6 @@ import {
   type OnboardingInput,
 } from "@/features/authentication/onboarding-decision";
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
-import { InvitationAcceptance } from "@/features/organizations/components/invitation-acceptance";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { authClient } from "@/lib/auth-client";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
@@ -378,7 +378,7 @@ function SetupOrganizationForm({
   pending: boolean;
   onConsume: (choice: SetupChoice) => Promise<void>;
 }) {
-  const tSetup = useTranslations("partnerships.setup");
+  const t = useTranslations("partnerships.setup");
   const create = decision.availableActions.some(
     (action) => action.kind === "create-organization",
   );
@@ -406,7 +406,7 @@ function SetupOrganizationForm({
       <FieldGroup>
         {create && owned && (
           <fieldset disabled={pending} className="flex flex-col gap-3">
-            <legend>{tSetup("chooseOrganization")}</legend>
+            <legend>{t("chooseOrganization")}</legend>
             <label>
               <input
                 type="radio"
@@ -414,7 +414,7 @@ function SetupOrganizationForm({
                 checked={!existing}
                 onChange={() => setKind("new")}
               />{" "}
-              {tSetup("newOrganization")}
+              {t("newOrganization")}
             </label>
             <label>
               <input
@@ -424,15 +424,15 @@ function SetupOrganizationForm({
                 data-testid="setup-existing-organization"
                 onChange={() => setKind("existing")}
               />{" "}
-              {tSetup("existingOrganization")}
+              {t("existingOrganization")}
             </label>
           </fieldset>
         )}
         {existing && owned ? (
           <Field data-testid="setup-organization-picker">
-            <FieldLabel>{tSetup("organization")}</FieldLabel>
+            <FieldLabel>{t("organization")}</FieldLabel>
             <EntityCombobox
-              label={tSetup("organization")}
+              label={t("organization")}
               disabled={pending}
               value={organizationId}
               onChange={setOrganizationId}
@@ -443,7 +443,7 @@ function SetupOrganizationForm({
           <>
             <Field>
               <FieldLabel htmlFor="setup-name">
-                {tSetup("newOrganizationName")}
+                {t("newOrganizationName")}
               </FieldLabel>
               <Input
                 id="setup-name"
@@ -458,7 +458,7 @@ function SetupOrganizationForm({
             </Field>
             <Field>
               <FieldLabel htmlFor="setup-country">
-                {tSetup("organizationCountry")}
+                {t("organizationCountry")}
               </FieldLabel>
               <select
                 id="setup-country"
@@ -472,7 +472,7 @@ function SetupOrganizationForm({
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               >
                 <option value="" disabled>
-                  {tSetup("countryPlaceholder")}
+                  {t("countryPlaceholder")}
                 </option>
                 {EU_COUNTRIES.map(({ code }) => (
                   <option key={code} value={code}>
@@ -493,7 +493,7 @@ function SetupOrganizationForm({
           }
           type="submit"
         >
-          {pending ? tSetup("completing") : tSetup("complete")}
+          {pending ? t("completing") : t("complete")}
         </Button>
       </FieldGroup>
     </form>
@@ -513,12 +513,12 @@ function SetupOrganizationAccess({
   select: (id: string) => Promise<void>;
   error: SetupError | undefined;
 }) {
-  const tSetup = useTranslations("partnerships.setup");
+  const t = useTranslations("partnerships.setup");
   return decision?.nextStep === "select-organization" ? (
     <>
       <Alert variant="info" data-relationship="project-partnership">
-        <AlertTitle>{tSetup("created")}</AlertTitle>
-        <AlertDescription>{tSetup("selectOrganization")}</AlertDescription>
+        <AlertTitle>{t("created")}</AlertTitle>
+        <AlertDescription>{t("selectOrganization")}</AlertDescription>
       </Alert>
       {decision.availableActions[0].organizations.map((organization) => (
         <Button
@@ -527,7 +527,7 @@ function SetupOrganizationAccess({
           disabled={pending}
           onClick={() => void select(organization.id)}
         >
-          {tSetup("useOrganization")}
+          {t("useOrganization")}
         </Button>
       ))}
     </>
@@ -538,17 +538,17 @@ function SetupOrganizationAccess({
       prefetch={false}
       href={decision.availableActions[0].destination}
     >
-      {tSetup("openPartnerProject")}
+      {t("openPartnerProject")}
     </Link>
   ) : decision?.nextStep === "authenticate" ? (
     <Link
       className={buttonVariants()}
       href={`/login?next=${encodeURIComponent(decision.availableActions[0].returnTo ?? returnTo)}`}
     >
-      {tSetup("signIn")}
+      {t("signIn")}
     </Link>
   ) : !error ? (
-    <output>{tSetup("checking")}</output>
+    <output>{t("checking")}</output>
   ) : null;
 }
 
@@ -562,8 +562,7 @@ export function SetupLinkRecipient({
   userId: string;
 }) {
   const router = useRouter();
-  const tSetup = useTranslations("partnerships.setup");
-  const t = useTranslations("onboarding");
+  const t = useTranslations("partnerships.setup");
   const [rejectedOrganization, setRejectedOrganization] = useState<string>();
   const queryClient = useQueryClient();
   const [decision, setDecision] = useState<OnboardingDecision>();
@@ -748,14 +747,14 @@ export function SetupLinkRecipient({
     <Card>
       <CardHeader>
         <CardTitle>
-          <h1>{tSetup("partnerSetup")}</h1>
+          <h1>{t("partnerSetup")}</h1>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-5" aria-busy={pending}>
-        <p>{tSetup("continueEmail")}</p>
+        <p>{t("continueEmail")}</p>
         {rejectedOrganization && (
           <output data-testid="setup-invitation-rejected">
-            {t("invitation.rejected", { organization: rejectedOrganization })}
+            {t("invitationRejected", { organization: rejectedOrganization })}
           </output>
         )}
         {decision?.nextStep === "resolve-invitation" ? (
@@ -776,15 +775,15 @@ export function SetupLinkRecipient({
         ) : decision?.nextStep === "bind-partnership" ? (
           <>
             <Alert variant="info">
-              <AlertTitle>{tSetup("retained")}</AlertTitle>
-              <AlertDescription>{tSetup("retainedDescription")}</AlertDescription>
+              <AlertTitle>{t("retained")}</AlertTitle>
+              <AlertDescription>{t("retainedDescription")}</AlertDescription>
             </Alert>
             <Button
               data-testid="retry-retained-setup"
               disabled={pending}
               onClick={() => void consume()}
             >
-              {tSetup("retryRetained")}
+              {t("retryRetained")}
             </Button>
           </>
         ) : decision?.nextStep === "setup-recovery" ? (
@@ -795,7 +794,7 @@ export function SetupLinkRecipient({
               disabled={pending}
               onClick={recheck}
             >
-              {tSetup("inspect")}
+              {t("inspect")}
             </Button>
           </>
         ) : (
@@ -815,7 +814,7 @@ export function SetupLinkRecipient({
               disabled={pending}
               onClick={recheck}
             >
-              {tSetup("inspect")}
+              {t("inspect")}
             </Button>
           </>
         )}

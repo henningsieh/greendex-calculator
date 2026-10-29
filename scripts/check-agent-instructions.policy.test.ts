@@ -144,14 +144,16 @@ describe("stale guidance matcher", () => {
 });
 
 describe("cost-tracker i18n instruction policy", () => {
-  it("covers the app-owned catalogue, routing, request config and locale layouts", () => {
+  it("covers the app-owned catalogue, routing, layouts and translation consumers", () => {
     const scopes = expectedScopes["i18n.md"].split(",");
     for (const scope of [
-      "apps/cost-tracker/src/messages/*.json",
+      "apps/cost-tracker/src/messages/**/*.json",
       "apps/cost-tracker/src/lib/i18n/**/*.ts",
       "apps/cost-tracker/src/proxy.ts",
       "apps/cost-tracker/src/app/**/page.tsx",
       "apps/cost-tracker/src/app/**/layout.tsx",
+      "apps/cost-tracker/src/features/**/*.tsx",
+      "apps/cost-tracker/src/components/**/*.tsx",
     ])
       expect(scopes).toContain(scope);
     for (const file of [

@@ -81,9 +81,7 @@ export function OrganizationTeam({
   currentUserEmail: string;
 }) {
   const queryClient = useQueryClient();
-  const t = useTranslations("organizations.confirmations");
-  const tTeam = useTranslations("organizations.team");
-  const tCommon = useTranslations("common");
+  const t = useTranslations("organizations");
   const { confirm, dialog } = useConfirmDialog();
   const [members, pending] = useSuspenseQueries({
     queries: [membersOptions, pendingOptions],
@@ -128,7 +126,7 @@ export function OrganizationTeam({
       setRole(ORGANIZATION_ROLES.OrganizationAdmin);
       setFormError("");
       toast.add({
-        title: tTeam("invitationSent", { email: result.email }),
+        title: t("team.invitationSent", { email: result.email }),
         type: "success",
       });
       await refresh();
@@ -143,7 +141,7 @@ export function OrganizationTeam({
       orpc.organizations.cancelInvitation({ invitationId }),
     onSuccess: async () => {
       setFormError("");
-      toast.add({ title: tTeam("invitationCancelled"), type: "success" });
+      toast.add({ title: t("team.invitationCancelled"), type: "success" });
       await refresh();
     },
     onError: (error) => {
@@ -170,23 +168,23 @@ export function OrganizationTeam({
       {dialog}
       {error && (
         <Alert variant="destructive">
-          <AlertTitle>{tTeam("unavailable")}</AlertTitle>
+          <AlertTitle>{t("team.unavailable")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <Card data-testid="staff-members">
         <CardHeader>
-          <CardTitle>{tTeam("membersTitle")}</CardTitle>
-          <CardDescription>{tTeam("membersDescription")}</CardDescription>
+          <CardTitle>{t("team.membersTitle")}</CardTitle>
+          <CardDescription>{t("team.membersDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{tCommon("name")}</TableHead>
-                <TableHead>{tCommon("email")}</TableHead>
-                <TableHead>{tCommon("roles")}</TableHead>
+                <TableHead>{t("team.columns.name")}</TableHead>
+                <TableHead>{t("team.columns.email")}</TableHead>
+                <TableHead>{t("team.columns.roles")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -203,7 +201,7 @@ export function OrganizationTeam({
               ))}
               {memberRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3}>{tTeam("noMembers")}</TableCell>
+                  <TableCell colSpan={3}>{t("team.noMembers")}</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -213,13 +211,15 @@ export function OrganizationTeam({
 
       <Card data-testid="staff-invite">
         <CardHeader>
-          <CardTitle>{tTeam("inviteTitle")}</CardTitle>
-          <CardDescription>{tTeam("inviteDescription")}</CardDescription>
+          <CardTitle>{t("team.inviteTitle")}</CardTitle>
+          <CardDescription>{t("team.inviteDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 sm:grid-cols-3" onSubmit={sendInvite}>
             <div className="space-y-2 sm:col-span-1">
-              <Label htmlFor="staff-invite-email">{tCommon("email")}</Label>
+              <Label htmlFor="staff-invite-email">
+                {t("team.columns.email")}
+              </Label>
               <Input
                 id="staff-invite-email"
                 data-testid="staff-invite-email"
@@ -230,7 +230,7 @@ export function OrganizationTeam({
               />
             </div>
             <div className="space-y-2 sm:col-span-1">
-              <Label htmlFor="staff-invite-role">{tCommon("role")}</Label>
+              <Label htmlFor="staff-invite-role">{t("team.columns.role")}</Label>
               <Select
                 value={role}
                 onValueChange={(value) => setRole(value as StaffRole)}
@@ -253,7 +253,7 @@ export function OrganizationTeam({
                 disabled={invite.isPending || !email}
                 type="submit"
               >
-                {invite.isPending ? tTeam("sending") : tTeam("sendInvitation")}
+                {invite.isPending ? t("team.sending") : t("team.sendInvitation")}
               </Button>
             </div>
           </form>
@@ -262,17 +262,17 @@ export function OrganizationTeam({
 
       <Card>
         <CardHeader>
-          <CardTitle>{tTeam("pendingTitle")}</CardTitle>
-          <CardDescription>{tTeam("pendingDescription")}</CardDescription>
+          <CardTitle>{t("team.pendingTitle")}</CardTitle>
+          <CardDescription>{t("team.pendingDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{tCommon("email")}</TableHead>
-                <TableHead>{tCommon("role")}</TableHead>
+                <TableHead>{t("team.columns.email")}</TableHead>
+                <TableHead>{t("team.columns.role")}</TableHead>
                 <TableHead>
-                  <span className="sr-only">{tCommon("actions")}</span>
+                  <span className="sr-only">{t("team.columns.actions")}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -283,7 +283,7 @@ export function OrganizationTeam({
                   data-testid={`staff-invitation-${entry.id}`}
                 >
                   <TableCell>{entry.email}</TableCell>
-                  <TableCell>{entry.role ?? tTeam("noRole")}</TableCell>
+                  <TableCell>{entry.role ?? t("team.noRole")}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       data-testid={`cancel-staff-invitation-${entry.id}`}
@@ -291,11 +291,16 @@ export function OrganizationTeam({
                       onClick={async () => {
                         if (
                           await confirm({
-                            title: t("cancelInvitation.title"),
-                            description: t("cancelInvitation.description", {
-                              email: entry.email,
-                            }),
-                            confirmText: t("cancelInvitation.execute"),
+                            title: t("confirmations.cancelInvitation.title"),
+                            description: t(
+                              "confirmations.cancelInvitation.description",
+                              {
+                                email: entry.email,
+                              },
+                            ),
+                            confirmText: t(
+                              "confirmations.cancelInvitation.execute",
+                            ),
                             isDestructive: true,
                           })
                         ) {
@@ -309,15 +314,15 @@ export function OrganizationTeam({
                       variant="outline"
                     >
                       {pendingInvitationIds.has(entry.id)
-                        ? t("pending")
-                        : tTeam("cancel")}
+                        ? t("confirmations.pending")
+                        : t("team.cancel")}
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
               {invitationRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3}>{tTeam("noPending")}</TableCell>
+                  <TableCell colSpan={3}>{t("team.noPending")}</TableCell>
                 </TableRow>
               )}
             </TableBody>

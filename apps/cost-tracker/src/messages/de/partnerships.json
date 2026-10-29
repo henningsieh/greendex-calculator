@@ -61,15 +61,24 @@
       "closing": "Wird geschlossen…",
       "closeLink": "Einrichtungslink der Partnerorganisation schließen",
       "completing": "Wird abgeschlossen…",
-      "complete": "Einrichtung abschließen"
-    }
-  },
-  "partnerOrganizations": {
-    "page": {
-      "eyebrow": "Projektnetzwerk",
-      "title": "Partnerorganisationen",
-      "restricted": "Die Verwaltung von Partnerorganisationen ist für das Personal der Hosting-Organisation verfügbar. Koordinator:innen arbeiten aus ihren zugewiesenen Projekten.",
-      "description": "Erstelle Setup-Links für gehostete Projekte oder weise bestehende Partnerorganisationen zu, wenn deine Rolle es erlaubt."
+      "complete": "Einrichtung abschließen",
+      "invitationRejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten."
+    },
+    "partnerOrganizations": {
+      "page": {
+        "eyebrow": "Projektnetzwerk",
+        "title": "Partnerorganisationen",
+        "restricted": "Die Verwaltung von Partnerorganisationen ist für das Personal der Hosting-Organisation verfügbar. Koordinator:innen arbeiten aus ihren zugewiesenen Projekten.",
+        "description": "Erstelle Setup-Links für gehostete Projekte oder weise bestehende Partnerorganisationen zu, wenn deine Rolle es erlaubt."
+      }
+    },
+    "confirmations": {
+      "pending": "Wird ausgeführt…",
+      "removePartnership": {
+        "title": "Projektpartnerschaft entfernen?",
+        "description": "{organization} aus {project} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektpartnerschaft entfernen"
+      }
     }
   }
 }

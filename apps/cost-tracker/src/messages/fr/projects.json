@@ -3,22 +3,7 @@
     "confirmations": {
       "cancel": "Annuler",
       "close": "Fermer",
-      "pending": "Traitement…",
-      "removePartnership": {
-        "title": "Supprimer le Partenariat de Projet ?",
-        "description": "Supprimer {organization} de {project} ? Cette suppression est irréversible.",
-        "execute": "Supprimer le Partenariat de Projet"
-      },
-      "removeParticipation": {
-        "title": "Supprimer la Participation au Projet ?",
-        "description": "Supprimer la Participation au Projet de {participant} ? Cette suppression est irréversible.",
-        "execute": "Supprimer la Participation au Projet"
-      },
-      "revokeOrganizer": {
-        "title": "Révoquer l’affectation d’Organisateur de Groupe ?",
-        "description": "Révoquer l’affectation d’Organisateur de Groupe de {user} ? Les rôles d’adhésion à l’Organisation ne changeront pas.",
-        "execute": "Révoquer l’affectation"
-      }
+      "pending": "Traitement…"
     },
     "page": {
       "eyebrow": "Project workspace",

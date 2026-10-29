@@ -32,7 +32,7 @@ export const expectedScopes: Record<string, string> = {
   "email.md":
     "packages/email/src/**/*.ts,packages/email/src/**/*.tsx,apps/calculator/src/lib/email.ts",
   "i18n.md":
-    "packages/i18n/src/**/*.ts,apps/calculator/src/messages/*.json,packages/config/src/languages.ts,apps/calculator/src/lib/i18n/**/*.ts,apps/calculator/src/proxy.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/app/sitemap.ts,apps/cost-tracker/src/messages/*.json,apps/cost-tracker/src/lib/i18n/**/*.ts,apps/cost-tracker/src/proxy.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx",
+    "packages/i18n/src/**/*.ts,apps/calculator/src/messages/*.json,packages/config/src/languages.ts,apps/calculator/src/lib/i18n/**/*.ts,apps/calculator/src/proxy.ts,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/calculator/src/app/sitemap.ts,apps/cost-tracker/src/messages/**/*.json,apps/cost-tracker/src/lib/i18n/**/*.ts,apps/cost-tracker/src/proxy.ts,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx,apps/cost-tracker/src/features/**/*.tsx,apps/cost-tracker/src/components/**/*.tsx",
   "nuqs.md":
     "apps/calculator/src/components/providers/nuqs-adapter.tsx,apps/calculator/src/features/**/components/**/*.tsx,apps/calculator/src/app/**/page.tsx,apps/calculator/src/app/**/layout.tsx,apps/cost-tracker/src/components/nuqs-provider.tsx,apps/cost-tracker/src/features/**/list-query-options.ts,apps/cost-tracker/src/features/**/components/**/*.tsx,apps/cost-tracker/src/app/**/page.tsx,apps/cost-tracker/src/app/**/layout.tsx",
   "orpc.md":

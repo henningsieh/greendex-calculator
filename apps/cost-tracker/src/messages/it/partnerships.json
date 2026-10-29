@@ -61,15 +61,24 @@
       "closing": "Chiusura…",
       "closeLink": "Chiudi link di configurazione dell’organizzazione partner",
       "completing": "Completamento…",
-      "complete": "Completa configurazione"
-    }
-  },
-  "partnerOrganizations": {
-    "page": {
-      "eyebrow": "Project network",
-      "title": "Partner Organizations",
-      "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
-      "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+      "complete": "Completa configurazione",
+      "invitationRejected": "Hai rifiutato l’invito a {organization}. Il tuo accesso attuale è stato verificato di nuovo. Segui il prossimo passo qui sotto."
+    },
+    "partnerOrganizations": {
+      "page": {
+        "eyebrow": "Project network",
+        "title": "Partner Organizations",
+        "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
+        "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+      }
+    },
+    "confirmations": {
+      "pending": "Operazione in corso…",
+      "removePartnership": {
+        "title": "Rimuovere il Partenariato di Progetto?",
+        "description": "Rimuovere {organization} da {project}? Questa rimozione è irreversibile.",
+        "execute": "Rimuovi Partenariato di Progetto"
+      }
     }
   }
 }

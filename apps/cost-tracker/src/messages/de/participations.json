@@ -124,45 +124,58 @@
       "coordinateDescription": "Koordiniere Teilnehmende für diese Projektpartnerschaft.",
       "participantDetails": "Teilnehmendendetails",
       "participantDetailsDescription": "Lies diese Project Participation und korrigiere die Daten, die du korrigieren darfst."
-    }
-  },
-  "participantOnboarding": {
-    "agreementUnavailable": {
-      "title": "Teilnehmenden-Agreement ist noch nicht verfügbar",
-      "description": "Beitritt und Teilnehmendenaktionen sind pausiert, bis das freigegebene Agreement veröffentlicht ist."
     },
-    "agreement": {
-      "label": "EU–Erasmus-Teilnehmenden-Agreement (",
-      "aria": "Text des Teilnehmenden-Agreements",
-      "accept": "Ich akzeptiere das aktuelle Teilnehmenden-Agreement"
+    "participantOnboarding": {
+      "agreementUnavailable": {
+        "title": "Teilnehmenden-Agreement ist noch nicht verfügbar",
+        "description": "Beitritt und Teilnehmendenaktionen sind pausiert, bis das freigegebene Agreement veröffentlicht ist."
+      },
+      "agreement": {
+        "label": "EU–Erasmus-Teilnehmenden-Agreement (",
+        "aria": "Text des Teilnehmenden-Agreements",
+        "accept": "Ich akzeptiere das aktuelle Teilnehmenden-Agreement"
+      },
+      "join": {
+        "title": "Als Projektteilnehmer:in beitreten",
+        "description": "Dein Konto muss eine verifizierte E-Mail-Adresse verwenden. Der Server prüft die Einladung oder den Registrierungslink.",
+        "invitationRequiredTitle": "Vollständige Teilnehmendeneinladung oder Registrierungslink erforderlich",
+        "invitationRequiredDescription": "Öffne den vollständigen Link, den du erhalten hast. Wenn er nicht funktioniert, bitte die sendende Person um einen neuen.",
+        "fullName": "Vollständiger Name",
+        "country": "Land",
+        "countryPlaceholder": "EU-Land auswählen"
+      },
+      "dashboard": {
+        "title": "Meine Project Participations",
+        "acceptAgreement": "Agreement akzeptieren",
+        "loading": "Deine Projekte werden geladen…",
+        "profileRequired": "Vervollständige dein Profil, bevor Teilnehmendenaktionen verfügbar sind.",
+        "fullName": "Vollständiger Name",
+        "agreementRequired": "Akzeptiere das aktuelle Agreement, bevor Teilnehmendenaktionen verfügbar sind.",
+        "retry": "Projekte erneut laden",
+        "empty": "Noch keine Projekte. Tritt über eine Teilnehmendeneinladung oder einen Registrierungslink bei.",
+        "representing": "Vertritt:",
+        "hostedBy": "Gehostet von:"
+      },
+      "actions": {
+        "joining": "Beitritt läuft…",
+        "join": "Projekt beitreten",
+        "saving": "Wird gespeichert…",
+        "saveProfile": "Profil speichern",
+        "accepting": "Wird angenommen…"
+      }
     },
-    "join": {
-      "title": "Als Projektteilnehmer:in beitreten",
-      "description": "Dein Konto muss eine verifizierte E-Mail-Adresse verwenden. Der Server prüft die Einladung oder den Registrierungslink.",
-      "invitationRequiredTitle": "Vollständige Teilnehmendeneinladung oder Registrierungslink erforderlich",
-      "invitationRequiredDescription": "Öffne den vollständigen Link, den du erhalten hast. Wenn er nicht funktioniert, bitte die sendende Person um einen neuen.",
-      "fullName": "Vollständiger Name",
-      "country": "Land",
-      "countryPlaceholder": "EU-Land auswählen"
-    },
-    "dashboard": {
-      "title": "Meine Project Participations",
-      "acceptAgreement": "Agreement akzeptieren",
-      "loading": "Deine Projekte werden geladen…",
-      "profileRequired": "Vervollständige dein Profil, bevor Teilnehmendenaktionen verfügbar sind.",
-      "fullName": "Vollständiger Name",
-      "agreementRequired": "Akzeptiere das aktuelle Agreement, bevor Teilnehmendenaktionen verfügbar sind.",
-      "retry": "Projekte erneut laden",
-      "empty": "Noch keine Projekte. Tritt über eine Teilnehmendeneinladung oder einen Registrierungslink bei.",
-      "representing": "Vertritt:",
-      "hostedBy": "Gehostet von:"
-    },
-    "actions": {
-      "joining": "Beitritt läuft…",
-      "join": "Projekt beitreten",
-      "saving": "Wird gespeichert…",
-      "saveProfile": "Profil speichern",
-      "accepting": "Wird angenommen…"
+    "confirmations": {
+      "pending": "Wird ausgeführt…",
+      "revokeOrganizer": {
+        "title": "Gruppenorganisator-Zuweisung widerrufen?",
+        "description": "Die Gruppenorganisator-Zuweisung für {user} widerrufen? Die Rollen der Organisationsmitgliedschaft bleiben unverändert.",
+        "execute": "Zuweisung widerrufen"
+      },
+      "removeParticipation": {
+        "title": "Projektteilnahme entfernen?",
+        "description": "Die Projektteilnahme von {participant} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektteilnahme entfernen"
+      }
     }
   }
 }

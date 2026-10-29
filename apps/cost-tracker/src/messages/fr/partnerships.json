@@ -61,15 +61,24 @@
       "closing": "Fermeture…",
       "closeLink": "Fermer le lien de configuration de l’organisation partenaire",
       "completing": "Finalisation…",
-      "complete": "Terminer la configuration"
-    }
-  },
-  "partnerOrganizations": {
-    "page": {
-      "eyebrow": "Project network",
-      "title": "Partner Organizations",
-      "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
-      "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+      "complete": "Terminer la configuration",
+      "invitationRejected": "Vous avez refusé l’invitation à {organization}. Votre accès actuel a été vérifié à nouveau. Suivez la prochaine étape ci-dessous."
+    },
+    "partnerOrganizations": {
+      "page": {
+        "eyebrow": "Project network",
+        "title": "Partner Organizations",
+        "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
+        "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+      }
+    },
+    "confirmations": {
+      "pending": "Traitement…",
+      "removePartnership": {
+        "title": "Supprimer le Partenariat de Projet ?",
+        "description": "Supprimer {organization} de {project} ? Cette suppression est irréversible.",
+        "execute": "Supprimer le Partenariat de Projet"
+      }
     }
   }
 }

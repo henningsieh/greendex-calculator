@@ -17,7 +17,7 @@ vi.mock("@/lib/session", () => ({
   invitationReturnTo: (value: string) =>
     /^\/accept-invitation\/[a-zA-Z0-9_-]{1,128}$/.test(value) ? value : undefined,
 }));
-vi.mock("@/features/organizations/components/invitation-acceptance", () => ({
+vi.mock("@/features/authentication/components/invitation-acceptance", () => ({
   InvitationAcceptance: ({ returnTo }: { returnTo: string }) => (
     <div data-testid="invitation-acceptance" data-return-to={returnTo} />
   ),

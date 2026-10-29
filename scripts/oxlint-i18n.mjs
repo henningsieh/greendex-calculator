@@ -28,6 +28,87 @@ function hasVisibleCopy(value) {
 export default {
   meta: { name: "greendex" },
   rules: {
+    "one-translator-source": {
+      meta: {
+        type: "problem",
+        messages: {
+          multiple: "Use one distinct translator namespace per UI file.",
+          literal:
+            "Pass one non-empty namespace string literal to the translator.",
+          binding: 'Bind the translator as "t".',
+        },
+      },
+      create(context) {
+        const namespaces = new Set();
+        const translatorModules = new Set([
+          "@greendex/i18n/client",
+          "@greendex/i18n/server",
+          "next-intl",
+          "next-intl/server",
+        ]);
+        const translatorNames = new Set(["useTranslations", "getTranslations"]);
+
+        return {
+          CallExpression(node) {
+            if (node.callee.type !== "Identifier") return;
+            let scope = context.sourceCode.getScope(node);
+            let variable;
+            while (scope) {
+              variable = scope.set.get(node.callee.name);
+              if (variable) break;
+              scope = scope.upper;
+            }
+            const imported = variable?.defs.find(
+              (definition) => definition.type === "ImportBinding",
+            );
+            if (
+              imported?.node.type !== "ImportSpecifier" ||
+              !translatorNames.has(imported.node.imported.name) ||
+              !translatorModules.has(imported.parent?.source.value)
+            ) {
+              return;
+            }
+
+            const namespace = node.arguments[0];
+            if (
+              node.arguments.length !== 1 ||
+              namespace?.type !== "Literal" ||
+              typeof namespace.value !== "string" ||
+              namespace.value.length === 0
+            ) {
+              context.report({ node, messageId: "literal" });
+            } else if (!namespaces.has(namespace.value)) {
+              namespaces.add(namespace.value);
+              if (namespaces.size > 1) {
+                context.report({ node: namespace, messageId: "multiple" });
+              }
+            }
+
+            let initializer = node;
+            while (
+              [
+                "AwaitExpression",
+                "TSAsExpression",
+                "TSSatisfiesExpression",
+                "TSNonNullExpression",
+                "TSTypeAssertion",
+              ].includes(initializer.parent.type)
+            ) {
+              initializer = initializer.parent;
+            }
+            const declaration = initializer.parent;
+            if (
+              declaration.type !== "VariableDeclarator" ||
+              declaration.init !== initializer ||
+              declaration.id.type !== "Identifier" ||
+              declaration.id.name !== "t"
+            ) {
+              context.report({ node, messageId: "binding" });
+            }
+          },
+        };
+      },
+    },
     "no-hardcoded-ui-copy": {
       meta: {
         type: "problem",

@@ -19,7 +19,9 @@
     },
     "account": {
       "openMenu": "Open account menu for {name}",
-      "settings": "Account settings"
+      "settings": "Account settings",
+      "signOut": "Cerrar sesión",
+      "signingOut": "Procesando…"
     },
     "themeSwitcher": {
       "label": "Color theme",
