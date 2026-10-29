@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import Link from "next/link";
 import { describe, expect, it, vi } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { Button } from "@/components/ui/button";
 import { Table, TableCell, TableHead } from "@/components/ui/table";
 import {

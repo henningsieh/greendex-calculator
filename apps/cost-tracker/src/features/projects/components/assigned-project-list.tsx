@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
@@ -8,6 +9,7 @@ import { orpcQuery } from "@/lib/orpc/orpc";
 
 /** Browse the same bounded, assignment-scoped results as the hosted search picker. */
 export function AssignedProjectList() {
+  const t = useTranslations("projects.assigned");
   const { data: projects } = useSuspenseQuery(
     orpcQuery.projects.searchHosted.queryOptions({
       input: { search: "" },
@@ -17,15 +19,15 @@ export function AssignedProjectList() {
 
   return (
     <section
-      aria-label="Assigned Projects"
+      aria-label={t("label")}
       className="mt-10 space-y-4"
       data-testid="assigned-projects"
     >
-      <h2 className="font-heading text-2xl font-semibold">Your Projects</h2>
+      <h2 className="font-heading text-2xl font-semibold">{t("title")}</h2>
       {projects.length === 0 ? (
         <Empty data-testid="assigned-projects-empty">
           <EmptyHeader>
-            <EmptyTitle>No Projects assigned yet.</EmptyTitle>
+            <EmptyTitle>{t("empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -42,7 +44,7 @@ export function AssignedProjectList() {
                 className="text-sm underline-offset-4 hover:underline"
                 href={`/projects/${encodeURIComponent(project.id)}/participants`}
               >
-                View Participants
+                {t("viewParticipants")}
               </Link>
             </li>
           ))}

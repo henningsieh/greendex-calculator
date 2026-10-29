@@ -1,0 +1,205 @@
+{
+  "shell": {
+    "brand": {
+      "name": "GreenDex",
+      "product": "Cost Tracker",
+      "markLabel": "GreenDex-Sternenkranz",
+      "edition": "GreenDex Cost Tracker · Erasmus-Edition"
+    },
+    "common": {
+      "signIn": "Anmelden",
+      "retry": "Erneut versuchen"
+    },
+    "nav": {
+      "primaryLabel": "Hauptnavigation",
+      "projects": "Projekte",
+      "partnerOrganizations": "Partnerorganisationen",
+      "organization": "Organisation"
+    },
+    "account": {
+      "openMenu": "Kontomenü für {name} öffnen",
+      "settings": "Kontoeinstellungen"
+    },
+    "themeSwitcher": {
+      "label": "Farbschema",
+      "triggerFallback": "Theme",
+      "ariaLabel": "Farbschema: {theme}. Theme wechseln",
+      "system": "System"
+    },
+    "combobox": {
+      "defaultSearchBy": "Name oder ID",
+      "select": "{label} auswählen",
+      "searchLabel": "{label} nach {searchBy} durchsuchen",
+      "searchPlaceholder": "{searchBy} durchsuchen…",
+      "searching": "Suche läuft",
+      "searchFailed": "Suche fehlgeschlagen.",
+      "noMatches": "Keine Treffer — verfeinere die Suche oder füge die vollständige ID ein"
+    },
+    "errorBoundary": {
+      "unableToLoad": "{resource} konnte nicht geladen werden"
+    },
+    "loading": "Cost Tracker wird geladen",
+    "landing": {
+      "accountNav": "Konto",
+      "createAccount": "Konto erstellen",
+      "hero": {
+        "titleLead": "Belege rein.",
+        "titleAccent": "Geld raus.",
+        "description": "Erasmus-Reisekosten abrechnen ohne Tabellenkrampf. Ticket fotografieren, Kosten teilen, Antrag einreichen — jede Zahl bleibt bis zum Beleg nachvollziehbar.",
+        "start": "Kosten erfassen",
+        "seeHow": "So funktioniert es",
+        "trustLine": "Kostenlos starten · Keine Kreditkarte · Demodaten unten"
+      },
+      "stats": {
+        "disbursed": {
+          "label": "Ausgezahlt",
+          "detail": "berechnet · nicht bearbeitbar"
+        },
+        "documented": {
+          "label": "Dokumentiert",
+          "detail": "keine offenen Lücken"
+        },
+        "avgReview": {
+          "label": "Ø Prüfzeit",
+          "detail": "Hosting-Prüfung",
+          "unit": "Std."
+        }
+      },
+      "process": {
+        "eyebrow": "Der Ablauf",
+        "title": "Ein Antrag. Null Rückfragen.",
+        "description": "Der Arbeitsbereich prüft alles vor dem Einreichen: Auszahlungskonto, Kostenpositionen, Belegverknüpfungen, eingefrorene Fördersätze. Was fehlt, erscheint als Checkliste — nicht als E-Mail drei Wochen später.",
+        "record": {
+          "title": "Erfassen",
+          "description": "Wähle das Projekt und trage die genauen Reisekosten ein."
+        },
+        "support": {
+          "title": "Belegen",
+          "description": "Füge Belege, Rechnungen oder Tickets als Nachweisdokumente hinzu."
+        },
+        "allocate": {
+          "title": "Aufteilen",
+          "description": "Ordne die Kosten den beteiligten Personen zu."
+        }
+      },
+      "terminal": {
+        "payoutAccount": "Auszahlungskonto · Green Routes e.V.",
+        "train": "Zug · 428,60 € · Beleg verknüpft",
+        "bus": "Bus · 86,40 € · Beleg verknüpft",
+        "openUpload": "Nahverkehrstickets · Upload offen",
+        "status": "515,00 € bereit zur Einreichung"
+      },
+      "values": {
+        "proof": {
+          "title": "Der Beleg bleibt bei den Kosten",
+          "description": "Hänge das Dokument einmal an und verknüpfe es mit den zugehörigen Kosten."
+        },
+        "group": {
+          "title": "Gruppenreisen bleiben übersichtlich",
+          "description": "Teile ein Ticket gleichmäßig, prozentual oder nach exaktem Euro-Betrag."
+        },
+        "partners": {
+          "title": "Partner bleiben abgestimmt",
+          "description": "Hosting- und Partnerorganisationen sehen einen projektspezifischen Datensatz."
+        }
+      },
+      "cta": {
+        "eyebrow": "Kostenlos starten",
+        "title": "Bereit für den nächsten Antrag?",
+        "description": "Foto hochladen. Kosten teilen. Geld zurückbekommen."
+      },
+      "footer": {
+        "product": "Greendex Cost Tracker",
+        "tagline": "Klare Nachweise für gemeinsames Reisen."
+      },
+      "journey": {
+        "project": "Frühlingsworkshop",
+        "subtitle": "Reisekostenverlauf",
+        "windowOpen": "Zeitfenster offen",
+        "train": {
+          "title": "Zug nach Utrecht",
+          "detail": "Berlin · 2 Teilnehmende"
+        },
+        "receipt": {
+          "title": "Beleg angehängt",
+          "detail": "bahn-ticket.pdf",
+          "status": "Bereit"
+        },
+        "allocation": {
+          "title": "Kosten aufgeteilt",
+          "detail": "Gleicher Anteil"
+        },
+        "submissionComplete": "Einreichung abgeschlossen"
+      }
+    },
+    "designSystem": {
+      "titleLead": "Ember",
+      "titleAccent": "Design",
+      "titleTail": "System",
+      "intro": "Sieben Themes, ein Feuer-Akzent. Tokens, Button-Matrix, Karten, Schriftspezimen und die fixierten Brand-Erweiterungen — live gerendert.",
+      "themes": {
+        "eyebrow": "Themes · 7 Plätze",
+        "title": "Theme-Umschalter",
+        "active": "aktiv:",
+        "system": "System"
+      },
+      "tokens": {
+        "eyebrow": "Tokens · Rollen",
+        "title": "Farbreferenzen",
+        "sample": "Aa"
+      },
+      "buttons": {
+        "eyebrow": "Buttons · Matrix",
+        "title": "Button-Varianten und -Zustände",
+        "primary": "Primär",
+        "ghost": "Ghost",
+        "outline": "Outline",
+        "secondary": "Sekundär",
+        "mainCta": "Haupt-CTA",
+        "link": "Link",
+        "destructive": "Destruktiv",
+        "disabledPrimary": "Deaktiviert primär",
+        "disabledGhost": "Deaktiviert Ghost",
+        "saving": "speichern…",
+        "small": "Klein",
+        "large": "Groß",
+        "spinnerNote": "Spinner-Muster — zusammengesetzt, kein isPending-Prop"
+      },
+      "cards": {
+        "eyebrow": "Karten · Zustände",
+        "title": "Karten-Hover und -Aktiv",
+        "hoverTitle": "Hover-Karte",
+        "hoverDescription": "Hebt sich um −2px mit Feuerrand. Nur bei Hover, statisch bei reduzierter Bewegung.",
+        "hoverAction": "Aktive Aktion",
+        "activeTitle": "Aktive Karte",
+        "activeDescription": "Dauerhafter Feuerrand mit dem Amber-Wash von oben.",
+        "exemptTitle": "Ausgenommene Karte",
+        "exemptDescription": "data-disabled — völlig still, kein Hover, auch bei klebrigem Touch.",
+        "exemptAction": "arbeitet…"
+      },
+      "type": {
+        "eyebrow": "Schrift · Spezimen",
+        "title": "Typografie",
+        "headline": "Riesen-Headline",
+        "label": "Cost Tracker · Ember C",
+        "body": "Fließtext bleibt leise: Warmweiß auf Pflaumenschwarz, Lavendelgrau für Sekundärtext. Ein Feuer-Akzent überall — Interaktion, Hervorhebungen, Fokus."
+      },
+      "brand": {
+        "eyebrow": "Brand · fixiert",
+        "title": "Brand-Erweiterungen",
+        "heroLabel": "Hero-Statistik",
+        "heroDetail": "Amber-Wash · Feuer-Einheit",
+        "claimsLabel": "Belege",
+        "claimsDetail": "nahtloses Raster · 1px-Linien",
+        "conformityLabel": "Konformität",
+        "conformityDetail": "tabellarische Zahlen · Mono-Labels"
+      },
+      "terminal": {
+        "tokens": "Tokens zugeordnet — 7 Themes",
+        "buttons": "Buttons neu gebaut — Spinner ausstehend",
+        "landing": "Landingpage — nächster Abschnitt",
+        "status": "ember-c · alle Systeme nominal"
+      }
+    }
+  }
+}

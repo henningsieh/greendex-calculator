@@ -60,6 +60,10 @@ pnpm run check:agent-instructions
 # reword the test instead.
 pnpm run check:no-copy-assertions
 
+# Run the exact same Cost Tracker UI copy check as `pnpm lint`, limited to
+# staged Cost Tracker UI sources. The script itself reads the staged file list.
+pnpm run check:check-i18n -- --staged
+
 # Only re-stage files that were selected from the original staged snapshot.
 # Uses the same two filters as the format step above, so exactly the files
 # the formatter may have rewritten get re-staged — nothing more.

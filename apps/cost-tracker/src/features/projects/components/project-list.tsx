@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import {
   columnFilteringFeature,
@@ -207,6 +208,7 @@ function MetricCard({ label, value }: { label: string; value: number }) {
 }
 
 export function ProjectList() {
+  const t = useTranslations("projects.list");
   const { data: availableScopes } = useSuspenseQuery(
     getProjectAvailableScopesQueryOptions(),
   );
@@ -226,14 +228,12 @@ export function ProjectList() {
       <Empty
         data-testid="projects-unavailable"
         variant="outlined"
-        aria-label="Project list"
+        aria-label={t("label")}
         className="mt-10"
       >
         <EmptyHeader>
-          <EmptyTitle>No Projects available</EmptyTitle>
-          <EmptyDescription>
-            No Projects are hosted by or assigned to your active Organization.
-          </EmptyDescription>
+          <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
+          <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
@@ -295,6 +295,7 @@ function ProjectListOverview({
   updateListState: (patch: Parameters<ProjectListQueryState[1]>[0]) => void;
   data: ProjectListData;
 }) {
+  const t = useTranslations("projects.list");
   const filtered = data.metrics.filtered;
   const whole = data.metrics.whole;
   return (
@@ -302,7 +303,7 @@ function ProjectListOverview({
       <div
         className="flex flex-wrap gap-2"
         role="tablist"
-        aria-label="Project relationship"
+        aria-label={t("relationship")}
       >
         <Button
           aria-selected={scope === "hosted"}
@@ -312,7 +313,7 @@ function ProjectListOverview({
           role="tab"
           variant={scope === "hosted" ? "default" : "outline"}
         >
-          Hosted
+          {t("hosted")}
         </Button>
         <Button
           data-testid="project-scope-partner"
@@ -322,7 +323,7 @@ function ProjectListOverview({
           role="tab"
           variant={scope === "partner" ? "default" : "outline"}
         >
-          Partner
+          {t("partner")}
         </Button>
       </div>
 
@@ -380,6 +381,7 @@ function ResolvedProjectList({
   state: ProjectListState;
   urlState: ProjectListQueryState[0];
 }) {
+  const t = useTranslations("projects.list");
   const fallbackNotices = useRef(new Set<string>());
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
@@ -444,7 +446,7 @@ function ResolvedProjectList({
       {
         accessorKey: "name",
         enableSorting: false,
-        header: "Project",
+        header: t("project"),
         cell: ({ row }) => (
           <Link
             className="font-medium text-foreground underline-offset-4 hover:underline"
@@ -461,14 +463,14 @@ function ResolvedProjectList({
           const sortDirection = column.getIsSorted();
           return (
             <Button
-              aria-label="Sort by start date"
+              aria-label={t("sortByStartDate")}
               data-testid="sort-project-start"
               onClick={() => column.toggleSorting(sortDirection === "asc")}
               size="sm"
               type="button"
               variant="ghost"
             >
-              Schedule
+              {t("schedule")}
             </Button>
           );
         },
@@ -478,7 +480,7 @@ function ResolvedProjectList({
       {
         id: "location",
         enableSorting: false,
-        header: "Location",
+        header: t("location"),
         cell: ({ row }) =>
           [row.original.location, row.original.country]
             .filter(Boolean)
@@ -491,14 +493,14 @@ function ResolvedProjectList({
             {
               id: "participants",
               enableSorting: false,
-              header: "Participants",
+              header: t("participants"),
               cell: ({ row }: { row: { original: ProjectListRow } }) => (
                 <Link
                   className="underline-offset-4 hover:underline"
                   href={`/projects/${encodeURIComponent(row.original.id)}/participants`}
                   data-testid={`project-participants-${row.original.id}`}
                 >
-                  View Participants
+                  {t("viewParticipants")}
                 </Link>
               ),
             } satisfies ColumnDef<
@@ -510,7 +512,7 @@ function ResolvedProjectList({
       {
         accessorKey: "costSubmissionWindowOpen",
         enableSorting: false,
-        header: "Submission window",
+        header: t("submissionWindow"),
         cell: ({ row }) => (
           <Badge
             data-testid={`project-window-${row.original.id}`}
@@ -524,7 +526,7 @@ function ResolvedProjectList({
         ),
       },
     ],
-    [returnTo, scope],
+    [returnTo, scope, t],
   );
   const table = useTable({
     columns,
@@ -612,7 +614,7 @@ function ResolvedProjectList({
 
   return (
     <section
-      aria-label="Project list"
+      aria-label={t("label")}
       className="mt-10 space-y-8"
       data-hydrated={isHydrated ? "true" : undefined}
       data-testid="project-list"
@@ -627,7 +629,7 @@ function ResolvedProjectList({
       />
       <div className="grid gap-5 rounded-xl border p-5 md:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-2">
-          <Label htmlFor="project-search">Project name</Label>
+          <Label htmlFor="project-search">{t("name")}</Label>
           <div className="relative">
             <SearchIcon
               aria-hidden="true"
@@ -647,12 +649,14 @@ function ResolvedProjectList({
                   updateProjectFilter(PROJECT_FILTER_IDS.name, search);
                 }, 300);
               }}
-              placeholder="Search at least 3 characters"
+              placeholder={t("searchPlaceholder")}
             />
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="project-submission-window">Submission window</Label>
+          <Label htmlFor="project-submission-window">
+            {t("submissionWindow")}
+          </Label>
           <Select
             onValueChange={(value) =>
               updateProjectFilter(
@@ -672,14 +676,14 @@ function ResolvedProjectList({
             <SelectContent>
               {PROJECT_WINDOW_FILTERS.map((value) => (
                 <SelectItem key={value} value={value}>
-                  {value === "all" ? "All windows" : value}
+                  {value === "all" ? t("allWindows") : value}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="project-sort">Sort</Label>
+          <Label htmlFor="project-sort">{t("sort")}</Label>
           <Select
             onValueChange={(value) =>
               table.setSorting(
@@ -699,18 +703,16 @@ function ResolvedProjectList({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="operational">
-                Open first, earliest start
-              </SelectItem>
-              <SelectItem value="start-asc">Start date, earliest</SelectItem>
-              <SelectItem value="start-desc">Start date, latest</SelectItem>
-              <SelectItem value="end-asc">End date, earliest</SelectItem>
-              <SelectItem value="end-desc">End date, latest</SelectItem>
+              <SelectItem value="operational">{t("sortOpenEarliest")}</SelectItem>
+              <SelectItem value="start-asc">{t("sortStartEarliest")}</SelectItem>
+              <SelectItem value="start-desc">{t("sortStartLatest")}</SelectItem>
+              <SelectItem value="end-asc">{t("sortEndEarliest")}</SelectItem>
+              <SelectItem value="end-desc">{t("sortEndLatest")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="project-page-size">Projects per page</Label>
+          <Label htmlFor="project-page-size">{t("perPage")}</Label>
           <Select
             onValueChange={(value) => table.setPageSize(Number(value))}
             value={String(state.pageSize)}
@@ -736,7 +738,7 @@ function ResolvedProjectList({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="project-date-from">Active on or after</Label>
+          <Label htmlFor="project-date-from">{t("activeAfter")}</Label>
           <Input
             id="project-date-from"
             data-testid="project-date-from"
@@ -753,7 +755,7 @@ function ResolvedProjectList({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="project-date-to">Active on or before</Label>
+          <Label htmlFor="project-date-to">{t("activeBefore")}</Label>
           <Input
             id="project-date-to"
             data-testid="project-date-to"
@@ -772,7 +774,7 @@ function ResolvedProjectList({
         {data.scope === "hosted" && data.partnerOptions.length > 0 && (
           <fieldset className="space-y-2 md:col-span-2">
             <legend className="text-sm font-medium">
-              Partner Organizations (match any)
+              {t("partnerOrganizations")}
             </legend>
             <div className="flex flex-wrap gap-3">
               {data.partnerOptions.map((partner) => (
@@ -821,7 +823,7 @@ function ResolvedProjectList({
             aria-hidden="true"
             className={isFetching ? "animate-spin" : undefined}
           />
-          Refresh
+          {t("refresh")}
         </Button>
       </div>
 
@@ -847,7 +849,7 @@ function ResolvedProjectList({
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell className="h-28 text-center" colSpan={columns.length}>
-                  No Projects match this scope and filter.
+                  {t("noMatch")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -873,7 +875,7 @@ function ResolvedProjectList({
             type="button"
             variant="outline"
           >
-            Previous page
+            {t("previousPage")}
           </Button>
         )}
         <Button
@@ -883,7 +885,7 @@ function ResolvedProjectList({
           type="button"
           variant="outline"
         >
-          Next page
+          {t("nextPage")}
         </Button>
       </div>
     </section>

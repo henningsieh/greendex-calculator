@@ -2,6 +2,7 @@
 
 /* eslint-disable shadcn/no-restyle -- Header-dropdown bespoke treatment, shared with AccountMenu + ThemeSwitcher: same w-64 rounded-xl p-2 content + normal-case items for identical header look. Extract a ui variant post-MVP. */
 
+import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Building2Icon,
@@ -43,6 +44,7 @@ export function OrganizationSwitcher({
 }: OrganizationSwitcherProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("organizations.switcher");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const active = organizations.find(
@@ -72,7 +74,9 @@ export function OrganizationSwitcher({
           render={
             <Button
               data-testid="organization-switcher"
-              aria-label={`Acting Organization: ${active?.name ?? "unknown"}. Switch Organization`}
+              aria-label={t("aria", {
+                organization: active?.name ?? t("select"),
+              })}
               disabled={pendingId !== null}
               size="sm"
               variant="outline"
@@ -80,7 +84,7 @@ export function OrganizationSwitcher({
           }
         >
           <Building2Icon aria-hidden="true" data-icon="inline-start" />
-          {active?.name ?? "Select Organization"}
+          {active?.name ?? t("select")}
           {pendingId !== null ? (
             <LoaderCircleIcon aria-hidden="true" className="animate-spin" />
           ) : (
@@ -89,7 +93,7 @@ export function OrganizationSwitcher({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Acting Organization</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("acting")}</DropdownMenuLabel>
             {organizations.map((organization) => {
               const current = organization.id === activeOrganizationId;
 
@@ -113,7 +117,7 @@ export function OrganizationSwitcher({
       </DropdownMenu>
       {failed ? (
         <p role="alert" data-switch-status="failed">
-          Could not switch Organization. Try again.
+          {t("failed")}
         </p>
       ) : null}
     </div>

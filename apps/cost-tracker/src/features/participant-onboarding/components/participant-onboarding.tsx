@@ -1,5 +1,6 @@
 "use client";
 import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
@@ -35,13 +36,11 @@ function hasAgreementCopy(
 }
 
 function AgreementUnavailable() {
+  const t = useTranslations("participantOnboarding");
   return (
     <Alert data-agreement-state="unavailable">
-      <AlertTitle>Participant agreement is not yet available</AlertTitle>
-      <AlertDescription>
-        Joining and Participant actions are paused until the approved agreement is
-        published.
-      </AlertDescription>
+      <AlertTitle>{t("agreementUnavailable.title")}</AlertTitle>
+      <AlertDescription>{t("agreementUnavailable.description")}</AlertDescription>
     </Alert>
   );
 }
@@ -55,16 +54,18 @@ function AgreementAcceptance({
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
+  const t = useTranslations("participantOnboarding");
   if (!hasAgreementCopy(agreement)) return <AgreementUnavailable />;
   return (
     <div className="space-y-3">
       <h2 className="font-heading text-lg font-semibold">
-        EU–Erasmus Participant agreement ({agreement.id})
+        {t("agreement.label")}
+        {agreement.id})
       </h2>
       <div
         data-testid="participant-agreement"
         className="max-h-64 overflow-auto rounded-md border p-4 whitespace-pre-wrap"
-        aria-label="Participant agreement text"
+        aria-label={t("agreement.aria")}
       >
         {agreement.content}
       </div>
@@ -76,7 +77,7 @@ function AgreementAcceptance({
           required
           type="checkbox"
         />
-        I accept the current Participant agreement
+        {t("agreement.accept")}
       </label>
     </div>
   );
@@ -90,6 +91,7 @@ export function ParticipantJoin({
   agreement: Agreement;
 }) {
   const router = useRouter();
+  const t = useTranslations("participantOnboarding");
   const [name, setName] = useState("");
   const [country, setCountry] = useState<EUCountryCode | "">("");
   const [accepted, setAccepted] = useState(false);
@@ -119,29 +121,21 @@ export function ParticipantJoin({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Join as a Project Participant</CardTitle>
+        <CardTitle>{t("join.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <p>
-          Your account must use a verified email address. The server checks the
-          Participant Invitation or Participant Registration Link before granting
-          access.
-        </p>
+        <p>{t("join.description")}</p>
         {!source ? (
           <Alert variant="destructive" data-entry-state="incomplete">
-            <AlertTitle>
-              Complete Participant Invitation or Participant Registration Link
-              required
-            </AlertTitle>
+            <AlertTitle>{t("join.invitationRequiredTitle")}</AlertTitle>
             <AlertDescription>
-              Open the complete link shared with you. If it does not work, ask the
-              sender for a new link.
+              {t("join.invitationRequiredDescription")}
             </AlertDescription>
           </Alert>
         ) : (
           <form className="space-y-5" onSubmit={join}>
             <div className="space-y-2">
-              <Label htmlFor="participant-name">Full name</Label>
+              <Label htmlFor="participant-name">{t("join.fullName")}</Label>
               <Input
                 data-testid="participant-name"
                 id="participant-name"
@@ -153,7 +147,7 @@ export function ParticipantJoin({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="participant-country">Country</Label>
+              <Label htmlFor="participant-country">{t("join.country")}</Label>
               <select
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 id="participant-country"
@@ -165,7 +159,7 @@ export function ParticipantJoin({
                 }
               >
                 <option disabled value="">
-                  Select your EU country
+                  {t("join.countryPlaceholder")}
                 </option>
                 {EU_COUNTRIES.map(({ code }) => (
                   <option key={code} value={code}>
@@ -195,6 +189,7 @@ export function ParticipantJoin({
 }
 
 export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
+  const t = useTranslations("participantOnboarding");
   const [state, setState] = useState<DashboardState>("loading");
   const [projects, setProjects] = useState<Projects>([]);
   const [name, setName] = useState("");
@@ -272,24 +267,24 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
       data-project-count={projects.length}
     >
       <CardHeader>
-        <CardTitle>My Project Participations</CardTitle>
+        <CardTitle>{t("dashboard.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         {!available ? (
           <>
             <AgreementUnavailable />
             <Button data-testid="accept-agreement" disabled type="button">
-              Accept agreement
+              {t("dashboard.acceptAgreement")}
             </Button>
           </>
         ) : state === "loading" ? (
-          <output>Loading your Projects…</output>
+          <output>{t("dashboard.loading")}</output>
         ) : state === "profile" ? (
           <>
-            <p>Complete your profile before Participant actions are available.</p>
+            <p>{t("dashboard.profileRequired")}</p>
             <form className="space-y-4" onSubmit={saveProfile}>
               <div className="space-y-2">
-                <Label htmlFor="profile-name">Full name</Label>
+                <Label htmlFor="profile-name">{t("dashboard.fullName")}</Label>
                 <Input
                   id="profile-name"
                   data-testid="participant-profile-name"
@@ -311,10 +306,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
           </>
         ) : state === "agreement" ? (
           <>
-            <p>
-              Accept the current agreement before Participant actions are
-              available.
-            </p>
+            <p>{t("dashboard.agreementRequired")}</p>
             <form className="space-y-4" onSubmit={accept}>
               <AgreementAcceptance
                 agreement={agreement}
@@ -340,13 +332,10 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
               void load();
             }}
           >
-            Retry loading Projects
+            {t("dashboard.retry")}
           </Button>
         ) : projects.length === 0 ? (
-          <p>
-            No Projects yet. Join through a Participant Invitation or Participant
-            Registration Link to see your Participations here.
-          </p>
+          <p>{t("dashboard.empty")}</p>
         ) : (
           <ul className="space-y-4">
             {projects.map((project) => (
@@ -360,10 +349,11 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                   {project.projectName}
                 </h2>
                 <p data-organization-role="represented">
-                  Representing: {project.representedOrganizationName}
+                  {t("dashboard.representing")}{" "}
+                  {project.representedOrganizationName}
                 </p>
                 <p data-organization-role="hosting">
-                  Hosted by: {project.hostingOrganizationName}
+                  {t("dashboard.hostedBy")} {project.hostingOrganizationName}
                 </p>
               </li>
             ))}

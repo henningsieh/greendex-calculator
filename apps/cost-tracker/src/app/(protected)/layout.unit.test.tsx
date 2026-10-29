@@ -1,5 +1,6 @@
-import { render } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
+
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
 vi.mock("@/app/(protected)/protected-shell", () => ({
   ProtectedShell: () => {

@@ -1,0 +1,32 @@
+{
+  "settings": {
+    "page": {
+      "title": "User settings",
+      "description": "Choose how Cost Tracker looks and keep your account details current."
+    },
+    "tabs": {
+      "sections": "User settings sections",
+      "account": "Account details",
+      "accountDescription": "Keep the identity shown to other Project members accurate.",
+      "appearance": "Appearance",
+      "appearanceDescription": "Your choice is saved in this browser."
+    },
+    "name": {
+      "label": "Name",
+      "description": "This name appears in the navigation and across shared Project work.",
+      "emailLabel": "Email address",
+      "emailDescription": "Email changes are not available in Cost Tracker yet.",
+      "save": "Save name",
+      "saving": "Saving name",
+      "success": "Your name has been updated."
+    },
+    "theme": {
+      "title": "Color theme",
+      "description": "All seven themes side by side — EU Erasmus light, five Ember vibes, and legacy dark.",
+      "ariaLabel": "Color theme",
+      "use": "Use {theme}",
+      "shortcutTitle": "Switch from anywhere",
+      "shortcutDescription": "Press {key} anywhere in Cost Tracker to switch between light and dark. The shortcut stays inactive while you are typing."
+    }
+  }
+}

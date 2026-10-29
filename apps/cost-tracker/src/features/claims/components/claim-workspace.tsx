@@ -1,6 +1,7 @@
 "use client";
 
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
+import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
@@ -101,6 +102,7 @@ function JourneyCorrection({
   name: string;
   refresh: () => Promise<void>;
 }) {
+  const t = useTranslations("claims.workspace");
   const [editing, setEditing] = useState(false);
   const [origin, setOrigin] = useState(journey.origin);
   const [destination, setDestination] = useState(journey.destination);
@@ -141,8 +143,8 @@ function JourneyCorrection({
         </p>
         <p className="text-sm text-muted-foreground">
           {journey.tripType},{" "}
-          <span className="font-mono">{journey.erasmusDistanceKm}</span> km
-          (calculator distance)
+          <span className="font-mono">{journey.erasmusDistanceKm}</span>{" "}
+          {t("journey.distanceSuffix")}
         </p>
       </div>
       {!editing ? (
@@ -153,13 +155,15 @@ function JourneyCorrection({
           onClick={() => setEditing(true)}
           data-testid={`correct-journey-${journey.projectParticipantId}`}
         >
-          Correct {name}&apos;s journey
+          {t("journey.correctFor", { name })}
         </Button>
       ) : (
         <form className="space-y-4" onSubmit={update} noValidate>
           <FieldError message={errors.journey} />
           <div>
-            <Label htmlFor={`${id}-origin`}>Origin for {name}</Label>
+            <Label htmlFor={`${id}-origin`}>
+              {t("journey.originFor", { name })}
+            </Label>
             <Input
               variant="accounting"
               id={`${id}-origin`}
@@ -170,7 +174,9 @@ function JourneyCorrection({
             <FieldError message={errors.origin} />
           </div>
           <div>
-            <Label htmlFor={`${id}-destination`}>Destination for {name}</Label>
+            <Label htmlFor={`${id}-destination`}>
+              {t("journey.destinationFor", { name })}
+            </Label>
             <Input
               variant="accounting"
               id={`${id}-destination`}
@@ -181,7 +187,9 @@ function JourneyCorrection({
             <FieldError message={errors.destination} />
           </div>
           <div>
-            <Label htmlFor={`${id}-type`}>Trip type for {name}</Label>
+            <Label htmlFor={`${id}-type`}>
+              {t("journey.tripTypeFor", { name })}
+            </Label>
             <select
               id={`${id}-type`}
               data-testid={`journey-correction-${journey.projectParticipantId}-type`}
@@ -191,14 +199,14 @@ function JourneyCorrection({
                 setTripType(event.target.value as typeof tripType)
               }
             >
-              <option value="one-way">One-way</option>
-              <option value="round-trip">Round-trip</option>
+              <option value="one-way">{t("journey.oneWay")}</option>
+              <option value="round-trip">{t("journey.roundTrip")}</option>
             </select>
             <FieldError message={errors.tripType} />
           </div>
           <div>
             <Label htmlFor={`${id}-distance`}>
-              Erasmus Distance-Calculator distance (km) for {name}
+              {t("journey.distanceFor", { name })}
             </Label>
             <Input
               variant="accounting"
@@ -217,7 +225,7 @@ function JourneyCorrection({
             disabled={pending}
             data-testid="journey-correction-save"
           >
-            Save correction
+            {t("journey.saveCorrection")}
           </Button>
           <Button
             data-testid="cancel-journey-correction"
@@ -234,7 +242,7 @@ function JourneyCorrection({
               setEditing(false);
             }}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
         </form>
       )}
@@ -257,6 +265,7 @@ function JourneyEditor({
   corrections: boolean;
   refresh: () => Promise<void>;
 }) {
+  const t = useTranslations("claims.workspace");
   const [person, setPerson] = useState("");
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
@@ -292,13 +301,13 @@ function JourneyEditor({
   return (
     <Card variant="document">
       <CardHeader>
-        <CardTitle as="h2">Participant Journeys</CardTitle>
+        <CardTitle as="h2">{t("journey.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5" id="claim-journeys">
         {saved.length === 0 ? (
           <Empty>
             <EmptyHeader>
-              <EmptyTitle>No journeys saved yet.</EmptyTitle>
+              <EmptyTitle>{t("journey.empty")}</EmptyTitle>
             </EmptyHeader>
           </Empty>
         ) : (
@@ -323,8 +332,8 @@ function JourneyEditor({
                       (item) => item.id === journey.projectParticipantId,
                     )?.displayName ?? "Participant"}
                     : {journey.origin} → {journey.destination}, {journey.tripType}
-                    , {journey.erasmusDistanceKm} km (calculator distance; saved,
-                    read-only)
+                    , {journey.erasmusDistanceKm}{" "}
+                    {t("journey.savedDistanceSuffix")}
                   </>
                 )}
               </li>
@@ -332,15 +341,12 @@ function JourneyEditor({
           </ul>
         )}
         {participants.some((item) => !existing.has(item.id)) && (
-          <ul
-            aria-label="Participations needing Journeys"
-            data-testid="journey-gaps"
-          >
+          <ul aria-label={t("journey.gapsLabel")} data-testid="journey-gaps">
             {participants
               .filter((item) => !existing.has(item.id))
               .map((item) => (
                 <li key={item.id} id={`journey-gap-${item.id}`}>
-                  {item.displayName}: no Participant Journey saved.
+                  {t("journey.missing", { name: item.displayName })}
                 </li>
               ))}
           </ul>
@@ -352,7 +358,7 @@ function JourneyEditor({
             noValidate
           >
             <div>
-              <Label htmlFor="journey-person">Participation</Label>
+              <Label htmlFor="journey-person">{t("journey.participation")}</Label>
               <select
                 id="journey-person"
                 data-testid="journey-person"
@@ -360,7 +366,7 @@ function JourneyEditor({
                 value={person}
                 onChange={(event) => setPerson(event.target.value)}
               >
-                <option value="">Select Participation</option>
+                <option value="">{t("journey.selectParticipation")}</option>
                 {participants
                   .filter((item) => !existing.has(item.id))
                   .map((item) => (
@@ -376,7 +382,7 @@ function JourneyEditor({
               <FieldError message={errors.projectParticipantId} />
             </div>
             <div>
-              <Label htmlFor="journey-origin">Origin</Label>
+              <Label htmlFor="journey-origin">{t("journey.origin")}</Label>
               <Input
                 variant="accounting"
                 id="journey-origin"
@@ -387,7 +393,9 @@ function JourneyEditor({
               <FieldError message={errors.origin} />
             </div>
             <div>
-              <Label htmlFor="journey-destination">Destination</Label>
+              <Label htmlFor="journey-destination">
+                {t("journey.destination")}
+              </Label>
               <Input
                 variant="accounting"
                 id="journey-destination"
@@ -397,7 +405,7 @@ function JourneyEditor({
               <FieldError message={errors.destination} />
             </div>
             <div>
-              <Label htmlFor="journey-type">Trip type</Label>
+              <Label htmlFor="journey-type">{t("journey.tripType")}</Label>
               <select
                 id="journey-type"
                 className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
@@ -406,15 +414,13 @@ function JourneyEditor({
                   setTripType(event.target.value as typeof tripType)
                 }
               >
-                <option value="one-way">One-way</option>
-                <option value="round-trip">Round-trip</option>
+                <option value="one-way">{t("journey.oneWay")}</option>
+                <option value="round-trip">{t("journey.roundTrip")}</option>
               </select>
               <FieldError message={errors.tripType} />
             </div>
             <div>
-              <Label htmlFor="journey-distance">
-                Erasmus Distance-Calculator distance (km)
-              </Label>
+              <Label htmlFor="journey-distance">{t("journey.distance")}</Label>
               <Input
                 variant="figure"
                 id="journey-distance"
@@ -432,7 +438,7 @@ function JourneyEditor({
               disabled={pending || !person}
               data-testid="journey-save"
             >
-              Save journey
+              {t("journey.save")}
             </Button>
           </form>
         )}
@@ -456,6 +462,7 @@ function CostEditor({
   editable: boolean;
   refresh: () => Promise<void>;
 }) {
+  const t = useTranslations("claims.workspace");
   const [entryId, setEntryId] = useState<string>();
   const [profile, setProfile] = useState<string>(
     PARTICIPANT_TRANSPORT_EMISSION_PROFILES[0],
@@ -529,13 +536,13 @@ function CostEditor({
   return (
     <Card variant="document">
       <CardHeader>
-        <CardTitle as="h2">Travel Cost Entries</CardTitle>
+        <CardTitle as="h2">{t("cost.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5" id="claim-costs">
         {entries.length === 0 ? (
           <Empty data-testid="costs-empty">
             <EmptyHeader>
-              <EmptyTitle>No costs saved yet.</EmptyTitle>
+              <EmptyTitle>{t("cost.empty")}</EmptyTitle>
             </EmptyHeader>
           </Empty>
         ) : (
@@ -586,7 +593,7 @@ function CostEditor({
                   type="button"
                   onClick={() => edit(entry)}
                 >
-                  Edit cost
+                  {t("cost.edit")}
                 </Button>
               ) : undefined,
             }))}
@@ -600,7 +607,7 @@ function CostEditor({
           >
             <p>{entryId ? "Edit saved cost" : "Add cost"}</p>
             <div>
-              <Label htmlFor="cost-profile">Transport</Label>
+              <Label htmlFor="cost-profile">{t("cost.transport")}</Label>
               <select
                 id="cost-profile"
                 className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
@@ -616,7 +623,7 @@ function CostEditor({
               <FieldError message={errors.transportProfile} />
             </div>
             <div>
-              <Label htmlFor="cost-amount">Exact total (EUR)</Label>
+              <Label htmlFor="cost-amount">{t("cost.exactTotal")}</Label>
               <Input
                 variant="figure"
                 id="cost-amount"
@@ -628,7 +635,7 @@ function CostEditor({
               <FieldError message={errors.amountEur} />
             </div>
             <div>
-              <Label htmlFor="cost-method">Allocation method</Label>
+              <Label htmlFor="cost-method">{t("cost.allocationMethod")}</Label>
               <select
                 id="cost-method"
                 data-testid="cost-method"
@@ -638,14 +645,14 @@ function CostEditor({
                   setMethod(event.target.value as typeof method)
                 }
               >
-                <option value="equal">Equal</option>
-                <option value="percentage">Percentage</option>
-                <option value="amount">Amount (EUR)</option>
+                <option value="equal">{t("cost.equal")}</option>
+                <option value="percentage">{t("cost.percentage")}</option>
+                <option value="amount">{t("cost.amount")}</option>
               </select>
               <FieldError message={errors.allocationMethod} />
             </div>
             <fieldset data-testid="cost-participations" className="space-y-2">
-              <legend>Covered Participations</legend>
+              <legend>{t("cost.coveredParticipations")}</legend>
               {participants.map((item) => {
                 const index = selected.indexOf(item.id);
                 return (
@@ -720,7 +727,7 @@ function CostEditor({
               disabled={pending}
               data-testid="cost-save"
             >
-              Save cost
+              {t("cost.save")}
             </Button>
           </form>
         )}
@@ -742,6 +749,7 @@ function ProofEditor({
   editable: boolean;
   refresh: () => Promise<void>;
 }) {
+  const t = useTranslations("claims.workspace");
   const [progress, setProgress] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
@@ -817,25 +825,24 @@ function ProofEditor({
   return (
     <Card variant="document">
       <CardHeader>
-        <CardTitle as="h2">Proof Documents</CardTitle>
+        <CardTitle as="h2">{t("proof.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4" id="claim-proofs">
         {documents.length === 0 ? (
-          <p>No Proof Documents in this Claim.</p>
+          <p>{t("proof.empty")}</p>
         ) : (
           <ul>
             {documents.map((document) => (
               <li key={document.id} className="wrap-anywhere">
-                {document.originalFileName} ({document.byteSize} bytes)
+                {document.originalFileName} ({document.byteSize}{" "}
+                {t("proof.bytes")})
               </li>
             ))}
           </ul>
         )}
         {editable && (
           <form className="space-y-4" onSubmit={upload}>
-            <Label htmlFor="proof-file">
-              Upload Proof Document (PDF, JPEG, PNG; up to 10 MB)
-            </Label>
+            <Label htmlFor="proof-file">{t("proof.uploadLabel")}</Label>
             <Input
               variant="accounting"
               id="proof-file"
@@ -851,7 +858,7 @@ function ProofEditor({
               disabled={busy}
               data-testid="proof-upload"
             >
-              Upload document
+              {t("proof.upload")}
             </Button>
           </form>
         )}
@@ -860,9 +867,9 @@ function ProofEditor({
             className="w-full accent-primary"
             value={progress}
             max={100}
-            aria-label="Upload progress"
+            aria-label={t("proof.progressLabel")}
           >
-            Upload: {progress}%
+            {t("proof.uploadProgress")} {progress}%
           </progress>
         )}
         {feedback && <output>{feedback}</output>}
@@ -871,11 +878,11 @@ function ProofEditor({
             <p>
               {entry.transportProfile}{" "}
               <span className="font-mono tabular-nums">
-                {entry.amountEur} EUR
+                {entry.amountEur} {t("proof.currencyEur")}
               </span>
             </p>
             <p className="wrap-anywhere">
-              Linked:{" "}
+              {t("proof.linked")}{" "}
               {entry.proofDocumentIds
                 .map(
                   (id) =>
@@ -886,9 +893,7 @@ function ProofEditor({
             </p>
             {editable && (
               <div>
-                <Label htmlFor={`link-${entry.id}`}>
-                  Link a Proof Document to this cost
-                </Label>
+                <Label htmlFor={`link-${entry.id}`}>{t("proof.linkLabel")}</Label>
                 <select
                   id={`link-${entry.id}`}
                   data-testid={`link-proof-${entry.id}`}
@@ -901,7 +906,7 @@ function ProofEditor({
                     event.target.value = "";
                   }}
                 >
-                  <option value="">Select Claim document</option>
+                  <option value="">{t("proof.selectDocument")}</option>
                   {documents
                     .filter(
                       (document) => !entry.proofDocumentIds.includes(document.id),
@@ -932,19 +937,23 @@ function SelectedClaimPayout({
   payout: Outputs["claims"]["listPayoutAccounts"];
   editable: boolean;
 }) {
+  const t = useTranslations("claims.workspace");
   const account = payout.accounts.find(
     (item) => item.id === payout.selectedPayoutAccountId,
   );
   if (!payout.selectedPayoutAccountId) return null;
   return account ? (
     <div className="my-5 space-y-3">
-      <p>Selected Payout Account:{editable && " change using the selector"}</p>
+      <p>
+        {t("payout.selected")}
+        {editable && ` ${t("payout.changeHint")}`}
+      </p>
       <PayoutAccountLines account={account} />
     </div>
   ) : (
     <p>
-      Selected Payout Account: Unavailable
-      {editable && " · change using the selector"}
+      {t("payout.unavailable")}
+      {editable && ` · ${t("payout.changeHint")}`}
     </p>
   );
 }
@@ -956,18 +965,17 @@ function ClaimStateNotice({
   draft: Outputs["claims"]["getDraft"];
   history: Outputs["claims"]["getHistory"];
 }) {
+  const t = useTranslations("claims.workspace");
+
   if (!draft) return null;
   if (draft.status === "correction_requested")
     return (
       <Alert data-testid="claim-correction-notice">
         <AlertDescription>
-          Correction requested:{" "}
+          {t("notice.correctionRequested")}{" "}
           {history.findLast((event) => event.eventType === "correction_requested")
             ?.reason ?? "See Claim history for the correction request."}
-          <p>
-            Correct the Claim data and Proof Documents, then resubmit for Hosting
-            review.
-          </p>
+          <p>{t("notice.correctionBody")}</p>
         </AlertDescription>
       </Alert>
     );
@@ -975,30 +983,23 @@ function ClaimStateNotice({
     return (
       <Alert>
         <AlertDescription>
-          Rejected:{" "}
+          {t("notice.rejected")}{" "}
           {history.findLast((event) => event.eventType === "rejected")?.reason ??
             "See Claim history for the rejection reason."}
-          <p>
-            This Claim is locked and unpaid. Only Hosting staff may reopen it;
-            reopening does not unlock Partner edits.
-          </p>
+          <p>{t("notice.rejectedBody")}</p>
         </AlertDescription>
       </Alert>
     );
   if (draft.status === "approved")
     return (
       <Alert>
-        <AlertDescription>
-          Approved · unpaid. The full transfer has not been recorded.
-        </AlertDescription>
+        <AlertDescription>{t("notice.approved")}</AlertDescription>
       </Alert>
     );
   if (draft.status === "paid")
     return (
       <Alert>
-        <AlertDescription>
-          Paid. The full transfer was recorded separately from approval.
-        </AlertDescription>
+        <AlertDescription>{t("notice.paid")}</AlertDescription>
       </Alert>
     );
   return null;
@@ -1017,6 +1018,7 @@ function ClaimDraftEditor({
   editable: boolean;
   refresh: () => Promise<void>;
 }) {
+  const t = useTranslations("claims.workspace");
   const client = useQueryClient();
   const input = { partnershipId };
   const [feedback, setFeedback] = useState("");
@@ -1086,7 +1088,7 @@ function ClaimDraftEditor({
   return (
     <Card variant="document">
       <CardHeader>
-        <CardTitle as="h2">Claim draft</CardTitle>
+        <CardTitle as="h2">{t("draft.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p data-draft-status={draft?.status ?? "none"}>
@@ -1095,7 +1097,7 @@ function ClaimDraftEditor({
             : "No Claim has been created. Opening this workspace saves nothing."}
         </p>
         <div id="claim-payout">
-          <Label htmlFor="claim-payout-select">Payout Account</Label>
+          <Label htmlFor="claim-payout-select">{t("payout.title")}</Label>
           {payout.accounts.length ? (
             <select
               id="claim-payout-select"
@@ -1105,7 +1107,7 @@ function ClaimDraftEditor({
               value={payout.selectedPayoutAccountId ?? ""}
               onChange={(event) => void selectAccount(event.target.value)}
             >
-              <option value="">Select account</option>
+              <option value="">{t("payout.selectAccount")}</option>
               {payout.accounts.map((account) => (
                 <option
                   data-testid={`payout-option-${account.id}`}
@@ -1119,9 +1121,7 @@ function ClaimDraftEditor({
           ) : (
             <Empty>
               <EmptyHeader>
-                <EmptyTitle>
-                  No Payout Accounts available. Create one below.
-                </EmptyTitle>
+                <EmptyTitle>{t("payout.empty")}</EmptyTitle>
               </EmptyHeader>
             </Empty>
           )}
@@ -1132,10 +1132,12 @@ function ClaimDraftEditor({
               onSubmit={addAccount}
               noValidate
             >
-              <p>Create Payout Account</p>
+              <p>{t("payout.create")}</p>
               <FieldError message={accountErrors.account} />
               <div className="sm:col-span-2">
-                <Label htmlFor="account-holder">Account holder</Label>
+                <Label htmlFor="account-holder">
+                  {t("payout.accountHolder")}
+                </Label>
                 <Input
                   variant="accounting"
                   id="account-holder"
@@ -1147,7 +1149,7 @@ function ClaimDraftEditor({
                 <FieldError message={accountErrors.accountHolder} />
               </div>
               <div>
-                <Label htmlFor="account-iban">IBAN</Label>
+                <Label htmlFor="account-iban">{t("payout.iban")}</Label>
                 <Input
                   variant="figure"
                   id="account-iban"
@@ -1159,7 +1161,7 @@ function ClaimDraftEditor({
                 <FieldError message={accountErrors.iban} />
               </div>
               <div>
-                <Label htmlFor="account-bic">BIC (optional)</Label>
+                <Label htmlFor="account-bic">{t("payout.bic")}</Label>
                 <Input
                   variant="figure"
                   id="account-bic"
@@ -1176,7 +1178,7 @@ function ClaimDraftEditor({
                 disabled={pending}
                 data-testid="payout-account-create"
               >
-                Create Payout Account
+                {t("payout.create")}
               </Button>
             </form>
           )}
@@ -1190,7 +1192,7 @@ function ClaimDraftEditor({
             data-testid="claim-draft-save"
             onClick={() => void saveDraft()}
           >
-            Save Claim draft
+            {t("payout.saveDraft")}
           </Button>
         )}
         {feedback && <output>{feedback}</output>}
@@ -1200,6 +1202,7 @@ function ClaimDraftEditor({
 }
 
 export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
+  const t = useTranslations("claims.workspace");
   const client = useQueryClient();
   const input = { partnershipId };
   const options = { input, meta: { costTrackerORPC: true } } as const;
@@ -1276,8 +1279,8 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
   }, [refresh]);
 
   return (
-    <section className="min-w-0" aria-label="Claim workspace">
-      <ClaimBand title="Claim workspace" status={draft?.status} />
+    <section className="min-w-0" aria-label={t("label")}>
+      <ClaimBand title={t("bandTitle")} status={draft?.status} />
       <div className="min-w-0 border border-t-0 bg-card">
         <div
           className={
@@ -1289,7 +1292,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
           {editable && preview && (
             <aside
               className="min-w-0 border-b bg-muted min-[961px]:col-start-2 min-[961px]:row-start-1 min-[961px]:border-b-0 min-[961px]:border-l"
-              aria-label="Submission"
+              aria-label={t("submissionLabel")}
               data-testid="claim-submission"
             >
               <ClaimSubmission
@@ -1311,8 +1314,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
             {draft && !editable && (
               <Alert data-testid="claim-locked">
                 <AlertDescription>
-                  This Claim is locked for Partner editing. Only a Hosting-side
-                  correction request can reopen it.
+                  {t("locked")}
                   {draft.approvedAmountEur &&
                     ` Calculated payable: ${draft.approvedAmountEur} EUR (computed by the server).`}
                 </AlertDescription>
@@ -1351,10 +1353,7 @@ export function ClaimWorkspace({ partnershipId }: { partnershipId: string }) {
         {draft && <ClaimHistory events={history} />}
         {!draft && (
           <Alert>
-            <AlertDescription>
-              Select a Payout Account and explicitly save a Claim draft to add
-              costs or Proof Documents. Journeys can be prepared separately.
-            </AlertDescription>
+            <AlertDescription>{t("noDraft")}</AlertDescription>
           </Alert>
         )}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ import { orpc } from "@/lib/orpc/orpc";
 
 export function NoOrganizationAccess() {
   const router = useRouter();
+  const t = useTranslations("onboarding.createOrganization");
   const [name, setName] = useState("");
   const [country, setCountry] = useState<EUCountryCode | "">("");
   const [error, setError] = useState<string>();
@@ -55,20 +57,16 @@ export function NoOrganizationAccess() {
       data-testid="no-organization-access"
     >
       <header>
-        <p className="text-sm font-medium text-primary">Your Organization</p>
+        <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
         <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight">
-          A home for your Projects
+          {t("heading")}
         </h1>
-        <p className="mt-4 leading-7 text-muted-foreground">
-          Your personal login is ready. Now add your Organization to host Erasmus
-          Projects. You&apos;ll become its Owner. You can create your first
-          Project next, whenever you&apos;re ready.
-        </p>
+        <p className="mt-4 leading-7 text-muted-foreground">{t("description")}</p>
       </header>
       <form onSubmit={createOrganization}>
         <FieldGroup>
           <Field data-invalid={Boolean(error)}>
-            <FieldLabel htmlFor="organization-name">Organization name</FieldLabel>
+            <FieldLabel htmlFor="organization-name">{t("nameLabel")}</FieldLabel>
             <Input
               disabled={pending}
               maxLength={100}
@@ -93,7 +91,7 @@ export function NoOrganizationAccess() {
           </Field>
           <Field>
             <FieldLabel htmlFor="organization-country">
-              Organization country
+              {t("countryLabel")}
             </FieldLabel>
             <select
               id="organization-country"
@@ -107,7 +105,7 @@ export function NoOrganizationAccess() {
               className="h-10 w-full border-0 border-b border-input bg-transparent py-2 text-sm text-foreground outline-none focus-visible:border-ring"
             >
               <option value="" disabled>
-                Select an EU country
+                {t("countryPlaceholder")}
               </option>
               {EU_COUNTRIES.map(({ code }) => (
                 <option key={code} value={code}>
@@ -128,16 +126,13 @@ export function NoOrganizationAccess() {
                   data-icon="inline-start"
                 />
               )}
-              Create Organization
+              {t("submit")}
             </Button>
             <SignOutButton />
           </div>
         </FieldGroup>
       </form>
-      <p className="text-sm text-muted-foreground">
-        Expecting an invitation? Open the link in your invitation email to join
-        the right Organization instead.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("invitationHint")}</p>
     </main>
   );
 }

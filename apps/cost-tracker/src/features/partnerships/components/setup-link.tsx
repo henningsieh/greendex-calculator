@@ -140,6 +140,7 @@ function SetupStatus({ state }: { state: SetupError }) {
 
 export function SetupLinkCreator() {
   const client = useQueryClient();
+  const t = useTranslations("partnerships.setup");
   const existingLinks = useQuery(
     orpcQuery.projectPartnerships.listSetupLinks.queryOptions({
       meta: { costTrackerORPC: true },
@@ -199,25 +200,22 @@ export function SetupLinkCreator() {
   return (
     <Card data-testid="setup-link-creator">
       <CardHeader>
-        <CardTitle>Partner Organization Setup Link</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <p>
-          Share this recipient-bound link privately. It does not grant Hosting
-          Organization membership.
-        </p>
+        <p>{t("description")}</p>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={create}>
           <div data-testid="hosted-project-picker" className="space-y-2">
-            <span className="text-sm font-medium">Hosted Project</span>
+            <span className="text-sm font-medium">{t("hostedProject")}</span>
             <EntityCombobox
-              label="Hosted Project"
+              label={t("hostedProject")}
               value={projectId}
               onChange={setProjectId}
               search={searchHosted}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="setup-email">Recipient email</Label>
+            <Label htmlFor="setup-email">{t("recipientEmail")}</Label>
             <Input
               id="setup-email"
               data-testid="setup-email"
@@ -240,23 +238,16 @@ export function SetupLinkCreator() {
         {error && <p role="alert">{error}</p>}
         <section
           data-testid="setup-links"
-          aria-label="Existing Partner Organization Setup Links"
+          aria-label={t("existingLinks")}
           className="space-y-3"
         >
-          <h3 className="font-semibold">
-            Existing Partner Organization Setup Links
-          </h3>
-          <p>
-            Only the newly created link can be copied. Existing link secrets are
-            not stored.
-          </p>
+          <h3 className="font-semibold">{t("existingLinks")}</h3>
+          <p>{t("existingLinksHint")}</p>
           {existingLinks.isPending ? (
-            <output>Loading Partner Organization Setup Links…</output>
+            <output>{t("loading")}</output>
           ) : existingLinks.isError ? (
             <Alert variant="destructive">
-              <AlertTitle>
-                Unable to load Partner Organization Setup Links
-              </AlertTitle>
+              <AlertTitle>{t("loadError")}</AlertTitle>
               <AlertDescription>
                 {getORPCRequestErrorMessage(existingLinks.error).text}
               </AlertDescription>
@@ -265,20 +256,20 @@ export function SetupLinkCreator() {
                 variant="outline"
                 onClick={() => void existingLinks.refetch()}
               >
-                Retry
+                {t("retry")}
               </Button>
             </Alert>
           ) : existingLinks.data.length === 0 ? (
-            <p>No Partner Organization Setup Links yet.</p>
+            <p>{t("empty")}</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Hosted Project</TableHead>
-                  <TableHead>Recipient email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead>{t("hostedProject")}</TableHead>
+                  <TableHead>{t("recipientEmail")}</TableHead>
+                  <TableHead>{t("status")}</TableHead>
+                  <TableHead>{t("expires")}</TableHead>
+                  <TableHead>{t("action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -329,7 +320,7 @@ export function SetupLinkCreator() {
         </section>
         {link && (
           <div className="space-y-2">
-            <Label htmlFor="recipient-link">Recipient setup link</Label>
+            <Label htmlFor="recipient-link">{t("recipientLink")}</Label>
             <Input
               id="recipient-link"
               data-testid="recipient-link"
@@ -351,13 +342,9 @@ export function SetupLinkCreator() {
                 }
               }}
             >
-              Kopieren
+              {t("copy")}
             </Button>
-            {copied && (
-              <output>
-                Link kopiert. Teilen Sie ihn nur mit der eingeladenen Person.
-              </output>
-            )}
+            {copied && <output>{t("copied")}</output>}
           </div>
         )}
       </CardContent>
@@ -391,6 +378,7 @@ function SetupOrganizationForm({
   pending: boolean;
   onConsume: (choice: SetupChoice) => Promise<void>;
 }) {
+  const tSetup = useTranslations("partnerships.setup");
   const create = decision.availableActions.some(
     (action) => action.kind === "create-organization",
   );
@@ -418,7 +406,7 @@ function SetupOrganizationForm({
       <FieldGroup>
         {create && owned && (
           <fieldset disabled={pending} className="flex flex-col gap-3">
-            <legend>Choose an Organization</legend>
+            <legend>{tSetup("chooseOrganization")}</legend>
             <label>
               <input
                 type="radio"
@@ -426,7 +414,7 @@ function SetupOrganizationForm({
                 checked={!existing}
                 onChange={() => setKind("new")}
               />{" "}
-              New Organization
+              {tSetup("newOrganization")}
             </label>
             <label>
               <input
@@ -436,15 +424,15 @@ function SetupOrganizationForm({
                 data-testid="setup-existing-organization"
                 onChange={() => setKind("existing")}
               />{" "}
-              Existing Organization
+              {tSetup("existingOrganization")}
             </label>
           </fieldset>
         )}
         {existing && owned ? (
           <Field data-testid="setup-organization-picker">
-            <FieldLabel>Organization</FieldLabel>
+            <FieldLabel>{tSetup("organization")}</FieldLabel>
             <EntityCombobox
-              label="Organization"
+              label={tSetup("organization")}
               disabled={pending}
               value={organizationId}
               onChange={setOrganizationId}
@@ -454,7 +442,9 @@ function SetupOrganizationForm({
         ) : (
           <>
             <Field>
-              <FieldLabel htmlFor="setup-name">New Organization name</FieldLabel>
+              <FieldLabel htmlFor="setup-name">
+                {tSetup("newOrganizationName")}
+              </FieldLabel>
               <Input
                 id="setup-name"
                 data-testid="setup-name"
@@ -468,7 +458,7 @@ function SetupOrganizationForm({
             </Field>
             <Field>
               <FieldLabel htmlFor="setup-country">
-                Organization country
+                {tSetup("organizationCountry")}
               </FieldLabel>
               <select
                 id="setup-country"
@@ -482,7 +472,7 @@ function SetupOrganizationForm({
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               >
                 <option value="" disabled>
-                  Select an EU country
+                  {tSetup("countryPlaceholder")}
                 </option>
                 {EU_COUNTRIES.map(({ code }) => (
                   <option key={code} value={code}>
@@ -523,13 +513,12 @@ function SetupOrganizationAccess({
   select: (id: string) => Promise<void>;
   error: SetupError | undefined;
 }) {
+  const tSetup = useTranslations("partnerships.setup");
   return decision?.nextStep === "select-organization" ? (
     <>
       <Alert variant="info" data-relationship="project-partnership">
-        <AlertTitle>Project Partnership created</AlertTitle>
-        <AlertDescription>
-          Select your Organization before opening its Project.
-        </AlertDescription>
+        <AlertTitle>{tSetup("created")}</AlertTitle>
+        <AlertDescription>{tSetup("selectOrganization")}</AlertDescription>
       </Alert>
       {decision.availableActions[0].organizations.map((organization) => (
         <Button
@@ -538,7 +527,7 @@ function SetupOrganizationAccess({
           disabled={pending}
           onClick={() => void select(organization.id)}
         >
-          Use this Organization
+          {tSetup("useOrganization")}
         </Button>
       ))}
     </>
@@ -549,17 +538,17 @@ function SetupOrganizationAccess({
       prefetch={false}
       href={decision.availableActions[0].destination}
     >
-      Open Partner Project
+      {tSetup("openPartnerProject")}
     </Link>
   ) : decision?.nextStep === "authenticate" ? (
     <Link
       className={buttonVariants()}
       href={`/login?next=${encodeURIComponent(decision.availableActions[0].returnTo ?? returnTo)}`}
     >
-      Sign in to continue
+      {tSetup("signIn")}
     </Link>
   ) : !error ? (
-    <output>Checking setup link…</output>
+    <output>{tSetup("checking")}</output>
   ) : null;
 }
 
@@ -574,6 +563,7 @@ export function SetupLinkRecipient({
 }) {
   const router = useRouter();
   const t = useTranslations("onboarding");
+  const tSetup = useTranslations("partnerships.setup");
   const [rejectedOrganization, setRejectedOrganization] = useState<string>();
   const queryClient = useQueryClient();
   const [decision, setDecision] = useState<OnboardingDecision>();
@@ -758,15 +748,11 @@ export function SetupLinkRecipient({
     <Card>
       <CardHeader>
         <CardTitle>
-          <h1>Partner Organization setup</h1>
+          <h1>{tSetup("partnerSetup")}</h1>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-5" aria-busy={pending}>
-        <p>
-          Continue with the email address this setup link was sent to. This
-          connects your Organization to the Project; it does not grant Hosting
-          Organization membership.
-        </p>
+        <p>{tSetup("continueEmail")}</p>
         {rejectedOrganization && (
           <output data-testid="setup-invitation-rejected">
             {t("invitation.rejected", { organization: rejectedOrganization })}
@@ -790,18 +776,15 @@ export function SetupLinkRecipient({
         ) : decision?.nextStep === "bind-partnership" ? (
           <>
             <Alert variant="info">
-              <AlertTitle>Organization retained</AlertTitle>
-              <AlertDescription>
-                Your Organization is ready. Continue to connect it to the Project.
-                No new Organization will be created.
-              </AlertDescription>
+              <AlertTitle>{tSetup("retained")}</AlertTitle>
+              <AlertDescription>{tSetup("retainedDescription")}</AlertDescription>
             </Alert>
             <Button
               data-testid="retry-retained-setup"
               disabled={pending}
               onClick={() => void consume()}
             >
-              Retry setup with retained Organization
+              {tSetup("retryRetained")}
             </Button>
           </>
         ) : decision?.nextStep === "setup-recovery" ? (
@@ -812,7 +795,7 @@ export function SetupLinkRecipient({
               disabled={pending}
               onClick={recheck}
             >
-              Inspect setup result
+              {tSetup("inspect")}
             </Button>
           </>
         ) : (
@@ -832,7 +815,7 @@ export function SetupLinkRecipient({
               disabled={pending}
               onClick={recheck}
             >
-              Inspect setup result
+              {tSetup("inspect")}
             </Button>
           </>
         )}

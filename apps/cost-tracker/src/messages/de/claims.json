@@ -1,0 +1,157 @@
+{
+  "claims": {
+    "band": {
+      "eyebrow": "GreenDex Cost Tracker · Erasmus Edition"
+    },
+    "loading": {
+      "workspace": "Claim-Arbeitsbereich wird geladen",
+      "review": "Claim-Prüfung wird geladen",
+      "submitted": "Eingereichte Claims werden geladen"
+    },
+    "document": {
+      "accountHolder": "Kontoinhaber",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "caption": "Exakte Summen, Cost Allocations und verknüpfte Proof Documents.",
+      "transport": "Transport",
+      "totalEur": "Summe (EUR)",
+      "costAllocations": "Cost Allocations",
+      "proofDocuments": "Proof Documents",
+      "action": "Aktion"
+    },
+    "queue": {
+      "title": "Eingereichte Claims zur Prüfung",
+      "empty": "Keine eingereichten Claims zur Prüfung verfügbar."
+    },
+    "page": {
+      "back": "Zurück zu Projekten",
+      "title": "Claim-Arbeitsbereich"
+    },
+    "review": {
+      "sectionLabel": "Claim-Prüfung",
+      "bandTitle": "Claim-Prüfung",
+      "back": "Zurück zu eingereichten Claims",
+      "historyLabel": "Claim-Verlauf",
+      "historyTitle": "Claim-Verlauf",
+      "historyEmpty": "Noch keine Prüfereignisse.",
+      "actor": "Akteur:",
+      "calculatedPayable": "Berechnete Auszahlung:",
+      "currencyEur": "EUR",
+      "serverApprovedAmount": "(serverseitig genehmigter Betrag)",
+      "decisionTitle": "Prüfentscheidung",
+      "decisionLabel": "Prüfentscheidung",
+      "confirm": "Bestätigen",
+      "cancel": "Abbrechen",
+      "detailsTitle": "Details des eingereichten Claims",
+      "noPayoutAccount": "Kein Payout Account",
+      "costsAndDocuments": "Travel Cost Entries und Proof Documents",
+      "noCosts": "Keine Kosten erfasst.",
+      "proofDocument": "Proof Document:",
+      "bytes": "Bytes",
+      "download": "Proof Document herunterladen:",
+      "journeysTitle": "Participant Journeys",
+      "noJourneys": "Keine Journeys erfasst.",
+      "km": "km",
+      "noClaim": "Für diese Projektpartnerschaft wurde kein Claim erstellt.",
+      "hostingTitle": "Hosting-Claim-Prüfung"
+    },
+    "submission": {
+      "title": "Einreichung",
+      "checklistLabel": "Einreichungs-Checkliste",
+      "pass": "Bestanden",
+      "fail": "Fehlgeschlagen",
+      "goToGap": "— Zur Lücke",
+      "viewSection": "Abschnitt anzeigen",
+      "calculatedPayable": "Berechnete Auszahlung:",
+      "currencyEur": "EUR",
+      "notEditable": "(vom Server berechnet; nicht bearbeitbar)",
+      "submit": "Claim einreichen",
+      "confirmDescription": "Einreichung bestätigen: Die Einreichung sperrt den Claim und den ausgewählten Payout Account für Partner-Bearbeitung, bis die Hosting-Seite eine Korrektur anfordert.",
+      "confirm": "Einreichung bestätigen",
+      "cancel": "Abbrechen"
+    },
+    "workspace": {
+      "label": "Claim-Arbeitsbereich",
+      "bandTitle": "Claim-Arbeitsbereich",
+      "submissionLabel": "Einreichung",
+      "locked": "Dieser Claim ist für Partner-Bearbeitung gesperrt. Nur eine Korrekturanforderung der Hosting-Seite kann ihn wieder öffnen.",
+      "noDraft": "Wähle einen Payout Account und speichere ausdrücklich einen Claim-Entwurf, um Kosten oder Proof Documents hinzuzufügen. Journeys können separat vorbereitet werden.",
+      "common": {
+        "cancel": "Abbrechen"
+      },
+      "journey": {
+        "distanceSuffix": "km (Calculator-Distanz)",
+        "correctFor": "Journey für {name} korrigieren",
+        "originFor": "Abfahrt für {name}",
+        "destinationFor": "Ziel für {name}",
+        "tripTypeFor": "Reiseart für {name}",
+        "oneWay": "Einfach",
+        "roundTrip": "Hin und zurück",
+        "distanceFor": "Erasmus-Distanzrechner-Distanz (km) für {name}",
+        "saveCorrection": "Korrektur speichern",
+        "title": "Participant Journeys",
+        "empty": "Noch keine Journeys gespeichert.",
+        "savedDistanceSuffix": "km (Calculator-Distanz; gespeichert, schreibgeschützt)",
+        "gapsLabel": "Participations ohne Journeys",
+        "missing": "{name}: keine Participant Journey gespeichert.",
+        "participation": "Project Participation",
+        "selectParticipation": "Project Participation auswählen",
+        "origin": "Abfahrt",
+        "destination": "Ziel",
+        "tripType": "Reiseart",
+        "distance": "Erasmus-Distanzrechner-Distanz (km)",
+        "save": "Journey speichern"
+      },
+      "cost": {
+        "title": "Travel Cost Entries",
+        "empty": "Noch keine Kosten gespeichert.",
+        "edit": "Kosten bearbeiten",
+        "transport": "Transport",
+        "exactTotal": "Exakter Betrag (EUR)",
+        "allocationMethod": "Verteilungsmethode",
+        "equal": "Gleich",
+        "percentage": "Prozentsatz",
+        "amount": "Betrag (EUR)",
+        "coveredParticipations": "Abgedeckte Participations",
+        "save": "Kosten speichern"
+      },
+      "proof": {
+        "title": "Proof Documents",
+        "empty": "Keine Proof Documents in diesem Claim.",
+        "bytes": "Bytes",
+        "uploadLabel": "Proof Document hochladen (PDF, JPEG, PNG; bis zu 10 MB)",
+        "upload": "Dokument hochladen",
+        "progressLabel": "Upload-Fortschritt",
+        "uploadProgress": "Upload:",
+        "currencyEur": "EUR",
+        "linked": "Verknüpft:",
+        "linkLabel": "Proof Document mit diesen Kosten verknüpfen",
+        "selectDocument": "Claim-Dokument auswählen"
+      },
+      "payout": {
+        "selected": "Ausgewählter Payout Account:",
+        "unavailable": "Ausgewählter Payout Account: Nicht verfügbar",
+        "changeHint": "über die Auswahl ändern",
+        "title": "Payout Account",
+        "selectAccount": "Konto auswählen",
+        "empty": "Keine Payout Accounts verfügbar. Erstelle unten einen.",
+        "create": "Payout Account erstellen",
+        "accountHolder": "Kontoinhaber",
+        "iban": "IBAN",
+        "bic": "BIC (optional)",
+        "saveDraft": "Claim-Entwurf speichern"
+      },
+      "notice": {
+        "correctionRequested": "Korrektur angefordert:",
+        "correctionBody": "Korrigiere die Claim-Daten und Proof Documents und reiche den Claim dann erneut zur Hosting-Prüfung ein.",
+        "rejected": "Abgelehnt:",
+        "rejectedBody": "Dieser Claim ist gesperrt und unbezahlt. Nur Hosting-Mitarbeitende können ihn wieder öffnen; das Wiederöffnen entsperrt keine Partner-Bearbeitung.",
+        "approved": "Genehmigt · unbezahlt. Die vollständige Überweisung wurde nicht erfasst.",
+        "paid": "Bezahlt. Die vollständige Überweisung wurde getrennt von der Genehmigung erfasst."
+      },
+      "draft": {
+        "title": "Claim-Entwurf"
+      }
+    }
+  }
+}

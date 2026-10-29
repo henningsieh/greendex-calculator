@@ -1,0 +1,111 @@
+{
+  "projects": {
+    "confirmations": {
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "pending": "Wird ausgeführt…",
+      "removePartnership": {
+        "title": "Projektpartnerschaft entfernen?",
+        "description": "{organization} aus {project} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektpartnerschaft entfernen"
+      },
+      "removeParticipation": {
+        "title": "Projektteilnahme entfernen?",
+        "description": "Die Projektteilnahme von {participant} entfernen? Dies kann nicht rückgängig gemacht werden.",
+        "execute": "Projektteilnahme entfernen"
+      },
+      "revokeOrganizer": {
+        "title": "Gruppenorganisator-Zuweisung widerrufen?",
+        "description": "Die Gruppenorganisator-Zuweisung für {user} widerrufen? Die Rollen der Organisationsmitgliedschaft bleiben unverändert.",
+        "execute": "Zuweisung widerrufen"
+      }
+    },
+    "page": {
+      "eyebrow": "Projektarbeitsbereich",
+      "title": "Projekte",
+      "description": "Prüfe Projekte, die von deiner aktiven Organisation gehostet oder ihr zugewiesen sind."
+    },
+    "detail": {
+      "eyebrow": "Projektarbeitsbereich"
+    },
+    "assigned": {
+      "label": "Zugewiesene Projekte",
+      "title": "Deine Projekte",
+      "empty": "Noch keine Projekte zugewiesen.",
+      "viewParticipants": "Teilnehmende ansehen"
+    },
+    "create": {
+      "title": "Neues Projekt",
+      "description": "Füge die Projektdetails hinzu. Reisekosten können später über Claims ergänzt werden.",
+      "name": "Name",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "location": "Ort",
+      "country": "Land",
+      "countryPlaceholder": "EU-Land auswählen",
+      "welcomeMessage": "Willkommensnachricht (optional)",
+      "cancel": "Abbrechen"
+    },
+    "list": {
+      "label": "Projektliste",
+      "emptyTitle": "Keine Projekte verfügbar",
+      "emptyDescription": "Keine Projekte werden von deiner aktiven Organisation gehostet oder ihr zugewiesen.",
+      "relationship": "Projektbeziehung",
+      "hosted": "Gehostet",
+      "partner": "Partner",
+      "sortByStartDate": "Nach Startdatum sortieren",
+      "schedule": "Zeitplan",
+      "viewParticipants": "Teilnehmende ansehen",
+      "name": "Projektname",
+      "searchPlaceholder": "Mindestens 3 Zeichen suchen",
+      "submissionWindow": "Einreichungsfenster",
+      "sort": "Sortieren",
+      "sortOpenEarliest": "Offen zuerst, frühester Start",
+      "sortStartEarliest": "Startdatum, frühestes",
+      "sortStartLatest": "Startdatum, spätestes",
+      "sortEndEarliest": "Enddatum, frühestes",
+      "sortEndLatest": "Enddatum, spätestes",
+      "perPage": "Projekte pro Seite",
+      "activeAfter": "Aktiv am oder nach",
+      "activeBefore": "Aktiv am oder vor",
+      "partnerOrganizations": "Partnerorganisationen (beliebige Übereinstimmung)",
+      "refresh": "Aktualisieren",
+      "noMatch": "Keine Projekte passen zu diesem Bereich und Filter.",
+      "previousPage": "Vorherige Seite",
+      "nextPage": "Nächste Seite",
+      "project": "Projekt",
+      "location": "Ort",
+      "participants": "Teilnehmende",
+      "allWindows": "Alle Fenster"
+    },
+    "loading": {
+      "projects": "Projekte werden geladen",
+      "list": "Projektliste wird geladen",
+      "workspace": "Projektarbeitsbereich wird geladen"
+    },
+    "workspace": {
+      "back": "Zurück zu Projekten",
+      "archived": "Archiviert",
+      "completed": "Abgeschlossen",
+      "submissionWindow": "Kosteneinreichungsfenster",
+      "by": "von",
+      "schedule": "Zeitplan",
+      "location": "Ort",
+      "assignedPartners": "Zugewiesene Partnerorganisationen",
+      "noPartners": "Keine Partnerorganisationen zugewiesen.",
+      "assigned": "Zugewiesen",
+      "participantView": "Hosting-Teilnehmendenansicht",
+      "reviewClaims": "Eingereichte Claims prüfen",
+      "managePartnerships": "Projektpartnerschaften verwalten",
+      "partnership": "Projektpartnerschaft",
+      "claimReadiness": "Claim-Bereitschaft:",
+      "hostingOrganization": "Hosting-Organisation:",
+      "assignedLabel": "Zugewiesen:",
+      "assignmentUpdated": "Zuweisung aktualisiert:",
+      "coordinateParticipants": "Teilnehmende koordinieren",
+      "openClaim": "Claim-Arbeitsbereich öffnen",
+      "hostedProject": "Gehostetes Projekt",
+      "partnerProject": "Partnerprojekt"
+    }
+  }
+}

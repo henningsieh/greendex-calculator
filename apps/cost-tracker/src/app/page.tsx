@@ -1,3 +1,4 @@
+import { getTranslations } from "@greendex/i18n/server";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -30,36 +31,45 @@ import { cn } from "@/lib/utils";
 const journeySteps = [
   {
     icon: TrainFrontIcon,
-    title: "Train to Utrecht",
-    detail: "Berlin · 2 participants",
+    titleKey: "landing.journey.train.title",
+    detailKey: "landing.journey.train.detail",
     amount: "€142.80",
   },
   {
     icon: FileCheck2Icon,
-    title: "Receipt attached",
-    detail: "bahn-ticket.pdf",
-    amount: "Ready",
+    titleKey: "landing.journey.receipt.title",
+    detailKey: "landing.journey.receipt.detail",
+    statusKey: "landing.journey.receipt.status",
   },
   {
     icon: SplitIcon,
-    title: "Cost allocated",
-    detail: "Equal share",
+    titleKey: "landing.journey.allocation.title",
+    detailKey: "landing.journey.allocation.detail",
     amount: "€71.40",
   },
-];
+] as const;
 
-export default function LandingPage() {
+// The localized routes serve every request (the proxy rewrites unprefixed
+// paths), so the root copy only needs a blocking fallback render.
+export const instant = false;
+
+export default async function LandingPage() {
+  const t = await getTranslations("shell");
+
   return (
     <main className="min-h-svh overflow-hidden">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between p-5 sm:px-8 lg:px-10">
         <SiteBrand />
-        <nav aria-label="Account" className="flex items-center gap-2 sm:gap-3">
+        <nav
+          aria-label={t("landing.accountNav")}
+          className="flex items-center gap-2 sm:gap-3"
+        >
           <ThemeSwitcher />
           <Link
             className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
             href="/login"
           >
-            Sign in
+            {t("common.signIn")}
           </Link>
           <Link
             className={cn(
@@ -68,7 +78,7 @@ export default function LandingPage() {
             )}
             href="/register"
           >
-            Create account
+            {t("landing.createAccount")}
           </Link>
         </nav>
       </header>
@@ -81,34 +91,34 @@ export default function LandingPage() {
               aria-hidden="true"
               className="size-1.5 rounded-full bg-primary"
             />
-            GreenDex Cost Tracker · Erasmus Edition
+            {t("brand.edition")}
           </Badge>
           <h1 className="mt-6 type-ember-display">
-            Receipts in.{" "}
-            <span className="ember-headline-accent text-primary">Money out.</span>
+            {t("landing.hero.titleLead")}{" "}
+            <span className="ember-headline-accent text-primary">
+              {t("landing.hero.titleAccent")}
+            </span>
           </h1>
           <p className="mt-7 max-w-xl text-lg/8 text-muted-foreground sm:text-xl">
-            Settle Erasmus travel costs without the spreadsheet struggle. Snap a
-            photo of the ticket, share the cost, file the claim — every number
-            stays traceable to its receipt.
+            {t("landing.hero.description")}
           </p>
           <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
               className={cn(buttonVariants({ size: "lg" }), "ember-cta group")}
               href="/register"
             >
-              Start tracking costs
+              {t("landing.hero.start")}
               <ArrowRightIcon data-icon="inline-end" />
             </Link>
             <Link
               className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
               href="#how-it-works"
             >
-              See how it works
+              {t("landing.hero.seeHow")}
             </Link>
           </div>
           <p className="mt-5 font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase">
-            Free to start · No credit card · Demo data below
+            {t("landing.hero.trustLine")}
           </p>
         </div>
 
@@ -121,22 +131,25 @@ export default function LandingPage() {
             <StatNumber>
               515<span className="text-[32px] text-primary">€</span>
             </StatNumber>
-            <StatLabel>Disbursed</StatLabel>
-            <StatDetail>calculated · not editable</StatDetail>
+            <StatLabel>{t("landing.stats.disbursed.label")}</StatLabel>
+            <StatDetail>{t("landing.stats.disbursed.detail")}</StatDetail>
           </StatCell>
           <StatCell>
             <StatNumber>
               100<span className="text-[32px] text-primary">%</span>
             </StatNumber>
-            <StatLabel>Documented</StatLabel>
-            <StatDetail>zero open gaps</StatDetail>
+            <StatLabel>{t("landing.stats.documented.label")}</StatLabel>
+            <StatDetail>{t("landing.stats.documented.detail")}</StatDetail>
           </StatCell>
           <StatCell>
             <StatNumber>
-              48<span className="text-[32px] text-primary">h</span>
+              48
+              <span className="text-[32px] text-primary">
+                {t("landing.stats.avgReview.unit")}
+              </span>
             </StatNumber>
-            <StatLabel>Avg. review time</StatLabel>
-            <StatDetail>hosting review</StatDetail>
+            <StatLabel>{t("landing.stats.avgReview.label")}</StatLabel>
+            <StatDetail>{t("landing.stats.avgReview.detail")}</StatDetail>
           </StatCell>
         </StatGrid>
       </section>
@@ -146,30 +159,28 @@ export default function LandingPage() {
         id="how-it-works"
       >
         <div>
-          <p className="type-ember-eyebrow">The process</p>
+          <p className="type-ember-eyebrow">{t("landing.process.eyebrow")}</p>
           <h2 className="mt-4 max-w-md font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-            One claim. Zero follow-up questions.
+            {t("landing.process.title")}
           </h2>
           <p className="mt-5 max-w-prose leading-7 text-muted-foreground">
-            The workspace checks everything before you submit: payout account,
-            cost entries, receipt links, frozen funding rates. What is missing
-            shows up as a checklist — not as an email three weeks later.
+            {t("landing.process.description")}
           </p>
           <ol className="mt-8 grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-3">
             <ProcessStep
-              description="Choose the project and enter the exact journey cost."
+              description={t("landing.process.record.description")}
               number="1"
-              title="Record"
+              title={t("landing.process.record.title")}
             />
             <ProcessStep
-              description="Add receipts, invoices, or tickets as proof documents."
+              description={t("landing.process.support.description")}
               number="2"
-              title="Support"
+              title={t("landing.process.support.title")}
             />
             <ProcessStep
-              description="Assign the cost to the participants it covered."
+              description={t("landing.process.allocate.description")}
               number="3"
-              title="Allocate"
+              title={t("landing.process.allocate.title")}
             />
           </ol>
         </div>
@@ -177,58 +188,57 @@ export default function LandingPage() {
           <TerminalDots />
           <div className="mt-4 flex flex-col gap-1">
             <p>
-              <span className="text-primary">✓</span> Payout account · Green
-              Routes e.V.
+              <span className="text-primary">✓</span>{" "}
+              {t("landing.terminal.payoutAccount")}
             </p>
             <p>
-              <span className="text-primary">✓</span> Train · €428.60 · receipt
-              linked
+              <span className="text-primary">✓</span>{" "}
+              {t("landing.terminal.train")}
             </p>
             <p>
-              <span className="text-primary">✓</span> Bus · €86.40 · receipt
-              linked
+              <span className="text-primary">✓</span> {t("landing.terminal.bus")}
             </p>
             <p>
-              <span className="text-muted-foreground/70">◌</span> Local bus
-              tickets · upload open
+              <span className="text-muted-foreground/70">◌</span>{" "}
+              {t("landing.terminal.openUpload")}
             </p>
           </div>
           <Separator className="my-4" />
-          <TerminalStatus>€515.00 ready for submission</TerminalStatus>
+          <TerminalStatus>{t("landing.terminal.status")}</TerminalStatus>
         </TerminalCard>
       </section>
 
       <section className="border-y bg-card/60">
         <div className="mx-auto grid w-full max-w-7xl divide-y px-5 sm:px-8 md:grid-cols-3 md:divide-x md:divide-y-0 lg:px-10">
           <ValuePoint
-            description="Attach the document once and connect it to the costs it supports."
-            title="Proof stays with the cost"
+            description={t("landing.values.proof.description")}
+            title={t("landing.values.proof.title")}
           />
           <ValuePoint
-            description="Split a ticket equally, by percentage, or by exact EUR amount."
-            title="Group travel stays legible"
+            description={t("landing.values.group.description")}
+            title={t("landing.values.group.title")}
           />
           <ValuePoint
-            description="Hosting and Partner Organizations see one project-specific record."
-            title="Partners stay aligned"
+            description={t("landing.values.partners.description")}
+            title={t("landing.values.partners.title")}
           />
         </div>
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-5 py-20 text-center sm:px-8 lg:px-10 lg:py-28">
-        <p className="type-ember-eyebrow">Free to start</p>
+        <p className="type-ember-eyebrow">{t("landing.cta.eyebrow")}</p>
         <h2 className="mx-auto mt-4 max-w-2xl font-heading text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
-          Ready for your next claim?
+          {t("landing.cta.title")}
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
-          Upload the photo. Share the cost. Get the money back.
+          {t("landing.cta.description")}
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link
             className={cn(buttonVariants({ size: "lg" }), "ember-cta group")}
             href="/register"
           >
-            Start tracking costs
+            {t("landing.hero.start")}
             <ArrowRightIcon data-icon="inline-end" />
           </Link>
         </div>
@@ -236,27 +246,33 @@ export default function LandingPage() {
 
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-5 py-7 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
-          <p>Greendex Cost Tracker</p>
-          <p>Clear records for shared travel.</p>
+          <p>{t("landing.footer.product")}</p>
+          <p>{t("landing.footer.tagline")}</p>
         </div>
       </footer>
     </main>
   );
 }
 
-function JourneyLedger() {
+async function JourneyLedger() {
+  const t = await getTranslations("shell");
+
   return (
     <div className="relative mx-auto w-full max-w-lg lg:mr-0">
       <div className="absolute -inset-10 -z-10 rounded-full bg-accent/35 blur-3xl" />
       <div className="overflow-hidden rounded-3xl border bg-card shadow-[0_24px_70px_-45px_color-mix(in_oklch,var(--foreground),transparent_55%)]">
         <div className="flex items-center justify-between border-b px-6 py-5">
           <div>
-            <p className="font-heading font-semibold">Spring workshop</p>
-            <p className="text-sm text-muted-foreground">Travel cost trail</p>
+            <p className="font-heading font-semibold">
+              {t("landing.journey.project")}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {t("landing.journey.subtitle")}
+            </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-primary">
             <span className="size-2 rounded-full bg-primary" />
-            Window open
+            {t("landing.journey.windowOpen")}
           </div>
         </div>
         <div className="px-6 py-2">
@@ -266,7 +282,7 @@ function JourneyLedger() {
             return (
               <div
                 className="relative grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-5"
-                key={step.title}
+                key={step.titleKey}
               >
                 {index < journeySteps.length - 1 && (
                   <span className="absolute top-12 left-5 h-10 w-px bg-border" />
@@ -275,11 +291,13 @@ function JourneyLedger() {
                   <Icon aria-hidden="true" className="size-4" />
                 </span>
                 <div>
-                  <p className="font-medium">{step.title}</p>
-                  <p className="text-sm text-muted-foreground">{step.detail}</p>
+                  <p className="font-medium">{t(step.titleKey)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t(step.detailKey)}
+                  </p>
                 </div>
                 <p className="font-heading text-sm font-semibold">
-                  {step.amount}
+                  {"amount" in step ? step.amount : t(step.statusKey)}
                 </p>
               </div>
             );
@@ -288,7 +306,9 @@ function JourneyLedger() {
         <div className="flex items-center justify-between bg-primary px-6 py-5 text-primary-foreground">
           <div className="flex items-center gap-3">
             <CheckIcon aria-hidden="true" className="size-4" />
-            <span className="text-sm font-medium">Submission complete</span>
+            <span className="text-sm font-medium">
+              {t("landing.journey.submissionComplete")}
+            </span>
           </div>
           <span className="font-heading text-lg font-semibold">€142.80</span>
         </div>

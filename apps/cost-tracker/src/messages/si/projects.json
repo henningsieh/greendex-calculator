@@ -1,0 +1,111 @@
+{
+  "projects": {
+    "confirmations": {
+      "cancel": "Prekliči",
+      "close": "Zapri",
+      "pending": "Obdelovanje…",
+      "removePartnership": {
+        "title": "Odstraniti projektno partnerstvo?",
+        "description": "Odstraniti {organization} iz projekta {project}? Tega dejanja ni mogoče razveljaviti.",
+        "execute": "Odstrani projektno partnerstvo"
+      },
+      "removeParticipation": {
+        "title": "Odstraniti udeležbo v projektu?",
+        "description": "Odstraniti udeležbo osebe {participant} v projektu? Tega dejanja ni mogoče razveljaviti.",
+        "execute": "Odstrani udeležbo v projektu"
+      },
+      "revokeOrganizer": {
+        "title": "Preklicati dodelitev organizatorja skupine?",
+        "description": "Preklicati dodelitev organizatorja skupine za {user}? Vloge članstva v organizaciji se ne bodo spremenile.",
+        "execute": "Prekliči dodelitev"
+      }
+    },
+    "page": {
+      "eyebrow": "Project workspace",
+      "title": "Projects",
+      "description": "Review Projects hosted by or assigned to your active Organization."
+    },
+    "detail": {
+      "eyebrow": "Project workspace"
+    },
+    "assigned": {
+      "label": "Assigned Projects",
+      "title": "Your Projects",
+      "empty": "No Projects assigned yet.",
+      "viewParticipants": "View Participants"
+    },
+    "create": {
+      "title": "New project",
+      "description": "Add the Project details. Travel can be added later with Claims.",
+      "name": "Name",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "location": "Location",
+      "country": "Country",
+      "countryPlaceholder": "Select an EU country",
+      "welcomeMessage": "Welcome message (optional)",
+      "cancel": "Cancel"
+    },
+    "list": {
+      "label": "Project list",
+      "emptyTitle": "No Projects available",
+      "emptyDescription": "No Projects are hosted by or assigned to your active Organization.",
+      "relationship": "Project relationship",
+      "hosted": "Hosted",
+      "partner": "Partner",
+      "sortByStartDate": "Sort by start date",
+      "schedule": "Schedule",
+      "viewParticipants": "View Participants",
+      "name": "Project name",
+      "searchPlaceholder": "Search at least 3 characters",
+      "submissionWindow": "Submission window",
+      "sort": "Sort",
+      "sortOpenEarliest": "Open first, earliest start",
+      "sortStartEarliest": "Start date, earliest",
+      "sortStartLatest": "Start date, latest",
+      "sortEndEarliest": "End date, earliest",
+      "sortEndLatest": "End date, latest",
+      "perPage": "Projects per page",
+      "activeAfter": "Active on or after",
+      "activeBefore": "Active on or before",
+      "partnerOrganizations": "Partner Organizations (match any)",
+      "refresh": "Refresh",
+      "noMatch": "No Projects match this scope and filter.",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "project": "Project",
+      "location": "Location",
+      "participants": "Participants",
+      "allWindows": "All windows"
+    },
+    "loading": {
+      "projects": "Loading Projects",
+      "list": "Loading Project list",
+      "workspace": "Loading Project workspace"
+    },
+    "workspace": {
+      "back": "Back to Projects",
+      "archived": "Archived",
+      "completed": "Completed",
+      "submissionWindow": "Cost Submission Window",
+      "by": "by",
+      "schedule": "Schedule",
+      "location": "Location",
+      "assignedPartners": "Assigned Partner Organizations",
+      "noPartners": "No Partner Organizations are assigned.",
+      "assigned": "Assigned",
+      "participantView": "Hosting Participant view",
+      "reviewClaims": "Review submitted Claims",
+      "managePartnerships": "Manage Project Partnerships",
+      "partnership": "Project Partnership",
+      "claimReadiness": "Claim readiness:",
+      "hostingOrganization": "Hosting Organization:",
+      "assignedLabel": "Assigned:",
+      "assignmentUpdated": "Assignment updated:",
+      "coordinateParticipants": "Coordinate Participants",
+      "openClaim": "Open Claim workspace",
+      "hostedProject": "Hosted Project",
+      "partnerProject": "Partner Project"
+    }
+  }
+}

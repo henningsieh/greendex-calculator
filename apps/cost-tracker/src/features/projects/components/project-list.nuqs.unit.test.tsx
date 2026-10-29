@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { NuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 
 const mocks = vi.hoisted(() => ({
   availableScopes: { hosted: true, partner: false },

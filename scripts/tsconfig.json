@@ -8,6 +8,7 @@
     "check-agent-instructions.utils.ts",
     "check-agent-instructions.policy.ts",
     "check-agent-instructions.policy.test.ts",
+    "check-cost-tracker-i18n.ts",
     "check-cost-tracker-persistence-seam.ts",
     "check-cost-tracker-persistence-seam.test.ts"
   ]

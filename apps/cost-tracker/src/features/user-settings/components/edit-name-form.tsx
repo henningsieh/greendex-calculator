@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ type EditNameFormProps = {
 
 export function EditNameForm({ email, name }: EditNameFormProps) {
   const router = useRouter();
+  const t = useTranslations("settings.name");
   const [error, setError] = useState<string>();
   const form = useForm<EditNameValues>({
     resolver: zodResolver(EditNameSchema),
@@ -41,7 +43,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
       await orpc.authentication.updateUser({ name: values.name });
 
       form.reset(values);
-      toast.add({ title: "Your name has been updated.", type: "success" });
+      toast.add({ title: t("success"), type: "success" });
       router.refresh();
     } catch (error) {
       setError(getORPCRequestErrorMessage(error).text);
@@ -56,7 +58,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
           name="name"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+              <FieldLabel htmlFor={field.name}>{t("label")}</FieldLabel>
               <Input
                 {...field}
                 data-testid="account-name"
@@ -69,17 +71,14 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
                   field.onChange(event);
                 }}
               />
-              <FieldDescription>
-                This name appears in the navigation and across shared Project
-                work.
-              </FieldDescription>
+              <FieldDescription>{t("description")}</FieldDescription>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />
 
         <Field>
-          <FieldLabel htmlFor="account-email">Email address</FieldLabel>
+          <FieldLabel htmlFor="account-email">{t("emailLabel")}</FieldLabel>
           <Input
             disabled
             data-testid="account-email"
@@ -87,9 +86,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
             type="email"
             value={email}
           />
-          <FieldDescription>
-            Email changes are not available in Cost Tracker yet.
-          </FieldDescription>
+          <FieldDescription>{t("emailDescription")}</FieldDescription>
         </Field>
 
         {error && <FieldError data-testid="name-form-error">{error}</FieldError>}
@@ -103,7 +100,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
           {form.formState.isSubmitting && (
             <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
           )}
-          {form.formState.isSubmitting ? "Saving name" : "Save name"}
+          {form.formState.isSubmitting ? t("saving") : t("save")}
         </Button>
       </FieldGroup>
     </form>

@@ -1,0 +1,140 @@
+{
+  "participations": {
+    "report": {
+      "label": "Hosting Participant view",
+      "description": "Totals count the Project Participations that exist, each in the Partner Organization that represents it. Agreement status is separate from membership.",
+      "agreementVersion": "Agreement version",
+      "agreementUnpublished": "is not published, so no Participant counts as completed.",
+      "empty": "No Project Participations have joined this Project yet.",
+      "country": "Country:",
+      "completed": "completed",
+      "pending": "pending",
+      "countryHeader": "Country"
+    },
+    "loading": {
+      "projectParticipations": "Loading Project Participations",
+      "details": "Loading Participant details",
+      "report": "Loading the Participants report"
+    },
+    "review": {
+      "registeredUser": "Registered User:",
+      "task": "Review Task",
+      "existingParticipation": "Existing Project Participation:",
+      "assignedUser": "Assigned Registered User:",
+      "assignToMe": "Assign Review Task to me",
+      "decision": "Review Task decision",
+      "resolve": "Resolve Review Task",
+      "decisionLabel": "Decision:",
+      "tasksLabel": "Review Tasks",
+      "loading": "Loading Review Tasks…",
+      "loadError": "Unable to load Review Tasks",
+      "retry": "Retry Review Tasks",
+      "empty": "No Review Tasks are recorded for this Project Partnership.",
+      "update": "Review Task update"
+    },
+    "groupOrganizer": {
+      "loadingUsers": "Loading Registered Users…",
+      "unavailable": "Group Organizer management unavailable",
+      "retryUsers": "Retry Registered Users",
+      "description": "Organization Owners and Organization Admins may assign or revoke a Group Organizer.",
+      "registeredUserLabel": "Registered User for Group Organizer assignment",
+      "selectUser": "Select a Registered User",
+      "noEligible": "No eligible Registered Users in this Organization.",
+      "assign": "Assign Group Organizer",
+      "update": "Group Organizer update"
+    },
+    "invitations": {
+      "title": "Email-bound Participant Invitations",
+      "description": "Only the invited email address can redeem each invitation. Forwarded links grant nothing.",
+      "empty": "No invitations are recorded for this Partnership.",
+      "reissue": "Reissue invitation for",
+      "close": "Close invitation for",
+      "statusHint": "Invitation status does not show profile or agreement progress."
+    },
+    "links": {
+      "title": "Shareable Participant Registration Links",
+      "description": "Anyone holding a link may redeem it with their own account. Close a link once it is no longer needed.",
+      "empty": "No registration links are recorded for this Partnership.",
+      "link": "Link",
+      "close": "Close registration link",
+      "reopen": "Reopen registration link"
+    },
+    "joined": {
+      "title": "Joined Participants",
+      "empty": "No Participants have joined this Partnership yet.",
+      "joined": "Joined",
+      "country": "Country",
+      "detailsFor": "Participant details for"
+    },
+    "page": {
+      "label": "Project Participations",
+      "project": "Project:",
+      "addUser": "Add a registered user to this project",
+      "addUserDescription": "Only add a registered User who has completed profile and agreement acceptance.",
+      "registeredUser": "Registered User",
+      "registeredUserLabel": "Registered User",
+      "groupOrganizers": "Group Organizers",
+      "reviewTasks": "Review Tasks",
+      "reviewTasksDescription": "Review duplicate Registered User identities. Resolution retains the existing Project Participation.",
+      "invitationsTitle": "Participant Invitations and Registration Links",
+      "invitationsDescription": "Email-bound invitations reach one address and only that verified account can redeem them.",
+      "inviteeEmail": "Invitee email",
+      "sendInvitation": "Send Participant Invitation",
+      "createLink": "Create Participant Registration Link",
+      "newLink": "New registration link (copy now)"
+    },
+    "details": {
+      "countryFor": "Country for",
+      "notSet": "Not set",
+      "saveCountry": "Save country for",
+      "label": "Participant details",
+      "back": "Back to Project Participations",
+      "project": "Project:",
+      "participation": "Project Participation",
+      "country": "Country",
+      "correctCountry": "Correct country",
+      "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it."
+    },
+    "app": {
+      "backToProjects": "Back to Projects",
+      "reportTitle": "Participants report",
+      "reportDescription": "Read how onboarding is progressing across this Project, grouped by Partner Organization.",
+      "projectParticipations": "Project Participations",
+      "coordinateDescription": "Coordinate Participants for this Project Partnership.",
+      "participantDetails": "Participant details",
+      "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct."
+    }
+  },
+  "participantOnboarding": {
+    "agreementUnavailable": {
+      "title": "Participant agreement is not yet available",
+      "description": "Joining and Participant actions are paused until the approved agreement is published."
+    },
+    "agreement": {
+      "label": "EU–Erasmus Participant agreement (",
+      "aria": "Participant agreement text",
+      "accept": "I accept the current Participant agreement"
+    },
+    "join": {
+      "title": "Join as a Project Participant",
+      "description": "Your account must use a verified email address. The server checks the Participant Invitation or Registration Link.",
+      "invitationRequiredTitle": "Complete Participant Invitation or Participant Registration Link required",
+      "invitationRequiredDescription": "Open the complete link shared with you. If it does not work, ask the sender for a new one.",
+      "fullName": "Full name",
+      "country": "Country",
+      "countryPlaceholder": "Select your EU country"
+    },
+    "dashboard": {
+      "title": "My Project Participations",
+      "acceptAgreement": "Accept agreement",
+      "loading": "Loading your Projects…",
+      "profileRequired": "Complete your profile before Participant actions are available.",
+      "fullName": "Full name",
+      "agreementRequired": "Accept the current agreement before Participant actions are available.",
+      "retry": "Retry loading Projects",
+      "empty": "No Projects yet. Join through a Participant Invitation or Participant Registration Link.",
+      "representing": "Representing:",
+      "hostedBy": "Hosted by:"
+    }
+  }
+}

@@ -5,6 +5,7 @@ import {
   EU_COUNTRY_CODES,
   type EUCountryCode,
 } from "@greendex/config/eu-countries";
+import { useTranslations } from "@greendex/i18n/client";
 import {
   useMutation,
   useQueryClient,
@@ -55,6 +56,7 @@ function CountryCorrection({
   country: string | null;
 }) {
   const queryClient = useQueryClient();
+  const t = useTranslations("participations.details");
   const [selected, setSelected] = useState<EUCountryCode | "">(
     asCountry(country),
   );
@@ -93,7 +95,9 @@ function CountryCorrection({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="participation-country">Country for {displayName}</Label>
+        <Label htmlFor="participation-country">
+          {t("countryFor")} {displayName}
+        </Label>
         <select
           className="h-9 rounded-md border bg-background px-3 text-sm"
           disabled={update.isPending}
@@ -104,7 +108,7 @@ function CountryCorrection({
           }}
           value={selected}
         >
-          <option value="">Not set</option>
+          <option value="">{t("notSet")}</option>
           {EU_COUNTRIES.map((country) => (
             <option key={country.code} value={country.code}>
               {country.code}
@@ -122,7 +126,7 @@ function CountryCorrection({
         type="button"
         variant="outline"
       >
-        Save country for {displayName}
+        {t("saveCountry")} {displayName}
       </Button>
       {feedback && (
         <Alert
@@ -160,10 +164,11 @@ export function ParticipantDetails({
   const correction = useParticipantEntryAccess(data.correctionContext);
   const denial = participantEntryDenialMessage(correction);
   const { participation } = data;
+  const t = useTranslations("participations.details");
   return (
     <section
       className="space-y-6"
-      aria-label="Participant details"
+      aria-label={t("label")}
       data-testid="participant-details"
     >
       <div className="space-y-2">
@@ -171,23 +176,23 @@ export function ParticipantDetails({
           className={buttonVariants({ variant: "ghost" })}
           href={`/partnerships/${encodeURIComponent(partnershipId)}/participants`}
         >
-          Back to Project Participations
+          {t("back")}
         </Link>
         <p className="text-sm text-muted-foreground">
-          Project: {data.projectName}
+          {t("project")} {data.projectName}
         </p>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>{participation.displayName}</CardTitle>
           <CardDescription>
-            Project Participation {participation.id}
+            {t("participation")} {participation.id}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <p>{participation.email ?? "No email recorded"}</p>
           <p className="flex flex-wrap items-center gap-3 text-sm">
-            <span>Country</span>
+            <span>{t("country")}</span>
             <Badge variant="secondary">
               {participation.country ?? "Not set"}
             </Badge>
@@ -196,11 +201,8 @@ export function ParticipantDetails({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Correct country</CardTitle>
-          <CardDescription>
-            The Participant sets this when joining. Only the Partner Organization
-            may correct it.
-          </CardDescription>
+          <CardTitle>{t("correctCountry")}</CardTitle>
+          <CardDescription>{t("correctCountryDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {correction.permitted ? (

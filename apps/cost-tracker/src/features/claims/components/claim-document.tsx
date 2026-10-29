@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -38,12 +41,12 @@ export function ClaimBand({
   title: string;
   status?: NonNullable<Outputs["claims"]["getDraft"]>["status"];
 }) {
+  const t = useTranslations("claims");
+
   return (
     <header>
       <Card variant="claim-band">
-        <p className="w-full type-ember-eyebrow">
-          GreenDex Cost Tracker · Erasmus Edition
-        </p>
+        <p className="w-full type-ember-eyebrow">{t("band.eyebrow")}</p>
         <CardTitle as="h2">{title}</CardTitle>
         {status && (
           <Badge
@@ -64,13 +67,15 @@ export function PayoutAccountLines({
 }: {
   account: { accountHolder: string; iban: string; bic: string | null };
 }) {
+  const t = useTranslations("claims.document");
+
   return (
     <dl className="grid min-w-0 grid-cols-[130px_minmax(0,1fr)] gap-x-5 gap-y-2 max-sm:grid-cols-1">
-      <dt className="text-muted-foreground">Account holder</dt>
+      <dt className="text-muted-foreground">{t("accountHolder")}</dt>
       <dd className="wrap-anywhere" data-testid="payout-account-holder">
         {account.accountHolder}
       </dd>
-      <dt className="text-muted-foreground">IBAN</dt>
+      <dt className="text-muted-foreground">{t("iban")}</dt>
       <dd
         className="font-mono wrap-anywhere tabular-nums select-all"
         data-testid="payout-account-iban"
@@ -80,7 +85,7 @@ export function PayoutAccountLines({
       </dd>
       {account.bic && (
         <>
-          <dt className="text-muted-foreground">BIC</dt>
+          <dt className="text-muted-foreground">{t("bic")}</dt>
           <dd
             data-testid="payout-bic"
             data-bic={account.bic}
@@ -112,11 +117,11 @@ export function ClaimCostTable({
   rows: ClaimCostRow[];
   actions?: boolean;
 }) {
+  const t = useTranslations("claims.document");
+
   return (
     <Table variant="accounting" data-testid="claim-cost-table">
-      <TableCaption>
-        Exact totals, Cost Allocations and linked Proof Documents.
-      </TableCaption>
+      <TableCaption>{t("caption")}</TableCaption>
       <colgroup>
         <col className="w-[12%]" />
         <col className="w-[16%]" />
@@ -127,16 +132,16 @@ export function ClaimCostTable({
       <TableHeader>
         <TableRow>
           <TableHead variant="accounting" scope="col">
-            Transport
+            {t("transport")}
           </TableHead>
           <TableHead variant="amount" scope="col">
-            Total (EUR)
+            {t("totalEur")}
           </TableHead>
           <TableHead variant="accounting" scope="col">
-            Cost Allocations
+            {t("costAllocations")}
           </TableHead>
           <TableHead variant="accounting" scope="col">
-            Proof Documents
+            {t("proofDocuments")}
           </TableHead>
           {actions && (
             <TableHead
@@ -144,7 +149,7 @@ export function ClaimCostTable({
               variant="accounting"
               scope="col"
             >
-              Action
+              {t("action")}
             </TableHead>
           )}
         </TableRow>

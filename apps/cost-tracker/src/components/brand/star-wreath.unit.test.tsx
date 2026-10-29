@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { StarWreath } from "@/components/brand/star-wreath";
 
 it("preserves the named inline image, brand fill, sizing and forwarded SVG props", () => {

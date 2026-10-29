@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
+
 import {
   CardSkeleton,
   HeaderSkeleton,
@@ -25,8 +29,9 @@ function ListRowsSkeleton({ count = 3 }: { count?: number }) {
 }
 
 export function ProjectsSkeleton() {
+  const t = useTranslations("projects.loading");
   return (
-    <LoadingRegion label="Loading Projects">
+    <LoadingRegion label={t("projects")}>
       <HeaderSkeleton />
       <ListRowsSkeleton />
     </LoadingRegion>
@@ -38,16 +43,18 @@ export function ProjectsSkeleton() {
  * The page shell already renders the real header, so only rows are sketched.
  */
 export function ProjectListSkeleton() {
+  const t = useTranslations("projects.loading");
   return (
-    <LoadingRegion label="Loading Project list">
+    <LoadingRegion label={t("list")}>
       <ListRowsSkeleton />
     </LoadingRegion>
   );
 }
 
 export function ProjectWorkspaceSkeleton() {
+  const t = useTranslations("projects.loading");
   return (
-    <LoadingRegion label="Loading Project workspace">
+    <LoadingRegion label={t("workspace")}>
       <div className="flex flex-col gap-8">
         <HeaderSkeleton />
         <div className="grid gap-4 md:grid-cols-2">

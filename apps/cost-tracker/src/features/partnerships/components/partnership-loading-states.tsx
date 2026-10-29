@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "@greendex/i18n/client";
+
 import {
   CardSkeleton,
   HeaderSkeleton,
@@ -6,8 +10,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function PartnerOrganizationsSkeleton() {
+  const t = useTranslations("partnerships.loading");
   return (
-    <LoadingRegion label="Loading Partner Organizations">
+    <LoadingRegion label={t("partnerOrganizations")}>
       <HeaderSkeleton />
       <div className="mt-10 grid gap-px rounded-2xl border p-px sm:grid-cols-2">
         {Array.from({ length: 4 }, (_, index) => (
@@ -23,8 +28,9 @@ export function PartnerOrganizationsSkeleton() {
 }
 
 export function ProjectPartnershipsSkeleton() {
+  const t = useTranslations("partnerships.loading");
   return (
-    <LoadingRegion label="Loading Project Partnerships">
+    <LoadingRegion label={t("projectPartnerships")}>
       <div className="mt-10 flex flex-col gap-4">
         <Skeleton className="h-8 w-72 max-w-full" />
         <CardSkeleton rows={1} />

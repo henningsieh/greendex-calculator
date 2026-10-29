@@ -1,3 +1,4 @@
+import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -54,14 +55,15 @@ export default async function ClaimPage({
   params: Promise<{ id: string }>;
 }) {
   if (!(await hasOrganizationMembership())) return null;
+  const t = await getTranslations("claims.page");
 
   return (
     <div className="space-y-8">
       <header className="space-y-3">
         <Link className={buttonVariants({ variant: "ghost" })} href="/projects">
-          Back to Projects
+          {t("back")}
         </Link>
-        <h1 className="font-heading text-4xl font-semibold">Claim workspace</h1>
+        <h1 className="font-heading text-4xl font-semibold">{t("title")}</h1>
       </header>
       <Suspense fallback={<ClaimWorkspaceSkeleton />}>
         <ClaimWorkspaceSection params={params} />

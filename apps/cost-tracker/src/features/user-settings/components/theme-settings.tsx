@@ -1,12 +1,12 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { KeyboardIcon, MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import * as React from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FieldDescription, FieldLegend, FieldSet } from "@/components/ui/field";
-import { Kbd } from "@/components/ui/kbd";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { THEMES, isThemeValue } from "@/lib/themes";
 
@@ -25,6 +25,7 @@ function themeIcon(value: string) {
 }
 
 export function ThemeSettings() {
+  const t = useTranslations("settings.theme");
   const mounted = React.useSyncExternalStore(
     subscribeToHydration,
     () => true,
@@ -46,13 +47,10 @@ export function ThemeSettings() {
   return (
     <div className="flex flex-col gap-6">
       <FieldSet>
-        <FieldLegend variant="label">Color theme</FieldLegend>
-        <FieldDescription>
-          All seven themes side by side — EU Erasmus light, five Ember vibes, and
-          legacy dark.
-        </FieldDescription>
+        <FieldLegend variant="label">{t("title")}</FieldLegend>
+        <FieldDescription>{t("description")}</FieldDescription>
         <ToggleGroup
-          aria-label="Color theme"
+          aria-label={t("ariaLabel")}
           className="flex-wrap justify-start"
           disabled={!mounted}
           onValueChange={changeTheme}
@@ -62,7 +60,7 @@ export function ThemeSettings() {
           {THEMES.map((entry) => (
             <ToggleGroupItem
               key={entry.value}
-              aria-label={`Use ${entry.label}`}
+              aria-label={t("use", { theme: entry.label })}
               value={entry.value}
             >
               {themeIcon(entry.value)}
@@ -74,10 +72,9 @@ export function ThemeSettings() {
 
       <Alert variant="accent">
         <KeyboardIcon aria-hidden="true" className="text-primary" />
-        <AlertTitle>Switch from anywhere</AlertTitle>
+        <AlertTitle>{t("shortcutTitle")}</AlertTitle>
         <AlertDescription>
-          Press <Kbd>d</Kbd> anywhere in Cost Tracker to switch between light and
-          dark. The shortcut stays inactive while you are typing.
+          {t("shortcutDescription", { key: "d" })}
         </AlertDescription>
       </Alert>
     </div>

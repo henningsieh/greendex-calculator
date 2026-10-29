@@ -1,9 +1,4 @@
 {
-  "confirmDialog": {
-    "confirm": "Confirmar",
-    "cancel": "Cancelar",
-    "close": "Cerrar"
-  },
   "onboarding": {
     "auth": {
       "signInHeading": "Te damos la bienvenida de nuevo",
@@ -102,40 +97,23 @@
       "credentials": "Correo o contraseña incorrectos. Comprueba tus datos e inténtalo de nuevo.",
       "verification": "Verifica tu correo antes de iniciar sesión. Abre el enlace de verificación de tu bandeja de entrada.",
       "signOut": "No se pudo cerrar sesión"
-    }
-  },
-  "projects": {
-    "confirmations": {
-      "cancel": "Cancelar",
-      "close": "Cerrar",
-      "pending": "Procesando…",
-      "removePartnership": {
-        "title": "¿Eliminar la colaboración del Proyecto?",
-        "description": "¿Eliminar {organization} de {project}? Esta acción no se puede deshacer.",
-        "execute": "Eliminar colaboración del Proyecto"
-      },
-      "removeParticipation": {
-        "title": "¿Eliminar la participación en el Proyecto?",
-        "description": "¿Eliminar la participación de {participant} en el Proyecto? Esta acción no se puede deshacer.",
-        "execute": "Eliminar participación"
-      },
-      "revokeOrganizer": {
-        "title": "¿Revocar la asignación de Organizador de Grupo?",
-        "description": "¿Revocar la asignación de Organizador de Grupo de {user}? Los roles de pertenencia a la Organización no cambiarán.",
-        "execute": "Revocar asignación"
-      }
-    }
-  },
-  "organizations": {
-    "confirmations": {
-      "cancel": "Cancelar",
-      "close": "Cerrar",
-      "pending": "Procesando…",
-      "cancelInvitation": {
-        "title": "¿Cancelar la invitación a la Organización?",
-        "description": "¿Cancelar la invitación a la Organización para {email}? Ya no podrá aceptarse.",
-        "execute": "Cancelar invitación"
-      }
+    },
+    "layout": {
+      "tagline": "Turn scattered travel costs into one trusted Project record.",
+      "benefitTotals": "Keep exact EUR totals intact",
+      "benefitDocuments": "Connect every entry to its Proof Documents",
+      "benefitAllocations": "Allocate shared tickets without guesswork",
+      "footer": "Greendex · Cost tracking for shared journeys"
+    },
+    "createOrganization": {
+      "eyebrow": "Your Organization",
+      "heading": "A home for your Projects",
+      "description": "Your personal login is ready. Now add your Organization to host Erasmus Projects. You'll become its Owner. You can create your first Project next, whenever you're ready.",
+      "nameLabel": "Organization name",
+      "countryLabel": "Organization country",
+      "countryPlaceholder": "Select an EU country",
+      "submit": "Create Organization",
+      "invitationHint": "Expecting an invitation? Open the link in your invitation email to join the right Organization instead."
     }
   }
 }

@@ -1,0 +1,21 @@
+{
+  "confirmDialog": {
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen",
+    "close": "Schließen"
+  },
+  "common": {
+    "name": "Name",
+    "email": "E-Mail",
+    "emailAddress": "E-Mail-Adresse",
+    "role": "Rolle",
+    "roles": "Rollen",
+    "actions": "Aktionen",
+    "members": "Mitglieder",
+    "use": "Verwenden",
+    "saving": "Speichern…",
+    "send": "Senden",
+    "loadingOrganization": "Organisation wird geladen",
+    "loadingOrganizationStaff": "Organisationsteam wird geladen"
+  }
+}

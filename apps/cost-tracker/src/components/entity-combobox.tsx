@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "@greendex/i18n/client";
 import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -22,7 +23,7 @@ export function EntityCombobox<T extends Entity>({
   search,
   preload = [],
   disabled,
-  searchBy = "name or ID",
+  searchBy,
 }: {
   label: string;
   value: string;
@@ -32,6 +33,7 @@ export function EntityCombobox<T extends Entity>({
   disabled?: boolean;
   searchBy?: string;
 }) {
+  const t = useTranslations("shell");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<T[]>([]);
@@ -40,6 +42,7 @@ export function EntityCombobox<T extends Entity>({
   const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState<T>();
   const term = query.trim();
+  const searchByLabel = searchBy ?? t("combobox.defaultSearchBy");
 
   useEffect(() => {
     if (!open || !search || term.length < 2) return;
@@ -91,7 +94,7 @@ export function EntityCombobox<T extends Entity>({
             type="button"
             variant="outline"
           >
-            {display?.name ?? (value || `Select ${label}`)}
+            {display?.name ?? (value || t("combobox.select", { label }))}
             <ChevronDownIcon aria-hidden="true" />
           </Button>
         }
@@ -100,9 +103,14 @@ export function EntityCombobox<T extends Entity>({
         <Command shouldFilter={false}>
           <CommandInput
             data-testid="entity-search"
-            aria-label={`Search ${label} by ${searchBy}`}
+            aria-label={t("combobox.searchLabel", {
+              label,
+              searchBy: searchByLabel,
+            })}
             ref={(node) => node?.focus()}
-            placeholder={`Search ${searchBy}…`}
+            placeholder={t("combobox.searchPlaceholder", {
+              searchBy: searchByLabel,
+            })}
             value={query}
             onValueChange={(next) => {
               setQuery(next);
@@ -113,13 +121,16 @@ export function EntityCombobox<T extends Entity>({
           />
           <CommandList>
             {loading ? (
-              <output className="block space-y-2 p-3" aria-label="Searching">
+              <output
+                className="block space-y-2 p-3"
+                aria-label={t("combobox.searching")}
+              >
                 <Skeleton className="h-9 w-full" />
                 <Skeleton className="h-9 w-full" />
               </output>
             ) : error ? (
               <div className="p-3 text-sm" role="alert">
-                Search failed.{" "}
+                {t("combobox.searchFailed")}{" "}
                 <Button
                   type="button"
                   variant="link"
@@ -129,7 +140,7 @@ export function EntityCombobox<T extends Entity>({
                     setRetry((count) => count + 1);
                   }}
                 >
-                  Retry
+                  {t("common.retry")}
                 </Button>
               </div>
             ) : options.length === 0 ? (
@@ -137,7 +148,7 @@ export function EntityCombobox<T extends Entity>({
                 data-testid="entity-search-empty"
                 className="p-3 text-sm text-muted-foreground"
               >
-                No matches — refine or paste full ID
+                {t("combobox.noMatches")}
               </p>
             ) : (
               options.map((item) => (

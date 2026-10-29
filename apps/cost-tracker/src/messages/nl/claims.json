@@ -1,0 +1,157 @@
+{
+  "claims": {
+    "band": {
+      "eyebrow": "GreenDex Cost Tracker · Erasmus Edition"
+    },
+    "loading": {
+      "workspace": "Loading Claim workspace",
+      "review": "Loading Claim review",
+      "submitted": "Loading submitted Claims"
+    },
+    "document": {
+      "accountHolder": "Account holder",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "caption": "Exact totals, Cost Allocations and linked Proof Documents.",
+      "transport": "Transport",
+      "totalEur": "Total (EUR)",
+      "costAllocations": "Cost Allocations",
+      "proofDocuments": "Proof Documents",
+      "action": "Action"
+    },
+    "queue": {
+      "title": "Submitted Claims awaiting review",
+      "empty": "No submitted Claims available for review."
+    },
+    "page": {
+      "back": "Back to Projects",
+      "title": "Claim workspace"
+    },
+    "review": {
+      "sectionLabel": "Claim review",
+      "bandTitle": "Claim review",
+      "back": "Back to submitted Claims",
+      "historyLabel": "Claim history",
+      "historyTitle": "Claim history",
+      "historyEmpty": "No review events yet.",
+      "actor": "Actor:",
+      "calculatedPayable": "Calculated payable:",
+      "currencyEur": "EUR",
+      "serverApprovedAmount": "(server-approved amount)",
+      "decisionTitle": "Review decision",
+      "decisionLabel": "Review decision",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "detailsTitle": "Submitted Claim details",
+      "noPayoutAccount": "No Payout Account",
+      "costsAndDocuments": "Travel Cost Entries and Proof Documents",
+      "noCosts": "No costs recorded.",
+      "proofDocument": "Proof Document:",
+      "bytes": "bytes",
+      "download": "Download Proof Document:",
+      "journeysTitle": "Participant Journeys",
+      "noJourneys": "No journeys recorded.",
+      "km": "km",
+      "noClaim": "No Claim has been created for this Partnership.",
+      "hostingTitle": "Hosting Claim review"
+    },
+    "submission": {
+      "title": "Submission",
+      "checklistLabel": "Submission checklist",
+      "pass": "Pass",
+      "fail": "Fail",
+      "goToGap": "— Go to gap",
+      "viewSection": "View section",
+      "calculatedPayable": "Calculated payable:",
+      "currencyEur": "EUR",
+      "notEditable": "(computed by the server; not editable)",
+      "submit": "Submit Claim",
+      "confirmDescription": "Confirm submission: submission locks the Claim and selected Payout Account for Partner editing until the Hosting side requests a correction.",
+      "confirm": "Confirm submission",
+      "cancel": "Cancel"
+    },
+    "workspace": {
+      "label": "Claim workspace",
+      "bandTitle": "Claim workspace",
+      "submissionLabel": "Submission",
+      "locked": "This Claim is locked for Partner editing. Only a Hosting-side correction request can reopen it.",
+      "noDraft": "Select a Payout Account and explicitly save a Claim draft to add costs or Proof Documents. Journeys can be prepared separately.",
+      "common": {
+        "cancel": "Cancel"
+      },
+      "journey": {
+        "distanceSuffix": "km (calculator distance)",
+        "correctFor": "Correct journey for {name}",
+        "originFor": "Origin for {name}",
+        "destinationFor": "Destination for {name}",
+        "tripTypeFor": "Trip type for {name}",
+        "oneWay": "One-way",
+        "roundTrip": "Round-trip",
+        "distanceFor": "Erasmus Distance-Calculator distance (km) for {name}",
+        "saveCorrection": "Save correction",
+        "title": "Participant Journeys",
+        "empty": "No journeys saved yet.",
+        "savedDistanceSuffix": "km (calculator distance; saved, read-only)",
+        "gapsLabel": "Participations needing Journeys",
+        "missing": "{name}: no Participant Journey saved.",
+        "participation": "Participation",
+        "selectParticipation": "Select Participation",
+        "origin": "Origin",
+        "destination": "Destination",
+        "tripType": "Trip type",
+        "distance": "Erasmus Distance-Calculator distance (km)",
+        "save": "Save journey"
+      },
+      "cost": {
+        "title": "Travel Cost Entries",
+        "empty": "No costs saved yet.",
+        "edit": "Edit cost",
+        "transport": "Transport",
+        "exactTotal": "Exact total (EUR)",
+        "allocationMethod": "Allocation method",
+        "equal": "Equal",
+        "percentage": "Percentage",
+        "amount": "Amount (EUR)",
+        "coveredParticipations": "Covered Participations",
+        "save": "Save cost"
+      },
+      "proof": {
+        "title": "Proof Documents",
+        "empty": "No Proof Documents in this Claim.",
+        "bytes": "bytes",
+        "uploadLabel": "Upload Proof Document (PDF, JPEG, PNG; up to 10 MB)",
+        "upload": "Upload document",
+        "progressLabel": "Upload progress",
+        "uploadProgress": "Upload:",
+        "currencyEur": "EUR",
+        "linked": "Linked:",
+        "linkLabel": "Link a Proof Document to this cost",
+        "selectDocument": "Select Claim document"
+      },
+      "payout": {
+        "selected": "Selected Payout Account:",
+        "unavailable": "Selected Payout Account: Unavailable",
+        "changeHint": "change using the selector",
+        "title": "Payout Account",
+        "selectAccount": "Select account",
+        "empty": "No Payout Accounts available. Create one below.",
+        "create": "Create Payout Account",
+        "accountHolder": "Account holder",
+        "iban": "IBAN",
+        "bic": "BIC (optional)",
+        "saveDraft": "Save Claim draft"
+      },
+      "notice": {
+        "correctionRequested": "Correction requested:",
+        "correctionBody": "Correct the Claim data and Proof Documents, then resubmit for Hosting review.",
+        "rejected": "Rejected:",
+        "rejectedBody": "This Claim is locked and unpaid. Only Hosting staff may reopen it; reopening does not unlock Partner edits.",
+        "approved": "Approved · unpaid. The full transfer has not been recorded.",
+        "paid": "Paid. The full transfer was recorded separately from approval."
+      },
+      "draft": {
+        "title": "Claim draft"
+      }
+    }
+  }
+}

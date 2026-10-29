@@ -1,0 +1,62 @@
+{
+  "partnerships": {
+    "loading": {
+      "partnerOrganizations": "Partnerorganisationen werden geladen",
+      "projectPartnerships": "Projektpartnerschaften werden geladen"
+    },
+    "manager": {
+      "assignExisting": "Bestehende Organisation zuweisen",
+      "hostedProject": "Gehostetes Projekt",
+      "partnerOrganization": "Partnerorganisation",
+      "current": "Aktuelle Projektpartnerschaften",
+      "none": "Keine Partnerorganisationen sind gehosteten Projekten zugewiesen.",
+      "assigned": "Zugewiesen",
+      "updated": "· Aktualisiert"
+    },
+    "setup": {
+      "title": "Setup-Link für Partnerorganisation",
+      "description": "Teile diesen empfängergebundenen Link privat. Er gewährt keinen Zugriff auf die Hosting-Organisation.",
+      "hostedProject": "Gehostetes Projekt",
+      "recipientEmail": "E-Mail der empfangenden Person",
+      "existingLinks": "Bestehende Setup-Links für Partnerorganisationen",
+      "existingLinksHint": "Nur der neu erstellte Link kann kopiert werden. Bestehende Link-Geheimnisse werden nicht gespeichert.",
+      "loading": "Setup-Links für Partnerorganisationen werden geladen…",
+      "loadError": "Setup-Links für Partnerorganisationen konnten nicht geladen werden",
+      "retry": "Erneut versuchen",
+      "empty": "Noch keine Setup-Links für Partnerorganisationen.",
+      "status": "Status",
+      "expires": "Läuft ab",
+      "action": "Aktion",
+      "recipientLink": "Empfänger-Setup-Link",
+      "copy": "Kopieren",
+      "copied": "Link kopiert. Teile ihn nur mit der eingeladenen Person.",
+      "chooseOrganization": "Organisation auswählen",
+      "newOrganization": "Neue Organisation",
+      "existingOrganization": "Bestehende Organisation",
+      "organization": "Organisation",
+      "newOrganizationName": "Name der neuen Organisation",
+      "organizationCountry": "Land der Organisation",
+      "countryPlaceholder": "EU-Land auswählen",
+      "created": "Projektpartnerschaft erstellt",
+      "selectOrganization": "Wähle deine Organisation, bevor du ihr Projekt öffnest.",
+      "useOrganization": "Diese Organisation verwenden",
+      "openPartnerProject": "Partnerprojekt öffnen",
+      "signIn": "Anmelden, um fortzufahren",
+      "checking": "Setup-Link wird geprüft…",
+      "partnerSetup": "Partnerorganisation einrichten",
+      "continueEmail": "Fahre mit der E-Mail-Adresse fort, an die dieser Setup-Link gesendet wurde. Das verbindet deine Organisation mit dem Projekt.",
+      "retained": "Organisation beibehalten",
+      "retainedDescription": "Deine Organisation ist bereit. Fahre fort, um sie mit dem Projekt zu verbinden. Es wird keine neue Organisation erstellt.",
+      "retryRetained": "Setup mit beibehaltener Organisation wiederholen",
+      "inspect": "Setup-Ergebnis prüfen"
+    }
+  },
+  "partnerOrganizations": {
+    "page": {
+      "eyebrow": "Projektnetzwerk",
+      "title": "Partnerorganisationen",
+      "restricted": "Die Verwaltung von Partnerorganisationen ist für das Personal der Hosting-Organisation verfügbar. Koordinator:innen arbeiten aus ihren zugewiesenen Projekten.",
+      "description": "Erstelle Setup-Links für gehostete Projekte oder weise bestehende Partnerorganisationen zu, wenn deine Rolle es erlaubt."
+    }
+  }
+}

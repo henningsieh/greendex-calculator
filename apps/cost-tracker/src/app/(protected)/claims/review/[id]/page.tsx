@@ -1,3 +1,4 @@
+import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -48,10 +49,11 @@ export default async function ClaimReviewPage({
   params: Promise<{ id: string }>;
 }) {
   if (!(await hasOrganizationMembership())) return null;
+  const t = await getTranslations("claims.review");
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-4xl font-semibold">Claim review</h1>
+      <h1 className="font-heading text-4xl font-semibold">{t("sectionLabel")}</h1>
       <Suspense fallback={<ClaimReviewSkeleton />}>
         <ClaimReviewSection params={params} />
       </Suspense>
