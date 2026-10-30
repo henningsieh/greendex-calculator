@@ -798,13 +798,22 @@ export const SafeErrorDataSchema = z
           "JOURNEY_DISTANCE_OUTSIDE_BANDS",
         ].includes(data.reason)) ||
       (data.blockers !== undefined &&
-        data.reason !== "PROJECT_COMPLETION_BLOCKED")
+        data.reason !== "PROJECT_COMPLETION_BLOCKED") ||
+      (data.reason === "JOURNEY_DISTANCE_OUTSIDE_BANDS" &&
+        data.issues?.some(
+          (issue) =>
+            issue.id !== "journeyDistanceOutsideBands" ||
+            issue.path.length !== 1 ||
+            issue.path[0] !== "erasmusDistanceKm",
+        ))
     )
       context.addIssue({
         code: "custom",
         message: "Details do not match the refusal.",
       });
   });
+export type SafeErrorData = z.infer<typeof SafeErrorDataSchema>;
+
 export const errorDefinitions = {
   PAYLOAD_TOO_LARGE: { message: "Payload too large" },
   UNSUPPORTED_MEDIA_TYPE: { message: "Unsupported media type" },

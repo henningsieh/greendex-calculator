@@ -210,7 +210,7 @@ describe("Participant Journey procedures", () => {
       })),
     ).toEqual(TRAVEL_FUNDING_RULES.bands);
     await expect(client.journeys.save(journey)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(
       await db
@@ -265,7 +265,7 @@ describe("Participant Journey procedures", () => {
   it("keeps earlier snapshots unchanged when config changes", async () => {
     useScenario("legacy");
     await expect(client.journeys.save(journey)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(
       await db.select().from(snapshots).where(eq(snapshots.projectId, project)),
@@ -401,7 +401,12 @@ describe("Participant Journey procedures", () => {
       client.journeys.update({ ...journey, erasmusDistanceKm: "9999999999.99" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      data: { issues: [{ path: ["erasmusDistanceKm"] }] },
+      data: {
+        reason: "JOURNEY_DISTANCE_OUTSIDE_BANDS",
+        issues: [
+          { id: "journeyDistanceOutsideBands", path: ["erasmusDistanceKm"] },
+        ],
+      },
     });
     const configBands = TRAVEL_FUNDING_RULES.bands as unknown as {
       minKm: number;
@@ -488,7 +493,7 @@ describe("Participant Journey procedures", () => {
         });
       } else {
         await expect(client.journeys.update(input)).rejects.toMatchObject({
-          code: "BAD_REQUEST",
+          code: "CONFLICT",
         });
         expect(
           (await db.select().from(journeys).where(eq(journeys.id, saved.id)))[0]

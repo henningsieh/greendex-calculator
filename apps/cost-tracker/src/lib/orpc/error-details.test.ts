@@ -105,14 +105,22 @@ describe("structured error details", () => {
     { blockers: [{ name: "", status: null }] },
     { blockers: [{ name: "Group", status: null, secret: "private" }] },
   ])("rejects malformed detail data %j", (details) => {
-    const error = new ORPCError("BAD_REQUEST", {
+    const hasBlockers = "blockers" in details;
+    const error = new ORPCError(hasBlockers ? "CONFLICT" : "BAD_REQUEST", {
       message: "private",
-      data: { reason: "CLAIM_SUBMISSION_INCOMPLETE", ...details },
+      data: {
+        reason: hasBlockers
+          ? "PROJECT_COMPLETION_BLOCKED"
+          : "CLAIM_SUBMISSION_INCOMPLETE",
+        ...details,
+      },
     });
     expect(getSafeErrorSituation(error)).toBeUndefined();
     expect(getORPCRequestErrorMessage(error)).toEqual({
       sessionExpired: false,
-      text: "We could not complete that request. Check your details and try again.",
+      text: hasBlockers
+        ? "The resource state conflicts with this request. Reload and try again."
+        : "We could not complete that request. Check your details and try again.",
     });
     expect(
       getSafeErrorSituation(
@@ -121,6 +129,25 @@ describe("structured error details", () => {
         ]),
       )?.reason,
     ).toBe("CLAIM_SUBMISSION_INCOMPLETE");
+  });
+
+  it("rejects a checklist detail on a Journey distance refusal", () => {
+    const error = new ORPCError("BAD_REQUEST", {
+      data: {
+        reason: "JOURNEY_DISTANCE_OUTSIDE_BANDS",
+        issues: [
+          createSafeFieldIssue("payoutAccountRequired", ["payoutAccount"]),
+        ],
+      },
+    });
+    expect(getSafeErrorSituation(error)).toBeUndefined();
+    expect(getORPCRequestErrorMessage(error)).toEqual({
+      sessionExpired: false,
+      text: "We could not complete that request. Check your details and try again.",
+    });
+    expect(
+      getSafeErrorSituation(errors.journeyDistanceOutsideBands())?.reason,
+    ).toBe("JOURNEY_DISTANCE_OUTSIDE_BANDS");
   });
 
   it("does not attach business details to session recovery", () => {

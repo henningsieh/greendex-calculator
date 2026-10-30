@@ -99,12 +99,12 @@ describe("Claim first-save conflict recovery", () => {
       data: { reason: "INTERNAL_FAILURE" },
     });
   });
-  it("retains 400 for a proven locked reread Claim", async () => {
+  it("returns 409 for a proven locked reread Claim", async () => {
     mocks.queues.set("claims", [[], [claim("submitted")]]);
     await expect(
       client.saveDraft({ partnershipId: "own" }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "CLAIM_NOT_EDITABLE" },
     });
   });
@@ -127,7 +127,7 @@ describe("Claim first-save conflict recovery", () => {
     await expect(
       client.saveDraft({ partnershipId: "own" }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "CLAIM_NOT_EDITABLE" },
     });
   });

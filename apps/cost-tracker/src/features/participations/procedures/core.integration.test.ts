@@ -254,7 +254,7 @@ describe("assignment-scoped participation coordination", () => {
         partnershipId: own,
         search: candidate,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
   });
 
   it("creates for an onboarded user, lists, updates and removes within the assigned Partnership", async () => {
@@ -295,7 +295,7 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.create({ partnershipId: own, userId: candidate }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       message: expect.stringMatching(/merge review/i),
     });
     await expect(
@@ -337,7 +337,7 @@ describe("assignment-scoped participation coordination", () => {
       await expect(
         client.participations.create({ partnershipId: own, userId: candidate }),
       ).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+        code: "CONFLICT",
         message: expect.stringMatching(/merge review/i),
       });
       expect(await client.duplicateReviews.list({ partnershipId: own })).toEqual([
@@ -363,7 +363,7 @@ describe("assignment-scoped participation coordination", () => {
           userId: mixedUser,
         }),
       ).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+        code: "CONFLICT",
         message: expect.stringMatching(/merge review/i),
       });
       expect(await client.duplicateReviews.list({ partnershipId: own })).toEqual([
@@ -386,7 +386,7 @@ describe("assignment-scoped participation coordination", () => {
     for (let attempt = 0; attempt < 2; attempt++)
       await expect(
         client.participations.create({ partnershipId: own, userId: candidate }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({ code: "CONFLICT" });
     const [task] = await client.duplicateReviews.list({ partnershipId: own });
     expect(task).toMatchObject({
       existingParticipationId: existing.id,
@@ -405,7 +405,7 @@ describe("assignment-scoped participation coordination", () => {
         decision: "same_person",
         survivorParticipationId: existing.id,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     actor = candidate;
     activeOrg = host;
     await expect(
@@ -427,7 +427,7 @@ describe("assignment-scoped participation coordination", () => {
     ).toMatchObject({ status: "assigned", assignedToUserId: coordinator });
     await expect(
       client.duplicateReviews.assign({ partnershipId: own, id: task!.id }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     actor = `coord-second-assignee-${s}`;
     await expect(
       client.duplicateReviews.resolve({
@@ -476,7 +476,7 @@ describe("assignment-scoped participation coordination", () => {
         decision: "dismiss",
         survivorParticipationId: existing.id,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await db.delete(reviewTasks).where(eq(reviewTasks.partnershipId, own));
     await client.participations.remove({ partnershipId: own, id: existing.id });
   });
@@ -487,7 +487,7 @@ describe("assignment-scoped participation coordination", () => {
     try {
       await expect(
         client.participations.create({ partnershipId: own, userId: candidate }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({ code: "CONFLICT" });
       const [task] = await client.duplicateReviews.list({ partnershipId: own });
       expect(task).toMatchObject({
         existingParticipationId: existing!.id,
@@ -572,18 +572,18 @@ describe("assignment-scoped participation coordination", () => {
     await expect(
       client.participations.remove({ partnershipId: own, id: created.id }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED" },
     });
     useScenario("submitted");
     const submitted = { id: `coord-submitted-row-${s}` };
     await expect(
       client.participations.remove({ partnershipId: own, id: submitted.id }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.participations.create({ partnershipId: own, userId: candidate }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       message: expect.stringMatching(/locked/i),
     });
     await expect(
@@ -592,7 +592,7 @@ describe("assignment-scoped participation coordination", () => {
         id: submitted.id,
         country: "FR",
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("allows Participation changes while the Claim is correction_requested", async () => {

@@ -463,7 +463,7 @@ describe("email-bound Participant Invitations", () => {
         },
       }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "PARTICIPANT_INVITATION_CLOSED" },
     });
     await expect(
@@ -498,7 +498,7 @@ describe("email-bound Participant Invitations", () => {
     await expect(
       client.participantOnboarding.join({ ...joinProfile, source }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "PARTICIPANT_INVITATION_CLOSED" },
     });
     expect(await recipientMemberships()).toHaveLength(0);
@@ -508,7 +508,7 @@ describe("email-bound Participant Invitations", () => {
         invitationId: issued.invitationId,
         open: true,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     const fresh = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -547,7 +547,7 @@ describe("email-bound Participant Invitations", () => {
         },
       }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "PARTICIPANT_INVITATION_EXPIRED" },
     });
     expect(await recipientMemberships()).toHaveLength(0);

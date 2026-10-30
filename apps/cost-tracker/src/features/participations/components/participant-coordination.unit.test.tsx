@@ -370,7 +370,7 @@ describe("ParticipantCoordination", () => {
 
   it("surfaces an actionable review request only for a validated duplicate reason", async () => {
     mocks.create.mockRejectedValue(
-      new ORPCError("BAD_REQUEST", {
+      new ORPCError("CONFLICT", {
         message: "hostile remote text",
         data: { reason: "PARTICIPATION_DUPLICATE" },
       }),
@@ -455,7 +455,7 @@ describe("ParticipantCoordination", () => {
     mocks.setRegistrationLinkOpen.mockResolvedValueOnce({ open: false });
     await user.click(closeButton);
     mocks.setRegistrationLinkOpen.mockRejectedValueOnce(
-      new ORPCError("BAD_REQUEST", {
+      new ORPCError("CONFLICT", {
         message: "hostile remote text",
         data: { reason: "REGISTRATION_CLAIM_LOCKED" },
       }),
