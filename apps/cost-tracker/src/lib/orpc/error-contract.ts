@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ClaimStatusSchema } from "@/features/claims/validation-schemas";
 import { getErrorStatus } from "@/lib/orpc/error-status";
 
 export const situationCatalog = {
@@ -747,6 +748,80 @@ export const FieldIssueIdSchema = z.enum(
     ...(keyof typeof fieldIssueCatalog)[],
   ],
 );
+const issueEntityId = z.string().min(1).regex(/\S/);
+const fieldIssuePathSchemas = {
+  journeyDistanceOutsideBands: z.union([
+    z.tuple([z.literal("erasmusDistanceKm")]),
+    z.tuple([
+      z.literal("participations"),
+      issueEntityId,
+      z.literal("fundingBand"),
+    ]),
+  ]),
+  payoutAccountRequired: z.tuple([z.literal("payoutAccount")]),
+  entryRequired: z.tuple([z.literal("entries")]),
+  entryRequiredForCheck: z.tuple([z.literal("entries")]),
+  participationOutsidePartnership: z.tuple([
+    z.literal("participations"),
+    issueEntityId,
+  ]),
+  journeyRequired: z.tuple([
+    z.literal("participations"),
+    issueEntityId,
+    z.literal("journey"),
+  ]),
+  journeyOriginRequired: z.tuple([
+    z.literal("participations"),
+    issueEntityId,
+    z.literal("journey"),
+    z.literal("origin"),
+  ]),
+  journeyDestinationRequired: z.tuple([
+    z.literal("participations"),
+    issueEntityId,
+    z.literal("journey"),
+    z.literal("destination"),
+  ]),
+  journeyTripTypeRequired: z.tuple([
+    z.literal("participations"),
+    issueEntityId,
+    z.literal("journey"),
+    z.literal("tripType"),
+  ]),
+  journeyDistanceRequired: z.tuple([
+    z.literal("participations"),
+    issueEntityId,
+    z.literal("journey"),
+    z.literal("erasmusDistanceKm"),
+  ]),
+  transportProfileOutsideRules: z.tuple([
+    z.literal("entries"),
+    issueEntityId,
+    z.literal("transportProfile"),
+  ]),
+  entryAmountRequired: z.tuple([
+    z.literal("entries"),
+    issueEntityId,
+    z.literal("amountEur"),
+  ]),
+  allocationRequired: z.tuple([
+    z.literal("entries"),
+    issueEntityId,
+    z.literal("allocations"),
+  ]),
+  allocationSharesInvalid: z.tuple([
+    z.literal("entries"),
+    issueEntityId,
+    z.literal("allocations"),
+  ]),
+  proofDocumentRequired: z.tuple([
+    z.literal("entries"),
+    issueEntityId,
+    z.literal("proofDocuments"),
+  ]),
+  fundingRulesRequired: z.tuple([z.literal("fundingRules")]),
+} satisfies Record<keyof typeof fieldIssueCatalog, z.ZodType<string[]>>;
+
 export const SafeFieldIssueSchema = z
   .object({
     id: FieldIssueIdSchema,
@@ -754,7 +829,11 @@ export const SafeFieldIssueSchema = z
     message: z.string(),
   })
   .strict()
-  .refine((issue) => issue.message === fieldIssueCatalog[issue.id]);
+  .refine(
+    (issue) =>
+      issue.message === fieldIssueCatalog[issue.id] &&
+      fieldIssuePathSchemas[issue.id].safeParse(issue.path).success,
+  );
 export type SafeFieldIssue = z.infer<typeof SafeFieldIssueSchema>;
 
 export function createSafeFieldIssue(
@@ -767,16 +846,7 @@ export function createSafeFieldIssue(
 export const ProjectCompletionBlockerSchema = z
   .object({
     name: z.string().min(1),
-    status: z
-      .enum([
-        "editable",
-        "correction_requested",
-        "submitted",
-        "approved",
-        "rejected",
-        "paid",
-      ])
-      .nullable(),
+    status: ClaimStatusSchema.nullable(),
   })
   .strict();
 export type ProjectCompletionBlocker = z.infer<

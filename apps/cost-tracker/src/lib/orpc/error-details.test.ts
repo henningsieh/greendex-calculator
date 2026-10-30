@@ -2,10 +2,14 @@
 import { ORPCError } from "@orpc/client";
 import { describe, expect, it } from "vitest";
 
+import { validFieldIssues } from "@/__tests__/field-issue-fixtures";
+import { ClaimStatusSchema } from "@/features/claims/validation-schemas";
 import {
   createSafeFieldIssue,
   fieldIssueCatalog,
   getSafeErrorSituation,
+  ProjectCompletionBlockerSchema,
+  SafeFieldIssueSchema,
   SafeErrorDataSchema,
 } from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
@@ -44,21 +48,68 @@ describe("structured error details", () => {
     });
   });
 
-  it.each(Object.keys(fieldIssueCatalog) as (keyof typeof fieldIssueCatalog)[])(
-    "round-trips the closed %s detail",
-    (id) => {
-      const error = errors.submissionIncomplete([
-        createSafeFieldIssue(id, ["entries", "entry-id"]),
-      ]);
-      expect(SafeErrorDataSchema.parse(error.data)).toMatchObject({
-        reason: "CLAIM_SUBMISSION_INCOMPLETE",
-        issues: [{ id, path: ["entries", "entry-id"] }],
-      });
-      expect(getSafeErrorSituation(error)?.reason).toBe(
-        "CLAIM_SUBMISSION_INCOMPLETE",
-      );
+  it("covers every closed detail with a valid producer path", () => {
+    expect(validFieldIssues.map(({ id }) => id).sort()).toEqual(
+      Object.keys(fieldIssueCatalog).sort(),
+    );
+  });
+
+  it.each(validFieldIssues)("round-trips the closed $id detail", (issue) => {
+    const error = errors.submissionIncomplete([issue]);
+    expect(SafeErrorDataSchema.parse(error.data)).toMatchObject({
+      reason: "CLAIM_SUBMISSION_INCOMPLETE",
+      issues: [issue],
+    });
+    expect(getSafeErrorSituation(error)?.reason).toBe(
+      "CLAIM_SUBMISSION_INCOMPLETE",
+    );
+  });
+
+  it.each(validFieldIssues)(
+    "rejects mismatched or empty paths for $id",
+    (issue) => {
+      for (const path of [[], ["unknown"], [...issue.path, "extra"]]) {
+        const invalid = { ...issue, path };
+        expect(SafeFieldIssueSchema.safeParse(invalid).success).toBe(false);
+        expect(
+          getSafeErrorSituation(
+            new ORPCError("BAD_REQUEST", {
+              data: { reason: "CLAIM_SUBMISSION_INCOMPLETE", issues: [invalid] },
+            }),
+          ),
+        ).toBeUndefined();
+      }
     },
   );
+
+  it("rejects a payout correction directed at a cost entry", () => {
+    expect(
+      SafeFieldIssueSchema.safeParse({
+        id: "payoutAccountRequired",
+        path: ["entries", "entry-id"],
+        message: fieldIssueCatalog.payoutAccountRequired,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts every persisted Claim status and no Claim for completion blockers", () => {
+    for (const status of ClaimStatusSchema.options) {
+      expect(
+        ProjectCompletionBlockerSchema.safeParse({ name: "Group", status })
+          .success,
+      ).toBe(true);
+    }
+    expect(
+      ProjectCompletionBlockerSchema.safeParse({ name: "Group", status: null })
+        .success,
+    ).toBe(true);
+    expect(
+      ProjectCompletionBlockerSchema.safeParse({
+        name: "Group",
+        status: "unknown",
+      }).success,
+    ).toBe(false);
+  });
 
   it("transports completion blockers without presenting an unfinished prefix", () => {
     const error = errors.projectCompletionBlocked([

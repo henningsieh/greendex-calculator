@@ -2,16 +2,50 @@ import { ORPCError } from "@orpc/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import {
   createSafeFieldIssue,
+  safeErrorResponseBody,
+  situationCatalog,
   type SafeFieldIssue,
 } from "@/lib/orpc/error-contract";
+import {
+  getHTTPErrorPresentation,
+  getORPCErrorPresentation,
+} from "@/lib/orpc/error-message";
+import { getErrorStatus } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
+
+vi.mock(
+  "@/components/error-presentation/error-presentation",
+  async (importOriginal) => {
+    const original =
+      await importOriginal<
+        typeof import("@/components/error-presentation/error-presentation")
+      >();
+    return {
+      ...original,
+      ErrorPresentation: function ObservedErrorPresentation(
+        props: ComponentProps<typeof original.ErrorPresentation>,
+      ) {
+        const presentation =
+          props.httpStatus === undefined
+            ? getORPCErrorPresentation(props.error)
+            : getHTTPErrorPresentation(props.error, props.httpStatus);
+        return (
+          <div data-error-key={presentation.key}>
+            <original.ErrorPresentation {...props} />
+          </div>
+        );
+      },
+    };
+  },
+);
 
 const mocks = vi.hoisted(() => ({
   permitted: true,
@@ -144,7 +178,9 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
                   ].map((key) => ({
                     key,
                     passed: false,
-                    gaps: [createSafeFieldIssue("entryRequiredForCheck", [key])],
+                    gaps: [
+                      createSafeFieldIssue("entryRequiredForCheck", ["entries"]),
+                    ],
                   })),
                   calculatedPayableEur: null,
                 }),
@@ -621,10 +657,7 @@ describe("Claim workspace", () => {
 
   it("surfaces the server one-journey rule at Participation without clearing the form", async () => {
     mocks.saveJourney.mockRejectedValue(
-      new ORPCError("BAD_REQUEST", {
-        message: "hostile remote text",
-        data: { reason: "JOURNEY_ALREADY_EXISTS" },
-      }),
+      createSituationErrors().journeyAlreadyExists(),
     );
     mount();
     expect(
@@ -633,11 +666,13 @@ describe("Claim workspace", () => {
     await userEvent.selectOptions(screen.getByTestId("journey-person"), "person");
     await userEvent.type(screen.getByTestId("journey-origin"), "Berlin");
     await userEvent.click(screen.getByTestId("journey-save"));
-    expect(
-      await within(
-        screen.getByTestId("journey-person").parentElement!,
-      ).findByRole("alert"),
-    ).toBeInTheDocument();
+    const feedback = await within(
+      screen.getByTestId("journey-person").parentElement!,
+    ).findByRole("alert");
+    expect(feedback.querySelector("[data-error-key]")).toHaveAttribute(
+      "data-error-key",
+      "JOURNEY_ALREADY_EXISTS",
+    );
     expect(screen.getByTestId("journey-origin")).toHaveValue("Berlin");
   });
 
@@ -795,7 +830,7 @@ describe("Claim workspace", () => {
         ].map((key) => ({
           key,
           passed: false,
-          gaps: [createSafeFieldIssue("entryRequiredForCheck", [key])],
+          gaps: [createSafeFieldIssue("entryRequiredForCheck", ["entries"])],
         })),
       ],
       calculatedPayableEur: null,
@@ -1110,7 +1145,11 @@ it.each([
     400,
     { code: "BAD_REQUEST", reason: "CLAIM_REQUIRED_FOR_PROOF" },
   ],
-  ["locked Claim", 400, { code: "BAD_REQUEST", reason: "CLAIM_NOT_EDITABLE" }],
+  [
+    "locked Claim",
+    getErrorStatus(situationCatalog.claimNotEditable.code),
+    safeErrorResponseBody(situationCatalog.claimNotEditable),
+  ],
   [
     "missing selection",
     400,
@@ -1180,11 +1219,15 @@ it.each([
       );
       expect(requests[0].send).toHaveBeenCalledOnce();
       requests[0].onload?.();
-      expect(
-        await within(document.getElementById("claim-proofs")!).findByTestId(
-          "proof-feedback",
-        ),
-      ).toBeInTheDocument();
+      const feedback = await within(
+        document.getElementById("claim-proofs")!,
+      ).findByTestId("proof-feedback");
+      expect(feedback).toBeInTheDocument();
+      if (_name === "locked Claim")
+        expect(feedback.querySelector("[data-error-key]")).toHaveAttribute(
+          "data-error-key",
+          "CLAIM_NOT_EDITABLE",
+        );
       expect(invalidate).not.toHaveBeenCalled();
       expect(screen.getByTestId("proof-upload")).toBeEnabled();
       expect(screen.getByRole("progressbar")).toHaveValue(0);

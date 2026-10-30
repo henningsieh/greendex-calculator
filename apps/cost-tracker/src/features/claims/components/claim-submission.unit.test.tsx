@@ -75,6 +75,13 @@ it.each([
 it.each([
   null,
   undefined,
+  createSafeFieldIssue("payoutAccountRequired", []),
+  createSafeFieldIssue("payoutAccountRequired", ["entries", "entry-id"]),
+  createSafeFieldIssue("proofDocumentRequired", [
+    "entries",
+    "",
+    "proofDocuments",
+  ]),
   { id: "payoutAccountRequired", message: "Select a Partner Payout Account." },
   {
     id: "payoutAccountRequired",

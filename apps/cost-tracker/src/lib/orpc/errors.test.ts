@@ -78,7 +78,7 @@ describe("derived situation refusals", () => {
     const issues = [
       {
         id: "proofDocumentRequired" as const,
-        path: ["entries", "entry-id"],
+        path: ["entries", "entry-id", "proofDocuments"],
         message: "Link a Proof Document belonging to this Claim.",
       },
     ];

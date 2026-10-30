@@ -4,13 +4,13 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { validFieldIssues } from "@/__tests__/field-issue-fixtures";
 import {
   ErrorDetail,
   ErrorPresentation,
 } from "@/components/error-presentation/error-presentation";
 import {
   createSafeFieldIssue,
-  fieldIssueCatalog,
   hasComposedCopy,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
@@ -72,12 +72,11 @@ describe("shared localized error presentation", () => {
     expect(present(<ErrorPresentation error={error} />, "de")).toBe(expected);
   });
 
-  it.each(Object.entries(fieldIssueCatalog))(
-    "renders the closed %s detail without remote prose",
-    (id, expected) => {
-      const issue = { id, path: ["entries"], message: expected };
+  it.each(validFieldIssues)(
+    "renders the closed $id detail without remote prose",
+    (issue) => {
       expect(present(<ErrorDetail issue={issue} />)).toBe(
-        renderToStaticMarkup(<>{expected}</>),
+        renderToStaticMarkup(<>{issue.message}</>),
       );
     },
   );
