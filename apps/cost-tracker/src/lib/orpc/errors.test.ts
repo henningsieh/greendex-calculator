@@ -46,6 +46,7 @@ describe("derived situation refusals", () => {
       reason: situationCatalog.journeyDistanceOutsideBands.reason,
       issues: [
         {
+          id: "journeyDistanceOutsideBands",
           path: ["erasmusDistanceKm"],
           message: situationCatalog.journeyDistanceOutsideBands.message,
         },
@@ -53,23 +54,33 @@ describe("derived situation refusals", () => {
     });
   });
 
-  it("projectCompletionBlocked preserves scoped names and statuses without changing 400 policy", () => {
+  it("projectCompletionBlocked preserves scoped names and statuses as structured 409 data", () => {
     expect(
       errors.projectCompletionBlocked([
         { name: "Group A", status: "submitted" },
         { name: "Group B", status: null },
       ]),
     ).toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       message:
         "Cannot complete Project: Group A (submitted), Group B (no Claim).",
-      data: { reason: "PROJECT_COMPLETION_BLOCKED" },
+      data: {
+        reason: "PROJECT_COMPLETION_BLOCKED",
+        blockers: [
+          { name: "Group A", status: "submitted" },
+          { name: "Group B", status: null },
+        ],
+      },
     });
   });
 
   it("submissionIncomplete preserves server-produced field issues", () => {
     const issues = [
-      { path: ["entries", "entry-id"], message: "Add a Proof Document." },
+      {
+        id: "proofDocumentRequired" as const,
+        path: ["entries", "entry-id"],
+        message: "Link a Proof Document belonging to this Claim.",
+      },
     ];
     expect(errors.submissionIncomplete(issues)).toMatchObject({
       code: situationCatalog.submissionIncomplete.code,

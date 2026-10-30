@@ -127,7 +127,7 @@ export const situationCatalog = {
     message: "Partner Organization not found.",
   },
   partnershipAlreadyAssigned: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTNERSHIP_ALREADY_ASSIGNED",
     message: "This Organization is already assigned to the Project.",
   },
@@ -138,18 +138,18 @@ export const situationCatalog = {
       "This Project Partnership cannot be created with the selected Organizations.",
   },
   partnershipReferenced: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTNERSHIP_REFERENCED",
     message:
       "Remove or reassign represented Project Participations before removing this Project Partnership.",
   },
   projectAlreadyCompleted: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PROJECT_ALREADY_COMPLETED",
     message: "Project is already completed.",
   },
   projectCompletionBlocked: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PROJECT_COMPLETION_BLOCKED",
     // Composed per request from the blocking Claims, so the declared copy is
     // only the prefix and clients never present it as a finished sentence.
@@ -167,12 +167,12 @@ export const situationCatalog = {
     message: "This setup link belongs to another email address.",
   },
   setupLinkDisabled: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "SETUP_LINK_DISABLED",
     message: "This setup link is disabled.",
   },
   setupLinkExpired: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "SETUP_LINK_EXPIRED",
     message: "This setup link has expired.",
   },
@@ -182,7 +182,7 @@ export const situationCatalog = {
     message: "You must be an Owner of the selected Organization.",
   },
   setupLinkUsed: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "SETUP_LINK_USED",
     message: "This setup link has already been used.",
   },
@@ -202,28 +202,28 @@ export const situationCatalog = {
     message: "This invitation is not an Organization staff invitation.",
   },
   staffInvitationClosed: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "STAFF_INVITATION_CLOSED",
     message: "Organization Invitation is no longer pending.",
   },
   staffInvitationRejected: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "STAFF_INVITATION_REJECTED",
     message: "Organization Invitation was rejected.",
   },
   staffInvitationWithdrawn: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "STAFF_INVITATION_WITHDRAWN",
     message: "Organization Invitation was withdrawn.",
   },
   staffInvitationAccepted: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "STAFF_INVITATION_ACCEPTED",
     message:
       "Organization Invitation was accepted. Check your current Organization access.",
   },
   staffInvitationExpired: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "STAFF_INVITATION_EXPIRED",
     message: "Organization Invitation has expired.",
   },
@@ -243,7 +243,7 @@ export const situationCatalog = {
     message: "Registration link not found.",
   },
   registrationLinkClosed: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "REGISTRATION_LINK_CLOSED",
     message: "Registration link is closed.",
   },
@@ -258,53 +258,53 @@ export const situationCatalog = {
     message: "Invitation is not for this account.",
   },
   participantInvitationClosed: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPANT_INVITATION_CLOSED",
     message: "Invitation is closed.",
   },
   participantInvitationExpired: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPANT_INVITATION_EXPIRED",
     message: "Participant Invitation has expired.",
   },
   participantAlreadyParticipates: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPANT_ALREADY_PARTICIPATES",
     message: "This person already participates in this Project.",
   },
   participantAlreadyInvited: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPANT_ALREADY_INVITED",
     message: "This person already has an invitation to this Project.",
   },
   joinedOtherPartner: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "JOINED_OTHER_PARTNER",
     message:
       "You already joined this Project through another Partner Organization.",
   },
   membershipChanged: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "MEMBERSHIP_CHANGED",
     message: "Membership changed; please retry onboarding.",
   },
   participationIdentityConflict: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPATION_IDENTITY_CONFLICT",
     message: "This identity already participates in this Project.",
   },
   participantInvitationAccepted: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPANT_INVITATION_ACCEPTED",
     message: "Accepted invitations cannot be changed.",
   },
   registrationClaimLocked: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "REGISTRATION_CLAIM_LOCKED",
     message: "A non-editable Claim prevents reopening registration.",
   },
   agreementUnavailable: {
-    code: "BAD_REQUEST",
+    code: "SERVICE_UNAVAILABLE",
     reason: "PARTICIPANT_AGREEMENT_UNAVAILABLE",
     message: "Participant agreement is not yet available.",
   },
@@ -314,7 +314,7 @@ export const situationCatalog = {
     message: "Only the Partner Organization may edit its Claim.",
   },
   payoutSelectionLocked: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PAYOUT_SELECTION_LOCKED",
     message:
       "Payout Account selection is locked while the Claim is not editable.",
@@ -330,7 +330,7 @@ export const situationCatalog = {
     message: "Select a Partner Payout Account before saving the Claim.",
   },
   claimNotEditable: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "CLAIM_NOT_EDITABLE",
     message: "Claim is not editable.",
   },
@@ -366,7 +366,7 @@ export const situationCatalog = {
     message: "Only the Partner Organization may manage Participant Journeys.",
   },
   journeysLocked: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "JOURNEYS_LOCKED",
     message: "Claim is locked; Participant Journeys cannot change.",
   },
@@ -376,7 +376,7 @@ export const situationCatalog = {
     message: "Select a Participation in this Project Partnership.",
   },
   journeyAlreadyExists: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "JOURNEY_ALREADY_EXISTS",
     message: "This Participation already has a Participant Journey.",
   },
@@ -408,7 +408,7 @@ export const situationCatalog = {
     message: "Only the Partner Organization may create its Participation.",
   },
   participationCreateLocked: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPATION_CREATE_LOCKED",
     message: "Locked Claim prevents Participation creation.",
   },
@@ -418,7 +418,7 @@ export const situationCatalog = {
     message: "Select an eligible onboarded User or use a Participant invitation.",
   },
   participationDuplicate: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPATION_DUPLICATE",
     message:
       "Identity already participates in this Project; request merge review.",
@@ -434,7 +434,7 @@ export const situationCatalog = {
     message: "Only the Partner Organization may update its Participation.",
   },
   participationUpdateLocked: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPATION_UPDATE_LOCKED",
     message: "Locked Claim prevents Participation changes.",
   },
@@ -449,18 +449,18 @@ export const situationCatalog = {
     message: "Only the Partner Organization may remove its Participation.",
   },
   participationRemoveLocked: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPATION_REMOVE_LOCKED",
     message: "Locked Claim prevents Participation removal.",
   },
   participationJourneyOrCostReferenced: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPATION_JOURNEY_OR_COST_REFERENCED",
     message:
       "Participation is referenced by a Participant Journey or Cost Allocation; request review instead.",
   },
   participationReferenced: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "PARTICIPATION_REFERENCED",
     message: "Participation is referenced; request review instead.",
   },
@@ -475,12 +475,12 @@ export const situationCatalog = {
     message: "Review Task not found in scope.",
   },
   reviewTaskNotOpen: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "REVIEW_TASK_NOT_OPEN",
     message: "Review Task is not open.",
   },
   reviewTaskNotAssigned: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "REVIEW_TASK_NOT_ASSIGNED",
     message: "Review Task must be assigned before resolution.",
   },
@@ -525,17 +525,17 @@ export const situationCatalog = {
     message: "Claim not found in scope.",
   },
   claimSubmittedRequired: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "CLAIM_SUBMITTED_REQUIRED",
     message: "Claim must be submitted for this review decision.",
   },
   claimRejectedRequired: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "CLAIM_REJECTED_REQUIRED",
     message: "Claim must be rejected for this review decision.",
   },
   claimReviewUnavailable: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "CLAIM_REVIEW_UNAVAILABLE",
     message: "No submitted Claim is available for review.",
   },
@@ -550,7 +550,7 @@ export const situationCatalog = {
     message: "Only Hosting staff may correct payment.",
   },
   claimApprovalRequired: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "CLAIM_APPROVAL_REQUIRED",
     message: "Claim must be approved to record payment.",
   },
@@ -560,7 +560,7 @@ export const situationCatalog = {
     message: "Transfer must equal the full approved EUR amount.",
   },
   claimPaidRequired: {
-    code: "BAD_REQUEST",
+    code: "CONFLICT",
     reason: "CLAIM_PAID_REQUIRED",
     message: "Only a paid Claim can have its paid flag corrected.",
   },
@@ -717,16 +717,94 @@ export const situationReasons = [
   ),
 ];
 export const ErrorReasonSchema = z.enum(situationReasons);
+export const fieldIssueCatalog = {
+  journeyDistanceOutsideBands:
+    "Journey distance must have exactly one frozen funding band.",
+  payoutAccountRequired: "Select a Partner Payout Account.",
+  entryRequired: "Add at least one Travel Cost Entry.",
+  entryRequiredForCheck: "Add a Travel Cost Entry to check this requirement.",
+  participationOutsidePartnership:
+    "Covered Participation must belong to this Project Partnership.",
+  journeyRequired: "Add a Participant Journey.",
+  journeyOriginRequired: "Enter a Journey origin.",
+  journeyDestinationRequired: "Enter a Journey destination.",
+  journeyTripTypeRequired: "Select a Journey trip type.",
+  journeyDistanceRequired: "Enter a positive exact Erasmus distance.",
+  transportProfileOutsideRules:
+    "Transport choice is not in this Project's frozen rules; replace the entry.",
+  entryAmountRequired: "Entry amount must be positive exact EUR.",
+  allocationRequired: "Allocate this entry to at least one Participation.",
+  allocationSharesInvalid:
+    "Use positive exact shares of the chosen method that total the entry amount (or 100%).",
+  proofDocumentRequired: "Link a Proof Document belonging to this Claim.",
+  fundingRulesRequired:
+    "Project has no complete frozen funding rules; save a Participant Journey first.",
+} as const;
+
+export const FieldIssueIdSchema = z.enum(
+  Object.keys(fieldIssueCatalog) as [
+    keyof typeof fieldIssueCatalog,
+    ...(keyof typeof fieldIssueCatalog)[],
+  ],
+);
+export const SafeFieldIssueSchema = z
+  .object({
+    id: FieldIssueIdSchema,
+    path: z.array(z.string()),
+    message: z.string(),
+  })
+  .strict()
+  .refine((issue) => issue.message === fieldIssueCatalog[issue.id]);
+export type SafeFieldIssue = z.infer<typeof SafeFieldIssueSchema>;
+
+export function createSafeFieldIssue(
+  id: keyof typeof fieldIssueCatalog,
+  path: string[],
+): SafeFieldIssue {
+  return { id, path, message: fieldIssueCatalog[id] };
+}
+
+export const ProjectCompletionBlockerSchema = z
+  .object({
+    name: z.string().min(1),
+    status: z
+      .enum([
+        "editable",
+        "correction_requested",
+        "submitted",
+        "approved",
+        "rejected",
+        "paid",
+      ])
+      .nullable(),
+  })
+  .strict();
+export type ProjectCompletionBlocker = z.infer<
+  typeof ProjectCompletionBlockerSchema
+>;
+
 export const SafeErrorDataSchema = z
   .object({
     reason: ErrorReasonSchema,
-    issues: z
-      .array(
-        z.object({ path: z.array(z.string()), message: z.string() }).strict(),
-      )
-      .optional(),
+    issues: z.array(SafeFieldIssueSchema).optional(),
+    blockers: z.array(ProjectCompletionBlockerSchema).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((data, context) => {
+    if (
+      (data.issues !== undefined &&
+        ![
+          "CLAIM_SUBMISSION_INCOMPLETE",
+          "JOURNEY_DISTANCE_OUTSIDE_BANDS",
+        ].includes(data.reason)) ||
+      (data.blockers !== undefined &&
+        data.reason !== "PROJECT_COMPLETION_BLOCKED")
+    )
+      context.addIssue({
+        code: "custom",
+        message: "Details do not match the refusal.",
+      });
+  });
 export const errorDefinitions = {
   PAYLOAD_TOO_LARGE: { message: "Payload too large" },
   UNSUPPORTED_MEDIA_TYPE: { message: "Unsupported media type" },

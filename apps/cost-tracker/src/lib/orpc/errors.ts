@@ -2,17 +2,24 @@ import { ORPCError } from "@orpc/server";
 
 import {
   SafeErrorDataSchema,
+  createSafeFieldIssue,
+  type SafeFieldIssue,
+  type ProjectCompletionBlocker,
   Situation,
   hasComposedCopy,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
 
 type SituationName = keyof typeof situationCatalog;
-type SafeIssue = { path: string[]; message: string };
+type SafeIssue = SafeFieldIssue;
 
 type SituationErrorOptions = {
   message: string;
-  data: { reason: string; issues?: SafeIssue[] };
+  data: {
+    reason: string;
+    issues?: SafeIssue[];
+    blockers?: readonly ProjectCompletionBlocker[];
+  };
 };
 
 /**
@@ -24,18 +31,6 @@ export type SituationErrorConstructors = {
   [Code in Situation["code"]]: (
     options: SituationErrorOptions,
   ) => ORPCError<string, unknown>;
-};
-
-type ProjectCompletionBlocker = {
-  name: string;
-  status:
-    | "editable"
-    | "correction_requested"
-    | "submitted"
-    | "approved"
-    | "rejected"
-    | "paid"
-    | null;
 };
 
 type RefusalInput = {
@@ -62,8 +57,8 @@ export type SituationErrors = {
 const fixedRefusalIssues: Partial<
   Record<RefusalName, (situation: Situation) => SafeIssue[]>
 > = {
-  journeyDistanceOutsideBands: (situation) => [
-    { path: ["erasmusDistanceKm"], message: situation.message },
+  journeyDistanceOutsideBands: () => [
+    createSafeFieldIssue("journeyDistanceOutsideBands", ["erasmusDistanceKm"]),
   ],
 };
 
@@ -96,6 +91,7 @@ function createRefusal(
         : situation.message,
       data: SafeErrorDataSchema.parse({
         reason: situation.reason,
+        ...(name === "projectCompletionBlocked" ? { blockers } : {}),
         ...(name in fixedRefusalIssues
           ? { issues: fixedRefusalIssues[name as RefusalName]?.(situation) }
           : issues
