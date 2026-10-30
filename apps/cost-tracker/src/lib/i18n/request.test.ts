@@ -12,7 +12,11 @@ vi.mock("@greendex/i18n/server", () => ({
 
 import { isSupportedLocale } from "@/lib/i18n/locales";
 import requestConfig from "@/lib/i18n/request";
-import { fieldIssueCatalog, situationCatalog } from "@/lib/orpc/error-contract";
+import {
+  fieldIssueCatalog,
+  ProjectCompletionBlockerSchema,
+  situationCatalog,
+} from "@/lib/orpc/error-contract";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { messageDomains } from "@/messages/domains";
@@ -101,13 +105,22 @@ const canonicalReasons = Object.fromEntries(
 );
 
 function assertReasonCatalogue(bundle: Record<string, unknown>) {
-  const {
-    fallback: _fallback,
-    completion: _completion,
-    details,
-    ...reasons
-  } = bundle;
+  const { fallback: _fallback, completion, details, ...reasons } = bundle;
   expect(details).toEqual(fieldIssueCatalog);
+  expect(completion).toMatchObject({
+    summary: expect.any(String),
+    status: expect.any(Object),
+  });
+  const statuses =
+    completion && typeof completion === "object" && "status" in completion
+      ? completion.status
+      : undefined;
+  expect(Object.keys(statuses ?? {}).sort()).toEqual(
+    [
+      "none",
+      ...ProjectCompletionBlockerSchema.shape.status.unwrap().options,
+    ].sort(),
+  );
   expect(reasons).toEqual(canonicalReasons);
 }
 
@@ -127,6 +140,26 @@ describe("API error catalogue coverage", () => {
       expect(() => assertReasonCatalogue(altered)).toThrow();
     },
   );
+
+  it.each([
+    "omitted detail",
+    "extra detail",
+    "English detail drift",
+    "detail argument drift",
+  ])("rejects %s", (defect) => {
+    const details: Record<string, string> = {
+      ...englishErrors.apiErrors.details,
+    };
+    if (defect === "omitted detail") delete details.payoutAccountRequired;
+    if (defect === "extra detail") details.UNKNOWN_DETAIL = "Unknown";
+    if (defect === "English detail drift")
+      details.payoutAccountRequired = "Changed wording";
+    if (defect === "detail argument drift")
+      details.payoutAccountRequired = "Select {account}";
+    expect(() =>
+      assertReasonCatalogue({ ...englishErrors.apiErrors, details }),
+    ).toThrow();
+  });
 
   it("preserves safe English internal and network presentation overrides", async () => {
     const config = await requestConfig({ requestLocale: Promise.resolve("en") });
@@ -180,31 +213,55 @@ describe("API error catalogue coverage", () => {
       for (const { reason } of Object.values(situationCatalog)) {
         expect(t(reason)).toBe(Reflect.get(reasons, reason));
       }
+      const details = Reflect.get(reasons, "details");
+      expect(Object.keys(details).sort()).toEqual(
+        Object.keys(fieldIssueCatalog).sort(),
+      );
+      for (const id of Object.keys(fieldIssueCatalog)) {
+        expect(t(`details.${id}`)).toBe(Reflect.get(details, id));
+      }
     },
   );
 
-  it("keeps German lifecycle refusals distinct and actionable", async () => {
-    const config = await requestConfig({ requestLocale: Promise.resolve("de") });
-    const t = createTranslator({
-      locale: "de",
-      messages: config.messages ?? undefined,
-      namespace: "apiErrors",
-    });
-    expect(t("SETUP_LINK_EXPIRED")).toBe(
-      "Dieser Einrichtungslink ist abgelaufen.",
-    );
-    expect(t("SETUP_LINK_USED")).toBe(
-      "Dieser Einrichtungslink wurde bereits verwendet.",
-    );
-    expect(t("REGISTRATION_LINK_CLOSED")).toBe(
-      "Der Registrierungslink ist geschlossen.",
-    );
-    expect(t("CLAIM_NOT_EDITABLE")).toBe("Der Claim ist nicht bearbeitbar.");
-    expect(t("PARTICIPANT_ALREADY_PARTICIPATES")).toBe(
-      "Diese Person nimmt bereits an diesem Projekt teil.",
-    );
-    expect(t("PAYOUT_ACCOUNT_REQUIRED")).toBe(
-      "Wähle einen Payout Account der Partnerorganisation aus, bevor du den Claim speicherst.",
-    );
-  });
+  it.each(LANGUAGE_CODES)(
+    "keeps lifecycle refusals distinct in %s",
+    async (locale) => {
+      const config = await requestConfig({
+        requestLocale: Promise.resolve(locale),
+      });
+      const t = createTranslator({
+        locale,
+        messages: config.messages ?? undefined,
+        namespace: "apiErrors",
+      });
+      const reasons = [
+        "SETUP_LINK_EXPIRED",
+        "SETUP_LINK_USED",
+        "REGISTRATION_LINK_CLOSED",
+        "CLAIM_NOT_EDITABLE",
+        "PARTICIPANT_ALREADY_PARTICIPATES",
+        "PAYOUT_ACCOUNT_REQUIRED",
+      ];
+      expect(new Set(reasons.map((reason) => t(reason))).size).toBe(
+        reasons.length,
+      );
+    },
+  );
+
+  it.each(LANGUAGE_CODES)(
+    "keeps distance refusal and detail wording consistent in %s",
+    async (locale) => {
+      const config = await requestConfig({
+        requestLocale: Promise.resolve(locale),
+      });
+      const t = createTranslator({
+        locale,
+        messages: config.messages ?? undefined,
+        namespace: "apiErrors",
+      });
+      expect(t("details.journeyDistanceOutsideBands")).toBe(
+        t("JOURNEY_DISTANCE_OUTSIDE_BANDS"),
+      );
+    },
+  );
 });

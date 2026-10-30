@@ -2,10 +2,13 @@
 
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { useTranslations } from "@greendex/i18n/client";
-import { ORPCError } from "@orpc/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  ErrorDetail,
+  ErrorPresentation,
+} from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,49 +25,26 @@ import {
 import { ClaimHistory } from "@/features/claims/components/claim-review";
 import { ClaimSubmission } from "@/features/claims/components/claim-submission";
 import { useParticipantEntryAccess } from "@/features/participant-onboarding/hooks/use-participant-entry-access";
-import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
-import { getErrorStatus } from "@/lib/orpc/error-status";
+import { getORPCErrorPresentation } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
 type Participation =
   Outputs["participations"]["listPartnership"]["participations"][number];
 type Cost = Outputs["costs"]["list"]["entries"][number];
-type FieldErrors = Record<string, string>;
+type FieldErrors = Record<string, React.ReactNode>;
 
 function errorsFor(error: unknown, root: string): FieldErrors {
+  const presentation = getORPCErrorPresentation(error);
   const errors: FieldErrors = {};
-  if (error instanceof ORPCError && error.code === "BAD_REQUEST") {
-    const data: unknown = error.data;
-    if (
-      data &&
-      typeof data === "object" &&
-      "issues" in data &&
-      Array.isArray(data.issues)
-    ) {
-      for (const issue of data.issues) {
-        if (
-          issue &&
-          typeof issue === "object" &&
-          "path" in issue &&
-          Array.isArray(issue.path) &&
-          "message" in issue &&
-          typeof issue.message === "string"
-        ) {
-          const path = issue.path.map(String).join(".");
-          if (path) errors[path] = issue.message;
-        }
-      }
-    }
-    const situation = getSafeErrorSituation(error);
-    if (situation?.reason === "JOURNEY_ALREADY_EXISTS")
-      errors[root] = situation.message;
-    if (situation?.reason === "PAYOUT_ACCOUNT_REQUIRED")
-      errors.payoutAccount = situation.message;
+  for (const issue of presentation.issues ?? []) {
+    const path = issue.path.join(".");
+    if (path) errors[path] = <ErrorDetail issue={issue} />;
   }
+  if (presentation.key === "PAYOUT_ACCOUNT_REQUIRED")
+    errors.payoutAccount = <ErrorPresentation error={error} />;
   if (!Object.keys(errors).length)
-    errors[root] = getORPCRequestErrorMessage(error).text;
+    errors[root] = <ErrorPresentation error={error} />;
   return errors;
 }
 
@@ -83,11 +63,11 @@ function enteredShareTotal(values: string[], method: "percentage" | "amount") {
   return `${units / BigInt(10) ** BigInt(precision)}.${String(units % BigInt(10) ** BigInt(precision)).padStart(precision, "0")}`;
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ message }: { message?: React.ReactNode }) {
   return message ? (
-    <p role="alert" className="text-sm text-destructive">
+    <div role="alert" className="text-sm text-destructive">
       {message}
-    </p>
+    </div>
   ) : null;
 }
 
@@ -762,7 +742,7 @@ function ProofEditor({
 }) {
   const t = useTranslations("claims.workspace");
   const [progress, setProgress] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<React.ReactNode>("");
   const [busy, setBusy] = useState(false);
   function upload(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -791,32 +771,20 @@ function ProofEditor({
         form.reset();
         void refresh();
       } else {
-        let text = "Upload failed. Please try again.";
+        let body: unknown;
         try {
-          const body: unknown = JSON.parse(request.responseText);
-          if (
-            body &&
-            typeof body === "object" &&
-            "code" in body &&
-            typeof body.code === "string" &&
-            "reason" in body
-          ) {
-            const situation = getSafeErrorSituation({
-              code: body.code,
-              data: { reason: body.reason },
-            });
-            if (situation && getErrorStatus(situation.code) === request.status)
-              text = situation.message;
-          }
+          body = JSON.parse(request.responseText);
         } catch {
-          // A malformed response must not expose remote prose or guessed causes.
+          body = undefined;
         }
-        setFeedback(text);
+        setFeedback(
+          <ErrorPresentation error={body} httpStatus={request.status} />,
+        );
       }
     };
     request.onerror = () => {
       setBusy(false);
-      setFeedback("Upload failed. Please try again.");
+      setFeedback(<ErrorPresentation error={undefined} />);
     };
     request.send(data);
   }
@@ -828,7 +796,7 @@ function ProofEditor({
       setFeedback("Proof Document linked.");
       await refresh();
     } catch (error) {
-      setFeedback(getORPCRequestErrorMessage(error).text);
+      setFeedback(<ErrorPresentation error={error} />);
     } finally {
       setBusy(false);
     }
@@ -883,7 +851,11 @@ function ProofEditor({
             {t("proof.uploadProgress")} {progress}%
           </progress>
         )}
-        {feedback && <output>{feedback}</output>}
+        {feedback && (
+          <div data-testid="proof-feedback" aria-live="polite" aria-atomic="true">
+            {feedback}
+          </div>
+        )}
         {entries.map((entry) => (
           <div key={entry.id} id={`proof-${entry.id}`}>
             <p>
@@ -1032,7 +1004,7 @@ function ClaimDraftEditor({
   const t = useTranslations("claims.workspace");
   const client = useQueryClient();
   const input = { partnershipId };
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<React.ReactNode>("");
   const [pending, setPending] = useState(false);
   const [accountHolder, setAccountHolder] = useState("");
   const [iban, setIban] = useState("");
@@ -1075,7 +1047,7 @@ function ClaimDraftEditor({
       await refresh();
       setFeedback("Payout Account selected.");
     } catch (error) {
-      setFeedback(getORPCRequestErrorMessage(error).text);
+      setFeedback(<ErrorPresentation error={error} />);
     } finally {
       setPending(false);
     }
@@ -1089,8 +1061,9 @@ function ClaimDraftEditor({
       setFeedback("Claim draft saved.");
     } catch (error) {
       setFeedback(
-        errorsFor(error, "draft").payoutAccount ??
-          getORPCRequestErrorMessage(error).text,
+        errorsFor(error, "draft").payoutAccount ?? (
+          <ErrorPresentation error={error} />
+        ),
       );
     } finally {
       setPending(false);
@@ -1206,7 +1179,11 @@ function ClaimDraftEditor({
             {t("payout.saveDraft")}
           </Button>
         )}
-        {feedback && <output>{feedback}</output>}
+        {feedback && (
+          <div aria-live="polite" aria-atomic="true">
+            {feedback}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

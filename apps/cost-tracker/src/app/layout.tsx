@@ -8,7 +8,6 @@ import { Geist, Inter, JetBrains_Mono } from "next/font/google";
 import { NuqsProvider } from "@/components/nuqs-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import shellMessages from "@/messages/en/shell.json";
 
@@ -67,13 +66,11 @@ export default async function RootLayout({
           now={now}
           timeZone="UTC"
         >
-          <Toaster>
-            <ThemeProvider>
-              <NuqsProvider>
-                <QueryProvider>{children}</QueryProvider>
-              </NuqsProvider>
-            </ThemeProvider>
-          </Toaster>
+          <ThemeProvider>
+            <NuqsProvider>
+              <QueryProvider>{children}</QueryProvider>
+            </NuqsProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

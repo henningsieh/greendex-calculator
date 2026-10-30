@@ -1,8 +1,13 @@
+import { NextIntlClientProvider } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useRef } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createSituationErrors } from "@/lib/orpc/errors";
+import german from "@/messages/de";
 
 const mocks = vi.hoisted(() => ({ add: vi.fn() }));
 
@@ -128,4 +133,27 @@ describe("QueryProvider", () => {
     await screen.findByTestId("refresh-partner-projects");
     expect(mocks.add).toHaveBeenCalledOnce();
   });
+});
+
+it("renders the grouped refresh description in German without discarding the cache", async () => {
+  render(
+    <NextIntlClientProvider locale="de" messages={german}>
+      <QueryProvider>
+        <FailingCachedORPCQuery
+          id="localized"
+          label="localized"
+          error={createSituationErrors().setupLinkExpired()}
+        />
+      </QueryProvider>
+    </NextIntlClientProvider>,
+  );
+  fireEvent.click(screen.getByTestId("refresh-localized-projects"));
+  await waitFor(() => expect(mocks.add).toHaveBeenCalledOnce());
+  expect(
+    renderToStaticMarkup(
+      <NextIntlClientProvider locale="de" messages={german}>
+        {mocks.add.mock.calls[0][0].description}
+      </NextIntlClientProvider>,
+    ),
+  ).toBe("Dieser Einrichtungslink ist abgelaufen.");
 });

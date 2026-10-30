@@ -136,7 +136,7 @@
       "networkFailure": "Der Server oder das Netzwerk ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
     },
     "details": {
-      "journeyDistanceOutsideBands": "Die Reisedistanz muss genau einem eingefrorenen Förderband entsprechen.",
+      "journeyDistanceOutsideBands": "Die Reiseentfernung muss genau einer festgeschriebenen Entfernungsstufe für die Förderung zugeordnet sein.",
       "payoutAccountRequired": "Wähle einen Payout Account der Partnerorganisation aus.",
       "entryRequired": "Füge mindestens einen Reisekosteneintrag hinzu.",
       "entryRequiredForCheck": "Füge einen Reisekosteneintrag hinzu, um diese Anforderung zu prüfen.",

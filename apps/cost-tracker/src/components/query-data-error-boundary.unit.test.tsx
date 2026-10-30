@@ -111,3 +111,20 @@ it.each([
   expect(screen.queryByTestId("project-data-sign-in")).toBeNull();
   vi.restoreAllMocks();
 });
+
+it.each(["en", "de"] as const)("preserves session recovery in %s", (locale) => {
+  shouldThrow = true;
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  render(
+    <ProjectDataErrorBoundary resource="Projects">
+      <FailingProjectDataView error={createSituationErrors().unauthenticated()} />
+    </ProjectDataErrorBoundary>,
+    { locale },
+  );
+  expect(screen.getByTestId("project-data-sign-in")).toHaveAttribute(
+    "href",
+    "/login",
+  );
+  expect(screen.queryByTestId("retry-project-data")).toBeNull();
+  vi.restoreAllMocks();
+});

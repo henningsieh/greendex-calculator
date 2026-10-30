@@ -14,6 +14,7 @@ import { useState } from "react";
 
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { EntityCombobox } from "@/components/entity-combobox";
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -31,7 +32,6 @@ import {
   useParticipantEntryAccess,
 } from "@/features/participant-onboarding/hooks/use-participant-entry-access";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -43,47 +43,33 @@ function createFeedback(error: unknown) {
   ) {
     return {
       title: "Review request",
-      description:
-        "This Registered User may already participate in this Project. Open Review Tasks to review the duplicate identity, then contact the Hosting Organization to request a merge review if needed. No new Project Participation was added.",
+      description: <ErrorPresentation error={error} />,
       outcome: "duplicate-review" as const,
     };
   }
   if (error instanceof ORPCError && error.code === "FORBIDDEN")
     return {
       title: "Access denied",
-      description: getORPCRequestErrorMessage(error).text,
+      description: <ErrorPresentation error={error} />,
       outcome: "access-denied" as const,
     };
   return {
     title: "Unable to add Participation",
-    description: getORPCRequestErrorMessage(error).text,
+    description: <ErrorPresentation error={error} />,
     outcome: "create-failed" as const,
   };
 }
 
 function removeRefusalFeedback(error: unknown) {
-  const refusals: Record<string, string> = {
-    PARTICIPATION_REMOVE_LOCKED:
-      "A locked Claim prevents removal of this Project Participation.",
-    PARTICIPATION_JOURNEY_OR_COST_REFERENCED:
-      "This Project Participation is referenced by a Participant Journey or Cost Allocation. Request review instead.",
-    PARTICIPATION_REFERENCED:
-      "This Project Participation is referenced by other records. Request review instead.",
-  };
   return {
     title: "Unable to remove Project Participation",
-    description:
-      error instanceof ORPCError && error.code === "BAD_REQUEST"
-        ? (refusals[getSafeErrorSituation(error)?.reason ?? ""] ??
-          getORPCRequestErrorMessage(error).text)
-        : getORPCRequestErrorMessage(error).text,
+    description: <ErrorPresentation error={error} />,
     outcome: "remove-refused" as const,
   };
 }
 
 const reopenRefusedFeedback = {
   title: "Registration link cannot be reopened",
-  description: "A non-editable Claim prevents reopening registration.",
   outcome: "reopen-refused",
 } as const;
 
@@ -104,16 +90,12 @@ function ReviewTaskControls({
   task: ReviewTask;
   canMutate: boolean;
   refresh: () => Promise<void>;
-  onFeedback: (message: string) => void;
+  onFeedback: (message: React.ReactNode) => void;
 }) {
   const t = useTranslations("participations");
   const [decision, setDecision] = useState<ReviewDecision>("same_person");
   const onError = (error: unknown) =>
-    onFeedback(
-      error instanceof ORPCError && error.code === "BAD_REQUEST"
-        ? "The Review Task is no longer available for this action. Only its assigned Registered User may resolve it with the existing Project Participation. Refresh the list and try again."
-        : getORPCRequestErrorMessage(error).text,
-    );
+    onFeedback(<ErrorPresentation error={error} />);
   const assign = useMutation({
     mutationFn: () =>
       orpc.duplicateReviews.assign({
@@ -227,7 +209,7 @@ function ReviewTasks({
 }) {
   const t = useTranslations("participations");
   const queryClient = useQueryClient();
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<React.ReactNode>("");
   const options = orpcQuery.duplicateReviews.list.queryOptions({
     input: { partnershipId },
     meta: { costTrackerORPC: true },
@@ -249,7 +231,7 @@ function ReviewTasks({
         <Alert>
           <AlertTitle>{t("review.loadError")}</AlertTitle>
           <AlertDescription>
-            {getORPCRequestErrorMessage(tasks.error).text}
+            {<ErrorPresentation error={tasks.error} />}
           </AlertDescription>
           <Button
             type="button"
@@ -293,7 +275,7 @@ function PartnerCoordinatorControls({
   const { confirm, dialog } = useConfirmDialog();
   const queryClient = useQueryClient();
   const [targetUserId, setTargetUserId] = useState("");
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<React.ReactNode>("");
   // This existing read is owner/admin-only; the mutations separately enforce
   // that the active Organization is this Project Partnership's Partner side.
   const members = useQuery(
@@ -314,7 +296,7 @@ function PartnerCoordinatorControls({
     ]);
   };
   const onError = (error: unknown) =>
-    setFeedback(getORPCRequestErrorMessage(error).text);
+    setFeedback(<ErrorPresentation error={error} />);
   const assign = useMutation({
     mutationFn: () =>
       orpc.projectPartnerships.assignPartnerCoordinator({
@@ -348,7 +330,7 @@ function PartnerCoordinatorControls({
       <Alert>
         <AlertTitle>{t("groupOrganizer.unavailable")}</AlertTitle>
         <AlertDescription>
-          {getORPCRequestErrorMessage(members.error).text}
+          {<ErrorPresentation error={members.error} />}
         </AlertDescription>
         <Button
           type="button"
@@ -756,14 +738,15 @@ export function ParticipantCoordination({
     url: string;
   }>();
   const [entryFeedback, setEntryFeedback] = useState<
-    { title: string; description: string } | typeof reopenRefusedFeedback
+    | { title: string; description: React.ReactNode }
+    | (typeof reopenRefusedFeedback & { description: React.ReactNode })
   >();
   const searchOnboarded = (search: string) =>
     orpc.participations.searchOnboarded({ partnershipId, search });
   const [feedback, setFeedback] = useState<
     | ReturnType<typeof createFeedback>
     | ReturnType<typeof removeRefusalFeedback>
-    | { title: string; description: string }
+    | { title: string; description: React.ReactNode }
   >();
   const refresh = async () => {
     await queryClient.invalidateQueries({
@@ -781,7 +764,7 @@ export function ParticipantCoordination({
   const entryError = (error: unknown) =>
     setEntryFeedback({
       title: "Entry point unavailable",
-      description: getORPCRequestErrorMessage(error).text,
+      description: <ErrorPresentation error={error} />,
     });
   const deliveryFeedback = (delivery: "sent" | "failed" | "already-issued") => {
     setEntryFeedback(
@@ -878,7 +861,10 @@ export function ParticipantCoordination({
         error instanceof ORPCError &&
         getSafeErrorSituation(error)?.reason === "REGISTRATION_CLAIM_LOCKED"
       ) {
-        setEntryFeedback(reopenRefusedFeedback);
+        setEntryFeedback({
+          ...reopenRefusedFeedback,
+          description: <ErrorPresentation error={error} />,
+        });
       } else entryError(error);
     },
   });

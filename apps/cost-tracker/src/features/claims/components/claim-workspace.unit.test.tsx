@@ -5,6 +5,11 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import {
+  createSafeFieldIssue,
+  type SafeFieldIssue,
+} from "@/lib/orpc/error-contract";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
@@ -61,7 +66,7 @@ const mocks = vi.hoisted(() => ({
     items: {
       key: string;
       passed: boolean;
-      gaps: { path: string[]; message: string }[];
+      gaps: SafeFieldIssue[];
     }[];
     calculatedPayableEur: string | null;
   },
@@ -139,9 +144,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
                   ].map((key) => ({
                     key,
                     passed: false,
-                    gaps: [
-                      { path: [key], message: "Complete this requirement." },
-                    ],
+                    gaps: [createSafeFieldIssue("entryRequiredForCheck", [key])],
                   })),
                   calculatedPayableEur: null,
                 }),
@@ -192,11 +195,12 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
 
 import { ClaimWorkspace } from "@/features/claims/components/claim-workspace";
 
-function mount(client = createQueryClient()) {
+function mount(client = createQueryClient(), locale: "en" | "de" = "en") {
   render(
     <QueryClientProvider client={client}>
       <ClaimWorkspace partnershipId="own" />
     </QueryClientProvider>,
+    { locale },
   );
 }
 
@@ -302,7 +306,7 @@ describe("Claim workspace", () => {
     }
   }, 30_000);
 
-  it("retains correction field errors and relocks on resubmission", async () => {
+  it("retains correction input after untrusted field errors and relocks on resubmission", async () => {
     mocks.journeys = [
       {
         id: "journey",
@@ -386,12 +390,11 @@ describe("Claim workspace", () => {
       "bad",
     );
     await userEvent.click(screen.getByTestId("journey-correction-save"));
-    for (const field of ["origin", "destination", "type", "distance"])
-      expect(
-        await within(
-          screen.getByTestId(`journey-correction-person-${field}`).parentElement!,
-        ).findByRole("alert"),
-      ).toBeInTheDocument();
+    expect(
+      await within(
+        screen.getByTestId("journey-correction-save").closest("form")!,
+      ).findByRole("alert"),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("journey-correction-person-distance")).toHaveValue(
       "bad",
     );
@@ -539,7 +542,7 @@ describe("Claim workspace", () => {
     expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" });
   });
 
-  it("retains invalid journey fields and maps server errors while costs are saved independently", async () => {
+  it("retains invalid journey fields and safely rejects unidentified field errors while costs are saved independently", async () => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
     mocks.saveJourney.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
@@ -563,14 +566,14 @@ describe("Claim workspace", () => {
     await userEvent.click(screen.getByTestId("journey-save"));
     expect(
       await within(
-        screen.getByTestId("journey-origin").parentElement!,
+        screen.getByTestId("journey-person").parentElement!,
       ).findByRole("alert"),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByTestId("journey-distance").parentElement!).getByRole(
+      within(screen.getByTestId("journey-distance").parentElement!).queryByRole(
         "alert",
       ),
-    ).toBeInTheDocument();
+    ).toBeNull();
     expect(screen.getByTestId("journey-origin")).toHaveValue("Mars");
     expect(screen.getByTestId("journey-distance")).toHaveValue("bad");
     await userEvent.type(screen.getByTestId("cost-amount"), "10.00");
@@ -586,6 +589,35 @@ describe("Claim workspace", () => {
     );
     expect(screen.getByTestId("journey-origin")).toHaveValue("Mars");
   });
+
+  it.each(["en", "de"] as const)(
+    "associates validated distance corrections with their field in %s",
+    async (locale) => {
+      mocks.saveJourney.mockRejectedValue(
+        createSituationErrors().journeyDistanceOutsideBands(),
+      );
+      mount(createQueryClient(), locale);
+      await userEvent.selectOptions(
+        await screen.findByTestId("journey-person"),
+        "person",
+      );
+      await userEvent.type(screen.getByTestId("journey-origin"), "Berlin");
+      await userEvent.type(screen.getByTestId("journey-distance"), "1");
+      await userEvent.click(screen.getByTestId("journey-save"));
+      expect(
+        await within(
+          screen.getByTestId("journey-distance").parentElement!,
+        ).findByRole("alert"),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("journey-origin").parentElement!).queryByRole(
+          "alert",
+        ),
+      ).toBeNull();
+      expect(screen.getByTestId("journey-origin")).toHaveValue("Berlin");
+      expect(screen.getByTestId("journey-distance")).toHaveValue("1");
+    },
+  );
 
   it("surfaces the server one-journey rule at Participation without clearing the form", async () => {
     mocks.saveJourney.mockRejectedValue(
@@ -609,7 +641,7 @@ describe("Claim workspace", () => {
     expect(screen.getByTestId("journey-origin")).toHaveValue("Berlin");
   });
 
-  it("shows share totals and server field errors without clearing an incomplete cost", async () => {
+  it("shows share totals and safe generic feedback for unidentified field errors without clearing an incomplete cost", async () => {
     mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
     mocks.saveCost.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
@@ -637,16 +669,12 @@ describe("Claim workspace", () => {
       "35.500000",
     );
     await userEvent.click(screen.getByTestId("cost-save"));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(
-      await within(
-        screen.getByTestId("cost-share-person").parentElement!,
-      ).findByRole("alert"),
-    ).toBeInTheDocument();
-    expect(
-      screen
-        .getByTestId("cost-participations")
-        .querySelector(':scope > [role="alert"]'),
-    ).toBeInTheDocument();
+      within(screen.getByTestId("cost-share-person").parentElement!).queryByRole(
+        "alert",
+      ),
+    ).toBeNull();
     expect(screen.getByTestId("cost-share-person")).toHaveValue("35.5");
   });
 
@@ -732,7 +760,9 @@ describe("Claim workspace", () => {
         expect(screen.getByRole("progressbar")).toHaveValue(100),
       );
       expect(
-        within(document.getElementById("claim-proofs")!).getByRole("status"),
+        within(document.getElementById("claim-proofs")!).getByTestId(
+          "proof-feedback",
+        ),
       ).toBeInTheDocument();
       expect(screen.getByTestId("proof-upload")).toBeEnabled();
     } finally {
@@ -748,18 +778,13 @@ describe("Claim workspace", () => {
           key: "payoutAccount",
           passed: false,
           gaps: [
-            {
-              path: ["payoutAccount"],
-              message: "Select a Partner Payout Account.",
-            },
+            createSafeFieldIssue("payoutAccountRequired", ["payoutAccount"]),
           ],
         },
         {
           key: "entries",
           passed: false,
-          gaps: [
-            { path: ["entries"], message: "Add at least one Travel Cost Entry." },
-          ],
+          gaps: [createSafeFieldIssue("entryRequired", ["entries"])],
         },
         ...[
           "entryDetails",
@@ -770,12 +795,7 @@ describe("Claim workspace", () => {
         ].map((key) => ({
           key,
           passed: false,
-          gaps: [
-            {
-              path: [key],
-              message: "Add a Travel Cost Entry to check this requirement.",
-            },
-          ],
+          gaps: [createSafeFieldIssue("entryRequiredForCheck", [key])],
         })),
       ],
       calculatedPayableEur: null,
@@ -813,20 +833,22 @@ describe("Claim workspace", () => {
           key: "entryDetails",
           passed: false,
           gaps: [
-            {
-              path: ["entries", "entry", "allocations"],
-              message: "Fix allocation.",
-            },
+            createSafeFieldIssue("allocationSharesInvalid", [
+              "entries",
+              "entry",
+              "allocations",
+            ]),
           ],
         },
         {
           key: "proofDocuments",
           passed: false,
           gaps: [
-            {
-              path: ["entries", "entry", "proofDocuments"],
-              message: "Link document.",
-            },
+            createSafeFieldIssue("proofDocumentRequired", [
+              "entries",
+              "entry",
+              "proofDocuments",
+            ]),
           ],
         },
         { key: "participations", passed: true, gaps: [] },
@@ -834,10 +856,11 @@ describe("Claim workspace", () => {
           key: "journeys",
           passed: false,
           gaps: [
-            {
-              path: ["participations", "person", "journey"],
-              message: "Add journey.",
-            },
+            createSafeFieldIssue("journeyRequired", [
+              "participations",
+              "person",
+              "journey",
+            ]),
           ],
         },
         { key: "fundingRules", passed: true, gaps: [] },
@@ -952,10 +975,11 @@ describe("Claim workspace", () => {
                 key: item.key,
                 passed: false,
                 gaps: [
-                  {
-                    path: ["entries", "entry", "proofDocuments"],
-                    message: "Link evidence.",
-                  },
+                  createSafeFieldIssue("proofDocumentRequired", [
+                    "entries",
+                    "entry",
+                    "proofDocuments",
+                  ]),
                 ],
               }
             : item,
@@ -1003,9 +1027,9 @@ describe("Claim workspace", () => {
     );
     await userEvent.click(screen.getByTestId("payout-account-create"));
     expect(
-      await within(screen.getByTestId("account-iban").parentElement!).findByRole(
-        "alert",
-      ),
+      await within(
+        screen.getByTestId("account-iban").closest("form")!,
+      ).findByRole("alert"),
     ).toBeInTheDocument();
     expect(screen.getByTestId("account-iban")).toHaveValue(
       "DE89370400440532013001",
@@ -1157,8 +1181,8 @@ it.each([
       expect(requests[0].send).toHaveBeenCalledOnce();
       requests[0].onload?.();
       expect(
-        await within(document.getElementById("claim-proofs")!).findByRole(
-          "status",
+        await within(document.getElementById("claim-proofs")!).findByTestId(
+          "proof-feedback",
         ),
       ).toBeInTheDocument();
       expect(invalidate).not.toHaveBeenCalled();

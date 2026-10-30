@@ -6,6 +6,7 @@ import { Building2Icon, CalendarDaysIcon, MapPinIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,6 @@ import {
   canCompleteProject,
 } from "@/features/claims/claim-lifecycle";
 import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -55,7 +55,7 @@ export function ProjectWorkspace({
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const [completing, setCompleting] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<React.ReactNode>("");
   const { data: project } = useSuspenseQuery(
     orpcQuery.projects.get.queryOptions({
       input: { projectId },
@@ -83,7 +83,7 @@ export function ProjectWorkspace({
           .queryKey,
       });
     } catch (error) {
-      setFeedback(getORPCRequestErrorMessage(error).text);
+      setFeedback(<ErrorPresentation error={error} />);
     } finally {
       setCompleting(false);
     }
@@ -148,7 +148,16 @@ export function ProjectWorkspace({
             {completing ? t("completing") : t("complete")}
           </Button>
         )}
-        {feedback && <output className="text-sm">{feedback}</output>}
+        {feedback && (
+          <div
+            data-testid="project-feedback"
+            aria-live="polite"
+            aria-atomic="true"
+            className="text-sm"
+          >
+            {feedback}
+          </div>
+        )}
       </header>
 
       <div className="grid gap-4 md:grid-cols-2">

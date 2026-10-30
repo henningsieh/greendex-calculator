@@ -9,11 +9,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ProjectCreateInputSchema } from "@/features/projects/validation-schemas";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
 type Details = z.input<typeof ProjectCreateInputSchema>;
@@ -22,7 +22,7 @@ export function CreateProjectDialog() {
   const router = useRouter();
   const t = useTranslations("projects.create");
   const [open, setOpen] = useState(false);
-  const [submitError, setSubmitError] = useState<string>();
+  const [submitError, setSubmitError] = useState<React.ReactNode>(null);
   const {
     register,
     handleSubmit,
@@ -41,7 +41,7 @@ export function CreateProjectDialog() {
       reset();
       router.push(`/projects/${encodeURIComponent(id)}`);
     } catch (error) {
-      setSubmitError(getORPCRequestErrorMessage(error).text);
+      setSubmitError(<ErrorPresentation error={error} />);
     }
   });
 
@@ -168,9 +168,9 @@ export function CreateProjectDialog() {
                   )}
                 </Field>
                 {submitError && (
-                  <p role="alert" className="text-sm text-destructive">
+                  <div role="alert" className="text-sm text-destructive">
                     {submitError}
-                  </p>
+                  </div>
                 )}
                 <div className="flex justify-end gap-3">
                   <Dialog.Close

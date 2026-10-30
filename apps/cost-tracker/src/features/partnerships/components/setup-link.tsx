@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 
 import { EntityCombobox } from "@/components/entity-combobox";
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +36,6 @@ import { CreateOrganizationInputSchema } from "@/features/authentication/validat
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { authClient } from "@/lib/auth-client";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
@@ -68,7 +68,10 @@ const knownErrors: Readonly<Record<string, SetupError>> = {
   EMAIL_VERIFICATION_REQUIRED: "verify-email",
 };
 
-const errorCopy: Record<SetupError, { title: string; description: string }> = {
+const errorCopy: Record<
+  SetupError,
+  { title: string; description: React.ReactNode }
+> = {
   invalid: {
     title: "Invalid setup link",
     description: "Check that you opened the complete link shared with you.",
@@ -121,19 +124,24 @@ const errorCopy: Record<SetupError, { title: string; description: string }> = {
   },
 };
 
-function setupError(error: unknown): SetupError {
-  if (error instanceof ORPCError) {
-    const situation = getSafeErrorSituation(error);
-    return situation ? (knownErrors[situation.reason] ?? "generic") : "generic";
-  }
-  return "generic";
+type SetupFeedback = { state: SetupError; detail?: React.ReactNode };
+
+function setupError(error: unknown): SetupFeedback {
+  const situation =
+    error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
+  return {
+    state: situation ? (knownErrors[situation.reason] ?? "generic") : "generic",
+    detail: <ErrorPresentation error={error} />,
+  };
 }
 
-function SetupStatus({ state }: { state: SetupError }) {
+function SetupStatus({ state, detail }: SetupFeedback) {
   return (
     <Alert data-setup-error={state} variant="destructive">
       <AlertTitle>{errorCopy[state].title}</AlertTitle>
-      <AlertDescription>{errorCopy[state].description}</AlertDescription>
+      <AlertDescription>
+        {detail ?? errorCopy[state].description}
+      </AlertDescription>
     </Alert>
   );
 }
@@ -160,7 +168,7 @@ export function SetupLinkCreator() {
       await orpc.projectPartnerships.disableSetupLink({ id });
       await refreshLinks();
     } catch (cause) {
-      setError(getORPCRequestErrorMessage(cause).text);
+      setError(<ErrorPresentation error={cause} />);
     } finally {
       setClosingId(undefined);
     }
@@ -168,7 +176,7 @@ export function SetupLinkCreator() {
   const [projectId, setProjectId] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [link, setLink] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<React.ReactNode>("");
   const [copied, setCopied] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -191,7 +199,7 @@ export function SetupLinkCreator() {
       setLink(url.toString());
       await refreshLinks();
     } catch (cause) {
-      setError(getORPCRequestErrorMessage(cause).text);
+      setError(<ErrorPresentation error={cause} />);
     } finally {
       setPending(false);
     }
@@ -235,7 +243,7 @@ export function SetupLinkCreator() {
             </Button>
           </div>
         </form>
-        {error && <p role="alert">{error}</p>}
+        {error && <div role="alert">{error}</div>}
         <section
           data-testid="setup-links"
           aria-label={t("existingLinks")}
@@ -249,7 +257,7 @@ export function SetupLinkCreator() {
             <Alert variant="destructive">
               <AlertTitle>{t("loadError")}</AlertTitle>
               <AlertDescription>
-                {getORPCRequestErrorMessage(existingLinks.error).text}
+                {<ErrorPresentation error={existingLinks.error} />}
               </AlertDescription>
               <Button
                 type="button"
@@ -511,7 +519,7 @@ function SetupOrganizationAccess({
   pending: boolean;
   returnTo: string;
   select: (id: string) => Promise<void>;
-  error: SetupError | undefined;
+  error: SetupFeedback | undefined;
 }) {
   const t = useTranslations("partnerships.setup");
   return decision?.nextStep === "select-organization" ? (
@@ -566,7 +574,7 @@ export function SetupLinkRecipient({
   const [rejectedOrganization, setRejectedOrganization] = useState<string>();
   const queryClient = useQueryClient();
   const [decision, setDecision] = useState<OnboardingDecision>();
-  const [error, setError] = useState<SetupError>();
+  const [error, setError] = useState<SetupFeedback>();
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const recovery = useRef<RecoveryCheckpoint | undefined>(undefined);
@@ -647,7 +655,7 @@ export function SetupLinkRecipient({
             country: choice.country,
           });
           if (!input.success) {
-            setError("create");
+            setError({ state: "create" });
             return;
           }
           retain({ phase: "creating" });
@@ -670,7 +678,7 @@ export function SetupLinkRecipient({
               recovery.current = undefined;
               setRecoverySnapshot(undefined);
             }
-            setError("create");
+            setError({ ...setupError(cause), state: "create" });
             await resolve();
             return;
           }
@@ -728,8 +736,8 @@ export function SetupLinkRecipient({
       await queryClient.invalidateQueries();
       await resolve();
       router.refresh();
-    } catch {
-      setError("generic");
+    } catch (cause) {
+      setError(setupError(cause));
     } finally {
       setPending(false);
     }
@@ -808,7 +816,7 @@ export function SetupLinkRecipient({
         )}
         {error && (
           <>
-            <SetupStatus state={error} />
+            <SetupStatus {...error} />
             <Button
               data-testid="inspect-setup"
               disabled={pending}
