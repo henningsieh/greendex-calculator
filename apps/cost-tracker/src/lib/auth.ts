@@ -18,6 +18,7 @@ export const auth = createServerAuth({
   organizationHooks: costTrackerOrganizationHooks,
   plugins: [costTrackerInvitationRoleGate, participantMembershipGrantPlugin],
   baseURL: env.NEXT_PUBLIC_BASE_URL,
+  localE2EAuth: env.LOCAL_E2E_AUTH === "1",
   secret: env.BETTER_AUTH_SECRET,
   socialProviders: {
     google: {

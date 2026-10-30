@@ -8,6 +8,7 @@ import { emailSender } from "@/lib/email";
 export const auth = createServerAuth({
   appName: "Next WebSocket Server",
   baseURL: env.NEXT_PUBLIC_BASE_URL,
+  localE2EAuth: env.LOCAL_E2E_AUTH === "1",
   secret: env.BETTER_AUTH_SECRET,
   emailSender,
   emailVerification: {
