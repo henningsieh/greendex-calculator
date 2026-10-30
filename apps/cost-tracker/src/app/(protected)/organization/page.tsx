@@ -1,5 +1,6 @@
 import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
@@ -58,6 +59,7 @@ async function OrganizationTeamSection({ email }: { email: string }) {
 }
 
 export default async function OrganizationPage() {
+  await connection();
   if (!(await hasOrganizationMembership())) return null;
   const session = await requireSession();
   const t = await getTranslations("organizations");

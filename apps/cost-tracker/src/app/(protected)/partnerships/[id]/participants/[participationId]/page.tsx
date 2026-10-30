@@ -1,6 +1,7 @@
 import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export default async function ParticipantDetailsPage({
 }: {
   params: Promise<{ id: string; participationId: string }>;
 }) {
+  await connection();
   if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("participations.app");
 
