@@ -51,6 +51,7 @@ export type SituationErrors = {
     blockers: readonly ProjectCompletionBlocker[],
   ) => ORPCError<string, unknown>;
   submissionIncomplete: (issues: SafeIssue[]) => ORPCError<string, unknown>;
+  invalidInputWithIssues: (issues: SafeIssue[]) => ORPCError<string, unknown>;
 };
 
 /** Field issues a fixed refusal carries beyond its declared copy. */
@@ -154,7 +155,11 @@ export function createSituationErrors(
     setRefusal(refusals, name, build);
   }
   assertComplete(refusals, names, "situation refusals");
-  return refusals;
+  return {
+    ...refusals,
+    invalidInputWithIssues: (issues) =>
+      createRefusal("badInput", constructors)({ issues }),
+  };
 }
 
 export type ScopeErrorConstructors = Partial<

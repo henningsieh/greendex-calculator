@@ -10,7 +10,7 @@ const errors = createSituationErrors();
 describe("derived situation refusals", () => {
   it("exposes exactly one refusal per declared situation", () => {
     expect(Object.keys(errors).sort()).toEqual(
-      Object.keys(situationCatalog).sort(),
+      [...Object.keys(situationCatalog), "invalidInputWithIssues"].sort(),
     );
   });
 

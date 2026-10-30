@@ -866,6 +866,7 @@ export const SafeErrorDataSchema = z
         ![
           "CLAIM_SUBMISSION_INCOMPLETE",
           "JOURNEY_DISTANCE_OUTSIDE_BANDS",
+          "INVALID_INPUT",
         ].includes(data.reason)) ||
       (data.blockers !== undefined &&
         data.reason !== "PROJECT_COMPLETION_BLOCKED") ||

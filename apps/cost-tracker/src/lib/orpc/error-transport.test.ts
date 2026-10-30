@@ -21,7 +21,9 @@ vi.mock("@/lib/orpc/router", async () => {
           throw errors[
             name as Exclude<
               keyof typeof errors,
-              "projectCompletionBlocked" | "submissionIncomplete"
+              | "projectCompletionBlocked"
+              | "submissionIncomplete"
+              | "invalidInputWithIssues"
             >
           ]();
         }),

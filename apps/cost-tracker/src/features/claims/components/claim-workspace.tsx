@@ -48,6 +48,26 @@ function errorsFor(error: unknown, root: string): FieldErrors {
   return errors;
 }
 
+function journeyFieldError(
+  errors: FieldErrors,
+  participantId: string,
+  field: "origin" | "destination" | "tripType" | "erasmusDistanceKm",
+) {
+  if (!participantId) return undefined;
+  return (
+    errors[`participations.${participantId}.journey.${field}`] ?? errors[field]
+  );
+}
+
+function costFieldError(
+  errors: FieldErrors,
+  entryId: string | undefined,
+  field: "transportProfile" | "amountEur" | "allocations",
+) {
+  const key = entryId ?? "new";
+  return errors[`entries.${key}.${field}`] ?? errors[field];
+}
+
 // Display-only sum; the server remains the authority for exact share validation.
 function enteredShareTotal(values: string[], method: "percentage" | "amount") {
   const precision = method === "percentage" ? 6 : 2;
@@ -151,7 +171,13 @@ function JourneyCorrection({
               value={origin}
               onChange={(event) => setOrigin(event.target.value)}
             />
-            <FieldError message={errors.origin} />
+            <FieldError
+              message={journeyFieldError(
+                errors,
+                journey.projectParticipantId,
+                "origin",
+              )}
+            />
           </div>
           <div>
             <Label htmlFor={`${id}-destination`}>
@@ -164,7 +190,13 @@ function JourneyCorrection({
               value={destination}
               onChange={(event) => setDestination(event.target.value)}
             />
-            <FieldError message={errors.destination} />
+            <FieldError
+              message={journeyFieldError(
+                errors,
+                journey.projectParticipantId,
+                "destination",
+              )}
+            />
           </div>
           <div>
             <Label htmlFor={`${id}-type`}>
@@ -182,7 +214,13 @@ function JourneyCorrection({
               <option value="one-way">{t("journey.oneWay")}</option>
               <option value="round-trip">{t("journey.roundTrip")}</option>
             </select>
-            <FieldError message={errors.tripType} />
+            <FieldError
+              message={journeyFieldError(
+                errors,
+                journey.projectParticipantId,
+                "tripType",
+              )}
+            />
           </div>
           <div>
             <Label htmlFor={`${id}-distance`}>
@@ -196,7 +234,13 @@ function JourneyCorrection({
               value={distance}
               onChange={(event) => setDistance(event.target.value)}
             />
-            <FieldError message={errors.erasmusDistanceKm} />
+            <FieldError
+              message={journeyFieldError(
+                errors,
+                journey.projectParticipantId,
+                "erasmusDistanceKm",
+              )}
+            />
           </div>
           <Button
             size="lg"
@@ -370,7 +414,7 @@ function JourneyEditor({
                 value={origin}
                 onChange={(event) => setOrigin(event.target.value)}
               />
-              <FieldError message={errors.origin} />
+              <FieldError message={journeyFieldError(errors, person, "origin")} />
             </div>
             <div>
               <Label htmlFor="journey-destination">
@@ -382,7 +426,9 @@ function JourneyEditor({
                 value={destination}
                 onChange={(event) => setDestination(event.target.value)}
               />
-              <FieldError message={errors.destination} />
+              <FieldError
+                message={journeyFieldError(errors, person, "destination")}
+              />
             </div>
             <div>
               <Label htmlFor="journey-type">{t("journey.tripType")}</Label>
@@ -397,7 +443,9 @@ function JourneyEditor({
                 <option value="one-way">{t("journey.oneWay")}</option>
                 <option value="round-trip">{t("journey.roundTrip")}</option>
               </select>
-              <FieldError message={errors.tripType} />
+              <FieldError
+                message={journeyFieldError(errors, person, "tripType")}
+              />
             </div>
             <div>
               <Label htmlFor="journey-distance">{t("journey.distance")}</Label>
@@ -409,7 +457,9 @@ function JourneyEditor({
                 value={distance}
                 onChange={(event) => setDistance(event.target.value)}
               />
-              <FieldError message={errors.erasmusDistanceKm} />
+              <FieldError
+                message={journeyFieldError(errors, person, "erasmusDistanceKm")}
+              />
             </div>
             <Button
               size="lg"
@@ -604,7 +654,9 @@ function CostEditor({
                   </option>
                 ))}
               </select>
-              <FieldError message={errors.transportProfile} />
+              <FieldError
+                message={costFieldError(errors, entryId, "transportProfile")}
+              />
             </div>
             <div>
               <Label htmlFor="cost-amount">{t("cost.exactTotal")}</Label>
@@ -616,7 +668,9 @@ function CostEditor({
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
               />
-              <FieldError message={errors.amountEur} />
+              <FieldError
+                message={costFieldError(errors, entryId, "amountEur")}
+              />
             </div>
             <div>
               <Label htmlFor="cost-method">{t("cost.allocationMethod")}</Label>
@@ -699,7 +753,9 @@ function CostEditor({
                   </div>
                 );
               })}
-              <FieldError message={errors.allocations} />
+              <FieldError
+                message={costFieldError(errors, entryId, "allocations")}
+              />
             </fieldset>
             <p aria-live="polite" data-share-total={shareTotal}>
               {method === "equal"

@@ -142,17 +142,45 @@ describe("Participant Journey procedures", () => {
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "INVALID_INPUT",
         issues: [
-          { path: ["origin"] },
-          { path: ["destination"] },
-          { path: ["tripType"] },
-          { path: ["erasmusDistanceKm"] },
+          {
+            id: "journeyOriginRequired",
+            path: ["participations", first, "journey", "origin"],
+            message: "Enter a Journey origin.",
+          },
+          {
+            id: "journeyDestinationRequired",
+            path: ["participations", first, "journey", "destination"],
+            message: "Enter a Journey destination.",
+          },
+          {
+            id: "journeyTripTypeRequired",
+            path: ["participations", first, "journey", "tripType"],
+            message: "Select a Journey trip type.",
+          },
+          {
+            id: "journeyDistanceRequired",
+            path: ["participations", first, "journey", "erasmusDistanceKm"],
+            message: "Enter a positive exact Erasmus distance.",
+          },
         ],
       },
     });
     expect(
       await db.select().from(snapshots).where(eq(snapshots.projectId, project)),
     ).toEqual([]);
+  });
+
+  it("omits field issues when the Participation identifier is missing", async () => {
+    const error = await client.journeys
+      .save({ partnershipId: own } as typeof journey)
+      .catch((failure: unknown) => failure);
+    expect(error).toMatchObject({
+      code: "BAD_REQUEST",
+      data: { reason: "INVALID_INPUT" },
+    });
+    expect(error).not.toHaveProperty("data.issues");
   });
 
   it("rejects blank locations, invalid trip types and nonpositive or overprecise distance", async () => {
@@ -359,11 +387,24 @@ describe("Participant Journey procedures", () => {
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "INVALID_INPUT",
         issues: [
-          { path: ["origin"] },
-          { path: ["destination"] },
-          { path: ["tripType"] },
-          { path: ["erasmusDistanceKm"] },
+          {
+            id: "journeyOriginRequired",
+            path: ["participations", first, "journey", "origin"],
+          },
+          {
+            id: "journeyDestinationRequired",
+            path: ["participations", first, "journey", "destination"],
+          },
+          {
+            id: "journeyTripTypeRequired",
+            path: ["participations", first, "journey", "tripType"],
+          },
+          {
+            id: "journeyDistanceRequired",
+            path: ["participations", first, "journey", "erasmusDistanceKm"],
+          },
         ],
       },
     });
