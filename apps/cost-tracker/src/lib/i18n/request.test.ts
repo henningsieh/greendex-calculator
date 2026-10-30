@@ -3,6 +3,7 @@
 import { readdir, readFile } from "node:fs/promises";
 
 import { DEFAULT_LANGUAGE, LANGUAGE_CODES } from "@greendex/config/languages";
+import { createTranslator } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@greendex/i18n/server", () => ({
@@ -11,7 +12,11 @@ vi.mock("@greendex/i18n/server", () => ({
 
 import { isSupportedLocale } from "@/lib/i18n/locales";
 import requestConfig from "@/lib/i18n/request";
+import { fieldIssueCatalog, situationCatalog } from "@/lib/orpc/error-contract";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { messageDomains } from "@/messages/domains";
+import englishErrors from "@/messages/en/apiErrors.json";
 
 const messagesDirectory = new URL("../../messages/", import.meta.url);
 
@@ -89,4 +94,117 @@ describe("Cost Tracker request catalogue", () => {
       expect(config.messages).toEqual(await readMerged(DEFAULT_LANGUAGE));
     },
   );
+});
+
+const canonicalReasons = Object.fromEntries(
+  Object.values(situationCatalog).map(({ reason, message }) => [reason, message]),
+);
+
+function assertReasonCatalogue(bundle: Record<string, unknown>) {
+  const {
+    fallback: _fallback,
+    completion: _completion,
+    details,
+    ...reasons
+  } = bundle;
+  expect(details).toEqual(fieldIssueCatalog);
+  expect(reasons).toEqual(canonicalReasons);
+}
+
+describe("API error catalogue coverage", () => {
+  it("matches the canonical English reasons without presentation overrides", () => {
+    assertReasonCatalogue(englishErrors.apiErrors);
+  });
+
+  it.each(["omitted reason", "extra reason", "English drift"])(
+    "rejects %s",
+    (defect) => {
+      const altered: Record<string, unknown> = { ...englishErrors.apiErrors };
+      const reason = situationCatalog.unauthenticated.reason;
+      if (defect === "omitted reason") delete altered[reason];
+      if (defect === "extra reason") altered.UNKNOWN_REASON = "Unknown";
+      if (defect === "English drift") altered[reason] = "Changed wording";
+      expect(() => assertReasonCatalogue(altered)).toThrow();
+    },
+  );
+
+  it("preserves safe English internal and network presentation overrides", async () => {
+    const config = await requestConfig({ requestLocale: Promise.resolve("en") });
+    const t = createTranslator({
+      locale: "en",
+      messages: config.messages ?? undefined,
+      namespace: "apiErrors",
+    });
+    expect(t("fallback.internalFailure")).toBe(
+      getORPCRequestErrorMessage(createSituationErrors().internalFailure()).text,
+    );
+    expect(t("fallback.networkFailure")).toBe(
+      getORPCRequestErrorMessage(new Error("private network detail")).text,
+    );
+    expect(t("INTERNAL_FAILURE")).toBe(situationCatalog.internalFailure.message);
+  });
+
+  it("rejects mismatched translation arguments", () => {
+    const altered = {
+      ...englishErrors.apiErrors,
+      SESSION_REQUIRED: "Sign in as {name} to continue.",
+    };
+    expect(() =>
+      expect(shape(altered)).toEqual(shape(englishErrors.apiErrors)),
+    ).toThrow();
+  });
+
+  it.each(LANGUAGE_CODES)(
+    "resolves every reason through the %s request tree",
+    async (locale) => {
+      const config = await requestConfig({
+        requestLocale: Promise.resolve(locale),
+      });
+      const t = createTranslator({
+        locale,
+        messages: config.messages ?? undefined,
+        namespace: "apiErrors",
+      });
+      const bundle = await readBundle(locale, "apiErrors");
+      const reasons = bundle.apiErrors;
+      if (!reasons || typeof reasons !== "object")
+        throw new Error("Missing apiErrors root");
+      expect(Object.keys(reasons).sort()).toEqual(
+        [
+          ...Object.keys(canonicalReasons),
+          "fallback",
+          "details",
+          "completion",
+        ].sort(),
+      );
+      for (const { reason } of Object.values(situationCatalog)) {
+        expect(t(reason)).toBe(Reflect.get(reasons, reason));
+      }
+    },
+  );
+
+  it("keeps German lifecycle refusals distinct and actionable", async () => {
+    const config = await requestConfig({ requestLocale: Promise.resolve("de") });
+    const t = createTranslator({
+      locale: "de",
+      messages: config.messages ?? undefined,
+      namespace: "apiErrors",
+    });
+    expect(t("SETUP_LINK_EXPIRED")).toBe(
+      "Dieser Einrichtungslink ist abgelaufen.",
+    );
+    expect(t("SETUP_LINK_USED")).toBe(
+      "Dieser Einrichtungslink wurde bereits verwendet.",
+    );
+    expect(t("REGISTRATION_LINK_CLOSED")).toBe(
+      "Der Registrierungslink ist geschlossen.",
+    );
+    expect(t("CLAIM_NOT_EDITABLE")).toBe("Der Claim ist nicht bearbeitbar.");
+    expect(t("PARTICIPANT_ALREADY_PARTICIPATES")).toBe(
+      "Diese Person nimmt bereits an diesem Projekt teil.",
+    );
+    expect(t("PAYOUT_ACCOUNT_REQUIRED")).toBe(
+      "Wähle einen Payout Account der Partnerorganisation aus, bevor du den Claim speicherst.",
+    );
+  });
 });
