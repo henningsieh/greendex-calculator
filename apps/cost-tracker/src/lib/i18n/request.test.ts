@@ -13,6 +13,8 @@ vi.mock("@greendex/i18n/server", () => ({
 import { isSupportedLocale } from "@/lib/i18n/locales";
 import requestConfig from "@/lib/i18n/request";
 import { situationCatalog } from "@/lib/orpc/error-contract";
+import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { createSituationErrors } from "@/lib/orpc/errors";
 import { messageDomains } from "@/messages/domains";
 import englishErrors from "@/messages/en/apiErrors.json";
 
@@ -119,6 +121,22 @@ describe("API error catalogue coverage", () => {
       expect(() => assertReasonCatalogue(altered)).toThrow();
     },
   );
+
+  it("preserves safe English internal and network presentation overrides", async () => {
+    const config = await requestConfig({ requestLocale: Promise.resolve("en") });
+    const t = createTranslator({
+      locale: "en",
+      messages: config.messages ?? undefined,
+      namespace: "apiErrors",
+    });
+    expect(t("fallback.internalFailure")).toBe(
+      getORPCRequestErrorMessage(createSituationErrors().internalFailure()).text,
+    );
+    expect(t("fallback.networkFailure")).toBe(
+      getORPCRequestErrorMessage(new Error("private network detail")).text,
+    );
+    expect(t("INTERNAL_FAILURE")).toBe(situationCatalog.internalFailure.message);
+  });
 
   it("rejects mismatched translation arguments", () => {
     const altered = {
