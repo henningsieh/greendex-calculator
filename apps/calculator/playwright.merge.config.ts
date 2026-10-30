@@ -5,7 +5,7 @@ export default defineConfig({
   testDir: "./src/__tests__/merge",
   fullyParallel: false,
   forbidOnly: true,
-  workers: 3,
+  workers: 1,
   retries: 1,
   // Covers the first Turbopack compilation of both apps on a small dev host.
   timeout: 300_000,

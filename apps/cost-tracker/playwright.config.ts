@@ -14,7 +14,7 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: true,
   retries: 1,
-  workers: 3,
+  workers: 1,
   globalSetup: "./src/__tests__/e2e/global-setup.ts",
   outputDir: "src/__tests__/e2e/.playwright/results",
   reporter: [["html", { outputFolder: "src/__tests__/e2e/.playwright/report" }]],

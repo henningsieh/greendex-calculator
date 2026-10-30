@@ -371,7 +371,7 @@ async function main(): Promise<void> {
                   "playwright",
                   "test",
                   `--config=${config}`,
-                  "--workers=3",
+                  "--workers=1",
                   "--retries=0",
                   ...(filter ? [filter] : []),
                 ],
