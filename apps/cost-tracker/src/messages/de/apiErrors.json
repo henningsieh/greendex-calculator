@@ -108,7 +108,7 @@
     "CLAIM_APPROVAL_REQUIRED": "Der Claim muss genehmigt sein, bevor eine Zahlung erfasst werden kann.",
     "FULL_TRANSFER_REQUIRED": "Die Überweisung muss dem gesamten genehmigten Eurobetrag entsprechen.",
     "CLAIM_PAID_REQUIRED": "Nur bei einem bezahlten Claim kann die Zahlungsmarkierung korrigiert werden.",
-    "JOURNEY_DISTANCE_OUTSIDE_BANDS": "Die Reiseentfernung muss genau einem festgeschriebenen Förderband zugeordnet sein.",
+    "JOURNEY_DISTANCE_OUTSIDE_BANDS": "Die Reiseentfernung muss genau einer festgeschriebenen Entfernungsstufe für die Förderung zugeordnet sein.",
     "CLAIM_SUBMISSION_INCOMPLETE": "Die Checkliste zur Einreichung des Claims ist unvollständig.",
     "PARTNER_DOCUMENTS_REQUIRED": "Nur die Partnerorganisation darf Proof Documents verwalten.",
     "PROOF_DOCUMENT_NOT_FOUND": "Das Proof Document wurde im zugänglichen Bereich nicht gefunden.",
