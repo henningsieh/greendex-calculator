@@ -552,7 +552,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
-    await expect(t.locator("form p[role='alert']")).toBeVisible();
+    await expect(t.locator("form").getByRole("alert")).toBeVisible();
     expect(
       await db
         .select()
@@ -591,7 +591,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await u.getByTestId("accept-participant-agreement").check();
     await u.getByTestId("join-project").click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
-    await expect(u.locator("form p[role='alert']")).toBeVisible();
+    await expect(u.locator("form").getByRole("alert")).toBeVisible();
     expect(
       await db
         .select()
@@ -749,7 +749,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the joinedOtherPartner factory copy.
-    await expect(t.locator("form p[role='alert']")).toBeVisible();
+    await expect(t.locator("form").getByRole("alert")).toBeVisible();
     expect(
       await db
         .select()
