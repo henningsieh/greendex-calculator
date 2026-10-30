@@ -131,13 +131,18 @@ describe("structured error details", () => {
     ).toBe("CLAIM_SUBMISSION_INCOMPLETE");
   });
 
-  it("rejects a checklist detail on a Journey distance refusal", () => {
+  it.each([
+    createSafeFieldIssue("payoutAccountRequired", ["payoutAccount"]),
+    createSafeFieldIssue("journeyDistanceOutsideBands", ["payoutAccount"]),
+    createSafeFieldIssue("journeyDistanceOutsideBands", [
+      "erasmusDistanceKm",
+      "extra",
+    ]),
+  ])("rejects a mismatched Journey distance detail %j", (issue) => {
     const error = new ORPCError("BAD_REQUEST", {
       data: {
         reason: "JOURNEY_DISTANCE_OUTSIDE_BANDS",
-        issues: [
-          createSafeFieldIssue("payoutAccountRequired", ["payoutAccount"]),
-        ],
+        issues: [issue],
       },
     });
     expect(getSafeErrorSituation(error)).toBeUndefined();
