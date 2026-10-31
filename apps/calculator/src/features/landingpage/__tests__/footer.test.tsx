@@ -24,8 +24,14 @@ vi.mock("@/features/landingpage/components/logo", () => ({
 }));
 vi.mock("@/lib/i18n/routing", () => ({
   // Expose the locale passed at the navigation boundary; don't emulate routing.
-  Link: ({ locale, ...props }: ComponentProps<"a"> & { locale: string }) => (
-    <a {...props} data-locale={locale} />
+  Link: ({
+    locale,
+    children,
+    ...props
+  }: ComponentProps<"a"> & { locale: string }) => (
+    <a {...props} data-locale={locale}>
+      {children}
+    </a>
   ),
 }));
 

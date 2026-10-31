@@ -4,7 +4,6 @@ import {
   DESCRIPTION,
   LOGO_PATH,
 } from "@greendex/config/metadata";
-import Script from "next/script";
 
 // JSON-LD structured data for SEO
 const jsonLd = {
@@ -52,12 +51,11 @@ const jsonLd = {
  */
 export function JsonLd() {
   return (
-    <Script
+    <script
       dangerouslySetInnerHTML={{
         __html: JSON.stringify(jsonLd),
       }}
       id="json-ld"
-      strategy="beforeInteractive"
       type="application/ld+json"
     />
   );

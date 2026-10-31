@@ -116,8 +116,8 @@ export function ProjectCard({
     }
   };
 
-  // Calculate status based on dates
-  const now = new Date();
+  // Capture the reference time once; avoids impure reads during render.
+  const [now] = useState(() => new Date());
   const startDate = new Date(project.startDate);
   const endDate = new Date(project.endDate);
   let status: "upcoming" | "active" | "completed" = "upcoming";

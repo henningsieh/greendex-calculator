@@ -22,14 +22,15 @@ export default function ORPCTestPage() {
     [key: string]: boolean;
   }>({});
 
-  // Test health check on mount
+  const fetchHealth = useCallback(() => orpc.health(), []);
+
   const testHealth = useCallback(async () => {
     setLoading((prev) => ({
       ...prev,
       health: true,
     }));
     try {
-      const result = await orpc.health();
+      const result = await fetchHealth();
       console.log("✅ Health Check Response:", result);
       setHealthResponse(JSON.stringify(result, null, 2));
     } catch (error) {
@@ -41,11 +42,27 @@ export default function ORPCTestPage() {
         health: false,
       }));
     }
-  }, []);
+  }, [fetchHealth]);
 
   useEffect(() => {
-    void testHealth();
-  }, [testHealth]);
+    let cancelled = false;
+
+    fetchHealth()
+      .then((result) => {
+        if (cancelled) return;
+        console.log("✅ Health Check Response:", result);
+        setHealthResponse(JSON.stringify(result, null, 2));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("❌ Health Check Error:", error);
+        setHealthResponse(`Error: ${error}`);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchHealth]);
 
   const testHello = async () => {
     setLoading((prev) => ({

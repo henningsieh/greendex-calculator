@@ -3,7 +3,7 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LogInIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,6 +40,10 @@ import { authClient } from "@/lib/better-auth/auth-client";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
+const subscribeToLastLoginMethod = () => () => {};
+const getLastLoginMethod = () => authClient.getLastUsedLoginMethod();
+const getServerLastLoginMethod = () => null;
+
 /**
  * Render a login form with password and magic-link methods, social sign-in buttons, and redirect handling.
  *
@@ -59,7 +63,11 @@ export function LoginForm({
 }: React.ComponentProps<"div"> & {
   nextPageUrl?: string | string[];
 }) {
-  const [lastLoginMethod, setLastLoginMethod] = useState<string | null>(null);
+  const lastLoginMethod = useSyncExternalStore(
+    subscribeToLastLoginMethod,
+    getLastLoginMethod,
+    getServerLastLoginMethod,
+  );
   const hydrated = useHydrated();
 
   const router = useRouter();
@@ -68,12 +76,6 @@ export function LoginForm({
   // append the callbackUrl to the env
   const finalRedirect = normalizeRedirectPath(nextPageUrl, DASHBOARD_PATH);
   const callbackURL = env.NEXT_PUBLIC_BASE_URL + finalRedirect;
-
-  // Get last login method on component mount
-  useEffect(() => {
-    const method = authClient.getLastUsedLoginMethod();
-    setLastLoginMethod(method);
-  }, []);
 
   const credentialsSchema = useMemo(
     () =>

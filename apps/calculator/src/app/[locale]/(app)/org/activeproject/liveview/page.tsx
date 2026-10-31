@@ -9,7 +9,7 @@
  */
 
 import { MapPinnedIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Leaderboard } from "@/features/liveview/leaderboard";
 import { LiveIndicator } from "@/features/liveview/live-indicator";
@@ -19,10 +19,8 @@ import {
 } from "@/features/liveview/mock-participant-travel";
 import { StatsOverview } from "@/features/liveview/stats-overview";
 import { TransportBreakdown } from "@/features/liveview/transport-breakdown";
-import type {
-  LiveViewParticipant,
-  LiveViewProjectStats,
-} from "@/features/liveview/types";
+import type { LiveViewParticipant } from "@/features/liveview/types";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 function generateMockParticipants(): LiveViewParticipant[] {
   const names = [
@@ -73,15 +71,35 @@ function generateMockParticipants(): LiveViewParticipant[] {
   });
 }
 
-export default function Dashboard() {
-  const [participants, setParticipants] = useState<LiveViewParticipant[]>([]);
-  const [stats, setStats] = useState<LiveViewProjectStats | null>(null);
+function DashboardLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="text-center">
+        <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-muted-foreground">Loading dashboard...</p>
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const initialParticipants = generateMockParticipants();
-    setParticipants(initialParticipants);
-    setStats(calculateLiveViewStats(initialParticipants));
-  }, []);
+export default function Dashboard() {
+  const hydrated = useHydrated();
+
+  if (!hydrated) {
+    return <DashboardLoading />;
+  }
+
+  return <LiveViewDashboard />;
+}
+
+function LiveViewDashboard() {
+  const [participants, setParticipants] = useState<LiveViewParticipant[]>(
+    generateMockParticipants,
+  );
+  const stats = useMemo(
+    () => calculateLiveViewStats(participants),
+    [participants],
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -114,19 +132,8 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (participants.length > 0) setStats(calculateLiveViewStats(participants));
-  }, [participants]);
-
   if (!stats) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardLoading />;
   }
 
   return (

@@ -87,9 +87,15 @@ describe("greendex/no-hardcoded-ui-copy", () => {
       "Alternative",
       "Wrapped",
     ]);
-    expect(result.output).toContain(
-      `${scopedFile}:1:51: error greendex(no-hardcoded-ui-copy)`,
-    );
+    const diagnostics = result.output.split(/\n\s*\n/);
+    expect(
+      diagnostics.some(
+        (diagnostic) =>
+          diagnostic.includes(`${scopedFile}:1:51`) &&
+          diagnostic.includes("greendex(no-hardcoded-ui-copy)"),
+      ),
+      `expected a no-hardcoded-ui-copy diagnostic at ${scopedFile}:1:51`,
+    ).toBe(true);
   });
 
   it("checks visible attributes on HTML, components and SVG", () => {

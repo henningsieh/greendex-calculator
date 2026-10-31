@@ -78,16 +78,24 @@ it("limits Tailwind rules to production UI sources in all owning contexts", () =
     if (result.error) throw result.error;
     const output = result.stdout + result.stderr;
     expect(result.status).toBe(1);
+    const diagnostics = output.split(/\n\s*\n/);
     for (const file of uiFiles) {
-      expect(output).toContain(`${file}:`);
-      expect(output).toMatch(
-        new RegExp(
-          `${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:.*better-tailwindcss\\(no-conflicting-classes\\)`,
+      expect(
+        diagnostics.some(
+          (diagnostic) =>
+            diagnostic.includes(file) &&
+            diagnostic.includes("better-tailwindcss(no-conflicting-classes)"),
         ),
-      );
+        `expected a no-conflicting-classes diagnostic for ${file}`,
+      ).toBe(true);
     }
     expect(output).not.toContain("Internal error");
-    for (const file of excludedFiles) expect(output).not.toContain(`${file}:`);
+    for (const file of excludedFiles) {
+      expect(
+        diagnostics.some((diagnostic) => diagnostic.includes(file)),
+        `expected no diagnostic for excluded file ${file}`,
+      ).toBe(false);
+    }
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }

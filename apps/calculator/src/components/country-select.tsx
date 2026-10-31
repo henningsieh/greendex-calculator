@@ -2,7 +2,7 @@
 
 import { useLocale } from "@greendex/i18n/client";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
-import { type ComponentProps, useMemo, useState } from "react";
+import { type ComponentProps, useId, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +54,7 @@ export function CountrySelect({
 }: CountrySelectProps) {
   const locale = useLocale();
   const [open, setOpen] = useState(false);
+  const listId = useId();
 
   const countries = useMemo(
     () => (euOnly ? getEUCountries(locale) : getAllCountries(locale)),
@@ -67,11 +68,12 @@ export function CountrySelect({
       <PopoverTrigger asChild>
         <Button
           {...triggerProps}
+          aria-controls={listId}
           aria-expanded={open}
+          aria-haspopup="listbox"
           className={cn("w-full justify-between", className)}
           disabled={disabled}
           id={id}
-          role="combobox"
           variant="outline"
         >
           {selectedCountry ? (
@@ -90,7 +92,7 @@ export function CountrySelect({
       <PopoverContent align="start" className="w-75 p-0">
         <Command>
           <CommandInput placeholder="Search country..." />
-          <CommandList>
+          <CommandList id={listId}>
             <CommandEmpty>No country found.</CommandEmpty>
             <CommandGroup>
               {countries.map((country) => (

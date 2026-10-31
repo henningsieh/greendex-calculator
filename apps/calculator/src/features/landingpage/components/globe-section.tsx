@@ -200,7 +200,7 @@ export function GlobeSection() {
                   mapSamples={GLOBE_CONFIG.mapSamples}
                   markerColor={GLOBE_CONFIG.markerColor}
                   onRender={handleRender}
-                  phi={phiRef.current}
+                  phi={GLOBE_CONFIG.initialPhi}
                   theta={GLOBE_CONFIG.theta}
                   width={size.width}
                 />
