@@ -73,6 +73,19 @@ export function CreateProjectForm({
     PROJECT_FORM_STEPS.PROJECT_DETAILS,
   );
 
+  const [defaultValues] = useState(() => ({
+    name: "",
+    startDate: new Date(),
+    endDate: new Date(
+      Date.now() + DEFAULT_PROJECT_DURATION_DAYS * MILLISECONDS_PER_DAY,
+    ),
+    country: undefined,
+    location: "",
+    welcomeMessage: undefined,
+    organizationId: activeOrganizationId,
+    sharedTravelLegs: [],
+  }));
+
   const {
     register,
     control,
@@ -82,18 +95,7 @@ export function CreateProjectForm({
   } = useForm<CreateProjectWithSharedTravelLegs>({
     resolver: zodResolver(CreateProjectWithSharedTravelLegsSchema),
     mode: "onChange",
-    defaultValues: {
-      name: "",
-      startDate: new Date(),
-      endDate: new Date(
-        Date.now() + DEFAULT_PROJECT_DURATION_DAYS * MILLISECONDS_PER_DAY,
-      ),
-      country: undefined,
-      location: "",
-      welcomeMessage: undefined,
-      organizationId: activeOrganizationId,
-      sharedTravelLegs: [],
-    },
+    defaultValues,
   });
 
   const { fields, append, remove } = useFieldArray({

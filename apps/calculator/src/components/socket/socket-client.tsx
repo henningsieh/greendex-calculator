@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 
 import { Empty, EmptyTitle } from "@/components/ui/empty";
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function SocketClient({ socketUrl }: Props) {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -49,16 +49,17 @@ export default function SocketClient({ socketUrl }: Props) {
       });
     });
 
-    setSocket(socketInstance);
+    socketRef.current = socketInstance;
 
     return () => {
       socketInstance.disconnect();
+      socketRef.current = null;
     };
   }, [socketUrl]);
 
   const sendMessage = () => {
-    if (socket && inputMessage.trim()) {
-      socket.emit("client-message", {
+    if (socketRef.current && inputMessage.trim()) {
+      socketRef.current.emit("client-message", {
         text: inputMessage,
         timestamp: new Date().toISOString(),
       });

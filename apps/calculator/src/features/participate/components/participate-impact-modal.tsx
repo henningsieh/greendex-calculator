@@ -196,8 +196,22 @@ const getCO2Color = (co2: number): string => {
   return "text-red-500";
 };
 
-export function ImpactModal({
-  isOpen,
+type ImpactModalContentProps = Omit<ImpactModalProps, "isOpen">;
+
+export function ImpactModal({ isOpen, ...props }: ImpactModalProps) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <ImpactModalContent
+      key={`${props.previousCO2}-${props.newCO2}-${props.stepKey}-${props.stepValue}`}
+      {...props}
+    />
+  );
+}
+
+function ImpactModalContent({
   previousCO2,
   newCO2,
   impact,
@@ -208,7 +222,7 @@ export function ImpactModal({
   roomOccupancy,
   carKm,
   onClose,
-}: ImpactModalProps) {
+}: ImpactModalContentProps) {
   const [animationPhase, setAnimationPhase] = useState<
     "start" | "counting" | "complete"
   >("start");
@@ -217,16 +231,8 @@ export function ImpactModal({
 
   const t = useTranslations("participation.questionnaire.impact-modal");
 
-  // Start animation when modal opens
+  // Start the animation once the content mounts.
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    setAnimationPhase("start");
-    setDisplayCO2(previousCO2.toFixed(1));
-    counterValue.set(previousCO2);
-
     // Phase 1: Show modal, then start counting
     const showTimer = setTimeout(() => {
       setAnimationPhase("counting");
@@ -242,11 +248,7 @@ export function ImpactModal({
     }, 100);
 
     return () => clearTimeout(showTimer);
-  }, [isOpen, previousCO2, newCO2, counterValue]);
-
-  if (!isOpen) {
-    return null;
-  }
+  }, [newCO2, counterValue]);
 
   const impactMessage = getImpactMessage(
     stepKey,
@@ -266,17 +268,10 @@ export function ImpactModal({
 
   return createPortal(
     <motion.div
-      animate={
-        isOpen
-          ? {
-              opacity: 1,
-              scale: 1,
-            }
-          : {
-              opacity: 0,
-              scale: 0.9,
-            }
-      }
+      animate={{
+        opacity: 1,
+        scale: 1,
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm sm:p-10"
       data-testid="impact-modal"
       initial={{

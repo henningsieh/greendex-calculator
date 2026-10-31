@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "@greendex/i18n/client";
 import { CheckIcon } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ export function LocaleSwitcher({ className }: { className?: string }) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const t = useTranslations("app");
+  const listId = useId();
 
   const locales = useMemo(() => getLocaleData(), []);
   const currentLocale = useMemo(
@@ -49,12 +50,13 @@ export function LocaleSwitcher({ className }: { className?: string }) {
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
+          aria-controls={listId}
           aria-expanded={open}
+          aria-haspopup="listbox"
           aria-label={`Select language, current: ${currentLocale?.englishName || locale}`}
           className={cn("size-8", className)}
           data-pending={isPending}
           disabled={isPending}
-          role="combobox"
           size="icon-xs"
           type="button"
           variant="locale"
@@ -67,7 +69,7 @@ export function LocaleSwitcher({ className }: { className?: string }) {
       <PopoverContent align="end" className="w-60 p-0">
         <Command>
           <CommandInput placeholder={t("localeSwitcher.searchPlaceholder")} />
-          <CommandList>
+          <CommandList id={listId}>
             <CommandEmpty>{t("localeSwitcher.noLanguageFound")}</CommandEmpty>
             <CommandGroup>
               {locales.map((entry) => (

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 
@@ -40,6 +40,9 @@ export function CreateOrganizationForm({
       name: "",
     },
   });
+
+  const name = useWatch({ control: form.control, name: "name" });
+  const country = useWatch({ control: form.control, name: "country" });
 
   async function onSubmit(data: z.infer<typeof OrganizationFormSchema>) {
     try {
@@ -137,11 +140,7 @@ export function CreateOrganizationForm({
 
           <Button
             className="w-full"
-            disabled={
-              form.formState.isSubmitting ||
-              !form.watch("name") ||
-              !form.watch("country")
-            }
+            disabled={form.formState.isSubmitting || !name || !country}
             onClick={handleSubmit}
             type="button"
           >

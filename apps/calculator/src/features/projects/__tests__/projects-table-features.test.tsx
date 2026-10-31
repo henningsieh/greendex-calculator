@@ -10,11 +10,6 @@ import { projectsTableFeatures } from "@/features/projects/components/dashboard/
 
 describe("projectsTableFeatures", () => {
   it("registers the automatic name sort and filter functions", () => {
-    let nameFilterFn: unknown;
-    let nameSortFn: unknown;
-    let filteredNames: string[] = [];
-    let sortedNames: string[] = [];
-
     function TableProbe() {
       const filteredTable = useTable({
         features: projectsTableFeatures,
@@ -34,23 +29,32 @@ describe("projectsTableFeatures", () => {
       });
 
       const nameColumn = filteredTable.getColumn("name");
-      nameFilterFn = nameColumn?.getFilterFn();
-      nameSortFn = unfilteredTable.getColumn("name")?.getSortFn();
-      filteredNames = filteredTable
+      const nameFilterFn: unknown = nameColumn?.getFilterFn();
+      const nameSortFn: unknown = unfilteredTable.getColumn("name")?.getSortFn();
+      const filteredNames = filteredTable
         .getFilteredRowModel()
         .rows.map((row) => row.original.name);
-      sortedNames = unfilteredTable
+      const sortedNames = unfilteredTable
         .getSortedRowModel()
         .rows.map((row) => row.original.name);
 
-      return null;
+      return (
+        <output
+          data-filter-fn-matches={
+            nameFilterFn === filterFn_includesString ? "true" : "false"
+          }
+          data-filtered={filteredNames.join("|")}
+          data-sort-fn-matches={nameSortFn === sortFn_text ? "true" : "false"}
+          data-sorted={sortedNames.join("|")}
+        />
+      );
     }
 
-    renderToStaticMarkup(<TableProbe />);
+    const html = renderToStaticMarkup(<TableProbe />);
 
-    expect(nameFilterFn).toBe(filterFn_includesString);
-    expect(nameSortFn).toBe(sortFn_text);
-    expect(filteredNames).toEqual(["Alpha"]);
-    expect(sortedNames).toEqual(["Alpha", "Zulu"]);
+    expect(html).toContain('data-filter-fn-matches="true"');
+    expect(html).toContain('data-sort-fn-matches="true"');
+    expect(html).toContain('data-filtered="Alpha"');
+    expect(html).toContain('data-sorted="Alpha|Zulu"');
   });
 });

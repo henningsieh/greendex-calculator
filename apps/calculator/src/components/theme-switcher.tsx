@@ -2,15 +2,9 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useTheme } from "next-themes";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
+import { useHydrated } from "@/hooks/use-hydrated";
 import { themes, type ThemeKey } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
@@ -36,15 +30,14 @@ export const ThemeSwitcher = ({
   const t = useTranslations("app.appearance.themes");
   const { theme, setTheme } = useTheme();
 
-  // Only ONE useState for hydration safety
-  const [mounted, setMounted] = useState(false);
+  // Hydration-safe mount flag
+  const hydrated = useHydrated();
 
   // Refs for DOM measurements
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Refs for rect tracking (avoids useState re-renders)
-  const activeRectRef = useRef<Rect>({ x: 0, width: 0, height: 0 });
   const hoverRectRef = useRef<Rect>({ x: 0, width: 0, height: 0 });
   const hoverInitializedRef = useRef(false);
 
@@ -94,10 +87,9 @@ export const ThemeSwitcher = ({
 
   // Update active overlay position (imperative, no re-render)
   const updateActiveRect = useCallback(() => {
-    if (!mounted || activeIndex === -1) return;
+    if (!hydrated || activeIndex === -1) return;
 
     const newRect = computeRectForIndex(activeIndex);
-    activeRectRef.current = newRect;
 
     // Imperatively update motion div
     const motionDiv = activeMotionRef.current;
@@ -106,12 +98,12 @@ export const ThemeSwitcher = ({
       motionDiv.style.height = `calc(${newRect.height}px - 2px)`;
       motionDiv.style.transform = `translateX(${newRect.x + 1}px) translateY(1px)`;
     }
-  }, [activeIndex, computeRectForIndex, mounted]);
+  }, [activeIndex, computeRectForIndex, hydrated]);
 
   // Update hover overlay position (imperative, no re-render)
   const updateHoverRect = useCallback(
     (index: number, visible: boolean, instant = false) => {
-      if (!mounted) return;
+      if (!hydrated) return;
 
       const newRect = visible ? computeRectForIndex(index) : hoverRectRef.current;
       hoverRectRef.current = newRect;
@@ -132,7 +124,7 @@ export const ThemeSwitcher = ({
         }
       }
     },
-    [computeRectForIndex, mounted],
+    [computeRectForIndex, hydrated],
   );
 
   // Stable event handlers
@@ -156,21 +148,16 @@ export const ThemeSwitcher = ({
     hoverInitializedRef.current = false;
   }, [updateHoverRect]);
 
-  // Set default theme once mounted
+  // Set default theme once hydrated
   useEffect(() => {
-    if (defaultValue && !theme && mounted) {
+    if (defaultValue && !theme && hydrated) {
       setTheme(defaultValue);
     }
-  }, [defaultValue, theme, setTheme, mounted]);
-
-  // Handle mounting
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  }, [defaultValue, theme, setTheme, hydrated]);
 
   // Update active overlay on theme change or resize
   useLayoutEffect(() => {
-    if (!mounted) return;
+    if (!hydrated) return;
 
     updateActiveRect();
 
@@ -188,10 +175,10 @@ export const ThemeSwitcher = ({
       window.removeEventListener("resize", updateActiveRect);
       ro?.disconnect();
     };
-  }, [updateActiveRect, mounted]);
+  }, [updateActiveRect, hydrated]);
 
-  // Don't render until mounted (hydration safety)
-  if (!mounted) {
+  // Don't render until hydrated (hydration safety)
+  if (!hydrated) {
     return null;
   }
 
@@ -210,9 +197,6 @@ export const ThemeSwitcher = ({
         className="ease-spring pointer-events-none absolute left-0 rounded-full bg-accent transition-transform duration-280"
         style={{
           top: "calc(50% - 11.5px)",
-          width: `calc(${activeRectRef.current.width}px - 2px)`,
-          height: `calc(${activeRectRef.current.height}px - 2px)`,
-          transform: `translateX(${activeRectRef.current.x + 1}px) translateY(1px)`,
         }}
       />
 
@@ -222,9 +206,6 @@ export const ThemeSwitcher = ({
         className="pointer-events-none absolute left-0 rounded-full bg-primary/40 transition-opacity duration-120"
         style={{
           top: "calc(50% - 11.5px)",
-          width: `calc(${hoverRectRef.current.width}px - 2px)`,
-          height: `calc(${hoverRectRef.current.height}px - 2px)`,
-          transform: `translateX(${hoverRectRef.current.x + 1}px) translateY(1px)`,
           opacity: 0,
         }}
       />

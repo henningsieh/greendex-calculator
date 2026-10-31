@@ -3,6 +3,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { CopyIcon, ExternalLinkIcon, Link2Icon, QrCodeIcon } from "lucide-react";
+import Image from "next/image";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -143,11 +144,13 @@ export function ParticipantsLinkControls({
               </DialogHeader>
               <div className="flex flex-col items-center gap-4 py-4">
                 {qrCodeDataUrl ? (
-                  <div
-                    aria-label={t("participation.modalTitle")}
-                    className="size-75 rounded-lg border border-secondary/70 bg-contain bg-center bg-no-repeat"
-                    role="img"
-                    style={{ backgroundImage: `url(${qrCodeDataUrl})` }}
+                  <Image
+                    alt={t("participation.modalTitle")}
+                    className="size-75 rounded-lg border border-secondary/70 object-contain"
+                    height={300}
+                    src={qrCodeDataUrl}
+                    unoptimized
+                    width={300}
                   />
                 ) : (
                   <div className="flex size-75 items-center justify-center rounded-lg border border-secondary/70">

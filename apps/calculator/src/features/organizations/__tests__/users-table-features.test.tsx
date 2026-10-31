@@ -10,11 +10,6 @@ import { usersTableFeatures } from "@/features/organizations/components/users-ta
 
 describe("usersTableFeatures", () => {
   it("registers the automatic person sort and filter functions", () => {
-    let memberFilterFn: unknown;
-    let memberSortFn: unknown;
-    let filteredMembers: string[] = [];
-    let sortedMembers: string[] = [];
-
     function TableProbe() {
       const filteredTable = useTable({
         features: usersTableFeatures,
@@ -34,23 +29,34 @@ describe("usersTableFeatures", () => {
       });
 
       const memberColumn = filteredTable.getColumn("member");
-      memberFilterFn = memberColumn?.getFilterFn();
-      memberSortFn = unfilteredTable.getColumn("member")?.getSortFn();
-      filteredMembers = filteredTable
+      const memberFilterFn: unknown = memberColumn?.getFilterFn();
+      const memberSortFn: unknown = unfilteredTable
+        .getColumn("member")
+        ?.getSortFn();
+      const filteredMembers = filteredTable
         .getFilteredRowModel()
         .rows.map((row) => row.original.member);
-      sortedMembers = unfilteredTable
+      const sortedMembers = unfilteredTable
         .getSortedRowModel()
         .rows.map((row) => row.original.member);
 
-      return null;
+      return (
+        <output
+          data-filter-fn-matches={
+            memberFilterFn === filterFn_includesString ? "true" : "false"
+          }
+          data-filtered={filteredMembers.join("|")}
+          data-sort-fn-matches={memberSortFn === sortFn_text ? "true" : "false"}
+          data-sorted={sortedMembers.join("|")}
+        />
+      );
     }
 
-    renderToStaticMarkup(<TableProbe />);
+    const html = renderToStaticMarkup(<TableProbe />);
 
-    expect(memberFilterFn).toBe(filterFn_includesString);
-    expect(memberSortFn).toBe(sortFn_text);
-    expect(filteredMembers).toEqual(["Alpha"]);
-    expect(sortedMembers).toEqual(["Alpha", "Zulu"]);
+    expect(html).toContain('data-filter-fn-matches="true"');
+    expect(html).toContain('data-sort-fn-matches="true"');
+    expect(html).toContain('data-filtered="Alpha"');
+    expect(html).toContain('data-sorted="Alpha|Zulu"');
   });
 });

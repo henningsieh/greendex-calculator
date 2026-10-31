@@ -196,6 +196,7 @@ function AnimatedGroup({
   })();
 
   return (
+    // eslint-disable-next-line react/static-components -- Dynamic tags are the component contract; motion.create is memoized.
     <MotionComponent
       initial={"hidden"}
       {...(useWhileInView
