@@ -13,26 +13,21 @@ fi
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -n "$staged" ] || exit 0
 
-# Protect unstaged edits, but only for the files the tools below actually write.
-# They only touch staged files, so unstaged edits elsewhere cannot be affected and
-# do not need protecting. Stashing those anyway makes `git stash pop` fail whenever
-# oxfmt reformats a staged file (realigning a Markdown table, for example), because
-# the stash still holds the pre-format content.
-stash_created=0
+# Refuse mixed trees instead of stashing. Stashing unstaged edits of staged
+# files and popping after oxfmt rewrote them fails whenever the formatter
+# touches the same region (the stash holds pre-format content), leaving an
+# unmerged tree and an orphaned stash behind. Aborting with guidance keeps
+# the tree intact; stage everything (or stash) and retry. Unstaged edits in
+# files outside this commit are untouched by the tools below and need no
+# protecting.
 if ! git diff --quiet -- $staged; then
-  git stash push --keep-index --message 'husky pre-commit unstaged changes' >/dev/null
-  stash_created=1
+  echo 'husky: staged files also carry unstaged edits — commit from a clean tree.' >&2
+  echo 'Offending files:' >&2
+  git diff --name-only -- $staged >&2
+  echo 'Stage everything (git add -A) or stash your work, then commit again.' >&2
+  echo 'Never bypass with --no-verify.' >&2
+  exit 1
 fi
-
-restore_stash() {
-  if [ "$stash_created" = "1" ]; then
-    git stash pop >/dev/null || {
-      echo 'husky: could not restore unstaged changes; resolve the stash manually' >&2
-      exit 1
-    }
-  fi
-}
-trap restore_stash EXIT
 
 # Format every staged source file in place. The first grep keeps only file
 # types the formatter understands; the second grep drops paths the formatter
