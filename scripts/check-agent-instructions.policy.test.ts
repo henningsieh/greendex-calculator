@@ -341,6 +341,8 @@ const verificationPolicyClauses = [
     [
       "zero flaky final acceptance",
       "zero retries",
+      "PLAYWRIGHT_RETRIES",
+      "retry-assisted passes",
       "Report failures, blocks, skips and cleanup failures honestly",
       "sanitized timings",
       "Implementing the command alone does not prove acceptance",

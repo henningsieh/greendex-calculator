@@ -1,4 +1,5 @@
 import { createServerAuth } from "@greendex/auth";
+import { localE2EAuthEnabled } from "@greendex/auth/local-e2e-auth";
 import { lastLoginMethod, magicLink } from "better-auth/plugins";
 import { after } from "next/server";
 
@@ -8,7 +9,7 @@ import { emailSender } from "@/lib/email";
 export const auth = createServerAuth({
   appName: "Next WebSocket Server",
   baseURL: env.NEXT_PUBLIC_BASE_URL,
-  localE2EAuth: env.LOCAL_E2E_AUTH === "1",
+  localE2EAuth: localE2EAuthEnabled(env),
   secret: env.BETTER_AUTH_SECRET,
   emailSender,
   emailVerification: {

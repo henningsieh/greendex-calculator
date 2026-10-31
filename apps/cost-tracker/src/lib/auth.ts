@@ -1,4 +1,5 @@
 import { createServerAuth } from "@greendex/auth";
+import { localE2EAuthEnabled } from "@greendex/auth/local-e2e-auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 
 import { env } from "@/env";
@@ -18,7 +19,7 @@ export const auth = createServerAuth({
   organizationHooks: costTrackerOrganizationHooks,
   plugins: [costTrackerInvitationRoleGate, participantMembershipGrantPlugin],
   baseURL: env.NEXT_PUBLIC_BASE_URL,
-  localE2EAuth: env.LOCAL_E2E_AUTH === "1",
+  localE2EAuth: localE2EAuthEnabled(env),
   secret: env.BETTER_AUTH_SECRET,
   socialProviders: {
     google: {

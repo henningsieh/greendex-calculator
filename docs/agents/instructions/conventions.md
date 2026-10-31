@@ -70,8 +70,21 @@ The root owns exactly four test commands. Workspace test scripts and aliases are
 
 - `pnpm run test:unit` runs the established server-free package/app selection with two workers, plus repository policy/tooling and Documentation tests.
 - `pnpm run test:integration` runs the classifier-complement database/procedure tests, database connection and real OpenAPI HTTP checks, full real-mail workflows, and development Garage checks. Files and shared fixtures run serially. Migration/reset/lifecycle tests that provision additional databases are removed; the canonical development seed implementation remains outside test execution.
-- `pnpm run test:e2e` runs both ordinary Playwright suites and the cross-app merge suite against existing apps, with one worker and zero retries. The extra-build-only instant suite is removed.
+- `pnpm run test:e2e` runs both ordinary Playwright suites and the cross-app merge suite against existing apps, with one worker. The extra-build-only instant suite is removed.
 - `pnpm run test:full` runs unit, integration and e2e sequentially and exits nonzero if any mode fails. Console summaries include sanitized timings. Implementing the command alone does not prove acceptance.
+
+Playwright reads `PLAYWRIGHT_RETRIES` from the existing app environment or injected environment, with injected values taking precedence. An unset value defaults to zero. Set a non-negative safe integer to enable retries; blank, fractional, negative, nonnumeric, and unsafe values fail configuration. A Playwright CLI `--retries` option overrides the config value. The configured reporters print the effective project retry count. Playwright's console output and HTML reports distinguish flaky tests that passed on retry from first-attempt passes. A CLI reporter override can replace the configured reporters. Do not treat retry-assisted passes as clean acceptance.
+
+For an explicit local retry allowance on a high-load machine, use either command:
+
+```bash
+PLAYWRIGHT_RETRIES=1 pnpm run test:e2e
+PLAYWRIGHT_RETRIES=1 PLAYWRIGHT_HTML_OPEN=never ./scripts/suite-evidence.py run e2e --dir .audit/retry-centralization
+```
+
+Investigate failures on their evidence. A retry-assisted pass does not establish that load caused the failure.
+
+For a local E2E test server, set `GREENDEX_LOCAL_TEST_SERVER=1` in the environment when starting each app server. This applies to development servers and production-built local servers. The server then defaults `LOCAL_E2E_AUTH` to `1`, raising the email login limit to 30 requests per 10 seconds. The auth base URL must be loopback HTTP or HTTPS. Ordinary server launches default to `0`. Set `LOCAL_E2E_AUTH=0` to retain the normal limit, or `1` to opt in explicitly. Both variables accept only `0` or `1`. An app `.env` value of `LOCAL_E2E_AUTH=0` is an explicit override. Changing the test runner environment cannot reconfigure an already running server.
 
 The browser inventory is:
 
@@ -85,7 +98,7 @@ For final verification:
 
 1. Preserve dedicated-mailbox/current-run correlation, default mail retention, development Garage isolation, owned-object cleanup, and sanitized evidence. Missing services or credentials are blockers. Remove only run-owned rows, sessions and storage objects; never clear shared fixtures or mailboxes. Browser artifacts remain private, with trace, video and automatic screenshots off.
 2. Require independent Standards and Spec reviews of the same integration candidate. Resolve findings with bounded focused repairs and review the changed final diff again.
-3. Require zero flaky final acceptance. Use zero retries. Report failures, blocks, skips and cleanup failures honestly; none prove a passed gate. A nonzero subprocess or real-workflow failure fails its mode; full still attempts the remaining modes.
+3. Require zero flaky final acceptance. Use zero retries for final acceptance, including any CLI override. Report failures, blocks, skips and cleanup failures honestly; none prove a passed gate. A nonzero subprocess or real-workflow failure fails its mode; full still attempts the remaining modes.
 4. Record the exact candidate, runtime targets, selected suites, results, timings, and blockers without secrets. Source/build-affecting changes invalidate relevant evidence. No fixed count of repeated green full runs is required.
 5. Retain final `pnpm run format`, `pnpm run lint` including design-system checks, applicable `pnpm run type-check`, affected SSR regressions, persistence checks, instruction-policy checks and diff review. Account for overlap without omitting a gate. Honor explicit user restrictions on command execution and report unrun gates rather than inventing evidence.
 

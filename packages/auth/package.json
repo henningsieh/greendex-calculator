@@ -6,10 +6,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./permissions": "./src/permissions.ts",
-    "./project-authorization": "./src/project-authorization.ts",
+    "./local-e2e-auth": "./src/local-e2e-auth.ts",
     "./oauth-icons": "./src/oauth-icons.tsx",
-    "./seed-user": "./src/seed-user.ts",
-    "./organization-roles": "./src/organization-roles.ts"
+    "./organization-roles": "./src/organization-roles.ts",
+    "./project-authorization": "./src/project-authorization.ts",
+    "./seed-user": "./src/seed-user.ts"
   },
   "scripts": {
     "clean": "rm -rf node_modules .turbo",

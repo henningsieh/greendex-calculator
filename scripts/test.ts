@@ -372,7 +372,6 @@ async function main(): Promise<void> {
                   "test",
                   `--config=${config}`,
                   "--workers=1",
-                  "--retries=0",
                   ...(filter ? [filter] : []),
                 ],
                 {

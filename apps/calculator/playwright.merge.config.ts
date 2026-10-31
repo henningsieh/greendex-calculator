@@ -1,17 +1,19 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { playwrightRetries } from "../../scripts/playwright-retries";
+
 // Explicit two-app proof; the ordinary Calculator suite still needs only Calculator.
 export default defineConfig({
   testDir: "./src/__tests__/merge",
   fullyParallel: false,
   forbidOnly: true,
   workers: 1,
-  retries: 1,
+  retries: playwrightRetries(process.env.PLAYWRIGHT_RETRIES),
   // Covers the first Turbopack compilation of both apps on a small dev host.
   timeout: 300_000,
   expect: { timeout: 20_000 },
   outputDir: "src/__tests__/e2e/.playwright/merge-results",
-  reporter: [["list"]],
+  reporter: [["../../scripts/playwright-retries-reporter.ts"], ["list"]],
   use: {
     ...devices["Desktop Chrome"],
     baseURL: process.env.NEXT_PUBLIC_BASE_URL,

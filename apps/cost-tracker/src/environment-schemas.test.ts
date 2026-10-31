@@ -43,6 +43,7 @@ describe("Cost Tracker environment", () => {
 
   it.each([
     ["LOCAL_E2E_AUTH", "true"],
+    ["GREENDEX_LOCAL_TEST_SERVER", "true"],
     ["BETTER_AUTH_SECRET", "short"],
     ["GOOGLE_CLIENT_ID", ""],
     ["GOOGLE_CLIENT_SECRET", ""],

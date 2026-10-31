@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@greendex/database", () => ({ db: {} }));
 
+import { z } from "zod";
+
+import { localE2EAuthEnabled, localE2EAuthEnvironment } from "./local-e2e-auth";
 import { createServerAuth } from "./server-auth";
 
 function authFor(baseURL: string, localE2EAuth?: boolean) {
@@ -59,7 +62,14 @@ describe("local E2E login limit", () => {
 
   it("keeps rate limiting active and leaves signup at its default limit", async () => {
     const baseURL = "http://127.0.0.1:3002";
-    const auth = authFor(baseURL, true);
+    const auth = authFor(
+      baseURL,
+      localE2EAuthEnabled(
+        z
+          .object(localE2EAuthEnvironment)
+          .parse({ GREENDEX_LOCAL_TEST_SERVER: "1" }),
+      ),
+    );
     const postInvalid = (path: string) =>
       auth.handler(
         new Request(`${baseURL}/api/auth/${path}`, {

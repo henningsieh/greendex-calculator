@@ -1,3 +1,4 @@
+import { localE2EAuthEnvironment } from "@greendex/auth/local-e2e-auth";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
@@ -5,7 +6,7 @@ export const env = createEnv({
   // Next sets this phase only while building. No persistent runtime bypass flag.
   skipValidation: process.env.NEXT_PHASE === "phase-production-build",
   server: {
-    LOCAL_E2E_AUTH: z.enum(["0", "1"]).optional(),
+    ...localE2EAuthEnvironment,
     NODE_ENV: z.enum(["development", "production", "test"]),
     TEST_RUN_ID: z
       .string()
@@ -70,6 +71,7 @@ export const env = createEnv({
   },
   runtimeEnv: {
     LOCAL_E2E_AUTH: process.env.LOCAL_E2E_AUTH,
+    GREENDEX_LOCAL_TEST_SERVER: process.env.GREENDEX_LOCAL_TEST_SERVER,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL,
     DATABASE_URL: process.env.DATABASE_URL,

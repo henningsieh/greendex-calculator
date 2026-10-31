@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { playwrightRetries } from "../../scripts/playwright-retries";
+
 /**
  * Playwright configuration for end-to-end tests
  * @see https://playwright.dev/docs/test-configuration
@@ -8,9 +10,12 @@ export default defineConfig({
   testDir: "./src/__tests__/e2e",
   fullyParallel: false, // Sequential execution to prevent database conflicts
   forbidOnly: true,
-  retries: 1,
+  retries: playwrightRetries(process.env.PLAYWRIGHT_RETRIES),
   workers: 1,
-  reporter: [["html", { outputFolder: "src/__tests__/e2e/.playwright/report" }]],
+  reporter: [
+    ["../../scripts/playwright-retries-reporter.ts"],
+    ["html", { outputFolder: "src/__tests__/e2e/.playwright/report" }],
+  ],
   outputDir: "src/__tests__/e2e/.playwright/results",
   globalSetup: "./src/__tests__/e2e/global-setup.ts",
   timeout: 60_000, // Increase global timeout for WSL Development Environments
