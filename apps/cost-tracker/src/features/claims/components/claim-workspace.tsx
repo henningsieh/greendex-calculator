@@ -5,7 +5,7 @@ import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import {
   ErrorDetail,
@@ -603,7 +603,7 @@ function CostEditor({
     setValue,
     setError,
     clearErrors,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(CostSaveInputSchema),
@@ -620,12 +620,10 @@ function CostEditor({
       }[],
     },
   });
-  const {
-    entryId,
-    amountEur: amount,
-    allocationMethod: method,
-    allocations,
-  } = watch();
+  const entryId = useWatch({ control, name: "entryId" });
+  const amount = useWatch({ control, name: "amountEur" });
+  const method = useWatch({ control, name: "allocationMethod" });
+  const allocations = useWatch({ control, name: "allocations" });
   function edit(entry: Cost) {
     reset({
       partnershipId,
