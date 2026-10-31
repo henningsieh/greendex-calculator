@@ -102,6 +102,28 @@ For final verification:
 4. Record the exact candidate, runtime targets, selected suites, results, timings, and blockers without secrets. Source/build-affecting changes invalidate relevant evidence. No fixed count of repeated green full runs is required.
 5. Retain final `pnpm run format`, `pnpm run lint` including design-system checks, applicable `pnpm run type-check`, affected SSR regressions, persistence checks, instruction-policy checks and diff review. Account for overlap without omitting a gate. Honor explicit user restrictions on command execution and report unrun gates rather than inventing evidence.
 
+### E2E artifact privacy
+
+Cost Tracker E2E artifacts are private by policy, not guaranteed sanitized. Keep
+`installArtifactPrivacy` dormant. The pure text redactor is not a reporting boundary.
+Enable a replacement only after a supported pre-serialization boundary covers all
+residual channels and a rejecting version assertion protects that boundary.
+
+- Keep trace, video, and automatic screenshots off. Keep boolean full-URL matcher
+  diagnostics and all routing, authorization, and data assertions intact.
+- Treat stdout, reporter steps and errors, HTML reports and their embedded ZIPs,
+  `error-context.md` DOM snapshots, and `.auth/storage-state.json` as private.
+  Disabled trace capture does not disable every failure snapshot or session file.
+- Do not publish or upload these outputs to PRs, issues, or public CI artifacts.
+  Git ignores are not an access control or a retention policy.
+- Use only generated synthetic values for privacy probes. Do not print probe values
+  or private URLs. Restore induced failures and re-run affected specs before handoff.
+- External CI access, retention, and discard remain manual operator responsibilities.
+  Deleting captured artifacts is not evidence of a pre-serialization guarantee.
+
+The [bounded #338 evidence report](../../../apps/cost-tracker/docs/archive/e2e-artifact-privacy-338.md)
+records why the experimental runner hooks remain disabled.
+
 ### Suite evidence runner
 
 `scripts/suite-evidence.py` runs one full suite per invocation and keeps a receipt that binds the run to the candidate. The suites themselves remain the root commands above; the runner only supplies the receipt, the live log and the exit receipt.
