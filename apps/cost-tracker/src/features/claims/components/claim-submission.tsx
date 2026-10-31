@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SafeFieldIssueSchema } from "@/lib/orpc/error-contract";
+import { ChecklistFieldIssueSchema } from "@/lib/orpc/error-contract";
 import { orpc } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -28,7 +28,7 @@ const labels = {
 
 type Preview = NonNullable<Outputs["claims"]["previewSubmission"]>;
 
-function gapAnchor(path: string[]) {
+function gapAnchor(path: (string | number)[]) {
   const [root, id, detail] = path;
   if (root === "payoutAccount") return "claim-payout";
   if (root === "entries")
@@ -98,11 +98,11 @@ export function ClaimSubmission({
                 {labels[item.key]}
               </p>
               {item.gaps.map((gap, index) => {
-                const parsed = SafeFieldIssueSchema.safeParse(gap);
+                const parsed = ChecklistFieldIssueSchema.safeParse(gap);
                 if (!parsed.success)
                   return (
                     <p key={`invalid-${index}`}>
-                      <ErrorDetail issue={gap} />
+                      <ErrorDetail issue={null} />
                     </p>
                   );
                 const issue = parsed.data;

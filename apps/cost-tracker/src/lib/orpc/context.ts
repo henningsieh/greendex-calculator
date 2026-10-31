@@ -8,13 +8,13 @@ import { normalizeInputValidationError } from "@/lib/orpc/input-validation";
 export const base = os
   .$context<{ headers: Headers; resHeaders?: Headers }>()
   .errors(errorDefinitions)
-  .use(async ({ context, errors, next, path }) => {
+  .use(async ({ context, errors, next }) => {
     try {
       return await next();
     } catch (error) {
       const situations = createSituationErrors(errors);
       throw (
-        normalizeInputValidationError(error, path, situations) ??
+        normalizeInputValidationError(error, situations) ??
         normalizeBetterAuthError(error, situations, context.resHeaders)
       );
     }

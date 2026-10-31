@@ -51,6 +51,17 @@ it.each([
                     "entry",
                     "proofDocuments",
                   ]),
+                  createSafeFieldIssue("journeyOriginRequired", [
+                    "participations",
+                    "participant",
+                    "journey",
+                    "origin",
+                  ]),
+                  createSafeFieldIssue("allocationSharesInvalid", [
+                    "entries",
+                    "entry",
+                    "allocations",
+                  ]),
                 ],
               },
             ],
@@ -63,6 +74,8 @@ it.each([
     expect(markup).toContain(proof);
     expect(markup).toContain('href="#claim-payout"');
     expect(markup).toContain('href="#proof-entry"');
+    expect(markup).toContain('href="#journey-participant"');
+    expect(markup).toContain('href="#cost-entry"');
     const document = new DOMParser().parseFromString(markup, "text/html");
     expect(
       document
@@ -72,9 +85,47 @@ it.each([
   },
 );
 
+it.each(["Reworded diagnostic.", "private server failure"])(
+  "keeps the correction link without showing diagnostic text %s",
+  (message) => {
+    const preview: ComponentProps<typeof ClaimSubmission>["preview"] = {
+      items: [
+        {
+          key: "payoutAccount",
+          passed: false,
+          gaps: [
+            { id: "payoutAccountRequired", path: ["payoutAccount"], message },
+          ],
+        },
+      ],
+      calculatedPayableEur: null,
+    };
+    const markup = renderToStaticMarkup(
+      <NextIntlClientProvider locale="de" messages={german}>
+        <ClaimSubmission
+          partnershipId="partnership"
+          refresh={async () => undefined}
+          preview={preview}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(markup).toContain(
+      "Wähle einen Payout Account der Partnerorganisation aus.",
+    );
+    expect(markup).toContain('href="#claim-payout"');
+    expect(markup).not.toContain(message);
+  },
+);
+
 it.each([
   null,
   undefined,
+  createSafeFieldIssue("journeyOriginRequired", ["origin"]),
+  createSafeFieldIssue("allocationSharesInvalid", [
+    "allocations",
+    0,
+    "amountEur",
+  ]),
   createSafeFieldIssue("payoutAccountRequired", []),
   createSafeFieldIssue("payoutAccountRequired", ["entries", "entry-id"]),
   createSafeFieldIssue("proofDocumentRequired", [
@@ -89,11 +140,6 @@ it.each([
     message: "Select a Partner Payout Account.",
   },
   { id: "unknown", path: ["payoutAccount"], message: "private server failure" },
-  {
-    id: "payoutAccountRequired",
-    path: ["payoutAccount"],
-    message: "private server failure",
-  },
 ])("renders malformed preview gap %j safely without navigation", (gap) => {
   const preview: ComponentProps<typeof ClaimSubmission>["preview"] = {
     items: [

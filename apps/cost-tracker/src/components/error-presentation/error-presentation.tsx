@@ -2,7 +2,13 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
-import { SafeFieldIssueSchema } from "@/lib/orpc/error-contract";
+import {
+  ErrorReasonSchema,
+  FieldIssueIdSchema,
+  hasComposedCopy,
+  SafeFieldIssueSchema,
+  situationCatalog,
+} from "@/lib/orpc/error-contract";
 import {
   getHTTPErrorPresentation,
   getORPCErrorPresentation,
@@ -38,7 +44,59 @@ export function ErrorDetail({ issue }: { issue: unknown }) {
         )}
       </>
     );
-  return <>{translate(t, `details.${parsed.data.id}`, parsed.data.message)}</>;
+  return (
+    <>
+      {translate(
+        t,
+        `details.${parsed.data.id}`,
+        english.apiErrors.details[parsed.data.id],
+      )}
+    </>
+  );
+}
+
+export function FieldErrorMessage({ message }: { message: unknown }) {
+  const t = useTranslations("apiErrors");
+  const id = FieldIssueIdSchema.safeParse(message);
+  if (!id.success)
+    return (
+      <>
+        {translate(
+          t,
+          "fallback.internalFailure",
+          english.apiErrors.fallback.internalFailure,
+        )}
+      </>
+    );
+  return (
+    <>{translate(t, `details.${id.data}`, english.apiErrors.details[id.data])}</>
+  );
+}
+
+export function ErrorReason({ reason }: { reason: unknown }) {
+  const t = useTranslations("apiErrors");
+  const parsed = ErrorReasonSchema.safeParse(reason);
+  const situation = parsed.success
+    ? Object.values(situationCatalog).find(
+        (entry) => entry.reason === parsed.data,
+      )
+    : undefined;
+  if (
+    !parsed.success ||
+    !situation ||
+    situation.reason === "INTERNAL_FAILURE" ||
+    hasComposedCopy(situation)
+  )
+    return (
+      <>
+        {translate(
+          t,
+          "fallback.internalFailure",
+          english.apiErrors.fallback.internalFailure,
+        )}
+      </>
+    );
+  return <>{translate(t, parsed.data, english.apiErrors[parsed.data])}</>;
 }
 
 export function ErrorPresentation({

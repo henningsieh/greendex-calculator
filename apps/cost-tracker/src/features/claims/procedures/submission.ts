@@ -29,7 +29,7 @@ import { requirePartnerCoordination } from "@/features/partnerships/procedures/c
 import {
   createSafeFieldIssue,
   fieldIssueCatalog,
-  SafeFieldIssueSchema,
+  ChecklistFieldIssueSchema,
 } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
@@ -360,7 +360,7 @@ export const previewSubmission = authorized
           z.object({
             key: z.enum(checklistKeys),
             passed: z.boolean(),
-            gaps: z.array(SafeFieldIssueSchema),
+            gaps: z.array(ChecklistFieldIssueSchema),
           }),
         ),
         calculatedPayableEur: z.string().nullable(),

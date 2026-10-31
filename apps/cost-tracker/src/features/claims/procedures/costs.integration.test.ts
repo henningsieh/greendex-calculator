@@ -384,8 +384,14 @@ describe("Claim cost procedures", () => {
       code: "BAD_REQUEST",
       data: {
         issues: expect.arrayContaining([
-          expect.objectContaining({ path: ["allocations", 1] }),
-          expect.objectContaining({ path: ["allocations"] }),
+          expect.objectContaining({
+            id: "allocationSharesInvalid",
+            path: ["allocations", 1],
+          }),
+          expect.objectContaining({
+            id: "allocationSharesInvalid",
+            path: ["allocations"],
+          }),
         ]),
       },
     });
@@ -407,7 +413,10 @@ describe("Claim cost procedures", () => {
         code: "BAD_REQUEST",
         data: {
           issues: expect.arrayContaining([
-            expect.objectContaining({ path: ["transportProfile"] }),
+            expect.objectContaining({
+              id: "transportProfileOutsideRules",
+              path: ["transportProfile"],
+            }),
           ]),
         },
       });

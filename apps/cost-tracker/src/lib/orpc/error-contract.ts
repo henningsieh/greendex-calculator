@@ -770,49 +770,63 @@ const fieldIssuePathSchemas = {
     issueEntityId,
     z.literal("journey"),
   ]),
-  journeyOriginRequired: z.tuple([
-    z.literal("participations"),
-    issueEntityId,
-    z.literal("journey"),
-    z.literal("origin"),
+  journeyOriginRequired: z.union([
+    z.tuple([z.literal("origin")]),
+    z.tuple([
+      z.literal("participations"),
+      issueEntityId,
+      z.literal("journey"),
+      z.literal("origin"),
+    ]),
   ]),
-  journeyDestinationRequired: z.tuple([
-    z.literal("participations"),
-    issueEntityId,
-    z.literal("journey"),
-    z.literal("destination"),
+  journeyDestinationRequired: z.union([
+    z.tuple([z.literal("destination")]),
+    z.tuple([
+      z.literal("participations"),
+      issueEntityId,
+      z.literal("journey"),
+      z.literal("destination"),
+    ]),
   ]),
-  journeyTripTypeRequired: z.tuple([
-    z.literal("participations"),
-    issueEntityId,
-    z.literal("journey"),
-    z.literal("tripType"),
+  journeyTripTypeRequired: z.union([
+    z.tuple([z.literal("tripType")]),
+    z.tuple([
+      z.literal("participations"),
+      issueEntityId,
+      z.literal("journey"),
+      z.literal("tripType"),
+    ]),
   ]),
-  journeyDistanceRequired: z.tuple([
-    z.literal("participations"),
-    issueEntityId,
-    z.literal("journey"),
-    z.literal("erasmusDistanceKm"),
+  journeyDistanceRequired: z.union([
+    z.tuple([z.literal("erasmusDistanceKm")]),
+    z.tuple([
+      z.literal("participations"),
+      issueEntityId,
+      z.literal("journey"),
+      z.literal("erasmusDistanceKm"),
+    ]),
   ]),
-  transportProfileOutsideRules: z.tuple([
-    z.literal("entries"),
-    issueEntityId,
-    z.literal("transportProfile"),
+  transportProfileOutsideRules: z.union([
+    z.tuple([z.literal("transportProfile")]),
+    z.tuple([z.literal("entries"), issueEntityId, z.literal("transportProfile")]),
   ]),
-  entryAmountRequired: z.tuple([
-    z.literal("entries"),
-    issueEntityId,
-    z.literal("amountEur"),
+  entryAmountRequired: z.union([
+    z.tuple([z.literal("amountEur")]),
+    z.tuple([z.literal("entries"), issueEntityId, z.literal("amountEur")]),
   ]),
-  allocationRequired: z.tuple([
-    z.literal("entries"),
-    issueEntityId,
-    z.literal("allocations"),
+  allocationRequired: z.union([
+    z.tuple([z.literal("allocations")]),
+    z.tuple([z.literal("entries"), issueEntityId, z.literal("allocations")]),
   ]),
-  allocationSharesInvalid: z.tuple([
-    z.literal("entries"),
-    issueEntityId,
-    z.literal("allocations"),
+  allocationSharesInvalid: z.union([
+    z.tuple([z.literal("allocations")]),
+    z.tuple([z.literal("allocations"), z.number().int().nonnegative()]),
+    z.tuple([
+      z.literal("allocations"),
+      z.number().int().nonnegative(),
+      z.enum(["projectParticipantId", "percentage", "amountEur"]),
+    ]),
+    z.tuple([z.literal("entries"), issueEntityId, z.literal("allocations")]),
   ]),
   proofDocumentRequired: z.tuple([
     z.literal("entries"),
@@ -820,25 +834,32 @@ const fieldIssuePathSchemas = {
     z.literal("proofDocuments"),
   ]),
   fundingRulesRequired: z.tuple([z.literal("fundingRules")]),
-} satisfies Record<keyof typeof fieldIssueCatalog, z.ZodType<string[]>>;
+} satisfies Record<
+  keyof typeof fieldIssueCatalog,
+  z.ZodType<(string | number)[]>
+>;
 
 export const SafeFieldIssueSchema = z
   .object({
     id: FieldIssueIdSchema,
-    path: z.array(z.string()),
+    path: z.array(z.union([z.string(), z.number().int().nonnegative()])),
     message: z.string(),
   })
   .strict()
   .refine(
-    (issue) =>
-      issue.message === fieldIssueCatalog[issue.id] &&
-      fieldIssuePathSchemas[issue.id].safeParse(issue.path).success,
+    (issue) => fieldIssuePathSchemas[issue.id].safeParse(issue.path).success,
   );
 export type SafeFieldIssue = z.infer<typeof SafeFieldIssueSchema>;
 
+export const ChecklistFieldIssueSchema = SafeFieldIssueSchema.refine((issue) =>
+  ["payoutAccount", "entries", "participations", "fundingRules"].includes(
+    String(issue.path[0]),
+  ),
+);
+
 export function createSafeFieldIssue(
   id: keyof typeof fieldIssueCatalog,
-  path: string[],
+  path: (string | number)[],
 ): SafeFieldIssue {
   return { id, path, message: fieldIssueCatalog[id] };
 }
@@ -870,6 +891,10 @@ export const SafeErrorDataSchema = z
         ].includes(data.reason)) ||
       (data.blockers !== undefined &&
         data.reason !== "PROJECT_COMPLETION_BLOCKED") ||
+      (data.reason === "CLAIM_SUBMISSION_INCOMPLETE" &&
+        data.issues?.some(
+          (issue) => !ChecklistFieldIssueSchema.safeParse(issue).success,
+        )) ||
       (data.reason === "JOURNEY_DISTANCE_OUTSIDE_BANDS" &&
         data.issues?.some(
           (issue) =>

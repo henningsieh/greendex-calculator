@@ -146,22 +146,22 @@ describe("Participant Journey procedures", () => {
         issues: [
           {
             id: "journeyOriginRequired",
-            path: ["participations", first, "journey", "origin"],
+            path: ["origin"],
             message: "Enter a Journey origin.",
           },
           {
             id: "journeyDestinationRequired",
-            path: ["participations", first, "journey", "destination"],
+            path: ["destination"],
             message: "Enter a Journey destination.",
           },
           {
             id: "journeyTripTypeRequired",
-            path: ["participations", first, "journey", "tripType"],
+            path: ["tripType"],
             message: "Select a Journey trip type.",
           },
           {
             id: "journeyDistanceRequired",
-            path: ["participations", first, "journey", "erasmusDistanceKm"],
+            path: ["erasmusDistanceKm"],
             message: "Enter a positive exact Erasmus distance.",
           },
         ],
@@ -172,15 +172,22 @@ describe("Participant Journey procedures", () => {
     ).toEqual([]);
   });
 
-  it("omits field issues when the Participation identifier is missing", async () => {
+  it("reports known field issues when the Participation identifier is missing", async () => {
     const error = await client.journeys
       .save({ partnershipId: own } as typeof journey)
       .catch((failure: unknown) => failure);
     expect(error).toMatchObject({
       code: "BAD_REQUEST",
-      data: { reason: "INVALID_INPUT" },
+      data: {
+        reason: "INVALID_INPUT",
+        issues: [
+          { path: ["origin"] },
+          { path: ["destination"] },
+          { path: ["tripType"] },
+          { path: ["erasmusDistanceKm"] },
+        ],
+      },
     });
-    expect(error).not.toHaveProperty("data.issues");
   });
 
   it("rejects blank locations, invalid trip types and nonpositive or overprecise distance", async () => {
@@ -391,19 +398,19 @@ describe("Participant Journey procedures", () => {
         issues: [
           {
             id: "journeyOriginRequired",
-            path: ["participations", first, "journey", "origin"],
+            path: ["origin"],
           },
           {
             id: "journeyDestinationRequired",
-            path: ["participations", first, "journey", "destination"],
+            path: ["destination"],
           },
           {
             id: "journeyTripTypeRequired",
-            path: ["participations", first, "journey", "tripType"],
+            path: ["tripType"],
           },
           {
             id: "journeyDistanceRequired",
-            path: ["participations", first, "journey", "erasmusDistanceKm"],
+            path: ["erasmusDistanceKm"],
           },
         ],
       },

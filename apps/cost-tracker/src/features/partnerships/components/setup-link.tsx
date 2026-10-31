@@ -9,7 +9,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 
 import { EntityCombobox } from "@/components/entity-combobox";
-import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import {
+  ErrorPresentation,
+  ErrorReason,
+} from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,106 +44,15 @@ import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
 
-type SetupError =
-  | "invalid"
-  | "disabled"
-  | "expired"
-  | "wrong-email"
-  | "verify-email"
-  | "duplicate"
-  | "owner"
-  | "unavailable"
-  | "host"
-  | "create"
-  | "generic";
+type SetupFeedback = { error: unknown };
 
-// Local presentation is selected only by validated code/status/reason metadata.
-const knownErrors: Readonly<Record<string, SetupError>> = {
-  SETUP_LINK_NOT_FOUND: "invalid",
-  SETUP_LINK_DISABLED: "disabled",
-  SETUP_LINK_EXPIRED: "expired",
-  SETUP_LINK_WRONG_EMAIL: "wrong-email",
-  SETUP_LINK_USED: "duplicate",
-  PARTNERSHIP_ALREADY_ASSIGNED: "duplicate",
-  ORGANIZATION_OWNER_REQUIRED: "owner",
-  PROJECT_NOT_FOUND: "unavailable",
-  SELF_PARTNERSHIP: "host",
-  EMAIL_VERIFICATION_REQUIRED: "verify-email",
-};
-
-const errorCopy: Record<
-  SetupError,
-  { title: string; description: React.ReactNode }
-> = {
-  invalid: {
-    title: "Invalid setup link",
-    description: "Check that you opened the complete link shared with you.",
-  },
-  disabled: {
-    title: "Disabled setup link",
-    description: "Ask the Hosting Organization for a new link.",
-  },
-  expired: {
-    title: "Expired setup link",
-    description: "Ask the Hosting Organization for a new link.",
-  },
-  "wrong-email": {
-    title: "Wrong email address",
-    description:
-      "Sign in with the verified recipient email address and try again.",
-  },
-  "verify-email": {
-    title: "Verify your email",
-    description: "Verify your recipient email address before completing setup.",
-  },
-  duplicate: {
-    title: "Setup already completed",
-    description:
-      "This Project Partnership cannot be set up again. Contact the Hosting Organization if you need help.",
-  },
-  owner: {
-    title: "Owner verification required",
-    description:
-      "You must be an Owner of the selected Organization. Choose an Organization you own or ask its Owner to complete setup.",
-  },
-  unavailable: {
-    title: "Project unavailable",
-    description:
-      "Ask the Hosting Organization whether this Project is still accepting partners.",
-  },
-  host: {
-    title: "Invalid Partner Organization",
-    description:
-      "Choose a different Organization from the Project's Hosting Organization.",
-  },
-  create: {
-    title: "Could not create Organization",
-    description:
-      "An Organization with this name may already exist, or your account may already belong to one. Choose an existing Organization or try another name.",
-  },
-  generic: {
-    title: "Could not complete setup",
-    description: "Please try again or contact the Hosting Organization.",
-  },
-};
-
-type SetupFeedback = { state: SetupError; detail?: React.ReactNode };
-
-function setupError(error: unknown): SetupFeedback {
-  const situation =
-    error instanceof ORPCError ? getSafeErrorSituation(error) : undefined;
-  return {
-    state: situation ? (knownErrors[situation.reason] ?? "generic") : "generic",
-    detail: <ErrorPresentation error={error} />,
-  };
-}
-
-function SetupStatus({ state, detail }: SetupFeedback) {
+function SetupStatus({ error }: SetupFeedback) {
+  const t = useTranslations("partnerships.setup");
   return (
-    <Alert data-setup-error={state} variant="destructive">
-      <AlertTitle>{errorCopy[state].title}</AlertTitle>
+    <Alert variant="destructive">
+      <AlertTitle>{t("partnerSetup")}</AlertTitle>
       <AlertDescription>
-        {detail ?? errorCopy[state].description}
+        <ErrorPresentation error={error} />
       </AlertDescription>
     </Alert>
   );
@@ -344,9 +256,7 @@ export function SetupLinkCreator() {
                   await navigator.clipboard.writeText(link);
                   setCopied(true);
                 } catch {
-                  setError(
-                    "Could not copy the link. Select and copy it manually.",
-                  );
+                  setError(t("copyError"));
                 }
               }}
             >
@@ -616,7 +526,7 @@ export function SetupLinkRecipient({
       .catch((cause: unknown) => {
         if (active) {
           setRecoverySnapshot(recovery.current);
-          setError(setupError(cause));
+          setError({ error: cause });
         }
       });
     return () => {
@@ -655,7 +565,7 @@ export function SetupLinkRecipient({
             country: choice.country,
           });
           if (!input.success) {
-            setError({ state: "create" });
+            setError({ error: createSituationErrors().badInput() });
             return;
           }
           retain({ phase: "creating" });
@@ -678,7 +588,7 @@ export function SetupLinkRecipient({
               recovery.current = undefined;
               setRecoverySnapshot(undefined);
             }
-            setError({ ...setupError(cause), state: "create" });
+            setError({ error: cause });
             await resolve();
             return;
           }
@@ -698,7 +608,7 @@ export function SetupLinkRecipient({
       }
       await bind(next);
     } catch (cause) {
-      setError(setupError(cause));
+      setError({ error: cause });
       // An uncertain binding is inspected on the next explicit retry, never repeated blindly.
       setDecision(undefined);
     } finally {
@@ -718,7 +628,7 @@ export function SetupLinkRecipient({
         retain({ phase: "creating" });
       await resolve();
     } catch (cause) {
-      setError(setupError(cause));
+      setError({ error: cause });
     } finally {
       setPending(false);
     }
@@ -737,7 +647,7 @@ export function SetupLinkRecipient({
       await resolve();
       router.refresh();
     } catch (cause) {
-      setError(setupError(cause));
+      setError({ error: cause });
     } finally {
       setPending(false);
     }
@@ -796,7 +706,12 @@ export function SetupLinkRecipient({
           </>
         ) : decision?.nextStep === "setup-recovery" ? (
           <>
-            <SetupStatus state={knownErrors[decision.reason] ?? "generic"} />
+            <Alert variant="destructive" data-setup-reason={decision.reason}>
+              <AlertTitle>{t("partnerSetup")}</AlertTitle>
+              <AlertDescription>
+                <ErrorReason reason={decision.reason} />
+              </AlertDescription>
+            </Alert>
             <Button
               data-testid="inspect-setup"
               disabled={pending}

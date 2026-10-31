@@ -82,6 +82,40 @@ describe("structured error details", () => {
     },
   );
 
+  it.each(["Reworded diagnostic.", "private server failure"])(
+    "recognizes a valid issue independently of diagnostic prose %s",
+    (message) => {
+      const data = {
+        reason: "CLAIM_SUBMISSION_INCOMPLETE",
+        issues: [{ id: "entryRequired", path: ["entries"], message }],
+      };
+      expect(getSafeErrorSituation({ code: "BAD_REQUEST", data })?.reason).toBe(
+        "CLAIM_SUBMISSION_INCOMPLETE",
+      );
+      expect(SafeErrorDataSchema.parse(data)).toEqual(data);
+    },
+  );
+
+  it.each([
+    createSafeFieldIssue("journeyOriginRequired", ["origin"]),
+    createSafeFieldIssue("allocationSharesInvalid", [
+      "allocations",
+      0,
+      "amountEur",
+    ]),
+  ])("accepts mutation paths only for input validation: %j", (issue) => {
+    expect(
+      SafeErrorDataSchema.safeParse({ reason: "INVALID_INPUT", issues: [issue] })
+        .success,
+    ).toBe(true);
+    expect(
+      SafeErrorDataSchema.safeParse({
+        reason: "CLAIM_SUBMISSION_INCOMPLETE",
+        issues: [issue],
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejects a payout correction directed at a cost entry", () => {
     expect(
       SafeFieldIssueSchema.safeParse({
@@ -132,7 +166,7 @@ describe("structured error details", () => {
 
   it.each([
     { issues: [{ id: "UNKNOWN", path: ["entries"], message: "private" }] },
-    { issues: [{ id: "entryRequired", path: ["entries"], message: "private" }] },
+    { issues: [{ id: "entryRequired", path: ["entries"], message: 123 }] },
     {
       issues: [
         {

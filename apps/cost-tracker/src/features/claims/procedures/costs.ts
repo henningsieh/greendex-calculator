@@ -1,5 +1,4 @@
 import "server-only";
-import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { db } from "@greendex/database";
 import {
   claimsTable as claims,
@@ -13,11 +12,8 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { isPartnerEditLocked } from "@/features/claims/claim-lifecycle";
-import {
-  decimalUnits,
-  euros,
-  TOTAL_ALLOCATION_PERCENTAGE_UNITS,
-} from "@/features/claims/payable";
+import { CostSaveInputSchema } from "@/features/claims/cost-validation";
+import { decimalUnits, euros } from "@/features/claims/payable";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
 import { ClaimScopeInputSchema } from "@/features/claims/validation-schemas";
 import {
@@ -26,119 +22,6 @@ import {
 } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
-
-const money = z
-  .string()
-  .regex(
-    /^\d{1,12}(?:\.\d{1,2})?$/,
-    "Enter a positive exact EUR amount with at most two decimal places.",
-  );
-const percentage = z
-  .string()
-  .regex(
-    /^\d{1,3}(?:\.\d{1,6})?$/,
-    "Enter a positive exact percentage with at most six decimal places.",
-  );
-const allocationInput = z.object({
-  projectParticipantId: coordinationId,
-  percentage: percentage.optional(),
-  amountEur: money.optional(),
-});
-const saveInput = ClaimScopeInputSchema.extend({
-  entryId: coordinationId.optional(),
-  transportProfile: z.string().min(1),
-  amountEur: money,
-  allocationMethod: z.enum(["equal", "percentage", "amount"]),
-  allocations: z
-    .array(allocationInput)
-    .min(1, "Select at least one Participation."),
-}).superRefine((input, ctx) => {
-  if (
-    money.safeParse(input.amountEur).success &&
-    decimalUnits(input.amountEur, 2) <= BigInt(0)
-  )
-    ctx.addIssue({
-      code: "custom",
-      path: ["amountEur"],
-      message: "Entry total must be positive.",
-    });
-  if (
-    !PARTICIPANT_TRANSPORT_EMISSION_PROFILES.some(
-      (profile) => profile === input.transportProfile,
-    )
-  )
-    ctx.addIssue({
-      code: "custom",
-      path: ["transportProfile"],
-      message: "Choose a currently configured transport profile.",
-    });
-  const seen = new Set<string>();
-  let total = BigInt(0);
-  input.allocations.forEach((allocation, index) => {
-    if (seen.has(allocation.projectParticipantId))
-      ctx.addIssue({
-        code: "custom",
-        path: ["allocations", index, "projectParticipantId"],
-        message: "Participation occurs more than once.",
-      });
-    seen.add(allocation.projectParticipantId);
-    const share =
-      input.allocationMethod === "percentage"
-        ? allocation.percentage
-        : allocation.amountEur;
-    if (
-      input.allocationMethod === "equal"
-        ? allocation.percentage !== undefined ||
-          allocation.amountEur !== undefined
-        : !share ||
-          (input.allocationMethod === "percentage"
-            ? allocation.amountEur !== undefined
-            : allocation.percentage !== undefined)
-    )
-      ctx.addIssue({
-        code: "custom",
-        path: ["allocations", index],
-        message: `Allocation must use only ${input.allocationMethod} shares.`,
-      });
-    if (
-      share &&
-      (input.allocationMethod === "percentage" ? percentage : money).safeParse(
-        share,
-      ).success &&
-      decimalUnits(share, input.allocationMethod === "percentage" ? 6 : 2) <=
-        BigInt(0)
-    )
-      ctx.addIssue({
-        code: "custom",
-        path: ["allocations", index],
-        message: "Allocation share must be positive.",
-      });
-    if (
-      share &&
-      (input.allocationMethod === "percentage" ? percentage : money).safeParse(
-        share,
-      ).success
-    )
-      total += decimalUnits(
-        share,
-        input.allocationMethod === "percentage" ? 6 : 2,
-      );
-  });
-  if (input.allocationMethod !== "equal") {
-    const expected =
-      input.allocationMethod === "percentage"
-        ? TOTAL_ALLOCATION_PERCENTAGE_UNITS
-        : money.safeParse(input.amountEur).success
-          ? decimalUnits(input.amountEur, 2)
-          : BigInt(0);
-    if (total !== expected)
-      ctx.addIssue({
-        code: "custom",
-        path: ["allocations"],
-        message: `${input.allocationMethod} shares must total ${input.allocationMethod === "percentage" ? "100%" : `${input.amountEur} EUR`}; received ${input.allocationMethod === "percentage" ? `${total} millionths of a percent` : `${euros(total)} EUR`}.`,
-      });
-  }
-});
 
 const allocationOutput = z.object({
   projectParticipantId: z.string(),
@@ -259,7 +142,7 @@ export const list = authorized
 
 /** The Claim must exist already; allocation replacement is atomic under its row lock. */
 export const save = authorized
-  .input(saveInput)
+  .input(CostSaveInputSchema)
   .output(entryOutput)
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(

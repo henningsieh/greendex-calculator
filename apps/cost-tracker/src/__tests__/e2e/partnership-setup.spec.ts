@@ -539,8 +539,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.locator("#setup-name").fill(`${names.P}!`);
     await page.locator("#setup-country").selectOption("DE");
     await page.getByTestId("complete-setup").click();
-    await expect(page.locator('[data-setup-error="create"]')).toBeVisible();
-    // Text-free: zero membership + zero partnership below prove graceful failure (no copy).
+    await expect(page.getByRole("alert")).toBeVisible();
+    // Shared refusal alert plus zero membership + zero partnership below prove graceful failure.
     const [membership] = await db
       .select({ value: count() })
       .from(member)
@@ -601,8 +601,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.locator("#setup-country").selectOption("DE");
     await markSetupDocument(page);
     await page.getByTestId("complete-setup").click();
-    await expect(page.locator('[data-setup-error="disabled"]')).toBeVisible();
-    // Text-free: retained org proven by the DB select below (no copy).
+    await expect(page.getByRole("alert")).toBeVisible();
+    // Shared refusal plus retained org proven by the DB select below.
     const [created] = await db
       .select({ id: organization.id })
       .from(organization)
@@ -716,12 +716,12 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       db.select({ value: count() }).from(partnerships),
     ]);
     const scenarios = [
-      { name: "missing", state: "invalid" },
-      { name: "secret", state: "invalid" },
-      { name: "disabled", state: "disabled" },
-      { name: "expired", state: "expired" },
-      { name: "project", state: "unavailable" },
-      { name: "verification", state: "verify-email" },
+      { name: "missing", reason: "SETUP_LINK_NOT_FOUND" },
+      { name: "secret", reason: "SETUP_LINK_NOT_FOUND" },
+      { name: "disabled", reason: "SETUP_LINK_DISABLED" },
+      { name: "expired", reason: "SETUP_LINK_EXPIRED" },
+      { name: "project", reason: "PROJECT_NOT_FOUND" },
+      { name: "verification", reason: "verify-email" },
     ];
     for (const scenario of scenarios) {
       const url = await issueInSetup(fixture.projectNames[2]!, x.email);
@@ -758,9 +758,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       try {
         await page.goto(parsed.toString());
         await expect(
-          scenario.state === "verify-email"
+          scenario.name === "verification"
             ? page.getByTestId("auth-verification-message")
-            : page.locator(`[data-setup-error="${scenario.state}"]`),
+            : page.locator(`[data-setup-reason="${scenario.reason}"]`),
         ).toBeVisible();
         await expect(page.locator("#setup-name")).toHaveCount(0);
         const [stored] = await db
@@ -810,10 +810,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const stranger = await fixture.actorContext(browser, "X", baseURL!);
       const page = await stranger.newPage();
       await page.goto(wrongEmailURL);
-      // Text-free: error hook + input absence below prove the wrong-email state (no copy).
+      // Text-free: validated-reason hook + input absence below prove the wrong-email state.
       const attemptedName = `CT ${suffix} Wrong Email`;
       await expect(
-        page.locator('[data-setup-error="wrong-email"]'),
+        page.locator('[data-setup-reason="SETUP_LINK_WRONG_EMAIL"]'),
       ).toBeVisible();
       await expect(page.locator("#setup-name")).toHaveCount(0);
       expect(
@@ -956,7 +956,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await chooseExisting(page);
     await selectEntity(page, "setup-organization-picker", targetId);
     await page.getByTestId("complete-setup").click();
-    await expect(page.locator('[data-setup-error="disabled"]')).toBeVisible();
+    await expect(page.getByRole("alert")).toBeVisible();
     expect(bindingAttempts).toBe(1);
     expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(0);
     await db
@@ -1107,7 +1107,9 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const context = await actorContext(browser, "M", baseURL!);
       const page = await context.newPage();
       await page.goto(adminSetupURL);
-      await expect(page.locator('[data-setup-error="owner"]')).toBeVisible();
+      await expect(
+        page.locator('[data-setup-reason="ORGANIZATION_OWNER_REQUIRED"]'),
+      ).toBeVisible();
       await expect(page.getByTestId("complete-setup")).toHaveCount(0);
       await expect(page.locator("#setup-name")).toHaveCount(0);
       expect(await partnershipCount(fixture.projectNames[2]!, names.E)).toBe(0);
@@ -1191,7 +1193,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const recipient = await partner.newPage();
     await recipient.goto(closedSetupURL);
     await expect(
-      recipient.locator('[data-setup-error="disabled"]'),
+      recipient.locator('[data-setup-reason="SETUP_LINK_DISABLED"]'),
     ).toBeVisible();
     expect(await partnershipCount(fixture.projectNames[2]!, names.P)).toBe(0);
     for (const [index, actor] of (["P", "F"] as const).entries()) {

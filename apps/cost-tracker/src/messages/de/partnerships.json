@@ -33,6 +33,7 @@
       "recipientLink": "Empfänger-Setup-Link",
       "copy": "Kopieren",
       "copied": "Link kopiert. Teile ihn nur mit der eingeladenen Person.",
+      "copyError": "Der Link konnte nicht kopiert werden. Markiere ihn und kopiere ihn manuell.",
       "chooseOrganization": "Organisation auswählen",
       "newOrganization": "Neue Organisation",
       "existingOrganization": "Bestehende Organisation",

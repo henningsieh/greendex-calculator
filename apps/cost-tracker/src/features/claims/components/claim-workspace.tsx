@@ -2,17 +2,26 @@
 
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { useTranslations } from "@greendex/i18n/client";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 import {
   ErrorDetail,
   ErrorPresentation,
+  FieldErrorMessage,
 } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldError as FormFieldError,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
@@ -24,7 +33,9 @@ import {
 } from "@/features/claims/components/claim-document";
 import { ClaimHistory } from "@/features/claims/components/claim-review";
 import { ClaimSubmission } from "@/features/claims/components/claim-submission";
+import { CostSaveInputSchema } from "@/features/claims/cost-validation";
 import { useParticipantEntryAccess } from "@/features/participant-onboarding/hooks/use-participant-entry-access";
+import { JourneyInputSchema } from "@/features/participations/validation-schemas";
 import { getORPCErrorPresentation } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
@@ -46,26 +57,6 @@ function errorsFor(error: unknown, root: string): FieldErrors {
   if (!Object.keys(errors).length)
     errors[root] = <ErrorPresentation error={error} />;
   return errors;
-}
-
-function journeyFieldError(
-  errors: FieldErrors,
-  participantId: string,
-  field: "origin" | "destination" | "tripType" | "erasmusDistanceKm",
-) {
-  if (!participantId) return undefined;
-  return (
-    errors[`participations.${participantId}.journey.${field}`] ?? errors[field]
-  );
-}
-
-function costFieldError(
-  errors: FieldErrors,
-  entryId: string | undefined,
-  field: "transportProfile" | "amountEur" | "allocations",
-) {
-  const key = entryId ?? "new";
-  return errors[`entries.${key}.${field}`] ?? errors[field];
 }
 
 // Display-only sum; the server remains the authority for exact share validation.
@@ -104,35 +95,55 @@ function JourneyCorrection({
 }) {
   const t = useTranslations("claims.workspace");
   const [editing, setEditing] = useState(false);
-  const [origin, setOrigin] = useState(journey.origin);
-  const [destination, setDestination] = useState(journey.destination);
-  const [tripType, setTripType] = useState(journey.tripType);
-  const [distance, setDistance] = useState(journey.erasmusDistanceKm);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<unknown>(null);
+  const defaults = {
+    partnershipId,
+    projectParticipantId: journey.projectParticipantId,
+    origin: journey.origin,
+    destination: journey.destination,
+    tripType: journey.tripType,
+    erasmusDistanceKm: journey.erasmusDistanceKm,
+  };
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(JourneyInputSchema),
+    defaultValues: defaults,
+  });
   const id = `correction-${journey.id}`;
 
-  async function update(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPending(true);
-    setErrors({});
+  const update = handleSubmit(async (values) => {
     try {
-      await orpc.journeys.update({
-        partnershipId,
-        projectParticipantId: journey.projectParticipantId,
-        origin,
-        destination,
-        tripType,
-        erasmusDistanceKm: distance,
-      });
+      await orpc.journeys.update(values);
       await refresh();
       setEditing(false);
     } catch (error) {
-      setErrors(errorsFor(error, "journey"));
-    } finally {
-      setPending(false);
+      setServerError(error);
+      const presentation = getORPCErrorPresentation(error);
+      let mapped = false;
+      for (const issue of presentation.issues ?? []) {
+        const field = issue.path.length === 1 ? issue.path[0] : undefined;
+        if (
+          field === "origin" ||
+          field === "destination" ||
+          field === "tripType" ||
+          field === "erasmusDistanceKm"
+        ) {
+          setError(
+            field,
+            { type: "server", message: issue.id },
+            { shouldFocus: !mapped },
+          );
+          mapped = true;
+        }
+      }
+      if (!mapped) setError("root.server", { type: "server" });
     }
-  }
+  });
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
@@ -158,116 +169,121 @@ function JourneyCorrection({
           {t("journey.correctFor", { name })}
         </Button>
       ) : (
-        <form className="space-y-4" onSubmit={update} noValidate>
-          <FieldError message={errors.journey} />
-          <div>
-            <Label htmlFor={`${id}-origin`}>
-              {t("journey.originFor", { name })}
-            </Label>
-            <Input
-              variant="accounting"
-              id={`${id}-origin`}
-              data-testid={`journey-correction-${journey.projectParticipantId}-origin`}
-              value={origin}
-              onChange={(event) => setOrigin(event.target.value)}
-            />
-            <FieldError
-              message={journeyFieldError(
-                errors,
-                journey.projectParticipantId,
-                "origin",
+        <form onSubmit={update} noValidate>
+          <FieldGroup>
+            {errors.root?.server && (
+              <FormFieldError>
+                <ErrorPresentation error={serverError} />
+              </FormFieldError>
+            )}
+            <Field data-invalid={!!errors.origin}>
+              <FieldLabel htmlFor={`${id}-origin`}>
+                {t("journey.originFor", { name })}
+              </FieldLabel>
+              <Input
+                variant="accounting"
+                id={`${id}-origin`}
+                data-testid={`journey-correction-${journey.projectParticipantId}-origin`}
+                {...register("origin")}
+                aria-invalid={!!errors.origin}
+                aria-describedby={
+                  errors.origin ? `${id}-origin-error` : undefined
+                }
+              />
+              {errors.origin && (
+                <FormFieldError id={`${id}-origin-error`}>
+                  <FieldErrorMessage message={errors.origin.message} />
+                </FormFieldError>
               )}
-            />
-          </div>
-          <div>
-            <Label htmlFor={`${id}-destination`}>
-              {t("journey.destinationFor", { name })}
-            </Label>
-            <Input
-              variant="accounting"
-              id={`${id}-destination`}
-              data-testid={`journey-correction-${journey.projectParticipantId}-destination`}
-              value={destination}
-              onChange={(event) => setDestination(event.target.value)}
-            />
-            <FieldError
-              message={journeyFieldError(
-                errors,
-                journey.projectParticipantId,
-                "destination",
+            </Field>
+            <Field data-invalid={!!errors.destination}>
+              <FieldLabel htmlFor={`${id}-destination`}>
+                {t("journey.destinationFor", { name })}
+              </FieldLabel>
+              <Input
+                variant="accounting"
+                id={`${id}-destination`}
+                data-testid={`journey-correction-${journey.projectParticipantId}-destination`}
+                {...register("destination")}
+                aria-invalid={!!errors.destination}
+                aria-describedby={
+                  errors.destination ? `${id}-destination-error` : undefined
+                }
+              />
+              {errors.destination && (
+                <FormFieldError id={`${id}-destination-error`}>
+                  <FieldErrorMessage message={errors.destination.message} />
+                </FormFieldError>
               )}
-            />
-          </div>
-          <div>
-            <Label htmlFor={`${id}-type`}>
-              {t("journey.tripTypeFor", { name })}
-            </Label>
-            <select
-              id={`${id}-type`}
-              data-testid={`journey-correction-${journey.projectParticipantId}-type`}
-              className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-              value={tripType}
-              onChange={(event) =>
-                setTripType(event.target.value as typeof tripType)
-              }
+            </Field>
+            <Field data-invalid={!!errors.tripType}>
+              <FieldLabel htmlFor={`${id}-type`}>
+                {t("journey.tripTypeFor", { name })}
+              </FieldLabel>
+              <select
+                id={`${id}-type`}
+                data-testid={`journey-correction-${journey.projectParticipantId}-type`}
+                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                {...register("tripType")}
+                aria-invalid={!!errors.tripType}
+                aria-describedby={
+                  errors.tripType ? `${id}-type-error` : undefined
+                }
+              >
+                <option value="one-way">{t("journey.oneWay")}</option>
+                <option value="round-trip">{t("journey.roundTrip")}</option>
+              </select>
+              {errors.tripType && (
+                <FormFieldError id={`${id}-type-error`}>
+                  <FieldErrorMessage message={errors.tripType.message} />
+                </FormFieldError>
+              )}
+            </Field>
+            <Field data-invalid={!!errors.erasmusDistanceKm}>
+              <FieldLabel htmlFor={`${id}-distance`}>
+                {t("journey.distanceFor", { name })}
+              </FieldLabel>
+              <Input
+                variant="accounting"
+                id={`${id}-distance`}
+                data-testid={`journey-correction-${journey.projectParticipantId}-distance`}
+                inputMode="decimal"
+                {...register("erasmusDistanceKm")}
+                aria-invalid={!!errors.erasmusDistanceKm}
+                aria-describedby={
+                  errors.erasmusDistanceKm ? `${id}-distance-error` : undefined
+                }
+              />
+              {errors.erasmusDistanceKm && (
+                <FormFieldError id={`${id}-distance-error`}>
+                  <FieldErrorMessage message={errors.erasmusDistanceKm.message} />
+                </FormFieldError>
+              )}
+            </Field>
+            <Button
+              size="lg"
+              variant="default"
+              type="submit"
+              disabled={isSubmitting}
+              data-testid="journey-correction-save"
             >
-              <option value="one-way">{t("journey.oneWay")}</option>
-              <option value="round-trip">{t("journey.roundTrip")}</option>
-            </select>
-            <FieldError
-              message={journeyFieldError(
-                errors,
-                journey.projectParticipantId,
-                "tripType",
-              )}
-            />
-          </div>
-          <div>
-            <Label htmlFor={`${id}-distance`}>
-              {t("journey.distanceFor", { name })}
-            </Label>
-            <Input
-              variant="accounting"
-              id={`${id}-distance`}
-              data-testid={`journey-correction-${journey.projectParticipantId}-distance`}
-              inputMode="decimal"
-              value={distance}
-              onChange={(event) => setDistance(event.target.value)}
-            />
-            <FieldError
-              message={journeyFieldError(
-                errors,
-                journey.projectParticipantId,
-                "erasmusDistanceKm",
-              )}
-            />
-          </div>
-          <Button
-            size="lg"
-            variant="default"
-            type="submit"
-            disabled={pending}
-            data-testid="journey-correction-save"
-          >
-            {t("journey.saveCorrection")}
-          </Button>
-          <Button
-            data-testid="cancel-journey-correction"
-            variant="default"
-            size="lg"
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              setOrigin(journey.origin);
-              setDestination(journey.destination);
-              setTripType(journey.tripType);
-              setDistance(journey.erasmusDistanceKm);
-              setErrors({});
-              setEditing(false);
-            }}
-          >
-            {t("common.cancel")}
-          </Button>
+              {t("journey.saveCorrection")}
+            </Button>
+            <Button
+              data-testid="cancel-journey-correction"
+              variant="default"
+              size="lg"
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => {
+                reset(defaults);
+                setServerError(null);
+                setEditing(false);
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+          </FieldGroup>
         </form>
       )}
     </div>
@@ -290,38 +306,72 @@ function JourneyEditor({
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.workspace");
-  const [person, setPerson] = useState("");
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
-  const [tripType, setTripType] = useState<"one-way" | "round-trip">("one-way");
-  const [distance, setDistance] = useState("");
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<unknown>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(JourneyInputSchema),
+    defaultValues: {
+      partnershipId,
+      projectParticipantId: "",
+      origin: "",
+      destination: "",
+      tripType: "one-way" as "one-way" | "round-trip",
+      erasmusDistanceKm: "",
+    },
+  });
   const existing = new Set(saved.map((journey) => journey.projectParticipantId));
-  async function save(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPending(true);
-    setErrors({});
+  const save = handleSubmit(async (values) => {
     try {
-      await orpc.journeys.save({
-        partnershipId,
-        projectParticipantId: person,
-        origin,
-        destination,
-        tripType,
-        erasmusDistanceKm: distance,
-      });
-      setPerson("");
-      setOrigin("");
-      setDestination("");
-      setDistance("");
+      await orpc.journeys.save(values);
       await refresh();
+      reset({
+        partnershipId,
+        projectParticipantId: "",
+        origin: "",
+        destination: "",
+        tripType: values.tripType,
+        erasmusDistanceKm: "",
+      });
     } catch (error) {
-      setErrors(errorsFor(error, "projectParticipantId"));
-    } finally {
-      setPending(false);
+      setServerError(error);
+      const presentation = getORPCErrorPresentation(error);
+      let mapped = false;
+      for (const issue of presentation.issues ?? []) {
+        const [field] = issue.path;
+        if (
+          issue.path.length === 1 &&
+          (field === "projectParticipantId" ||
+            field === "origin" ||
+            field === "destination" ||
+            field === "tripType" ||
+            field === "erasmusDistanceKm")
+        ) {
+          setError(
+            field,
+            { type: "server", message: issue.id },
+            { shouldFocus: !mapped },
+          );
+          mapped = true;
+        }
+      }
+      if (!mapped) {
+        if (presentation.key === "JOURNEY_ALREADY_EXISTS") {
+          setError(
+            "projectParticipantId",
+            { type: "situation" },
+            { shouldFocus: true },
+          );
+        } else {
+          setError("root.server", { type: "server" });
+        }
+      }
     }
-  }
+  });
   return (
     <Card variant="document">
       <CardHeader>
@@ -376,100 +426,152 @@ function JourneyEditor({
           </ul>
         )}
         {editable && (
-          <form
-            className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>fieldset]:col-span-full [&>p]:col-span-full"
-            onSubmit={save}
-            noValidate
-          >
-            <div>
-              <Label htmlFor="journey-person">{t("journey.participation")}</Label>
-              <select
-                id="journey-person"
-                data-testid="journey-person"
-                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                value={person}
-                onChange={(event) => setPerson(event.target.value)}
+          <form onSubmit={save} noValidate>
+            <FieldGroup className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start">
+              {errors.root?.server && (
+                <FormFieldError>
+                  <ErrorPresentation error={serverError} />
+                </FormFieldError>
+              )}
+              <Field data-invalid={!!errors.projectParticipantId}>
+                <FieldLabel htmlFor="journey-person">
+                  {t("journey.participation")}
+                </FieldLabel>
+                <select
+                  id="journey-person"
+                  data-testid="journey-person"
+                  className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  {...register("projectParticipantId")}
+                  aria-invalid={!!errors.projectParticipantId}
+                  aria-describedby={
+                    errors.projectParticipantId
+                      ? "journey-person-error"
+                      : undefined
+                  }
+                >
+                  <option value="">{t("journey.selectParticipation")}</option>
+                  {participants
+                    .filter((item) => !existing.has(item.id))
+                    .map((item) => (
+                      <option
+                        data-testid={`journey-option-${item.id}`}
+                        key={item.id}
+                        value={item.id}
+                      >
+                        {item.displayName}
+                      </option>
+                    ))}
+                </select>
+                {errors.projectParticipantId && (
+                  <FormFieldError id="journey-person-error">
+                    {errors.projectParticipantId.type === "situation" ? (
+                      <ErrorPresentation error={serverError} />
+                    ) : errors.projectParticipantId.type === "server" ? (
+                      <FieldErrorMessage
+                        message={errors.projectParticipantId.message}
+                      />
+                    ) : (
+                      t("journey.selectParticipation")
+                    )}
+                  </FormFieldError>
+                )}
+              </Field>
+              <Field data-invalid={!!errors.origin}>
+                <FieldLabel htmlFor="journey-origin">
+                  {t("journey.origin")}
+                </FieldLabel>
+                <Input
+                  variant="accounting"
+                  id="journey-origin"
+                  data-testid="journey-origin"
+                  {...register("origin")}
+                  aria-invalid={!!errors.origin}
+                  aria-describedby={
+                    errors.origin ? "journey-origin-error" : undefined
+                  }
+                />
+                {errors.origin && (
+                  <FormFieldError id="journey-origin-error">
+                    <FieldErrorMessage message={errors.origin.message} />
+                  </FormFieldError>
+                )}
+              </Field>
+              <Field data-invalid={!!errors.destination}>
+                <FieldLabel htmlFor="journey-destination">
+                  {t("journey.destination")}
+                </FieldLabel>
+                <Input
+                  variant="accounting"
+                  id="journey-destination"
+                  {...register("destination")}
+                  aria-invalid={!!errors.destination}
+                  aria-describedby={
+                    errors.destination ? "journey-destination-error" : undefined
+                  }
+                />
+                {errors.destination && (
+                  <FormFieldError id="journey-destination-error">
+                    <FieldErrorMessage message={errors.destination.message} />
+                  </FormFieldError>
+                )}
+              </Field>
+              <Field data-invalid={!!errors.tripType}>
+                <FieldLabel htmlFor="journey-type">
+                  {t("journey.tripType")}
+                </FieldLabel>
+                <select
+                  id="journey-type"
+                  className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  {...register("tripType")}
+                  aria-invalid={!!errors.tripType}
+                  aria-describedby={
+                    errors.tripType ? "journey-type-error" : undefined
+                  }
+                >
+                  <option value="one-way">{t("journey.oneWay")}</option>
+                  <option value="round-trip">{t("journey.roundTrip")}</option>
+                </select>
+                {errors.tripType && (
+                  <FormFieldError id="journey-type-error">
+                    <FieldErrorMessage message={errors.tripType.message} />
+                  </FormFieldError>
+                )}
+              </Field>
+              <Field data-invalid={!!errors.erasmusDistanceKm}>
+                <FieldLabel htmlFor="journey-distance">
+                  {t("journey.distance")}
+                </FieldLabel>
+                <Input
+                  variant="figure"
+                  id="journey-distance"
+                  data-testid="journey-distance"
+                  inputMode="decimal"
+                  {...register("erasmusDistanceKm")}
+                  aria-invalid={!!errors.erasmusDistanceKm}
+                  aria-describedby={
+                    errors.erasmusDistanceKm
+                      ? "journey-distance-error"
+                      : undefined
+                  }
+                />
+                {errors.erasmusDistanceKm && (
+                  <FormFieldError id="journey-distance-error">
+                    <FieldErrorMessage
+                      message={errors.erasmusDistanceKm.message}
+                    />
+                  </FormFieldError>
+                )}
+              </Field>
+              <Button
+                size="lg"
+                variant="default"
+                type="submit"
+                disabled={isSubmitting}
+                data-testid="journey-save"
               >
-                <option value="">{t("journey.selectParticipation")}</option>
-                {participants
-                  .filter((item) => !existing.has(item.id))
-                  .map((item) => (
-                    <option
-                      data-testid={`journey-option-${item.id}`}
-                      key={item.id}
-                      value={item.id}
-                    >
-                      {item.displayName}
-                    </option>
-                  ))}
-              </select>
-              <FieldError message={errors.projectParticipantId} />
-            </div>
-            <div>
-              <Label htmlFor="journey-origin">{t("journey.origin")}</Label>
-              <Input
-                variant="accounting"
-                id="journey-origin"
-                data-testid="journey-origin"
-                value={origin}
-                onChange={(event) => setOrigin(event.target.value)}
-              />
-              <FieldError message={journeyFieldError(errors, person, "origin")} />
-            </div>
-            <div>
-              <Label htmlFor="journey-destination">
-                {t("journey.destination")}
-              </Label>
-              <Input
-                variant="accounting"
-                id="journey-destination"
-                value={destination}
-                onChange={(event) => setDestination(event.target.value)}
-              />
-              <FieldError
-                message={journeyFieldError(errors, person, "destination")}
-              />
-            </div>
-            <div>
-              <Label htmlFor="journey-type">{t("journey.tripType")}</Label>
-              <select
-                id="journey-type"
-                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                value={tripType}
-                onChange={(event) =>
-                  setTripType(event.target.value as typeof tripType)
-                }
-              >
-                <option value="one-way">{t("journey.oneWay")}</option>
-                <option value="round-trip">{t("journey.roundTrip")}</option>
-              </select>
-              <FieldError
-                message={journeyFieldError(errors, person, "tripType")}
-              />
-            </div>
-            <div>
-              <Label htmlFor="journey-distance">{t("journey.distance")}</Label>
-              <Input
-                variant="figure"
-                id="journey-distance"
-                data-testid="journey-distance"
-                inputMode="decimal"
-                value={distance}
-                onChange={(event) => setDistance(event.target.value)}
-              />
-              <FieldError
-                message={journeyFieldError(errors, person, "erasmusDistanceKm")}
-              />
-            </div>
-            <Button
-              size="lg"
-              variant="default"
-              type="submit"
-              disabled={pending || !person}
-              data-testid="journey-save"
-            >
-              {t("journey.save")}
-            </Button>
+                {t("journey.save")}
+              </Button>
+            </FieldGroup>
           </form>
         )}
       </CardContent>
@@ -493,74 +595,128 @@ function CostEditor({
   refresh: () => Promise<void>;
 }) {
   const t = useTranslations("claims.workspace");
-  const [entryId, setEntryId] = useState<string>();
-  const [profile, setProfile] = useState<string>(
-    PARTICIPANT_TRANSPORT_EMISSION_PROFILES[0],
-  );
-  const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<"equal" | "percentage" | "amount">(
-    "equal",
-  );
-  const [shares, setShares] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState<string[]>([]);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<unknown>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    setError,
+    clearErrors,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(CostSaveInputSchema),
+    defaultValues: {
+      partnershipId,
+      entryId: undefined as string | undefined,
+      transportProfile: PARTICIPANT_TRANSPORT_EMISSION_PROFILES[0],
+      amountEur: "",
+      allocationMethod: "equal" as "equal" | "percentage" | "amount",
+      allocations: [] as {
+        projectParticipantId: string;
+        percentage?: string;
+        amountEur?: string;
+      }[],
+    },
+  });
+  const {
+    entryId,
+    amountEur: amount,
+    allocationMethod: method,
+    allocations,
+  } = watch();
   function edit(entry: Cost) {
-    setEntryId(entry.id);
-    setProfile(entry.transportProfile);
-    setAmount(entry.amountEur);
-    setMethod(entry.allocationMethod);
-    setSelected(entry.allocations.map((item) => item.projectParticipantId));
-    setShares(
-      Object.fromEntries(
-        entry.allocations.map((item) => [
-          item.projectParticipantId,
-          entry.allocationMethod === "percentage"
-            ? (item.percentage ?? "")
-            : entry.allocationMethod === "amount"
-              ? (item.amountEur ?? "")
-              : "",
-        ]),
-      ),
-    );
-    setErrors({});
+    reset({
+      partnershipId,
+      entryId: entry.id,
+      transportProfile: entry.transportProfile,
+      amountEur: entry.amountEur,
+      allocationMethod: entry.allocationMethod,
+      allocations: entry.allocations.map((item) => ({
+        projectParticipantId: item.projectParticipantId,
+        ...(entry.allocationMethod === "percentage"
+          ? { percentage: item.percentage ?? "" }
+          : entry.allocationMethod === "amount"
+            ? { amountEur: item.amountEur ?? "" }
+            : {}),
+      })),
+    });
+    setServerError(null);
   }
-  async function save(event: React.SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPending(true);
-    setErrors({});
+  const save = handleSubmit(async (values) => {
+    setServerError(null);
     try {
-      await orpc.costs.save({
+      await orpc.costs.save(values);
+      reset({
         partnershipId,
-        entryId,
-        transportProfile: profile,
-        amountEur: amount,
-        allocationMethod: method,
-        allocations: selected.map((id) => ({
-          projectParticipantId: id,
-          ...(method === "percentage"
-            ? { percentage: shares[id] ?? "" }
-            : method === "amount"
-              ? { amountEur: shares[id] ?? "" }
-              : {}),
-        })),
+        entryId: undefined,
+        transportProfile: values.transportProfile,
+        amountEur: "",
+        allocationMethod: values.allocationMethod,
+        allocations: [],
       });
-      setEntryId(undefined);
-      setAmount("");
-      setSelected([]);
-      setShares({});
       await refresh();
     } catch (error) {
-      setErrors(errorsFor(error, "allocations"));
-    } finally {
-      setPending(false);
+      setServerError(error);
+      const issues = getORPCErrorPresentation(error).issues ?? [];
+      let mapped = false;
+      for (const issue of issues) {
+        const path = issue.path;
+        if (
+          path.length === 1 &&
+          (path[0] === "amountEur" ||
+            path[0] === "transportProfile" ||
+            path[0] === "allocationMethod" ||
+            path[0] === "allocations")
+        ) {
+          setError(
+            path[0],
+            { type: "server", message: issue.id },
+            { shouldFocus: !mapped },
+          );
+          mapped = true;
+        } else if (
+          path[0] === "allocations" &&
+          typeof path[1] === "number" &&
+          path[1] >= 0 &&
+          path[1] < values.allocations.length &&
+          path.length === 2
+        ) {
+          setError(`allocations.${path[1]}`, {
+            type: "server",
+            message: issue.id,
+          });
+          mapped = true;
+        } else if (
+          path[0] === "allocations" &&
+          typeof path[1] === "number" &&
+          path[1] >= 0 &&
+          path[1] < values.allocations.length &&
+          path.length === 3 &&
+          (path[2] === "percentage" ||
+            path[2] === "amountEur" ||
+            path[2] === "projectParticipantId")
+        ) {
+          setError(
+            `allocations.${path[1]}.${path[2]}`,
+            { type: "server", message: issue.id },
+            { shouldFocus: !mapped },
+          );
+          mapped = true;
+        }
+      }
+      if (!mapped) setError("root.server", { type: "server" });
     }
-  }
+  });
   const shareTotal =
     method === "equal"
       ? undefined
       : enteredShareTotal(
-          selected.map((id) => shares[id] || "0"),
+          allocations.map(
+            (item) =>
+              (method === "percentage" ? item.percentage : item.amountEur) || "0",
+          ),
           method,
         );
   return (
@@ -634,148 +790,257 @@ function CostEditor({
           />
         )}
         {editable && (
-          <form
-            className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>fieldset]:col-span-full [&>p]:col-span-full"
-            onSubmit={save}
-            noValidate
-          >
-            <p>{entryId ? t("copy.editCost") : t("copy.addCost")}</p>
-            <div>
-              <Label htmlFor="cost-profile">{t("cost.transport")}</Label>
-              <select
-                id="cost-profile"
-                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                value={profile}
-                onChange={(event) => setProfile(event.target.value)}
-              >
-                {PARTICIPANT_TRANSPORT_EMISSION_PROFILES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-              <FieldError
-                message={costFieldError(errors, entryId, "transportProfile")}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cost-amount">{t("cost.exactTotal")}</Label>
-              <Input
-                variant="figure"
-                id="cost-amount"
-                data-testid="cost-amount"
-                inputMode="decimal"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-              />
-              <FieldError
-                message={costFieldError(errors, entryId, "amountEur")}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cost-method">{t("cost.allocationMethod")}</Label>
-              <select
-                id="cost-method"
-                data-testid="cost-method"
-                className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                value={method}
-                onChange={(event) =>
-                  setMethod(event.target.value as typeof method)
-                }
-              >
-                <option value="equal">{t("cost.equal")}</option>
-                <option value="percentage">{t("cost.percentage")}</option>
-                <option value="amount">{t("cost.amount")}</option>
-              </select>
-              <FieldError message={errors.allocationMethod} />
-            </div>
-            <fieldset data-testid="cost-participations" className="space-y-2">
-              <legend>{t("cost.coveredParticipations")}</legend>
-              {participants.map((item) => {
-                const index = selected.indexOf(item.id);
-                return (
-                  <div key={item.id}>
-                    <label>
-                      <input
-                        data-testid={`cost-participation-${item.id}`}
-                        type="checkbox"
-                        checked={index !== -1}
-                        onChange={(event) =>
-                          setSelected((old) =>
-                            event.target.checked
-                              ? [...old, item.id]
-                              : old.filter((id) => id !== item.id),
-                          )
-                        }
-                      />{" "}
-                      {item.displayName}
-                    </label>
-                    {index !== -1 && (
-                      <FieldError
-                        message={
-                          errors[`allocations.${index}.projectParticipantId`] ??
-                          (method === "equal"
-                            ? errors[`allocations.${index}`]
-                            : undefined)
-                        }
-                      />
-                    )}
-                    {index !== -1 && method !== "equal" && (
-                      <div>
-                        <Label htmlFor={`share-${item.id}`}>
-                          {item.displayName}{" "}
-                          {method === "percentage"
-                            ? t("copy.percentage")
-                            : t("copy.eurShare")}
-                        </Label>
-                        <Input
-                          variant="figure"
-                          id={`share-${item.id}`}
-                          data-testid={`cost-share-${item.id}`}
-                          inputMode="decimal"
-                          value={shares[item.id] ?? ""}
-                          onChange={(event) =>
-                            setShares((old) => ({
-                              ...old,
-                              [item.id]: event.target.value,
-                            }))
+          <form onSubmit={save} noValidate>
+            <FieldGroup className="grid gap-4 sm:grid-cols-2 [&>button]:justify-self-start [&>fieldset]:col-span-full [&>p]:col-span-full">
+              <p>{entryId ? t("copy.editCost") : t("copy.addCost")}</p>
+              {errors.root?.server && (
+                <FormFieldError>
+                  <ErrorPresentation error={serverError} />
+                </FormFieldError>
+              )}
+              <Field data-invalid={!!errors.transportProfile}>
+                <FieldLabel htmlFor="cost-profile">
+                  {t("cost.transport")}
+                </FieldLabel>
+                <select
+                  id="cost-profile"
+                  className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  aria-invalid={!!errors.transportProfile}
+                  aria-describedby={
+                    errors.transportProfile ? "cost-profile-error" : undefined
+                  }
+                  {...register("transportProfile")}
+                >
+                  {PARTICIPANT_TRANSPORT_EMISSION_PROFILES.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                {errors.transportProfile && (
+                  <FormFieldError id="cost-profile-error">
+                    <FieldErrorMessage
+                      message={errors.transportProfile.message}
+                    />
+                  </FormFieldError>
+                )}
+              </Field>
+              <Field data-invalid={!!errors.amountEur}>
+                <FieldLabel htmlFor="cost-amount">
+                  {t("cost.exactTotal")}
+                </FieldLabel>
+                <Input
+                  variant="figure"
+                  id="cost-amount"
+                  data-testid="cost-amount"
+                  inputMode="decimal"
+                  aria-invalid={!!errors.amountEur}
+                  aria-describedby={
+                    errors.amountEur ? "cost-amount-error" : undefined
+                  }
+                  {...register("amountEur")}
+                />
+                {errors.amountEur && (
+                  <FormFieldError id="cost-amount-error">
+                    <FieldErrorMessage message={errors.amountEur.message} />
+                  </FormFieldError>
+                )}
+              </Field>
+              <Field data-invalid={!!errors.allocationMethod}>
+                <FieldLabel htmlFor="cost-method">
+                  {t("cost.allocationMethod")}
+                </FieldLabel>
+                <select
+                  id="cost-method"
+                  data-testid="cost-method"
+                  className="min-h-11 w-full min-w-0 rounded-sm border border-input bg-card p-2 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  aria-invalid={!!errors.allocationMethod}
+                  aria-describedby={
+                    errors.allocationMethod ? "cost-method-error" : undefined
+                  }
+                  {...register("allocationMethod", {
+                    onChange: (event) => {
+                      const next = event.target.value;
+                      clearErrors("allocations");
+                      setValue(
+                        "allocations",
+                        allocations.map((item) => ({
+                          projectParticipantId: item.projectParticipantId,
+                          ...(next === "percentage"
+                            ? {
+                                percentage:
+                                  item.percentage ?? item.amountEur ?? "",
+                              }
+                            : next === "amount"
+                              ? {
+                                  amountEur:
+                                    item.amountEur ?? item.percentage ?? "",
+                                }
+                              : {}),
+                        })),
+                        { shouldDirty: true, shouldValidate: true },
+                      );
+                    },
+                  })}
+                >
+                  <option value="equal">{t("cost.equal")}</option>
+                  <option value="percentage">{t("cost.percentage")}</option>
+                  <option value="amount">{t("cost.amount")}</option>
+                </select>
+                {errors.allocationMethod && (
+                  <FormFieldError id="cost-method-error">
+                    <FieldErrorMessage
+                      message={errors.allocationMethod.message}
+                    />
+                  </FormFieldError>
+                )}
+              </Field>
+              <fieldset data-testid="cost-participations" className="space-y-2">
+                <legend>{t("cost.coveredParticipations")}</legend>
+                {participants.map((item) => {
+                  const index = allocations.findIndex(
+                    (allocation) => allocation.projectParticipantId === item.id,
+                  );
+                  const rowError =
+                    index >= 0 ? errors.allocations?.[index] : undefined;
+                  return (
+                    <div key={item.id}>
+                      <label>
+                        <input
+                          data-testid={`cost-participation-${item.id}`}
+                          type="checkbox"
+                          checked={index !== -1}
+                          onChange={(event) => {
+                            clearErrors("allocations");
+                            setValue(
+                              "allocations",
+                              event.target.checked
+                                ? [
+                                    ...allocations,
+                                    {
+                                      projectParticipantId: item.id,
+                                      ...(method === "percentage"
+                                        ? {
+                                            percentage: "",
+                                          }
+                                        : method === "amount"
+                                          ? {
+                                              amountEur: "",
+                                            }
+                                          : {}),
+                                    },
+                                  ]
+                                : allocations.filter(
+                                    (allocation) =>
+                                      allocation.projectParticipantId !== item.id,
+                                  ),
+                              { shouldDirty: true, shouldValidate: true },
+                            );
+                          }}
+                        />{" "}
+                        {item.displayName}
+                      </label>
+                      {rowError?.projectParticipantId && (
+                        <FormFieldError>
+                          <FieldErrorMessage
+                            message={rowError.projectParticipantId.message}
+                          />
+                        </FormFieldError>
+                      )}
+                      {method === "equal" && rowError?.message && (
+                        <FormFieldError>
+                          <FieldErrorMessage message={rowError.message} />
+                        </FormFieldError>
+                      )}
+                      {index !== -1 && method !== "equal" && (
+                        <Field
+                          data-invalid={
+                            !!(
+                              rowError?.percentage ||
+                              rowError?.amountEur ||
+                              rowError?.message
+                            )
                           }
-                        />
-                        <FieldError
-                          message={
-                            errors[
-                              `allocations.${index}.${method === "percentage" ? "percentage" : "amountEur"}`
-                            ] ?? errors[`allocations.${index}`]
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              <FieldError
-                message={costFieldError(errors, entryId, "allocations")}
-              />
-            </fieldset>
-            <p aria-live="polite" data-share-total={shareTotal}>
-              {method === "equal"
-                ? t("copy.equalSplit", { count: selected.length })
-                : method === "percentage"
-                  ? t("copy.percentageTotal", { total: String(shareTotal) })
-                  : t("copy.amountTotal", {
-                      total: String(shareTotal),
-                      amount: amount || "0",
-                    })}
-            </p>
-            <Button
-              size="lg"
-              variant="default"
-              type="submit"
-              disabled={pending}
-              data-testid="cost-save"
-            >
-              {t("cost.save")}
-            </Button>
+                        >
+                          <FieldLabel htmlFor={`share-${item.id}`}>
+                            {item.displayName}{" "}
+                            {method === "percentage"
+                              ? t("copy.percentage")
+                              : t("copy.eurShare")}
+                          </FieldLabel>
+                          <Input
+                            variant="figure"
+                            id={`share-${item.id}`}
+                            data-testid={`cost-share-${item.id}`}
+                            inputMode="decimal"
+                            aria-invalid={
+                              !!(
+                                rowError?.percentage ||
+                                rowError?.amountEur ||
+                                rowError?.message
+                              )
+                            }
+                            aria-describedby={
+                              rowError?.percentage ||
+                              rowError?.amountEur ||
+                              rowError?.message
+                                ? `share-${item.id}-error`
+                                : undefined
+                            }
+                            {...register(
+                              `allocations.${index}.${method === "percentage" ? "percentage" : "amountEur"}`,
+                            )}
+                          />
+                          {(rowError?.percentage ||
+                            rowError?.amountEur ||
+                            rowError?.message) && (
+                            <FormFieldError id={`share-${item.id}-error`}>
+                              <FieldErrorMessage
+                                message={
+                                  rowError.percentage?.message ??
+                                  rowError.amountEur?.message ??
+                                  rowError.message
+                                }
+                              />
+                            </FormFieldError>
+                          )}
+                        </Field>
+                      )}
+                    </div>
+                  );
+                })}
+                {(errors.allocations?.message ||
+                  errors.allocations?.root?.message) && (
+                  <FormFieldError>
+                    <FieldErrorMessage
+                      message={
+                        errors.allocations.message ??
+                        errors.allocations.root?.message
+                      }
+                    />
+                  </FormFieldError>
+                )}
+              </fieldset>
+              <p aria-live="polite" data-share-total={shareTotal}>
+                {method === "equal"
+                  ? t("copy.equalSplit", { count: allocations.length })
+                  : method === "percentage"
+                    ? t("copy.percentageTotal", { total: String(shareTotal) })
+                    : t("copy.amountTotal", {
+                        total: String(shareTotal),
+                        amount: amount || "0",
+                      })}
+              </p>
+              <Button
+                size="lg"
+                variant="default"
+                type="submit"
+                disabled={isSubmitting}
+                data-testid="cost-save"
+              >
+                {t("cost.save")}
+              </Button>
+            </FieldGroup>
           </form>
         )}
       </CardContent>
