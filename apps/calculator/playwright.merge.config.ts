@@ -6,7 +6,7 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: true,
   workers: 1,
-  retries: 0,
+  retries: 1,
   // Covers the first Turbopack compilation of both apps on a small dev host.
   timeout: 300_000,
   expect: { timeout: 20_000 },

@@ -478,7 +478,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
       cancelledClient.organizations.acceptInvitation({
         invitationId: cancelled.invitationId,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
 
     const expiredEmail = uniqueEmail("expired");
     const expiredInvite = await ownerClient.organizations.inviteMember({
@@ -498,7 +498,7 @@ describe("organizations staff invites (Better Auth underneath)", () => {
         invitationId: expiredInvite.invitationId,
       }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       message: "Organization Invitation has expired.",
     });
 

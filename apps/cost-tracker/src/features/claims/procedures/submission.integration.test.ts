@@ -484,7 +484,7 @@ describe("Claim submission", () => {
       erasmusDistanceKm: "2500",
     };
     await expect(client.journeys.update(correctionInput)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     await asHost();
     await review("requestCorrection", "Correct distance");
@@ -520,7 +520,7 @@ describe("Claim submission", () => {
       approvedAmountEur: "844.00",
     });
     await expect(client.journeys.update(correctionInput)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect((await events()).map((row) => row.eventType)).toEqual([
       "submitted",
@@ -586,14 +586,17 @@ describe("Claim submission", () => {
           key: "payoutAccount",
           passed: false,
           gaps: expect.arrayContaining([
-            expect.objectContaining({ path: ["payoutAccount"] }),
+            expect.objectContaining({
+              id: "payoutAccountRequired",
+              path: ["payoutAccount"],
+            }),
           ]),
         }),
         expect.objectContaining({
           key: "entries",
           passed: false,
           gaps: expect.arrayContaining([
-            expect.objectContaining({ path: ["entries"] }),
+            expect.objectContaining({ id: "entryRequired", path: ["entries"] }),
           ]),
         }),
       ]),
@@ -648,9 +651,13 @@ describe("Claim submission", () => {
     await expect(submit()).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "CLAIM_SUBMISSION_INCOMPLETE",
         issues: expect.arrayContaining([
-          expect.objectContaining({ path: ["payoutAccount"] }),
-          expect.objectContaining({ path: ["entries"] }),
+          expect.objectContaining({
+            id: "payoutAccountRequired",
+            path: ["payoutAccount"],
+          }),
+          expect.objectContaining({ id: "entryRequired", path: ["entries"] }),
         ]),
       },
     });
@@ -702,7 +709,7 @@ describe("Claim submission", () => {
         partnershipId: own,
         payoutAccountId: alternate,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.costs.save({
         partnershipId: own,
@@ -711,7 +718,7 @@ describe("Claim submission", () => {
         allocationMethod: "equal",
         allocations: [{ projectParticipantId: robin }],
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.journeys.save({
         partnershipId: own,
@@ -721,7 +728,7 @@ describe("Claim submission", () => {
         tripType: "one-way",
         erasmusDistanceKm: "800",
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   }, 15_000);
 
   it("reports invalid frozen transport, missing evidence, journeys and relationship separately", async () => {
@@ -736,6 +743,7 @@ describe("Claim submission", () => {
     await expect(submit()).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "CLAIM_SUBMISSION_INCOMPLETE",
         issues: expect.arrayContaining([
           expect.objectContaining({
             path: ["entries", train.id, "transportProfile"],
@@ -773,6 +781,7 @@ describe("Claim submission", () => {
     await expect(submit()).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "CLAIM_SUBMISSION_INCOMPLETE",
         issues: expect.arrayContaining([
           expect.objectContaining({ path: ["entries", train.id, "allocations"] }),
           expect.objectContaining({
@@ -814,6 +823,7 @@ describe("Claim submission", () => {
     await expect(submit()).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "CLAIM_SUBMISSION_INCOMPLETE",
         issues: expect.arrayContaining([
           expect.objectContaining({ path: ["participations", outsider] }),
           expect.objectContaining({ path: ["entries", train.id, "allocations"] }),
@@ -883,7 +893,7 @@ describe("Claim submission", () => {
         partnershipId: own,
         payoutAccountId: account,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 });
 
@@ -1000,7 +1010,7 @@ describe("Claim lock abuse", () => {
       ];
       for (const attempt of attempts)
         await expect(attempt()).rejects.toMatchObject({
-          code: "BAD_REQUEST",
+          code: "CONFLICT",
           message: expect.stringMatching(/locked|editable/i),
         });
       expect(
@@ -1147,14 +1157,14 @@ describe("Host Claim review", () => {
     );
     await expect(
       client.claims.saveDraft({ partnershipId: own }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    await expect(submit()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(submit()).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,
         payoutAccountId: account,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await asHost();
     expect(await review("reopen")).toMatchObject({ status: "submitted" });
     expect(
@@ -1192,8 +1202,8 @@ describe("Host Claim review", () => {
     activeOrg = partner;
     await expect(
       client.claims.saveDraft({ partnershipId: own }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    await expect(submit()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(submit()).rejects.toMatchObject({ code: "CONFLICT" });
   }, 15_000);
 
   it("names a missing scoped Claim instead of a review/payment state, while submit retains save-first400", async () => {
@@ -1228,14 +1238,14 @@ describe("Host Claim review", () => {
   it("cannot approve incomplete or unsubmitted Claims, confirms submitted payable and permanently locks Partner editing", async () => {
     await asHost();
     await expect(review("approve")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "CLAIM_SUBMITTED_REQUIRED" },
     });
     activeOrg = partner;
     await prepare("100.01");
     await asHost();
     await expect(review("approve")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     // Deliberate saved-payable corruption is under test; restored before the supported submission below.
     await db
@@ -1258,13 +1268,13 @@ describe("Host Claim review", () => {
       approvedAmountEur: submitted.approvedAmountEur,
     });
     await expect(review("requestCorrection")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
-    await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(review("reopen")).rejects.toMatchObject({ code: "CONFLICT" });
     activeOrg = partner;
     await expect(
       client.claims.saveDraft({ partnershipId: own }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.costs.save({
         partnershipId: own,
@@ -1273,7 +1283,7 @@ describe("Host Claim review", () => {
         allocationMethod: "equal",
         allocations: [{ projectParticipantId: robin }],
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.journeys.save({
         partnershipId: own,
@@ -1283,7 +1293,7 @@ describe("Host Claim review", () => {
         tripType: "one-way",
         erasmusDistanceKm: "800",
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     expect((await events()).map((event) => event.eventType)).toEqual([
       "submitted",
       "approved",
@@ -1292,10 +1302,10 @@ describe("Host Claim review", () => {
 
   it("denies reopen while paid and all transitions outside their source state", async () => {
     await submittedClaim();
-    await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(review("reopen")).rejects.toMatchObject({ code: "CONFLICT" });
     await review("reject");
     useScenario("paid");
-    await expect(review("reopen")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(review("reopen")).rejects.toMatchObject({ code: "CONFLICT" });
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
     ).toBe("paid");
@@ -1436,7 +1446,7 @@ describe("Claim payment recording", () => {
     expect(payment.status).toBe("fulfilled");
     expect(correction).toMatchObject({
       status: "rejected",
-      reason: { code: "BAD_REQUEST" },
+      reason: { code: "CONFLICT" },
     });
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
@@ -1452,7 +1462,7 @@ describe("Claim payment recording", () => {
         partnershipId: own,
         payoutAccountId: alternate,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
   it("payment attempt against a concurrent correction request fails without a paid event", async () => {
     await submittedClaim();
@@ -1462,7 +1472,7 @@ describe("Claim payment recording", () => {
     ]);
     expect(payment).toMatchObject({
       status: "rejected",
-      reason: { code: "BAD_REQUEST" },
+      reason: { code: "CONFLICT" },
     });
     expect(correction.status).toBe("fulfilled");
     expect(
@@ -1477,7 +1487,7 @@ describe("Claim payment recording", () => {
   it("rejects unpaid drafts, submissions and rejections without writing history", async () => {
     await asHost();
     await expect(markPaid("101.01")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       message: "Claim must be approved to record payment.",
       data: { reason: "CLAIM_APPROVAL_REQUIRED" },
     });
@@ -1485,12 +1495,12 @@ describe("Claim payment recording", () => {
     activeOrg = partner;
     await submittedClaim();
     await expect(markPaid("101.01")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     await review("reject", "Not eligible");
     const before = await events();
     await expect(markPaid("101.01")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
@@ -1525,7 +1535,7 @@ describe("Claim payment recording", () => {
         partnershipId: own,
         payoutAccountId: alternate,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await asHost();
     expect(await markPaid(payable)).toMatchObject({
       status: "paid",
@@ -1554,7 +1564,7 @@ describe("Claim payment recording", () => {
         partnershipId: own,
         payoutAccountId: alternate,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
   }, 15_000);
 
@@ -1574,7 +1584,7 @@ describe("Claim payment recording", () => {
   it("corrects only a paid flag with a required reason, retaining both history events", async () => {
     const payable = await approvedClaim();
     await expect(correctPayment("Premature mark")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     await markPaid(payable);
     const before = await events();
@@ -1588,7 +1598,7 @@ describe("Claim payment recording", () => {
       approvedAmountEur: payable,
     });
     await expect(correctPayment("Again")).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
@@ -1610,7 +1620,7 @@ describe("Claim payment recording", () => {
         partnershipId: own,
         payoutAccountId: alternate,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
   }, 15_000);
 
@@ -1686,7 +1696,7 @@ describe("Claim competing writes", () => {
       expect(claim.status).toBe("submitted");
       expect(saved).toMatchObject({
         status: "rejected",
-        reason: { code: "BAD_REQUEST" },
+        reason: { code: "CONFLICT" },
       });
       expect(submittedEvents).toHaveLength(1);
       expect(
@@ -1742,7 +1752,7 @@ describe("Claim competing writes", () => {
       // Submission won the Claim lock: the correction is safely refused.
       expect(corrected).toMatchObject({
         status: "rejected",
-        reason: { code: "BAD_REQUEST" },
+        reason: { code: "CONFLICT" },
       });
     }
     // Remote-DB flow exceeded 5s under load; let it finish before fixture cleanup.
@@ -1759,7 +1769,7 @@ describe("Claim competing writes", () => {
     const loserRefusal = {
       status: "rejected",
       reason: {
-        code: "BAD_REQUEST",
+        code: "CONFLICT",
         data: { reason: "CLAIM_SUBMITTED_REQUIRED" },
       },
     };
@@ -1817,7 +1827,7 @@ describe("Claim competing writes", () => {
       expect(payment).toMatchObject({
         status: "rejected",
         reason: {
-          code: "BAD_REQUEST",
+          code: "CONFLICT",
           data: { reason: "CLAIM_APPROVAL_REQUIRED" },
         },
       });

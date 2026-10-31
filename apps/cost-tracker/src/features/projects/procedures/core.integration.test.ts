@@ -134,8 +134,11 @@ describe("projects procedures", () => {
     ] as const)("blocks %s with the Partnership named", async (status) => {
       useScenario(status);
       await expect(complete()).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-        message: expect.stringContaining(partnerIds[0]),
+        code: "CONFLICT",
+        data: {
+          reason: "PROJECT_COMPLETION_BLOCKED",
+          blockers: expect.arrayContaining([{ name: partnerIds[0], status }]),
+        },
       });
     });
 
@@ -149,15 +152,15 @@ describe("projects procedures", () => {
       ).toEqual([null, null, null]);
       useScenario("claimless-partial");
       await expect(complete()).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+        code: "CONFLICT",
         message: expect.stringContaining(partnerIds[0]),
       });
       await expect(complete()).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+        code: "CONFLICT",
         message: expect.stringContaining(partnerIds[2]),
       });
       await expect(complete()).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+        code: "CONFLICT",
         message: expect.stringContaining("no Claim"),
       });
     });
@@ -194,7 +197,7 @@ describe("projects procedures", () => {
         completedByUserId: actor,
       });
       useSession(host);
-      await expect(complete()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(complete()).rejects.toMatchObject({ code: "CONFLICT" });
       const [unchanged] = await db
         .select({
           completedAt: projectsTable.completedAt,

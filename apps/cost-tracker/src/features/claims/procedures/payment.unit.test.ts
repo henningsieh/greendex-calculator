@@ -65,8 +65,8 @@ describe("payment predicate outcomes", () => {
     [undefined, "NOT_FOUND", 404, "CLAIM_NOT_FOUND"],
     [
       { id: "claim", status: "submitted", approvedAmountEur: "10.00" },
-      "BAD_REQUEST",
-      400,
+      "CONFLICT",
+      409,
       "CLAIM_APPROVAL_REQUIRED",
     ],
     [
@@ -102,8 +102,8 @@ describe("payment predicate outcomes", () => {
     [undefined, "NOT_FOUND", 404, "CLAIM_NOT_FOUND"],
     [
       { id: "claim", status: "submitted", approvedAmountEur: "10.00" },
-      "BAD_REQUEST",
-      400,
+      "CONFLICT",
+      409,
       "CLAIM_PAID_REQUIRED",
     ],
     [

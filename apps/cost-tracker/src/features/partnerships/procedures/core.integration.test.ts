@@ -142,7 +142,7 @@ describe("Project Partnership procedures", () => {
         projectId,
         organizationId: candidateOrganizationId,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("rejects self-Partnership and foreign hosted Projects", async () => {
@@ -169,7 +169,7 @@ describe("Project Partnership procedures", () => {
   it("translates the represented-Organization removal block safely", async () => {
     await expect(
       client.projectPartnerships.remove({ id: assignedPartnershipId }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("does not assign after Hosting ownership changes between relationship resolution and mutation", async () => {

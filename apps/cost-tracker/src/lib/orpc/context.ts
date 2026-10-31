@@ -3,6 +3,7 @@ import { os } from "@orpc/server";
 import { normalizeBetterAuthError } from "@/lib/orpc/better-auth-errors";
 import { errorDefinitions } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
+import { normalizeInputValidationError } from "@/lib/orpc/input-validation";
 
 export const base = os
   .$context<{ headers: Headers; resHeaders?: Headers }>()
@@ -11,10 +12,10 @@ export const base = os
     try {
       return await next();
     } catch (error) {
-      throw normalizeBetterAuthError(
-        error,
-        createSituationErrors(errors),
-        context.resHeaders,
+      const situations = createSituationErrors(errors);
+      throw (
+        normalizeInputValidationError(error, situations) ??
+        normalizeBetterAuthError(error, situations, context.resHeaders)
       );
     }
   });

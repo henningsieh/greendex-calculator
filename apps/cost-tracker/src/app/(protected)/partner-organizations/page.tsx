@@ -1,6 +1,7 @@
 import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { canViewPartnerNetwork } from "@/features/organizations/access";
@@ -13,6 +14,7 @@ import { hasOrganizationMembership } from "@/lib/session";
 export const metadata: Metadata = { title: "Partner Organizations" };
 
 export default async function PartnerOrganizationsPage() {
+  await connection();
   if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("partnerships.partnerOrganizations.page");
 

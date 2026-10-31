@@ -5,6 +5,7 @@ import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import Link from "next/link";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import {
   Alert,
   AlertAction,
@@ -34,7 +35,9 @@ function ProjectDataErrorFallback({
   return (
     <Alert data-testid="data-error-fallback" variant="destructive">
       <AlertTitle>{t("errorBoundary.unableToLoad", { resource })}</AlertTitle>
-      <AlertDescription>{errorMessage.text}</AlertDescription>
+      <AlertDescription>
+        <ErrorPresentation error={error} />
+      </AlertDescription>
       <AlertAction>
         {errorMessage.sessionExpired ? (
           <Link

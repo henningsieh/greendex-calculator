@@ -1,5 +1,6 @@
 import { mergeMessages } from "@/messages/merge";
 
+import apiErrors from "./apiErrors.json";
 import claims from "./claims.json";
 import common from "./common.json";
 import onboarding from "./onboarding.json";
@@ -11,6 +12,7 @@ import settings from "./settings.json";
 import shell from "./shell.json";
 
 const messages = mergeMessages([
+  apiErrors,
   claims,
   common,
   onboarding,

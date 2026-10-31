@@ -26,10 +26,16 @@ import {
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
 import { ClaimScopeInputSchema } from "@/features/claims/validation-schemas";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
+import {
+  createSafeFieldIssue,
+  fieldIssueCatalog,
+  ChecklistFieldIssueSchema,
+} from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const issue = (path: string[], message: string) => ({ path, message });
+const issue = (path: string[], id: keyof typeof fieldIssueCatalog) =>
+  createSafeFieldIssue(id, path);
 const exact = (value: string | null, scale: number) => {
   if (value === null) return null;
   try {
@@ -97,12 +103,7 @@ function checklistItems(issues: ReturnType<typeof issue>[]) {
   if (groups.entries.length) {
     for (const key of checklistKeys.slice(2)) {
       if (!groups[key].length)
-        groups[key].push(
-          issue(
-            ["entries"],
-            "Add a Travel Cost Entry to check this requirement.",
-          ),
-        );
+        groups[key].push(issue(["entries"], "entryRequiredForCheck"));
     }
   }
   return checklistKeys.map((key) => ({
@@ -125,7 +126,7 @@ function validateSubmissionJourneys(
       issues.push(
         issue(
           ["participations", participantId],
-          "Covered Participation must belong to this Project Partnership.",
+          "participationOutsidePartnership",
         ),
       );
     const route = routes.find(
@@ -133,10 +134,7 @@ function validateSubmissionJourneys(
     );
     if (!route) {
       issues.push(
-        issue(
-          ["participations", participantId, "journey"],
-          "Add a Participant Journey.",
-        ),
+        issue(["participations", participantId, "journey"], "journeyRequired"),
       );
       continue;
     }
@@ -144,21 +142,21 @@ function validateSubmissionJourneys(
       issues.push(
         issue(
           ["participations", participantId, "journey", "origin"],
-          "Enter a Journey origin.",
+          "journeyOriginRequired",
         ),
       );
     if (!route.destination.trim())
       issues.push(
         issue(
           ["participations", participantId, "journey", "destination"],
-          "Enter a Journey destination.",
+          "journeyDestinationRequired",
         ),
       );
     if (!["one-way", "round-trip"].includes(route.tripType))
       issues.push(
         issue(
           ["participations", participantId, "journey", "tripType"],
-          "Select a Journey trip type.",
+          "journeyTripTypeRequired",
         ),
       );
     const distance = exact(route.erasmusDistanceKm, 2);
@@ -166,7 +164,7 @@ function validateSubmissionJourneys(
       issues.push(
         issue(
           ["participations", participantId, "journey", "erasmusDistanceKm"],
-          "Enter a positive exact Erasmus distance.",
+          "journeyDistanceRequired",
         ),
       );
     if (distance !== null && distance > BigInt(0)) {
@@ -184,7 +182,7 @@ function validateSubmissionJourneys(
         issues.push(
           issue(
             ["participations", participantId, "fundingBand"],
-            "Journey distance must have exactly one frozen funding band.",
+            "journeyDistanceOutsideBands",
           ),
         );
     }
@@ -203,24 +201,14 @@ function validateSubmissionEntries(
     const path = ["entries", entry.id];
     if (!frozen?.participantTransportProfiles.includes(entry.transportProfile))
       issues.push(
-        issue(
-          [...path, "transportProfile"],
-          `Transport choice ${entry.transportProfile} is not in this Project's frozen rules; replace the entry.`,
-        ),
+        issue([...path, "transportProfile"], "transportProfileOutsideRules"),
       );
     const amount = exact(entry.amountEur, 2);
     if (amount === null || amount <= BigInt(0))
-      issues.push(
-        issue([...path, "amountEur"], "Entry amount must be positive exact EUR."),
-      );
+      issues.push(issue([...path, "amountEur"], "entryAmountRequired"));
     const allocated = shares.filter((row) => row.travelCostEntryId === entry.id);
     if (!allocated.length)
-      issues.push(
-        issue(
-          [...path, "allocations"],
-          "Allocate this entry to at least one Participation.",
-        ),
-      );
+      issues.push(issue([...path, "allocations"], "allocationRequired"));
     else {
       const invalid = allocated.some((row) =>
         entry.allocationMethod === "equal"
@@ -251,20 +239,10 @@ function validateSubmissionEntries(
           sum !== TOTAL_ALLOCATION_PERCENTAGE_UNITS) ||
         (entry.allocationMethod === "amount" && sum !== amount)
       )
-        issues.push(
-          issue(
-            [...path, "allocations"],
-            "Use positive exact shares of the chosen method that total the entry amount (or 100%).",
-          ),
-        );
+        issues.push(issue([...path, "allocations"], "allocationSharesInvalid"));
     }
     if (!evidence.some((row) => row.entryId === entry.id))
-      issues.push(
-        issue(
-          [...path, "proofDocuments"],
-          "Link a Proof Document belonging to this Claim.",
-        ),
-      );
+      issues.push(issue([...path, "proofDocuments"], "proofDocumentRequired"));
   }
 }
 
@@ -288,13 +266,11 @@ async function evaluateSubmission(
     )
     .where(eq(selections.partnershipId, partnershipId))
     .limit(1);
-  if (!selection)
-    issues.push(issue(["payoutAccount"], "Select a Partner Payout Account."));
+  if (!selection) issues.push(issue(["payoutAccount"], "payoutAccountRequired"));
   const costRows = claimId
     ? await tx.select().from(entries).where(eq(entries.claimId, claimId))
     : [];
-  if (!costRows.length)
-    issues.push(issue(["entries"], "Add at least one Travel Cost Entry."));
+  if (!costRows.length) issues.push(issue(["entries"], "entryRequired"));
   const entryIds = costRows.map((row) => row.id);
   const shares = entryIds.length
     ? await tx
@@ -357,12 +333,7 @@ async function evaluateSubmission(
     issues,
   );
   if (!frozen || !fundingBands.length)
-    issues.push(
-      issue(
-        ["fundingRules"],
-        "Project has no complete frozen funding rules; save a Participant Journey first.",
-      ),
-    );
+    issues.push(issue(["fundingRules"], "fundingRulesRequired"));
   validateSubmissionEntries(costRows, shares, evidence, frozen, issues);
   const approvedAmountEur = issues.length
     ? null
@@ -389,9 +360,7 @@ export const previewSubmission = authorized
           z.object({
             key: z.enum(checklistKeys),
             passed: z.boolean(),
-            gaps: z.array(
-              z.object({ path: z.array(z.string()), message: z.string() }),
-            ),
+            gaps: z.array(ChecklistFieldIssueSchema),
           }),
         ),
         calculatedPayableEur: z.string().nullable(),

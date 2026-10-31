@@ -7,6 +7,7 @@ import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,6 @@ import {
   PayoutAccountLines,
 } from "@/features/claims/components/claim-document";
 import { authClient } from "@/lib/auth-client";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -181,9 +181,9 @@ export function ClaimDecisionPanel({
 }) {
   const t = useTranslations("claims.review");
   const [confirming, setConfirming] = useState<Decision | null>(null);
-  const [reason, setReason] = useState("");
-  const [pending, setPending] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [reason, setReason] = useState<string>("");
+  const [pending, setPending] = useState<boolean>(false);
+  const [feedback, setFeedback] = useState<React.ReactNode>(null);
   const controls = claimPanelActions(status).map((action) => ({
     action,
     label: decisionDefinitions[action].label,
@@ -211,7 +211,7 @@ export function ClaimDecisionPanel({
       setConfirming(null);
       setReason("");
     } catch (error) {
-      setFeedback(getORPCRequestErrorMessage(error).text);
+      setFeedback(<ErrorPresentation error={error} />);
     } finally {
       setPending(false);
     }
@@ -298,7 +298,7 @@ export function ClaimDecisionPanel({
             </div>
           </Alert>
         )}
-        {feedback && <output role="alert">{feedback}</output>}
+        {feedback && <div role="alert">{feedback}</div>}
       </CardContent>
     </Card>
   );

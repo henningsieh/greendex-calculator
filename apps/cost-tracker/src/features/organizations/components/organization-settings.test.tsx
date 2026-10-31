@@ -1,10 +1,13 @@
+import { NextIntlClientProvider } from "@greendex/i18n/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import german from "@/messages/de";
 
 const mocks = vi.hoisted(() => ({ updateCountry: vi.fn(), toastAdd: vi.fn() }));
 vi.mock("@/components/ui/toast", () => ({
@@ -77,11 +80,21 @@ describe("Organization country settings", () => {
     await waitFor(() =>
       expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
         title: "Could not save Organization country",
-        description:
-          "The server or network is unreachable. Check your connection and try again.",
+        description: expect.any(Object),
         type: "error",
       }),
     );
+    expect(
+      renderToStaticMarkup(
+        <NextIntlClientProvider locale="de" messages={german}>
+          {mocks.toastAdd.mock.calls[0][0].description}
+        </NextIntlClientProvider>,
+      ),
+    ).toBe(
+      "Der Server oder das Netzwerk ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
+    );
     expect(screen.getByTestId("save-organization-country")).not.toBeDisabled();
+    await user.click(screen.getByTestId("save-organization-country"));
+    await waitFor(() => expect(mocks.updateCountry).toHaveBeenCalledTimes(2));
   });
 });

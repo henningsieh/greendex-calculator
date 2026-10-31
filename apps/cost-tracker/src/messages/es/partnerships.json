@@ -33,6 +33,7 @@
       "recipientLink": "Recipient setup link",
       "copy": "Copy",
       "copied": "Link copied. Share it only with the invited person.",
+      "copyError": "Could not copy the link. Select and copy it manually.",
       "chooseOrganization": "Choose an Organization",
       "newOrganization": "New Organization",
       "existingOrganization": "Existing Organization",

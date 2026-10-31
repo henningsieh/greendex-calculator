@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -19,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import type { EditNameValues } from "@/features/user-settings/types";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
 type EditNameFormProps = {
@@ -30,7 +30,7 @@ type EditNameFormProps = {
 export function EditNameForm({ email, name }: EditNameFormProps) {
   const router = useRouter();
   const t = useTranslations("settings.name");
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<React.ReactNode>();
   const form = useForm<EditNameValues>({
     resolver: zodResolver(EditNameSchema),
     defaultValues: { name },
@@ -46,7 +46,7 @@ export function EditNameForm({ email, name }: EditNameFormProps) {
       toast.add({ title: t("success"), type: "success" });
       router.refresh();
     } catch (error) {
-      setError(getORPCRequestErrorMessage(error).text);
+      setError(<ErrorPresentation error={error} />);
     }
   }
 

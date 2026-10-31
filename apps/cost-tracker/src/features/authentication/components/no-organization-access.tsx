@@ -7,13 +7,13 @@ import { LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import { slugifyOrganizationName as slugify } from "@/features/organizations/slug";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
 export function NoOrganizationAccess() {
@@ -21,7 +21,7 @@ export function NoOrganizationAccess() {
   const t = useTranslations("onboarding.createOrganization");
   const [name, setName] = useState("");
   const [country, setCountry] = useState<EUCountryCode | "">("");
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<React.ReactNode>();
   const [pending, setPending] = useState(false);
 
   async function createOrganization(event: SyntheticEvent<HTMLFormElement>) {
@@ -39,7 +39,7 @@ export function NoOrganizationAccess() {
       router.replace("/projects");
       router.refresh();
     } catch (error) {
-      setError(getORPCRequestErrorMessage(error).text);
+      setError(<ErrorPresentation error={error} />);
       if (
         error instanceof ORPCError &&
         getSafeErrorSituation(error)?.reason ===

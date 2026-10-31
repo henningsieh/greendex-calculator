@@ -195,7 +195,7 @@ describe("Project workspace", () => {
     renderWorkspace();
     await user.click(await screen.findByTestId("complete-project"));
     expect(mocks.complete).toHaveBeenCalledWith({ projectId: "project-1" });
-    expect(await screen.findByRole("status")).toBeInTheDocument();
+    expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
     expect(await screen.findByTestId("project-completed")).toBeInTheDocument();
     expect(screen.queryByTestId("complete-project")).toBeNull();
   });
@@ -256,7 +256,7 @@ describe("Project workspace", () => {
     mocks.complete.mockRejectedValue(new Error("network"));
     renderWorkspace();
     await user.click(await screen.findByTestId("complete-project"));
-    expect(await screen.findByRole("status")).toBeInTheDocument();
+    expect(await screen.findByTestId("project-feedback")).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByTestId("complete-project")).toBeEnabled();
     });

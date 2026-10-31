@@ -298,17 +298,12 @@ describe("organizations staff invites", () => {
       const before = authMocks.createInvitation.mock.calls.length;
       await expect(
         client.organizations.inviteMember({ email: "target@example.org", role }),
-      ).rejects.toMatchObject({
-        code: "BAD_REQUEST",
-        message: "Input validation failed",
-        data: {
-          issues: expect.arrayContaining([
-            expect.objectContaining({
-              message: "Use a defined Organization role.",
-            }),
-          ]),
-        },
-      });
+      ).rejects.toEqual(
+        expect.objectContaining({
+          code: "BAD_REQUEST",
+          data: { reason: "INVALID_INPUT" },
+        }),
+      );
       expect(authMocks.createInvitation).toHaveBeenCalledTimes(before);
     },
   );
@@ -551,7 +546,10 @@ describe("organizations staff invites", () => {
         client.organizations.cancelInvitation({
           invitationId: seedInvitations.acceptedId,
         }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({
+        code: "CONFLICT",
+        data: { reason: "STAFF_INVITATION_CLOSED" },
+      });
 
       await expect(
         client.organizations.cancelInvitation({

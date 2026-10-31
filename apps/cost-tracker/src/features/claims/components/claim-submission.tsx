@@ -3,11 +3,15 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useState } from "react";
 
+import {
+  ErrorDetail,
+  ErrorPresentation,
+} from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
+import { ChecklistFieldIssueSchema } from "@/lib/orpc/error-contract";
 import { orpc } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -24,7 +28,7 @@ const labels = {
 
 type Preview = NonNullable<Outputs["claims"]["previewSubmission"]>;
 
-function gapAnchor(path: string[]) {
+function gapAnchor(path: (string | number)[]) {
   const [root, id, detail] = path;
   if (root === "payoutAccount") return "claim-payout";
   if (root === "entries")
@@ -53,7 +57,7 @@ export function ClaimSubmission({
   const t = useTranslations("claims.submission");
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<React.ReactNode>("");
   const ready =
     preview.items.length === 7 &&
     preview.items.every((item) => item.passed) &&
@@ -66,7 +70,7 @@ export function ClaimSubmission({
       await refresh();
     } catch (error) {
       setConfirming(false);
-      setFeedback(getORPCRequestErrorMessage(error).text);
+      setFeedback(<ErrorPresentation error={error} />);
       await refresh();
     } finally {
       setPending(false);
@@ -93,16 +97,26 @@ export function ClaimSubmission({
                 )}{" "}
                 {labels[item.key]}
               </p>
-              {item.gaps.map((gap) => (
-                <p key={`${gap.path.join(".")}-${gap.message}`}>
-                  <a
-                    href={`#${gapAnchor(gap.path)}`}
-                    data-testid={`submission-gap-${gap.path.join("-")}`}
-                  >
-                    {gap.message} {t("goToGap")}
-                  </a>
-                </p>
-              ))}
+              {item.gaps.map((gap, index) => {
+                const parsed = ChecklistFieldIssueSchema.safeParse(gap);
+                if (!parsed.success)
+                  return (
+                    <p key={`invalid-${index}`}>
+                      <ErrorDetail issue={null} />
+                    </p>
+                  );
+                const issue = parsed.data;
+                return (
+                  <p key={`${issue.path.join(".")}-${issue.id}`}>
+                    <a
+                      href={`#${gapAnchor(issue.path)}`}
+                      data-testid={`submission-gap-${issue.path.join("-")}`}
+                    >
+                      <ErrorDetail issue={issue} /> {t("goToGap")}
+                    </a>
+                  </p>
+                );
+              })}
               {item.passed && (
                 <a href={`#${gapAnchor([item.key])}`}>{t("viewSection")}</a>
               )}
@@ -161,7 +175,7 @@ export function ClaimSubmission({
             </div>
           </Alert>
         )}
-        {feedback && <output role="alert">{feedback}</output>}
+        {feedback && <div role="alert">{feedback}</div>}
       </CardContent>
     </Card>
   );

@@ -120,6 +120,7 @@ export interface ServerAuthConfig<
 > {
   appName: string;
   baseURL: string;
+  localE2EAuth?: boolean;
   secret: string;
   socialProviders: {
     google: {
@@ -169,10 +170,28 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
 ) {
   const flags = resolveFlags(config.flags);
 
+  if (config.localE2EAuth) {
+    const target = new URL(config.baseURL);
+    if (
+      !["http:", "https:"].includes(target.protocol) ||
+      !["localhost", "127.0.0.1", "[::1]"].includes(target.hostname) ||
+      target.username ||
+      target.password
+    ) {
+      throw new Error("LOCAL_E2E_AUTH requires a loopback HTTP(S) base URL.");
+    }
+  }
+
   return betterAuth({
     appName: config.appName,
     baseURL: config.baseURL,
     secret: config.secret,
+    rateLimit: config.localE2EAuth
+      ? {
+          enabled: true,
+          customRules: { "/sign-in/email": { window: 10, max: 30 } },
+        }
+      : undefined,
     advanced: {
       database: {
         joins: true,

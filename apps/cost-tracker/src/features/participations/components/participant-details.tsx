@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -29,7 +30,6 @@ import {
   participantEntryDenialMessage,
   useParticipantEntryAccess,
 } from "@/features/participant-onboarding/hooks/use-participant-entry-access";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 /** The single EU set a `country` may hold, shared with the server's input schema. */
@@ -40,7 +40,7 @@ function asCountry(value: string | null): EUCountryCode | "" {
 function countrySaveFailedFeedback(error: unknown) {
   return {
     title: "Unable to save country",
-    description: getORPCRequestErrorMessage(error).text,
+    description: <ErrorPresentation error={error} />,
   };
 }
 

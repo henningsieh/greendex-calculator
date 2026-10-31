@@ -50,7 +50,7 @@ beforeEach(() => {
 describe("duplicate Review Task guarded refusal", () => {
   it.each([
     [[], "NOT_FOUND", 404, "REVIEW_TASK_NOT_FOUND"],
-    [[{ status: "assigned" }], "BAD_REQUEST", 400, "REVIEW_TASK_NOT_OPEN"],
+    [[{ status: "assigned" }], "CONFLICT", 409, "REVIEW_TASK_NOT_OPEN"],
     [[{ status: "open" }], "INTERNAL_SERVER_ERROR", 500, "INTERNAL_FAILURE"],
   ] as const)(
     "assign distinguishes scoped absence, state and unexplained refusal (%s)",
@@ -65,7 +65,7 @@ describe("duplicate Review Task guarded refusal", () => {
   );
   it.each([
     [[], "NOT_FOUND", 404, "REVIEW_TASK_NOT_FOUND"],
-    [[{ status: "open" }], "BAD_REQUEST", 400, "REVIEW_TASK_NOT_ASSIGNED"],
+    [[{ status: "open" }], "CONFLICT", 409, "REVIEW_TASK_NOT_ASSIGNED"],
     [
       [{ status: "assigned", assignedToUserId: "other" }],
       "FORBIDDEN",

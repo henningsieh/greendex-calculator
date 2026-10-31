@@ -150,22 +150,24 @@ describe("Proof Document upload outcomes", () => {
   it.each([
     [
       [],
+      "BAD_REQUEST",
       "CLAIM_REQUIRED_FOR_PROOF",
       "Save an editable Claim before uploading a Proof Document.",
     ],
     [
       [{ id: "claim", status: "submitted" }],
+      "CONFLICT",
       "CLAIM_NOT_EDITABLE",
       "Claim is not editable.",
     ],
   ])(
     "distinguishes missing and locked Claim: %j",
-    async (claims, reason, message) => {
+    async (claims, code, reason, message) => {
       mocks.limit.mockResolvedValue(claims);
       await expect(
         uploadProofDocument({ ...input, file: file() }),
       ).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+        code,
         message,
         data: { reason },
       });

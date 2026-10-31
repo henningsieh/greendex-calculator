@@ -81,7 +81,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     activeOrg = host;
     await expect(
       client.claims.getReviewDetails({ partnershipId: own }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("exposes reviewer access for assigned Hosting coordinators and owners, not Partners or unassigned staff", async () => {
@@ -267,12 +267,12 @@ describe("Claim drafts and Partnership payout selection", () => {
         payoutAccountId: account,
       }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       message: expect.stringMatching(/locked|editable/i),
     });
     await expect(
       client.claims.saveDraft({ partnershipId: own }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(
       await db.select().from(selections).where(eq(selections.partnershipId, own)),
     ).toMatchObject([{ payoutAccountId: secondAccount }]);
@@ -285,7 +285,7 @@ describe("Claim drafts and Partnership payout selection", () => {
         partnershipId: own,
         payoutAccountId: account,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(
       await db.select().from(selections).where(eq(selections.partnershipId, own)),
     ).toEqual([]);

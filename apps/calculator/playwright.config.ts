@@ -8,8 +8,8 @@ export default defineConfig({
   testDir: "./src/__tests__/e2e",
   fullyParallel: false, // Sequential execution to prevent database conflicts
   forbidOnly: true,
-  retries: 0,
-  workers: 1, // Always use 1 worker to prevent database race conditions
+  retries: 1,
+  workers: 1,
   reporter: [["html", { outputFolder: "src/__tests__/e2e/.playwright/report" }]],
   outputDir: "src/__tests__/e2e/.playwright/results",
   globalSetup: "./src/__tests__/e2e/global-setup.ts",

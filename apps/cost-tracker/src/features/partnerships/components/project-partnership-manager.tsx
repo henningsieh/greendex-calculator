@@ -11,9 +11,9 @@ import { useState } from "react";
 
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { EntityCombobox } from "@/components/entity-combobox";
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -27,7 +27,7 @@ const searchOrganizations = (search: string) =>
   orpc.organizations.search({ search });
 
 function mutationMessage(error: unknown) {
-  return getORPCRequestErrorMessage(error).text;
+  return <ErrorPresentation error={error} />;
 }
 
 /**
@@ -50,7 +50,7 @@ export function ProjectPartnershipManager({
   const [projectId, setProjectId] = useState("");
   const [organizationId, setOrganizationId] = useState("");
   const [feedback, setFeedback] = useState<
-    { message: string; status: "success" | "error" } | undefined
+    { message: React.ReactNode; status: "success" | "error" } | undefined
   >();
 
   const invalidateProjectData = async () => {
@@ -174,14 +174,14 @@ export function ProjectPartnershipManager({
               </Button>
             </form>
             {feedback && (
-              <p
+              <div
                 aria-live="polite"
                 className="mt-4 text-sm"
                 data-testid="partnership-feedback"
                 data-state={feedback.status}
               >
                 {feedback.message}
-              </p>
+              </div>
             )}
           </CardContent>
         </Card>

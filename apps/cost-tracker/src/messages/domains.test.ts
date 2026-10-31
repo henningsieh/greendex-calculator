@@ -102,6 +102,8 @@ it.each([
 });
 
 it.each([
+  ["components/error-presentation/api-error.tsx", "apiErrors"],
+  ["components/error-boundary.tsx", "shell"],
   ["app/(setup)/setup-links/[id]/page.tsx", "partnerships"],
   ["app/(setup)/participant/page.tsx", "participations"],
   [
@@ -130,4 +132,17 @@ it("keeps every locale bundle rooted in its own domain", () => {
     }
   }
   expect(violations).toEqual([]);
+});
+
+it("reserves apiErrors translation for the shared presentation owner", () => {
+  const source = 'const t = useTranslations("apiErrors");';
+  expect(
+    translatorViolations("components/error-presentation/api-error.tsx", source),
+  ).toEqual([]);
+  expect(
+    translatorViolations("features/claims/components/form.tsx", source),
+  ).toEqual(["features/claims/components/form.tsx: apiErrors is outside claims"]);
+  expect(translatorViolations("components/navigation.tsx", source)).toEqual([
+    "components/navigation.tsx: apiErrors is outside shell",
+  ]);
 });

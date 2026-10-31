@@ -69,8 +69,8 @@ describe("review predicate outcomes", () => {
     [undefined, "NOT_FOUND", 404, "CLAIM_NOT_FOUND"],
     [
       { id: "claim", status: "editable", approvedAmountEur: null },
-      "BAD_REQUEST",
-      400,
+      "CONFLICT",
+      409,
       "CLAIM_SUBMITTED_REQUIRED",
     ],
     [
@@ -101,7 +101,7 @@ describe("review predicate outcomes", () => {
       claim: { id: "claim", status: "editable", approvedAmountEur: null },
     });
     await expect(client.reopen({ partnershipId: "own" })).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "CLAIM_REJECTED_REQUIRED" },
     });
     expect(mocks.write).not.toHaveBeenCalled();

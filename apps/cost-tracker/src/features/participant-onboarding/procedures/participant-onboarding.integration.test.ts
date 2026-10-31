@@ -462,7 +462,7 @@ describe("Participant onboarding procedures", () => {
         input(issued.invitationId, issued.secret!),
       ),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "PARTICIPANT_INVITATION_EXPIRED" },
     });
     expect(authMocks.addMember).not.toHaveBeenCalled();
@@ -676,7 +676,7 @@ describe("Participant onboarding procedures", () => {
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     actor = owner;
     await client.participantOnboarding.setRegistrationLinkOpen({
       id: created.id,
@@ -705,7 +705,7 @@ describe("Participant onboarding procedures", () => {
           agreement: { accepted: true },
         }),
       ).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+        code: "CONFLICT",
         message:
           "You already joined this Project through another Partner Organization.",
       });
@@ -759,7 +759,7 @@ describe("Participant onboarding procedures", () => {
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.participantOnboarding.join({
         source: { kind: "link", id: second.id, secret: second.secret },
@@ -791,7 +791,7 @@ describe("Participant onboarding procedures", () => {
         id: link.id,
         open: true,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(
       (await db.select().from(entryTokens).where(eq(entryTokens.id, link.id)))[0]
         ?.status,
@@ -908,7 +908,7 @@ describe("Participant onboarding procedures", () => {
       }),
     );
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "MEMBERSHIP_CHANGED" },
     });
     expect(
@@ -954,7 +954,7 @@ describe("Participant onboarding procedures", () => {
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(authMocks.addMember).not.toHaveBeenCalled();
     expect(await memberships()).toHaveLength(0);
     expect(
@@ -967,7 +967,7 @@ describe("Participant onboarding procedures", () => {
         invitationId: issued.invitationId,
         open: true,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     const reissued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -1078,7 +1078,7 @@ describe("Participant onboarding procedures", () => {
         profile: { fullName: "Recipient", country: "LV" as const },
         agreement: { accepted: true },
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       client.participantOnboarding.join({
         source: {
@@ -1210,7 +1210,7 @@ describe("Participant onboarding procedures", () => {
     });
     actor = recipient;
     await expect(join(link.secret)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(await memberships()).toHaveLength(0);
     expect(
@@ -1286,7 +1286,7 @@ describe("Participant onboarding procedures", () => {
       })
       .returning({ id: participants.id });
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(await memberships()).toEqual([
       { role: ORGANIZATION_ROLES.Participant },
@@ -1330,7 +1330,7 @@ describe("Participant onboarding procedures", () => {
         partnershipId: partnership,
         email: recipientEmail,
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(
       await db
         .select()

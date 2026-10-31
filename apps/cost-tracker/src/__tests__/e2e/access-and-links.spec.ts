@@ -560,14 +560,18 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       .where(eq(setupLinks.id, setupId));
     const x = await pageFor(browser, "X", baseURL!);
     await x.goto(first);
-    // Text-free: setup-error state hook proves the disabled page (subsumes page identity).
-    await expect(x.locator('[data-setup-error="disabled"]')).toBeVisible();
+    // Text-free: validated-reason hook proves the disabled page (subsumes page identity).
+    await expect(
+      x.locator('[data-setup-reason="SETUP_LINK_DISABLED"]'),
+    ).toBeVisible();
     await creator.getByTestId("create-setup-link").click();
     const replacement = await creator.locator("#recipient-link").inputValue();
     // Preserve the original pathname inequality without printing either private ID.
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);
-    await expect(x.locator('[data-setup-error="disabled"]')).toBeVisible();
+    await expect(
+      x.locator('[data-setup-reason="SETUP_LINK_DISABLED"]'),
+    ).toBeVisible();
     const fresh = await browser.newContext({
       baseURL: baseURL!,
       storageState: { cookies: [], origins: [] },
@@ -648,7 +652,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
-    await expect(t.locator("form p[role='alert']")).toBeVisible();
+    await expect(t.locator("form").getByRole("alert")).toBeVisible();
     expect(
       await db
         .select()
@@ -688,7 +692,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
-    await expect(t.locator("form p[role='alert']")).toBeVisible();
+    await expect(t.locator("form").getByRole("alert")).toBeVisible();
     expect(
       await db
         .select()

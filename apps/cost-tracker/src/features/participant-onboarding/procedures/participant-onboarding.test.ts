@@ -76,7 +76,7 @@ describe("participant onboarding agreement procedures", () => {
     await expect(
       unpublished.participantOnboarding.acceptAgreement({ accepted: true }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "SERVICE_UNAVAILABLE",
       message: "Participant agreement is not yet available.",
     });
     await expect(
@@ -85,7 +85,7 @@ describe("participant onboarding agreement procedures", () => {
         agreement: { accepted: true },
         source: { kind: "link", id: "link-1", secret: "secret" },
       }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
     expect(mocks.insert).not.toHaveBeenCalled();
     expect(mocks.addMember).not.toHaveBeenCalled();
     expect(mocks.acceptInvitation).not.toHaveBeenCalled();
