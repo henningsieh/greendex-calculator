@@ -2,17 +2,24 @@ import { ORPCError } from "@orpc/server";
 
 import {
   SafeErrorDataSchema,
+  createSafeFieldIssue,
+  type SafeFieldIssue,
+  type ProjectCompletionBlocker,
   Situation,
   hasComposedCopy,
   situationCatalog,
 } from "@/lib/orpc/error-contract";
 
 type SituationName = keyof typeof situationCatalog;
-type SafeIssue = { path: string[]; message: string };
+type SafeIssue = SafeFieldIssue;
 
 type SituationErrorOptions = {
   message: string;
-  data: { reason: string; issues?: SafeIssue[] };
+  data: {
+    reason: string;
+    issues?: SafeIssue[];
+    blockers?: readonly ProjectCompletionBlocker[];
+  };
 };
 
 /**
@@ -24,18 +31,6 @@ export type SituationErrorConstructors = {
   [Code in Situation["code"]]: (
     options: SituationErrorOptions,
   ) => ORPCError<string, unknown>;
-};
-
-type ProjectCompletionBlocker = {
-  name: string;
-  status:
-    | "editable"
-    | "correction_requested"
-    | "submitted"
-    | "approved"
-    | "rejected"
-    | "paid"
-    | null;
 };
 
 type RefusalInput = {
@@ -56,14 +51,15 @@ export type SituationErrors = {
     blockers: readonly ProjectCompletionBlocker[],
   ) => ORPCError<string, unknown>;
   submissionIncomplete: (issues: SafeIssue[]) => ORPCError<string, unknown>;
+  invalidInputWithIssues: (issues: SafeIssue[]) => ORPCError<string, unknown>;
 };
 
 /** Field issues a fixed refusal carries beyond its declared copy. */
 const fixedRefusalIssues: Partial<
   Record<RefusalName, (situation: Situation) => SafeIssue[]>
 > = {
-  journeyDistanceOutsideBands: (situation) => [
-    { path: ["erasmusDistanceKm"], message: situation.message },
+  journeyDistanceOutsideBands: () => [
+    createSafeFieldIssue("journeyDistanceOutsideBands", ["erasmusDistanceKm"]),
   ],
 };
 
@@ -96,6 +92,7 @@ function createRefusal(
         : situation.message,
       data: SafeErrorDataSchema.parse({
         reason: situation.reason,
+        ...(name === "projectCompletionBlocked" ? { blockers } : {}),
         ...(name in fixedRefusalIssues
           ? { issues: fixedRefusalIssues[name as RefusalName]?.(situation) }
           : issues
@@ -158,7 +155,11 @@ export function createSituationErrors(
     setRefusal(refusals, name, build);
   }
   assertComplete(refusals, names, "situation refusals");
-  return refusals;
+  return {
+    ...refusals,
+    invalidInputWithIssues: (issues) =>
+      createRefusal("badInput", constructors)({ issues }),
+  };
 }
 
 export type ScopeErrorConstructors = Partial<

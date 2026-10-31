@@ -9,11 +9,11 @@ import {
 } from "@tanstack/react-query";
 import { useState, type SyntheticEvent } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 import type { Outputs } from "@/lib/orpc/router";
 
@@ -41,7 +41,7 @@ function CountrySettings({
     },
     onError: (error) => {
       toast.add({
-        description: getORPCRequestErrorMessage(error).text,
+        description: <ErrorPresentation error={error} />,
         title: t("saveError"),
         type: "error",
       });

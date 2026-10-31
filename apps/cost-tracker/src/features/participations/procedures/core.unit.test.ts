@@ -109,7 +109,7 @@ describe("Participation constraint recovery", () => {
     await expect(
       client.create({ partnershipId: "own", userId: "candidate" }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "PARTICIPATION_DUPLICATE" },
     });
     expect(mocks.reviewInsert).toHaveBeenCalledTimes(1);

@@ -3,8 +3,8 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { toast } from "@/components/ui/toast";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { createORPCErrorToastGrouper } from "@/lib/orpc/error-toast-grouping";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
@@ -23,7 +23,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         }
 
         toast.add({
-          description: getORPCRequestErrorMessage(error).text,
+          description: <ErrorPresentation error={error} />,
           title: "Could not refresh data",
           type: "error",
         });

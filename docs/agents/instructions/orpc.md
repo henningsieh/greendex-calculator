@@ -52,10 +52,15 @@ The direct router client must exist before the owning app's `src/lib/orpc/orpc.t
 3. Use `base` for public procedures and `authorized` for authenticated procedures; apply permission middleware after `authorized`.
 4. Constrain tenant-owned persistence by `context.session.activeOrganizationId`.
 5. Throw errors from the typed error map and test procedure and consumer behavior. Cost Tracker business outcomes use named methods from `src/lib/orpc/errors.ts`; their fixed code/reason and local copy live in `error-contract.ts`. HTTP statuses come from the app's `error-status.ts` map, not `ORPCError.status` or `.errors()` definitions. Do not construct free-form domain errors in producers or discriminate by remote prose in consumers. `error-centralization.test.ts` pins the matrix and guards construction sites; native Better Auth and exact private invariant exceptions remain separate.
-6. Server Components call `orpc` directly or prefetch `orpcQuery.*.queryOptions()` into the request QueryClient.
-7. Client Components use `orpcQuery` with TanStack Query; follow [TanStack Query project rules](tanstack-query.md).
-8. Hydrate prefetched data before suspense consumers render, and handle typed navigation errors explicitly.
-9. Keep internal Project reads authenticated and organization-scoped; Calculator uses `projects.getForParticipation` for public participation reads.
+6. Cost Tracker input-validation normalization: oRPC Zod failures throw raw `BAD_REQUEST` `ValidationError` before handlers, with no domain reason. `base` in `context.ts` calls `normalizeInputValidationError` from `lib/orpc/input-validation.ts` before the Better Auth passthrough. The normalizer takes no route name: it reads each Zod issue message as a `FieldIssueId`, keeps the schema's own input-relative path, drops and deduplicates anything the `SafeFieldIssueSchema` path table in `error-contract.ts` rejects, and returns `invalidInputWithIssues` when at least one sanitized issue survives. Unknown shapes fall back to `badInput` without issues. `SafeErrorDataSchema` permits issues only for `CLAIM_SUBMISSION_INCOMPLETE`, `JOURNEY_DISTANCE_OUTSIDE_BANDS`, `INVALID_INPUT`. `errors.ts` adds `invalidInputWithIssues` as `badInput` plus issues. UI keeps `errorsFor` in `features/claims/components/claim-workspace.tsx` keyed by the full joined issue path; unidentified validation failures receive safe summary feedback rather than remote field prose.
+7. Server Components call `orpc` directly or prefetch `orpcQuery.*.queryOptions()` into the request QueryClient.
+8. Client Components use `orpcQuery` with TanStack Query; follow [TanStack Query project rules](tanstack-query.md).
+9. Hydrate prefetched data before suspense consumers render, and handle typed navigation errors explicitly.
+10. Keep internal Project reads authenticated and organization-scoped; Calculator uses `projects.getForParticipation` for public participation reads.
+
+## Input validation detail map
+
+Cost Tracker only. `lib/orpc/error-contract.ts` owns the field-issue catalogue: `fieldIssueCatalog` messages, `FieldIssueIdSchema`, and the per-id `SafeFieldIssueSchema` path tables covering both mutation input-relative paths and persisted entity-relative paths. `lib/orpc/input-validation.ts` only sanitizes: it maps Zod issue messages to catalogue ids, preserves input-relative paths, deduplicates, and rejects anything outside the path tables. `lib/orpc/input-validation.test.ts` pins the sanitizer. Backend owns translation. UI owns key building. No vendor prose crosses the wire.
 
 ## OpenAPI
 

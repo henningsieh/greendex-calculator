@@ -142,6 +142,44 @@ describe("Participant Journey procedures", () => {
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "INVALID_INPUT",
+        issues: [
+          {
+            id: "journeyOriginRequired",
+            path: ["origin"],
+            message: "Enter a Journey origin.",
+          },
+          {
+            id: "journeyDestinationRequired",
+            path: ["destination"],
+            message: "Enter a Journey destination.",
+          },
+          {
+            id: "journeyTripTypeRequired",
+            path: ["tripType"],
+            message: "Select a Journey trip type.",
+          },
+          {
+            id: "journeyDistanceRequired",
+            path: ["erasmusDistanceKm"],
+            message: "Enter a positive exact Erasmus distance.",
+          },
+        ],
+      },
+    });
+    expect(
+      await db.select().from(snapshots).where(eq(snapshots.projectId, project)),
+    ).toEqual([]);
+  });
+
+  it("reports known field issues when the Participation identifier is missing", async () => {
+    const error = await client.journeys
+      .save({ partnershipId: own } as typeof journey)
+      .catch((failure: unknown) => failure);
+    expect(error).toMatchObject({
+      code: "BAD_REQUEST",
+      data: {
+        reason: "INVALID_INPUT",
         issues: [
           { path: ["origin"] },
           { path: ["destination"] },
@@ -150,9 +188,6 @@ describe("Participant Journey procedures", () => {
         ],
       },
     });
-    expect(
-      await db.select().from(snapshots).where(eq(snapshots.projectId, project)),
-    ).toEqual([]);
   });
 
   it("rejects blank locations, invalid trip types and nonpositive or overprecise distance", async () => {
@@ -210,7 +245,7 @@ describe("Participant Journey procedures", () => {
       })),
     ).toEqual(TRAVEL_FUNDING_RULES.bands);
     await expect(client.journeys.save(journey)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(
       await db
@@ -265,7 +300,7 @@ describe("Participant Journey procedures", () => {
   it("keeps earlier snapshots unchanged when config changes", async () => {
     useScenario("legacy");
     await expect(client.journeys.save(journey)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
     });
     expect(
       await db.select().from(snapshots).where(eq(snapshots.projectId, project)),
@@ -359,11 +394,24 @@ describe("Participant Journey procedures", () => {
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       data: {
+        reason: "INVALID_INPUT",
         issues: [
-          { path: ["origin"] },
-          { path: ["destination"] },
-          { path: ["tripType"] },
-          { path: ["erasmusDistanceKm"] },
+          {
+            id: "journeyOriginRequired",
+            path: ["origin"],
+          },
+          {
+            id: "journeyDestinationRequired",
+            path: ["destination"],
+          },
+          {
+            id: "journeyTripTypeRequired",
+            path: ["tripType"],
+          },
+          {
+            id: "journeyDistanceRequired",
+            path: ["erasmusDistanceKm"],
+          },
         ],
       },
     });
@@ -401,7 +449,12 @@ describe("Participant Journey procedures", () => {
       client.journeys.update({ ...journey, erasmusDistanceKm: "9999999999.99" }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
-      data: { issues: [{ path: ["erasmusDistanceKm"] }] },
+      data: {
+        reason: "JOURNEY_DISTANCE_OUTSIDE_BANDS",
+        issues: [
+          { id: "journeyDistanceOutsideBands", path: ["erasmusDistanceKm"] },
+        ],
+      },
     });
     const configBands = TRAVEL_FUNDING_RULES.bands as unknown as {
       minKm: number;
@@ -488,7 +541,7 @@ describe("Participant Journey procedures", () => {
         });
       } else {
         await expect(client.journeys.update(input)).rejects.toMatchObject({
-          code: "BAD_REQUEST",
+          code: "CONFLICT",
         });
         expect(
           (await db.select().from(journeys).where(eq(journeys.id, saved.id)))[0]

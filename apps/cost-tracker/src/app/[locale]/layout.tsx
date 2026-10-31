@@ -8,6 +8,7 @@ import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { Toaster } from "@/components/ui/toast";
 import { isSupportedLocale } from "@/lib/i18n/locales";
 import { routing } from "@/lib/i18n/routing";
 import type { LocaleParams } from "@/lib/i18n/types";
@@ -63,7 +64,7 @@ async function LocalizedIntl({
         now={now}
         formats={{}}
       >
-        {children}
+        <Toaster>{children}</Toaster>
       </NextIntlClientProvider>
     </div>
   );

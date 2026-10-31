@@ -98,6 +98,7 @@ beforeEach(() => {
 function recipient(
   userId = "user-1",
   secret: string | undefined = "private-secret",
+  locale: "en" | "de" = "en",
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -106,6 +107,7 @@ function recipient(
     <QueryClientProvider client={client}>
       <SetupLinkRecipient id="link-1" secret={secret} userId={userId} />
     </QueryClientProvider>,
+    { locale },
   );
 }
 async function create() {
@@ -201,7 +203,9 @@ it("honors a changed server decision before either mutation", async () => {
   recipient();
   await create();
   await waitFor(() =>
-    expect(document.querySelector('[data-setup-error="expired"]')).toBeVisible(),
+    expect(
+      document.querySelector('[data-setup-reason="SETUP_LINK_EXPIRED"]'),
+    ).toBeVisible(),
   );
   expect(mocks.create).not.toHaveBeenCalled();
   expect(mocks.bind).not.toHaveBeenCalled();
@@ -253,9 +257,7 @@ it("blocks Project access on refused Organization selection", async () => {
   await userEvent.click(
     await screen.findByTestId("use-setup-organization-retained"),
   );
-  await waitFor(() =>
-    expect(document.querySelector('[data-setup-error="generic"]')).toBeVisible(),
-  );
+  await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
   expect(mocks.refresh).not.toHaveBeenCalled();
 });
@@ -280,9 +282,7 @@ it.each([
     mocks.create.mockRejectedValueOnce(createSituationErrors()[situation]());
     recipient();
     await create();
-    await waitFor(() =>
-      expect(document.querySelector('[data-setup-error="create"]')).toBeVisible(),
-    );
+    await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
     expect(localStorage.getItem(key)).toBeNull();
     expect(screen.getByTestId("setup-name")).toBeVisible();
     expect(mocks.next).toHaveBeenLastCalledWith({
@@ -374,35 +374,79 @@ it("does not reuse another User's recovery checkpoint", async () => {
 });
 
 it.each([
-  ["SETUP_LINK_NOT_FOUND", "invalid"],
-  ["SETUP_LINK_DISABLED", "disabled"],
-  ["SETUP_LINK_EXPIRED", "expired"],
-  ["SETUP_LINK_WRONG_EMAIL", "wrong-email"],
-  ["SETUP_LINK_USED", "duplicate"],
-  ["ORGANIZATION_OWNER_REQUIRED", "owner"],
-  ["PARTNERSHIP_ALREADY_ASSIGNED", "duplicate"],
-  ["PROJECT_NOT_FOUND", "unavailable"],
-  ["SELF_PARTNERSHIP", "host"],
-])(
-  "renders server recovery %s with no creation action",
-  async (reason, state) => {
+  "SETUP_LINK_NOT_FOUND",
+  "SETUP_LINK_DISABLED",
+  "SETUP_LINK_EXPIRED",
+  "SETUP_LINK_WRONG_EMAIL",
+  "SETUP_LINK_USED",
+  "ORGANIZATION_OWNER_REQUIRED",
+  "PARTNERSHIP_ALREADY_ASSIGNED",
+  "PROJECT_NOT_FOUND",
+  "SELF_PARTNERSHIP",
+])("renders server recovery %s with no creation action", async (reason) => {
+  mocks.next.mockResolvedValue({
+    nextStep: "setup-recovery",
+    entryContext: "partner-setup",
+    reason,
+    availableActions: [{ kind: "sign-out" }, { kind: "recheck" }],
+  });
+  recipient();
+  await waitFor(() =>
+    expect(
+      document.querySelector(`[data-setup-reason="${reason}"]`),
+    ).toBeVisible(),
+  );
+  expect(screen.getByRole("alert")).toBeVisible();
+  expect(screen.getByTestId("inspect-setup")).toBeEnabled();
+  expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
+  expect(mocks.create).not.toHaveBeenCalled();
+});
+
+it.each(["SETUP_LINK_EXPIRED", "SETUP_LINK_USED", "SETUP_LINK_DISABLED"])(
+  "renders server recovery %s in English and German with no creation action",
+  async (reason) => {
+    for (const locale of ["en", "de"] as const) {
+      mocks.next.mockResolvedValue({
+        nextStep: "setup-recovery",
+        entryContext: "partner-setup",
+        reason,
+        availableActions: [{ kind: "sign-out" }, { kind: "recheck" }],
+      });
+      const view = recipient(
+        `user-${locale}-${reason}`,
+        "private-secret",
+        locale,
+      );
+      await waitFor(() =>
+        expect(
+          document.querySelector(`[data-setup-reason="${reason}"]`),
+        ).toBeVisible(),
+      );
+      expect(screen.getByRole("alert")).toBeVisible();
+      expect(screen.getByTestId("inspect-setup")).toBeEnabled();
+      expect(screen.queryByTestId("complete-setup")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
+      expect(mocks.create).not.toHaveBeenCalled();
+      view.unmount();
+    }
+  },
+);
+
+it("falls back to a safe alert for malformed recovery reasons in English and German", async () => {
+  for (const locale of ["en", "de"] as const) {
     mocks.next.mockResolvedValue({
       nextStep: "setup-recovery",
       entryContext: "partner-setup",
-      reason,
+      reason: "NOT_A_REAL_REASON",
       availableActions: [{ kind: "sign-out" }, { kind: "recheck" }],
     });
-    recipient();
-    await waitFor(() =>
-      expect(
-        document.querySelector(`[data-setup-error="${state}"]`),
-      ).toBeVisible(),
-    );
+    const view = recipient(`user-malformed-${locale}`, "private-secret", locale);
+    await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
     expect(screen.getByTestId("inspect-setup")).toBeEnabled();
-    expect(screen.queryByTestId("setup-name")).not.toBeInTheDocument();
-    expect(mocks.create).not.toHaveBeenCalled();
-  },
-);
+    expect(screen.queryByTestId("complete-setup")).not.toBeInTheDocument();
+    view.unmount();
+  }
+});
 
 it("uses verification instructions instead of setup actions for an unverified account", async () => {
   mocks.next.mockResolvedValue({
@@ -433,9 +477,7 @@ it("keeps unknown remote errors out of presentation and offers inspection", asyn
   recipient();
   await screen.findByTestId("complete-setup");
   await existing();
-  await waitFor(() =>
-    expect(document.querySelector('[data-setup-error="generic"]')).toBeVisible(),
-  );
+  await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
   expect(message).not.toHaveBeenCalled();
 });
 
@@ -478,7 +520,9 @@ it("sends missing-secret links to server recovery without offering creation", as
   });
   recipient("user-1", "");
   await waitFor(() =>
-    expect(document.querySelector('[data-setup-error="invalid"]')).toBeVisible(),
+    expect(
+      document.querySelector('[data-setup-reason="SETUP_LINK_NOT_FOUND"]'),
+    ).toBeVisible(),
   );
   expect(mocks.next).toHaveBeenCalledWith({
     returnTo: "/setup-links/link-1",

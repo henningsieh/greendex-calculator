@@ -1,5 +1,6 @@
 import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
@@ -48,6 +49,7 @@ export default async function ClaimReviewPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("claims.review");
 

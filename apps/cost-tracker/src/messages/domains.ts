@@ -1,4 +1,5 @@
 export const messageDomains = [
+  "apiErrors",
   "claims",
   "common",
   "onboarding",
@@ -22,6 +23,7 @@ export const messageBundleRoutes = [
   ["features/partnerships/", "partnerships"],
   ["features/projects/", "projects"],
   ["components/confirm-dialog.tsx", "common"],
+  ["components/error-presentation/", "apiErrors"],
   ["components/", "shell"],
   ["app/(protected)/projects/[id]/participants/", "participations"],
   ["app/(protected)/partnerships/[id]/participants/", "participations"],

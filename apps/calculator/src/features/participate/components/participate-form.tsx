@@ -16,7 +16,7 @@ import {
 import { useTranslations } from "@greendex/i18n/client";
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircle2Icon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { AnimatedGroup } from "@/components/animated-group";
 import { CountrySelect } from "@/components/country-select";
@@ -146,7 +146,11 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
     return 0;
   });
 
-  const [isHydrated, setIsHydrated] = useState(false);
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   // Impact modal state
   const [showImpactModal, setShowImpactModal] = useState(false);
@@ -204,10 +208,6 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
       }
     }
   }, [answers, currentStep, confirmedEmissions, project.id]);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
 
   const totalSteps = PARTICIPATE_TOTAL_STEPS;
   const progress = ((currentStep + 1) / totalSteps) * 100;

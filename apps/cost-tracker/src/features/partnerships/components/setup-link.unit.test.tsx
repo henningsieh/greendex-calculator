@@ -136,13 +136,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function creator() {
+function creator(locale: "en" | "de" = "en") {
   const client = createQueryClient();
   client.setDefaultOptions({ queries: { retry: false } });
   return render(
     <QueryClientProvider client={client}>
       <SetupLinkCreator />
     </QueryClientProvider>,
+    { locale },
   );
 }
 
@@ -195,6 +196,26 @@ describe("Setup Link UI", () => {
     await user.click(screen.getByTestId("copy-setup-link"));
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
   });
+
+  it.each(["en", "de"] as const)(
+    "shows the copy fallback alert in %s when the clipboard write fails",
+    async (locale) => {
+      const user = userEvent.setup();
+      vi.spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(
+        new Error("denied"),
+      );
+      creator(locale as "en" | "de");
+      await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
+      await user.click(screen.getByTestId("entity-combobox-trigger"));
+      await user.type(screen.getByTestId("entity-search"), "Host");
+      await user.click(await screen.findByRole("option"));
+      await user.type(screen.getByTestId("setup-email"), "partner@example.com");
+      await user.click(screen.getByTestId("create-setup-link"));
+      await screen.findByTestId("recipient-link");
+      await user.click(screen.getByTestId("copy-setup-link"));
+      await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
+    },
+  );
 
   it("prevents repeat issuance while the new link is pending", async () => {
     const user = userEvent.setup();

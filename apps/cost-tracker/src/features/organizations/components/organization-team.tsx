@@ -11,6 +11,7 @@ import {
 import { useState, type SyntheticEvent } from "react";
 
 import { useConfirmDialog } from "@/components/confirm-dialog";
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const STAFF_ROLES = [
@@ -90,7 +90,7 @@ export function OrganizationTeam({
   const [role, setRole] = useState<StaffRole>(
     ORGANIZATION_ROLES.OrganizationAdmin,
   );
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState<React.ReactNode>("");
   const [pendingInvitationIds, setPendingInvitationIds] = useState(
     () => new Set<string>(),
   );
@@ -132,7 +132,7 @@ export function OrganizationTeam({
       await refresh();
     },
     onError: (error) => {
-      setFormError(getORPCRequestErrorMessage(error).text);
+      setFormError(<ErrorPresentation error={error} />);
     },
   });
 
@@ -145,7 +145,7 @@ export function OrganizationTeam({
       await refresh();
     },
     onError: (error) => {
-      setFormError(getORPCRequestErrorMessage(error).text);
+      setFormError(<ErrorPresentation error={error} />);
     },
     onSettled: (_data, _error, invitationId) => {
       setPendingInvitationIds((current) => {

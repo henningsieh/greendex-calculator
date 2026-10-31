@@ -46,7 +46,7 @@ describe("locked Entry Token recheck", () => {
     await expect(
       recheckEntryToken(transaction(), errors, token),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "PARTICIPANT_INVITATION_EXPIRED" },
     });
   });

@@ -184,10 +184,10 @@ describe("Claim cost procedures", () => {
     const lockedClaim = await upload(
       request("cost-locked-partnership-canonical"),
     );
-    expect(lockedClaim.status).toBe(400);
+    expect(lockedClaim.status).toBe(409);
     expect(await lockedClaim.json()).toEqual({
       error: "Claim is not editable.",
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       reason: "CLAIM_NOT_EDITABLE",
     });
     expect(authMocks.put).toHaveBeenCalledTimes(1);
@@ -384,8 +384,14 @@ describe("Claim cost procedures", () => {
       code: "BAD_REQUEST",
       data: {
         issues: expect.arrayContaining([
-          expect.objectContaining({ path: ["allocations", 1] }),
-          expect.objectContaining({ path: ["allocations"] }),
+          expect.objectContaining({
+            id: "allocationSharesInvalid",
+            path: ["allocations", 1],
+          }),
+          expect.objectContaining({
+            id: "allocationSharesInvalid",
+            path: ["allocations"],
+          }),
         ]),
       },
     });
@@ -407,7 +413,10 @@ describe("Claim cost procedures", () => {
         code: "BAD_REQUEST",
         data: {
           issues: expect.arrayContaining([
-            expect.objectContaining({ path: ["transportProfile"] }),
+            expect.objectContaining({
+              id: "transportProfileOutsideRules",
+              path: ["transportProfile"],
+            }),
           ]),
         },
       });
@@ -446,7 +455,7 @@ describe("Claim cost procedures", () => {
         ],
       }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "CLAIM_NOT_EDITABLE" },
     });
     await expect(
@@ -456,7 +465,7 @@ describe("Claim cost procedures", () => {
         proofDocumentId: "cost-locked-proof-canonical",
       }),
     ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
+      code: "CONFLICT",
       data: { reason: "CLAIM_NOT_EDITABLE" },
     });
     actor = participantUser;

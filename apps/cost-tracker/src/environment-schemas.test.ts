@@ -42,6 +42,7 @@ describe("Cost Tracker environment", () => {
   });
 
   it.each([
+    ["LOCAL_E2E_AUTH", "true"],
     ["BETTER_AUTH_SECRET", "short"],
     ["GOOGLE_CLIENT_ID", ""],
     ["GOOGLE_CLIENT_SECRET", ""],
@@ -65,6 +66,18 @@ describe("Cost Tracker environment", () => {
       }).success,
     ).toBe(false);
   });
+
+  it.each([undefined, "0", "1"])(
+    "accepts the explicit local E2E flag %s",
+    (value) => {
+      expect(
+        CostTrackerServerEnvironmentSchema.parse({
+          ...validServerEnvironment,
+          ...(value === undefined ? {} : { LOCAL_E2E_AUTH: value }),
+        }).LOCAL_E2E_AUTH,
+      ).toBe(value);
+    },
+  );
 
   it.each([
     "S3_ENDPOINT",

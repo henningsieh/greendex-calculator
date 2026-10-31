@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const CostTrackerServerEnvironmentSchema = z.object({
+  LOCAL_E2E_AUTH: z.enum(["0", "1"]).optional(),
   DATABASE_URL: z.url(),
   TEST_RUN_ID: z
     .string()

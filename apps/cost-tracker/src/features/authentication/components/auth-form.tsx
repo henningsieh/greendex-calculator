@@ -2,13 +2,13 @@
 
 import { GoogleIcon } from "@greendex/auth/oauth-icons";
 import { useTranslations } from "@greendex/i18n/client";
-import { ORPCError } from "@orpc/client";
 import { ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFormStatus } from "react-dom";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Field,
@@ -23,7 +23,6 @@ import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
-import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +45,7 @@ export function AuthForm({
   const router = useRouter();
   const t = useTranslations("onboarding");
   const heading = useRef<HTMLHeadingElement>(null);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<React.ReactNode>();
   const [submittedEmail, setSubmittedEmail] = useState<string>();
   const [receipt, setReceipt] = useState<OnboardingDecision>();
   useEffect(() => {
@@ -62,19 +61,7 @@ export function AuthForm({
   const destination = decision?.availableActions[0].returnTo ?? returnTo;
 
   function showError(error: unknown) {
-    const reason =
-      error instanceof ORPCError
-        ? getSafeErrorSituation(error)?.reason
-        : undefined;
-    setError(
-      t(
-        reason === "INVALID_CREDENTIALS"
-          ? "error.credentials"
-          : reason === "EMAIL_VERIFICATION_REQUIRED"
-            ? "error.verification"
-            : "error.request",
-      ),
-    );
+    setError(<ErrorPresentation error={error} />);
   }
 
   async function submit(formData: FormData) {
@@ -261,7 +248,7 @@ function AuthCredentialFields({
   error,
 }: {
   isSignIn: boolean;
-  error: string | undefined;
+  error: React.ReactNode;
 }) {
   const t = useTranslations("onboarding");
   return (

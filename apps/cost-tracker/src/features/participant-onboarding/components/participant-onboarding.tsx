@@ -1,10 +1,12 @@
 "use client";
+
 import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 
+import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +17,6 @@ import {
   type ParticipantAgreementVersion,
 } from "@/features/participant-onboarding/participant-agreement";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
-import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { orpc } from "@/lib/orpc/orpc";
 
 type Agreement = ParticipantAgreementVersion & { content?: string };
@@ -96,7 +97,7 @@ export function ParticipantJoin({
   const [country, setCountry] = useState<EUCountryCode | "">("");
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<React.ReactNode>();
   const available = hasAgreementCopy(agreement);
 
   async function join(event: SyntheticEvent<HTMLFormElement>) {
@@ -112,7 +113,7 @@ export function ParticipantJoin({
       });
       router.replace("/participant");
     } catch (cause) {
-      setError(getORPCRequestErrorMessage(cause).text);
+      setError(<ErrorPresentation error={cause} />);
     } finally {
       setPending(false);
     }
@@ -180,7 +181,7 @@ export function ParticipantJoin({
             >
               {pending ? t("actions.joining") : t("actions.join")}
             </Button>
-            {error && <p role="alert">{error}</p>}
+            {error && <div role="alert">{error}</div>}
           </form>
         )}
       </CardContent>
@@ -195,7 +196,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
   const [name, setName] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<React.ReactNode>();
   const available = hasAgreementCopy(agreement);
 
   const loaded = useCallback((result: Projects) => {
@@ -214,7 +215,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
     ) {
       setState("agreement");
     } else {
-      setError(getORPCRequestErrorMessage(cause).text);
+      setError(<ErrorPresentation error={cause} />);
       setState("error");
     }
   }, []);
@@ -239,7 +240,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
       await orpc.participantOnboarding.saveProfile({ fullName: name });
       await load();
     } catch (cause) {
-      setError(getORPCRequestErrorMessage(cause).text);
+      setError(<ErrorPresentation error={cause} />);
     } finally {
       setPending(false);
     }
@@ -254,7 +255,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
       await orpc.participantOnboarding.acceptAgreement({ accepted: true });
       await load();
     } catch (cause) {
-      setError(getORPCRequestErrorMessage(cause).text);
+      setError(<ErrorPresentation error={cause} />);
     } finally {
       setPending(false);
     }
@@ -361,7 +362,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
             ))}
           </ul>
         )}
-        {error && <p role="alert">{error}</p>}
+        {error && <div role="alert">{error}</div>}
       </CardContent>
     </Card>
   );

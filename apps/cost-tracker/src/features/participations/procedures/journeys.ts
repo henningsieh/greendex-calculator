@@ -13,6 +13,7 @@ import { z } from "zod";
 
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
+import { JourneyInputSchema } from "@/features/participations/validation-schemas";
 import {
   coordinationId,
   requirePartnerCoordination,
@@ -21,26 +22,9 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 const scopeInput = z.object({ partnershipId: coordinationId });
-const journeyInput = scopeInput.extend({
-  projectParticipantId: coordinationId,
-  origin: z.string().trim().min(1),
-  destination: z.string().trim().min(1),
-  tripType: z.enum(["one-way", "round-trip"]),
-  // numeric(12, 2) stores at most ten integer digits plus two decimals.
-  erasmusDistanceKm: z
-    .string()
-    .regex(
-      /^\d{1,10}(?:\.\d{1,2})?$/,
-      "Enter a positive distance with at most two decimal places.",
-    )
-    .refine(
-      (value) => Number(value) > 0,
-      "Distance must be positive and fit the supported precision.",
-    ),
+const journeyOutput = JourneyInputSchema.omit({ partnershipId: true }).extend({
+  id: z.string(),
 });
-const journeyOutput = journeyInput
-  .omit({ partnershipId: true })
-  .extend({ id: z.string() });
 const selected = {
   id: journeys.id,
   projectParticipantId: journeys.projectParticipantId,
@@ -93,7 +77,7 @@ export const list = authorized
 
 /** Journeys may be prepared before a Claim exists; frozen Project rules start with the first one. */
 export const save = authorized
-  .input(journeyInput)
+  .input(JourneyInputSchema)
   .output(journeyOutput)
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
@@ -175,7 +159,7 @@ export const save = authorized
 
 /** Edit the existing shared journey, selecting its new band only from frozen Project rules. */
 export const update = authorized
-  .input(journeyInput)
+  .input(JourneyInputSchema)
   .output(journeyOutput)
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(

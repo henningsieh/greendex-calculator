@@ -51,7 +51,7 @@ describe("safe situation presentation", () => {
       ),
     ).toEqual({
       sessionExpired: false,
-      text: situationCatalog.badInput.message,
+      text: situationCatalog.conflict.message,
     });
   });
 });
@@ -121,7 +121,7 @@ it.each(Object.entries(situationCatalog))(
     expect(getORPCRequestErrorMessage(error)).toEqual({
       sessionExpired: situation.reason === "SESSION_REQUIRED",
       text: composed
-        ? situationCatalog.badInput.message
+        ? situationCatalog.conflict.message
         : situation.reason === "INTERNAL_FAILURE"
           ? "The request could not be completed. Try again."
           : situation.message,

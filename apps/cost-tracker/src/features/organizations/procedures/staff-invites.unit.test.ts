@@ -551,7 +551,10 @@ describe("organizations staff invites", () => {
         client.organizations.cancelInvitation({
           invitationId: seedInvitations.acceptedId,
         }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      ).rejects.toMatchObject({
+        code: "CONFLICT",
+        data: { reason: "STAFF_INVITATION_CLOSED" },
+      });
 
       await expect(
         client.organizations.cancelInvitation({

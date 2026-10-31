@@ -2,7 +2,9 @@ import { projectPartnerOrganizationsTable } from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const CoordinationIdSchema = z.string().trim().min(1).max(128);
+import { CoordinationIdSchema } from "@/features/partnerships/coordination-id-schema";
+
+export { CoordinationIdSchema };
 export const SetupLinkEmailSchema = z
   .email()
   .transform((value) => value.toLowerCase());
