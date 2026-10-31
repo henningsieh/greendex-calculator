@@ -2,6 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { Building2Icon, LoaderCircleIcon } from "lucide-react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
@@ -21,7 +22,7 @@ import { authClient } from "@/lib/auth-client";
 type SelectOrganizationProps = {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];
   onSelected?: () => Promise<void>;
-  signOutDestination?: string;
+  signOutDestination?: Route;
 };
 
 export function SelectOrganization({

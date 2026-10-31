@@ -10,8 +10,10 @@ import {
   LogOutIcon,
   UsersIcon,
 } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 import { useRef } from "react";
 
 import { SiteBrand } from "@/components/site-brand";
@@ -47,8 +49,10 @@ const organizationNavigationItem = {
 } as const;
 
 type AppNavigationProps = {
-  email: string;
-  name: string;
+  email?: string;
+  name?: string;
+  brandHref?: Route;
+  actions?: ReactNode;
   showOrganization?: boolean;
   showPartnerOrganizations?: boolean;
   showOrganizationSwitcher?: boolean;
@@ -59,6 +63,8 @@ type AppNavigationProps = {
 export function AppNavigation({
   email,
   name,
+  brandHref = "/",
+  actions,
   showOrganization = false,
   showPartnerOrganizations = true,
   showOrganizationSwitcher = false,
@@ -67,6 +73,7 @@ export function AppNavigation({
 }: AppNavigationProps) {
   const t = useTranslations("shell");
   const pathname = usePathname();
+  const account = email != null && name != null ? { email, name } : null;
   // Presentation-only: each page and its procedures gate access. The Partner
   // Organizations tab hides for people who cannot use that page.
   const navigationItems = [
@@ -78,58 +85,81 @@ export function AppNavigation({
   return (
     <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
       <div className="flex h-18 items-center justify-between">
-        <SiteBrand href="/projects" />
-        <div className="flex items-center gap-2">
-          <ThemeSwitcher />
-          {showOrganizationSwitcher && activeOrganizationId ? (
-            <OrganizationSwitcher
-              activeOrganizationId={activeOrganizationId}
-              organizations={staffOrganizations}
+        <SiteBrand href={brandHref} />
+        {account ? (
+          <div className="flex items-center gap-2">
+            <ThemeSwitcher />
+            {showOrganizationSwitcher && activeOrganizationId ? (
+              <OrganizationSwitcher
+                activeOrganizationId={activeOrganizationId}
+                organizations={staffOrganizations}
+              />
+            ) : null}
+            <div className="lg:hidden">
+              <AccountMenu
+                compact
+                email={account.email}
+                name={account.name}
+                pathname={pathname}
+              />
+            </div>
+          </div>
+        ) : (
+          <nav
+            aria-label={t("landing.accountNav")}
+            className="flex items-center gap-2 sm:gap-3"
+          >
+            <ThemeSwitcher />
+            {actions}
+          </nav>
+        )}
+      </div>
+
+      {account ? (
+        <div className="flex min-w-0 items-end justify-between gap-6">
+          <nav
+            aria-label={t("nav.primaryLabel")}
+            className="-ml-2 flex min-w-0 overflow-x-auto sm:-ml-3"
+          >
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const active = pathname === item.href;
+
+              return (
+                <Link
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 border-b-2 px-2 py-4 text-sm font-medium transition-colors sm:px-3",
+                    active
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                  href={item.href}
+                  key={item.href}
+                >
+                  <Icon aria-hidden="true" className="hidden size-4 sm:block" />
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="hidden shrink-0 pb-2 lg:block">
+            <AccountMenu
+              email={account.email}
+              name={account.name}
+              pathname={pathname}
             />
-          ) : null}
-          <div className="lg:hidden">
-            <AccountMenu compact email={email} name={name} pathname={pathname} />
           </div>
         </div>
-      </div>
-
-      <div className="flex min-w-0 items-end justify-between gap-6">
-        <nav
-          aria-label={t("nav.primaryLabel")}
-          className="-ml-2 flex min-w-0 overflow-x-auto sm:-ml-3"
-        >
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-
-            return (
-              <Link
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex shrink-0 items-center gap-2 border-b-2 px-2 py-4 text-sm font-medium transition-colors sm:px-3",
-                  active
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-                href={item.href}
-                key={item.href}
-              >
-                <Icon aria-hidden="true" className="hidden size-4 sm:block" />
-                {t(item.labelKey)}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="hidden shrink-0 pb-2 lg:block">
-          <AccountMenu email={email} name={name} pathname={pathname} />
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }
 
-type AccountMenuProps = AppNavigationProps & {
+type AccountMenuProps = {
+  email: string;
+  name: string;
   compact?: boolean;
   pathname: string;
 };

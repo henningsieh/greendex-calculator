@@ -1,4 +1,5 @@
 import "server-only";
+import type { Route } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -11,10 +12,10 @@ export const getSession = cache(async () =>
 
 export function invitationReturnTo(
   value: string | string[] | undefined,
-): string | undefined {
+): Route | undefined {
   if (typeof value !== "string") return undefined;
   return /^\/accept-invitation\/[a-zA-Z0-9_-]{1,128}$/.test(value)
-    ? value
+    ? (value as Route)
     : undefined;
 }
 
@@ -25,19 +26,19 @@ export function invitationReturnTo(
  */
 export function setupLinkReturnTo(
   value: string | string[] | undefined,
-): string | undefined {
+): Route | undefined {
   if (typeof value !== "string") return undefined;
   return /^\/setup-links\/[A-Za-z0-9_-]{1,128}(?:\?secret=[A-Za-z0-9_-]{1,256})?$/.test(
     value,
   )
-    ? value
+    ? (value as Route)
     : undefined;
 }
 
 /** Any setup destination a signed-out recipient may resume after sign-in. */
 export function safeSignInReturnTo(
   value: string | string[] | undefined,
-): string | undefined {
+): Route | undefined {
   return invitationReturnTo(value) ?? setupLinkReturnTo(value);
 }
 

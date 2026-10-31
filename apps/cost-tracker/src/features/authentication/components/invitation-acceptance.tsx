@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -52,7 +53,7 @@ export function InvitationAcceptance({
     (next: OnboardingDecision) => {
       onDecision?.(next);
       if (next.nextStep === "continue")
-        router.replace(next.availableActions[0].destination);
+        router.replace(next.availableActions[0].destination as Route);
       if (next.nextStep === "authenticate") {
         onAuthenticate?.();
         const action = next.availableActions[0];
@@ -367,7 +368,9 @@ function InvitationNextSteps({
           <div className="mt-4" key={action.kind}>
             <SignOutButton
               destination={
-                "destination" in action ? action.destination : undefined
+                "destination" in action
+                  ? (action.destination as Route)
+                  : undefined
               }
             />
           </div>
@@ -404,7 +407,7 @@ function InvitationOrganizationChoice({
         onSelected={recheck}
         signOutDestination={
           "destination" in decision.availableActions[1]
-            ? decision.availableActions[1].destination
+            ? (decision.availableActions[1].destination as Route)
             : undefined
         }
       />

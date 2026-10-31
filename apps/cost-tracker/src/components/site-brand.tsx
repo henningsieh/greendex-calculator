@@ -1,4 +1,5 @@
 import { useTranslations } from "@greendex/i18n/client";
+import type { Route } from "next";
 import Link from "next/link";
 
 import { StarWreath } from "@/components/brand/star-wreath";
@@ -6,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 type SiteBrandProps = {
   className?: string;
-  href?: string;
+  href?: Route;
 };
 
 /* Header lockup (LOCKED 2026-10-11; spelling corrected in #313): StarWreath (34px) + GreenDex

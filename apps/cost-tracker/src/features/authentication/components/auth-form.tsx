@@ -3,6 +3,7 @@
 import { GoogleIcon } from "@greendex/auth/oauth-icons";
 import { useTranslations } from "@greendex/i18n/client";
 import { ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -91,7 +92,7 @@ export function AuthForm({
       }
 
       // replace fetches the destination; a following refresh would start a second RSC request.
-      router.replace(destination ?? "/projects");
+      router.replace((destination ?? "/projects") as Route);
     } catch (error) {
       showError(error);
     }

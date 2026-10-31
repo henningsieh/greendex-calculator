@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { AppNavigation } from "@/components/app-navigation";
 import { Aura } from "@/components/brand/aura";
 import {
   StatCell,
@@ -21,8 +22,6 @@ import {
   TerminalDots,
   TerminalStatus,
 } from "@/components/brand/terminal-card";
-import { SiteBrand } from "@/components/site-brand";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -58,33 +57,32 @@ export default async function LandingPage() {
 
   return (
     <main className="min-h-svh overflow-hidden">
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between p-5 sm:px-8 lg:px-10">
-        <SiteBrand />
-        <nav
-          aria-label={t("landing.accountNav")}
-          className="flex items-center gap-2 sm:gap-3"
-        >
-          <ThemeSwitcher />
-          <Link
-            className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
-            href="/login"
-          >
-            {t("common.signIn")}
-          </Link>
-          <Link
-            className={cn(
-              buttonVariants({ size: "sm" }),
-              "hidden sm:inline-flex",
-            )}
-            href="/register"
-          >
-            {t("landing.createAccount")}
-          </Link>
-        </nav>
+      <header>
+        <AppNavigation
+          actions={
+            <>
+              <Link
+                className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
+                href="/login"
+              >
+                {t("common.signIn")}
+              </Link>
+              <Link
+                className={cn(
+                  buttonVariants({ size: "sm" }),
+                  "hidden sm:inline-flex",
+                )}
+                href="/register"
+              >
+                {t("landing.createAccount")}
+              </Link>
+            </>
+          }
+        />
       </header>
 
       <section className="relative mx-auto grid w-full max-w-7xl items-center gap-16 px-5 pt-10 pb-20 sm:px-8 sm:pt-14 lg:grid-cols-[1.04fr_0.96fr] lg:px-10 lg:pt-16 lg:pb-28">
-        <Aura className="absolute -top-32 left-1/2 h-72 w-[720px] -translate-x-1/2" />
+        <Aura className="absolute -top-32 left-1/2 h-72 w-180 -translate-x-1/2" />
         <div className="relative max-w-2xl">
           <Badge variant="ember-pill">
             <span

@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import {
   createLoader,
   parseAsIsoDate,
@@ -81,7 +82,7 @@ export type ResolvedProjectListState = {
  * Accepts only a local Project list URL. This keeps return context out of
  * workspace authorization and prevents open redirects from crafted links.
  */
-export function getProjectListReturnDestination(returnTo: unknown): string {
+export function getProjectListReturnDestination(returnTo: unknown): Route {
   if (
     typeof returnTo !== "string" ||
     !returnTo.startsWith("/") ||
@@ -93,7 +94,7 @@ export function getProjectListReturnDestination(returnTo: unknown): string {
   try {
     const url = new URL(returnTo, LOCAL_URL_ORIGIN);
     return url.origin === LOCAL_URL_ORIGIN && url.pathname === PROJECT_LIST_PATH
-      ? returnTo
+      ? (returnTo as Route)
       : PROJECT_LIST_PATH;
   } catch {
     return PROJECT_LIST_PATH;

@@ -22,6 +22,7 @@ const nextConfig = {
   // Prefetch shared static shells; private and URL-dependent data streams per request.
   partialPrefetching: true,
   reactCompiler: true,
+  typedRoutes: true,
   experimental: {
     requestInsights: true,
     turbopackFileSystemCacheForBuild: true,

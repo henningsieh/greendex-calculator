@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "@testing-library/react";
+import type { Route } from "next";
 import Link from "next/link";
 import { describe, expect, it, vi } from "vitest";
 
@@ -141,7 +142,10 @@ describe("Claim document presentation", () => {
               </ul>
             ),
             documents: (
-              <Link href="/proof-documents/receipt.pdf">{filename}</Link>
+              // Public asset, not an app route: typed routes only cover pages.
+              <Link href={"/proof-documents/receipt.pdf" as Route}>
+                {filename}
+              </Link>
             ),
             action: (
               <Button

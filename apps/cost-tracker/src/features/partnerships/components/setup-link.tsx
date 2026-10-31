@@ -4,6 +4,7 @@ import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries"
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
@@ -454,7 +455,7 @@ function SetupOrganizationAccess({
       data-testid="open-partner-project"
       className={buttonVariants()}
       prefetch={false}
-      href={decision.availableActions[0].destination}
+      href={decision.availableActions[0].destination as Route}
     >
       {t("openPartnerProject")}
     </Link>

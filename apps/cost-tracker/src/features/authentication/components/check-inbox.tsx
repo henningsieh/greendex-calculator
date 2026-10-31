@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import type { Route } from "next";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -146,7 +147,9 @@ export function CheckInbox({
           <div className="mt-4" key={action.kind}>
             <SignOutButton
               destination={
-                "destination" in action ? action.destination : undefined
+                "destination" in action
+                  ? (action.destination as Route)
+                  : undefined
               }
             />
           </div>

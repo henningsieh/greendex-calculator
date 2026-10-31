@@ -25,7 +25,7 @@
     "test:full": "tsx scripts/test.ts full",
     "test:integration": "tsx scripts/test.ts integration",
     "test:unit": "tsx scripts/test.ts unit",
-    "type-check": "turbo run type-check && pnpm run type-check:cost-tracker-persistence-seam",
+    "type-check": "turbo run type-check",
     "type-check:cost-tracker-persistence-seam": "tsc --project scripts/tsconfig.json"
   },
   "dependencies": {

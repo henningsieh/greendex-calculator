@@ -1,4 +1,5 @@
 import { getTranslations } from "@greendex/i18n/server";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
@@ -32,7 +33,7 @@ export default async function OrganizationInvitationPage({
     redirect(`/${action.entry}?next=${encodeURIComponent(action.returnTo)}`);
   }
   if (decision.nextStep === "continue")
-    redirect(decision.availableActions[0].destination);
+    redirect(decision.availableActions[0].destination as Route);
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-6">
       <InvitationAcceptance returnTo={returnTo} initialDecision={decision} />
