@@ -601,7 +601,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await page.locator("#setup-country").selectOption("DE");
     await markSetupDocument(page);
     await page.getByTestId("complete-setup").click();
-    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.getByTestId("inspect-setup")).toBeEnabled();
     // Shared refusal plus retained org proven by the DB select below.
     const [created] = await db
       .select({ id: organization.id })
@@ -956,7 +956,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     await chooseExisting(page);
     await selectEntity(page, "setup-organization-picker", targetId);
     await page.getByTestId("complete-setup").click();
-    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.getByTestId("inspect-setup")).toBeEnabled();
     expect(bindingAttempts).toBe(1);
     expect(await partnershipCount(fixture.projectNames[0]!, targetName)).toBe(0);
     await db

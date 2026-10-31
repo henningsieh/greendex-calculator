@@ -52,6 +52,38 @@ test("Project tabs accept the first available click after a slow script load", a
   }
 });
 
+test("Participation starts with one click after a slow script load", async ({
+  page,
+}) => {
+  const [project] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .innerJoin(organization, eq(projectsTable.organizationId, organization.id))
+    .where(eq(organization.slug, "seed-org"))
+    .limit(1);
+  expect(project, "Canonical Hosting Project must exist").toBeDefined();
+
+  const release = await holdClientScripts(page);
+  try {
+    await page.goto(`/en/project/${project.id}/participate`, {
+      waitUntil: "commit",
+    });
+    const start = page.getByTestId("participate-start");
+    await expect(start).toBeVisible();
+    await expect(start).toBeDisabled();
+    release();
+    await expect(start).toBeEnabled();
+    await start.click();
+    await expect(page.getByTestId("participate-step")).toHaveAttribute(
+      "data-step",
+      "1",
+    );
+    await expect(page.locator("#firstName")).toBeVisible();
+  } finally {
+    release();
+  }
+});
+
 test.describe("Login readiness", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 

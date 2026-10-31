@@ -550,6 +550,7 @@ export function QuestionnaireForm({ project }: QuestionnaireFormProps) {
                 <Button
                   className="mt-4 w-full bg-linear-to-r from-teal-700 to-emerald-600 px-8 py-4 text-base transition-all duration-250 hover:scale-[1.02] hover:from-teal-800 hover:to-emerald-700 sm:w-auto sm:text-lg"
                   data-testid="participate-start"
+                  disabled={!isHydrated}
                   onClick={handleNext}
                   size="lg"
                 >
