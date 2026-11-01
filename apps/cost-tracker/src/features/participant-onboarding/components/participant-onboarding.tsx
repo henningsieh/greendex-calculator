@@ -1,12 +1,13 @@
 "use client";
 
-import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -149,25 +150,14 @@ export function ParticipantJoin({
             </div>
             <div className="space-y-2">
               <Label htmlFor="participant-country">{t("join.country")}</Label>
-              <select
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              <EUCountrySelector
+                className="w-full"
                 id="participant-country"
                 data-testid="participant-country"
-                required
+                disabled={pending}
                 value={country}
-                onChange={(event) =>
-                  setCountry(event.target.value as EUCountryCode)
-                }
-              >
-                <option disabled value="">
-                  {t("join.countryPlaceholder")}
-                </option>
-                {EU_COUNTRIES.map(({ code }) => (
-                  <option key={code} value={code}>
-                    {new Intl.DisplayNames(["en"], { type: "region" }).of(code)}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setCountry}
+              />
             </div>
             <AgreementAcceptance
               agreement={agreement}

@@ -1,6 +1,6 @@
 "use client";
 
-import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { LoaderCircleIcon } from "lucide-react";
@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -93,26 +94,14 @@ export function NoOrganizationAccess() {
             <FieldLabel htmlFor="organization-country">
               {t("countryLabel")}
             </FieldLabel>
-            <select
+            <EUCountrySelector
+              aria-required="true"
               id="organization-country"
               data-testid="organization-country"
-              required
               disabled={pending}
               value={country}
-              onChange={(event) =>
-                setCountry(event.target.value as EUCountryCode)
-              }
-              className="h-10 w-full border-0 border-b border-input bg-transparent py-2 text-sm text-foreground outline-none focus-visible:border-ring"
-            >
-              <option value="" disabled>
-                {t("countryPlaceholder")}
-              </option>
-              {EU_COUNTRIES.map(({ code }) => (
-                <option key={code} value={code}>
-                  {new Intl.DisplayNames(["en"], { type: "region" }).of(code)}
-                </option>
-              ))}
-            </select>
+              onValueChange={setCountry}
+            />
           </Field>
           <div className="flex flex-wrap gap-3">
             <Button

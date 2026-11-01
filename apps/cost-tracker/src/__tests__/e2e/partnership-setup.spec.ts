@@ -31,6 +31,7 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { selectCountry } from "./fixtures/country-selector";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 import { projectLink, staffRow } from "./fixtures/journey-locators";
@@ -228,7 +229,7 @@ async function createProject(page: Page, name: string) {
   await dialog.locator("#new-project-start").fill("2027-04-01");
   await dialog.locator("#new-project-end").fill("2027-04-03");
   await dialog.locator("#new-project-location").fill("Berlin");
-  await dialog.locator("#new-project-country").selectOption("DE");
+  await selectCountry(dialog.locator("#new-project-country"), "DE");
   await dialog.getByTestId("create-project").click();
   await expect(page.getByTestId("project-workspace")).toBeVisible();
   await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
@@ -376,7 +377,7 @@ async function completeNew(page: Page, url: string, name: string) {
   await page.goto(url);
   // Text-free: the setup form interactions below prove the page (no heading copy).
   await page.locator("#setup-name").fill(name);
-  await page.locator("#setup-country").selectOption("DE");
+  await selectCountry(page.locator("#setup-country"), "DE");
   await markSetupDocument(page);
   await page.getByTestId("complete-setup").click();
   await expect(page.getByTestId("open-partner-project")).toBeVisible();
@@ -465,7 +466,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     const dialog = await organizationSetup(page);
     await dialog.locator("#organization-name").fill(fixture.organizationName);
-    await dialog.locator("#organization-country").selectOption("DE");
+    await selectCountry(dialog.locator("#organization-country"), "DE");
     await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectFirstOrganizationProjects(page, fixture.organizationName);
@@ -537,7 +538,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     await page.goto(url);
     await page.locator("#setup-name").fill(`${names.P}!`);
-    await page.locator("#setup-country").selectOption("DE");
+    await selectCountry(page.locator("#setup-country"), "DE");
     await page.getByTestId("complete-setup").click();
     await expect(page.getByRole("alert")).toBeVisible();
     // Shared refusal alert plus zero membership + zero partnership below prove graceful failure.
@@ -598,7 +599,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     );
     await page.goto(url);
     await page.locator("#setup-name").fill(names.R);
-    await page.locator("#setup-country").selectOption("DE");
+    await selectCountry(page.locator("#setup-country"), "DE");
     await markSetupDocument(page);
     await page.getByTestId("complete-setup").click();
     await expect(page.getByTestId("inspect-setup")).toBeEnabled();
@@ -674,7 +675,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     );
     await page.goto(url);
     await page.locator("#setup-name").fill(names.U);
-    await page.locator("#setup-country").selectOption("DE");
+    await selectCountry(page.locator("#setup-country"), "DE");
     await markSetupDocument(page);
     await page.getByTestId("complete-setup").click();
     await expect(page.getByTestId("inspect-setup")).toBeEnabled();
@@ -863,7 +864,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     ).toBeVisible();
     const dialog = await organizationSetup(page);
     await dialog.locator("#organization-name").fill(names.E);
-    await dialog.locator("#organization-country").selectOption("DE");
+    await selectCountry(dialog.locator("#organization-country"), "DE");
     await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectFirstOrganizationProjects(page, names.E);
@@ -1304,7 +1305,7 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
     await setup
       .locator("#organization-name")
       .fill(removalFixture.organizationName);
-    await setup.locator("#organization-country").selectOption("DE");
+    await selectCountry(setup.locator("#organization-country"), "DE");
     await setup.getByTestId("create-organization").click();
     await expect(setup).toBeHidden();
     await db.insert(projectsTable).values({

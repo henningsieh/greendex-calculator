@@ -28,6 +28,7 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { selectCountry } from "./fixtures/country-selector";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -345,7 +346,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await dialog.locator("#new-project-start").fill("2027-04-01");
     await dialog.locator("#new-project-end").fill("2027-04-03");
     await dialog.locator("#new-project-location").fill("Berlin");
-    await dialog.locator("#new-project-country").selectOption("DE");
+    await selectCountry(dialog.locator("#new-project-country"), "DE");
     await dialog.getByTestId("create-project").click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(h, /\/projects\/[^/]+$/, { timeout: 90_000 });
@@ -648,7 +649,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       `/participant-invitations/${ids.oldParticipantInvitation}?secret=${encodeURIComponent(oldSecret)}`,
     );
     await t.getByTestId("participant-name").fill(actors.T.name);
-    await t.locator("#participant-country").selectOption("DE");
+    await selectCountry(t.locator("#participant-country"), "DE");
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
@@ -688,7 +689,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await t.goto(link);
     await expect(t.getByTestId("join-project")).toBeVisible();
     await t.getByTestId("participant-name").fill(actors.T.name);
-    await t.locator("#participant-country").selectOption("DE");
+    await selectCountry(t.locator("#participant-country"), "DE");
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the registrationLinkClosed factory copy.

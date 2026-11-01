@@ -738,6 +738,9 @@ importers:
       cn:
         specifier: ^0.5.1
         version: 0.5.1
+      country-flag-icons:
+        specifier: 'catalog:'
+        version: 1.6.20
       dotenv-cli:
         specifier: 'catalog:'
         version: 11.1.0

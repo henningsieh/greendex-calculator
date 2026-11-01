@@ -29,40 +29,8 @@ const browserSession = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth-client", async () => {
-  const { costTrackerOrganizationRoles, parseOrganizationRoles } =
-    await import("@greendex/auth/permissions");
-  return {
-    authClient: {
-      useSession: () => ({ data: { user: { id: browserSession.userId } } }),
-      useActiveOrganization: () => ({
-        data: browserSession.activeOrganizationId
-          ? {
-              id: browserSession.activeOrganizationId,
-              members: [
-                { userId: browserSession.userId, role: browserSession.role },
-              ],
-            }
-          : null,
-      }),
-      // Resolves the identical single-sourced role definitions Better Auth uses.
-      organization: {
-        checkRolePermission: ({
-          role,
-          permissions,
-        }: {
-          role: string;
-          permissions: Record<string, string[]>;
-        }) =>
-          parseOrganizationRoles(role).some(
-            (name) =>
-              name in costTrackerOrganizationRoles &&
-              costTrackerOrganizationRoles[
-                name as keyof typeof costTrackerOrganizationRoles
-              ].authorize(permissions as never).success,
-          ),
-      },
-    },
-  };
+  const { createAuthClientMock } = await import("@/__tests__/auth-client-mock");
+  return { authClient: createAuthClientMock(browserSession) };
 });
 
 vi.mock("@/lib/orpc/orpc", async (importOriginal) => {

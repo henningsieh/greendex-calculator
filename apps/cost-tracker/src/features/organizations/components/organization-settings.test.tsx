@@ -8,6 +8,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import german from "@/messages/de";
+import messages from "@/messages/en";
+
+const countryLabel = messages.organizations.settings.country;
+const countryName = (code: string) =>
+  new Intl.DisplayNames(["en"], { type: "region" }).of(code)!;
 
 const mocks = vi.hoisted(() => ({ updateCountry: vi.fn(), toastAdd: vi.fn() }));
 vi.mock("@/components/ui/toast", () => ({
@@ -49,6 +54,15 @@ function renderSettings() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  Element.prototype.scrollIntoView = vi.fn();
   mocks.updateCountry.mockResolvedValue({ success: true });
 });
 
@@ -57,8 +71,14 @@ describe("Organization country settings", () => {
     const user = userEvent.setup();
     renderSettings();
     const control = await screen.findByTestId("organization-country");
-    expect(control).toHaveValue("DE");
-    await user.selectOptions(control, "FR");
+    expect(control).toHaveRole("combobox");
+    await user.click(screen.getByRole("combobox", { name: countryLabel }));
+    expect(
+      await screen.findByRole("option", { name: countryName("DE") }),
+    ).toHaveAttribute("aria-selected", "true");
+    await user.click(
+      await screen.findByRole("option", { name: countryName("FR") }),
+    );
     await user.click(screen.getByTestId("save-organization-country"));
     await waitFor(() =>
       expect(mocks.updateCountry).toHaveBeenCalledWith({ country: "FR" }),
@@ -75,7 +95,10 @@ describe("Organization country settings", () => {
     mocks.updateCountry.mockRejectedValueOnce(new Error("network unavailable"));
     const user = userEvent.setup();
     renderSettings();
-    await screen.findByTestId("organization-country");
+    await user.click(await screen.findByRole("combobox", { name: countryLabel }));
+    await user.click(
+      await screen.findByRole("option", { name: countryName("FR") }),
+    );
     await user.click(screen.getByTestId("save-organization-country"));
     await waitFor(() =>
       expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith({
@@ -96,5 +119,18 @@ describe("Organization country settings", () => {
     expect(screen.getByTestId("save-organization-country")).not.toBeDisabled();
     await user.click(screen.getByTestId("save-organization-country"));
     await waitFor(() => expect(mocks.updateCountry).toHaveBeenCalledTimes(2));
+    expect(mocks.updateCountry).toHaveBeenLastCalledWith({ country: "FR" });
   });
+});
+
+it("disables country changes while saving", async () => {
+  mocks.updateCountry.mockReturnValue(new Promise(() => {}));
+  const user = userEvent.setup({ delay: null });
+  renderSettings();
+  const country = await screen.findByRole("combobox", {
+    name: countryLabel,
+  });
+  await user.click(screen.getByTestId("save-organization-country"));
+  expect(country).toBeDisabled();
+  expect(country).toHaveAttribute("aria-required", "true");
 });
