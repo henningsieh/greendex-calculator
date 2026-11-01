@@ -190,6 +190,9 @@ test("delivered email verifies signup and verified registration continues into o
     await page.keyboard.press("Tab");
     await expect(setup.locator("#organization-country")).toBeFocused();
     await selectCountry(setup.locator("#organization-country"), "DE");
+    // Deterministic handoff: the combobox popup closes asynchronously and
+    // returns focus to the trigger; Tab before that lands inside the popup.
+    await expect(setup.locator("#organization-country")).toBeFocused();
     const create = setup.getByTestId("create-organization");
     await expect(create).toBeEnabled();
     await page.keyboard.press("Tab");

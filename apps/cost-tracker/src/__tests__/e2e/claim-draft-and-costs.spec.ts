@@ -17,6 +17,7 @@ import {
   organization,
   partnerCoordinatorAssignmentsTable,
   participantAgreementAcceptancesTable,
+  participantJourneysTable,
   participantProfilesTable,
   partnershipPayoutAccountsTable,
   payoutAccountsTable,
@@ -714,21 +715,45 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         page.locator("#journey-distance").locator("..").getByRole("alert"),
       ).toBeVisible();
       for (const person of people) {
-        await page
-          .locator("#journey-person")
-          .selectOption(await participationId(person.id));
+        const participation = await participationId(person.id);
+        await page.locator("#journey-person").selectOption(participation);
         await page.locator("#journey-origin").fill("Berlin");
         await page.locator("#journey-destination").fill("Riga");
         await page.locator("#journey-type").selectOption("round-trip");
         await page.locator("#journey-distance").fill(distance);
-        await page.getByTestId("journey-save").click();
+        const journeySave = page.getByTestId("journey-save");
+        await journeySave.click();
+        // Deterministic chain: pin the mutation in the database first, then
+        // the submit settle gate, then the UI effects. The save button clears
+        // disabled={isSubmitting} only after the whole handler (save, every
+        // save-triggered refetch, reset) has settled, so no reset can arrive
+        // later and wipe the next person's entries mid-fill. A bare
+        // value-"" wait is not proof: the select falls back to "" on its
+        // own once the saved option disappears, before reset() runs.
+        await expect
+          .poll(
+            () =>
+              db
+                .select({ id: participantJourneysTable.id })
+                .from(participantJourneysTable)
+                .where(
+                  eq(
+                    participantJourneysTable.projectParticipantId,
+                    participation,
+                  ),
+                ),
+            { timeout: 15_000 },
+          )
+          .toHaveLength(1);
+        await expect(journeySave).toBeEnabled();
         // Text-free: saved journeys persist (submit + checklist + DB below prove
         // validity); rendered leg echoes are setup detail typed two lines above.
         await expect(
           page
             .locator("#journey-person")
-            .locator(`option[value="${await participationId(person.id)}"]`),
+            .locator(`option[value="${participation}"]`),
         ).toHaveCount(0);
+        await expect(page.locator("#journey-person")).toHaveValue("");
       }
       const [snapshot] = await db
         .select()

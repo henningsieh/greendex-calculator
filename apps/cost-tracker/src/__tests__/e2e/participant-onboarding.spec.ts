@@ -35,7 +35,6 @@ import { and, count, eq, inArray } from "drizzle-orm";
 // Case 203 assigns/revokes Group Organizer scope in-browser without changing roles.
 // UI GAP (14): reissue is visible, but cannot be clicked against real SMTP.
 import participationMessages from "@/messages/en/participations.json" with { type: "json" };
-import shellMessages from "@/messages/en/shell.json" with { type: "json" };
 
 import {
   expectPrivateURL,
@@ -43,10 +42,8 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import { selectCountry as selectSharedCountry } from "./fixtures/country-selector";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
-
-const countryName = (code: string) =>
-  new Intl.DisplayNames(["en"], { type: "region" }).of(code)!;
 
 const suffix = randomUUID();
 const names = {
@@ -226,21 +223,14 @@ async function openPartnerParticipants(page: Page, projectName: string) {
 }
 
 async function selectCountry(page: Page) {
-  await page
-    .getByRole("combobox", {
+  await selectSharedCountry(
+    page.getByRole("combobox", {
       name: participationMessages.participations.participantOnboarding.join
         .country,
       exact: true,
-    })
-    .click();
-  await page
-    .getByRole("combobox", {
-      name: shellMessages.shell.countrySelector.searchLabel,
-    })
-    .fill("Germany");
-  await page
-    .getByRole("option", { name: countryName("DE"), exact: true })
-    .click();
+    }),
+    "DE",
+  );
   await expect(page.getByTestId("participant-country")).toBeFocused();
 }
 
