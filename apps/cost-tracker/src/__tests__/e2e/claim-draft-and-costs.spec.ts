@@ -43,6 +43,10 @@ import {
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
+import {
+  selectCountry,
+  expectSelectedCountry,
+} from "./fixtures/country-selector";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 async function confirmRemoveParticipation(page: Page) {
@@ -442,14 +446,14 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await detailsLink.click();
       await expectPrivateURL(page, detailsHref!);
       await expect(page.getByTestId("participant-details")).toBeVisible();
-      await page.locator("#participation-country").selectOption("DE");
+      await selectCountry(page.locator("#participation-country"), "DE");
       await page.getByTestId("participation-country-save").click();
       await expect(
         page.locator('[data-feedback-outcome="country-saved"]'),
       ).toBeVisible();
-      await expect(page.locator("#participation-country")).toHaveValue("DE");
+      await expectSelectedCountry(page.locator("#participation-country"), "DE");
       await page.reload();
-      await expect(page.locator("#participation-country")).toHaveValue("DE");
+      await expectSelectedCountry(page.locator("#participation-country"), "DE");
       expect(
         await db
           .select()

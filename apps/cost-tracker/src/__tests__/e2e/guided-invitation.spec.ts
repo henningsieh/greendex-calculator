@@ -21,6 +21,7 @@ import {
   registerPrivateValues,
   test,
 } from "./fixtures/artifact-privacy";
+import { selectCountry } from "./fixtures/country-selector";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 import { staffRow } from "./fixtures/journey-locators";
@@ -77,7 +78,7 @@ test.describe.serial("guided Organization Invitation", () => {
     const setup = page.getByTestId("no-organization-access");
     await expect(setup).toBeVisible();
     await setup.locator("#organization-name").fill(fixture.organizationName);
-    await setup.locator("#organization-country").selectOption("DE");
+    await selectCountry(setup.locator("#organization-country"), "DE");
     await setup.getByTestId("create-organization").click();
     await expectFirstOrganizationProjects(page, fixture.organizationName);
     const created = await db.query.organization.findFirst({
@@ -180,7 +181,7 @@ test.describe.serial("guided Organization Invitation", () => {
     try {
       await other.goto("/projects");
       await other.getByTestId("organization-name").fill(otherName);
-      await other.getByTestId("organization-country").selectOption("DE");
+      await selectCountry(other.getByTestId("organization-country"), "DE");
       await other.getByTestId("create-organization").click();
       await expectFirstOrganizationProjects(other, otherName);
       const stored = await db.query.organization.findFirst({

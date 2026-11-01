@@ -21,14 +21,6 @@ import { type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { and, count, eq, inArray } from "drizzle-orm";
 
-import {
-  expectPrivateURL,
-  expect,
-  test,
-  registerPrivateValues,
-} from "./fixtures/artifact-privacy";
-import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
-
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
 // Automatic DOM snapshots and reporter API diagnostics remain known risks; the
@@ -42,6 +34,20 @@ import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 // Case 15 reopens in-browser; a setup-seeded non-editable Claim proves visible refusal.
 // Case 203 assigns/revokes Group Organizer scope in-browser without changing roles.
 // UI GAP (14): reissue is visible, but cannot be clicked against real SMTP.
+import participationMessages from "@/messages/en/participations.json" with { type: "json" };
+import shellMessages from "@/messages/en/shell.json" with { type: "json" };
+
+import {
+  expectPrivateURL,
+  expect,
+  test,
+  registerPrivateValues,
+} from "./fixtures/artifact-privacy";
+import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
+
+const countryName = (code: string) =>
+  new Intl.DisplayNames(["en"], { type: "region" }).of(code)!;
+
 const suffix = randomUUID();
 const names = {
   host: `CT ${suffix} Hosting`,
@@ -219,12 +225,31 @@ async function openPartnerParticipants(page: Page, projectName: string) {
   // form interactions below prove the content (no heading-copy assertion).
 }
 
+async function selectCountry(page: Page) {
+  await page
+    .getByRole("combobox", {
+      name: participationMessages.participations.participantOnboarding.join
+        .country,
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("combobox", {
+      name: shellMessages.shell.countrySelector.searchLabel,
+    })
+    .fill("Germany");
+  await page
+    .getByRole("option", { name: countryName("DE"), exact: true })
+    .click();
+  await expect(page.getByTestId("participant-country")).toBeFocused();
+}
+
 async function join(page: Page, url: string, actor: Actor) {
   await page.goto(url);
   await expect(page.getByTestId("participant-agreement")).toBeVisible();
   await expect(page.getByTestId("participant-agreement")).not.toBeEmpty();
   await page.getByTestId("participant-name").fill(actors[actor].name);
-  await page.locator("#participant-country").selectOption("DE");
+  await selectCountry(page);
   await page.getByTestId("accept-participant-agreement").check();
   await page.getByTestId("join-project").click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
@@ -263,7 +288,7 @@ async function assertJoined(
   expect(await membershipRole(actor, partnerId)).toHaveLength(0);
   expect(
     await db
-      .select()
+      .select({ country: participants.country })
       .from(participants)
       .where(
         and(
@@ -272,7 +297,7 @@ async function assertJoined(
           eq(participants.representedOrganizationId, partnerId),
         ),
       ),
-  ).toHaveLength(1);
+  ).toEqual([{ country: "DE" }]);
   expect(
     await db
       .select()
@@ -548,7 +573,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(invitationUrl(ids.oldInvitation));
     await t.getByTestId("participant-name").fill(actors.T.name);
-    await t.locator("#participant-country").selectOption("DE");
+    await selectCountry(t);
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the participantInvitationClosed factory copy.
@@ -587,7 +612,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const u = await pageFor(browser, "U", baseURL!);
     await u.goto(sharedLink);
     await u.getByTestId("participant-name").fill(actors.U.name);
-    await u.locator("#participant-country").selectOption("DE");
+    await selectCountry(u);
     await u.getByTestId("accept-participant-agreement").check();
     await u.getByTestId("join-project").click();
     // Error centralization: join uses the registrationLinkClosed factory copy.
@@ -745,7 +770,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const t = await pageFor(browser, "T", baseURL!);
     await t.goto(foreignLink);
     await t.getByTestId("participant-name").fill(actors.T.name);
-    await t.locator("#participant-country").selectOption("DE");
+    await selectCountry(t);
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Error centralization: join uses the joinedOtherPartner factory copy.
@@ -783,7 +808,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     otherLink = await p.locator("#new-participant-link").inputValue();
     await t.goto(otherLink);
     await t.getByTestId("participant-name").fill(actors.T.name);
-    await t.locator("#participant-country").selectOption("DE");
+    await selectCountry(t);
     await t.getByTestId("accept-participant-agreement").check();
     await t.getByTestId("join-project").click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.

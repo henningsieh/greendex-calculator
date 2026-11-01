@@ -11,6 +11,7 @@ import { validateMailboxEnvironment } from "#cost-tracker-scripts/email-run-safe
 import { assertExistingIntegrationDatabase } from "#repo/scripts/existing-integration-environment";
 
 import { expect, registerPrivateValues, test } from "./fixtures/artifact-privacy";
+import { selectCountry } from "./fixtures/country-selector";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 
 test.use({
@@ -188,7 +189,7 @@ test("delivered email verifies signup and verified registration continues into o
     await expect(organizationInput).toHaveValue(organizationName);
     await page.keyboard.press("Tab");
     await expect(setup.locator("#organization-country")).toBeFocused();
-    await setup.locator("#organization-country").selectOption("DE");
+    await selectCountry(setup.locator("#organization-country"), "DE");
     const create = setup.getByTestId("create-organization");
     await expect(create).toBeEnabled();
     await page.keyboard.press("Tab");

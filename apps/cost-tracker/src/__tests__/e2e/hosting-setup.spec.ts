@@ -12,6 +12,7 @@ import { type Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 
 import { expectPrivateURL, expect, test } from "./fixtures/artifact-privacy";
+import { selectCountry } from "./fixtures/country-selector";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 import { projectLink, staffRow } from "./fixtures/journey-locators";
@@ -39,7 +40,7 @@ async function createProject(page: Page, name: string) {
   await dialog.locator("#new-project-start").fill("2027-04-01");
   await dialog.locator("#new-project-end").fill("2027-04-03");
   await dialog.locator("#new-project-location").fill("Berlin");
-  await dialog.locator("#new-project-country").selectOption("DE");
+  await selectCountry(dialog.locator("#new-project-country"), "DE");
   await dialog.getByTestId("create-project").click();
   await expect(page.getByTestId("project-workspace")).toBeVisible({
     timeout: 90_000,
@@ -76,7 +77,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     const dialog = page.getByTestId("no-organization-access");
     await expect(dialog).toBeVisible();
     await dialog.locator("#organization-name").fill(fixture.organizationName);
-    await dialog.locator("#organization-country").selectOption("DE");
+    await selectCountry(dialog.locator("#organization-country"), "DE");
     await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectFirstOrganizationProjects(page, fixture.organizationName);
@@ -274,7 +275,7 @@ test("creation from Organization management ends at the Project overview", async
     const dialog = page.getByTestId("no-organization-access");
     await expect(dialog).toBeVisible();
     await dialog.locator("#organization-name").fill(recovery.organizationName);
-    await dialog.locator("#organization-country").selectOption("DE");
+    await selectCountry(dialog.locator("#organization-country"), "DE");
     await dialog.getByTestId("create-organization").click();
     await expect(dialog).toBeHidden();
     await expectPrivateURL(page, /\/projects$/);
