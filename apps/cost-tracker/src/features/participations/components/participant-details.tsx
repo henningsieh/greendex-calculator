@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  EU_COUNTRIES,
   EU_COUNTRY_CODES,
   type EUCountryCode,
 } from "@greendex/config/eu-countries";
@@ -15,6 +14,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -98,23 +98,16 @@ function CountryCorrection({
         <Label htmlFor="participation-country">
           {t("countryFor")} {displayName}
         </Label>
-        <select
-          className="h-9 rounded-md border bg-background px-3 text-sm"
+        <EUCountrySelector
           disabled={update.isPending}
           id="participation-country"
-          onChange={(event) => {
+          optional
+          onValueChange={(value) => {
             setFeedback(undefined);
-            setSelected(asCountry(event.target.value));
+            setSelected(value);
           }}
           value={selected}
-        >
-          <option value="">{t("notSet")}</option>
-          {EU_COUNTRIES.map((country) => (
-            <option key={country.code} value={country.code}>
-              {country.code}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       <Button
         data-testid="participation-country-save"

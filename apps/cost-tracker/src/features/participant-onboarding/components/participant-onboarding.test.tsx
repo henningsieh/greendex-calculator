@@ -1,10 +1,14 @@
 import { ORPCError } from "@orpc/client";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createSituationErrors } from "@/lib/orpc/errors";
+import messages from "@/messages/en";
+
+const countryName = (code: string) =>
+  new Intl.DisplayNames(["en"], { type: "region" }).of(code)!;
 
 const mocks = vi.hoisted(() => ({
   join: vi.fn(),
@@ -50,12 +54,23 @@ const projects = [
 ];
 
 beforeEach(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  Element.prototype.scrollIntoView = vi.fn();
   vi.clearAllMocks();
   mocks.listMyProjects.mockResolvedValue(projects);
   mocks.join.mockResolvedValue({ participationId: "participation-1" });
   mocks.saveProfile.mockResolvedValue({ success: true });
   mocks.acceptAgreement.mockResolvedValue({ version: "fixture-v1" });
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("ParticipantJoin", () => {
   it.each([
@@ -72,7 +87,14 @@ describe("ParticipantJoin", () => {
     const user = userEvent.setup();
     render(<ParticipantJoin agreement={published} source={source} />);
     await user.type(screen.getByTestId("participant-name"), "Alex Example");
-    await user.selectOptions(screen.getByTestId("participant-country"), "DE");
+    await user.click(
+      screen.getByRole("combobox", {
+        name: messages.participations.participantOnboarding.join.country,
+      }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: countryName("DE") }),
+    );
     expect(screen.getByTestId("join-project")).toBeDisabled();
     expect(screen.getByTestId("participant-agreement")).toBeInTheDocument();
     await user.click(screen.getByTestId("accept-participant-agreement"));
@@ -99,7 +121,14 @@ describe("ParticipantJoin", () => {
     await user.type(screen.getByTestId("participant-name"), "Alex Example");
     await user.click(screen.getByTestId("accept-participant-agreement"));
     expect(screen.getByTestId("join-project")).toBeDisabled();
-    await user.selectOptions(screen.getByTestId("participant-country"), "FR");
+    await user.click(
+      screen.getByRole("combobox", {
+        name: messages.participations.participantOnboarding.join.country,
+      }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: countryName("FR") }),
+    );
     await user.click(screen.getByTestId("join-project"));
     await waitFor(() =>
       expect(mocks.join).toHaveBeenCalledWith({
@@ -108,6 +137,29 @@ describe("ParticipantJoin", () => {
         agreement: { accepted: true },
       }),
     );
+  });
+
+  it("disables country selection while joining", async () => {
+    mocks.join.mockImplementation(() => new Promise(() => {}));
+    const user = userEvent.setup();
+    render(
+      <ParticipantJoin
+        agreement={published}
+        source={{ kind: "link", id: "link-1", secret: "secret-1" }}
+      />,
+    );
+    await user.type(screen.getByTestId("participant-name"), "Alex Example");
+    const country = screen.getByRole("combobox", {
+      name: messages.participations.participantOnboarding.join.country,
+    });
+    expect(country).toHaveAttribute("aria-required", "true");
+    await user.click(country);
+    await user.click(
+      await screen.findByRole("option", { name: countryName("DE") }),
+    );
+    await user.click(screen.getByTestId("accept-participant-agreement"));
+    await user.click(screen.getByTestId("join-project"));
+    await waitFor(() => expect(country).toBeDisabled());
   });
 
   it("never offers pending legal text as accept-worthy and does not call join", async () => {
@@ -136,12 +188,27 @@ describe("ParticipantJoin", () => {
       />,
     );
     await user.type(screen.getByTestId("participant-name"), "Alex Example");
-    await user.selectOptions(screen.getByTestId("participant-country"), "DE");
+    await user.click(
+      screen.getByRole("combobox", {
+        name: messages.participations.participantOnboarding.join.country,
+      }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: countryName("DE") }),
+    );
     await user.click(screen.getByTestId("accept-participant-agreement"));
     await user.click(screen.getByTestId("join-project"));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.getByTestId("participant-name")).toHaveValue("Alex Example");
-    expect(screen.getByTestId("participant-country")).toHaveValue("DE");
+    await user.click(
+      screen.getByRole("combobox", {
+        name: messages.participations.participantOnboarding.join.country,
+      }),
+    );
+    expect(
+      await screen.findByRole("option", { name: countryName("DE") }),
+    ).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{Escape}");
     expect(mocks.join).toHaveBeenCalledWith({
       source: { kind: "link", id: "link-1", secret: "secret-1" },
       profile: { fullName: "Alex Example", country: "DE" },
