@@ -74,6 +74,9 @@ export function CountrySelect({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
           id={id}
+          // Select-only combobox trigger; the search input only mounts in the popover.
+          // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+          role="combobox"
           variant="outline"
         >
           {selectedCountry ? (
