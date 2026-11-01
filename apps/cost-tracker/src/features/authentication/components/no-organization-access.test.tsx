@@ -61,7 +61,7 @@ describe("NoOrganizationAccess", () => {
     await user.type(screen.getByTestId("organization-name"), "Northwind");
     await user.click(screen.getByRole("combobox", { name: countryLabel }));
     await user.click(
-      await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+      await screen.findByRole("option", { name: countryName("DE") }),
     );
     await user.click(screen.getByTestId("create-organization"));
 
@@ -84,7 +84,7 @@ describe("NoOrganizationAccess", () => {
     await user.type(screen.getByTestId("organization-name"), "Northwind");
     await user.click(screen.getByRole("combobox", { name: countryLabel }));
     await user.click(
-      await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+      await screen.findByRole("option", { name: countryName("DE") }),
     );
     await user.click(screen.getByTestId("create-organization"));
 
@@ -116,7 +116,7 @@ it("refreshes authoritative guidance when a stale creation attempt is refused", 
   await actor.type(screen.getByTestId("organization-name"), "New Organization");
   await actor.click(screen.getByRole("combobox", { name: countryLabel }));
   await actor.click(
-    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+    await screen.findByRole("option", { name: countryName("DE") }),
   );
   await actor.click(screen.getByTestId("create-organization"));
   expect(await screen.findByTestId("organization-error")).toBeVisible();
@@ -131,7 +131,7 @@ it("requires a country and disables it while creation is pending", async () => {
   expect(screen.getByTestId("create-organization")).toBeDisabled();
   await user.click(screen.getByRole("combobox", { name: countryLabel }));
   await user.click(
-    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+    await screen.findByRole("option", { name: countryName("DE") }),
   );
   await user.click(screen.getByTestId("create-organization"));
   expect(screen.getByRole("combobox", { name: countryLabel })).toBeDisabled();

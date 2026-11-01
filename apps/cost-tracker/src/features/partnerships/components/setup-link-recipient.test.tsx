@@ -120,7 +120,7 @@ async function create() {
   await user.type(await screen.findByTestId("setup-name"), "Our Organization");
   await user.click(screen.getByRole("combobox", { name: countryLabel }));
   await user.click(
-    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+    await screen.findByRole("option", { name: countryName("DE") }),
   );
   await user.click(screen.getByTestId("complete-setup"));
 }
@@ -703,7 +703,7 @@ it("requires a country and disables it during Partner Organization creation", as
   expect(screen.getByTestId("complete-setup")).toBeDisabled();
   await user.click(screen.getByRole("combobox", { name: countryLabel }));
   await user.click(
-    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+    await screen.findByRole("option", { name: countryName("DE") }),
   );
   await user.click(screen.getByTestId("complete-setup"));
   await waitFor(() => expect(mocks.create).toHaveBeenCalled());

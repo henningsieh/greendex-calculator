@@ -74,10 +74,10 @@ describe("Organization country settings", () => {
     expect(control).toHaveRole("combobox");
     await user.click(screen.getByRole("combobox", { name: countryLabel }));
     expect(
-      await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+      await screen.findByRole("option", { name: countryName("DE") }),
     ).toHaveAttribute("aria-selected", "true");
     await user.click(
-      await screen.findByRole("option", { name: countryName("FR"), exact: true }),
+      await screen.findByRole("option", { name: countryName("FR") }),
     );
     await user.click(screen.getByTestId("save-organization-country"));
     await waitFor(() =>
@@ -97,7 +97,7 @@ describe("Organization country settings", () => {
     renderSettings();
     await user.click(await screen.findByRole("combobox", { name: countryLabel }));
     await user.click(
-      await screen.findByRole("option", { name: countryName("FR"), exact: true }),
+      await screen.findByRole("option", { name: countryName("FR") }),
     );
     await user.click(screen.getByTestId("save-organization-country"));
     await waitFor(() =>
