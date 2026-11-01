@@ -82,6 +82,7 @@ export function EUCountrySelector({
       itemToStringValue={(country) => country.code}
       isItemEqualToValue={(a, b) => a.code === b.code}
       disabled={disabled}
+      required={!optional}
       name={name}
     >
       <ComboboxTrigger render={<Button variant="outline" />} {...props}>

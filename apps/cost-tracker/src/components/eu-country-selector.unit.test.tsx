@@ -110,6 +110,10 @@ describe("EUCountrySelector", () => {
   it("updates controlled selection and supports an optional Not set item without a clear button", async () => {
     const user = userEvent.setup();
     render(<Controlled optional />);
+    expect(screen.getByRole("combobox")).not.toHaveAttribute(
+      "aria-required",
+      "true",
+    );
     await user.click(screen.getByRole("combobox"));
     await user.click(
       await screen.findByRole("option", { name: countryName("DE") }),
@@ -139,6 +143,7 @@ describe("EUCountrySelector", () => {
     );
     const trigger = screen.getByRole("combobox");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveAttribute("aria-required", "true");
     await user.tab();
     await user.keyboard("{Enter}");
     const search = await screen.findByRole("combobox", {
@@ -178,6 +183,43 @@ describe("EUCountrySelector", () => {
     expect(control).toHaveAccessibleDescription("Choose a country");
     await user.click(control);
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("preserves selected ISO values and decorative flags across closed controlled updates in German", () => {
+    const onValueChange = vi.fn();
+    const { rerender } = render(
+      <form>
+        <EUCountrySelector
+          name="country"
+          value="DE"
+          onValueChange={onValueChange}
+        />
+      </form>,
+      { locale: "de" },
+    );
+    const control = screen.getByRole("combobox");
+    expect(control).toHaveAttribute("aria-expanded", "false");
+    expect(new FormData(control.closest("form")!).get("country")).toBe("DE");
+    expect(control.querySelector("svg[focusable=false]")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    rerender(
+      <form>
+        <EUCountrySelector
+          name="country"
+          value="FR"
+          onValueChange={onValueChange}
+        />
+      </form>,
+    );
+    expect(new FormData(control.closest("form")!).get("country")).toBe("FR");
+    expect(control).toHaveAttribute("aria-expanded", "false");
+    expect(control.querySelector("svg[focusable=false]")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(within(control).queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("localizes names and sorting in German", async () => {
