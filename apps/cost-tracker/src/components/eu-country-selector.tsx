@@ -30,6 +30,7 @@ export type EUCountrySelectorProps = Pick<
   | "aria-labelledby"
   | "aria-describedby"
   | "aria-invalid"
+  | "aria-required"
   | "className"
 > & {
   value: EUCountryCode | "";

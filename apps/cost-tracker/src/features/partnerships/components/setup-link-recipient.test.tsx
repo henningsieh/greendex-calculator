@@ -6,6 +6,11 @@ import { beforeEach, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
+import messages from "@/messages/en";
+
+const countryLabel = messages.partnerships.setup.organizationCountry;
+const countryName = (code: string) =>
+  new Intl.DisplayNames(["en"], { type: "region" }).of(code)!;
 
 const mocks = vi.hoisted(() => ({
   next: vi.fn(),
@@ -113,7 +118,10 @@ function recipient(
 async function create() {
   const user = userEvent.setup({ delay: null });
   await user.type(await screen.findByTestId("setup-name"), "Our Organization");
-  await user.selectOptions(screen.getByTestId("setup-country"), "DE");
+  await user.click(screen.getByRole("combobox", { name: countryLabel }));
+  await user.click(
+    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+  );
   await user.click(screen.getByTestId("complete-setup"));
 }
 async function existing() {
@@ -686,3 +694,22 @@ it.each([
     expect(mocks.bind).not.toHaveBeenCalled();
   },
 );
+
+it("requires a country and disables it during Partner Organization creation", async () => {
+  mocks.create.mockReturnValue(new Promise(() => {}));
+  recipient();
+  const user = userEvent.setup({ delay: null });
+  await user.type(await screen.findByTestId("setup-name"), "Our Organization");
+  expect(screen.getByTestId("complete-setup")).toBeDisabled();
+  await user.click(screen.getByRole("combobox", { name: countryLabel }));
+  await user.click(
+    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+  );
+  await user.click(screen.getByTestId("complete-setup"));
+  await waitFor(() => expect(mocks.create).toHaveBeenCalled());
+  expect(screen.getByRole("combobox", { name: countryLabel })).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: countryLabel })).toHaveAttribute(
+    "aria-required",
+    "true",
+  );
+});

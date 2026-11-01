@@ -1,6 +1,5 @@
 "use client";
 
-import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import {
   useMutation,
@@ -10,6 +9,7 @@ import {
 import { useState, type SyntheticEvent } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -62,23 +62,16 @@ function CountrySettings({
         <form className="space-y-4" onSubmit={save}>
           <Field>
             <FieldLabel htmlFor="organization-country">{t("country")}</FieldLabel>
-            <select
+            <EUCountrySelector
+              aria-required="true"
               id="organization-country"
               data-testid="organization-country"
-              value={country}
-              required
               disabled={update.isPending}
-              onChange={(event) =>
-                setCountry(event.target.value as EUCountryCode)
-              }
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            >
-              {EU_COUNTRIES.map(({ code }) => (
-                <option key={code} value={code}>
-                  {new Intl.DisplayNames(["en"], { type: "region" }).of(code)}
-                </option>
-              ))}
-            </select>
+              value={country}
+              onValueChange={(value) => {
+                if (value) setCountry(value);
+              }}
+            />
           </Field>
           <Button
             data-testid="save-organization-country"

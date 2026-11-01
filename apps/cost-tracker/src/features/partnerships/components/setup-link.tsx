@@ -1,6 +1,6 @@
 "use client";
 
-import { EU_COUNTRIES, type EUCountryCode } from "@greendex/config/eu-countries";
+import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import {
   ErrorPresentation,
   ErrorReason,
 } from "@/components/error-presentation/error-presentation";
+import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -379,26 +380,14 @@ function SetupOrganizationForm({
               <FieldLabel htmlFor="setup-country">
                 {t("organizationCountry")}
               </FieldLabel>
-              <select
+              <EUCountrySelector
+                aria-required="true"
                 id="setup-country"
                 data-testid="setup-country"
-                value={country}
-                required
                 disabled={pending}
-                onChange={(event) =>
-                  setCountry(event.target.value as EUCountryCode)
-                }
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              >
-                <option value="" disabled>
-                  {t("countryPlaceholder")}
-                </option>
-                {EU_COUNTRIES.map(({ code }) => (
-                  <option key={code} value={code}>
-                    {new Intl.DisplayNames(["en"], { type: "region" }).of(code)}
-                  </option>
-                ))}
-              </select>
+                value={country}
+                onValueChange={setCountry}
+              />
             </Field>
           </>
         )}

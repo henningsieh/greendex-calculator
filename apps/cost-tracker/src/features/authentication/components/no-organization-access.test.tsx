@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import messages from "@/messages/en";
+
+const countryLabel = messages.onboarding.createOrganization.countryLabel;
+const countryName = (code: string) =>
+  new Intl.DisplayNames(["en"], { type: "region" }).of(code)!;
 
 const mocks = vi.hoisted(() => ({
   createOrganization: vi.fn(),
@@ -30,6 +35,15 @@ import { NoOrganizationAccess } from "@/features/authentication/components/no-or
 describe("NoOrganizationAccess", () => {
   beforeEach(() => {
     mocks.createOrganization.mockReset();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    Element.prototype.scrollIntoView = vi.fn();
     mocks.refresh.mockReset();
     mocks.replace.mockReset();
   });
@@ -45,7 +59,10 @@ describe("NoOrganizationAccess", () => {
     expect(screen.getByTestId("organization-name")).toBeVisible();
 
     await user.type(screen.getByTestId("organization-name"), "Northwind");
-    await user.selectOptions(screen.getByTestId("organization-country"), "DE");
+    await user.click(screen.getByRole("combobox", { name: countryLabel }));
+    await user.click(
+      await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+    );
     await user.click(screen.getByTestId("create-organization"));
 
     expect(mocks.createOrganization).toHaveBeenCalledExactlyOnceWith({
@@ -65,7 +82,10 @@ describe("NoOrganizationAccess", () => {
     const user = userEvent.setup({ delay: null });
     render(<NoOrganizationAccess />);
     await user.type(screen.getByTestId("organization-name"), "Northwind");
-    await user.selectOptions(screen.getByTestId("organization-country"), "DE");
+    await user.click(screen.getByRole("combobox", { name: countryLabel }));
+    await user.click(
+      await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+    );
     await user.click(screen.getByTestId("create-organization"));
 
     expect(await screen.findByTestId("organization-error")).toBeTruthy();
@@ -75,6 +95,13 @@ describe("NoOrganizationAccess", () => {
     expect(screen.getByTestId("organization-name")).toHaveValue("Northwind");
     expect(mocks.refresh).not.toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
+    await user.click(screen.getByTestId("create-organization"));
+    expect(mocks.createOrganization).toHaveBeenCalledTimes(2);
+    expect(mocks.createOrganization).toHaveBeenLastCalledWith({
+      name: "Northwind",
+      slug: "northwind",
+      country: "DE",
+    });
   });
 });
 
@@ -87,8 +114,29 @@ it("refreshes authoritative guidance when a stale creation attempt is refused", 
   render(<NoOrganizationAccess />);
   const actor = userEvent.setup({ delay: null });
   await actor.type(screen.getByTestId("organization-name"), "New Organization");
-  await actor.selectOptions(screen.getByTestId("organization-country"), "DE");
+  await actor.click(screen.getByRole("combobox", { name: countryLabel }));
+  await actor.click(
+    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+  );
   await actor.click(screen.getByTestId("create-organization"));
   expect(await screen.findByTestId("organization-error")).toBeVisible();
   expect(mocks.refresh).toHaveBeenCalled();
+});
+
+it("requires a country and disables it while creation is pending", async () => {
+  mocks.createOrganization.mockReturnValue(new Promise(() => {}));
+  const user = userEvent.setup({ delay: null });
+  render(<NoOrganizationAccess />);
+  await user.type(screen.getByTestId("organization-name"), "Northwind");
+  expect(screen.getByTestId("create-organization")).toBeDisabled();
+  await user.click(screen.getByRole("combobox", { name: countryLabel }));
+  await user.click(
+    await screen.findByRole("option", { name: countryName("DE"), exact: true }),
+  );
+  await user.click(screen.getByTestId("create-organization"));
+  expect(screen.getByRole("combobox", { name: countryLabel })).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: countryLabel })).toHaveAttribute(
+    "aria-required",
+    "true",
+  );
 });
