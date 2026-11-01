@@ -1,15 +1,15 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { EU_COUNTRIES } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ export function CreateProjectDialog() {
   const [submitError, setSubmitError] = useState<React.ReactNode>(null);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
@@ -129,27 +130,29 @@ export function CreateProjectDialog() {
                   <FieldLabel htmlFor="new-project-country">
                     {t("country")}
                   </FieldLabel>
-                  <select
-                    aria-invalid={!!errors.country}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    id="new-project-country"
-                    data-testid="new-project-country"
-                    defaultValue=""
-                    {...register("country")}
-                  >
-                    <option disabled value="">
-                      {t("countryPlaceholder")}
-                    </option>
-                    {EU_COUNTRIES.map(({ code }) => (
-                      <option key={code} value={code}>
-                        {new Intl.DisplayNames(["en"], { type: "region" }).of(
-                          code,
-                        )}
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    control={control}
+                    name="country"
+                    render={({ field }) => (
+                      <EUCountrySelector
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value ?? ""}
+                        onValueChange={field.onChange}
+                        disabled={isSubmitting}
+                        aria-invalid={!!errors.country}
+                        aria-describedby={
+                          errors.country ? "new-project-country-error" : undefined
+                        }
+                        id="new-project-country"
+                        data-testid="new-project-country"
+                      />
+                    )}
+                  />
                   {errors.country && (
-                    <FieldError>{errors.country.message}</FieldError>
+                    <FieldError id="new-project-country-error">
+                      {errors.country.message}
+                    </FieldError>
                   )}
                 </Field>
                 <Field data-invalid={!!errors.welcomeMessage}>
