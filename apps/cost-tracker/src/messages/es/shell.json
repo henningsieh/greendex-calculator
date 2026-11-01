@@ -203,6 +203,13 @@
         "landing": "landing page — next section",
         "status": "ember-c · all systems nominal"
       }
+    },
+    "countrySelector": {
+      "placeholder": "Selecciona un país",
+      "searchLabel": "Buscar países",
+      "searchPlaceholder": "Buscar países…",
+      "noMatches": "No se encontraron países.",
+      "notSet": "Sin especificar"
     }
   }
 }

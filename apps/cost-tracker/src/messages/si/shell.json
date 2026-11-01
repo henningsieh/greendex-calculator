@@ -203,6 +203,13 @@
         "landing": "landing page — next section",
         "status": "ember-c · all systems nominal"
       }
+    },
+    "countrySelector": {
+      "placeholder": "Izberite državo",
+      "searchLabel": "Iskanje držav",
+      "searchPlaceholder": "Poiščite državo…",
+      "noMatches": "Ni najdenih držav.",
+      "notSet": "Ni nastavljeno"
     }
   }
 }
