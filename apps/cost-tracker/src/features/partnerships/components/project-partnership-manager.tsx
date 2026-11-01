@@ -42,6 +42,12 @@ export function ProjectPartnershipManager({
   const queryClient = useQueryClient();
   const t = useTranslations("partnerships");
   const { confirm, dialog } = useConfirmDialog();
+  const { data: hostedProjects } = useSuspenseQuery(
+    orpcQuery.projects.searchHosted.queryOptions({
+      input: { search: "" },
+      meta: { costTrackerORPC: true },
+    }),
+  );
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
       meta: { costTrackerORPC: true },
@@ -100,12 +106,7 @@ export function ProjectPartnershipManager({
   });
 
   const projectPreload = Array.from(
-    new Map(
-      partnerships.map(({ projectId: id, projectName: name }) => [
-        id,
-        { id, name },
-      ]),
-    ).values(),
+    new Map(hostedProjects.map(({ id, name }) => [id, { id, name }])).values(),
   );
   const organizationPreload = Array.from(
     new Map(

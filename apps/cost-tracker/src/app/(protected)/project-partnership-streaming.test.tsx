@@ -52,7 +52,10 @@ vi.mock("@/lib/orpc/orpc", () => {
       journeys: { list: { queryOptions } },
       costs: { list: { queryOptions } },
       documents: { list: { queryOptions } },
-      projects: { get: { queryOptions } },
+      projects: {
+        get: { queryOptions },
+        searchHosted: { queryOptions },
+      },
       projectPartnerships: { list: { queryOptions } },
     },
   };

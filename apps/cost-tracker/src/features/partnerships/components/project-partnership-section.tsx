@@ -13,13 +13,21 @@ export async function ProjectPartnershipSection({
   canAssign: boolean;
 }) {
   const queryClient = getQueryClient();
-  await queryClient
-    .query(
-      orpcQuery.projectPartnerships.list.queryOptions({
-        meta: { costTrackerORPC: true },
-      }),
-    )
-    .catch(swallowPrefetchError);
+  await Promise.all(
+    [
+      queryClient.query(
+        orpcQuery.projectPartnerships.list.queryOptions({
+          meta: { costTrackerORPC: true },
+        }),
+      ),
+      queryClient.query(
+        orpcQuery.projects.searchHosted.queryOptions({
+          input: { search: "" },
+          meta: { costTrackerORPC: true },
+        }),
+      ),
+    ].map((promise) => promise.catch(swallowPrefetchError)),
+  );
 
   return (
     <HydrateClient client={queryClient}>
