@@ -352,6 +352,9 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["partnerships", "list"],
     });
+    expect(mocks.query).toHaveBeenCalledWith({
+      queryKey: ["projects", "search-hosted"],
+    });
     expect(screen.getByTestId("project-partnership-manager")).toHaveAttribute(
       "data-can-assign",
       "true",

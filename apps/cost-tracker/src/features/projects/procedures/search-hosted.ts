@@ -7,12 +7,21 @@ import {
   member,
   projectsTable as projects,
 } from "@greendex/database/schema";
-import { and, asc, eq, exists, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
+/**
+ * Picker search over hosted Projects. Two modes share one endpoint:
+ * - Empty search (""): browse preload, newest first — the projects most
+ *   likely awaiting a Partner Organization assignment surface on top.
+ * - Typed search: server-filtered over the full table, alphabetical, so a
+ *   2+ character query reaches any hosted project.
+ * Both modes cap at 20 rows. The cap never blocks assignment (the filter
+ * runs before the limit); it only bounds the browse view.
+ */
 export const searchHosted = authorized
   .input(
     z.object({
@@ -53,34 +62,44 @@ export const searchHosted = authorized
 
     const escaped = input.search.replace(/[\\%_]/g, "\\$&");
     const pattern = `%${escaped}%`;
-    return db
-      .select({ id: projects.id, name: projects.name })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.organizationId, activeOrganizationId),
-          eq(projects.archived, false),
-          input.search
-            ? or(
-                sql`lower(${projects.name}) like lower(${pattern}) escape '\\'`,
-                sql`lower(${projects.id}) like lower(${pattern}) escape '\\'`,
-              )
-            : undefined,
-          isManager
-            ? undefined
-            : exists(
-                db
-                  .select({ userId: assignments.userId })
-                  .from(assignments)
-                  .where(
-                    and(
-                      eq(assignments.projectId, projects.id),
-                      eq(assignments.userId, context.user.id),
+    return (
+      db
+        .select({ id: projects.id, name: projects.name })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.organizationId, activeOrganizationId),
+            eq(projects.archived, false),
+            input.search
+              ? or(
+                  sql`lower(${projects.name}) like lower(${pattern}) escape '\\'`,
+                  sql`lower(${projects.id}) like lower(${pattern}) escape '\\'`,
+                )
+              : undefined,
+            isManager
+              ? undefined
+              : exists(
+                  db
+                    .select({ userId: assignments.userId })
+                    .from(assignments)
+                    .where(
+                      and(
+                        eq(assignments.projectId, projects.id),
+                        eq(assignments.userId, context.user.id),
+                      ),
                     ),
-                  ),
-              ),
-        ),
-      )
-      .orderBy(asc(projects.name), asc(projects.id))
-      .limit(20);
+                ),
+          ),
+        )
+        .orderBy(
+          // Browse mode surfaces newest projects first; typed search stays
+          // alphabetical so matches scan predictably.
+          ...(input.search
+            ? [asc(projects.name), asc(projects.id)]
+            : [desc(projects.createdAt), asc(projects.id)]),
+        )
+        // Picker page size — the filter above runs first, so typing reaches
+        // every hosted project regardless of this cap.
+        .limit(20)
+    );
   });

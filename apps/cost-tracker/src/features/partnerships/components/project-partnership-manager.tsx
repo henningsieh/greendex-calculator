@@ -6,15 +6,19 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { Building2Icon, LinkIcon, Trash2Icon } from "lucide-react";
+import { Building2Icon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 import { useConfirmDialog } from "@/components/confirm-dialog";
-import { EntityCombobox } from "@/components/entity-combobox";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+
+import { invalidatePartnershipProjectData } from "./invalidate-partnership-data";
+import {
+  ProjectPartnershipAssigner,
+  type PartnershipFeedback,
+} from "./project-partnership-assigner";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -22,17 +26,14 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
-const searchOrganizations = (search: string) =>
-  orpc.organizations.search({ search });
-
 function mutationMessage(error: unknown) {
   return <ErrorPresentation error={error} />;
 }
 
 /**
- * Manages Partner Organization assignments for Projects hosted by the active
- * Organization and refreshes affected Project data after each successful change.
+ * Lists Project Partnerships for the active Organization and handles removals.
+ * The assignment form lives in a child that only mounts for viewers who may
+ * assign, so assign-only data is never fetched for readers.
  */
 export function ProjectPartnershipManager({
   canAssign = false,
@@ -47,44 +48,8 @@ export function ProjectPartnershipManager({
       meta: { costTrackerORPC: true },
     }),
   );
-  const [projectId, setProjectId] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
-  const [feedback, setFeedback] = useState<
-    { message: React.ReactNode; status: "success" | "error" } | undefined
-  >();
+  const [feedback, setFeedback] = useState<PartnershipFeedback | undefined>();
 
-  const invalidateProjectData = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.projectPartnerships.list.queryKey(),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.listHosted.key({ type: "query" }),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.listPartner.key({ type: "query" }),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: orpcQuery.projects.get.key({ type: "query" }),
-      }),
-    ]);
-  };
-
-  const assignMutation = useMutation({
-    mutationFn: () =>
-      orpc.projectPartnerships.assign({ projectId, organizationId }),
-    onSuccess: async () => {
-      setFeedback({
-        message: "Project Partnership assigned.",
-        status: "success",
-      });
-      setOrganizationId("");
-      await invalidateProjectData();
-    },
-    onError: (error) => {
-      setFeedback({ message: mutationMessage(error), status: "error" });
-    },
-  });
   const removeMutation = useMutation({
     mutationFn: (id: string) => orpc.projectPartnerships.remove({ id }),
     onSuccess: async () => {
@@ -92,99 +57,25 @@ export function ProjectPartnershipManager({
         message: "Project Partnership removed.",
         status: "success",
       });
-      await invalidateProjectData();
+      await invalidatePartnershipProjectData(queryClient);
     },
     onError: (error) => {
       setFeedback({ message: mutationMessage(error), status: "error" });
     },
   });
 
-  const projectPreload = Array.from(
-    new Map(
-      partnerships.map(({ projectId: id, projectName: name }) => [
-        id,
-        { id, name },
-      ]),
-    ).values(),
-  );
-  const organizationPreload = Array.from(
-    new Map(
-      partnerships.map(({ organizationId: id, organizationName: name }) => [
-        id,
-        { id, name },
-      ]),
-    ).values(),
-  );
-
   return (
     <section className="mt-10 space-y-8">
       {dialog}
+      {/* Mounted only for viewers who may assign: the form fetches its own
+          hosted-project options, so readers never fetch what they cannot use.
+          Feedback stays shared, so assignment and removal report into one slot. */}
       {canAssign && (
-        <Card data-testid="organization-assignment">
-          <CardHeader>
-            <CardTitle>{t("manager.assignExisting")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              className="grid gap-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setFeedback(undefined);
-                assignMutation.mutate();
-              }}
-            >
-              <div data-testid="hosted-project-picker" className="space-y-2">
-                <span className="text-sm font-medium">
-                  {t("manager.hostedProject")}
-                </span>
-                <EntityCombobox
-                  label={t("manager.hostedProject")}
-                  value={projectId}
-                  onChange={setProjectId}
-                  search={searchHosted}
-                  preload={projectPreload}
-                />
-              </div>
-              <div
-                data-testid="partner-organization-picker"
-                className="space-y-2"
-              >
-                <span className="text-sm font-medium">
-                  {t("manager.partnerOrganization")}
-                </span>
-                <EntityCombobox
-                  label={t("manager.partnerOrganization")}
-                  value={organizationId}
-                  onChange={setOrganizationId}
-                  search={searchOrganizations}
-                  preload={organizationPreload}
-                />
-              </div>
-              <Button
-                data-testid="assign-partnership"
-                disabled={
-                  assignMutation.isPending || !projectId || !organizationId
-                }
-                type="submit"
-              >
-                <LinkIcon aria-hidden="true" />
-                {assignMutation.isPending
-                  ? t("manager.assigning")
-                  : t("manager.assign")}
-              </Button>
-            </form>
-            {feedback && (
-              <div
-                aria-live="polite"
-                className="mt-4 text-sm"
-                data-testid="partnership-feedback"
-                data-state={feedback.status}
-              >
-                {feedback.message}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ProjectPartnershipAssigner
+          partnerships={partnerships}
+          feedback={feedback}
+          onFeedback={setFeedback}
+        />
       )}
 
       <div className="space-y-4">

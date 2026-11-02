@@ -3,7 +3,10 @@
 
 import { hasOrganizationRole } from "@greendex/auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { db } from "@greendex/database";
+import { projectsTable as projects } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -155,13 +158,24 @@ describe("entity picker procedures", () => {
   });
 
   it("scopes hosted search by active host membership and coordinator assignment", async () => {
+    // Pin distinct creation times so the empty-query ordering (newest first)
+    // is proven, not inherited from alphabetical coincidence.
+    await db
+      .update(projects)
+      .set({ createdAt: new Date("2024-01-01T00:00:00.000Z") })
+      .where(eq(projects.id, assigned));
+    await db
+      .update(projects)
+      .set({ createdAt: new Date("2024-06-01T00:00:00.000Z") })
+      .where(eq(projects.id, unassigned));
     expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
       { id: assigned, name: `Project ${assigned}` },
       { id: unassigned, name: `Project ${unassigned}` },
     ]);
+    // Browse preload: newest first. Typed search above stays alphabetical.
     expect(await client.projects.searchHosted({ search: "" })).toEqual([
-      { id: assigned, name: `Project ${assigned}` },
       { id: unassigned, name: `Project ${unassigned}` },
+      { id: assigned, name: `Project ${assigned}` },
     ]);
     session(host, scenario.coordinatorUserId);
     expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
