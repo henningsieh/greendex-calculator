@@ -2,8 +2,19 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
+import { HeaderSkeleton, LoadingRegion } from "@/components/loading-skeletons";
 import { SiteBrand } from "@/components/site-brand";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export function ProtectedPageSkeleton() {
+  const t = useTranslations("shell");
+
+  return (
+    <LoadingRegion label={t("loading")}>
+      <HeaderSkeleton />
+    </LoadingRegion>
+  );
+}
 
 export function ProtectedShellSkeleton() {
   const t = useTranslations("shell");

@@ -1,6 +1,5 @@
 import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
-import { connection } from "next/server";
 
 import { UserSettingsTabs } from "@/features/user-settings/components/user-settings-tabs";
 import { hasOrganizationMembership, requireSession } from "@/lib/session";
@@ -8,7 +7,6 @@ import { hasOrganizationMembership, requireSession } from "@/lib/session";
 export const metadata: Metadata = { title: "User settings" };
 
 export default async function UserSettingsPage() {
-  await connection();
   if (!(await hasOrganizationMembership())) return null;
   const session = await requireSession();
   const t = await getTranslations("settings.page");
