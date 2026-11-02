@@ -40,9 +40,17 @@ git diff --cached --name-only -z --diff-filter=ACMR \
   | xargs -0 -r pnpm exec oxfmt --write --no-error-on-unmatched-pattern
 # Lint every staged script file. Same selection idea, narrower file types:
 # only code reaches the linter, docs never do.
-git diff --cached --name-only -z --diff-filter=ACMR \
+# An oxlint run where every file is ignore-listed reports "No files found
+# to lint" — nothing to do is a pass, not a failure.
+lint_out=$(git diff --cached --name-only -z --diff-filter=ACMR \
   | grep -zE '\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$' \
-  | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json
+  | xargs -0 -r pnpm exec oxlint --config .oxlintrc.json 2>&1) || {
+  if [ "$lint_out" != "No files found to lint. Please check your paths and ignore patterns." ]; then
+    printf '%s\n' "$lint_out" >&2
+    exit 1
+  fi
+}
+[ -n "$lint_out" ] && printf '%s\n' "$lint_out"
 
 # Keep agent-context quality high: the drift guard and its policy tests are
 # build-free reads (node + single-file vitest, ~seconds) and block the commit
@@ -53,7 +61,16 @@ pnpm run check:agent-instructions
 # break suites. This scan is a build-free read (~1s) over test sources and
 # blocks the commit on violation. Never bypass with --no-verify;
 # reword the test instead.
-pnpm run check:no-copy-assertions
+# Scoped to staged test sources: WIP violations in untouched files must not
+# block unrelated commits. CI runs the full scan as the backstop.
+staged_tests=$(git diff --cached --name-only -z --diff-filter=ACMR \
+  | grep -zE '(^apps/[^/]+/(src/__tests__/(e2e|merge)/|test/e2e/)|\.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$)' \
+  || true)
+if [ -n "$staged_tests" ]; then
+  pnpm run check:no-copy-assertions
+else
+  echo 'husky: no staged test sources — skipping check:no-copy-assertions (CI still runs it).'
+fi
 
 # Only re-stage files that were selected from the original staged snapshot.
 # Uses the same two filters as the format step above, so exactly the files
