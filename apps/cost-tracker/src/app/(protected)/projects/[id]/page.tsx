@@ -1,4 +1,3 @@
-import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -20,11 +19,9 @@ export default async function ProjectPage({
 }: ProjectPageProps) {
   await connection();
   if (!(await hasOrganizationMembership())) return null;
-  const t = await getTranslations("projects.detail");
 
   return (
     <div>
-      <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
       <Suspense fallback={<ProjectWorkspaceSkeleton />}>
         <ProjectWorkspaceSection params={params} searchParams={searchParams} />
       </Suspense>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { buttonVariants } from "@/components/ui/button";
 import { ClaimWorkspaceSkeleton } from "@/features/claims/components/claim-loading-states";
@@ -61,12 +62,14 @@ export default async function ClaimPage({
 
   return (
     <div className="space-y-8">
-      <header className="space-y-3">
-        <Link className={buttonVariants({ variant: "ghost" })} href="/projects">
-          {t("back")}
-        </Link>
-        <h1 className="font-heading text-4xl font-semibold">{t("title")}</h1>
-      </header>
+      <ProtectedPageHeader
+        title={t("title")}
+        bottomLink={
+          <Link className={buttonVariants({ variant: "ghost" })} href="/projects">
+            {t("back")}
+          </Link>
+        }
+      />
       <Suspense fallback={<ClaimWorkspaceSkeleton />}>
         <ClaimWorkspaceSection params={params} />
       </Suspense>

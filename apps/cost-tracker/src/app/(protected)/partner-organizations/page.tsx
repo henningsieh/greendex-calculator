@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 
+import ProtectedPageHeader from "@/components/protected-page-header";
 import { canViewPartnerNetwork } from "@/features/organizations/access";
 import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/partnership-loading-states";
 import { ProjectPartnershipSection } from "@/features/partnerships/components/project-partnership-section";
@@ -35,27 +36,28 @@ export default async function PartnerOrganizationsPage() {
     );
   }
 
-  const canAssign = await hasCostTrackerPermissions(await headers(), {
-    projectPartnership: ["create"],
-  });
+  const canCreateProjectPartnership = await hasCostTrackerPermissions(
+    await headers(),
+    {
+      projectPartnership: ["create"],
+    },
+  );
   return (
     <div>
-      <header className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
-        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          {t("title")}
-        </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">{t("description")}</p>
-      </header>
+      <ProtectedPageHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
+      />
 
-      {canAssign && (
+      {canCreateProjectPartnership && (
         <section className="mt-10">
           <SetupLinkCreator />
         </section>
       )}
 
       <Suspense fallback={<ProjectPartnershipsSkeleton />}>
-        <ProjectPartnershipSection canAssign={canAssign} />
+        <ProjectPartnershipSection canAssign={canCreateProjectPartnership} />
       </Suspense>
     </div>
   );

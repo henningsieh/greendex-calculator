@@ -1,6 +1,7 @@
 import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
 
+import ProtectedPageHeader from "@/components/protected-page-header";
 import { UserSettingsTabs } from "@/features/user-settings/components/user-settings-tabs";
 import { hasOrganizationMembership, requireSession } from "@/lib/session";
 
@@ -13,12 +14,7 @@ export default async function UserSettingsPage() {
 
   return (
     <div className="max-w-5xl">
-      <header className="max-w-2xl">
-        <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-          {t("title")}
-        </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">{t("description")}</p>
-      </header>
+      <ProtectedPageHeader title={t("title")} description={t("description")} />
 
       <UserSettingsTabs email={session.user.email} name={session.user.name} />
     </div>

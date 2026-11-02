@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { ClaimReviewSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReview } from "@/features/claims/components/claim-review";
@@ -55,7 +56,7 @@ export default async function ClaimReviewPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-4xl font-semibold">{t("sectionLabel")}</h1>
+      <ProtectedPageHeader title={t("sectionLabel")} />
       <Suspense fallback={<ClaimReviewSkeleton />}>
         <ClaimReviewSection params={params} />
       </Suspense>

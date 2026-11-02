@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,22 +97,24 @@ export function ProjectWorkspace({
       data-testid="project-workspace"
     >
       <header className="space-y-4">
-        <Link
-          className={buttonVariants({ variant: "ghost" })}
-          href={getProjectListReturnDestination(returnTo)}
-          data-testid="back-to-projects"
-        >
-          {t("back")}
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <p
-            className="text-sm font-medium text-primary"
-            data-relationship={project.relationship}
-          >
-            {project.relationship === "hosted"
+        <ProtectedPageHeader
+          eyebrow={
+            project.relationship === "hosted"
               ? t("hostedProject")
-              : t("partnerProject")}
-          </p>
+              : t("partnerProject")
+          }
+          title={project.name}
+          bottomLink={
+            <Link
+              className={buttonVariants({ variant: "ghost" })}
+              href={getProjectListReturnDestination(returnTo)}
+              data-testid="back-to-projects"
+            >
+              {t("back")}
+            </Link>
+          }
+        />
+        <div className="flex flex-wrap items-center gap-3">
           {project.archived && <Badge variant="secondary">{t("archived")}</Badge>}
           {project.completedAt && (
             <Badge data-testid="project-completed" variant="secondary">
@@ -119,9 +122,6 @@ export function ProjectWorkspace({
             </Badge>
           )}
         </div>
-        <h1 className="font-heading text-4xl font-semibold tracking-tight">
-          {project.name}
-        </h1>
         <Badge
           variant={project.costSubmissionWindowOpen ? "default" : "secondary"}
         >
