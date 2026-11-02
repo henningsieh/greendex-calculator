@@ -65,7 +65,7 @@ Use this disposable shared-database account for local Cost Tracker authenticatio
 - **Status:** email verified; it has no Organization Membership and therefore no Project access.
 
 Do not grant this account roles or add it to an Organization. The IMAP-backed
-`pnpm run test:integration` check uses run-created
+root `pnpm run test:integration` check uses run-created
 mailbox Users on the shared development database, not this account. Messages are retained; see [live email verification](live-email-verification.md).
 
 ## Scope

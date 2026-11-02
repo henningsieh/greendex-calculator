@@ -66,12 +66,18 @@ Representative focused selections:
 
 ### Centrally owned final acceptance
 
-The root owns exactly four test commands. Workspace test scripts and aliases are absent.
+Run repository-wide suites from the repository root.
 
 - `pnpm run test:unit` runs the established server-free package/app selection with two workers, plus repository policy/tooling and Documentation tests.
 - `pnpm run test:integration` runs the classifier-complement database/procedure tests, database connection and real OpenAPI HTTP checks, full real-mail workflows, and development Garage checks. Files and shared fixtures run serially. Migration/reset/lifecycle tests that provision additional databases are removed; the canonical development seed implementation remains outside test execution.
 - `pnpm run test:e2e` runs both ordinary Playwright suites and the cross-app merge suite against existing apps, with one worker. The extra-build-only instant suite is removed.
 - `pnpm run test:full` runs unit, integration and e2e sequentially and exits nonzero if any mode fails. Console summaries include sanitized timings. Implementing the command alone does not prove acceptance.
+
+Run `pnpm run test:unit`, `pnpm run test:integration`, or `pnpm run test:e2e` from `apps/cost-tracker` for Cost Tracker-only coverage. These scripts use the same runner and result summaries as the root commands. Unit and integration selections use the same shared classifier as the root suites. Unit tests use two workers. Integration and E2E tests use one worker.
+
+Cost Tracker-only integration and E2E runs require only the existing Cost Tracker app, its `.env`, and shared development database configuration. They do not require Calculator or its socket service. The app integration command runs Vitest service tests, including real HTTP checks. Separate live-mail workflows and Garage verification run under the root integration command.
+
+Each command reports the suite exit code, pass or fail status, duration, candidate commit, branch, working-tree state, and overall exit code. Start and stop application servers separately.
 
 Playwright reads `PLAYWRIGHT_RETRIES` from the existing app environment or injected environment, with injected values taking precedence. An unset value defaults to zero. Set a non-negative safe integer to enable retries; blank, fractional, negative, nonnumeric, and unsafe values fail configuration. A Playwright CLI `--retries` option overrides the config value. The configured reporters print the effective project retry count. Playwright's console output and HTML reports distinguish flaky tests that passed on retry from first-attempt passes. A CLI reporter override can replace the configured reporters. Do not treat retry-assisted passes as clean acceptance.
 

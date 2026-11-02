@@ -381,7 +381,7 @@ describe("two-loop verification instruction policy", () => {
     for (const clause of clauses) expect(text).toContain(clause);
   });
 
-  it("exposes exactly four test commands at the root and none in workspaces", async () => {
+  it("exposes root suites and Cost Tracker-scoped scripts through the shared runner", async () => {
     const root = fileURLToPath(new URL("../", import.meta.url));
     const manifests = [
       "package.json",
@@ -389,19 +389,31 @@ describe("two-loop verification instruction policy", () => {
         cwd: root,
       }),
     ];
-    const commands: string[] = [];
+    const commands: Record<string, string[]> = {
+      "package.json": [],
+      "apps/cost-tracker/package.json": [],
+    };
     for (const file of manifests) {
       const manifest = JSON.parse(await readFile(path.join(root, file), "utf8"));
       for (const [name, command] of Object.entries(manifest.scripts ?? {})) {
         if (name !== "test" && !name.startsWith("test:")) continue;
-        expect(file).toBe("package.json");
-        expect(command).toBe(`tsx scripts/test.ts ${name.slice(5)}`);
-        commands.push(name);
+        expect(Object.keys(commands)).toContain(file);
+        expect(command).toBe(
+          file === "package.json"
+            ? `tsx scripts/test.ts ${name.slice(5)}`
+            : `tsx ../../scripts/test.ts ${name.slice(5)} --app cost-tracker`,
+        );
+        commands[file]!.push(name);
       }
     }
-    expect(commands.sort()).toEqual([
+    expect(commands["package.json"]!.sort()).toEqual([
       "test:e2e",
       "test:full",
+      "test:integration",
+      "test:unit",
+    ]);
+    expect(commands["apps/cost-tracker/package.json"]!.sort()).toEqual([
+      "test:e2e",
       "test:integration",
       "test:unit",
     ]);

@@ -369,8 +369,8 @@ oRPC routing fix: an authenticated user can open an existing internal Project
 page, and a public participation page loads for an existing Project instead of
 returning 404.
 
-The root exposes exactly four test commands, implemented in `scripts/test.ts`.
-`test:unit` retains the package/app selection with two Vitest workers and includes
+Run the repository-wide commands from the repository root. They use `scripts/test.ts`.
+`test:unit` runs the package/app selection with two Vitest workers and includes
 repository policy/tooling and Documentation tests. `test:integration` runs the
 complementary database/procedure tests, connection and HTTP checks, full real-mail
 journeys, and development Garage checks serially. `test:e2e` runs both ordinary
@@ -387,14 +387,25 @@ production verification requires the user to supply the reviewed production buil
 
 Live mail uses the correlated dedicated mailbox and retains messages. Cleanup
 removes only run-owned rows, sessions and Garage objects. Existing apps and the
-shared database are retained. Console summaries report mode outcomes and timings
-without a custom evidence framework. The extra-build instant suite and
-provisioning migration/seed/lifecycle tests are removed. The canonical seed used
-by development remains available outside tests.
+shared database are retained. Console summaries report suite exit codes, pass or
+fail status, durations, candidate commit, branch, working-tree state, and overall exit code.
 
 For focused work use `pnpm --dir <workspace> exec vitest run <file>` or
 `pnpm --dir <app> exec playwright test --config=<config> <file> --workers=1 --retries=0`.
-There are no workspace test scripts or root aliases.
+
+For Cost Tracker-only coverage, run from `apps/cost-tracker`:
+
+```bash
+pnpm run test:unit
+pnpm run test:integration
+pnpm run test:e2e
+```
+
+These commands use the same runner and summary format. Unit tests need no server.
+Integration and E2E tests require only the existing Cost Tracker server and shared
+development database, not Calculator. Keep the server running. The app integration
+command runs Vitest service tests and real HTTP checks. Separate live-mail and
+Garage verification remain part of the root integration suite.
 
 ---
 

@@ -23,7 +23,8 @@ HTTP statuses use the existing `ERROR_STATUS_MAP`. Error bodies retain `code`, s
 
 ## Real-HTTP integration tests
 
-`src/__tests__/openapi-http.test.ts` runs under root `pnpm run test:integration`.
+Run `pnpm run test:integration` from `apps/cost-tracker` to include
+`src/__tests__/openapi-http.test.ts`. The root integration command also includes it.
 It requires the existing loopback Cost Tracker app configured in its `.env` and
 the same shared `greendex_development` database at `188.245.144.137:5489` as Vitest.
 The runner loads configuration automatically and never starts or builds servers,

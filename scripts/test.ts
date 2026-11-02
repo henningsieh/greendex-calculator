@@ -33,12 +33,24 @@ const root = resolve(dirname(process.argv[1]), "..");
 const mode = process.argv[2];
 const modes = ["unit", "integration", "e2e"] as const;
 const filter = process.argv[3];
+const appScope =
+  filter === "--app"
+    ? integrationApps.find((app) => app === process.argv[4])
+    : undefined;
+const scopedInvocation =
+  process.argv.length === 5 &&
+  appScope !== undefined &&
+  modes.some((suite) => suite === mode);
 if (
-  !(process.argv.length === 3 || (process.argv.length === 4 && mode === "e2e")) ||
+  !(
+    process.argv.length === 3 ||
+    (process.argv.length === 4 && mode === "e2e") ||
+    scopedInvocation
+  ) ||
   ![...modes, "full"].some((value) => value === mode)
 ) {
   console.error(
-    "Usage: pnpm run test:<unit|integration|e2e|full> [e2e-file-filter]",
+    "Usage: pnpm run test:<unit|integration|e2e|full> [e2e-file-filter | --app calculator|cost-tracker]",
   );
   process.exit(1);
 }
@@ -131,13 +143,15 @@ function environmentFile(path: string): Record<string, string> {
   }
 }
 
-function existingEnvironment(): Omit<ExistingIntegrationContext, "seed"> {
+function existingEnvironment(
+  selectedApps: readonly (typeof integrationApps)[number][] = integrationApps,
+): Omit<ExistingIntegrationContext, "seed"> {
   const databaseUrl =
     process.env.DATABASE_URL ??
     environmentFile("packages/database/.env").DATABASE_URL;
   assertExistingIntegrationDatabase(databaseUrl ?? "");
   const apps = Object.fromEntries(
-    integrationApps.map((app) => {
+    selectedApps.map((app) => {
       const environment: Record<string, string> = {
         ...environmentFile(`apps/${app}/.env`),
         ...Object.fromEntries(
@@ -186,6 +200,44 @@ async function available(baseUrl: string): Promise<void> {
   );
 }
 
+async function appTests(
+  appScope: (typeof integrationApps)[number],
+  suite: (typeof modes)[number],
+): Promise<void> {
+  const directory = `apps/${appScope}`;
+  let environment: Record<string, string | undefined> = process.env;
+  if (suite !== "unit") {
+    const context = existingEnvironment([appScope]);
+    const app = context.apps[appScope]!;
+    environment = {
+      ...app.environment,
+      [appScope === "calculator"
+        ? "CALCULATOR_TEST_BASE_URL"
+        : "COST_TRACKER_TEST_BASE_URL"]: app.baseUrl,
+      ...(appScope === "cost-tracker"
+        ? { COST_TRACKER_E2E_BASE_URL: app.baseUrl }
+        : {}),
+    };
+    await available(app.baseUrl);
+  }
+  if (suite === "e2e") {
+    return command(
+      directory,
+      ["playwright", "test", "--config=playwright.config.ts", "--workers=1"],
+      environment,
+    );
+  }
+  const integration = suite === "integration";
+  const files = filesFor(directory).filter(
+    (file) =>
+      nonbrowserTestNeedsServices(
+        file,
+        readFileSync(resolve(root, directory, file), "utf8"),
+      ) === integration,
+  );
+  await vitest(directory, files, integration, environment);
+}
+
 async function main(): Promise<void> {
   console.log(
     "Tests use existing configuration and servers only, dev or production. No production provenance claim.",
@@ -222,7 +274,9 @@ async function main(): Promise<void> {
       }
     };
     try {
-      if (suite === "unit") {
+      if (appScope) {
+        await check(`${appScope}/${suite}`, () => appTests(appScope, suite));
+      } else if (suite === "unit") {
         for (const name of ["auth", "email", "database", "config", "i18n"]) {
           const directory = `packages/${name}`;
           const files = filesFor(directory).filter(
