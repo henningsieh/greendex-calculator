@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   remove: vi.fn(),
   searchHosted: vi.fn(),
+  searchHostedQuery: vi.fn(),
   searchOrganizations: vi.fn(),
 }));
 
@@ -59,7 +60,23 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
       },
     },
     orpcQuery: {
-      projects: original.orpcQuery.projects,
+      // NB: orpcQuery is a lazy proxy — never spread it. Reference the
+      // routes the tree uses and override only the searchHosted queryFn.
+      projects: {
+        searchHosted: {
+          queryOptions: (
+            ...args: Parameters<
+              typeof original.orpcQuery.projects.searchHosted.queryOptions
+            >
+          ) => ({
+            ...original.orpcQuery.projects.searchHosted.queryOptions(...args),
+            queryFn: mocks.searchHostedQuery,
+          }),
+        },
+        listHosted: original.orpcQuery.projects.listHosted,
+        listPartner: original.orpcQuery.projects.listPartner,
+        get: original.orpcQuery.projects.get,
+      },
       projectPartnerships: {
         list: {
           queryKey: () => original.orpcQuery.projectPartnerships.list.queryKey(),
@@ -179,6 +196,12 @@ describe("ProjectPartnershipManager", () => {
     mocks.searchHosted
       .mockReset()
       .mockResolvedValue([{ id: "project-new", name: "New Project" }]);
+    // The "" preload query returns every hosted project, mirroring the
+    // endpoint; live search above stays filtered through the client mock.
+    mocks.searchHostedQuery.mockReset().mockResolvedValue([
+      { id: "project-existing", name: "Existing Project" },
+      { id: "project-new", name: "New Project" },
+    ]);
     mocks.searchOrganizations
       .mockReset()
       .mockResolvedValue([{ id: "organization-new", name: "New Partner" }]);

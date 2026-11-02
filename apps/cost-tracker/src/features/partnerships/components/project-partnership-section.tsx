@@ -20,12 +20,20 @@ export async function ProjectPartnershipSection({
           meta: { costTrackerORPC: true },
         }),
       ),
-      queryClient.query(
-        orpcQuery.projects.searchHosted.queryOptions({
-          input: { search: "" },
-          meta: { costTrackerORPC: true },
-        }),
-      ),
+      // The assignment form below only renders for canAssign viewers, so
+      // only they need the hosted-project options prefetched. The preload
+      // shows the first 20 newest; typing in the picker searches the full
+      // table.
+      ...(canAssign
+        ? [
+            queryClient.query(
+              orpcQuery.projects.searchHosted.queryOptions({
+                input: { search: "" },
+                meta: { costTrackerORPC: true },
+              }),
+            ),
+          ]
+        : []),
     ].map((promise) => promise.catch(swallowPrefetchError)),
   );
 
