@@ -4,10 +4,13 @@ import type { ReactElement } from "react";
 
 import german from "@/messages/de";
 import messages from "@/messages/en";
+import slovenian from "@/messages/si";
 
 export function renderWithMessages(
   ui: ReactElement,
-  options?: Omit<RenderOptions, "wrapper"> & { locale?: "en" | "de" },
+  options?: Omit<RenderOptions, "wrapper"> & {
+    locale?: "en" | "de" | "si";
+  },
 ) {
   const { locale = "en", ...renderOptions } = options ?? {};
   return render(ui, {
@@ -15,7 +18,9 @@ export function renderWithMessages(
     wrapper: ({ children }) => (
       <NextIntlClientProvider
         locale={locale}
-        messages={locale === "de" ? german : messages}
+        messages={
+          locale === "de" ? german : locale === "si" ? slovenian : messages
+        }
       >
         {children}
       </NextIntlClientProvider>

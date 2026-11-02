@@ -1,10 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { NuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import messagesDe from "@/messages/de";
+import messagesEn from "@/messages/en";
+import messagesSi from "@/messages/si";
 
 const mocks = vi.hoisted(() => ({
   availableScopes: { hosted: true, partner: false },
@@ -49,13 +53,16 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
 
 import { ProjectList } from "@/features/projects/components/project-list";
 
-function renderList({
-  onUrlUpdate,
-  searchParams = "?scope=partner&cursor=partner-cursor",
-}: {
-  onUrlUpdate: (event: UrlUpdateEvent) => void;
-  searchParams?: string;
-}) {
+function renderList(
+  {
+    onUrlUpdate,
+    searchParams = "?scope=partner&cursor=partner-cursor",
+  }: {
+    onUrlUpdate: (event: UrlUpdateEvent) => void;
+    searchParams?: string;
+  },
+  locale: "en" | "de" | "si" = "en",
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -72,6 +79,7 @@ function renderList({
         </Suspense>
       </QueryClientProvider>
     </NuqsTestingAdapter>,
+    { locale },
   );
 }
 
@@ -155,6 +163,34 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
       );
       expect(onUrlUpdate).not.toHaveBeenCalled();
       expect(mocks.toastAdd).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { locale: "en", messages: messagesEn },
+    { locale: "de", messages: messagesDe },
+    { locale: "si", messages: messagesSi },
+  ] as const)(
+    "commits the selected sort option to the URL (%s)",
+    async ({ locale, messages }) => {
+      const user = userEvent.setup();
+      const onUrlUpdate = vi.fn();
+      mocks.availableScopes = { hosted: true, partner: true };
+      renderList({ onUrlUpdate, searchParams: "?scope=hosted" }, locale);
+
+      await user.click(
+        await screen.findByTestId("project-sort", {}, { timeout: 10_000 }),
+      );
+      await user.click(
+        await screen.findByRole("option", {
+          name: messages.projects.list.sortStartLatest,
+        }),
+      );
+
+      await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
+      const update = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent;
+      expect(update.options.history).toBe("push");
+      expect(update.searchParams.get("sort")).toBe("start-desc");
     },
   );
 });
