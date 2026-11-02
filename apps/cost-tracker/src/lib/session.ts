@@ -70,15 +70,14 @@ export const hasOrganizationMembership = cache(async () => {
   return organizations.some(({ id }) => id === activeOrganizationId);
 });
 
-/**
- * Session plus active Organization, typed as known.
+/* Layering contract: ProtectedShell owns the membership gate (UX),
+ * oRPC procedures own authority (per-call enforcement). Pages keep no
+ * boolean membership checks — they render under the shell and fetch typed
+ * context here when they render org data. The redirects below are
+ * unreachable backstops, never loops: without an org the shell shows the
+ * onboarding UI instead of children.
  *
- * ProtectedShell only renders children once onboarding reaches "continue"
- * (verified + Organization ready + active Organization set), so pages under
- * it re-derive nothing: one cached call, non-null values out. The redirects
- * are unreachable backstops — without an org the shell shows the onboarding
- * UI instead of children, so they land back under the shell, never in a loop.
- */
+ * Session plus active Organization, typed as known. */
 export const requireActiveOrganization = cache(async () => {
   const session = await requireSession();
   const organizationId = session.session.activeOrganizationId;

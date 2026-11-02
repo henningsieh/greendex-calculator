@@ -224,7 +224,7 @@ it.each(routes)(
 );
 
 it.each(routes)(
-  "$path does not render or prefetch without Organization Membership",
+  "$path renders without consulting Organization Membership (shell owns the gate)",
   async ({ Page }) => {
     mocks.membership.mockResolvedValue(false);
     expect(
@@ -234,7 +234,7 @@ it.each(routes)(
           participationId: "participation-1",
         }),
       }),
-    ).toBeNull();
+    ).not.toBeNull();
     expect(mocks.query).not.toHaveBeenCalled();
   },
 );

@@ -4,7 +4,6 @@ import { Suspense } from "react";
 
 import { ProjectWorkspaceSkeleton } from "@/features/projects/components/project-loading-states";
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
-import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Project workspace" };
 
@@ -18,7 +17,6 @@ export default async function ProjectPage({
   searchParams,
 }: ProjectPageProps) {
   await connection();
-  if (!(await hasOrganizationMembership())) return null;
 
   return (
     <div>

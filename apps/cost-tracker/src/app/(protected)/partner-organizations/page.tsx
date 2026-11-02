@@ -9,12 +9,10 @@ import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/
 import { ProjectPartnershipSection } from "@/features/partnerships/components/project-partnership-section";
 import { SetupLinkCreator } from "@/features/partnerships/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
-import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Partner Organizations" };
 
 export default async function PartnerOrganizationsPage() {
-  if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("partnerships.partnerOrganizations.page");
 
   // Same gate as projectPartnerships.list: without it the section below

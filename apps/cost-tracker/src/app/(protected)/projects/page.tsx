@@ -9,7 +9,6 @@ import { CreateProjectDialog } from "@/features/projects/components/create-proje
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
 import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
-import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Projects" };
 
@@ -23,7 +22,6 @@ export default async function ProjectsPage(
   },
 ) {
   await connection();
-  if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("projects.page");
   const canCreate = await hasCostTrackerPermissions(await headers(), {
     project: ["create"],

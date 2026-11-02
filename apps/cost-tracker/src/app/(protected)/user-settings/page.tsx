@@ -3,12 +3,11 @@ import type { Metadata } from "next";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { UserSettingsTabs } from "@/features/user-settings/components/user-settings-tabs";
-import { hasOrganizationMembership, requireSession } from "@/lib/session";
+import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "User settings" };
 
 export default async function UserSettingsPage() {
-  if (!(await hasOrganizationMembership())) return null;
   const session = await requireSession();
   const t = await getTranslations("settings.page");
 

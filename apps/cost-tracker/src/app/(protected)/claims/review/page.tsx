@@ -8,7 +8,6 @@ import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary
 import { ClaimReviewQueueSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReviewQueue } from "@/features/claims/components/claim-review-queue";
 import { orpcQuery } from "@/lib/orpc/orpc";
-import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -51,7 +50,6 @@ async function ClaimReviewQueueSection() {
 
 export default async function ClaimReviewQueuePage() {
   await connection();
-  if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("claims.review");
 
   return (

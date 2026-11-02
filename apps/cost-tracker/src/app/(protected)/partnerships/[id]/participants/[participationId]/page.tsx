@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ParticipantDetailsSkeleton } from "@/features/participations/components/loading-skeletons";
 import { ParticipantDetailsSection } from "@/features/participations/components/participant-details-section";
-import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Participant details" };
 
@@ -16,7 +15,6 @@ export default async function ParticipantDetailsPage({
   params: Promise<{ id: string; participationId: string }>;
 }) {
   await connection();
-  if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("participations.app");
 
   return (
