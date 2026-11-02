@@ -1,6 +1,8 @@
 import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { AppNavigation } from "@/components/app-navigation";
+import { ProtectedPageSkeleton } from "@/components/protected-shell-skeleton";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
@@ -79,7 +81,7 @@ export async function ProtectedShell({
         />
       </header>
       <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-        {children}
+        <Suspense fallback={<ProtectedPageSkeleton />}>{children}</Suspense>
       </main>
     </div>
   );
