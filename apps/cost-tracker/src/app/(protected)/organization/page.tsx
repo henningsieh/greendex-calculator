@@ -4,12 +4,13 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { PrefetchedSectionSkeleton } from "@/components/prefetched-page-skeleton";
+import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { canManageOrganization } from "@/features/organizations/access";
 import { OrganizationSettings } from "@/features/organizations/components/organization-settings";
 import { OrganizationTeam } from "@/features/organizations/components/organization-team";
 import { orpcQuery } from "@/lib/orpc/orpc";
-import { hasOrganizationMembership, requireSession } from "@/lib/session";
+import { requireActiveOrganization } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -60,36 +61,29 @@ async function OrganizationTeamSection({ email }: { email: string }) {
 
 export default async function OrganizationPage() {
   await connection();
-  if (!(await hasOrganizationMembership())) return null;
-  const session = await requireSession();
+  // Guaranteed by ProtectedShell ("continue" = verified + org ready):
+  // session and active Organization are known here, typed non-null.
+  const { session, organization } = await requireActiveOrganization();
   const t = await getTranslations("organizations");
 
   // Presentation-only gating; every procedure re-enforces owner/admin access.
   if (!(await canManageOrganization())) {
     return (
-      <div className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">{t("page.eyebrow")}</p>
-        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          {t("page.title")}
-        </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">
-          {t("page.restricted")}
-        </p>
-      </div>
+      <ProtectedPageHeader
+        eyebrow={t("page.eyebrow")}
+        title={organization.name}
+        description={t("page.restricted")}
+      />
     );
   }
 
   return (
     <div>
-      <header className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">{t("page.eyebrow")}</p>
-        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          {t("page.title")}
-        </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">
-          {t("page.description")}
-        </p>
-      </header>
+      <ProtectedPageHeader
+        eyebrow={t("page.eyebrow")}
+        title={organization.name}
+        description={t("page.description")}
+      />
 
       <section className="mt-10">
         <Suspense

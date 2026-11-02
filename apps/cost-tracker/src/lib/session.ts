@@ -69,3 +69,25 @@ export const hasOrganizationMembership = cache(async () => {
 
   return organizations.some(({ id }) => id === activeOrganizationId);
 });
+
+/**
+ * Session plus active Organization, typed as known.
+ *
+ * ProtectedShell only renders children once onboarding reaches "continue"
+ * (verified + Organization ready + active Organization set), so pages under
+ * it re-derive nothing: one cached call, non-null values out. The redirects
+ * are unreachable backstops — without an org the shell shows the onboarding
+ * UI instead of children, so they land back under the shell, never in a loop.
+ */
+export const requireActiveOrganization = cache(async () => {
+  const session = await requireSession();
+  const organizationId = session.session.activeOrganizationId;
+  if (!organizationId) redirect("/projects");
+
+  const organization = await auth.api.getFullOrganization({
+    headers: await headers(),
+  });
+  if (!organization) redirect("/projects");
+
+  return { session, organizationId, organization };
+});
