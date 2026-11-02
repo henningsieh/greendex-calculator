@@ -21,7 +21,7 @@
     "type-check:cost-tracker-persistence-seam": "pnpm exec tsx ../../scripts/check-cost-tracker-persistence-seam.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1160.0",
+    "@aws-sdk/client-s3": "^3.1161.0",
     "@base-ui/react": "^1.9.0",
     "@greendex/auth": "workspace:*",
     "@greendex/config": "workspace:*",
@@ -41,7 +41,7 @@
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
     "cmdk": "^1.1.1",
-    "cn": "^0.5.1",
+    "cn": "^0.5.2",
     "country-flag-icons": "catalog:",
     "dotenv-cli": "catalog:",
     "drizzle-orm": "catalog:",
@@ -85,6 +85,6 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "ws": "^8.22.0"
+    "ws": "^8.22.1"
   }
 }
