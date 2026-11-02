@@ -10,6 +10,7 @@ import Link from "next/link";
 
 import { AppNavigation } from "@/components/app-navigation";
 import { Aura } from "@/components/brand/aura";
+import { LandingCtaButton } from "@/components/brand/landing-cta-button";
 import {
   StatCell,
   StatDetail,
@@ -101,13 +102,10 @@ export default async function LandingPage() {
             {t("landing.hero.description")}
           </p>
           <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <Link
-              className={cn(buttonVariants({ size: "lg" }), "ember-cta group")}
-              href="/register"
-            >
+            <LandingCtaButton href="/register">
               {t("landing.hero.start")}
               <ArrowRightIcon data-icon="inline-end" />
-            </Link>
+            </LandingCtaButton>
             <Link
               className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
               href="#how-it-works"
@@ -232,13 +230,10 @@ export default async function LandingPage() {
           {t("landing.cta.description")}
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link
-            className={cn(buttonVariants({ size: "lg" }), "ember-cta group")}
-            href="/register"
-          >
+          <LandingCtaButton href="/register">
             {t("landing.hero.start")}
             <ArrowRightIcon data-icon="inline-end" />
-          </Link>
+          </LandingCtaButton>
         </div>
       </section>
 

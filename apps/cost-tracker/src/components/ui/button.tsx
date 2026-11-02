@@ -2,43 +2,18 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 
-/* Ember button system (ember-c-spec.md, LOCKED 2026-10-11), implemented
-   shadcn-idiomatically. Semantic tokens only — no raw values.
-   - default: fire surface, pill, lift (-2px hover, hover-gated) + press .97.
-   - ghost: transparent, 1px line, hover = 6% white wash + fire border.
-   - pending: NO isPending prop (shadcn Critical Rules) — compose
-     <PendingButton> (Spinner + disabled + data-disabled) instead.
-     Color-mix 45% fire, no opacity dimming (would dim the glow).
-   - cta: landing-page main CTA only; breathes via the .ember-cta glow layer
-     (opacity-only animation, never box-shadow — Emil performance rule).
-   Hover/press feedback applies to enabled buttons only (:enabled / :not(:disabled)).
-   data-disabled (not :has()) marks exempt cells; .calm zones stay static. */
-const buttonFeedback =
-  "rounded-full text-sm tracking-normal normal-case whitespace-normal text-center transition-[translate,scale,background-color,border-color,box-shadow] duration-160 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline-solid focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring focus-visible:ring-0 motion-reduce:transition-none motion-reduce:active:scale-100";
-const primaryFeedback =
-  "relative overflow-hidden border-primary-border bg-primary text-primary-foreground shadow-primary-glow focus-visible:overflow-visible fine-hover:enabled:-translate-y-0.5 fine-hover:enabled:bg-primary-active fine-hover:enabled:shadow-primary-glow focus-visible:border-brand focus-visible:shadow-primary-glow active:enabled:scale-[.97] active:enabled:bg-primary-active motion-reduce:fine-hover:enabled:translate-y-0 motion-reduce:active:enabled:scale-100 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:w-1/2 after:skew-x-[-20deg] after:bg-[linear-gradient(105deg,transparent,var(--shine),transparent)] after:opacity-0 after:transition-[translate,opacity] after:duration-600 fine-hover:enabled:after:opacity-100 fine-hover:enabled:after:translate-x-[260%] after:translate-x-[-160%] motion-reduce:after:transition-none";
-const ghostFeedback =
-  "border-border bg-transparent text-foreground fine-hover:enabled:bg-accent fine-hover:enabled:border-brand focus-visible:border-brand active:enabled:scale-[.98] active:enabled:duration-100 motion-reduce:active:enabled:scale-100";
-const pendingFeedback =
-  "cursor-not-allowed border-transparent bg-pending text-pending-foreground shadow-secondary-glow";
-const ctaFeedback =
-  "ember-cta border-primary-border bg-primary text-primary-foreground shadow-primary-glow fine-hover:enabled:-translate-y-0.5 fine-hover:enabled:bg-primary-active focus-visible:border-brand active:enabled:scale-[.97] motion-reduce:fine-hover:enabled:translate-y-0 motion-reduce:active:enabled:scale-100";
-
-const defaultButtonStyle = `${buttonFeedback} ${primaryFeedback}`;
-const outlineButtonStyle = `${buttonFeedback} ${ghostFeedback}`;
-
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding px-6 text-xs font-semibold tracking-widest whitespace-nowrap uppercase transition-[translate,scale,background-color,border-color,box-shadow] outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:cursor-not-allowed disabled:data-[variant=default]:bg-pending disabled:data-[variant=default]:text-pending-foreground disabled:data-[variant=default]:shadow-secondary-glow disabled:data-[variant=outline]:bg-muted disabled:data-[variant=outline]:text-muted-foreground disabled:data-[variant=ghost]:text-muted-foreground aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-none border border-transparent bg-clip-padding text-xs font-semibold tracking-widest whitespace-nowrap uppercase transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       variant: {
-        default: defaultButtonStyle,
-        outline: outlineButtonStyle,
+        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        outline:
+          "border-border bg-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-input/30",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost: ghostFeedback,
-        pending: `${buttonFeedback} ${pendingFeedback}`,
-        cta: `${buttonFeedback} ${ctaFeedback}`,
+        ghost:
+          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline underline-offset-4 hover:underline",
@@ -71,7 +46,6 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
-      data-variant={variant ?? "default"}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

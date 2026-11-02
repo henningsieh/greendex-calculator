@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import * as React from "react";
 
 import { Aura } from "@/components/brand/aura";
+import { LandingCtaButton } from "@/components/brand/landing-cta-button";
 import { PendingButton } from "@/components/brand/pending-button";
 import { StarWreath } from "@/components/brand/star-wreath";
 import {
@@ -187,7 +188,6 @@ export default function DesignSystemPage() {
             <Button variant="secondary">
               {t("designSystem.buttons.secondary")}
             </Button>
-            <Button variant="cta">{t("designSystem.buttons.mainCta")}</Button>
             <Button variant="link">{t("designSystem.buttons.link")}</Button>
             <Button variant="destructive">
               {t("designSystem.buttons.destructive")}
@@ -211,6 +211,11 @@ export default function DesignSystemPage() {
           <p className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
             <Spinner /> {t("designSystem.buttons.spinnerNote")}
           </p>
+          <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+            <LandingCtaButton href="/design-system">
+              {t("designSystem.buttons.mainCta")}
+            </LandingCtaButton>
+          </div>
         </div>
       </Section>
 
