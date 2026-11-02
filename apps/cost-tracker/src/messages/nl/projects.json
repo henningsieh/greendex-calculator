@@ -40,6 +40,8 @@
       "relationship": "Project relationship",
       "hosted": "Hosted",
       "partner": "Partner",
+      "noPartnerProjects": "Je hebt geen projecten toegewezen als partner",
+      "noHostedProjects": "Jouw organisatie host geen projecten",
       "sortByStartDate": "Sort by start date",
       "schedule": "Schedule",
       "viewParticipants": "View Participants",

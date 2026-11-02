@@ -40,6 +40,8 @@
       "relationship": "Project relationship",
       "hosted": "Hosted",
       "partner": "Partner",
+      "noPartnerProjects": "Non hai progetti assegnati come partner",
+      "noHostedProjects": "La tua organizzazione non ospita alcun progetto",
       "sortByStartDate": "Sort by start date",
       "schedule": "Schedule",
       "viewParticipants": "View Participants",

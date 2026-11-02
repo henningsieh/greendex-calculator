@@ -1,10 +1,14 @@
 import { getTranslations } from "@greendex/i18n/server";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import ProtectedPageHeader from "@/components/protected-page-header";
+import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectListSection } from "@/features/projects/components/project-list-section";
 import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
+import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { hasOrganizationMembership } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Projects" };
@@ -21,16 +25,18 @@ export default async function ProjectsPage(
   await connection();
   if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("projects.page");
+  const canCreate = await hasCostTrackerPermissions(await headers(), {
+    project: ["create"],
+  });
 
   return (
     <div>
-      <header className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
-        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          {t("title")}
-        </h1>
-        <p className="mt-4 text-lg/8 text-muted-foreground">{t("description")}</p>
-      </header>
+      <ProtectedPageHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
+        rightButton={canCreate ? <CreateProjectDialog /> : undefined}
+      />
 
       <Suspense fallback={<ProjectListSkeleton />}>
         <ProjectListSection searchParams={searchParams} />

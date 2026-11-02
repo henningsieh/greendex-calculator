@@ -8,6 +8,7 @@ import { Geist, Inter, JetBrains_Mono } from "next/font/google";
 import { NuqsProvider } from "@/components/nuqs-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import shellMessages from "@/messages/en/shell.json";
 
@@ -68,7 +69,9 @@ export default async function RootLayout({
         >
           <ThemeProvider>
             <NuqsProvider>
-              <QueryProvider>{children}</QueryProvider>
+              <TooltipProvider>
+                <QueryProvider>{children}</QueryProvider>
+              </TooltipProvider>
             </NuqsProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

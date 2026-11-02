@@ -50,8 +50,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AssignedProjectList } from "@/features/projects/components/assigned-project-list";
-import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import {
   getProjectAvailableScopesQueryOptions,
   getProjectListQueryOptions,
@@ -217,7 +217,6 @@ export function ProjectList() {
     if (availableScopes.canCreate) {
       return (
         <>
-          <CreateProjectDialog />
           <ProjectDataErrorBoundary resource="Assigned Projects">
             <AssignedProjectList />
           </ProjectDataErrorBoundary>
@@ -241,7 +240,6 @@ export function ProjectList() {
 
   return (
     <>
-      {availableScopes.canCreate && <CreateProjectDialog />}
       <ProjectDataErrorBoundary resource="Projects">
         <AvailableProjectList availableScopes={availableScopes} />
       </ProjectDataErrorBoundary>
@@ -305,26 +303,40 @@ function ProjectListOverview({
         role="tablist"
         aria-label={t("relationship")}
       >
-        <Button
-          aria-selected={scope === "hosted"}
-          data-testid="project-scope-hosted"
-          disabled={!availableScopes.hosted && availableScopes.partner}
-          onClick={() => updateListState({ scope: "hosted" })}
-          role="tab"
-          variant={scope === "hosted" ? "default" : "outline"}
-        >
-          {t("hosted")}
-        </Button>
-        <Button
-          data-testid="project-scope-partner"
-          aria-selected={scope === "partner"}
-          disabled={!availableScopes.partner}
-          onClick={() => updateListState({ scope: "partner" })}
-          role="tab"
-          variant={scope === "partner" ? "default" : "outline"}
-        >
-          {t("partner")}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger render={<span className="inline-flex" />}>
+            <Button
+              aria-selected={scope === "hosted"}
+              data-testid="project-scope-hosted"
+              disabled={!availableScopes.hosted && availableScopes.partner}
+              onClick={() => updateListState({ scope: "hosted" })}
+              role="tab"
+              variant={scope === "hosted" ? "default" : "outline"}
+            >
+              {t("hosted")}
+            </Button>
+          </TooltipTrigger>
+          {!availableScopes.hosted && (
+            <TooltipContent>{t("noHostedProjects")}</TooltipContent>
+          )}
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={<span className="inline-flex" />}>
+            <Button
+              data-testid="project-scope-partner"
+              aria-selected={scope === "partner"}
+              disabled={!availableScopes.partner}
+              onClick={() => updateListState({ scope: "partner" })}
+              role="tab"
+              variant={scope === "partner" ? "default" : "outline"}
+            >
+              {t("partner")}
+            </Button>
+          </TooltipTrigger>
+          {!availableScopes.partner && (
+            <TooltipContent>{t("noPartnerProjects")}</TooltipContent>
+          )}
+        </Tooltip>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
