@@ -17,7 +17,7 @@ import {
   user,
 } from "@greendex/database/schema";
 import { ORPCError, createRouterClient } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   afterAll,
   afterEach,
@@ -29,12 +29,57 @@ import {
   vi,
 } from "vitest";
 
+// Observe real transaction backends without replacing queries or row locks.
+const transactionHooks = vi.hoisted(() => ({ onBegin: vi.fn() }));
+vi.mock("@greendex/database", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@greendex/database")>();
+  return {
+    ...actual,
+    db: new Proxy(actual.db, {
+      get(target, property) {
+        if (property === "transaction") {
+          return (
+            callback: Parameters<typeof actual.db.transaction>[0],
+            config: Parameters<typeof actual.db.transaction>[1],
+          ) =>
+            actual.db.transaction(async (tx) => {
+              await transactionHooks.onBegin(tx);
+              return callback(tx);
+            }, config);
+        }
+        return Reflect.get(target, property);
+      },
+    }),
+  };
+});
+
 const delivery = vi.hoisted(() => ({
   sendParticipantInvitation: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/email", () => ({
   sendParticipantInvitation: delivery.sendParticipantInvitation,
+  emailSender: {},
 }));
+
+const joinHooks = vi.hoisted(() => ({ beforeRecheck: vi.fn() }));
+vi.mock(
+  "@/features/participant-onboarding/procedures/entry-tokens",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/features/participant-onboarding/procedures/entry-tokens")
+      >();
+    return {
+      ...actual,
+      recheckEntryToken: async (
+        ...args: Parameters<typeof actual.recheckEntryToken>
+      ) => {
+        await joinHooks.beforeRecheck(args[2]);
+        return actual.recheckEntryToken(...args);
+      },
+    };
+  },
+);
 
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -43,13 +88,12 @@ const authMocks = vi.hoisted(() => ({
   grantParticipantMembership: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/auth", () => ({
-  // No $context: procedures must reach Membership writes only through the
-  // supported auth.api surface, never through the internal adapter.
-  auth: {
-    api: authMocks,
-  },
-}));
+vi.mock("@/lib/auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth")>();
+  const { createJoinTransactionAuthMock } =
+    await import("./join-transaction-auth-mock");
+  return createJoinTransactionAuthMock(authMocks, actual);
+});
 
 import {
   costTrackerOrganizationRoles,
@@ -104,6 +148,31 @@ const client = createRouterClient(
     context: async () => ({ headers: new Headers() }),
   },
 );
+
+type JoinTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function backendPid(tx: JoinTransaction): Promise<number> {
+  const result = await tx.execute<{ pid: number }>(
+    sql`select pg_backend_pid() as pid`,
+  );
+  return result.rows[0]!.pid;
+}
+
+/** Wait for observed PostgreSQL blocking, not elapsed time or scheduling guesses. */
+async function waitForBlockedQuery(
+  pid: number,
+  blocker: number,
+): Promise<string> {
+  const deadline = Date.now() + 3000;
+  while (Date.now() < deadline) {
+    const result = await db.execute<{ query: string; blocked: boolean }>(sql`
+      select query, ${blocker} = any(pg_blocking_pids(pid)) as blocked
+      from pg_stat_activity where pid = ${pid}
+    `);
+    if (result.rows[0]?.blocked) return result.rows[0].query;
+  }
+  throw new Error(`Backend ${pid} did not block on backend ${blocker}`);
+}
 
 async function memberships() {
   return db
@@ -244,6 +313,8 @@ beforeEach(async () => {
   activeOrganizationId = partner;
   version = { id: "fixture-agreement-v1", contentHash: "fixture-hash-v1" };
   vi.clearAllMocks();
+  joinHooks.beforeRecheck.mockReset();
+  transactionHooks.onBegin.mockReset();
   delivery.sendParticipantInvitation.mockResolvedValue(undefined);
   authMocks.getSession.mockImplementation(async () => {
     const stored = await db.query.user.findFirst({
@@ -260,83 +331,12 @@ beforeEach(async () => {
       session: { id: randomUUID(), activeOrganizationId },
     };
   });
-  // Faithful stand-in for the server-only participant-membership endpoint:
-  // fresh read, idempotent resume, compare-and-swap on the expected role.
-  authMocks.grantParticipantMembership.mockImplementation(
-    async ({
-      body,
-    }: {
-      body: { userId: string; organizationId: string; expectedRole: string };
-    }) => {
-      const [row] = await db
-        .select()
-        .from(member)
-        .where(
-          and(
-            eq(member.userId, body.userId),
-            eq(member.organizationId, body.organizationId),
-          ),
-        )
-        .limit(1);
-      if (!row)
-        return new Response(JSON.stringify({ code: "MEMBER_NOT_FOUND" }), {
-          status: 400,
-        });
-      if (
-        row.role
-          .split(",")
-          .map((value) => value.trim())
-          .includes(ORGANIZATION_ROLES.Participant)
-      )
-        return new Response(JSON.stringify({ member: row }), { status: 200 });
-      if (row.role !== body.expectedRole)
-        return new Response(JSON.stringify({ code: "MEMBERSHIP_CHANGED" }), {
-          status: 400,
-        });
-      const [updated] = await db
-        .update(member)
-        .set({ role: `${row.role},participant` })
-        .where(and(eq(member.id, row.id), eq(member.role, row.role)))
-        .returning();
-      if (!updated)
-        return new Response(JSON.stringify({ code: "MEMBERSHIP_CHANGED" }), {
-          status: 400,
-        });
-      return new Response(JSON.stringify({ member: updated }), {
-        status: 200,
-      });
-    },
+  // Only sessions and error injection are mocked. Membership writes use the
+  // real Better Auth APIs bound to the join transaction, including role hooks.
+  authMocks.grantParticipantMembership.mockImplementation((input, api) =>
+    api.grantParticipantMembership(input),
   );
-  authMocks.addMember.mockImplementation(
-    async ({ body }: { body: { userId: string; organizationId: string } }) => {
-      // Mirrors Better Auth's already-a-member refusal for competing joins.
-      const [existing] = await db
-        .select({ id: member.id })
-        .from(member)
-        .where(
-          and(
-            eq(member.userId, body.userId),
-            eq(member.organizationId, body.organizationId),
-          ),
-        )
-        .limit(1);
-      if (existing)
-        return new Response(
-          JSON.stringify({
-            code: "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION",
-          }),
-          { status: 400 },
-        );
-      await db.insert(member).values({
-        id: randomUUID(),
-        organizationId: host,
-        userId: recipient,
-        role: ORGANIZATION_ROLES.Participant,
-        createdAt: new Date(),
-      });
-      return new Response(null, { status: 200 });
-    },
-  );
+  authMocks.addMember.mockImplementation((input, api) => api.addMember(input));
   authMocks.hasPermission.mockImplementation(
     async ({ body }: { body: { permissions: Record<string, string[]> } }) => ({
       success: await authorizedActiveRole(body.permissions),
@@ -594,71 +594,392 @@ describe("Participant onboarding procedures", () => {
     ).toHaveLength(0);
   });
 
-  it("compensates a membership created before a mid-join token revoke", async () => {
-    const issued = await client.participantOnboarding.issueInvitation({
-      partnershipId: partnership,
-      email: recipientEmail,
-    });
-    actor = recipient;
-    // #372: revoke between the unlocked pre-check and the row-locked
-    // recheck, then let the membership write succeed. The join must fail
-    // with the invitation closed and leave no orphan membership behind.
-    authMocks.addMember.mockImplementationOnce(async () => {
-      await db
-        .update(entryTokens)
-        .set({ status: "revoked" })
-        .where(eq(entryTokens.id, issued.invitationId));
-      const [existing] = await db
-        .select({ id: member.id })
-        .from(member)
-        .where(and(eq(member.userId, recipient), eq(member.organizationId, host)))
-        .limit(1);
+  it.each([
+    ["link", false],
+    ["invitation", false],
+    ["link", true],
+    ["invitation", true],
+  ] as const)(
+    "refuses a mid-join %s revoke and preserves existing state=%s",
+    async (kind, existing) => {
       if (existing)
-        return new Response(
-          JSON.stringify({
-            code: "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION",
-          }),
-          { status: 400 },
-        );
-      await db.insert(member).values({
-        id: randomUUID(),
-        organizationId: host,
-        userId: recipient,
-        role: ORGANIZATION_ROLES.Participant,
-        createdAt: new Date(),
+        recipient = roleInvitees.get(ORGANIZATION_ROLES.ProjectCoordinator)!;
+      const stored = (await db.query.user.findFirst({
+        where: eq(user.id, recipient),
+      }))!;
+      const issued =
+        kind === "link"
+          ? await client.participantOnboarding.createRegistrationLink({
+              partnershipId: partnership,
+            })
+          : await client.participantOnboarding.issueInvitation({
+              partnershipId: partnership,
+              email: stored.email,
+            });
+      const id = "id" in issued ? issued.id : issued.invitationId;
+      const source =
+        kind === "link"
+          ? { kind, id, secret: issued.secret! }
+          : { kind, invitationId: id, secret: issued.secret! };
+      if (existing) {
+        await db.insert(participants).values({
+          projectId: project,
+          representedOrganizationId: partner,
+          userId: recipient,
+          displayName: "Before",
+          email: stored.email,
+          country: "FR",
+        });
+      }
+      const beforeMemberships = await memberships();
+      const beforeParticipants = await db
+        .select()
+        .from(participants)
+        .where(eq(participants.projectId, project));
+      actor = recipient;
+      joinHooks.beforeRecheck.mockImplementationOnce(async () => {
+        await db
+          .update(entryTokens)
+          .set({ status: "revoked" })
+          .where(eq(entryTokens.id, id));
       });
-      return new Response(null, { status: 200 });
-    });
-    await expect(
-      client.participantOnboarding.join({
-        source: {
-          kind: "invitation",
-          invitationId: issued.invitationId,
-          secret: issued.secret!,
+      await expect(
+        client.participantOnboarding.join({
+          source,
+          profile: { fullName: "Recipient", country: "LV" },
+          agreement: { accepted: true },
+        }),
+      ).rejects.toMatchObject({
+        code: "CONFLICT",
+        data: {
+          reason:
+            kind === "link"
+              ? "REGISTRATION_LINK_CLOSED"
+              : "PARTICIPANT_INVITATION_CLOSED",
         },
-        profile: { fullName: "Recipient", country: "LV" as const },
-        agreement: { accepted: true },
-      }),
-    ).rejects.toMatchObject({
-      code: "CONFLICT",
-      data: { reason: "PARTICIPANT_INVITATION_CLOSED" },
+      });
+      expect(await memberships()).toEqual(beforeMemberships);
+      expect(authMocks.addMember).not.toHaveBeenCalled();
+      expect(authMocks.grantParticipantMembership).not.toHaveBeenCalled();
+      expect(
+        await db
+          .select()
+          .from(participants)
+          .where(eq(participants.projectId, project)),
+      ).toEqual(beforeParticipants);
+      expect(
+        await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+      ).toEqual([]);
+      expect(
+        await db
+          .select()
+          .from(acceptances)
+          .where(eq(acceptances.userId, recipient)),
+      ).toEqual([]);
+    },
+  );
+
+  it.each(["link", "invitation"] as const)(
+    "rolls back a real Better Auth coordinator grant on %s failure and preserves existing state",
+    async (kind) => {
+      const coordinatorUser = roleInvitees.get(
+        ORGANIZATION_ROLES.ProjectCoordinator,
+      )!;
+      const stored = (await db.query.user.findFirst({
+        where: eq(user.id, coordinatorUser),
+      }))!;
+      const issued =
+        kind === "link"
+          ? await client.participantOnboarding.createRegistrationLink({
+              partnershipId: partnership,
+            })
+          : await client.participantOnboarding.issueInvitation({
+              partnershipId: partnership,
+              email: stored.email,
+            });
+      const id = "id" in issued ? issued.id : issued.invitationId;
+      const source =
+        kind === "link"
+          ? { kind, id, secret: issued.secret! }
+          : { kind, invitationId: id, secret: issued.secret! };
+      recipient = coordinatorUser;
+      actor = recipient;
+      const [legacy] = await db
+        .insert(participants)
+        .values({
+          projectId: project,
+          representedOrganizationId: partner,
+          displayName: "Legacy",
+          email: stored.email,
+        })
+        .returning();
+      await db.insert(profiles).values({ userId: recipient, fullName: "Before" });
+      await db.insert(acceptances).values({
+        userId: recipient,
+        version: "before",
+        contentHash: "before",
+        answers: "before",
+      });
+      const beforeProfiles = await db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.userId, recipient));
+      const beforeAcceptances = await db
+        .select()
+        .from(acceptances)
+        .where(eq(acceptances.userId, recipient));
+      // Observe the real API write inside the transaction before the later identity conflict.
+      authMocks.grantParticipantMembership.mockImplementationOnce(
+        async (input, api) => {
+          const response = await api.grantParticipantMembership(input);
+          expect(response.ok).toBe(true);
+          expect(await response.clone().json()).toMatchObject({
+            member: {
+              role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
+            },
+          });
+          return response;
+        },
+      );
+      await expect(
+        client.participantOnboarding.join({
+          source,
+          profile: { fullName: "After", country: "LV" },
+          agreement: { accepted: true },
+        }),
+      ).rejects.toMatchObject({ code: "CONFLICT" });
+      expect(authMocks.grantParticipantMembership).toHaveBeenCalledTimes(1);
+      expect(await memberships()).toEqual([
+        { role: ORGANIZATION_ROLES.ProjectCoordinator },
+      ]);
+      expect(
+        await db
+          .select()
+          .from(participants)
+          .where(eq(participants.projectId, project)),
+      ).toEqual([legacy]);
+      expect(
+        await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+      ).toEqual(beforeProfiles);
+      expect(
+        await db
+          .select()
+          .from(acceptances)
+          .where(eq(acceptances.userId, recipient)),
+      ).toEqual(beforeAcceptances);
+    },
+  );
+
+  it("does not deadlock a token close whose closedByUserId references the joining User", async () => {
+    const link = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
     });
-    expect(await memberships()).toHaveLength(0);
-    expect(
-      await db.select().from(profiles).where(eq(profiles.userId, recipient)),
-    ).toHaveLength(0);
+    let releaseClose!: () => void;
+    const closeGate = new Promise<void>((resolve) => {
+      releaseClose = resolve;
+    });
+    let tokenLocked!: (pid: number) => void;
+    const tokenReady = new Promise<number>((resolve) => {
+      tokenLocked = resolve;
+    });
+    const close = db.transaction(async (tx) => {
+      await tx
+        .select({ id: entryTokens.id })
+        .from(entryTokens)
+        .where(eq(entryTokens.id, link.id))
+        .for("update");
+      tokenLocked(await backendPid(tx));
+      await closeGate;
+      // Match registration-link close's token update and its User FK check.
+      await tx
+        .update(entryTokens)
+        .set({
+          status: "revoked",
+          closedAt: new Date(),
+          closedByUserId: recipient,
+        })
+        .where(eq(entryTokens.id, link.id));
+    });
+    const closeOutcome = close.then(
+      () => ({ ok: true }),
+      (error) => ({ error }),
+    );
+    const closerPid = await tokenReady;
+    let joinArrived!: (pid: number) => void;
+    const joinReady = new Promise<number>((resolve) => {
+      joinArrived = resolve;
+    });
+    transactionHooks.onBegin.mockImplementationOnce(
+      async (tx: JoinTransaction) => {
+        joinArrived(await backendPid(tx));
+      },
+    );
+    actor = recipient;
+    const join = client.participantOnboarding.join({
+      source: { kind: "link", id: link.id, secret: link.secret },
+      profile: { fullName: "Recipient", country: "LV" },
+      agreement: { accepted: true },
+    });
+    const joinOutcome = join.then(
+      (value) => ({ value }),
+      (error) => ({ error }),
+    );
+    try {
+      const joinPid = await joinReady;
+      // User lock is held; join is now blocked on the closer's token lock.
+      const blockedQuery = await waitForBlockedQuery(joinPid, closerPid);
+      expect(blockedQuery).toContain('"participant_entry_token"');
+    } finally {
+      releaseClose();
+      await Promise.all([closeOutcome, joinOutcome]);
+    }
+    const [closed, joined] = await Promise.all([closeOutcome, joinOutcome]);
+    expect(closed).toEqual({ ok: true });
+    expect(joined).toMatchObject({
+      error: { code: "CONFLICT", data: { reason: "REGISTRATION_LINK_CLOSED" } },
+    });
+    expect(await memberships()).toEqual([]);
     expect(
       await db
         .select()
         .from(participants)
         .where(eq(participants.projectId, project)),
-    ).toHaveLength(0);
+    ).toEqual([]);
     expect(
-      await db
-        .select()
-        .from(acceptances)
-        .where(eq(acceptances.userId, recipient)),
-    ).toHaveLength(0);
+      (await db.select().from(entryTokens).where(eq(entryTokens.id, link.id)))[0],
+    ).toMatchObject({ status: "revoked", closedByUserId: recipient });
+  });
+
+  it.each([false, true])(
+    "serializes different-token joins with an overlapping failure=%s",
+    async (fail) => {
+      const link = await client.participantOnboarding.createRegistrationLink({
+        partnershipId: partnership,
+      });
+      const invitation = await client.participantOnboarding.issueInvitation({
+        partnershipId: partnership,
+        email: recipientEmail,
+      });
+      actor = recipient;
+      let firstPid = 0;
+      transactionHooks.onBegin.mockImplementationOnce(
+        async (tx: JoinTransaction) => {
+          firstPid = await backendPid(tx);
+        },
+      );
+      let release!: () => void;
+      let started!: () => void;
+      const entered = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      authMocks.addMember.mockImplementationOnce(async (input, api) => {
+        const response = await api.addMember(input);
+        expect(response.ok).toBe(true);
+        started();
+        await gate;
+        return fail ? new Response(null, { status: 503 }) : response;
+      });
+      const profile = { fullName: "Recipient", country: "LV" as const };
+      const agreement = { accepted: true as const };
+      const first = client.participantOnboarding.join({
+        source: { kind: "link", id: link.id, secret: link.secret },
+        profile,
+        agreement,
+      });
+      // Install rejection handling before releasing the injected failure.
+      const firstOutcome = first.then(
+        (value) => ({ value }),
+        (error) => ({ error }),
+      );
+      await entered;
+      let arrived!: (pid: number) => void;
+      const secondArrived = new Promise<number>((resolve) => {
+        arrived = resolve;
+      });
+      transactionHooks.onBegin.mockImplementationOnce(
+        async (tx: JoinTransaction) => {
+          arrived(await backendPid(tx));
+        },
+      );
+      const second = client.participantOnboarding.join({
+        source: {
+          kind: "invitation",
+          invitationId: invitation.invitationId,
+          secret: invitation.secret!,
+        },
+        profile,
+        agreement,
+      });
+      const completed = Promise.allSettled([firstOutcome, second]);
+      // Do not let the first transaction finish until PostgreSQL proves that
+      // the second has attempted the User lock and is waiting on the first.
+      try {
+        const secondPid = await secondArrived;
+        const blockedQuery = await waitForBlockedQuery(secondPid, firstPid);
+        expect(blockedQuery).toMatch(/from "user".*for no key update/i);
+      } finally {
+        release();
+        await completed;
+      }
+      const [outcome, successful] = await Promise.all([firstOutcome, second]);
+      if (fail)
+        expect(outcome).toMatchObject({ error: { code: "SERVICE_UNAVAILABLE" } });
+      else expect(outcome).toEqual({ value: successful });
+      expect(await memberships()).toEqual([
+        { role: ORGANIZATION_ROLES.Participant },
+      ]);
+      expect(
+        await db
+          .select()
+          .from(participants)
+          .where(eq(participants.projectId, project)),
+      ).toHaveLength(1);
+      expect(authMocks.addMember).toHaveBeenCalledTimes(fail ? 2 : 1);
+    },
+  );
+
+  it("keeps a successful join when an overlapping different-Partner join fails", async () => {
+    const first = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: partnership,
+    });
+    activeOrganizationId = otherPartner;
+    const second = await client.participantOnboarding.createRegistrationLink({
+      partnershipId: otherPartnership,
+    });
+    activeOrganizationId = partner;
+    actor = recipient;
+    const outcomes = await Promise.allSettled(
+      [first, second].map((link) =>
+        client.participantOnboarding.join({
+          source: { kind: "link", id: link.id, secret: link.secret },
+          profile: { fullName: "Recipient", country: "LV" },
+          agreement: { accepted: true },
+        }),
+      ),
+    );
+    const successful = outcomes.filter(
+      (outcome) => outcome.status === "fulfilled",
+    );
+    const failed = outcomes.filter((outcome) => outcome.status === "rejected");
+    expect(successful).toHaveLength(1);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.reason).toMatchObject({
+      code: "CONFLICT",
+      data: { reason: "JOINED_OTHER_PARTNER" },
+    });
+    const rows = await db
+      .select()
+      .from(participants)
+      .where(eq(participants.projectId, project));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.id).toBe(successful[0]!.value.participationId);
+    expect(await memberships()).toEqual([
+      { role: ORGANIZATION_ROLES.Participant },
+    ]);
+    expect(authMocks.addMember).toHaveBeenCalledTimes(1);
   });
 
   it("separately gates missing profile and stale agreement before listing Participations", async () => {
@@ -1326,7 +1647,7 @@ describe("Participant onboarding procedures", () => {
     );
   });
 
-  it("retries app writes after the membership grant but the app transaction failed", async () => {
+  it("rolls back the membership when the join fails and permits a retry", async () => {
     const issued = await client.participantOnboarding.issueInvitation({
       partnershipId: partnership,
       email: recipientEmail,
@@ -1355,9 +1676,7 @@ describe("Participant onboarding procedures", () => {
     await expect(client.participantOnboarding.join(input)).rejects.toMatchObject({
       code: "CONFLICT",
     });
-    expect(await memberships()).toEqual([
-      { role: ORGANIZATION_ROLES.Participant },
-    ]);
+    expect(await memberships()).toEqual([]);
     expect(
       await db.select().from(profiles).where(eq(profiles.userId, recipient)),
     ).toHaveLength(0);
@@ -1371,8 +1690,8 @@ describe("Participant onboarding procedures", () => {
     expect(await client.participantOnboarding.join(input)).toHaveProperty(
       "participationId",
     );
-    // The grant ran once; the retry reused the existing Membership.
-    expect(authMocks.addMember).toHaveBeenCalledTimes(1);
+    // The failed grant rolled back, so the retry grants Membership again.
+    expect(authMocks.addMember).toHaveBeenCalledTimes(2);
     expect(
       await db
         .select()
@@ -1805,22 +2124,6 @@ describe("Participant onboarding procedures", () => {
           session: { id: randomUUID(), activeOrganizationId },
         };
       });
-      authMocks.addMember.mockImplementationOnce(
-        async ({
-          body,
-        }: {
-          body: { userId: string; organizationId: string };
-        }) => {
-          await db.insert(member).values({
-            id: randomUUID(),
-            organizationId: body.organizationId,
-            userId: body.userId,
-            role: ORGANIZATION_ROLES.Participant,
-            createdAt: new Date(),
-          });
-          return new Response(null, { status: 200 });
-        },
-      );
       actor = second;
       const other = await client.participantOnboarding.join({
         ...linkInput,

@@ -46,6 +46,7 @@ const delivery = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/email", () => ({
   sendParticipantInvitation: delivery.sendParticipantInvitation,
+  emailSender: {},
 }));
 
 const authMocks = vi.hoisted(() => ({
@@ -55,9 +56,12 @@ const authMocks = vi.hoisted(() => ({
   grantParticipantMembership: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/auth", () => ({
-  auth: { api: authMocks },
-}));
+vi.mock("@/lib/auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth")>();
+  const { createJoinTransactionAuthMock } =
+    await import("./join-transaction-auth-mock");
+  return createJoinTransactionAuthMock(authMocks, actual);
+});
 
 import { listPendingInvitations } from "@/features/organizations/procedures/staff-invites";
 import { createParticipantOnboardingProcedures } from "@/features/participant-onboarding/procedures/participant-onboarding";
@@ -198,42 +202,14 @@ beforeEach(async () => {
     },
     session: { id: randomUUID(), activeOrganizationId },
   }));
-  authMocks.addMember.mockImplementation(
-    async ({ body }: { body: { userId: string; organizationId: string } }) => {
-      const [existing] = await db
-        .select({ id: member.id })
-        .from(member)
-        .where(
-          and(
-            eq(member.userId, body.userId),
-            eq(member.organizationId, body.organizationId),
-          ),
-        )
-        .limit(1);
-      if (existing)
-        return new Response(
-          JSON.stringify({
-            code: "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION",
-          }),
-          { status: 400 },
-        );
-      await db.insert(member).values({
-        id: randomUUID(),
-        organizationId: body.organizationId,
-        userId: body.userId,
-        role: ORGANIZATION_ROLES.Participant,
-        createdAt: new Date(),
-      });
-      return new Response(null, { status: 200 });
-    },
-  );
+  authMocks.addMember.mockImplementation((input, api) => api.addMember(input));
   authMocks.hasPermission.mockImplementation(
     async ({ body }: { body: { permissions: Record<string, string[]> } }) => ({
       success: await authorizedActiveRole(body.permissions),
     }),
   );
-  authMocks.grantParticipantMembership.mockImplementation(
-    async () => new Response(null, { status: 200 }),
+  authMocks.grantParticipantMembership.mockImplementation((input, api) =>
+    api.grantParticipantMembership(input),
   );
 });
 
