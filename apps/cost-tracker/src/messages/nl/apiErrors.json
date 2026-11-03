@@ -117,6 +117,7 @@
     "PROOF_FILE_TOO_LARGE": "Kies een bewijsdocument van maximaal 10 MB.",
     "PROOF_FILE_EMPTY": "Kies een niet-leeg bewijsdocument.",
     "PROOF_FILE_NAME_REQUIRED": "Kies een bewijsdocument met een bestandsnaam.",
+    "PROOF_QUOTA_EXCEEDED": "Deze claim bevat al het maximale volume aan bewijsdocumenten.",
     "CLAIM_REQUIRED_FOR_PROOF": "Sla een bewerkbare financieringsaanvraag op voordat je een bewijsdocument uploadt.",
     "PROOF_ORIGIN_DENIED": "Ongeldige uploadherkomst.",
     "PROOF_TRANSPORT_TOO_LARGE": "Het uploadverzoek is te groot.",

@@ -6,7 +6,7 @@ import {
   claimsTable as claims,
   proofDocumentsTable as documents,
 } from "@greendex/database/schema";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
@@ -122,6 +122,12 @@ export async function downloadProofDocument(input: {
 
 const allowedMediaTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 const maximumBytes = 10 * 1024 * 1024;
+// #378: per-claim upload quota. Counts and bytes come from stored rows
+// only — no clock windows, no new tables. The claim row is already
+// row-locked above, so concurrent uploads to the same claim serialize
+// and cannot both slip past the check.
+const maximumDocumentsPerClaim = 25;
+const maximumBytesPerClaim = 100 * 1024 * 1024;
 
 /**
  * #374: server-side magic-byte sniffing for the proof allowlist. The
@@ -216,6 +222,23 @@ export async function uploadProofDocument(input: {
     const sniffedMediaType = sniffProofMediaType(bytes);
     if (sniffedMediaType === null || sniffedMediaType !== input.file.type)
       throw proofErrors.proofMediaUnsupported();
+    const [usage] = await tx
+      .select({
+        documentCount: count(documents.id),
+        totalBytes: sql<number>`coalesce(sum(${documents.byteSize}), 0)`.mapWith(
+          Number,
+        ),
+      })
+      .from(documents)
+      .where(eq(documents.claimId, claim.id))
+      .limit(1);
+    const existingCount = Number(usage?.documentCount ?? 0);
+    const existingBytes = Number(usage?.totalBytes ?? 0);
+    if (
+      existingCount >= maximumDocumentsPerClaim ||
+      existingBytes + bytes.length > maximumBytesPerClaim
+    )
+      throw proofErrors.proofQuotaExceeded();
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
     await putProofFile(reference, bytes, sniffedMediaType);
     const [saved] = await tx

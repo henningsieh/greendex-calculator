@@ -117,6 +117,7 @@
     "PROOF_FILE_TOO_LARGE": "Wähle ein Proof Document mit höchstens 10 MB aus.",
     "PROOF_FILE_EMPTY": "Wähle ein nicht leeres Proof Document aus.",
     "PROOF_FILE_NAME_REQUIRED": "Wähle ein Proof Document mit einem Dateinamen aus.",
+    "PROOF_QUOTA_EXCEEDED": "Dieser Claim hat bereits das maximale Proof-Dokument-Volumen erreicht.",
     "CLAIM_REQUIRED_FOR_PROOF": "Speichere einen bearbeitbaren Claim, bevor du ein Proof Document hochlädst.",
     "PROOF_ORIGIN_DENIED": "Die Herkunft des Uploads ist ungültig.",
     "PROOF_TRANSPORT_TOO_LARGE": "Die Upload-Anfrage ist zu groß.",

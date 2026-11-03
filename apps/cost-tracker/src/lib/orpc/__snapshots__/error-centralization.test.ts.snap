@@ -585,6 +585,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "PROOF_ORIGIN_DENIED",
     "status": 403,
   },
+  "proofQuotaExceeded": {
+    "code": "TOO_MANY_REQUESTS",
+    "message": "This Claim already holds the maximum Proof Document volume.",
+    "reason": "PROOF_QUOTA_EXCEEDED",
+    "status": 429,
+  },
   "proofSelectionRequired": {
     "code": "BAD_REQUEST",
     "message": "Select a file and Project Partnership.",

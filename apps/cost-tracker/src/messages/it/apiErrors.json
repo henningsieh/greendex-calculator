@@ -117,6 +117,7 @@
     "PROOF_FILE_TOO_LARGE": "Scegli un documento giustificativo di dimensioni non superiori a 10 MB.",
     "PROOF_FILE_EMPTY": "Scegli un documento giustificativo non vuoto.",
     "PROOF_FILE_NAME_REQUIRED": "Scegli un documento giustificativo con un nome di file.",
+    "PROOF_QUOTA_EXCEEDED": "Questa richiesta ha già raggiunto il volume massimo di documenti giustificativi.",
     "CLAIM_REQUIRED_FOR_PROOF": "Salva una richiesta di finanziamento modificabile prima di caricare un documento giustificativo.",
     "PROOF_ORIGIN_DENIED": "Origine del caricamento non valida.",
     "PROOF_TRANSPORT_TOO_LARGE": "La richiesta di caricamento è troppo grande.",
