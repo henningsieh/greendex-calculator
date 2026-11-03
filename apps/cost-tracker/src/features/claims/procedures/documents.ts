@@ -123,6 +123,53 @@ export async function downloadProofDocument(input: {
 const allowedMediaTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 const maximumBytes = 10 * 1024 * 1024;
 
+/**
+ * #374: server-side magic-byte sniffing for the proof allowlist. The
+ * multipart `File.type` is client-supplied and untrusted, so only the
+ * sniffed type decides what is stored and served. Dependency-free on
+ * purpose: exactly three allowlisted types with crisp magic numbers.
+ */
+const proofMagicTypes = [
+  {
+    mediaType: "application/pdf",
+    match: (bytes: Uint8Array) =>
+      bytes.length >= 5 &&
+      bytes[0] === 0x25 && // %
+      bytes[1] === 0x50 && // P
+      bytes[2] === 0x44 && // D
+      bytes[3] === 0x46 && // F
+      bytes[4] === 0x2d, // -
+  },
+  {
+    mediaType: "image/jpeg",
+    match: (bytes: Uint8Array) =>
+      bytes.length >= 3 &&
+      bytes[0] === 0xff &&
+      bytes[1] === 0xd8 &&
+      bytes[2] === 0xff,
+  },
+  {
+    mediaType: "image/png",
+    match: (bytes: Uint8Array) =>
+      bytes.length >= 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 && // P
+      bytes[2] === 0x4e && // N
+      bytes[3] === 0x47 && // G
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a,
+  },
+] as const;
+
+export function sniffProofMediaType(bytes: Uint8Array): string | null {
+  for (const candidate of proofMagicTypes) {
+    if (candidate.match(bytes)) return candidate.mediaType;
+  }
+  return null;
+}
+
 /** Called by the multipart route only; the Claim lock protects editable status across the upload. */
 export async function uploadProofDocument(input: {
   partnershipId: string;
@@ -162,15 +209,22 @@ export async function uploadProofDocument(input: {
     if (!claim) throw proofErrors.claimRequiredForProof();
     if (!canPartnerEditClaim(claim.status)) throw proofErrors.claimNotEditable();
     const bytes = Buffer.from(await input.file.arrayBuffer());
+    // #374: File.type is client-supplied. Only the sniffed magic-byte type
+    // is authoritative: a spoofed label is rejected even when it names an
+    // allowlisted type, and the stored/served ContentType always matches
+    // the verified bytes.
+    const sniffedMediaType = sniffProofMediaType(bytes);
+    if (sniffedMediaType === null || sniffedMediaType !== input.file.type)
+      throw proofErrors.proofMediaUnsupported();
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
-    await putProofFile(reference, bytes, input.file.type);
+    await putProofFile(reference, bytes, sniffedMediaType);
     const [saved] = await tx
       .insert(documents)
       .values({
         claimId: claim.id,
         fileReference: reference,
         originalFileName: input.file.name.slice(0, 255),
-        mediaType: input.file.type,
+        mediaType: sniffedMediaType,
         byteSize: bytes.length,
         checksum: createHash("sha256").update(bytes).digest("hex"),
       })
