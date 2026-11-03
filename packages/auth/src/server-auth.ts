@@ -115,6 +115,31 @@ type SessionDatabaseHooks = NonNullable<
 // P preserves each passed plugin's endpoint types into auth.api. A wide
 // BetterAuthPlugin[] would erase custom server-only endpoints from the
 // inferred API surface.
+/**
+ * Closed origin allowlist derived from the deployment base URL.
+ * Only the app's own origin (plus its www alias, which serves the same
+ * deployment) is trusted. Preview deployments bake their own origin into
+ * the base URL, so no wildcard or runtime discovery is needed. Exported
+ * for the calculator OpenAPI CORS allowlist so both surfaces share one
+ * definition (#371).
+ */
+export function trustedOriginsFor(baseURL: string): string[] {
+  const origins = [baseURL];
+  try {
+    const url = new URL(baseURL);
+    const host = url.hostname;
+    const isLoopback =
+      host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+    if (!isLoopback && !host.startsWith("www.")) {
+      const wwwOrigin = url.protocol + "//www." + host;
+      origins.push(url.port ? wwwOrigin + ":" + url.port : wwwOrigin);
+    }
+  } catch {
+    // Callers validate the base URL (t3-env at startup); keep the raw value only.
+  }
+  return origins;
+}
+
 export interface ServerAuthConfig<
   P extends BetterAuthPlugin[] = BetterAuthPlugin[],
 > {
@@ -186,6 +211,22 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
     appName: config.appName,
     baseURL: config.baseURL,
     secret: config.secret,
+    // #373: explicit origin trust instead of the implicit baseURL default.
+    // Deployments may additionally extend this via BETTER_AUTH_TRUSTED_ORIGINS.
+    trustedOrigins: trustedOriginsFor(config.baseURL),
+    // #373: explicit account-linking policy, pinned to the verified
+    // Better Auth 1.7 behavior (empty trustedProviders + verified local
+    // mail required). A social login links to an existing account only
+    // when the provider mail is verified there and the local account mail
+    // is verified here; nothing links on unverified mail alone.
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: [],
+        requireLocalEmailVerified: true,
+        allowDifferentEmails: false,
+      },
+    },
     rateLimit: config.localE2EAuth
       ? {
           enabled: true,
@@ -201,6 +242,8 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
+      // #373: pin the verified 1h library default instead of relying on it silently.
+      resetPasswordTokenExpiresIn: 3600,
       sendResetPassword: ({ user, url }) =>
         config.emailSender.sendPasswordResetEmail({ user, url }),
     },
@@ -216,6 +259,11 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
         enabled: false,
       },
       additionalFields: {
+        // activeOrganizationId is intentionally NOT declared here: it is
+        // owned by the organization plugin schema (session.fields), which
+        // persists it. Declaring it twice would split ownership of the
+        // tenant key. #373 verified this against Better Auth 1.7 instead
+        // of assuming it.
         activeProjectId: {
           type: "string",
           required: false,
@@ -232,6 +280,10 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
             ? costTrackerOrganizationRoles
             : calculatorOrganizationRoles,
         creatorRole: ORGANIZATION_ROLES.OrganizationOwner,
+        // #373: invitations require a verified mailbox unless a caller
+        // explicitly opts out. Cost Tracker already passes this; the
+        // Calculator now inherits it instead of the silent library default.
+        requireEmailVerificationOnInvitation: true,
         ...config.organization,
         schema: {
           organization: { additionalFields: organizationCountryFields },
