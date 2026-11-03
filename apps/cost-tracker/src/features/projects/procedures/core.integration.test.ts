@@ -594,6 +594,59 @@ describe("projects procedures", () => {
       }
     });
 
+    it("returns the same empty shape for invisible projects as for gibberish (no search oracle)", async () => {
+      // #377: the response must not reveal whether a searched name exists
+      // outside the caller's scope. "Foreign Partner Project" belongs to a
+      // foreign host and is partnered to list-partner only; "Archived
+      // Project" is archived out of every list scope. Both must read
+      // exactly like a search matching nothing at all.
+      const gibberish = "zzz-no-such-project-zzz";
+      useActiveOrganization(hostId);
+      const hostedForeign = await client.projects.listHosted({
+        pageSize: 25,
+        search: "Foreign Partner Project",
+      });
+      const hostedArchived = await client.projects.listHosted({
+        pageSize: 25,
+        search: "Archived Project",
+      });
+      const hostedGibberish = await client.projects.listHosted({
+        pageSize: 25,
+        search: gibberish,
+      });
+      expect(hostedForeign.rows).toEqual([]);
+      expect(hostedForeign).toEqual(hostedGibberish);
+      expect(hostedArchived).toEqual(hostedGibberish);
+
+      // Positive control: the partner that may see the foreign project
+      // finds it, so the empty shape above is scope enforcement, not a
+      // broken search.
+      useActiveOrganization(partnerId);
+      const partnerForeign = await client.projects.listPartner({
+        pageSize: 25,
+        search: "Foreign Partner Project",
+      });
+      expect(partnerForeign.rows.map((row) => row.id)).toEqual([foreignId]);
+      const partnerArchived = await client.projects.listPartner({
+        pageSize: 25,
+        search: "Archived Project",
+      });
+      const partnerGibberish = await client.projects.listPartner({
+        pageSize: 25,
+        search: gibberish,
+      });
+      expect(partnerArchived.rows).toEqual([]);
+      expect(partnerArchived).toEqual(partnerGibberish);
+
+      // partnerOptions stay need-to-know: partnered orgs are listed (the
+      // hosting side manages those partnerships), unrelated orgs never are.
+      useActiveOrganization(hostId);
+      const options = await client.projects.listHosted({ pageSize: 25 });
+      const optionIds = options.partnerOptions.map((option) => option.id);
+      expect(optionIds).toContain(partnerId);
+      expect(optionIds).not.toContain(unrelatedId);
+    });
+
     it.each([
       ORGANIZATION_ROLES.Participant,
       ORGANIZATION_ROLES.Participant,

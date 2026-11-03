@@ -587,6 +587,11 @@ export const listPartner = authorized
     const assignedIds = canReadPartner
       ? []
       : await assignedPartnershipIds(context.user.id, activeOrganizationId);
+    // #377: accessDenied stays distinct from selectOrganization on purpose.
+    // Both describe the caller's own access state (need-to-know UX used
+    // app-wide), never another principal's data: every query below is
+    // tenant-scoped, and invisible-vs-nonexistent searches share one empty
+    // shape (see "no search oracle" regression test).
     if (!canReadPartner && assignedIds.length === 0) {
       throw createSituationErrors(errors).accessDenied();
     }
