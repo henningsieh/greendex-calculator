@@ -68,7 +68,7 @@
     "@radix-ui/react-use-controllable-state": "^1.3.0",
     "@t3-oss/env-nextjs": "catalog:",
     "@tanstack/react-query": "catalog:",
-    "@tanstack/react-query-devtools": "^5.105.0",
+    "@tanstack/react-query-devtools": "^5.105.2",
     "@tanstack/react-table": "catalog:",
     "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
@@ -105,7 +105,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@next/playwright": "16.4.3",
+    "@next/playwright": "16.4.4",
     "@noble/hashes": "^2.4.0",
     "@paralleldrive/cuid2": "catalog:",
     "@playwright/test": "catalog:",
@@ -116,7 +116,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "@vitest/ui": "^5.0.5",
+    "@vitest/ui": "^5.1.0",
     "auth": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "jsdom": "catalog:",
