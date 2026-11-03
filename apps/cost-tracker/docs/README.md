@@ -22,6 +22,7 @@ Open only when the task touches them; not required reading.
 - [Confirm an action](confirm-dialog.md)
 - [HTTP API and real-HTTP test prerequisites](openapi.md)
 - [Live email verification for both managed apps](live-email-verification.md)
+- [E2E artifact privacy policy](../../../docs/agents/instructions/conventions.md#e2e-artifact-privacy)
 - [Prefetch and Suspense route audit](prefetch-suspense-audit.md) — consult when changing server-prefetched Cost Tracker routes
 - [Clickdummy use-case traceability](clickdummy/requirements-traceability.md)
 - [Garage S3 infrastructure](infrastructure/garage.md)

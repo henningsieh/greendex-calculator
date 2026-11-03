@@ -11,7 +11,7 @@ import {
 
 export { expect } from "@playwright/test";
 
-// The deep guard is dormant for MVP. See #338 (E2E artifact privacy follow-up).
+// Artifacts stay private by policy. The redactor is not a reporting boundary.
 const require = createRequire(import.meta.url);
 
 const privateValues = new Set<string>([SEED_USER.password]);
@@ -96,7 +96,7 @@ type PrivacyTestInfo = TestInfo & {
   _failWithError: (error: unknown) => void;
 };
 
-// Deliberate no-op: do not install runner-internals hooks for MVP.
+// No supported pre-serialization boundary has been verified. Keep hooks dormant.
 export function installArtifactPrivacy(_testInfo: TestInfo): () => void {
   return () => undefined;
 }
