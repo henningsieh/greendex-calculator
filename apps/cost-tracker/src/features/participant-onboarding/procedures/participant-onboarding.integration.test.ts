@@ -594,6 +594,73 @@ describe("Participant onboarding procedures", () => {
     ).toHaveLength(0);
   });
 
+  it("compensates a membership created before a mid-join token revoke", async () => {
+    const issued = await client.participantOnboarding.issueInvitation({
+      partnershipId: partnership,
+      email: recipientEmail,
+    });
+    actor = recipient;
+    // #372: revoke between the unlocked pre-check and the row-locked
+    // recheck, then let the membership write succeed. The join must fail
+    // with the invitation closed and leave no orphan membership behind.
+    authMocks.addMember.mockImplementationOnce(async () => {
+      await db
+        .update(entryTokens)
+        .set({ status: "revoked" })
+        .where(eq(entryTokens.id, issued.invitationId));
+      const [existing] = await db
+        .select({ id: member.id })
+        .from(member)
+        .where(and(eq(member.userId, recipient), eq(member.organizationId, host)))
+        .limit(1);
+      if (existing)
+        return new Response(
+          JSON.stringify({
+            code: "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION",
+          }),
+          { status: 400 },
+        );
+      await db.insert(member).values({
+        id: randomUUID(),
+        organizationId: host,
+        userId: recipient,
+        role: ORGANIZATION_ROLES.Participant,
+        createdAt: new Date(),
+      });
+      return new Response(null, { status: 200 });
+    });
+    await expect(
+      client.participantOnboarding.join({
+        source: {
+          kind: "invitation",
+          invitationId: issued.invitationId,
+          secret: issued.secret!,
+        },
+        profile: { fullName: "Recipient", country: "LV" as const },
+        agreement: { accepted: true },
+      }),
+    ).rejects.toMatchObject({
+      code: "CONFLICT",
+      data: { reason: "PARTICIPANT_INVITATION_CLOSED" },
+    });
+    expect(await memberships()).toHaveLength(0);
+    expect(
+      await db.select().from(profiles).where(eq(profiles.userId, recipient)),
+    ).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(participants)
+        .where(eq(participants.projectId, project)),
+    ).toHaveLength(0);
+    expect(
+      await db
+        .select()
+        .from(acceptances)
+        .where(eq(acceptances.userId, recipient)),
+    ).toHaveLength(0);
+  });
+
   it("separately gates missing profile and stale agreement before listing Participations", async () => {
     actor = recipient;
     await expect(
