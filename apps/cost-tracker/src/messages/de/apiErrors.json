@@ -118,7 +118,7 @@
     "PROOF_FILE_EMPTY": "Wähle ein nicht leeres Proof Document aus.",
     "PROOF_FILE_NAME_REQUIRED": "Wähle ein Proof Document mit einem Dateinamen aus.",
     "PROOF_QUOTA_EXCEEDED": "Dieser Claim hat bereits das maximale Proof-Dokument-Volumen erreicht.",
-    "PROOF_DAILY_QUOTA_EXCEEDED": "Das tägliche Upload-Limit für Nachweisdokumente ist erreicht. Versuche es morgen erneut.",
+    "PROOF_DAILY_QUOTA_EXCEEDED": "Das tägliche Upload-Limit für Nachweisdokumente ist erreicht. Es wird um 00:00 UTC zurückgesetzt.",
     "CLAIM_REQUIRED_FOR_PROOF": "Speichere einen bearbeitbaren Claim, bevor du ein Proof Document hochlädst.",
     "PROOF_ORIGIN_DENIED": "Die Herkunft des Uploads ist ungültig.",
     "PROOF_TRANSPORT_TOO_LARGE": "Die Upload-Anfrage ist zu groß.",

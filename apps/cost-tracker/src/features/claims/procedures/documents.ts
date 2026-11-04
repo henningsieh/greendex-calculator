@@ -245,7 +245,6 @@ export async function uploadProofDocument(input: {
     });
     if (allowance === "exhausted") return { kind: "exhausted" as const };
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
-    await putProofFile(reference, bytes, sniffedMediaType);
     const [saved] = await tx
       .insert(documents)
       .values({
@@ -261,9 +260,27 @@ export async function uploadProofDocument(input: {
       console.error("[Proof upload] Insert returned no document");
       throw proofErrors.proofUploadFailed();
     }
-    return { kind: "saved" as const, document: saved };
+    return {
+      kind: "saved" as const,
+      document: saved,
+      reference,
+      bytes,
+      mediaType: sniffedMediaType,
+    };
   });
   await cleanupQuotasBestEffort();
   if (outcome.kind === "exhausted") throw proofErrors.proofDailyQuotaExceeded();
+  // Storage writes stay outside the transaction: a slow upload must not hold
+  // the quota row lock, and a rollback can no longer orphan an object.
+  try {
+    await putProofFile(outcome.reference, outcome.bytes, outcome.mediaType);
+  } catch {
+    try {
+      await db.delete(documents).where(eq(documents.id, outcome.document.id));
+    } catch {
+      console.error("[Proof upload] Compensating document delete failed");
+    }
+    throw proofErrors.proofUploadFailed();
+  }
   return { status: 201 as const, document: outcome.document };
 }
