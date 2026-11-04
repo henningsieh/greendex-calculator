@@ -25,8 +25,7 @@ export const openapiHandler = new OpenAPIHandler(router, {
       docsPath: "/api/docs",
       specPath: "/api/openapi-spec",
       provider: "scalar",
-      providerScriptUrl:
-        "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0/dist/browser/standalone.js",
+      providerScriptUrl: "/api/scalar/standalone.js",
       allow: async ({ context }) => {
         const session = await auth.api.getSession({ headers: context.headers });
         return Boolean(session?.session && session.user);

@@ -34,6 +34,9 @@ const privateInvariantThrows: Record<string, string[]> = {
   "lib/orpc/orpc.ts": ['new Error("RPCLink is not allowed on the server side.")'],
   "messages/merge.ts": ["new Error(`Duplicate message namespace: ${namespace}`)"],
   "lib/proof-storage.ts": ['new Error("Proof file has no body.")'],
+  "app/api/scalar/standalone.js/route.ts": [
+    'new Error("Scalar standalone.js not found")',
+  ],
 };
 function directErrorSites(source: string) {
   const aliases = [...source.matchAll(/\bORPCError\s+as\s+(\w+)/g)].map(
