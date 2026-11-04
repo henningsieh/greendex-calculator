@@ -23,7 +23,7 @@ import {
   vi,
 } from "vitest";
 
-import { ownedCleanup } from "@/features/quotas/procedures/owned-cleanup.test-helper";
+import { ownedCleanup } from "@/__tests__/owned-cleanup.test-helper";
 
 const mocks = vi.hoisted(() => ({
   put: vi.fn(),

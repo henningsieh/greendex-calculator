@@ -7,7 +7,7 @@ import { eq, sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { ownedCleanup } from "@/features/quotas/procedures/owned-cleanup.test-helper";
+import { ownedCleanup } from "@/__tests__/owned-cleanup.test-helper";
 
 const control = vi.hoisted(() => ({
   instant: undefined as string | undefined,
