@@ -7,8 +7,11 @@ import { eq, sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { ownedCleanup } from "@/features/quotas/procedures/owned-cleanup.test-helper";
+
 const control = vi.hoisted(() => ({
   instant: undefined as string | undefined,
+  cleanupExecutor: undefined as Pick<typeof db, "execute"> | undefined,
   failCleanup: false,
   failConsumption: false,
 }));
@@ -32,10 +35,16 @@ vi.mock("@greendex/database", async (original) => {
                   : tx,
               );
             });
-        if (key === "execute" && control.failCleanup)
-          return () => {
-            throw new Error("private connection detail");
-          };
+        if (key === "execute") {
+          if (control.failCleanup)
+            return () => {
+              throw new Error("private connection detail");
+            };
+          return ownedCleanup(control.cleanupExecutor ?? target, [
+            organizationId,
+            `${organizationId}-second`,
+          ]).execute;
+        }
         return Reflect.get(target, key);
       },
     }),
@@ -123,35 +132,32 @@ function controlledClock(tx: Transaction, instant: () => string): Transaction {
   });
 }
 
-function ownedCleanup(tx: Transaction): Transaction {
-  return new Proxy(tx, {
-    get(target, key) {
-      if (key === "execute")
-        return (statement: Parameters<Transaction["execute"]>[0]) => {
-          if (typeof statement === "string") return target.execute(statement);
-          const query = new PgDialect().sqlToQuery(statement.getSQL());
-          const scoped = query.sql.replace(
-            "where expires_at <=",
-            "where organization_id = __owned__ and expires_at <=",
-          );
-          const chunks = scoped
-            .split(/(\$\d+|__owned__)/g)
-            .map((part) =>
-              part === "__owned__"
-                ? sql`${organizationId}`
-                : /^\$\d+$/.test(part)
-                  ? sql`${query.params[Number(part.slice(1)) - 1]}`
-                  : sql.raw(part),
-            );
-          return target.execute(sql.join(chunks, sql.raw("")));
-        };
-      const value = Reflect.get(target, key, target);
-      return typeof value === "function" ? value.bind(target) : value;
-    },
-  });
-}
-
 describe("PostgreSQL principal quotas", () => {
+  it("restricts automatic cleanup to this file's fixture Organizations", async () => {
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`create temporary table principal_quota_counters (like public.principal_quota_counters including all) on commit drop`,
+      );
+      await tx.execute(
+        sql`insert into principal_quota_counters values
+          ('listing_calls', ${organizationId}, 'expired', '2000-01-01', '2000-01-02', 1),
+          ('listing_calls', 'unrelated-fixture', 'expired', '2000-01-01', '2000-01-02', 1)`,
+      );
+      control.cleanupExecutor = tx;
+      try {
+        await listing();
+        expect((await rows()).map((row) => row.used)).toEqual([1n]);
+        const remaining = await tx.execute(
+          sql`select organization_id from principal_quota_counters`,
+        );
+        expect(remaining.rows).toEqual([
+          { organization_id: "unrelated-fixture" },
+        ]);
+      } finally {
+        control.cleanupExecutor = undefined;
+      }
+    });
+  });
   it("admits exact bytes and denies overflow without increasing usage", async () => {
     await seed("upload_bytes", DAILY_UPLOAD_BYTES - 6);
     expect(await upload(6)).toBe("allowed");
@@ -384,7 +390,9 @@ describe("PostgreSQL principal quotas", () => {
     await held;
     try {
       expect(
-        await db.transaction((tx) => deleteExpiredQuotaRows(ownedCleanup(tx))),
+        await db.transaction((tx) =>
+          deleteExpiredQuotaRows(ownedCleanup(tx, [organizationId])),
+        ),
       ).toBe(0);
     } finally {
       release();
@@ -392,7 +400,9 @@ describe("PostgreSQL principal quotas", () => {
     await blocker;
     await listing();
     expect(
-      await db.transaction((tx) => deleteExpiredQuotaRows(ownedCleanup(tx))),
+      await db.transaction((tx) =>
+        deleteExpiredQuotaRows(ownedCleanup(tx, [organizationId])),
+      ),
     ).toBe(0);
     expect((await rows())[0].used).toBe(1n);
     await db
@@ -404,7 +414,9 @@ describe("PostgreSQL principal quotas", () => {
       .where(owned);
     const deleted = await Promise.all(
       [0, 1].map(() =>
-        db.transaction((tx) => deleteExpiredQuotaRows(ownedCleanup(tx))),
+        db.transaction((tx) =>
+          deleteExpiredQuotaRows(ownedCleanup(tx, [organizationId])),
+        ),
       ),
     );
     expect(deleted.reduce((sum, count) => sum + count, 0)).toBe(1);
@@ -414,7 +426,9 @@ describe("PostgreSQL principal quotas", () => {
     await seed("listing_calls", 120, new Date("2000-01-01"));
     await Promise.all([
       listing(),
-      db.transaction((tx) => deleteExpiredQuotaRows(ownedCleanup(tx))),
+      db.transaction((tx) =>
+        deleteExpiredQuotaRows(ownedCleanup(tx, [organizationId])),
+      ),
     ]);
     expect((await rows()).map((row) => row.used)).toEqual([1n]);
   });

@@ -23,8 +23,11 @@ import {
   vi,
 } from "vitest";
 
+import { ownedCleanup } from "@/features/quotas/procedures/owned-cleanup.test-helper";
+
 const mocks = vi.hoisted(() => ({
   put: vi.fn(),
+  cleanupExecutor: undefined as Pick<typeof db, "execute"> | undefined,
   session: vi.fn(),
   failInsert: false,
 }));
@@ -64,6 +67,9 @@ vi.mock("@greendex/database", async (original) => {
                 }),
               ),
             );
+        if (key === "execute")
+          return ownedCleanup(mocks.cleanupExecutor ?? target, [partner, other])
+            .execute;
         return Reflect.get(target, key);
       },
     }),
@@ -183,6 +189,31 @@ afterAll(async () => {
 });
 
 describe("Proof upload Organization daily consumption", () => {
+  it("restricts automatic cleanup to this file's fixture Organizations", async () => {
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`create temporary table principal_quota_counters (like public.principal_quota_counters including all) on commit drop`,
+      );
+      await tx.execute(
+        sql`insert into principal_quota_counters values
+          ('listing_calls', ${partner}, 'expired', '2000-01-01', '2000-01-02', 1),
+          ('listing_calls', 'unrelated-fixture', 'expired', '2000-01-01', '2000-01-02', 1)`,
+      );
+      mocks.cleanupExecutor = tx;
+      try {
+        await upload();
+        expect((await quotaRows()).map((row) => row.used)).toEqual([6n]);
+        const remaining = await tx.execute(
+          sql`select organization_id from principal_quota_counters`,
+        );
+        expect(remaining.rows).toEqual([
+          { organization_id: "unrelated-fixture" },
+        ]);
+      } finally {
+        mocks.cleanupExecutor = undefined;
+      }
+    });
+  });
   it("serializes simultaneous uploads to different Claims at the exact byte boundary", async () => {
     await seed(DAILY_UPLOAD_BYTES - 6);
     const result = await Promise.allSettled([

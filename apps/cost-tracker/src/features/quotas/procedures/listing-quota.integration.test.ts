@@ -11,7 +11,7 @@ import {
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { createRouterClient, type RouterClient } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -22,9 +22,12 @@ import {
   vi,
 } from "vitest";
 
+import { ownedCleanup } from "@/features/quotas/procedures/owned-cleanup.test-helper";
+
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   permission: vi.fn(),
+  cleanupExecutor: undefined as Pick<typeof db, "execute"> | undefined,
   headers: vi.fn(),
   failRead: false,
 }));
@@ -46,6 +49,9 @@ vi.mock("@greendex/database", async (original) => {
               throw new Error("simulated listing query failure");
             return Reflect.apply(target.select.bind(target), target, [fields]);
           };
+        if (key === "execute")
+          return ownedCleanup(mocks.cleanupExecutor ?? target, [organizationId])
+            .execute;
         return Reflect.get(target, key);
       },
     }),
@@ -133,6 +139,31 @@ afterAll(async () => {
 });
 
 describe("shared listing procedure budget", () => {
+  it("restricts automatic cleanup to this file's fixture Organizations", async () => {
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`create temporary table principal_quota_counters (like public.principal_quota_counters including all) on commit drop`,
+      );
+      await tx.execute(
+        sql`insert into principal_quota_counters values
+          ('listing_calls', ${organizationId}, 'expired', '2000-01-01', '2000-01-02', 1),
+          ('listing_calls', 'unrelated-fixture', 'expired', '2000-01-01', '2000-01-02', 1)`,
+      );
+      mocks.cleanupExecutor = tx;
+      try {
+        await calls[0]();
+        expect(await usage()).toBe(1n);
+        const remaining = await tx.execute(
+          sql`select organization_id from principal_quota_counters`,
+        );
+        expect(remaining.rows).toEqual([
+          { organization_id: "unrelated-fixture" },
+        ]);
+      } finally {
+        mocks.cleanupExecutor = undefined;
+      }
+    });
+  });
   it("admits exactly 120 mixed calls across all four endpoints", async () => {
     await seed(0);
     const results = await Promise.allSettled(
