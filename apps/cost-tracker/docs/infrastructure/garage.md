@@ -9,7 +9,6 @@ Both services belong to Greendex on the Coolify host (`ssh coolify`). Production
 | Setting            | Development                                | Staging                                |
 | ------------------ | ------------------------------------------ | -------------------------------------- |
 | Service            | `greendex-development-s3`                  | `greendex-staging-s3`                  |
-| UUID               | `qvnaqod5vknlufojogo13l1j`                 | `ckhy5vfyielgwo87ha4zaksd`             |
 | S3 API             | `https://s3-dev.greendex.apps.sieh.org`    | `https://s3.greendex.apps.sieh.org`    |
 | Bucket websites    | `https://web-dev.greendex.apps.sieh.org`   | `https://web.greendex.apps.sieh.org`   |
 | Admin API          | `https://admin-dev.greendex.apps.sieh.org` | `https://admin.greendex.apps.sieh.org` |
@@ -35,13 +34,7 @@ Run `pnpm run test:integration` from the repository root using the local develop
 
 For staging, use its application key and configured bucket with a unique temporary object. Verify downloaded bytes and delete only that object. Confirm existing aliases and permissions remain intact.
 
-Coolify's `/garage stats -a` health check proves process and cluster-statistics access, not authenticated storage behavior. Inspect the current container before running operational commands:
-
-```bash
-ssh coolify 'docker exec garage-qvnaqod5vknlufojogo13l1j /garage status'
-ssh coolify 'docker exec garage-qvnaqod5vknlufojogo13l1j /garage layout show'
-ssh coolify 'docker exec garage-qvnaqod5vknlufojogo13l1j /garage bucket list'
-```
+Garage process health does not prove authenticated storage access. Resolve the target service and container through Coolify before inspecting cluster status, layout, or buckets.
 
 ## Proof Document policy
 

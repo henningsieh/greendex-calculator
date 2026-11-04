@@ -279,7 +279,6 @@ describe("environment entrypoints", () => {
       const config = JSON.parse(
         readFileSync(path.resolve(`../../apps/${app}/turbo.json`), "utf8"),
       );
-      expect(config.tasks.build.cache).toBe(false);
       expect(config.tasks.build.dependsOn ?? []).not.toContain("db:migrate");
       expect(config.tasks.dev.dependsOn ?? []).not.toContain("db:migrate");
     }

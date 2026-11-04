@@ -12,7 +12,7 @@ Use this instruction whenever changing a manifest, dependency version, workspace
 
 - Workspaces and shared versions: `pnpm-workspace.yaml`
 - Root task entrypoints and runtime pins: `package.json`
-- Task graph, caching, outputs, and forwarded environment: `turbo.json`
+- Task graph, caching, outputs, and forwarded environment: root and workspace `turbo.json` files
 - Package ownership: the nearest workspace `package.json`
 - Resolved dependency graph: `pnpm-lock.yaml`
 
@@ -25,17 +25,11 @@ Use this instruction whenever changing a manifest, dependency version, workspace
 - Shared packages declare React or framework peer dependencies when their public API requires the consumer to supply them.
 - Root dev dependencies are limited to repository-wide orchestration and quality tools.
 - Keep exactly one Next.js install for the workspace: pin it in the catalog and expose that install at the repository root with `publicHoistPattern` rather than adding a second root dependency.
+- Use an override only for a deliberate transitive-resolution fix that the catalog cannot express; document why it exists.
 
 ## Single Next.js install
 
-The catalog pins one `next` version for the whole workspace, and `publicHoistPattern: [next]` in `pnpm-workspace.yaml` exposes that same install at the repository root. This keeps the Next.js documentation single-sourced:
-
-- the Next.js-managed agent-rules block in the root `AGENTS.md` resolves `node_modules/next/dist/docs` verbatim;
-- the bundled version-matched docs exist once, not per app;
-- Next.js documentation is resolved from the single catalog-managed installation at `node_modules/next/dist/docs/` from the repository root; do not regenerate a downloaded documentation corpus.
-
-Do not add `next` to the root `dependencies`: a root install can resolve a second, differently peer-suffixed copy. Keep the link, not a copy.
-- Use an override only for a deliberate transitive-resolution fix that the catalog cannot express; document why it exists.
+Resolve version-matched Next.js documentation from the catalog-managed installation at `node_modules/next/dist/docs/`. Keep the root link to that installation rather than a separate dependency or downloaded documentation copy.
 
 ## Adding or updating a dependency
 
@@ -51,22 +45,16 @@ Do not edit `pnpm-lock.yaml` manually.
 
 - Define reusable root task entrypoints in `package.json`; define workspace implementations in workspace manifests.
 - Declare generated outputs so Turbo can cache only reproducible artifacts.
-- Keep lint inputs complete: the `lint` task hashes `$TURBO_ROOT$/.oxlintrc.json` plus the root `package.json` and `pnpm-lock.yaml`, so a config or lint-plugin version change invalidates cached results.
+- Include shared lint configuration and tooling in lint task inputs so relevant changes invalidate cached results.
 - Mark persistent processes and non-cacheable lifecycle/database tasks appropriately.
 - Keep dependency ordering explicit with `dependsOn`.
 - Do not add a task merely to alias a single command unless it is part of the repository workflow.
 
-## Critical environment forwarding
+## Environment forwarding
 
-Coolify and local application scripts provide environment variables to Turbo. The `build` and `start` tasks in `turbo.json` require:
+Preserve the application-required environment variables when changing Turbo tasks. Inspect the current task configuration and package scripts for forwarding and loading behavior; deployment requirements live in the [Coolify runbook](coolify.md).
 
-```json
-"env": ["*"]
-```
-
-This setting is critical: without it, workspace processes do not receive the injected environment expected by application validation and build/start code. Preserve it when editing the task graph.
-
-Each application owns its app-specific `.env` and `.env.example`; database-consuming apps configure local `DATABASE_URL` only in `packages/database/.env` (template: `packages/database/.env.example`). Do not recreate a repository-root environment file. Turbo does not load these files. Next.js loads the documentation environment, while Calculator package scripts use the dotenv CLI (`dotenv run`) so its Next.js and Socket.IO processes receive one consistent environment. Keep app-local `.env*` and the shared database `.env*` in build/test task inputs so changes invalidate the correct package's cache.
+Each application owns its `.env` and `.env.example`. Configure local `DATABASE_URL` in the shared `packages/database/.env`, not a repository-root environment file. Include relevant environment files in cached task inputs.
 
 ## Runtime consistency
 
