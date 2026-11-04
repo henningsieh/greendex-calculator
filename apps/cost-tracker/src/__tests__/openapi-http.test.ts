@@ -174,7 +174,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     if (cleanupFailed) throw new Error("HTTP fixture session cleanup failed.");
   }, 45_000);
 
-  it("gates both explicit docs paths as unmatched and serves pinned Scalar and the newest spec to sessions", async () => {
+  it("gates both explicit docs paths as unmatched and serves vendored Scalar and the newest spec to sessions", async () => {
     for (const path of ["/api/docs", "/api/openapi-spec"]) {
       expect((await fetchWithTimeout(`${baseURL}${path}`)).status).toBe(404);
       expect(
@@ -190,12 +190,19 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     });
     expect(docs.status).toBe(200);
     const html = await docs.text();
-    expect(html).toContain(
-      "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0/dist/browser/standalone.js",
-    );
+    expect(html).toContain('src="/api/scalar/standalone.js"');
     // The v2 plugin embeds the generated spec rather than fetching specPath in the viewer.
     expect(html).toContain("Cost Tracker API");
-    expect(html).not.toContain("@latest");
+    for (const banned of ["@latest", "jsdelivr", "unpkg", "cdn"]) {
+      expect(html).not.toContain(banned);
+    }
+    const standalone = await fetchWithTimeout(
+      `${baseURL}/api/scalar/standalone.js`,
+    );
+    expect(standalone.status).toBe(200);
+    expect(standalone.headers.get("content-type")).toContain("javascript");
+    expect(standalone.headers.get("cache-control")).toContain("immutable");
+    expect(await standalone.text()).toContain("createApiReference");
     const response = await fetchWithTimeout(`${baseURL}/api/openapi-spec`, {
       headers: { cookie: cookies[0]! },
     });
