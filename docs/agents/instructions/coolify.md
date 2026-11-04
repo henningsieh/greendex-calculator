@@ -21,37 +21,24 @@ Start at the [Coolify `llms.txt`](https://coolify.io/docs/llms.txt) only when th
 
 ## Greendex resources
 
-Project: `t40wk84o88wkgcocs80k0wws` (Greendex). Server: `sswswkg88448cw8sksowgc4k` (`localhost`, `188.245.144.137`). Resource inventory is API-verified; recheck live state before mutations.
+Resolve the Greendex project, environment, resource IDs, and current deployment settings through the live API. Resource names below provide discovery hints, not a substitute for checking the target.
 
 ### Staging
 
-Environment: `ot4zwaowvypudrxjpmjpemos`.
-
-| Resource | UUID | Purpose | Public domain |
-| --- | --- | --- | --- |
-| Calculator | `4ioaqslgamchlltplms74nbr` | Calculator and Socket.IO deployment | `greendex.apps.sieh.org` |
-| Cost-Tracker | `vqud5nt2raw8yclhrypl4ipx` | Cost Tracker staging deployment | `cost-tracker.apps.sieh.org` |
-| greendex-staging-postgres | `a004oogs4cwss04cok0wwckk` | Shared staging database for both apps | — |
-
-Both apps auto-deploy `main` at `HEAD` via webhook and use the staging database's private hostname on `5432`, logical database `postgres`. PostgreSQL image: `postgres:17-alpine`; public endpoint: `188.245.144.137:5488`.
+Calculator and Cost Tracker share `greendex-staging-postgres`. Its public endpoint is `188.245.144.137:5488`; inspect the live resource for private connection and deployment settings.
 
 ### Development
 
-Environment: `rc04oc8sksggs48ggkwsgsg0`.
+- `greendex-development-postgres` serves local Calculator and Cost Tracker development.
+- `greendex-preview-postgres` serves pull-request previews. Inspect its live connection settings and each application's configured logical database.
+- `greendex-documentation` is database-free.
+- `greendex-development-s3` provides isolated development object storage.
 
-| Resource | UUID | Purpose |
-| --- | --- | --- |
-| greendex-development-postgres | `akbcevdeuhawuljnatnexrxj` | Local Calculator and Cost Tracker development; isolated volume and credentials |
-| greendex-preview-postgres | `gcmwapuqoz45mjvtdwl3vgg4` | Preview database server; private `5432`, no public port |
-| greendex-documentation | `nz8kya4kzwatnmbrnxktjkog` | Database-free Next.js/Fumadocs application |
-| carbon-cycle-animation | `zg4ssg84cg48w48ko00sowc8` | Animation application |
-| greendex-development-s3 | `qvnaqod5vknlufojogo13l1j` | Isolated Garage object storage for local development (bucket `greendex-cost-tracker-development`) |
+The approved local development database is `greendex_development` at `188.245.144.137:5489`.
 
-The local development database uses `postgres:17-alpine`, logical database `greendex_development`, endpoint `188.245.144.137:5489`.
+Configure local `DATABASE_URL` in the ignored `packages/database/.env`. Inspect current package scripts for environment loading and migration hooks. Verify the database target before operations and restart affected processes after changing their environment.
 
-Configure local `DATABASE_URL` in the ignored `packages/database/.env`. Both apps load this shared file before their app-local `.env`; injected environment variables take precedence. Root `pnpm run dev` runs migrations before starting servers: verify the target first. Restart local processes after changing the file; they retain their previous environment.
-
-Production environment `u8scwcgo0w88sogc4g844c8s` has no resources. Read the [Garage runbook](../../../apps/cost-tracker/docs/infrastructure/garage.md) before S3 operations; resolve placement from the live API if its inventory differs from this map.
+Read the [Garage runbook](../../../apps/cost-tracker/docs/infrastructure/garage.md) before S3 operations. Verify resource placement through the live API rather than assuming an environment's contents.
 
 ## Application contract
 
@@ -61,19 +48,11 @@ Production environment `u8scwcgo0w88sogc4g844c8s` has no resources. Read the [Ga
 | Cost Tracker | `pnpm turbo run build --filter=@greendex/cost-tracker` | `pnpm turbo run start --filter=@greendex/cost-tracker` | `https://cost-tracker.apps.sieh.org` → `3002` | `/` on `3002` |
 | Documentation | `pnpm turbo run build --filter=@greendex/documentation` | `pnpm turbo run start --filter=@greendex/documentation` | `https://docs.greendex.apps.sieh.org` → `3001` | `/en` on `3001` |
 
-These three applications use repository root `/`, Railpack, repository `henningsieh/greendex-calculator`, branch `main` at `HEAD`, and preview template `{{pr_id}}.{{domain}}`. Wildcard DNS must cover the resulting preview hosts.
-
-| Application | Auto-deploy | Previews enabled | Preview database on the shared preview server |
-| --- | --- | --- | --- |
-| Calculator | Yes | No | `postgres` |
-| Cost Tracker | Yes | Yes | `cost_tracker_pr261` |
-| Documentation | No | No | None |
-
-Calculator and Cost Tracker must follow `main` with `git_commit_sha=HEAD` and push auto-deployment enabled outside controlled rollouts. Changing only `git_branch` does not clear an old commit pin: verify the queued deployment's SHA against the pushed commit. Manual redeployment must also resolve the branch head rather than rebuild a historical commit.
+Read the configured branch, commit pin, deployment flags, preview template, and database from the live application. Preserve settings outside the requested rollout. Verify that the queued deployment uses the intended commit; changing a branch alone may leave a historical commit pin in place. Wildcard DNS must cover the resolved preview hosts.
 
 ### Release migration gate
 
-Database-consuming apps migrate **before application startup**, not during image builds, through `prestart` → `start:prepare`. Migration failure must prevent startup; never suppress its exit status. Managed start commands must invoke the package's `start` script (through pnpm/Turbo), not bypass it with `next start`.
+Database-consuming apps migrate **before application startup**, not during image builds. Migration failure must prevent startup; never suppress its exit status. Managed start commands must use repository scripts rather than bypassing their startup checks.
 
 Documentation has no migration or database credentials. Updating repository scripts does not update managed Coolify settings.
 
@@ -81,13 +60,13 @@ Documentation has no migration or database credentials. Updating repository scri
 
 - For both normal and preview environments, credentials must be **buildtime OFF, runtime ON**: `DATABASE_URL`, `BETTER_AUTH_SECRET`, OAuth client secrets, `SMTP_PASSWORD`, `IMAP_PASSWORD`, usernames and S3 access keys. Other server configuration can also be runtime-only. Keep public `NEXT_PUBLIC_*` URLs available at build time; they must never contain credentials.
 - Do not pass credentials via generated Docker `ARG`/`ENV` or copy `.env*` files into build stages. Verify the actual Railpack source context and generated build plan; `.dockerignore` alone is not proof that Railpack excludes files. Exclude existing `.next`, Turbo caches, logs and auth artifacts too.
-- Both apps invoke `next build` without loading the shared database `.env`. t3-env skips validation only for Next's `phase-production-build`; runtime schemas remain active. Do not inject `NEXT_PHASE` or a validation-bypass flag into running containers.
+- Image builds must not require runtime credentials. Keep runtime environment validation active; do not inject validation-bypass flags into running containers.
 - Before release, build without real credentials, pull the immutable image digest, and inspect image config/history and every unpacked layer for synthetic canaries, including deleted lower-layer files. Check build logs/caches/attestations separately. A grep of source or only the final container filesystem is insufficient.
 - Start that same digest with runtime credentials and verify health/auth/mail/storage plus rejection of missing credentials. Rotate exposed credentials first; remove contaminated images and caches only with explicit authorization.
 
-Manual recovery remains root `pnpm run db:migrate`, with an explicit `DATABASE_URL` override when needed. Root builds run sequentially using `--concurrency=1`; root migration has one database-package task. The deployment mutex continues to serialize separate Coolify releases. There is no custom migration runner, migration lock, or automatic database repair. Coordinate separate invocations against the same database. Startup migrations must remain compatible with the previously running release until traffic switches; multiple replicas must not migrate concurrently without coordination.
+Use the repository migration command for manual recovery after verifying the target. Coordinate migrations against the same database. Startup migrations must remain compatible with the previously running release until traffic switches; multiple replicas must not migrate concurrently without coordination.
 
-Preserve `"env": ["*"]` on Turbo `build` and `start`. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Authentication and mail settings may mirror development unless the task says otherwise.
+Preserve required environment forwarding through Turbo. Keep Coolify `NODE_ENV=production` runtime-only; do not expose or override `NODE_ENV` at build time. `next build` selects production mode itself, while a build-time `NODE_ENV` can change dependency installation and a `development` value causes invalid Next.js builds. `NEXT_PUBLIC_*` preview values are build-time values and must name the PR hosts. Authentication and mail settings may mirror development unless the task says otherwise.
 
 ### Set the preview origin before a build
 
@@ -107,7 +86,7 @@ After an origin change, build a new image. A runtime restart cannot replace `NEX
 2. **Publish.** The same controller runs local format, lint, type-check, tests, and production builds; commits and pushes. Completion: the PR head SHA is the tested SHA and no Coolify deployment was created.
 3. **Select one app.** Enable previews only for the target app. Validate its commands, ports, and health check. Complete the [preview-origin gate](#set-the-preview-origin-before-a-build) through API readback before triggering. Reinspect complete `GET /deployments` results. Completion: only the target enabled, origin readback passes, active set empty.
 4. **Trigger.** The same controller requests only that application UUID with the PR number. Record the returned `deployment_uuid`; no webhook, UI, or second API caller may trigger another deployment. Completion: the global active set contains only that UUID.
-5. **Observe.** Poll the exact deployment record every 10 seconds and inspect log advancement at least every minute. One API timeout gets one retry; two consecutive timeouts or two minutes without new logs triggers host/log diagnosis. Completion: the record reaches a terminal state.
+5. **Observe.** Follow the exact deployment record and its logs. Diagnose stalled progress or repeated API failures before retrying. Completion: the record reaches a terminal state.
 6. **Verify.** A `finished` record is necessary but insufficient: request the preview URL and health endpoint, verify the expected commit, and check migrations for database-consuming apps. Completion: every app-specific check below passes.
 7. **Hand off.** Disable previews for the completed app, confirm the active set is empty, then repeat steps 3–6 for each remaining target. Restore captured ordinary auto-deploy settings. Re-enable automatic previews only after deciding concurrent builds are safe.
 
@@ -146,7 +125,7 @@ Use `PATCH /applications/{uuid}` for persistent application settings and `/appli
 - Deployment commit equals the current PR head.
 - `GET https://<pr>.greendex.apps.sieh.org/api/rpc/health` succeeds.
 - `https://<pr>.socket.greendex.apps.sieh.org` routes to the same preview deployment; verify a Socket.IO handshake when practical.
-- The running preview container uses the preview database listed above, not staging or the local development database.
+- The running preview container uses its configured preview database, not staging or the local development database.
 - Drizzle migrations completed and the `verification` table exists. Pass `DATABASE_URL` explicitly when invoking migration inside a container.
 
 ### Documentation
