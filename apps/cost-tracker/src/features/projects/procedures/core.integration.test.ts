@@ -4,9 +4,13 @@ import { randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
-import { claimsTable, projectsTable } from "@greendex/database/schema";
+import {
+  claimsTable,
+  principalQuotaCounters as counters,
+  projectsTable,
+} from "@greendex/database/schema";
 import { createRouterClient, ORPCError } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -14,11 +18,18 @@ const authMocks = vi.hoisted(() => ({
   hasPermission: vi.fn(),
 }));
 
+const quotaMocks = vi.hoisted(() => ({
+  enforceListingLimit: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  enforceListingLimit: quotaMocks.enforceListingLimit,
+}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
 import { PROJECT_SORT_MODES } from "@/features/projects/list-query-options";
 import { resolveRelationship } from "@/features/projects/procedures/core";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerProjects.
@@ -385,6 +396,18 @@ describe("projects procedures", () => {
       useActiveOrganization(hostId);
     });
     it("returns a bounded Hosted page with whole-scope metrics", async () => {
+      expect(vi.isMockFunction(enforceListingLimit)).toBe(true);
+      const quotaRows = () =>
+        db
+          .select()
+          .from(counters)
+          .where(
+            and(
+              eq(counters.kind, "listing_calls"),
+              eq(counters.organizationId, hostId),
+            ),
+          );
+      const quotaBefore = await quotaRows();
       const result = await client.projects.listHosted({ pageSize: 25 });
 
       expect(result.scope).toBe("hosted");
@@ -405,6 +428,11 @@ describe("projects procedures", () => {
 
       const largerPage = await client.projects.listHosted({ pageSize: 50 });
       expect(largerPage.metrics).toEqual(result.metrics);
+      expect(quotaMocks.enforceListingLimit).toHaveBeenCalledWith(
+        { userId: userId, organizationId: hostId },
+        expect.any(Object),
+      );
+      expect(await quotaRows()).toEqual(quotaBefore);
     });
 
     it.each(PROJECT_SORT_MODES)(
