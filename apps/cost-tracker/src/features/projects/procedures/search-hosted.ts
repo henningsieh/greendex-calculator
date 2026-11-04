@@ -10,6 +10,7 @@ import {
 import { and, asc, desc, eq, exists, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -59,6 +60,11 @@ export const searchHosted = authorized
       !hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
     )
       throw createSituationErrors(errors).hostingStaffRequired();
+
+    await enforceListingLimit(
+      { userId: context.user.id, organizationId: activeOrganizationId },
+      errors,
+    );
 
     const escaped = input.search.replace(/[\\%_]/g, "\\$&");
     const pattern = `%${escaped}%`;

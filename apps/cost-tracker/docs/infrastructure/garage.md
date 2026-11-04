@@ -41,3 +41,28 @@ Garage process health does not prove authenticated storage access. Resolve the t
 - Keep Claim Proof Documents in the private bucket while their Project is active. No automatic expiry is implemented.
 - Treat uploads as untrusted. Malware scanning is best effort, not an enforced upload or download gate. Acceptance does not mean a file is clean.
 - Project archival should delete its Proof Document objects and references. No automatic archive hook implements this policy yet. Arrange and verify scoped deletion operationally, without deleting unrelated objects or the bucket.
+
+## Application upload and listing limits
+
+Application procedures enforce these source-defined limits independently of the gateway.
+
+| Control                               | Limit                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| Multipart transport                   | 11 MiB per upload request                                                |
+| Proof Document                        | 10 MiB per file                                                          |
+| Claim                                 | 25 Proof Documents and 100 MiB                                           |
+| Partner Organization uploads          | `DAILY_UPLOAD_BYTES`, 500 MiB per UTC calendar day                       |
+| User and active Organization listings | `LISTING_CALLS_PER_MINUTE`, 120 calls per epoch-aligned 60-second window |
+
+The daily upload allowance counts successfully persisted bytes across all Claims
+of the Partner Organization. Deletion does not refund consumption. The listing
+allowance is shared by `projects.listHosted`, `projects.listPartner`,
+`projects.searchHosted`, and `projectPartnerships.list`, including direct server
+calls. Calls that fail existing input or access checks do not consume allowance.
+Exhausted allowances return safe HTTP 429 errors. Fixed-window boundary bursts
+are permitted.
+
+[Quota procedures](../../src/features/quotas/procedures/counters.ts) own the named
+constants and PostgreSQL counters. Bounded best-effort expiry cleanup runs after
+quota decisions, outside their transactions, with `QUOTA_CLEANUP_BATCH_SIZE` set
+to 500 rows per call.

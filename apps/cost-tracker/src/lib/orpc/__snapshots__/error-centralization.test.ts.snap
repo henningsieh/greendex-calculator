@@ -537,6 +537,12 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
     "reason": "PROJECT_READ_REQUIRED",
     "status": 403,
   },
+  "proofDailyQuotaExceeded": {
+    "code": "TOO_MANY_REQUESTS",
+    "message": "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
+    "reason": "PROOF_DAILY_QUOTA_EXCEEDED",
+    "status": 429,
+  },
   "proofDownloadFailed": {
     "code": "INTERNAL_SERVER_ERROR",
     "message": "Download failed. Please try again.",

@@ -8,8 +8,12 @@ const mocks = vi.hoisted(() => ({
   hasPermission: vi.fn(),
   headers: vi.fn(),
   orderBy: vi.fn().mockResolvedValue([]),
+  listingLimit: vi.fn(),
 }));
 
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  enforceListingLimit: mocks.listingLimit,
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ headers: mocks.headers }));
 vi.mock("@/lib/auth", () => ({
@@ -43,6 +47,7 @@ describe("Cost Tracker server oRPC client", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.orderBy.mockResolvedValue([]);
+    mocks.listingLimit.mockResolvedValue(undefined);
     mocks.getSession.mockResolvedValue({
       session: {
         id: "session-id",

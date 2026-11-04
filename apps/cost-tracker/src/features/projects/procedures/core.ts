@@ -1,6 +1,6 @@
 import { hasOrganizationRole } from "@greendex/auth";
-import "server-only";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import "server-only";
 import { db } from "@greendex/database";
 import {
   claimsTable,
@@ -53,6 +53,7 @@ import {
   ProjectDetailSchema,
   ProjectListScopeAvailabilitySchema,
 } from "@/features/projects/validation-schemas";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import {
   createSituationErrors,
   type SituationErrorConstructors,
@@ -493,6 +494,10 @@ export const listHosted = authorized
       ...input,
     });
     const cursor = parseCursor(input, fingerprint, errors);
+    await enforceListingLimit(
+      { userId: context.user.id, organizationId: activeOrganizationId },
+      errors,
+    );
     const wholeFilters = getHostedProjectScopeFilters(activeOrganizationId);
     const filteredScopeFilters = [...wholeFilters, ...getProjectFilters(input)];
 
@@ -600,6 +605,10 @@ export const listPartner = authorized
       ...input,
     });
     const cursor = parseCursor(input, fingerprint, errors);
+    await enforceListingLimit(
+      { userId: context.user.id, organizationId: activeOrganizationId },
+      errors,
+    );
     const wholeFilters = getPartnerProjectScopeFilters(activeOrganizationId);
     if (assignedIds.length > 0)
       wholeFilters.push(
