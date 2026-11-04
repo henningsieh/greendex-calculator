@@ -4,6 +4,7 @@ import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transp
 import { db } from "@greendex/database";
 import {
   costAllocationsTable as allocations,
+  principalQuotaCounters as quotaCounters,
   proofDocumentsTable as documents,
   projectsTable as projects,
   travelCostEntriesTable as entries,
@@ -24,6 +25,14 @@ const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   put: vi.fn(),
   get: vi.fn(),
+}));
+const quotaMocks = vi.hoisted(() => ({
+  consumeUploadBytes: vi.fn(),
+  cleanupQuotasBestEffort: vi.fn(),
+}));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  consumeUploadBytes: quotaMocks.consumeUploadBytes,
+  cleanupQuotasBestEffort: quotaMocks.cleanupQuotasBestEffort,
 }));
 vi.mock("@/lib/proof-storage", () => ({
   putProofFile: authMocks.put,
@@ -85,9 +94,22 @@ beforeAll(async () => {
   }));
 });
 
+const quotaRowsForPartner = () =>
+  db
+    .select()
+    .from(quotaCounters)
+    .where(
+      and(
+        eq(quotaCounters.kind, "upload_bytes"),
+        eq(quotaCounters.organizationId, partner),
+      ),
+    );
+
 beforeEach(async () => {
   actor = coordinator;
   activeOrg = partner;
+  quotaMocks.consumeUploadBytes.mockReset().mockResolvedValue("allowed");
+  quotaMocks.cleanupQuotasBestEffort.mockReset().mockResolvedValue(undefined);
   await db.delete(entries).where(eq(entries.claimId, ownClaim));
   await db
     .delete(documents)
@@ -160,6 +182,7 @@ describe("Claim cost procedures", () => {
       code: "NOT_FOUND",
       reason: "PROJECT_PARTNERSHIP_NOT_FOUND",
     });
+    const quotaBefore = await quotaRowsForPartner();
     const response = await upload(request(own));
     expect(response.status).toBe(201);
     expect(authMocks.put).toHaveBeenCalledWith(
@@ -191,6 +214,9 @@ describe("Claim cost procedures", () => {
       reason: "CLAIM_NOT_EDITABLE",
     });
     expect(authMocks.put).toHaveBeenCalledTimes(1);
+    expect(quotaMocks.consumeUploadBytes).toHaveBeenCalledTimes(1);
+    expect(await quotaRowsForPartner()).toEqual(quotaBefore);
+    expect(quotaMocks.cleanupQuotasBestEffort).toHaveBeenCalled();
   });
   it("downloads identical uploaded bytes only for the authorized Claim Partnership", async () => {
     const bytes = new Uint8Array([
@@ -202,6 +228,7 @@ describe("Claim cost procedures", () => {
       "file",
       new File([bytes], "uploaded.pdf", { type: "application/pdf" }),
     );
+    const quotaBefore = await quotaRowsForPartner();
     const uploaded = await upload(
       new Request(`${origin}/api/proof-documents`, {
         method: "POST",
@@ -250,6 +277,9 @@ describe("Claim cost procedures", () => {
     expect(response.headers.get("content-disposition")).toContain("uploaded.pdf");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(authMocks.get).toHaveBeenCalledTimes(1);
+    expect(quotaMocks.consumeUploadBytes).toHaveBeenCalledTimes(1);
+    expect(await quotaRowsForPartner()).toEqual(quotaBefore);
+    expect(quotaMocks.cleanupQuotasBestEffort).toHaveBeenCalled();
   });
 
   it("keeps one real group total and derives equal cents that sum exactly to it", async () => {
