@@ -539,7 +539,7 @@ exports[`centralized error guardrails > pins the complete situation matrix indep
   },
   "proofDailyQuotaExceeded": {
     "code": "TOO_MANY_REQUESTS",
-    "message": "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
+    "message": "The daily Proof Document upload allowance is exhausted. It resets at 00:00 UTC.",
     "reason": "PROOF_DAILY_QUOTA_EXCEEDED",
     "status": 429,
   },

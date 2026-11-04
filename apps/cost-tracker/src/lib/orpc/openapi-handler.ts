@@ -11,6 +11,7 @@ import { normalizeBetterAuthError } from "@/lib/orpc/better-auth-errors";
 import { ERROR_STATUS_MAP } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { router } from "@/lib/orpc/router";
+import { SCALAR_STANDALONE_PATH } from "@/lib/scalar-version";
 
 const converters = [new ZodToJsonSchemaConverter()];
 const generator = new OpenAPIGenerator({ converters });
@@ -25,7 +26,7 @@ export const openapiHandler = new OpenAPIHandler(router, {
       docsPath: "/api/docs",
       specPath: "/api/openapi-spec",
       provider: "scalar",
-      providerScriptUrl: "/api/scalar/standalone.js",
+      providerScriptUrl: SCALAR_STANDALONE_PATH,
       allow: async ({ context }) => {
         const session = await auth.api.getSession({ headers: context.headers });
         return Boolean(session?.session && session.user);

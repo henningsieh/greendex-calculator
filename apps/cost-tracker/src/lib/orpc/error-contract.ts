@@ -624,7 +624,7 @@ export const situationCatalog = {
     code: "TOO_MANY_REQUESTS",
     reason: "PROOF_DAILY_QUOTA_EXCEEDED",
     message:
-      "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
+      "The daily Proof Document upload allowance is exhausted. It resets at 00:00 UTC.",
   },
   proofOriginDenied: {
     code: "FORBIDDEN",

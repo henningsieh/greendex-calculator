@@ -118,7 +118,7 @@
     "PROOF_FILE_EMPTY": "Choisissez un justificatif non vide.",
     "PROOF_FILE_NAME_REQUIRED": "Choisissez un justificatif portant un nom de fichier.",
     "PROOF_QUOTA_EXCEEDED": "Cette demande contient déjà le volume maximal de justificatifs.",
-    "PROOF_DAILY_QUOTA_EXCEEDED": "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
+    "PROOF_DAILY_QUOTA_EXCEEDED": "Le quota quotidien de téléversement de justificatifs est épuisé. Il est réinitialisé à 00:00 UTC.",
     "CLAIM_REQUIRED_FOR_PROOF": "Enregistrez une demande de financement modifiable avant de téléverser un justificatif.",
     "PROOF_ORIGIN_DENIED": "Origine du téléversement non valide.",
     "PROOF_TRANSPORT_TOO_LARGE": "La requête de téléversement est trop volumineuse.",
