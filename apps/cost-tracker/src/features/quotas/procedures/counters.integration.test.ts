@@ -366,11 +366,10 @@ describe("PostgreSQL principal quotas", () => {
       })
       .where(owned);
     await expect(listing()).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
-    expect(log.mock.calls).toHaveLength(2);
-    for (const [message, error] of log.mock.calls) {
-      expect(message).toBe("[Principal quotas] Expired counter cleanup failed");
-      expect(error).toBeInstanceOf(Error);
-    }
+    expect(log.mock.calls).toEqual([
+      ["[Principal quotas] Expired counter cleanup failed"],
+      ["[Principal quotas] Expired counter cleanup failed"],
+    ]);
     control.failCleanup = false;
   });
   it("skips locked expired rows and never deletes a concurrent refreshed window", async () => {

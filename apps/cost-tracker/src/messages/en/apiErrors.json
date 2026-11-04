@@ -118,7 +118,7 @@
     "PROOF_FILE_EMPTY": "Choose a non-empty Proof Document.",
     "PROOF_FILE_NAME_REQUIRED": "Choose a Proof Document with a file name.",
     "PROOF_QUOTA_EXCEEDED": "This Claim already holds the maximum Proof Document volume.",
-    "PROOF_DAILY_QUOTA_EXCEEDED": "The daily Proof Document upload allowance is exhausted. It resets at 00:00 UTC.",
+    "PROOF_DAILY_QUOTA_EXCEEDED": "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
     "CLAIM_REQUIRED_FOR_PROOF": "Save an editable Claim before uploading a Proof Document.",
     "PROOF_ORIGIN_DENIED": "Invalid upload origin.",
     "PROOF_TRANSPORT_TOO_LARGE": "The upload request is too large.",

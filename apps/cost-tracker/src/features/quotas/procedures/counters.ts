@@ -123,7 +123,7 @@ export async function deleteExpiredQuotaRows(
 export async function cleanupQuotasBestEffort(): Promise<void> {
   try {
     await deleteExpiredQuotaRows();
-  } catch (error) {
-    console.error("[Principal quotas] Expired counter cleanup failed", error);
+  } catch {
+    console.error("[Principal quotas] Expired counter cleanup failed");
   }
 }

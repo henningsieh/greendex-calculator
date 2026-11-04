@@ -118,7 +118,7 @@
     "PROOF_FILE_EMPTY": "Izberite dokazilo, ki ni prazno.",
     "PROOF_FILE_NAME_REQUIRED": "Izberite dokazilo z imenom datoteke.",
     "PROOF_QUOTA_EXCEEDED": "Ta zahtevek že vsebuje največji obseg dokazil.",
-    "PROOF_DAILY_QUOTA_EXCEEDED": "Dnevna omejitev nalaganja dokazil je dosežena. Ponastavi se ob 00:00 UTC.",
+    "PROOF_DAILY_QUOTA_EXCEEDED": "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
     "CLAIM_REQUIRED_FOR_PROOF": "Pred nalaganjem dokazila shranite zahtevek za financiranje, ki ga je mogoče urejati.",
     "PROOF_ORIGIN_DENIED": "Neveljaven izvor nalaganja.",
     "PROOF_TRANSPORT_TOO_LARGE": "Zahteva za nalaganje je prevelika.",

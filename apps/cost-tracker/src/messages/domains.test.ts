@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { globSync, readFileSync, statSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { LANGUAGE_CODES } from "@greendex/config/languages";
@@ -57,7 +57,6 @@ function translatorViolations(file: string, source: string): string[] {
 it("assigns every translator file one literal namespace in its home bundle", () => {
   const violations: string[] = [];
   for (const file of globSync("**/*.{js,jsx,ts,tsx}", { cwd: root })) {
-    if (!statSync(`${root}${file}`).isFile()) continue;
     if (/(?:^|\/)__tests__\/|\.(?:test|spec|stories)\./.test(file)) continue;
     violations.push(
       ...translatorViolations(file, readFileSync(`${root}${file}`, "utf8")),

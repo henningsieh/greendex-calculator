@@ -118,7 +118,7 @@
     "PROOF_FILE_EMPTY": "Scegli un documento giustificativo non vuoto.",
     "PROOF_FILE_NAME_REQUIRED": "Scegli un documento giustificativo con un nome di file.",
     "PROOF_QUOTA_EXCEEDED": "Questa richiesta ha già raggiunto il volume massimo di documenti giustificativi.",
-    "PROOF_DAILY_QUOTA_EXCEEDED": "La quota giornaliera di caricamento dei documenti giustificativi è esaurita. Viene reimpostata alle 00:00 UTC.",
+    "PROOF_DAILY_QUOTA_EXCEEDED": "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
     "CLAIM_REQUIRED_FOR_PROOF": "Salva una richiesta di finanziamento modificabile prima di caricare un documento giustificativo.",
     "PROOF_ORIGIN_DENIED": "Origine del caricamento non valida.",
     "PROOF_TRANSPORT_TOO_LARGE": "La richiesta di caricamento è troppo grande.",

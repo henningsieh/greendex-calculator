@@ -4,7 +4,7 @@ Cost Tracker exposes the same procedure router over two transports:
 
 - `/api/rpc`: the existing oRPC wire protocol used by the application.
 - `/api/openapi/<router group>/<procedure>`: plain HTTP, using oRPC v2's default **POST** routes (for example `/api/openapi/projects/create`, `/api/openapi/projects/listHosted`, and `/api/openapi/organizations/getSettings`). Send the procedure input as a JSON body with `Content-Type: application/json`; responses contain the procedure output directly, without an RPC envelope. Procedures without input can omit the body.
-- `GET /api/docs`: Scalar reference, vendored in the app at `/api/scalar/standalone-1.76.4.js` (`@scalar/api-reference` 1.76.4, no CDN).
+- `GET /api/docs`: Scalar reference, with its script pinned to 1.73.0.
 - `GET /api/openapi-spec`: generated OpenAPI JSON, using the generator's newest emitted version (currently 3.2.0).
 
 Both reference paths are served by the OpenAPI reference plugin on the same handler. Its `allow` condition requires a valid Better Auth session **in every environment**, including production. Missing, expired, or invalid sessions fall through as unmatched (404), not as a login redirect. The viewer embeds the generated spec. Its try-it behavior is owned by Scalar, not the backend transport.

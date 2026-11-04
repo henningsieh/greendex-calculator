@@ -269,13 +269,10 @@ describe("Proof upload Organization daily consumption", () => {
     expect((await quotaRows())[0].used).toBe(524288000n);
     expect(mocks.put).toHaveBeenCalledTimes(1);
   });
-  it("keeps the committed usage but removes the document after storage failure", async () => {
+  it("rolls back usage and the document after storage failure", async () => {
     mocks.put.mockRejectedValueOnce(new Error("storage unavailable"));
-    await expect(upload()).rejects.toMatchObject({
-      code: "INTERNAL_SERVER_ERROR",
-      data: { reason: "PROOF_UPLOAD_FAILED" },
-    });
-    expect((await quotaRows())[0].used).toBe(6n);
+    await expect(upload()).rejects.toThrow("storage unavailable");
+    expect(await quotaRows()).toEqual([]);
     expect(
       await db
         .select()
@@ -283,7 +280,7 @@ describe("Proof upload Organization daily consumption", () => {
         .where(inArray(documents.claimId, claimIds)),
     ).toEqual([]);
   });
-  it("never reaches storage when the document insert fails", async () => {
+  it("rolls back the charge on a database insert error after S3 success", async () => {
     await seed(0);
     mocks.failInsert = true;
     await expect(upload()).rejects.toMatchObject({ cause: { code: "22012" } });
@@ -294,7 +291,7 @@ describe("Proof upload Organization daily consumption", () => {
         .from(documents)
         .where(inArray(documents.claimId, claimIds)),
     ).toEqual([]);
-    expect(mocks.put).not.toHaveBeenCalled();
+    expect(mocks.put).toHaveBeenCalledTimes(1);
   });
   it("returns a safe HTTP 429 body with no usage or principal identifiers", async () => {
     await seed(DAILY_UPLOAD_BYTES);
@@ -312,7 +309,7 @@ describe("Proof upload Organization daily consumption", () => {
     expect(response.status).toBe(429);
     expect(await response.json()).toEqual({
       error:
-        "The daily Proof Document upload allowance is exhausted. It resets at 00:00 UTC.",
+        "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
       code: "TOO_MANY_REQUESTS",
       reason: "PROOF_DAILY_QUOTA_EXCEEDED",
     });

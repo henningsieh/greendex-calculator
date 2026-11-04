@@ -59,7 +59,7 @@ describe("shared localized error presentation", () => {
   it.each([
     [
       errors.proofDailyQuotaExceeded(),
-      "Das tägliche Upload-Limit für Nachweisdokumente ist erreicht. Es wird um 00:00 UTC zurückgesetzt.",
+      "Das tägliche Upload-Limit für Nachweisdokumente ist erreicht. Versuche es morgen erneut.",
     ],
     [errors.setupLinkExpired(), "Dieser Einrichtungslink ist abgelaufen."],
     [errors.setupLinkUsed(), "Dieser Einrichtungslink wurde bereits verwendet."],
