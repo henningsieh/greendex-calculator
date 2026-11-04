@@ -16,6 +16,10 @@ import {
   coordinationId,
   requirePartnerCoordination,
 } from "@/features/partnerships/procedures/coordination";
+import {
+  cleanupQuotasBestEffort,
+  consumeUploadBytes,
+} from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 import { getProofFile, putProofFile } from "@/lib/proof-storage";
@@ -122,10 +126,6 @@ export async function downloadProofDocument(input: {
 
 const allowedMediaTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 const maximumBytes = 10 * 1024 * 1024;
-// #378: per-claim upload quota. Counts and bytes come from stored rows
-// only — no clock windows, no new tables. The claim row is already
-// row-locked above, so concurrent uploads to the same claim serialize
-// and cannot both slip past the check.
 const maximumDocumentsPerClaim = 25;
 const maximumBytesPerClaim = 100 * 1024 * 1024;
 
@@ -200,7 +200,7 @@ export async function uploadProofDocument(input: {
     {},
   );
   // Never materialize an empty Claim from a file upload. First save is explicit.
-  return db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx) => {
     // Shared lock order: the Claim lock keeps editable status across the upload.
     const { claim } = await lockClaimScope(
       tx,
@@ -239,6 +239,11 @@ export async function uploadProofDocument(input: {
       existingBytes + bytes.length > maximumBytesPerClaim
     )
       throw proofErrors.proofQuotaExceeded();
+    const allowance = await consumeUploadBytes(tx, {
+      partnerOrganizationId: scope.partnerId,
+      bytes: bytes.length,
+    });
+    if (allowance === "exhausted") return { kind: "exhausted" as const };
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
     await putProofFile(reference, bytes, sniffedMediaType);
     const [saved] = await tx
@@ -256,6 +261,9 @@ export async function uploadProofDocument(input: {
       console.error("[Proof upload] Insert returned no document");
       throw proofErrors.proofUploadFailed();
     }
-    return { status: 201 as const, document: saved };
+    return { kind: "saved" as const, document: saved };
   });
+  await cleanupQuotasBestEffort();
+  if (outcome.kind === "exhausted") throw proofErrors.proofDailyQuotaExceeded();
+  return { status: 201 as const, document: outcome.document };
 }

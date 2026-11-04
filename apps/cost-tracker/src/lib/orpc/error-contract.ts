@@ -620,6 +620,12 @@ export const situationCatalog = {
     reason: "PROOF_QUOTA_EXCEEDED",
     message: "This Claim already holds the maximum Proof Document volume.",
   },
+  proofDailyQuotaExceeded: {
+    code: "TOO_MANY_REQUESTS",
+    reason: "PROOF_DAILY_QUOTA_EXCEEDED",
+    message:
+      "The daily Proof Document upload allowance is exhausted. Try again tomorrow.",
+  },
   proofOriginDenied: {
     code: "FORBIDDEN",
     reason: "PROOF_ORIGIN_DENIED",

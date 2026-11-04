@@ -17,6 +17,7 @@ import {
   RemoveProjectPartnershipResultSchema,
 } from "@/features/partnerships/validation-schemas";
 import { resolveRelationship } from "@/features/projects/procedures/core";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import {
   authorized,
@@ -55,6 +56,10 @@ export const listPartnerships = authorized
     if (!canRead && assignedIds.length === 0) {
       throw createSituationErrors(errors).accessDenied();
     }
+    await enforceListingLimit(
+      { userId: context.user.id, organizationId: activeOrganizationId },
+      errors,
+    );
     const scopeFilter = assignedIds.length
       ? and(
           inArray(projectPartnerOrganizationsTable.id, assignedIds),

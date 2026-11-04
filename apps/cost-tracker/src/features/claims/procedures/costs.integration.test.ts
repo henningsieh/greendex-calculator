@@ -132,7 +132,7 @@ describe("Claim cost procedures", () => {
       data.set("partnershipId", partnershipId);
       data.set(
         "file",
-        new File(["test"], "uploaded.pdf", { type: "application/pdf" }),
+        new File(["%PDF-\n"], "uploaded.pdf", { type: "application/pdf" }),
       );
       return new Request(`${origin}/api/proof-documents`, {
         method: "POST",
@@ -193,7 +193,9 @@ describe("Claim cost procedures", () => {
     expect(authMocks.put).toHaveBeenCalledTimes(1);
   });
   it("downloads identical uploaded bytes only for the authorized Claim Partnership", async () => {
-    const bytes = new Uint8Array([0, 255, 37, 10, 128]);
+    const bytes = new Uint8Array([
+      0x25, 0x50, 0x44, 0x46, 0x2d, 0, 255, 37, 10, 128,
+    ]);
     const data = new FormData();
     data.set("partnershipId", own);
     data.set(

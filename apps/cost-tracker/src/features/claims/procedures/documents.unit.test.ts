@@ -6,11 +6,17 @@ import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   scope: vi.fn(),
+  consume: vi.fn(),
+  cleanup: vi.fn(),
   limit: vi.fn(),
   returning: vi.fn(),
   put: vi.fn(),
   get: vi.fn(),
   session: vi.fn(),
+}));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  consumeUploadBytes: mocks.consume,
+  cleanupQuotasBestEffort: mocks.cleanup,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
@@ -68,6 +74,8 @@ const file = () =>
 const errors = createSituationErrors();
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.consume.mockResolvedValue("allowed");
+  mocks.cleanup.mockResolvedValue(undefined);
   mocks.scope.mockResolvedValue({ partnerId: "partner", hostId: "host" });
   mocks.session.mockResolvedValue({
     user: { id: "actor" },
@@ -273,6 +281,22 @@ describe("Proof Document upload outcomes", () => {
       }),
     ).resolves.toEqual({ status: 201, document: { id: "proof" } });
     expect(mocks.put).toHaveBeenCalledTimes(1);
+  });
+  it("denies daily exhaustion without storage or document insertion", async () => {
+    mocks.consume.mockResolvedValue("exhausted");
+    await expect(
+      uploadProofDocument({ ...input, file: file() }),
+    ).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+      data: { reason: "PROOF_DAILY_QUOTA_EXCEEDED" },
+    });
+    expect(mocks.consume).toHaveBeenCalledWith(expect.anything(), {
+      partnerOrganizationId: "partner",
+      bytes: 6,
+    });
+    expect(mocks.put).not.toHaveBeenCalled();
+    expect(mocks.returning).not.toHaveBeenCalled();
+    expect(mocks.cleanup).toHaveBeenCalledOnce();
   });
   it.each([
     [

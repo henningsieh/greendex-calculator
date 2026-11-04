@@ -28,6 +28,9 @@ const privateInvariantThrows: Record<string, string[]> = {
     'new Error("Unsupported decimal precision")',
     "new Error( `No frozen funding band for Participation ${journey.participantId}.`, )",
   ],
+  "features/quotas/procedures/counters.ts": [
+    'new Error("Quota principal lock unavailable after cleanup races")',
+  ],
   "lib/orpc/orpc.ts": ['new Error("RPCLink is not allowed on the server side.")'],
   "messages/merge.ts": ["new Error(`Duplicate message namespace: ${namespace}`)"],
   "lib/proof-storage.ts": ['new Error("Proof file has no body.")'],

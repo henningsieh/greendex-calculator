@@ -57,6 +57,10 @@ describe("shared localized error presentation", () => {
   );
 
   it.each([
+    [
+      errors.proofDailyQuotaExceeded(),
+      "Das tägliche Upload-Limit für Nachweisdokumente ist erreicht. Versuche es morgen erneut.",
+    ],
     [errors.setupLinkExpired(), "Dieser Einrichtungslink ist abgelaufen."],
     [errors.setupLinkUsed(), "Dieser Einrichtungslink wurde bereits verwendet."],
     [errors.setupLinkDisabled(), "Dieser Einrichtungslink ist deaktiviert."],
