@@ -5,6 +5,7 @@ import {
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { and, asc, eq, exists, inArray, notExists } from "drizzle-orm";
 import { z } from "zod";
@@ -39,6 +40,12 @@ function isExpectedORPCError(error: unknown): boolean {
 
 export const listPartnerships = authorized
   .output(z.array(ProjectPartnershipSchema))
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "List project partnerships",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
@@ -106,6 +113,12 @@ export const assignPartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
   .input(AssignProjectPartnershipInputSchema)
   .output(ProjectPartnershipSchema)
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "Assign a partner organization to a project",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
     const relationship = await resolveRelationship({
@@ -196,6 +209,12 @@ export const removePartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["delete"] }))
   .input(RemoveProjectPartnershipInputSchema)
   .output(RemoveProjectPartnershipResultSchema)
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "Remove a partnership",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
 

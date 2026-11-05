@@ -8,6 +8,7 @@ import {
   travelCostEntriesTable as entries,
   travelCostEntryDocumentsTable as links,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
@@ -115,6 +116,12 @@ export const list = authorized
       coveredProjectParticipantIds: z.array(z.string()),
     }),
   )
+  .meta(
+    openapi({
+      tags: ["Costs"],
+      summary: "List travel cost entries of a claim",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     await requirePartnerSide(
       input.partnershipId,
@@ -144,6 +151,12 @@ export const list = authorized
 export const save = authorized
   .input(CostSaveInputSchema)
   .output(entryOutput)
+  .meta(
+    openapi({
+      tags: ["Costs"],
+      summary: "Save a travel cost entry",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,
@@ -248,6 +261,12 @@ export const linkDocument = authorized
     }),
   )
   .output(z.object({ linked: z.literal(true) }))
+  .meta(
+    openapi({
+      tags: ["Costs"],
+      summary: "Link a proof document to a travel cost entry",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,

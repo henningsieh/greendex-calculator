@@ -7,6 +7,7 @@ import {
   member,
   projectsTable as projects,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, desc, eq, exists, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -34,6 +35,12 @@ export const searchHosted = authorized
     }),
   )
   .output(z.array(z.object({ id: z.string(), name: z.string() })).max(20))
+  .meta(
+    openapi({
+      tags: ["Projects"],
+      summary: "Search hosted projects",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId)

@@ -6,6 +6,7 @@ import {
   member,
   projectsTable,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -17,6 +18,12 @@ import { authorized } from "@/lib/orpc/middleware";
 export const create = authorized
   .input(ProjectCreateInputSchema)
   .output(z.object({ id: z.string() }))
+  .meta(
+    openapi({
+      tags: ["Projects"],
+      summary: "Create a project",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const organizationId = context.session.activeOrganizationId;
     if (!organizationId) {

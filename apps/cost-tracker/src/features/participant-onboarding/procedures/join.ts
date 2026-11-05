@@ -11,6 +11,7 @@ import {
   projectParticipantsTable as participants,
   projectsTable as projects,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -55,6 +56,12 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
   const join = authorized
     .input(joinInput)
     .output(z.object({ participationId: z.string() }))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Join a partnership via invitation or registration link",
+      }),
+    )
     .handler(async ({ context, input, errors }) => {
       const version = requirePublishedAgreement(errors);
       if (!context.user.emailVerified)
@@ -267,6 +274,12 @@ export function buildSaveProfile() {
   const saveProfile = authorized
     .input(profileInput)
     .output(success)
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Save the participant profile",
+      }),
+    )
     .handler(async ({ context, input }) => {
       await db
         .insert(profiles)
@@ -286,6 +299,12 @@ export function buildAcceptAgreement(
   const acceptAgreement = authorized
     .input(agreementInput)
     .output(z.object({ version: z.string() }))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Accept the current participant agreement",
+      }),
+    )
     .handler(async ({ context, errors }) => {
       const version = requirePublishedAgreement(errors);
       await db

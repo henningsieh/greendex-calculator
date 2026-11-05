@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- #388 OpenAPI metadata pushed this hub module past the limit (was already at 988/999). Split list/detail/complete into focused procedure files as follow-up; the metadata stays until then. */
 import { hasOrganizationRole } from "@greendex/auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import "server-only";
@@ -10,6 +11,7 @@ import {
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import {
   and,
   asc,
@@ -465,6 +467,12 @@ export const listHosted = authorized
   .use(requireCostTrackerPermissions({ project: ["read"] }))
   .input(HostedProjectListInputSchema)
   .output(HostedProjectListSchema)
+  .meta(
+    openapi({
+      tags: ["Projects"],
+      summary: "List hosted projects",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
     const [membership] = await db
@@ -578,6 +586,12 @@ export const listHosted = authorized
 export const listPartner = authorized
   .input(PartnerProjectListInputSchema)
   .output(PartnerProjectListSchema)
+  .meta(
+    openapi({
+      tags: ["Projects"],
+      summary: "List partnered projects",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
@@ -662,6 +676,12 @@ export const listPartner = authorized
 
 export const availableScopes = authorized
   .output(ProjectListScopeAvailabilitySchema)
+  .meta(
+    openapi({
+      tags: ["Projects"],
+      summary: "List available project scopes",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
@@ -743,6 +763,12 @@ export const availableScopes = authorized
 export const getProject = authorized
   .input(ProjectDetailInputSchema)
   .output(ProjectDetailSchema)
+  .meta(
+    openapi({
+      tags: ["Projects"],
+      summary: "Get project details",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
@@ -909,6 +935,12 @@ export const complete = authorized
       completed: z.literal(true),
       completedAt: z.date(),
       completedByUserId: z.string(),
+    }),
+  )
+  .meta(
+    openapi({
+      tags: ["Projects"],
+      summary: "Record project completion",
     }),
   )
   .handler(async ({ input, context, errors }) => {
