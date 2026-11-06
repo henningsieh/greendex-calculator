@@ -123,7 +123,6 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "pg": "catalog:",
-    "playwright": "^1.64.1",
     "tailwindcss": "catalog:",
     "ts-prune": "^0.10.3",
     "tw-animate-css": "catalog:",

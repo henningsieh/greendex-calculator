@@ -41,7 +41,7 @@ the [Husky pre-commit research](../research/husky-pre-commit.md).
 - `ignorePatterns` and `overrides` entries are resolved relative to the config file directory, so keep them repository-root-relative.
 - Tailwind-resolving lint rules run on production JSX/TSX sources in the apps, auth, and email packages, excluding tests and stories. The current plain TS/JS sources in those contexts have no class-bearing helpers; when adding one, include its path in the Tailwind override and cover it in the scope regression test. Oxlint overrides do not support `comment` keys; keep rationale here, not in configuration fields.
 - Cost Tracker UI copy is enforced by `greendex/no-hardcoded-ui-copy` in `scripts/oxlint-i18n.mjs`. Regular lint and staged-file pre-commit lint share `.oxlintrc.json`. The rule checks static JSX text and visible attributes, including rendered branches; it does not trace values through variables or function calls. Its regression tests run in `test:unit`, not in the lint chain.
-- Use Vitest for unit/integration tests and Playwright for browser flows.
+- Use Vitest for unit/integration tests and Playwright for browser flows. `@playwright/test` alone is enough — do not add the bare `playwright` package and do not use library mode (`import { chromium } from "playwright"`) in scripts; use the test runner (`import { test, expect } from "@playwright/test"`).
 - Follow the process restrictions in `AGENTS.md`; repository configuration does not override them.
 
 ## Two verification loops
