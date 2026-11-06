@@ -7,6 +7,7 @@ import { CheckIcon, ChevronDownIcon, PaletteIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import * as React from "react";
 
+import { ThemeSwatch } from "@/components/theme-swatch";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,9 +22,9 @@ import { THEMES, isThemeValue } from "@/lib/themes";
 const subscribeToHydration = () => () => undefined;
 
 /* Header theme switcher — mirrors OrganizationSwitcher 1:1.
-   Trigger: outline sm + icon + current label + chevron.
+   Trigger: icon-only (palette + chevron), label lives in aria-label.
    Content: w-64 rounded-xl p-2 + label + check items (same as AccountMenu).
-   All 7 themes from lib/themes, semantic tokens only. */
+   All 4 themes from lib/themes; dots preview each theme's swatch. */
 export function ThemeSwitcher() {
   const t = useTranslations("shell.themeSwitcher");
   const mounted = React.useSyncExternalStore(
@@ -43,13 +44,13 @@ export function ThemeSwitcher() {
         render={
           <Button
             aria-label={t("ariaLabel", { theme: current?.label ?? t("system") })}
+            className="rounded-md"
             size="sm"
             variant="outline"
           />
         }
       >
         <PaletteIcon aria-hidden="true" data-icon="inline-start" />
-        {current?.label ?? t("triggerFallback")}
         <ChevronDownIcon aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
@@ -66,10 +67,7 @@ export function ThemeSwitcher() {
                 onClick={() => setTheme(entry.value)}
                 title={entry.description}
               >
-                <span
-                  aria-hidden="true"
-                  className="size-3 shrink-0 rounded-full bg-primary"
-                />
+                <ThemeSwatch value={entry.value} />
                 {entry.label}
                 {active && <CheckIcon aria-hidden="true" className="ml-auto" />}
               </DropdownMenuItem>

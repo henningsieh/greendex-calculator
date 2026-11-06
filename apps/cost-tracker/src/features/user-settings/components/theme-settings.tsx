@@ -1,28 +1,17 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { KeyboardIcon, MoonIcon, SunIcon } from "lucide-react";
+import { KeyboardIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import * as React from "react";
 
+import { ThemeSwatch } from "@/components/theme-swatch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FieldDescription, FieldLegend, FieldSet } from "@/components/ui/field";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { THEMES, isThemeValue } from "@/lib/themes";
 
 const subscribeToHydration = () => () => undefined;
-
-function themeIcon(value: string) {
-  if (value === "light") {
-    return <SunIcon data-icon="inline-start" />;
-  }
-
-  if (value === "dark") {
-    return <MoonIcon data-icon="inline-start" />;
-  }
-
-  return <span aria-hidden="true" className="size-3 rounded-full bg-primary" />;
-}
 
 export function ThemeSettings() {
   const t = useTranslations("settings.theme");
@@ -32,42 +21,36 @@ export function ThemeSettings() {
     () => false,
   );
   const { setTheme, theme } = useTheme();
-  const selectedValues = mounted && theme && isThemeValue(theme) ? [theme] : [];
-
-  function changeTheme(values: string[]) {
-    changeFullTheme(values.at(-1) ?? null);
-  }
-
-  function changeFullTheme(value: string | null) {
-    if (value && isThemeValue(value)) {
-      setTheme(value);
-    }
-  }
+  const selectedTheme = mounted && theme && isThemeValue(theme) ? theme : null;
 
   return (
     <div className="flex flex-col gap-6">
       <FieldSet>
         <FieldLegend variant="label">{t("title")}</FieldLegend>
         <FieldDescription>{t("description")}</FieldDescription>
-        <ToggleGroup
+        <Tabs
           aria-label={t("ariaLabel")}
-          className="flex-wrap justify-start"
-          disabled={!mounted}
-          onValueChange={changeTheme}
-          value={selectedValues}
-          variant="outline"
+          value={selectedTheme ?? ""}
+          onValueChange={(value) => {
+            if (value && isThemeValue(value)) {
+              setTheme(value);
+            }
+          }}
         >
-          {THEMES.map((entry) => (
-            <ToggleGroupItem
-              key={entry.value}
-              aria-label={t("use", { theme: entry.label })}
-              value={entry.value}
-            >
-              {themeIcon(entry.value)}
-              {entry.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+          {/* eslint-disable-next-line shadcn/no-restyle -- segmented theme switch wraps to two rows on narrow screens */}
+          <TabsList className="h-auto min-h-10 flex-wrap">
+            {THEMES.map((entry) => (
+              <TabsTrigger
+                key={entry.value}
+                aria-label={t("use", { theme: entry.label })}
+                value={entry.value}
+              >
+                <ThemeSwatch value={entry.value} />
+                {entry.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </FieldSet>
 
       <Alert variant="accent">
