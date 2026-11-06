@@ -2,9 +2,10 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Building2Icon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,8 +81,8 @@ function PartnerOrganizationParticipants({
       <CardHeader className="flex flex-wrap items-center justify-between gap-3">
         <CardTitle>
           <span className="flex items-center gap-2">
-            <Building2Icon
-              aria-hidden="true"
+            <EntityIcon
+              entity="partnerOrganization"
               className="size-5 text-muted-foreground"
             />
             {group.name}

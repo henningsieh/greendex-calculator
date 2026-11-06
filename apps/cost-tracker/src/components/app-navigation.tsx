@@ -3,19 +3,14 @@
 /* eslint-disable shadcn/no-restyle -- Account-menu bespoke treatments: none of the shared Button/DropdownMenu variants provide this screen's exact shape, spacing, typography, and color. Zero visual change intended; revisit with a variant if the pattern repeats. */
 
 import { useTranslations } from "@greendex/i18n/client";
-import {
-  Building2Icon,
-  ChevronDownIcon,
-  FolderKanbanIcon,
-  LogOutIcon,
-  UsersIcon,
-} from "lucide-react";
+import { ChevronDownIcon, LogOutIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useRef } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
@@ -33,18 +28,18 @@ import { OrganizationSwitcher } from "@/features/organizations/components/organi
 import { cn } from "@/lib/utils";
 
 const baseNavigationItems = [
-  { href: "/projects", icon: FolderKanbanIcon, labelKey: "nav.projects" },
+  { entity: "project", href: "/projects", labelKey: "nav.projects" },
 ] as const;
 
 const partnerOrganizationsNavigationItem = {
+  entity: "partnerOrganization",
   href: "/partner-organizations",
-  icon: Building2Icon,
   labelKey: "nav.partnerOrganizations",
 } as const;
 
 const organizationNavigationItem = {
+  entity: "organization",
   href: "/organization",
-  icon: UsersIcon,
   labelKey: "nav.organization",
 } as const;
 
@@ -129,7 +124,6 @@ export function AppNavigation({
             className="-ml-2 flex min-w-0 overflow-x-auto sm:-ml-3"
           >
             {navigationItems.map((item) => {
-              const Icon = item.icon;
               const active = pathname === item.href;
 
               return (
@@ -144,7 +138,10 @@ export function AppNavigation({
                   href={item.href}
                   key={item.href}
                 >
-                  <Icon aria-hidden="true" className="hidden size-4 sm:block" />
+                  <EntityIcon
+                    entity={item.entity}
+                    className="hidden size-4 sm:block"
+                  />
                   {t(item.labelKey)}
                 </Link>
               );
@@ -247,6 +244,7 @@ function AccountMenu({
                 />
               }
             >
+              <EntityIcon entity="account" />
               {t("account.settings")}
             </DropdownMenuItem>
             <DropdownMenuItem

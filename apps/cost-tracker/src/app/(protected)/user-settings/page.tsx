@@ -5,7 +5,7 @@ import ProtectedPageHeader from "@/components/protected-page-header";
 import { UserSettingsTabs } from "@/features/user-settings/components/user-settings-tabs";
 import { requireSession } from "@/lib/session";
 
-export const metadata: Metadata = { title: "User settings" };
+export const metadata: Metadata = { title: "Account settings" };
 
 export default async function UserSettingsPage() {
   const session = await requireSession();

@@ -2,10 +2,11 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Building2Icon, CalendarDaysIcon, MapPinIcon } from "lucide-react";
+import { CalendarDaysIcon, MapPinIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
@@ -217,8 +218,8 @@ export function ProjectWorkspace({
                     key={partner.id}
                   >
                     <span className="flex items-center gap-3 font-medium">
-                      <Building2Icon
-                        aria-hidden="true"
+                      <EntityIcon
+                        entity="partnerOrganization"
                         className="size-5 text-muted-foreground"
                       />
                       {partner.organizationName}

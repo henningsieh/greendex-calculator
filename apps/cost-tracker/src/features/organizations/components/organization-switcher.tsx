@@ -4,15 +4,11 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Building2Icon,
-  CheckIcon,
-  ChevronDownIcon,
-  LoaderCircleIcon,
-} from "lucide-react";
+import { CheckIcon, ChevronDownIcon, LoaderCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -84,7 +80,7 @@ export function OrganizationSwitcher({
             />
           }
         >
-          <Building2Icon aria-hidden="true" data-icon="inline-start" />
+          <EntityIcon data-icon="inline-start" entity="organization" />
           <span className="hidden md:inline">{active?.name ?? t("select")}</span>
           {pendingId !== null ? (
             <LoaderCircleIcon aria-hidden="true" className="animate-spin" />

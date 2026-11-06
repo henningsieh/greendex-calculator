@@ -2,7 +2,7 @@
   "settings": {
     "page": {
       "eyebrow": "Einstellungen",
-      "title": "Benutzereinstellungen",
+      "title": "Kontoeinstellungen",
       "description": "Wähle, wie Cost Tracker aussieht, und halte deine Kontodaten aktuell."
     },
     "tabs": {
