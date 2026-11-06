@@ -199,7 +199,7 @@ function AccountMenu({
               data-testid="account-menu-trigger"
               aria-label={compact ? t("account.openMenu", { name }) : undefined}
               className={cn(
-                "group h-11 gap-3 rounded-lg px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
+                "group h-11 gap-3 rounded-md px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
                 active && "bg-muted",
                 compact &&
                   "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
