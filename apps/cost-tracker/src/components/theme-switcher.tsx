@@ -44,7 +44,7 @@ export function ThemeSwitcher() {
         render={
           <Button
             aria-label={t("ariaLabel", { theme: current?.label ?? t("system") })}
-            className="rounded-md"
+            className="rounded-md lg:h-11"
             size="sm"
             variant="outline"
           />

@@ -77,7 +77,7 @@ export function OrganizationSwitcher({
               aria-label={t("aria", {
                 organization: active?.name ?? t("select"),
               })}
-              className="rounded-md"
+              className="rounded-md lg:h-11"
               disabled={pendingId !== null}
               size="sm"
               variant="outline"

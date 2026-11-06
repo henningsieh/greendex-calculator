@@ -103,6 +103,13 @@ export function AppNavigation({
                 pathname={pathname}
               />
             </div>
+            <div className="hidden lg:block">
+              <AccountMenu
+                email={account.email}
+                name={account.name}
+                pathname={pathname}
+              />
+            </div>
           </div>
         ) : (
           <nav
@@ -143,14 +150,6 @@ export function AppNavigation({
               );
             })}
           </nav>
-
-          <div className="hidden shrink-0 pb-2 lg:block">
-            <AccountMenu
-              email={account.email}
-              name={account.name}
-              pathname={pathname}
-            />
-          </div>
         </div>
       ) : null}
     </div>
