@@ -19,17 +19,12 @@ export default async function PartnerOrganizationsPage() {
   // would only render a denial. Assignment holders see their own rows.
   if (!(await canViewPartnerNetwork())) {
     return (
-      <div className="max-w-3xl">
-        <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
-        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
-          {t("title")}
-        </h1>
-        <p
-          className="mt-4 text-lg/8 text-muted-foreground"
-          data-testid="hosting-staff-note"
-        >
-          {t("restricted")}
-        </p>
+      <div>
+        <ProtectedPageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          description={t("restricted")}
+        />
       </div>
     );
   }

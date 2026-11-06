@@ -13,7 +13,11 @@ export default async function UserSettingsPage() {
 
   return (
     <div className="max-w-5xl">
-      <ProtectedPageHeader title={t("title")} description={t("description")} />
+      <ProtectedPageHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
+      />
 
       <UserSettingsTabs email={session.user.email} name={session.user.name} />
     </div>

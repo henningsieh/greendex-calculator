@@ -54,7 +54,7 @@ export default async function ClaimReviewPage({
 
   return (
     <div className="space-y-6">
-      <ProtectedPageHeader title={t("sectionLabel")} />
+      <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("sectionLabel")} />
       <Suspense fallback={<ClaimReviewSkeleton />}>
         <ClaimReviewSection params={params} />
       </Suspense>

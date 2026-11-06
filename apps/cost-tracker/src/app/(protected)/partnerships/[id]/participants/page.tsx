@@ -20,6 +20,7 @@ export default async function PartnershipParticipantsPage({
   return (
     <div className="space-y-8">
       <ProtectedPageHeader
+        eyebrow={t("eyebrow")}
         title={t("projectParticipations")}
         description={t("coordinateDescription")}
       />

@@ -27,10 +27,12 @@
       "empty": "No submitted Claims available for review."
     },
     "page": {
+      "eyebrow": "Partner Claim",
       "back": "Back to Projects",
       "title": "Claim workspace"
     },
     "review": {
+      "eyebrow": "Claim review",
       "sectionLabel": "Claim review",
       "bandTitle": "Claim review",
       "back": "Back to submitted Claims",

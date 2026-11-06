@@ -117,6 +117,7 @@
       "cannotCorrect": "Te udeležbe v projektu ne morete popraviti."
     },
     "app": {
+      "eyebrow": "Participations",
       "backToProjects": "Back to Projects",
       "reportTitle": "Participants report",
       "reportDescription": "Read how onboarding is progressing across this Project, grouped by Partner Organization.",

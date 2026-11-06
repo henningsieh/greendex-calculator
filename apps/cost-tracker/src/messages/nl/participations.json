@@ -117,6 +117,7 @@
       "cannotCorrect": "Je kunt deze projectdeelname niet corrigeren."
     },
     "app": {
+      "eyebrow": "Participations",
       "backToProjects": "Back to Projects",
       "reportTitle": "Participants report",
       "reportDescription": "Read how onboarding is progressing across this Project, grouped by Partner Organization.",

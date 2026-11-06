@@ -117,6 +117,7 @@
       "cannotCorrect": "Du darfst diese Projektteilnahme nicht korrigieren."
     },
     "app": {
+      "eyebrow": "Teilnahmen",
       "backToProjects": "Zurück zu Projekten",
       "reportTitle": "Teilnehmendenbericht",
       "reportDescription": "Lies, wie das Onboarding in diesem Projekt voranschreitet, gruppiert nach Partnerorganisation.",

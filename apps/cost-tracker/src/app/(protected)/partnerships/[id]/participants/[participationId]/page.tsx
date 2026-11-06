@@ -20,6 +20,7 @@ export default async function ParticipantDetailsPage({
   return (
     <div className="space-y-8">
       <ProtectedPageHeader
+        eyebrow={t("eyebrow")}
         title={t("participantDetails")}
         description={t("participantDetailsDescription")}
       />

@@ -61,6 +61,7 @@ export default async function ClaimPage({
   return (
     <div className="space-y-8">
       <ProtectedPageHeader
+        eyebrow={t("eyebrow")}
         title={t("title")}
         bottomLink={
           <Link className={buttonVariants({ variant: "ghost" })} href="/projects">

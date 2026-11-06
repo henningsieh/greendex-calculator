@@ -1,5 +1,5 @@
 type ProtectedPageHeaderProps = {
-  eyebrow?: string;
+  eyebrow: string;
   title: string;
   rightButton?: React.ReactNode;
 } & (
@@ -17,9 +17,7 @@ export default function ProtectedPageHeader({
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="max-w-3xl">
-        {eyebrow ? (
-          <p className="text-sm font-medium text-primary">{eyebrow}</p>
-        ) : null}
+        <p className="text-sm font-medium text-primary">{eyebrow}</p>
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
           {title}
         </h1>

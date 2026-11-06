@@ -54,7 +54,7 @@ export default async function ClaimReviewQueuePage() {
 
   return (
     <div className="space-y-6">
-      <ProtectedPageHeader title={t("hostingTitle")} />
+      <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("hostingTitle")} />
       <Suspense fallback={<ClaimReviewQueueSkeleton />}>
         <ClaimReviewQueueSection />
       </Suspense>

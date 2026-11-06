@@ -27,10 +27,12 @@
       "empty": "Keine eingereichten Claims zur Prüfung verfügbar."
     },
     "page": {
+      "eyebrow": "Partner-Claim",
       "back": "Zurück zu Projekten",
       "title": "Claim-Arbeitsbereich"
     },
     "review": {
+      "eyebrow": "Claim-Prüfung",
       "sectionLabel": "Claim-Prüfung",
       "bandTitle": "Claim-Prüfung",
       "back": "Zurück zu eingereichten Claims",
