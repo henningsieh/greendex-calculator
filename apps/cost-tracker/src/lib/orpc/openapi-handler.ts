@@ -6,7 +6,6 @@ import { ResponseHeadersHandlerPlugin } from "@orpc/server/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod";
 
 import { env } from "@/env";
-import { auth } from "@/lib/auth";
 import { normalizeBetterAuthError } from "@/lib/orpc/better-auth-errors";
 import { ERROR_STATUS_MAP } from "@/lib/orpc/error-status";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -27,10 +26,6 @@ export const openapiHandler = new OpenAPIHandler(router, {
       specPath: "/api/openapi-spec",
       provider: "scalar",
       providerScriptUrl: SCALAR_STANDALONE_PATH,
-      allow: async ({ context }) => {
-        const session = await auth.api.getSession({ headers: context.headers });
-        return Boolean(session?.session && session.user);
-      },
       spec: () =>
         generator.generate(router, {
           errorStatusMap: ERROR_STATUS_MAP,
