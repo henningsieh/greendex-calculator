@@ -12,6 +12,7 @@ import {
   travelCostEntriesTable as entries,
   travelCostEntryDocumentsTable as links,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -34,8 +35,20 @@ const result = z.object({
   status: z.enum(["correction_requested", "approved", "rejected", "submitted"]),
   approvedAmountEur: z.string().nullable(),
 });
+const decisionSummaries: Record<ClaimReviewDecision, string> = {
+  requestCorrection: "Request correction on a submitted claim",
+  approve: "Approve a submitted claim",
+  reject: "Reject a submitted claim",
+  reopen: "Reopen a decided claim",
+};
 function decision(action: ClaimReviewDecision) {
   return authorized
+    .meta(
+      openapi({
+        tags: ["Claims"],
+        summary: decisionSummaries[action],
+      }),
+    )
     .input(reviewInput)
     .output(result)
     .handler(async ({ input, context, errors }) => {
@@ -121,6 +134,12 @@ function decision(action: ClaimReviewDecision) {
 
 // Rendering hint only. Mutations independently repeat the authoritative scope check.
 export const reviewerAccess = authorized
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Check reviewer access for a claim",
+    }),
+  )
   .input(ClaimInputSchema)
   .output(z.object({ canReview: z.boolean() }))
   .handler(async ({ input, context, errors }) => {
@@ -135,6 +154,12 @@ export const reviewerAccess = authorized
 
 /** Hosting-only, read-only snapshot for Claim review; no editable drafts or storage keys leave this boundary. */
 export const getReviewDetails = authorized
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Get claim details for review",
+    }),
+  )
   .input(ClaimInputSchema)
   .output(
     z.object({
@@ -341,6 +366,12 @@ export const getHistory = authorized
         reason: z.string().nullable(),
       }),
     ),
+  )
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Get the claim event history",
+    }),
   )
   .handler(async ({ input, context, errors }) => {
     await requirePartnerCoordination(

@@ -16,7 +16,7 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 // Private invariant exceptions remain raw. Pin exact expressions, not entire
 // files; the procedure boundary sanitizes exceptions raised by procedures.
 const privateInvariantThrows: Record<string, string[]> = {
-  "features/projects/procedures/core.ts": [
+  "features/projects/procedures/list.ts": [
     'new Error("Expected at least one SQL condition.")',
     'new Error("Expected at least one SQL condition.")',
   ],

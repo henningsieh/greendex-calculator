@@ -6,6 +6,7 @@ import {
   claimsTable as claims,
   proofDocumentsTable as documents,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, count, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -57,6 +58,12 @@ async function requirePartner(
 export const list = authorized
   .input(ClaimScopeInputSchema)
   .output(z.array(documentOutput))
+  .meta(
+    openapi({
+      tags: ["Documents"],
+      summary: "List proof documents of a claim",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     await requirePartner(
       input.partnershipId,

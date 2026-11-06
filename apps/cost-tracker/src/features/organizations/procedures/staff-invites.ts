@@ -8,6 +8,7 @@ import {
   organization,
   user,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -120,6 +121,12 @@ async function requireOrganizationManager(
 export const listMembers = authorized
   .input(z.object({}).optional())
   .output(z.object({ members: z.array(MemberSchema) }))
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "List organization members",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     const organizationId = requireActiveOrganization(
       context.session.activeOrganizationId,
@@ -152,6 +159,12 @@ export const listMembers = authorized
 export const listPendingInvitations = authorized
   .input(z.object({}).optional())
   .output(z.object({ invitations: z.array(PendingInvitationSchema) }))
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "List pending staff invitations",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     const organizationId = requireActiveOrganization(
       context.session.activeOrganizationId,
@@ -188,6 +201,12 @@ export const listPendingInvitations = authorized
 export const inviteMember = authorized
   .input(InviteInputSchema)
   .output(InviteResultSchema)
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "Invite a staff member",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const organizationId = requireActiveOrganization(
       context.session.activeOrganizationId,
@@ -321,6 +340,12 @@ export async function readStaffInvitation(
 export const acceptInvitation = authorized
   .input(z.object({ invitationId: z.string().min(1).max(128) }))
   .output(z.object({ organizationId: z.string() }))
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "Accept a staff invitation",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     if (!context.user.emailVerified)
       throw createSituationErrors(errors).verifyEmail();
@@ -348,6 +373,12 @@ export const acceptInvitation = authorized
 export const rejectInvitation = authorized
   .input(CancelInputSchema)
   .output(z.object({ success: z.literal(true) }))
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "Reject a staff invitation",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     if (!context.user.emailVerified)
       throw createSituationErrors(errors).verifyEmail();
@@ -373,6 +404,12 @@ export const rejectInvitation = authorized
 export const cancelInvitation = authorized
   .input(CancelInputSchema)
   .output(z.object({ success: z.literal(true) }))
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "Cancel a staff invitation",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const organizationId = requireActiveOrganization(
       context.session.activeOrganizationId,

@@ -1,3 +1,4 @@
+import { openapi } from "@orpc/openapi";
 import { z } from "zod";
 
 import {
@@ -88,6 +89,12 @@ async function callBetterAuth(
 export const signIn = base
   .input(SignInInputSchema)
   .output(SuccessSchema)
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Sign in with email and password",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     await callBetterAuth(context, errors, () =>
       auth.api.signInEmail({
@@ -103,6 +110,12 @@ export const signIn = base
 export const signUp = base
   .input(SignUpInputSchema)
   .output(SignUpResultSchema)
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Create an account with email and password",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     await callBetterAuth(context, errors, () =>
       auth.api.signUpEmail({
@@ -141,6 +154,12 @@ export const signUp = base
 export const startGoogleSignIn = base
   .input(GoogleSignInInputSchema.optional())
   .output(SocialSignInSchema)
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Start Google OAuth sign-in",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     // Only the validated invitation route survives OAuth; anything else
     // falls back to the Project list so callbackURL can never be abused.
@@ -158,6 +177,12 @@ export const startGoogleSignIn = base
 
 export const signOut = base
   .output(SuccessSchema)
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Sign out of the current session",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     await callBetterAuth(context, errors, () =>
       auth.api.signOut({ asResponse: true, headers: context.headers }),
@@ -170,6 +195,12 @@ export const createOrganization = authorized
   .input(CreateOrganizationInputSchema)
   .output(
     z.object({ success: z.literal(true), organizationId: z.string().min(1) }),
+  )
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Create a new organization",
+    }),
   )
   .handler(async ({ context, errors, input }) => {
     const response = await callBetterAuth(context, errors, async () => {
@@ -215,6 +246,12 @@ export const createOrganization = authorized
 export const updateUser = authorized
   .input(EditNameSchema)
   .output(SuccessSchema)
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Update the own display name",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     await callBetterAuth(context, errors, () =>
       auth.api.updateUser({
@@ -230,6 +267,12 @@ export const updateUser = authorized
 export const onboardingNextStep = base
   .input(OnboardingInputSchema)
   .output(OnboardingDecisionSchema)
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Resolve the next onboarding step",
+    }),
+  )
   .handler(async ({ context, input, errors }) => {
     context.resHeaders?.set("cache-control", "private, no-store");
     return decideOnboarding(

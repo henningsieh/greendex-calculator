@@ -82,10 +82,9 @@ import {
   availableScopes,
   complete,
   getProject,
-  listHosted,
-  listPartner,
 } from "@/features/projects/procedures/core";
 import { create as createProject } from "@/features/projects/procedures/create";
+import { listHosted, listPartner } from "@/features/projects/procedures/list";
 import { searchHosted } from "@/features/projects/procedures/search-hosted";
 
 export const router = {

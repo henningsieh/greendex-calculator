@@ -3,6 +3,7 @@ import "server-only";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import { member, organization } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, eq, gt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -16,6 +17,12 @@ export const searchOrganizations = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
   .input(searchInput)
   .output(options)
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "Search organizations by name",
+    }),
+  )
   .handler(async ({ input }) => {
     const escaped = input.search.replace(/[\\%_]/g, "\\$&");
     const pattern = `%${escaped}%`;
@@ -35,6 +42,12 @@ export const searchOrganizations = authorized
 export const listMyOrganizations = authorized
   .input(searchInput)
   .output(options)
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "List the own organizations",
+    }),
+  )
   .handler(async ({ context, input }) => {
     const escaped = input.search.replace(/[\\%_]/g, "\\$&");
     const pattern = `%${escaped}%`;

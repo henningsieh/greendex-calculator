@@ -8,6 +8,7 @@ import {
   projectParticipantsTable as participants,
   projectsTable as projects,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
@@ -33,6 +34,12 @@ export function buildListMyProjects(
           hostingOrganizationName: z.string(),
         }),
       ),
+    )
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "List projects the participant joined",
+      }),
     )
     .handler(async ({ context, errors }) => {
       const version = requirePublishedAgreement(errors);

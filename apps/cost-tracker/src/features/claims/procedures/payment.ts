@@ -4,6 +4,7 @@ import {
   claimHistoryTable as history,
   claimsTable as claims,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -35,6 +36,12 @@ export const markPaid = authorized
     }),
   )
   .output(result)
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Mark an approved claim as paid",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerCoordination(
       input.partnershipId,
@@ -100,6 +107,12 @@ export const correctPayment = authorized
     }),
   )
   .output(result)
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Correct the paid flag of a claim",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerCoordination(
       input.partnershipId,

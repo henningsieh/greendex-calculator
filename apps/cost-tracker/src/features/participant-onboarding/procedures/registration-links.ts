@@ -4,6 +4,7 @@ import {
   claimsTable,
   participantEntryTokensTable as tokens,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -18,6 +19,12 @@ export function buildCreateRegistrationLink() {
   return authorized
     .input(z.object({ partnershipId: id }))
     .output(z.object({ id: z.string(), secret: z.string() }))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Create a shareable participant registration link",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const partnership = await requirePartnerScopeAuthority(
         context.headers,
@@ -43,6 +50,12 @@ export function buildSetRegistrationLinkOpen() {
   return authorized
     .input(z.object({ id, open: z.boolean() }))
     .output(z.object({ open: z.boolean() }))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Enable or disable a registration link",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const [token] = await db
         .select({ partnershipId: tokens.partnershipId, email: tokens.email })

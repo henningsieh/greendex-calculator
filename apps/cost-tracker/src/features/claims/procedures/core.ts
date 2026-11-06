@@ -5,6 +5,7 @@ import {
   partnershipPayoutAccountsTable as selections,
   payoutAccountsTable as accounts,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -96,6 +97,12 @@ export const getDraft = authorized
       })
       .nullable(),
   )
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Get the editable claim draft",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     await requirePartnerCoordination(
       input.partnershipId,
@@ -130,6 +137,12 @@ export const listPayoutAccounts = authorized
         }),
       ),
       selectedPayoutAccountId: z.string().nullable(),
+    }),
+  )
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "List payout accounts",
     }),
   )
   .handler(async ({ input, context, errors }) => {
@@ -178,6 +191,12 @@ export const createPayoutAccount = authorized
     }),
   )
   .output(accountSchema)
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Create a payout account",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,
@@ -206,6 +225,12 @@ export const createPayoutAccount = authorized
 export const selectPayoutAccount = authorized
   .input(ClaimPartnershipInputSchema.extend({ payoutAccountId: coordinationId }))
   .output(z.object({ partnershipId: z.string(), payoutAccountId: z.string() }))
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Select the payout account for a claim",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,
@@ -255,6 +280,12 @@ export const selectPayoutAccount = authorized
 export const saveDraft = authorized
   .input(ClaimPartnershipInputSchema)
   .output(ClaimDraftSchema)
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Save the claim draft",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,

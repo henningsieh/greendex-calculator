@@ -8,6 +8,7 @@ import {
   projectFundingSnapshotsTable as snapshots,
   projectParticipantsTable as participants,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { z } from "zod";
 
@@ -55,6 +56,12 @@ async function requirePartnerSide(
 export const list = authorized
   .input(scopeInput)
   .output(z.array(journeyOutput))
+  .meta(
+    openapi({
+      tags: ["Journeys"],
+      summary: "List travel journeys of a participation",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,
@@ -79,6 +86,12 @@ export const list = authorized
 export const save = authorized
   .input(JourneyInputSchema)
   .output(journeyOutput)
+  .meta(
+    openapi({
+      tags: ["Journeys"],
+      summary: "Save a travel journey",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,
@@ -161,6 +174,12 @@ export const save = authorized
 export const update = authorized
   .input(JourneyInputSchema)
   .output(journeyOutput)
+  .meta(
+    openapi({
+      tags: ["Journeys"],
+      summary: "Update a travel journey",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(
       input.partnershipId,
