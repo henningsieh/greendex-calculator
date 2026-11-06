@@ -113,6 +113,18 @@ export function ProjectWorkspace({
               {t("back")}
             </Link>
           }
+          rightButton={
+            canComplete ? (
+              <Button
+                disabled={completing}
+                onClick={completeProject}
+                data-testid="complete-project"
+                type="button"
+              >
+                {completing ? t("completing") : t("complete")}
+              </Button>
+            ) : undefined
+          }
         />
         <div className="flex flex-wrap items-center gap-3">
           {project.archived && <Badge variant="secondary">{t("archived")}</Badge>}
@@ -137,16 +149,6 @@ export function ProjectWorkspace({
             {t("completed")} {dateTimeFormatter.format(project.completedAt)}{" "}
             {t("by")} {project.completedByUserId}
           </p>
-        )}
-        {canComplete && (
-          <Button
-            disabled={completing}
-            onClick={completeProject}
-            data-testid="complete-project"
-            type="button"
-          >
-            {completing ? t("completing") : t("complete")}
-          </Button>
         )}
         {feedback && (
           <div
@@ -234,7 +236,7 @@ export function ProjectWorkspace({
             )}
             <div className="flex flex-wrap gap-3">
               <Link
-                className={buttonVariants({ variant: "outline" })}
+                className={buttonVariants({ variant: "secondary" })}
                 href={`/projects/${encodeURIComponent(project.id)}/participants`}
                 data-testid="hosted-participants"
               >
@@ -247,7 +249,7 @@ export function ProjectWorkspace({
                 {t("reviewClaims")}
               </Link>
               <Link
-                className={buttonVariants({ variant: "outline" })}
+                className={buttonVariants({ variant: "ghost" })}
                 href="/partner-organizations"
                 data-testid="manage-project-partnerships"
               >
