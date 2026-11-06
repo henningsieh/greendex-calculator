@@ -85,7 +85,7 @@ export function OrganizationSwitcher({
           }
         >
           <Building2Icon aria-hidden="true" data-icon="inline-start" />
-          {active?.name ?? t("select")}
+          <span className="hidden md:inline">{active?.name ?? t("select")}</span>
           {pendingId !== null ? (
             <LoaderCircleIcon aria-hidden="true" className="animate-spin" />
           ) : (
