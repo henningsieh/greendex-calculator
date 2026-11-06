@@ -1,44 +1,36 @@
-/* Theme registry — 7-theme scope (LOCKED 2026-10-11).
+/* Theme registry — 4-theme scope.
    `light` = EU-Erasmus light (:root, untouched).
-   `dark` = legacy zinc dark (.dark, untouched).
-   `theme-ember-*` = the five Ember vibes (DESIGN.md frontmatter).
-   Values are next-themes class names; each maps 1:1 to a globals.css block. */
+   `theme-erasmus-*` = the three Erasmus dark vibes (DESIGN.md frontmatter).
+   Values are next-themes class names; each maps 1:1 to a globals.css block.
+   Array order is the display order in every picker (header switcher,
+   user-settings Appearance, design-system page). */
 
 export const THEMES = [
   {
     value: "light",
-    label: "EU Erasmus Light",
+    label: "Erasmus Light",
     description: "Calm EU Erasmus identity — blue base, yellow accents.",
+    // Preview dot: amplified stage hue so options stay distinguishable at
+    // 12px. Literal --backgrounds are all near-black and unreadable as dots.
+    swatch: "#edf2f8",
   },
   {
-    value: "theme-ember-plum",
-    label: "Ember Plum",
-    description: "Plum-black stage, single fire accent. Default Ember vibe.",
-  },
-  {
-    value: "theme-ember-midnight",
-    label: "Ember Midnight",
-    description: "Deep blue-black vibe. Fire stays #FFB800.",
-  },
-  {
-    value: "theme-ember-violet",
-    label: "Ember Violet",
-    description: "Violet-black vibe. Fire stays #FFB800.",
-  },
-  {
-    value: "theme-ember-abyss",
-    label: "Ember Abyss",
+    value: "theme-erasmus-dark",
+    label: "Erasmus Dark",
     description: "Near-black blue-grey vibe. Fire stays #FFB800.",
+    swatch: "#3f4a63",
   },
   {
-    value: "theme-ember-royal",
-    label: "Ember Royal",
-    description: "Royal blue vibe. Fire stays #FFB800.",
+    value: "theme-erasmus-midnight",
+    label: "Erasmus Midnight",
+    description: "Deep blue-black vibe. Fire stays #FFB800.",
+    swatch: "#33428a",
   },
   {
-    value: "dark",
-    label: "Legacy Dark",
-    description: "Previous zinc dark. Kept as the 7th option.",
+    value: "theme-erasmus-violet",
+    label: "Erasmus Violet",
+    description: "Violet-black vibe. Fire stays #FFB800.",
+    swatch: "#7a4fb5",
   },
 ] as const;
 

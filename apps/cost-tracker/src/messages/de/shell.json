@@ -139,9 +139,9 @@
       "titleLead": "Ember",
       "titleAccent": "Design",
       "titleTail": "System",
-      "intro": "Sieben Themes, ein Feuer-Akzent. Tokens, Button-Matrix, Karten, Schriftspezimen und die fixierten Brand-Erweiterungen — live gerendert.",
+      "intro": "Vier Themes, ein Feuer-Akzent. Tokens, Button-Matrix, Karten, Schriftspezimen und die fixierten Brand-Erweiterungen — live gerendert.",
       "themes": {
-        "eyebrow": "Themes · 7 Plätze",
+        "eyebrow": "Themes · 4 Plätze",
         "title": "Theme-Umschalter",
         "active": "aktiv:",
         "system": "System"
@@ -149,7 +149,8 @@
       "tokens": {
         "eyebrow": "Tokens · Rollen",
         "title": "Farbreferenzen",
-        "sample": "Aa"
+        "sample": "Aa",
+        "summary": null
       },
       "buttons": {
         "eyebrow": "Buttons · Matrix",
@@ -198,7 +199,7 @@
         "conformityDetail": "tabellarische Zahlen · Mono-Labels"
       },
       "terminal": {
-        "tokens": "Tokens zugeordnet — 7 Themes",
+        "tokens": "Tokens zugeordnet — 4 Themes",
         "buttons": "Buttons neu gebaut — Spinner ausstehend",
         "landing": "Landingpage — nächster Abschnitt",
         "status": "ember-c · alle Systeme nominal"

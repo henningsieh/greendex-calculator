@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *, .theme-ember-plum *, .theme-ember-midnight *, .theme-ember-violet *, .theme-ember-abyss *, .theme-ember-royal *));
+@custom-variant dark (&:is(.theme-erasmus-midnight *, .theme-erasmus-violet *, .theme-erasmus-dark *));
 @custom-variant fine-hover {
   @media (hover: hover) and (pointer: fine) {
     &:hover {
@@ -22,7 +22,7 @@
   --primary-foreground: #ffffff;
   --secondary: #edf2f8;
   --secondary-foreground: #102b50;
-  --muted: #edf2f8;
+  --muted: #dbe4ef;
   --muted-foreground: #52647a;
   --accent: #e8f0ff;
   --accent-foreground: #003399;
@@ -73,126 +73,14 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
-.dark {
-  --background: #09090b;
-  --foreground: #e4e4e7;
-  --card: #18181b;
-  --card-foreground: #e4e4e7;
-  --popover: #18181b;
-  --popover-foreground: #e4e4e7;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #27272a;
-  --secondary-foreground: #e4e4e7;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #172a4d;
-  --accent-foreground: #93b4ff;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: #3f3f46;
-  --input: #71717a;
-  --ring: #ffcc00;
-  --chart-1: #ffb800;
-  --chart-2: #ffcc33;
-  --chart-3: #d99a00;
-  --chart-4: #a1a1aa;
-  --chart-5: #71717a;
-  --sidebar: #18181b;
-  --sidebar-foreground: #e4e4e7;
-  --sidebar-primary: #2563eb;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #27272a;
-  --sidebar-accent-foreground: #93b4ff;
-  --sidebar-border: #3f3f46;
-  --sidebar-ring: #ffcc00;
-  --claim-band: #102b50;
-  --claim-band-foreground: #ffffff;
-  --brand: #ffcc00;
-  --link: #93b4ff;
-  --link-hover: #ffcc00;
-  --primary-hover: #2d6bf3;
-  --primary-border: #739fff;
-  --secondary-hover: #202023;
-  --secondary-hover-foreground: #e4e4e7;
-  --secondary-feedback-border: rgb(255 204 0 / 75%);
-  --primary-glow: 0 0 14px rgb(255 204 0 / 28%);
-  --secondary-glow: 0 0 8px rgb(255 204 0 / 18%);
-  --primary-active: #2d6bf3;
-  --pending: color-mix(in srgb, #2563eb 45%, #09090b);
-  --pending-foreground: #a1a1aa;
-  --term: #18181b;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-}
-
-/* ── Ember brand layer (7-theme scope, LOCKED 2026-10-11) ─────────────
-   :root (EU-Erasmus light) and .dark (legacy zinc) above are UNTOUCHED.
-   The five Ember vibes below map the DESIGN.md frontmatter onto shadcn
+/* ── Ember brand layer (4-theme scope, LOCKED 2026-10-11) ─────────────
+   :root (EU-Erasmus light) above is UNTOUCHED.
+   The three Ember vibes below map the DESIGN.md frontmatter onto shadcn
    variables. Shared Ember decisions live in each block (no cross-theme
    inheritance — every block is self-sufficient).
    Custom tokens: --primary-active, --pending, --pending-foreground,
    --ease-out, --ease-in-out. Registered in @theme inline below. */
-.theme-ember-plum {
-  --background: #0e0a14;
-  --foreground: #f7f2e9;
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-inter);
-  --card: rgb(255 255 255 / 0.02);
-  --card-foreground: #f7f2e9;
-  --popover: #0e0a14;
-  --popover-foreground: #f7f2e9;
-  --primary: #ffb800;
-  --primary-foreground: #1c1200;
-  --secondary: rgb(255 255 255 / 0.04);
-  --secondary-foreground: #f7f2e9;
-  --muted: rgb(255 255 255 / 0.04);
-  --muted-foreground: #b3a8c4;
-  --accent: rgb(255 255 255 / 0.06);
-  --accent-foreground: #f7f2e9;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: rgb(255 255 255 / 0.1);
-  --input: rgb(255 255 255 / 0.1);
-  --ring: #ffb800;
-  --chart-1: #ffb800;
-  --chart-2: #ffcc33;
-  --chart-3: #d99a00;
-  --chart-4: #b3a8c4;
-  --chart-5: #7c7192;
-  --sidebar: #0e0a14;
-  --sidebar-foreground: #f7f2e9;
-  --sidebar-primary: #ffb800;
-  --sidebar-primary-foreground: #1c1200;
-  --sidebar-accent: rgb(255 255 255 / 0.04);
-  --sidebar-accent-foreground: #f7f2e9;
-  --sidebar-border: rgb(255 255 255 / 0.1);
-  --sidebar-ring: #ffb800;
-  --claim-band: #080510;
-  --claim-band-foreground: #f7f2e9;
-  --brand: #ffb800;
-  --link: #ffb800;
-  --link-hover: #ffcc33;
-  --primary-hover: #ffcc33;
-  --primary-active: #ffcc33;
-  --primary-border: rgb(255 184 0 / 0.45);
-  --secondary-hover: rgb(255 255 255 / 0.06);
-  --secondary-hover-foreground: #f7f2e9;
-  --secondary-feedback-border: #ffb800;
-  --primary-glow: 0 0 18px rgb(255 184 0 / 0.45);
-  --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
-  --pending: color-mix(in srgb, #ffb800 45%, #0e0a14);
-  --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #0e0a14);
-  --term: #080510;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 22px;
-  --radius-3xl: 22px;
-  --radius-4xl: 999px;
-}
-.theme-ember-midnight {
+.theme-erasmus-midnight {
   --background: #0a1230;
   --foreground: #f7f2e9;
   --font-sans: var(--font-inter);
@@ -252,7 +140,7 @@
   --radius-3xl: 22px;
   --radius-4xl: 999px;
 }
-.theme-ember-violet {
+.theme-erasmus-violet {
   --background: #130b26;
   --foreground: #f7f2e9;
   --font-sans: var(--font-inter);
@@ -312,7 +200,7 @@
   --radius-3xl: 22px;
   --radius-4xl: 999px;
 }
-.theme-ember-abyss {
+.theme-erasmus-dark {
   --background: #070a16;
   --foreground: #f7f2e9;
   --font-sans: var(--font-inter);
@@ -361,66 +249,6 @@
   --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
   --pending: color-mix(in srgb, #ffb800 45%, #070a16);
   --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #070a16);
-  --term: #080510;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 22px;
-  --radius-3xl: 22px;
-  --radius-4xl: 999px;
-}
-.theme-ember-royal {
-  --background: #0b1642;
-  --foreground: #f7f2e9;
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-inter);
-  --card: rgb(255 255 255 / 0.02);
-  --card-foreground: #f7f2e9;
-  --popover: #0b1642;
-  --popover-foreground: #f7f2e9;
-  --primary: #ffb800;
-  --primary-foreground: #1c1200;
-  --secondary: rgb(255 255 255 / 0.04);
-  --secondary-foreground: #f7f2e9;
-  --muted: rgb(255 255 255 / 0.04);
-  --muted-foreground: #a3b2d8;
-  --accent: rgb(255 255 255 / 0.06);
-  --accent-foreground: #f7f2e9;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: rgb(147 180 255 / 0.15);
-  --input: rgb(147 180 255 / 0.15);
-  --ring: #ffb800;
-  --chart-1: #ffb800;
-  --chart-2: #ffcc33;
-  --chart-3: #d99a00;
-  --chart-4: #a3b2d8;
-  --chart-5: #6f7ea8;
-  --sidebar: #0b1642;
-  --sidebar-foreground: #f7f2e9;
-  --sidebar-primary: #ffb800;
-  --sidebar-primary-foreground: #1c1200;
-  --sidebar-accent: rgb(255 255 255 / 0.04);
-  --sidebar-accent-foreground: #f7f2e9;
-  --sidebar-border: rgb(147 180 255 / 0.15);
-  --sidebar-ring: #ffb800;
-  --claim-band: #080510;
-  --claim-band-foreground: #f7f2e9;
-  --brand: #ffb800;
-  --link: #ffb800;
-  --link-hover: #ffcc33;
-  --primary-hover: #ffcc33;
-  --primary-active: #ffcc33;
-  --primary-border: rgb(255 184 0 / 0.45);
-  --secondary-hover: rgb(255 255 255 / 0.06);
-  --secondary-hover-foreground: #f7f2e9;
-  --secondary-feedback-border: #ffb800;
-  --primary-glow: 0 0 18px rgb(255 184 0 / 0.45);
-  --secondary-glow: 0 0 8px rgb(255 184 0 / 0.18);
-  --pending: color-mix(in srgb, #ffb800 45%, #0b1642);
-  --pending-foreground: color-mix(in srgb, #f7f2e9 60%, #0b1642);
   --term: #080510;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);

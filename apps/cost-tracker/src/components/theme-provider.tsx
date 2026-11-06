@@ -16,6 +16,21 @@ function ThemeProvider({
       enableSystem
       disableTransitionOnChange
       themes={[...THEME_VALUES]}
+      value={{
+        light: "light",
+        // System dark resolves to the literal name "dark".
+        dark: "theme-erasmus-midnight",
+        "theme-erasmus-midnight": "theme-erasmus-midnight",
+        "theme-erasmus-violet": "theme-erasmus-violet",
+        "theme-erasmus-dark": "theme-erasmus-dark",
+        // Removed themes: heal stored user choices to midnight.
+        "theme-ember-plum": "theme-erasmus-midnight",
+        "theme-ember-royal": "theme-erasmus-midnight",
+        // Renamed themes: heal stored pre-rename choices.
+        "theme-ember-midnight": "theme-erasmus-midnight",
+        "theme-ember-violet": "theme-erasmus-violet",
+        "theme-ember-abyss": "theme-erasmus-dark",
+      }}
       {...props}
     >
       <ThemeHotkey />
@@ -58,7 +73,7 @@ function ThemeHotkey() {
         return;
       }
 
-      setTheme(resolvedTheme === "dark" ? "light" : "dark");
+      setTheme(resolvedTheme === "light" ? "theme-erasmus-midnight" : "light");
     }
 
     window.addEventListener("keydown", onKeyDown);
