@@ -7,7 +7,6 @@ import * as React from "react";
 
 import { ThemeSwatch } from "@/components/theme-swatch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FieldDescription, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { THEMES, isThemeValue } from "@/lib/themes";
 
@@ -21,37 +20,54 @@ export function ThemeSettings() {
     () => false,
   );
   const { setTheme, theme } = useTheme();
+  const titleId = React.useId();
   const selectedTheme = mounted && theme && isThemeValue(theme) ? theme : null;
+
+  const themeTriggers = THEMES.map((entry) => (
+    <TabsTrigger
+      aria-label={t("use", { theme: entry.label })}
+      key={entry.value}
+      value={entry.value}
+    >
+      <ThemeSwatch value={entry.value} />
+      {entry.label}
+    </TabsTrigger>
+  ));
+
+  const handleThemeChange = (value: string) => {
+    if (value && isThemeValue(value)) {
+      setTheme(value);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
-      <FieldSet>
-        <FieldLegend variant="label">{t("title")}</FieldLegend>
-        <FieldDescription>{t("description")}</FieldDescription>
+      <section aria-labelledby={titleId} className="flex flex-col gap-6">
+        <h2 className="mb-3 text-xs font-semibold uppercase" id={titleId}>
+          {t("title")}
+        </h2>
+        <p className="text-left text-sm/normal leading-normal font-normal tracking-normal text-muted-foreground normal-case last:mt-0 nth-last-2:-mt-1 [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary">
+          {t("description")}
+        </p>
         <Tabs
           aria-label={t("ariaLabel")}
+          className="max-sm:hidden"
+          orientation="horizontal"
           value={selectedTheme ?? ""}
-          onValueChange={(value) => {
-            if (value && isThemeValue(value)) {
-              setTheme(value);
-            }
-          }}
+          onValueChange={handleThemeChange}
         >
-          {/* eslint-disable-next-line shadcn/no-restyle -- segmented theme switch wraps to two rows on narrow screens */}
-          <TabsList className="h-auto min-h-10 flex-wrap">
-            {THEMES.map((entry) => (
-              <TabsTrigger
-                key={entry.value}
-                aria-label={t("use", { theme: entry.label })}
-                value={entry.value}
-              >
-                <ThemeSwatch value={entry.value} />
-                {entry.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <TabsList>{themeTriggers}</TabsList>
         </Tabs>
-      </FieldSet>
+        <Tabs
+          aria-label={t("ariaLabel")}
+          className="sm:hidden"
+          orientation="vertical"
+          value={selectedTheme ?? ""}
+          onValueChange={handleThemeChange}
+        >
+          <TabsList>{themeTriggers}</TabsList>
+        </Tabs>
+      </section>
 
       <Alert variant="accent">
         <KeyboardIcon aria-hidden="true" className="text-primary" />
