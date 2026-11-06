@@ -66,6 +66,8 @@ export const auth = createServerAuth({
   },
   plugins: [
     magicLink({
+      // #373: pin the verified 5-minute library default instead of relying on it silently.
+      expiresIn: 300,
       sendMagicLink: async ({ email, url }) => {
         await emailSender.sendMagicLinkEmail({ email, url });
       },
