@@ -5,7 +5,7 @@ import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { SiteBrand } from "@/components/site-brand";
 
 describe("SiteBrand", () => {
-  it("renders the canonical GreenDex wordmark and accessible wreath name", () => {
+  it("renders the official GreenDex wordmark and accessible wreath name", () => {
     render(<SiteBrand />);
 
     expect(screen.getByTestId("site-brand-name")).toBeVisible();

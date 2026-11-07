@@ -34,7 +34,7 @@ import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { router } from "@/lib/orpc/router";
 
-/** Canonical Participant has no Hosting assignments; creation owns only its new Projects. */
+/** Seeded Participant has no Hosting assignments; creation owns only its new Projects. */
 let actor = "";
 let host = "";
 let otherHost = "";
@@ -100,9 +100,7 @@ describe("projects.create", () => {
       !seededForeign ||
       !seededUnassigned
     )
-      throw new Error(
-        "Canonical seed required: run the isolated seeded lifecycle.",
-      );
+      throw new Error("Seed required: run the isolated seeded lifecycle.");
     actor = seededActor.id;
     participantActor = actor;
     for (const [role, email] of [
@@ -116,7 +114,7 @@ describe("projects.create", () => {
       const seeded = await db.query.user.findFirst({
         where: eq(user.email, email),
       });
-      if (!seeded) throw new Error(`Canonical role actor missing: ${email}`);
+      if (!seeded) throw new Error(`Seed role actor missing: ${email}`);
       roleActors.set(role, seeded.id);
     }
     host = seededHost.id;
@@ -278,7 +276,7 @@ describe("projects.create", () => {
     ORGANIZATION_ROLES.OrganizationOwner,
     ORGANIZATION_ROLES.OrganizationAdmin,
   ])("keeps %s role while assigning the creator", async (membershipRole) => {
-    // projects.create owns assignment creation; pre-existing canonical role
+    // projects.create owns assignment creation; pre-existing seed role
     // actors prove it preserves Owner/Admin Memberships without setup writes.
     actor = roleActors.get(membershipRole)!;
     session(host);

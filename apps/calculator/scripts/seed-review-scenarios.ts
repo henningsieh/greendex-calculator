@@ -25,7 +25,7 @@ import {
   ensureSeedUsers,
 } from "./seed-tables";
 
-/** Ordinary read-only preconditions, owned by the canonical seed, not test setup. */
+/** Ordinary read-only preconditions, owned by the seed, not test setup. */
 export async function ensureReviewScenarios(
   db: SeedDatabase,
   hostId: string,
@@ -106,7 +106,7 @@ export async function ensureReviewScenarios(
         id: createId(),
         organizationId: ids.organizationId,
         // Older than the main Memberships: staff-read scenarios must not alter
-        // the canonical actors' default active Organization at sign-in.
+        // the seed actors' default active Organization at sign-in.
         createdAt: new Date("2023-01-01T00:00:00Z"),
       })),
   );

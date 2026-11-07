@@ -64,12 +64,12 @@ import {
 import { createParticipationProcedures } from "@/features/participations/procedures/core";
 
 /**
- * Canonical seed identities for the onboarding Project (Climate Action
+ * Seed identities for the onboarding Project (Climate Action
  * Workshop) with Partnerships to the second and third Partner Organizations. The Owner
  * issues; the seeded Invitee joins. Issuance and redemption go through the
  * procedures under test; per-test tokens, Participations, claims, profiles,
  * acceptances, and Memberships are removed afterwards without deleting
- * canonical actors. See `SEED_SCENARIOS` in `apps/calculator/scripts/seed.ts`.
+ * seed actors. See `SEED_SCENARIOS` in `apps/calculator/scripts/seed.ts`.
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_PARTNER_SLUG = "seed-second-partner-org";
@@ -143,25 +143,22 @@ beforeAll(async () => {
   const seedHost = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  if (!seedHost)
-    throw new Error("Canonical seed Hosting Organization is missing");
+  if (!seedHost) throw new Error("Seed Hosting Organization is missing");
   const seedPartner = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_PARTNER_SLUG),
   });
-  if (!seedPartner)
-    throw new Error("Canonical seed Partner Organization is missing");
+  if (!seedPartner) throw new Error("Seed Partner Organization is missing");
   const seedSecond = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_SECOND_PARTNER_SLUG),
   });
-  if (!seedSecond)
-    throw new Error("Canonical second Partner Organization is missing");
+  if (!seedSecond) throw new Error("Seed second Partner Organization is missing");
   const seedProject = await db.query.projectsTable.findFirst({
     where: and(
       eq(projectsTable.organizationId, seedHost.id),
       eq(projectsTable.name, SEED_ONBOARDING_PROJECT_NAME),
     ),
   });
-  if (!seedProject) throw new Error("Canonical onboarding Project is missing");
+  if (!seedProject) throw new Error("Seed onboarding Project is missing");
   const mainPartnership =
     await db.query.projectPartnerOrganizationsTable.findFirst({
       where: and(
@@ -169,8 +166,7 @@ beforeAll(async () => {
         eq(partnerships.organizationId, seedPartner.id),
       ),
     });
-  if (!mainPartnership)
-    throw new Error("Canonical onboarding Partnership is missing");
+  if (!mainPartnership) throw new Error("Seed onboarding Partnership is missing");
   const secondPartnership =
     await db.query.projectPartnerOrganizationsTable.findFirst({
       where: and(
@@ -179,12 +175,12 @@ beforeAll(async () => {
       ),
     });
   if (!secondPartnership)
-    throw new Error("Canonical onboarding second Partnership is missing");
+    throw new Error("Seed onboarding second Partnership is missing");
   async function userIdFor(email: string): Promise<string> {
     const stored = await db.query.user.findFirst({
       where: eq(user.email, email),
     });
-    if (!stored) throw new Error(`Canonical seed User is missing: ${email}`);
+    if (!stored) throw new Error(`Seed User is missing: ${email}`);
     return stored.id;
   }
   host = seedHost.id;
@@ -380,7 +376,7 @@ afterAll(async () => {
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Hosting Organization was deleted",
+    "seed Hosting Organization was deleted",
   ).not.toBeUndefined();
   expect(
     await db.query.projectsTable.findFirst({
@@ -389,12 +385,12 @@ afterAll(async () => {
         eq(projectsTable.name, SEED_ONBOARDING_PROJECT_NAME),
       ),
     }),
-    "canonical onboarding Project was deleted",
+    "seed onboarding Project was deleted",
   ).not.toBeUndefined();
   for (const email of [SEED_OWNER_EMAIL, recipientEmail, secondInviteeEmail]) {
     expect(
       await db.query.user.findFirst({ where: eq(user.email, email) }),
-      `canonical seed User was deleted: ${email}`,
+      `seed User was deleted: ${email}`,
     ).not.toBeUndefined();
   }
   expect(
@@ -689,7 +685,7 @@ describe("Participant onboarding procedures", () => {
       agreement: { accepted: true },
     });
     // A second partner's link is never authority to replace a previous Participation.
-    // The canonical Owner also owns the third Partner Organization.
+    // The seed Owner also owns the third Partner Organization.
     actor = owner;
     activeOrganizationId = otherPartner;
     const second = await client.participantOnboarding.createRegistrationLink({
@@ -772,18 +768,13 @@ describe("Participant onboarding procedures", () => {
   it("blocks reopening registration after the Partnership's Claim is submitted", async () => {
     // SEED_SCENARIOS.reviewFixes.submittedRegistration supplies a revoked
     // link on a submitted Claim; only the reopening behavior is under test.
-    const link = { id: "onboarding-submitted-link-canonical" };
+    const link = { id: "ld3ukgstb6tzbgvte5qmr33l" };
     expect(
       (
         await db
           .select()
           .from(claimsTable)
-          .where(
-            eq(
-              claimsTable.partnershipId,
-              "onboarding-submitted-partnership-canonical",
-            ),
-          )
+          .where(eq(claimsTable.partnershipId, "yrrjw45ya3ehy4t3nobhe59b"))
       )[0]?.status,
     ).toBe("submitted");
     await expect(

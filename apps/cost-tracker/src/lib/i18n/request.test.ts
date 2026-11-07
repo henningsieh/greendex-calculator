@@ -100,7 +100,7 @@ describe("Cost Tracker request catalogue", () => {
   );
 });
 
-const canonicalReasons = Object.fromEntries(
+const sourceReasons = Object.fromEntries(
   Object.values(situationCatalog).map(({ reason, message }) => [reason, message]),
 );
 
@@ -121,11 +121,11 @@ function assertReasonCatalogue(bundle: Record<string, unknown>) {
       ...ProjectCompletionBlockerSchema.shape.status.unwrap().options,
     ].sort(),
   );
-  expect(reasons).toEqual(canonicalReasons);
+  expect(reasons).toEqual(sourceReasons);
 }
 
 describe("API error catalogue coverage", () => {
-  it("matches the canonical English reasons without presentation overrides", () => {
+  it("matches the source English reasons without presentation overrides", () => {
     assertReasonCatalogue(englishErrors.apiErrors);
   });
 
@@ -204,7 +204,7 @@ describe("API error catalogue coverage", () => {
         throw new Error("Missing apiErrors root");
       expect(Object.keys(reasons).sort()).toEqual(
         [
-          ...Object.keys(canonicalReasons),
+          ...Object.keys(sourceReasons),
           "fallback",
           "details",
           "completion",

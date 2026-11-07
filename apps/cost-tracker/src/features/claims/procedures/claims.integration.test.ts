@@ -25,18 +25,17 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerClaims.
-const suffix = "canonical";
-const host = `claim-host-${suffix}`;
-const partner = `claim-partner-${suffix}`;
-const coordinator = `claim-coordinator-${suffix}`;
-const participant = `claim-participant-${suffix}`;
-const owner = `claim-owner-${suffix}`;
-const project = `claim-project-${suffix}`;
-let own = `claim-own-${suffix}`;
-const foreign = `claim-foreign-${suffix}`;
-const account = `claim-account-${suffix}`;
-const secondAccount = `claim-second-account-${suffix}`;
-const foreignAccount = `claim-foreign-account-${suffix}`;
+const host = "rvvkpmsj6futf7oh5w6fc8ck";
+const partner = "dgj0r3bf101hos6d7z5tsn61";
+const coordinator = "nol2sd5ye6kezxgvovi7q5f0";
+const participant = "fhmed3rl5eut51ok5j81rodo";
+const owner = "u58a1drm42imnu2fu4304ajw";
+const project = "rmqohj3gpdw0f9detkz6osga";
+let own = "llej1oakvcdzp64hvqmwyfoi";
+const foreign = "btgjwuma0gvy6a89ovz5w4yx";
+const account = "b0196l2ew39i22ursbv48p3s";
+const secondAccount = "dsj2rua1gdb4x4jvknmymoi4";
+const foreignAccount = "n6i6klamj4v5mxrz6sv78cwf";
 let actor = coordinator;
 let activeOrg = partner;
 const createdAccountIds = new Set<string>();
@@ -48,9 +47,7 @@ beforeAll(async () => {
   if (
     !(await db.query.projectsTable.findFirst({ where: eq(projects.id, project) }))
   )
-    throw new Error(
-      "Canonical seed required: run the isolated seeded lifecycle.",
-    );
+    throw new Error("Seed required: run the isolated seeded lifecycle.");
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
@@ -58,7 +55,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  own = `claim-own-${suffix}`;
+  own = "llej1oakvcdzp64hvqmwyfoi";
   actor = coordinator;
   activeOrg = partner;
   await db.delete(claims).where(eq(claims.partnershipId, own));
@@ -66,10 +63,12 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await db.delete(claims).where(eq(claims.partnershipId, `claim-own-${suffix}`));
+  await db
+    .delete(claims)
+    .where(eq(claims.partnershipId, "llej1oakvcdzp64hvqmwyfoi"));
   await db
     .delete(selections)
-    .where(eq(selections.partnershipId, `claim-own-${suffix}`));
+    .where(eq(selections.partnershipId, "llej1oakvcdzp64hvqmwyfoi"));
   for (const id of createdAccountIds)
     await db.delete(accounts).where(eq(accounts.id, id));
   createdAccountIds.clear();
@@ -77,7 +76,7 @@ afterEach(async () => {
 
 describe("Claim drafts and Partnership payout selection", () => {
   it("does not expose unsubmitted drafts to Hosting review", async () => {
-    own = `claim-editable-${suffix}`;
+    own = "sf9t6fbzyfur5lqqhn799mf5";
     activeOrg = host;
     await expect(
       client.claims.getReviewDetails({ partnershipId: own }),
@@ -260,7 +259,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       await db.select().from(selections).where(eq(selections.partnershipId, own)),
     ).toMatchObject([{ payoutAccountId: secondAccount }]);
     expect(draft.status).toBe("editable");
-    own = `claim-submitted-selected-${suffix}`;
+    own = "l0ttgu2m4ieljze7t4mbzgs1";
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,
@@ -279,7 +278,7 @@ describe("Claim drafts and Partnership payout selection", () => {
   });
 
   it("locks payout selection for an already-submitted Claim", async () => {
-    own = `claim-submitted-${suffix}`;
+    own = "kp9h78jm6bn5ob0b82bqlitb";
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,

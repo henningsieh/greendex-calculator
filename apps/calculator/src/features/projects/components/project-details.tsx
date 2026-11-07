@@ -313,7 +313,7 @@ export function ProjectDetails({ id }: ProjectDetailsProps) {
     }),
   );
 
-  // Fetch canonical Project Shared Travel Legs.
+  // Fetch seeded Project Shared Travel Legs.
   const { data: sharedTravelLegs } = useSuspenseQuery(
     orpcQuery.projectSharedTravelLegs.list.queryOptions({
       input: { projectId: id },

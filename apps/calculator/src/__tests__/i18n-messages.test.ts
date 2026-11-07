@@ -69,7 +69,7 @@ describe("i18n message catalogs", () => {
     }
   });
 
-  it("uses canonical shared-travel namespaces", async () => {
+  it("uses standard shared-travel namespaces", async () => {
     for (const locale of LANGUAGE_CODES) {
       const messageLeaves = collectMessageLeaves(await loadMessages(locale));
 

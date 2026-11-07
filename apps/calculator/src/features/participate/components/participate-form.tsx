@@ -59,7 +59,7 @@ interface QuestionnaireFormProps {
 /**
  * Renders the multi-step participant questionnaire UI, managing form state, localStorage persistence, conditional step flow, emission calculations, and impact confirmation modals.
  *
- * @param project - Project data used to initialize default answers, provide canonical shared travel for emissions calculations, and display project-specific text (e.g., welcome message).
+ * @param project - Project data used to initialize default answers, provide standard shared travel for emissions calculations, and display project-specific text (e.g., welcome message).
  * @returns The questionnaire form React element.
  */
 

@@ -98,7 +98,7 @@ export function EditProjectForm({ project, onSuccess }: EditProjectFormProps) {
     },
   });
 
-  // Keep fetched canonical legs (including IDs) in the form for later updates.
+  // Keep fetched seeded legs (including IDs) in the form for later updates.
   useEffect(() => {
     setValue(
       "sharedTravelLegs",

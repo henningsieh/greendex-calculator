@@ -30,20 +30,18 @@ const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
-import { submissionSeedId } from "#repo/apps/calculator/scripts/seed-claim-review-ids";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerSubmission.
-const id = submissionSeedId;
-const host = id("host"),
-  partner = id("partner"),
-  other = id("other");
-const actor = id("actor"),
-  participantUser = id("participant-user");
+const host = "rvcaur1km9mca7jjin85kj5m",
+  partner = "k2nbcl2vpykg3cxy9f8lz3fl",
+  other = "gxian35umt6xb38qa9liisys";
+const actor = "uxeutxj67uas64bo7vsey4sr",
+  participantUser = "zvs4tq30t3y59whwb4t3knqp";
 let project: string, own: string, foreign: string;
 let robin: string, sam: string, outsider: string, third: string, proof: string;
-const account = id("account"),
-  alternate = id("alternate");
+const account = "qi6haiste5mxtl7ubdgkpsty",
+  alternate = "mimkarr03v5k3znklrhap4c2";
 const scenarioNames = [
   "editable",
   "submitted",
@@ -62,23 +60,91 @@ const baselines = new Map<
   }
 >();
 const touchedScenarios = new Set<SubmissionScenario>();
+const scenarioIds = [
+  {
+    project: "luh2gfkwy1qlbobg3fhggmz6",
+    own: "m2tamlimqmu4p3073psrkb2u",
+    foreign: "izdjfs9otehxynijhxhchvb9",
+    robin: "bc2g6sjjzrlcpdkoqscvq2zh",
+    sam: "qgxc4i0fduva2k6dy99xqojt",
+    outsider: "da5vgzf6c2h4o4cq4t2vogik",
+    third: "f5h3tu1f0i7zonmgdauskb44",
+    proof: "pct9jkyjz1mdy9bgxaw472lc",
+    claim: "ldnogv8cruaflqrhrhbqx1qj",
+  }, // editable
+  {
+    project: "gsomgvvmjy64i4whn11obpy6",
+    own: "kk2cafpklhtfyiw2xqjkrdtg",
+    foreign: "fzoa5tg6otyfo5742en8gd76",
+    robin: "dg5ye1kjmzpabhztlghfkzx2",
+    sam: "dhf16yprotcujlx82vs3iuyp",
+    outsider: "p4shlsz7b7fqkcz5dbinjakk",
+    third: "heutu0d8adspp94g7tsp82k6",
+    proof: "peem2suosx2y21f8bhu7t9r6",
+    claim: "sxn9qzymvu56hdd7yy2cxcmr",
+  }, // submitted
+  {
+    project: "dbwtgd36aiev0ivcgrf73zlj",
+    own: "kcpn5m5gvh8765khby63bumd",
+    foreign: "bsql0y7jhg7c28qd8pgec8if",
+    robin: "mng7k5xp3zb04hkxxjmtqznj",
+    sam: "pal7vxgj2tmdp0ege6onf0ov",
+    outsider: "ev1fb9mfco8ieglzme7lom8g",
+    third: "tbzrz76i1eaoqc85u7ysvpx8",
+    proof: "wzbmtsf4n668w43mag53a7tr",
+    claim: "t3ssn4t8gxv3a3ggz2n6h5r0",
+  }, // rejected
+  {
+    project: "bejcs4i97dof6cmvyb3luodw",
+    own: "gwpumb113ddri3v28lhms4uy",
+    foreign: "q0uzkmbjotnvk5l316qpmxh4",
+    robin: "t4qu1gu6pztjgathhqwrnvud",
+    sam: "ew1kqx424ysv4mocn6awopne",
+    outsider: "e8009v5lorrjbrlb13f1g52g",
+    third: "ogqcxxymvrunn0l92z8bkj04",
+    proof: "jaydcbf1bqenp5nfjez5vaeh",
+    claim: "e7ul210pvegdxxd148vs9u23",
+  }, // approved
+  {
+    project: "t82gnzi6yaxobn0c8mfcsu0b",
+    own: "viop9j0fgg4y8jvvg1afar1v",
+    foreign: "pk0bkccpbwbe18a4fywwp74b",
+    robin: "ewx7htm2lf7avxu1ajkzf0u6",
+    sam: "ur9n1nv3vv9o8xeyc50bcusj",
+    outsider: "jh5o7w7tz6eqzb0aabxdpdr0",
+    third: "likedwohbzvrl74w78h8xp9a",
+    proof: "a8xuggw1tmx8j18wmqyybx2t",
+    claim: "xdp911g90lrnw5l14s80m2os",
+  }, // paid
+  {
+    project: "qjgboeu1c40q7s1934akvqo6",
+    own: "cpa0z6v9653245f5h1zgzk4s",
+    foreign: "l0oo403hnolh3507uuljivvc",
+    robin: "j31v4ka2dobbgqn1ipghxr63",
+    sam: "uh36vnua59x39wqks082aq9k",
+    outsider: "am1fvf3tengy5wa2yjfq1asw",
+    third: "diwbsj2a33ixrtt05mvdbtsx",
+    proof: "ycrm6550judv7pmx76z110dn",
+    claim: "m7ucc9h6942vji76np31cwyc",
+  }, // correction
+] as const;
 function useScenario(name: SubmissionScenario) {
   touchedScenarios.add(name);
-  const scenarioId = (part: string) => id(`${name}-${part}`);
-  project = scenarioId("project");
-  own = scenarioId("own");
-  foreign = scenarioId("foreign");
-  robin = scenarioId("robin");
-  sam = scenarioId("sam");
-  outsider = scenarioId("outsider");
-  third = scenarioId("third");
-  proof = scenarioId("proof");
-  claimId = scenarioId("claim");
+  const ids = scenarioIds[scenarioNames.indexOf(name)]!;
+  project = ids.project;
+  own = ids.own;
+  foreign = ids.foreign;
+  robin = ids.robin;
+  sam = ids.sam;
+  outsider = ids.outsider;
+  third = ids.third;
+  proof = ids.proof;
+  claimId = ids.claim;
 }
 async function restoreScenario(name: SubmissionScenario) {
   const baseline = baselines.get(name);
-  if (!baseline) throw new Error("Canonical Submission baseline missing.");
-  const scenarioId = (part: string) => id(`${name}-${part}`);
+  if (!baseline) throw new Error("Seed Submission baseline missing.");
+  const ids = scenarioIds[scenarioNames.indexOf(name)]!;
   // Exact baseline restoration removes procedure outputs and deliberate corruptions.
   await db.delete(history).where(eq(history.claimId, baseline.claim.id));
   await db.delete(claims).where(eq(claims.id, baseline.claim.id));
@@ -88,13 +154,9 @@ async function restoreScenario(name: SubmissionScenario) {
     .delete(selections)
     .where(eq(selections.partnershipId, baseline.selection.partnershipId));
   await db.insert(selections).values(baseline.selection);
-  for (const part of ["robin", "sam", "third"])
-    await db
-      .delete(journeys)
-      .where(eq(journeys.projectParticipantId, scenarioId(part)));
-  await db
-    .delete(snapshots)
-    .where(eq(snapshots.projectId, scenarioId("project")));
+  for (const part of [ids.robin, ids.sam, ids.third] as const)
+    await db.delete(journeys).where(eq(journeys.projectParticipantId, part));
+  await db.delete(snapshots).where(eq(snapshots.projectId, ids.project));
   if (name === "correction") {
     const event = baselineCorrectionEvent;
     if (event) await db.insert(history).values(event);
@@ -111,7 +173,7 @@ const submit = () => client.claims.submit({ partnershipId: own });
 
 beforeAll(async () => {
   baselineCorrectionEvent = await db.query.claimHistoryTable.findFirst({
-    where: eq(history.id, id("correction-submitted-event")),
+    where: eq(history.id, "a3xevm2bfj6nd3ku2qz1069w"),
   });
   for (const name of scenarioNames) {
     useScenario(name);
@@ -125,7 +187,7 @@ beforeAll(async () => {
       where: eq(selections.partnershipId, own),
     });
     if (!claim || !doc || !selection)
-      throw new Error("Canonical Submission seed required.");
+      throw new Error("Seed Submission seed required.");
     baselines.set(name, { claim, doc, selection });
   }
   authMocks.getSession.mockImplementation(async () => ({
@@ -239,72 +301,84 @@ const roles = [
     side: "partner",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
+    userId: "wyiaggmoo57nbdfxsuro92ly",
   },
   {
     name: "Partner owner",
     side: "partner",
     role: ORGANIZATION_ROLES.OrganizationOwner,
     assigned: false,
+    userId: "lp4bh5itvvwgxhjjfi8lp53i",
   },
   {
     name: "Partner admin",
     side: "partner",
     role: ORGANIZATION_ROLES.OrganizationAdmin,
     assigned: false,
+    userId: "aac5ia5l456jhxkqtve53kw9",
   },
   {
     name: "Partner unassigned coordinator",
     side: "partner",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: false,
+    userId: "tsqcugbwilakc07141vpx353",
   },
   {
     name: "Partner unassigned participant",
     side: "partner",
     role: ORGANIZATION_ROLES.Participant,
     assigned: false,
+    userId: "qj684zdgr4rzy2wn6cf2pkev",
   },
   {
     name: "Partner participant",
     side: "partner",
     role: ORGANIZATION_ROLES.Participant,
     assigned: true,
+    userId: "nkd49pvzgccbn3c5vj77u935",
   },
   {
     name: "Hosting assigned coordinator",
     side: "host",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
+    userId: "pdfzs3i83b72k15yw2has3ep",
   },
   {
     name: "Hosting owner",
     side: "host",
     role: ORGANIZATION_ROLES.OrganizationOwner,
     assigned: false,
+    userId: "hhwhygf6tfpm9wspoko2bya8",
   },
   {
     name: "Hosting admin",
     side: "host",
     role: ORGANIZATION_ROLES.OrganizationAdmin,
     assigned: false,
+    userId: "uxyaz38ise25t23otabtuo5t",
   },
   {
     name: "Hosting unassigned coordinator",
     side: "host",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: false,
+    userId: "d28e0jt5scc82g7zcop5og4y",
   },
   {
     name: "Hosting unassigned participant",
     side: "host",
     role: ORGANIZATION_ROLES.Participant,
     assigned: false,
+    userId: "cjzyp4u7nmguzlna05kw9b4i",
   },
   {
     name: "Hosting participant",
     side: "host",
     role: ORGANIZATION_ROLES.Participant,
     assigned: true,
+    userId: "k7o2d2mrkj6t3i2if6jx17ox",
   },
 ] as const;
 
@@ -440,9 +514,7 @@ describe("Claim authorization matrix", () => {
       ).id;
     }
     const orgId = role.side === "host" ? host : partner;
-    const person = id(
-      `matrix-${role.side}-${role.role}-${role.assigned ? "assigned" : "unassigned"}`,
-    );
+    const person = role.userId;
     activeOrg = orgId;
     activeActor = person;
     try {
@@ -905,15 +977,9 @@ const review = (
     ? client.claims[action]({ partnershipId: own, reason: reason ?? "Reason" })
     : client.claims[action]({ partnershipId: own });
 
-async function asHost(
-  role: string = ORGANIZATION_ROLES.ProjectCoordinator,
-  userId = actor,
-) {
+async function asHost(userId: string = actor) {
   activeOrg = host;
-  activeActor =
-    role === ORGANIZATION_ROLES.ProjectCoordinator && userId === actor
-      ? actor
-      : id(`matrix-host-${role}-${userId === actor ? "assigned" : "unassigned"}`);
+  activeActor = userId;
 }
 
 async function submittedClaim() {
@@ -1313,14 +1379,14 @@ describe("Host Claim review", () => {
 
   it("returns Project and Partner context only to authorized Hosting reviewers", async () => {
     useScenario("submitted");
-    await asHost(ORGANIZATION_ROLES.ProjectCoordinator);
+    await asHost();
     expect(
       await client.claims.getReviewDetails({ partnershipId: own }),
     ).toMatchObject({
       projectName: "Seed Submission Project submitted",
       organizationName: "Seed Submission Partner Organization",
     });
-    await asHost(ORGANIZATION_ROLES.ProjectCoordinator, participantUser);
+    await asHost("d28e0jt5scc82g7zcop5og4y");
     await expect(
       client.claims.getReviewDetails({ partnershipId: own }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -1334,12 +1400,12 @@ describe("Host Claim review", () => {
   it("enforces the Hosting role matrix on every review action and every Partnership", async () => {
     await submittedClaim();
     const actions = ["requestCorrection", "approve", "reject", "reopen"] as const;
-    for (const role of [
-      ORGANIZATION_ROLES.OrganizationOwner,
-      ORGANIZATION_ROLES.OrganizationAdmin,
-      ORGANIZATION_ROLES.ProjectCoordinator,
-    ]) {
-      await asHost(role);
+    for (const userId of [
+      "gxv18y1pzjnp9c662zti90y7",
+      "jkbudjbygh7pecbslkalsh3f",
+      "pdfzs3i83b72k15yw2has3ep",
+    ] as const) {
+      await asHost(userId);
       for (const action of actions) {
         const name = action === "reopen" ? "rejected" : "submitted";
         await restoreScenario(name);
@@ -1356,22 +1422,22 @@ describe("Host Claim review", () => {
         });
       }
     }
-    await asHost(ORGANIZATION_ROLES.Participant);
+    await asHost("k7o2d2mrkj6t3i2if6jx17ox");
     for (const action of actions) {
       useScenario(action === "reopen" ? "rejected" : "submitted");
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
-    for (const role of [
-      ORGANIZATION_ROLES.Participant,
-      ORGANIZATION_ROLES.ProjectCoordinator,
-    ]) {
-      await asHost(role, participantUser);
+    for (const userId of [
+      "cjzyp4u7nmguzlna05kw9b4i",
+      "d28e0jt5scc82g7zcop5og4y",
+    ] as const) {
+      await asHost(userId);
       for (const action of actions) {
         useScenario(action === "reopen" ? "rejected" : "submitted");
         await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
       }
     }
-    await asHost(ORGANIZATION_ROLES.Participant, participantUser);
+    await asHost("cjzyp4u7nmguzlna05kw9b4i");
     for (const action of actions) {
       useScenario(action === "reopen" ? "rejected" : "submitted");
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -1416,7 +1482,7 @@ describe("Host Claim review", () => {
     await expect(
       client.claims.getHistory({ partnershipId: own }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await asHost(ORGANIZATION_ROLES.ProjectCoordinator);
+    await asHost();
     for (const action of actions)
       await expect(
         client.claims[action]({ partnershipId: foreign, reason: "Reason" }),
@@ -1646,16 +1712,16 @@ describe("Claim payment recording", () => {
 
   it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
     const payable = await approvedClaim();
-    for (const role of [
-      ORGANIZATION_ROLES.OrganizationOwner,
-      ORGANIZATION_ROLES.OrganizationAdmin,
-      ORGANIZATION_ROLES.ProjectCoordinator,
-    ]) {
-      await asHost(role);
+    for (const userId of [
+      "gxv18y1pzjnp9c662zti90y7",
+      "jkbudjbygh7pecbslkalsh3f",
+      "pdfzs3i83b72k15yw2has3ep",
+    ] as const) {
+      await asHost(userId);
       await markPaid(payable);
       await correctPayment("Incorrect flag");
     }
-    await asHost(ORGANIZATION_ROLES.Participant, participantUser);
+    await asHost("cjzyp4u7nmguzlna05kw9b4i");
     await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
     useScenario("paid");
     await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({

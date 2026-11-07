@@ -2,10 +2,10 @@
 
 import { Buffer } from "node:buffer";
 /**
- * Canonical development + test seed.
+ * Seeded development + test seed.
  *
  * Single implementation used by normal development seeding (`pnpm run db:seed`
- * in either app; Cost Tracker reuses this file). Tests read existing canonical
+ * in either app; Cost Tracker reuses this file). Tests read existing seed
  * identities and never invoke seeding. Do not introduce a parallel fixture generator.
  *
  * Stable identities and scenario registry:
@@ -21,7 +21,7 @@ import { Buffer } from "node:buffer";
  *   membership-free outsider for auth/Organization/permission checks.
  *
  * Deterministic reference policy:
- * - Domain dates are fixed canonical values (a 2024 reference calendar for
+ * - Domain dates are fixed seed values (a 2024 reference calendar for
  *   Projects, Project-relative travel days), never derived from the wall
  *   clock, so the baseline cannot become invalid as the calendar changes.
  * - `createdAt`/`updatedAt` on inserted rows are run-anchored metadata, not
@@ -40,8 +40,8 @@ import { Buffer } from "node:buffer";
  * - Removing seed data is explicit and safely targeted: `resetSeedData`
  *   requires `{ confirmSeedReset: true }`, and the CLI additionally requires
  *   the `--reset-seed-data` flag plus `SEED_ALLOW_DEV_RESET=true`. Only rows
- *   matching canonical seed identities are removed; unrelated organizations,
- *   non-canonical projects, and hand-added travel legs survive.
+ *   matching seed identities are removed; unrelated organizations,
+ *   non-seed projects, and hand-added travel legs survive.
  *
  * Extension point (same seed, no parallel datasets):
  * 1. Add stable identities/constants next to `SEED_SCENARIOS`.
@@ -98,7 +98,6 @@ import { and, eq, inArray, ne, notExists, or } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-import { submissionSeedId } from "./seed-claim-review-ids";
 import {
   ensureCostTrackerScenarios,
   SUBMISSION_PAYOUT_ACCOUNT_IDS,
@@ -107,10 +106,10 @@ import { ensureReviewScenarios } from "./seed-review-scenarios";
 import { SEED_ENTITY_SEARCH, SEED_REVIEW_SCENARIOS } from "./seed-scenarios";
 import { ensureSeedHostAssignments } from "./seed-tables";
 
-/** Database handle the canonical seed operates on. The caller owns the connection lifecycle. */
+/** Database handle the seed operates on. The caller owns the connection lifecycle. */
 export type SeedDatabase = NodePgDatabase<typeof schema>;
 
-/** Re-exported so test setup references one canonical seed surface. */
+/** Re-exported so test setup references one seed surface. */
 export { SEED_USER };
 
 export const SEED_ORGANIZATION = {
@@ -155,7 +154,7 @@ export const SEED_THIRD_PARTNER_ORGANIZATION = {
  * permits first-Organization creation only for membership-free callers, so each
  * parallel creator file owns one memberless gate and must restore it after
  * use (concurrent runs must never contend on shared rows). The Invitees are
- * the canonical joiners for participant-entry/onboarding flows; case
+ * the seed joiners for participant-entry/onboarding flows; case
  * Participations, tokens, profiles, and acceptances for them are created
  * through the procedures under test and removed afterwards.
  */
@@ -428,77 +427,87 @@ export const SEED_SHOWCASE = {
 } as const;
 
 /**
- * Discoverable registry of canonical seed scenarios. Reference these stable
+ * Discoverable registry of seed scenarios. Reference these stable
  * identities instead of inventing private setup datasets.
  */
 export const SEED_SCENARIOS = {
   reviewFixes: SEED_REVIEW_SCENARIOS,
   costTrackerSetupLinks: {
     userIds: [
-      "user",
-      "host-coordinator",
-      "host-participant",
-      "host-admin",
-      "host-owner",
-      "assigned-coordinator",
-      "partner-participant",
-    ].map((name) => `setup-${name}-canonical`),
+      "sg35qwjva9v00sz5lal6nq5k",
+      "e4kdv5xbdh7mdks1s5whazy0",
+      "c7lv2v4wbrkggzotjnyn4y11",
+      "mh9zd08yyzmjqy3t684r8us9",
+      "zdvjl3sxo874wg59dfxp88ti",
+      "y4c99qnw9bbaiz4cqqjpm3sb",
+      "wy5shwjouvxfad8epx3t966h",
+    ],
     userEmails: [
-      "setup-canonical@example.com",
-      ...[
-        "host-coordinator",
-        "host-participant",
-        "host-admin",
-        "host-owner",
-        "assigned-coordinator",
-        "partner-participant",
-      ].map((name) => `setup-${name}-canonical@example.com`),
+      "sg35qwjva9v00sz5lal6nq5k@example.com",
+      "e4kdv5xbdh7mdks1s5whazy0@example.com",
+      "c7lv2v4wbrkggzotjnyn4y11@example.com",
+      "mh9zd08yyzmjqy3t684r8us9@example.com",
+      "zdvjl3sxo874wg59dfxp88ti@example.com",
+      "y4c99qnw9bbaiz4cqqjpm3sb@example.com",
+      "wy5shwjouvxfad8epx3t966h@example.com",
     ],
     organizationIds: [
-      "host",
-      "partner",
-      "combined-coordinator,owner",
-      "combined-owner,participant",
-      "bind",
-      "race",
-      "rival",
-    ].map((name) => `setup-${name}-canonical`),
-    projectNames: ["project", "other-project"].map(
-      (name) => `Seed Setup Link Project setup-${name}-canonical`,
-    ),
+      "bv8cv1pccaghkuhwcrnvk87p",
+      "xecuissn7aiyiyezm3jfkkc1",
+      "ue3fwothynemqt2ywrszcase",
+      "ihfwcjl6hn2epqdid5rgkari",
+      "taap3sr6rz40ho5ojh4dzrfa",
+      "iijo00f0gw3fgf80j6k7jha7",
+      "epdqai2n6zc14d4myu5e3b38",
+    ],
+    projectNames: [
+      "Seed Setup Link Project project",
+      "Seed Setup Link Project other-project",
+    ],
   },
   costTrackerSubmission: {
     payoutAccountIds: SUBMISSION_PAYOUT_ACCOUNT_IDS,
     userIds: [
-      submissionSeedId("actor"),
-      submissionSeedId("participant-user"),
-      ...["host", "partner"].flatMap((side) =>
-        ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
-          (side === "partner" && (role === "owner" || role === "admin")
-            ? ["unassigned"]
-            : ["assigned", "unassigned"]
-          ).map((scope) => submissionSeedId(`matrix-${side}-${role}-${scope}`)),
-        ),
-      ),
+      "uxeutxj67uas64bo7vsey4sr",
+      "zvs4tq30t3y59whwb4t3knqp",
+      "gxv18y1pzjnp9c662zti90y7",
+      "hhwhygf6tfpm9wspoko2bya8",
+      "jkbudjbygh7pecbslkalsh3f",
+      "uxyaz38ise25t23otabtuo5t",
+      "pdfzs3i83b72k15yw2has3ep",
+      "d28e0jt5scc82g7zcop5og4y",
+      "k7o2d2mrkj6t3i2if6jx17ox",
+      "cjzyp4u7nmguzlna05kw9b4i",
+      "lp4bh5itvvwgxhjjfi8lp53i",
+      "aac5ia5l456jhxkqtve53kw9",
+      "wyiaggmoo57nbdfxsuro92ly",
+      "tsqcugbwilakc07141vpx353",
+      "nkd49pvzgccbn3c5vj77u935",
+      "qj684zdgr4rzy2wn6cf2pkev",
     ],
     userEmails: [
-      `${submissionSeedId("actor")}@example.org`,
-      `${submissionSeedId("participant-user")}@example.org`,
-      ...["host", "partner"].flatMap((side) =>
-        ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
-          (side === "partner" && (role === "owner" || role === "admin")
-            ? ["unassigned"]
-            : ["assigned", "unassigned"]
-          ).map(
-            (scope) =>
-              `${submissionSeedId(`matrix-${side}-${role}-${scope}`)}@example.org`,
-          ),
-        ),
-      ),
+      "uxeutxj67uas64bo7vsey4sr@example.org",
+      "zvs4tq30t3y59whwb4t3knqp@example.org",
+      "gxv18y1pzjnp9c662zti90y7@example.org",
+      "hhwhygf6tfpm9wspoko2bya8@example.org",
+      "jkbudjbygh7pecbslkalsh3f@example.org",
+      "uxyaz38ise25t23otabtuo5t@example.org",
+      "pdfzs3i83b72k15yw2has3ep@example.org",
+      "d28e0jt5scc82g7zcop5og4y@example.org",
+      "k7o2d2mrkj6t3i2if6jx17ox@example.org",
+      "cjzyp4u7nmguzlna05kw9b4i@example.org",
+      "lp4bh5itvvwgxhjjfi8lp53i@example.org",
+      "aac5ia5l456jhxkqtve53kw9@example.org",
+      "wyiaggmoo57nbdfxsuro92ly@example.org",
+      "tsqcugbwilakc07141vpx353@example.org",
+      "nkd49pvzgccbn3c5vj77u935@example.org",
+      "qj684zdgr4rzy2wn6cf2pkev@example.org",
     ],
-    organizationIds: ["host", "partner", "other"].map((name) =>
-      submissionSeedId(name),
-    ),
+    organizationIds: [
+      "rvcaur1km9mca7jjin85kj5m",
+      "k2nbcl2vpykg3cxy9f8lz3fl",
+      "gxian35umt6xb38qa9liisys",
+    ],
     projectNames: [
       "editable",
       "submitted",
@@ -511,58 +520,116 @@ export const SEED_SCENARIOS = {
       `Seed Other Submission Project ${name}`,
     ]),
     participationIds: [
-      "editable",
-      "submitted",
-      "rejected",
-      "approved",
-      "paid",
-      "correction",
-    ].flatMap((name) =>
-      ["robin", "sam", "outsider", "third"].map((part) =>
-        submissionSeedId(`${name}-${part}`),
-      ),
-    ),
+      "bc2g6sjjzrlcpdkoqscvq2zh",
+      "qgxc4i0fduva2k6dy99xqojt",
+      "da5vgzf6c2h4o4cq4t2vogik",
+      "f5h3tu1f0i7zonmgdauskb44",
+      "dg5ye1kjmzpabhztlghfkzx2",
+      "dhf16yprotcujlx82vs3iuyp",
+      "p4shlsz7b7fqkcz5dbinjakk",
+      "heutu0d8adspp94g7tsp82k6",
+      "mng7k5xp3zb04hkxxjmtqznj",
+      "pal7vxgj2tmdp0ege6onf0ov",
+      "ev1fb9mfco8ieglzme7lom8g",
+      "tbzrz76i1eaoqc85u7ysvpx8",
+      "t4qu1gu6pztjgathhqwrnvud",
+      "ew1kqx424ysv4mocn6awopne",
+      "e8009v5lorrjbrlb13f1g52g",
+      "ogqcxxymvrunn0l92z8bkj04",
+      "ewx7htm2lf7avxu1ajkzf0u6",
+      "ur9n1nv3vv9o8xeyc50bcusj",
+      "jh5o7w7tz6eqzb0aabxdpdr0",
+      "likedwohbzvrl74w78h8xp9a",
+      "j31v4ka2dobbgqn1ipghxr63",
+      "uh36vnua59x39wqks082aq9k",
+      "am1fvf3tengy5wa2yjfq1asw",
+      "diwbsj2a33ixrtt05mvdbtsx",
+    ],
   },
   costTrackerParticipations: {
     userIds: [
-      ...[
-        "actor",
-        "candidate",
-        "unassigned",
-        "current",
-        "old",
-        "mixed",
-        "owner",
-        "second-assignee",
-        "missing-agreement",
-        "missing-profile",
-      ].map((name) => `coord-${name}-canonical`),
-      ...["unverified", "no-profile", "stale", "wrong-role", "wrong-org"].map(
-        (key) => `directory-${key}-canonical`,
-      ),
-      ...Array.from({ length: 22 }, (_, index) => `capacity-${index}-canonical`),
+      "yk6wubi79tj3ebwz8yd9x08t",
+      "qvgz7f1iyhnu7gp1lgxxo0xr",
+      "f5i4bmbo7wrhagns7u47kg9i",
+      "e7oprdkk819b6w8w68u761vp",
+      "yufbvup9o0m6ohqvfhu3fxv2",
+      "r8ekilum3fbuhjkmk4hkx9lc",
+      "pht5o8jyya3mxpghmyuvllso",
+      "bccrlmqtthueqebjmltfaa3n",
+      "jwgmepz6x7kuk7n3y5c4cmkx",
+      "h6fk257q3py9rhd1rmo60jcz",
+      "l0w9g4n0cbb3wza1tzuu847m",
+      "x7t57jutj2wmcih2pvlqjopb",
+      "rornt3es93uoymcfmw6md2he",
+      "h3ginec0jtgjtp8c9bxpkv2w",
+      "faev6x3yt3v8nynvbnvych45",
+      "t63xd4ofymlmp0al0qxd2vlj",
+      "rt2cyydpzmcdo28io5pph2db",
+      "zw71b90n0w4ujzk4mlmlbxtd",
+      "vy1ehwrj5u3j9lghkmu4qhko",
+      "g44wak6rn3hj020u4iw8ineq",
+      "uffzylfkiw7nf95obsdhulfg",
+      "vckhuuz4zfq95ygfpd3jrty2",
+      "f1gw8yvqbz78a5p3tdpjk9x9",
+      "vtq7ld6rtni257j6759aizsq",
+      "e41azp2t3vgfjb0a7dm2zyfb",
+      "d9g7za72p2k227ep6jsgnqsy",
+      "hl17dpmivnhjmgscsnokle95",
+      "vtxulzkhcck6w40nc0otb0gc",
+      "nl8jwh3w9wtq2o25u6hzru9b",
+      "k2zdnrt37uygy4psomwvtr3u",
+      "yspskow867h74685x073obff",
+      "va1eqcn3nj3y9xpknh98rfn4",
+      "m2rona103x576xenlao9avtl",
+      "j779j3h8zt61xqrqgv2657sf",
+      "aqgjsirvhbep9cpu26ui1j83",
+      "zm1kpzoo8r265izy4ewoa2ma",
+      "mdfm7dbi38yc0wcvnng2rxni",
     ],
     userEmails: [
-      "coordinator-canonical@example.org",
-      "candidate-canonical@example.org",
-      "unassigned-canonical@x.org",
-      "current-canonical@x.org",
-      "old-canonical@x.org",
-      "MIXED-canonical@EXAMPLE.ORG",
-      ...["owner", "second-assignee", "missing-agreement", "missing-profile"].map(
-        (name) => `coord-${name}-canonical@example.org`,
-      ),
-      ...["unverified", "no-profile", "stale", "wrong-role", "wrong-org"].map(
-        (key) => `directory-${key}-canonical@example.org`,
-      ),
-      ...Array.from(
-        { length: 22 },
-        (_, index) => `capacity-${index}-canonical@example.org`,
-      ),
+      "yk6wubi79tj3ebwz8yd9x08t@example.org",
+      "qvgz7f1iyhnu7gp1lgxxo0xr@example.org",
+      "f5i4bmbo7wrhagns7u47kg9i@x.org",
+      "e7oprdkk819b6w8w68u761vp@x.org",
+      "yufbvup9o0m6ohqvfhu3fxv2@x.org",
+      "r8ekilum3fbuhjkmk4hkx9lc@EXAMPLE.ORG",
+      "pht5o8jyya3mxpghmyuvllso@example.org",
+      "bccrlmqtthueqebjmltfaa3n@example.org",
+      "jwgmepz6x7kuk7n3y5c4cmkx@example.org",
+      "h6fk257q3py9rhd1rmo60jcz@example.org",
+      "l0w9g4n0cbb3wza1tzuu847m@example.org",
+      "x7t57jutj2wmcih2pvlqjopb@example.org",
+      "rornt3es93uoymcfmw6md2he@example.org",
+      "h3ginec0jtgjtp8c9bxpkv2w@example.org",
+      "faev6x3yt3v8nynvbnvych45@example.org",
+      "t63xd4ofymlmp0al0qxd2vlj@example.org",
+      "rt2cyydpzmcdo28io5pph2db@example.org",
+      "zw71b90n0w4ujzk4mlmlbxtd@example.org",
+      "vy1ehwrj5u3j9lghkmu4qhko@example.org",
+      "g44wak6rn3hj020u4iw8ineq@example.org",
+      "uffzylfkiw7nf95obsdhulfg@example.org",
+      "vckhuuz4zfq95ygfpd3jrty2@example.org",
+      "f1gw8yvqbz78a5p3tdpjk9x9@example.org",
+      "vtq7ld6rtni257j6759aizsq@example.org",
+      "e41azp2t3vgfjb0a7dm2zyfb@example.org",
+      "d9g7za72p2k227ep6jsgnqsy@example.org",
+      "hl17dpmivnhjmgscsnokle95@example.org",
+      "vtxulzkhcck6w40nc0otb0gc@example.org",
+      "nl8jwh3w9wtq2o25u6hzru9b@example.org",
+      "k2zdnrt37uygy4psomwvtr3u@example.org",
+      "yspskow867h74685x073obff@example.org",
+      "va1eqcn3nj3y9xpknh98rfn4@example.org",
+      "m2rona103x576xenlao9avtl@example.org",
+      "j779j3h8zt61xqrqgv2657sf@example.org",
+      "aqgjsirvhbep9cpu26ui1j83@example.org",
+      "zm1kpzoo8r265izy4ewoa2ma@example.org",
+      "mdfm7dbi38yc0wcvnng2rxni@example.org",
     ],
-    organizationIds: ["host", "partner", "other"].map(
-      (name) => `coord-${name}-canonical`,
-    ),
+    organizationIds: [
+      "ycvohy4h4kwieafr6898z8kv",
+      "y1trk5u6aktm6ydac8hkedqw",
+      "qm1q3p423syonhiz03hapvo2",
+    ],
     projectNames: [
       "empty",
       "email",
@@ -577,88 +644,94 @@ export const SEED_SCENARIOS = {
       "report-empty",
     ].map((name) => `Seed Participation Project ${name}`),
     participationIds: [
-      ...[
-        "email",
-        "mixed",
-        "old-email",
-        "referenced",
-        "submitted",
-        "correction",
-      ].map((name) => `coord-${name}-row-canonical`),
-      "coord-unjoined-canonical",
-      "coord-current-row-canonical",
-      "coord-old-row-canonical",
+      "sl84191j69cov4uufubu7vr1",
+      "mfbuvifruot8cgf124qosc6w",
+      "tsveb7nvf5usg4bv477yeutt",
+      "ypo125qjxk231y00bi0u4fw2",
+      "g303rlwxq17ioi7opy96382x",
+      "d8cqmpxlvlyjvvki4gyzl32f",
+      "ahz5je5a4nth2jst8wamm1vo",
+      "g885oopdixosp0sawcpcs3yj",
+      "yx2j5gov3tgk9304xs8j4hke",
     ],
   },
   costTrackerProjects: {
     userIds: [
-      "readiness-actor-canonical",
-      "readiness-other-user-canonical",
-      ...["owner", "admin", "coordinator", "participant"].flatMap((role) =>
-        ["assigned", "unassigned"].map(
-          (scope) => `readiness-${scope}-${role}-canonical`,
-        ),
-      ),
-      "detail-user-canonical",
-      "list-user-canonical",
-      ...["participant", "coordinator", "participant,coordinator"].map(
-        (role) => `list-${role}-canonical`,
-      ),
-      "relationship-user-canonical",
-      "discovery-coord-canonical",
-      "discovery-stranger-canonical",
+      "v3mlz2g5clg8w6ah4ksaxyhs",
+      "cl3p954elr9yulp1cmy17bdt",
+      "g1uqbte2iau4cota7ihqvsd7",
+      "dnaqpymw7b42kf84mh8cjtj4",
+      "ht74tddcca1pd57ckhan9jyn",
+      "ozww4cen0d8jhtwwf5dpgez5",
+      "cy9lv43gdjuksbp2dt3ipdb8",
+      "kqndalgew54w27ztll9b2xyh",
+      "tq9lhc4pcvh7m23xctv46olw",
+      "n9n8i1cvwpmn65lpk3xgk1kh",
+      "b9ry2h2ubab6tis178d99t25",
+      "jir0evdydult8a6bs4zn9nof",
+      "r4lbmg3rydm9whnikhr8uk39",
+      "weegow6wmcg6tmuc0zy0v5s4",
+      "u5j0wa97s7pbjl95gb8pju0h",
+      "qxc6jkqps0gxemssxs47zjye",
+      "pny51623ftjwk3daduipft1b",
+      "txknveoktb9jsg1svevjy5yd",
     ],
     userEmails: [
-      "readiness-actor-canonical@example.org",
-      "readiness-other-user-canonical@example.org",
-      ...["owner", "admin", "coordinator", "participant"].flatMap((role) =>
-        ["assigned", "unassigned"].map(
-          (scope) => `readiness-${scope}-${role}-canonical@example.org`,
-        ),
-      ),
-      "detail-user-canonical@example.com",
-      "list-user-canonical@example.com",
-      ...["participant", "coordinator", "participant-coordinator"].map(
-        (role) => `list-${role}-canonical@example.org`,
-      ),
-      "relationship-user-canonical@example.com",
-      "discovery-coord-canonical@example.com",
-      "discovery-stranger-canonical@example.com",
+      "v3mlz2g5clg8w6ah4ksaxyhs@example.org",
+      "cl3p954elr9yulp1cmy17bdt@example.org",
+      "g1uqbte2iau4cota7ihqvsd7@example.org",
+      "dnaqpymw7b42kf84mh8cjtj4@example.org",
+      "ht74tddcca1pd57ckhan9jyn@example.org",
+      "ozww4cen0d8jhtwwf5dpgez5@example.org",
+      "cy9lv43gdjuksbp2dt3ipdb8@example.org",
+      "kqndalgew54w27ztll9b2xyh@example.org",
+      "tq9lhc4pcvh7m23xctv46olw@example.org",
+      "n9n8i1cvwpmn65lpk3xgk1kh@example.org",
+      "b9ry2h2ubab6tis178d99t25@example.com",
+      "jir0evdydult8a6bs4zn9nof@example.com",
+      "r4lbmg3rydm9whnikhr8uk39@example.org",
+      "weegow6wmcg6tmuc0zy0v5s4@example.org",
+      "kpdbi3tev42k6epgarud6fie@example.org",
+      "qxc6jkqps0gxemssxs47zjye@example.com",
+      "pny51623ftjwk3daduipft1b@example.com",
+      "txknveoktb9jsg1svevjy5yd@example.com",
     ],
     organizationIds: [
-      "readiness-host",
-      "readiness-partner-a",
-      "readiness-partner-b",
-      "readiness-partner-c",
-      "detail-host",
-      "detail-partner",
-      "detail-unrelated",
-      "list-host",
-      "list-foreign-host",
-      "list-partner",
-      "list-second-partner",
-      "list-unrelated",
-      "relationship-host",
-      "relationship-partner",
-      "relationship-unrelated",
-      "discovery-host",
-      "discovery-partner",
-    ].map((name) => `${name}-canonical`),
+      "qktk52yxvs7xld84b1tvuoh9",
+      "qoqjcz9wkb9w1cu1jciykycq",
+      "xykexg4zokyx3xmwsqoarbne",
+      "ci9hh94qpeqiqkdd9r3bh6kv",
+      "y3vs6znh5b2au1r8larqs1c8",
+      "g8vhp8dyvh25i35adrvuurai",
+      "dx661hzjhafd0l1uujpcmqfd",
+      "d7mj5abcpjlp433v6xveq0xc",
+      "bm03ehh30ylx3eh32xzlm0li",
+      "z7s6cxlk5ix6xpjd45nf0syj",
+      "om6l4k0d4454dbi59xs6an9i",
+      "xpajvpxll5xfoqlql3p1j557",
+      "co377paio4zfz1q1bx4whjkw",
+      "c12l1bn346722vdnxwfacqbx",
+      "hbsugr6cxctsen7wi6e27r20",
+      "j2h6zbf5nluzl5i69updxed9",
+      "k9p9253nsdvi27fggezdv43d",
+    ],
     projectNames: [
-      ...[
-        "empty",
-        "mixed",
-        "claimless-partial",
-        "terminal",
-        "editable",
-        "submitted",
-        "correction_requested",
-        "approved",
-      ].flatMap((name) =>
-        ["project", "other-project"].map(
-          (part) => `readiness-${name}-${part}-canonical`,
-        ),
-      ),
+      "yw0j74vrct2t82f1rgqtrs4t",
+      "b5giqvh1tv51xwcsaqeucmke",
+      "qglynmc75ava9l2jpyyos5cp",
+      "rcggqd5tiwuyfqcivd6qs2z8",
+      "aa8p1gyxlst0fkc06npqp227",
+      "xj7hc44t4oz92u8cfm6jwoim",
+      "wmexswb9vwkzkemjgb0fuio8",
+      "mwqzfluw6sf7prnwgqj0b41u",
+      "qhj5ysoj4rhmeakufdfcnjha",
+      "yzj71wxq73ycvvnfvxbq3ibn",
+      "mxszdqbyysrail9pf3t8x0f0",
+      "sz13k9ez22w1avn1gpimre5w",
+      "q769rcuir0ts8v9pxxra44hz",
+      "gk8s7m7qce7egn73x0p3tbmu",
+      "lw7lrv1wm139zv4qgnzjkao7",
+      "jl95anvdi1dwvyco65alx4fn",
       "Detail Project",
       "Alpha Open Workshop",
       "Beta Closed Forum",
@@ -671,169 +744,270 @@ export const SEED_SCENARIOS = {
       ),
       "Relationship Project",
       "Archived Relationship Project",
-      "discovery-assigned-canonical",
-      "discovery-foreign-canonical",
+      "csxxr9afisxdchhhwad3g3x0",
+      "lciizaru87wgg6zi7vn08d6h",
     ],
     participationIds: [],
   },
   costTrackerJourneys: {
-    userIds: ["journey-coordinator-canonical", "journey-user-canonical"],
+    userIds: ["njj93kk5qvwteuv9nptk9ryb", "b21etdwq5uyop54hnqideez1"],
     userEmails: [
-      "journey-coordinator-canonical@example.org",
-      "journey-user-canonical@example.org",
+      "njj93kk5qvwteuv9nptk9ryb@example.org",
+      "b21etdwq5uyop54hnqideez1@example.org",
     ],
-    organizationIds: ["host", "partner", "other"].map(
-      (name) => `journey-${name}-canonical`,
-    ),
+    organizationIds: [
+      "vx9gyxubkxro0lssmyroxe75",
+      "qkygpb1cfcfftazz91qywhrn",
+      "wqrtqzx3xvvhlhef4f8sau4l",
+    ],
     projectNames: [
-      "empty",
-      "editable",
-      "legacy",
-      "correction_requested",
-      "submitted",
-      "approved",
-      "rejected",
-      "paid",
-    ].flatMap((name) =>
-      ["project", "second-project"].map(
-        (part) => `Seed Journey Project journey-${name}-${part}-canonical`,
-      ),
-    ),
+      "Seed Journey Project empty project",
+      "Seed Journey Project empty second-project",
+      "Seed Journey Project editable project",
+      "Seed Journey Project editable second-project",
+      "Seed Journey Project legacy project",
+      "Seed Journey Project legacy second-project",
+      "Seed Journey Project correction_requested project",
+      "Seed Journey Project correction_requested second-project",
+      "Seed Journey Project submitted project",
+      "Seed Journey Project submitted second-project",
+      "Seed Journey Project approved project",
+      "Seed Journey Project approved second-project",
+      "Seed Journey Project rejected project",
+      "Seed Journey Project rejected second-project",
+      "Seed Journey Project paid project",
+      "Seed Journey Project paid second-project",
+    ],
     participationIds: [
-      "empty",
-      "editable",
-      "legacy",
-      "correction_requested",
-      "submitted",
-      "approved",
-      "rejected",
-      "paid",
-    ].flatMap((name) =>
-      ["first", "second", "outside", "later"].map(
-        (part) => `journey-${name}-${part}-canonical`,
-      ),
-    ),
+      "qsv67xo722qe1b00w0g9qi0o",
+      "adrq31kxemsrho7vxin91xii",
+      "p0i8js1lix8zfh0bhcpz8kcr",
+      "hcw9cmnc0tjdg95vefyjnkg0",
+      "dnhbmektk3b0kymk67gijh5v",
+      "c6rzw7mjcfzouw011z6glezo",
+      "ce90d9m4ox9pcsa6gnvzeukc",
+      "mz3gl3c4s9dx05kxpacgab1h",
+      "diwsigd48oyf7giaz6d5m76e",
+      "weapsdhv2og96fqrblgjr8fw",
+      "v28trsvdlxszdjbrslj7jzhe",
+      "o5mbhevxssukttfo6wdb7t3v",
+      "vzb305ommel0h8t52pmicku8",
+      "k1f28nyl1dr0j09felqn1p65",
+      "htyn28cu0n1kaqbxu4bb0u60",
+      "e0oy0n9nhhi7y1yo8iaouhji",
+      "wq9ldyrvwbjcqoledih3950p",
+      "wexe0nzi53wk9yxpjcyz2s5b",
+      "i2au75gjcz4x8vcc8f1t1avw",
+      "kuf0x8zecl929omfs7ufyxqb",
+      "liixtwq2c9307qgchtzlk4sr",
+      "q6x77i77fmcghbtj9nfb3fux",
+      "cox16dq4rldrb27vhbduncc8",
+      "uean2qifj1oh7t3ztwyi391n",
+      "tsvkwpwofp3dm6xj1lhl9xqn",
+      "zjp4m9ssm5eejv3is118vb5a",
+      "trcmao8ecc90cbynik4tvdad",
+      "qugg501l00hypycy2zmiggqr",
+      "bj65q8qk8xu452az5stmvmfn",
+      "duwh2xksyo3wkffxpy779j9w",
+      "z3k1zkw7poy8ccatgqm7ixix",
+      "y145ox23z8dwq68p4trp0hja",
+    ],
   },
   costTrackerPartnerships: {
     userIds: [
-      "partnership-user-canonical",
-      "partnership-visibility-coord-canonical",
-      "partnership-visibility-stranger-canonical",
+      "j3il3a249ve1ptmg95avdlgv",
+      "tqsbp0h0ue0r9f3cucsau6ub",
+      "c7zd4q31mcarkmy6gj8ohr05",
     ],
     userEmails: [
-      "partnership-user-canonical",
-      "partnership-visibility-coord-canonical",
-      "partnership-visibility-stranger-canonical",
+      "j3il3a249ve1ptmg95avdlgv",
+      "tqsbp0h0ue0r9f3cucsau6ub",
+      "c7zd4q31mcarkmy6gj8ohr05",
     ].map((id) => `${id}@example.com`),
     organizationIds: [
-      "host",
-      "foreign-host",
-      "assigned-org",
-      "removable-org",
-      "candidate-org",
-      "race-org",
-      "visibility-host",
-      "visibility-partner",
-    ].map((name) => `partnership-${name}-canonical`),
+      "bju7ngb3cgo3pdl2mus0fd1x",
+      "lgiqk6xb0z0fmc5mt2a14c2h",
+      "qzk86wnb1aey5g57xszuapg7",
+      "ru7qr7r69sz7qq4x6a7sfdjk",
+      "i1vygof18xbl8888j7h6dlxv",
+      "pbsbg6s5g2p5cmc2z4kfo03v",
+      "eear0jif4y85mgfp3egcs35t",
+      "kbw5d47mmfruysu3eseo7gdk",
+    ],
     projectNames: [
       "Managed Project",
       "Foreign Managed Project",
-      "partnership-visibility-own-canonical",
-      "partnership-visibility-other-canonical",
+      "s72n412ll4eehimlyctpc5u4",
+      "ihi2lq4bmhm3k7kwyc4ru3ca",
     ],
-    participationIds: ["partnership-participation-canonical"],
+    participationIds: ["s4hxs7xxvi2anxjzg482zo0q"],
   },
   costTrackerEntitySearch: {
-    suffix: "canonical",
     userIds: [
-      "picker-user-canonical",
-      "picker-coordinator-canonical",
-      "picker-unassigned-coordinator-canonical",
-      "picker-participant-canonical",
+      "un3tvw49u59cn2d2a9rop8dl",
+      "vos8x8p742eg5c2vj6cry4l5",
+      "fsvc5hi90jub4no6rp7sk4qt",
+      "w0vmksmuqkmwxcb21weiuzwv",
     ],
     userEmails: [
-      "user",
-      "coordinator",
-      "unassigned-coordinator",
-      "participant",
-    ].map((name) => `picker-${name}-canonical@example.com`),
-    coordinatorUserId: "picker-coordinator-canonical",
-    unassignedCoordinatorUserId: "picker-unassigned-coordinator-canonical",
-    participantUserId: "picker-participant-canonical",
+      "un3tvw49u59cn2d2a9rop8dl@example.com",
+      "vos8x8p742eg5c2vj6cry4l5@example.com",
+      "fsvc5hi90jub4no6rp7sk4qt@example.com",
+      "w0vmksmuqkmwxcb21weiuzwv@example.com",
+    ],
+    coordinatorUserId: "vos8x8p742eg5c2vj6cry4l5",
+    unassignedCoordinatorUserId: "fsvc5hi90jub4no6rp7sk4qt",
+    participantUserId: "w0vmksmuqkmwxcb21weiuzwv",
     organizationIds: [
-      "picker-host-canonical",
-      "picker-partner-canonical",
-      "picker-foreign-canonical",
-      ...Array.from({ length: 22 }, (_, i) => `picker-result-${i}-canonical`),
-      ...Array.from({ length: 55 }, (_, i) => `owned-result-${i}-canonical`),
+      "mdeufadg0pokz21yilwj20zh",
+      "jc81zdxvsmhn9amf5cd7b2z8",
+      "y4l7cye3sx531uc750fe1dfu",
+      "yy0c67wkivbca05auv1830ye",
+      "j2wgduuhmd5eh4cojqp69xzp",
+      "qbn0uzj86zkigrxudyaejgmv",
+      "m3mu9h0xfsz60852s0nld0y5",
+      "jf5rux41z37qdydcb97zipeu",
+      "nncgadszm4lpmb08onb65sv7",
+      "rx44zi293x82pe3eurpfgjli",
+      "yz3mcrb41afje6cr0dz7dkjs",
+      "ta5saza94oe6dsbgzp3oneyz",
+      "h70dzw4s67yq89p7drk41xl5",
+      "ad0utktcx37zhffpmpaaypfp",
+      "btiinsn1adtr1j5moxq7l6yk",
+      "uga7jk013dgum1puajj8vmw5",
+      "rhxsn23wqetmalzbghjs08nb",
+      "dux616zf0efcn67decpu7s5x",
+      "by4tf8repgrmat6p8gpgptaj",
+      "lydl4eqihkam129oxptfm9wj",
+      "mlztoxxn3yspsqr8b80y9pi7",
+      "pzqpxvga1b4lhv9rel98nv32",
+      "w5wbrjeb5djj09zwshgsbbc9",
+      "jkhzrd5nf21y36tutuio2mta",
+      "wteulge3nc0tiassog1pl31r",
+      "p1kgthpbxvdyvxzvlygi5sap",
+      "tocgv294h1vvz9ibu4fs6ion",
+      "o23eaebfzq8e04hjgglnpfwb",
+      "z0p3jl2rnnmc4fd34pbj6qxq",
+      "p4x1mzz7xgem67vkwl1uwz5e",
+      "q9doomq37jbxkks1hgexonk0",
+      "ng63ofa9ivse7ia9dbjwk2rs",
+      "qxtau8lriyhho2zy19hy27on",
+      "a79iz9v14ayj05izy3mnz4g3",
+      "fnfx6w1gh62kwl8ij7knlkgo",
+      "at8u3y33m4t6ai1xh7xmg2xu",
+      "jehwr2mwysovflxcnh9wq4a3",
+      "qhusxhdu162eulqhfj325yod",
+      "l3dij6ofh8yka7nwnc1q2ja3",
+      "s4du7tprhv35jfu38tj2pix7",
+      "lf1cg4i3jmoyi07tmkspoy6h",
+      "arpq33kt6ca5gemgxrgite20",
+      "i2zsvjarmeggtm8f55549gmb",
+      "a06elq7tflqdz1yp0ikynynl",
+      "bqb9jgxghg5xxhuy168y0k4v",
+      "ng0rt6r77qtj3kif1v8z71u2",
+      "hl7fggn7w9irkuzp80owcz71",
+      "v0si6v4p2gwr7vrspr8sg4wi",
+      "pfmx78nbhvj0f7ng5944o8vf",
+      "jc990270fc3q4vzavorw938u",
+      "xw90jjpqp4k3disl7tg0iipj",
+      "ntxmcsuy5wiqud65p3aegwx0",
+      "rc7qit065mpomssq39bvljue",
+      "v6bpiezxq9co45gvs13qryxg",
+      "zl9lquv3nma0rzyzu7gx3x44",
+      "nmqjlr6hu7ler9gg46waa4yp",
+      "c8xev643s2o9pn4u6vz1nrj0",
+      "kvo6tmuhvn153zbxynhhwvfr",
+      "jvzsgsv4mzhqdcxnaihh708x",
+      "ebrs97u91kiyptl46npbtllo",
+      "j54r2kaa5qm583nqcq4lc9r1",
+      "fs8qp6k1amk6bwazvmfifqu1",
+      "y94p5uo2gsoowapx14o8vbwn",
+      "xaevrc9nhxd4yripqwpr72si",
+      "neloje71jnr72l5w38xigyv1",
+      "ievy4zi9s1wlt2rv622j6s1n",
+      "cjs5jyd74dpsurrp05zy2nsm",
+      "pee6jy9a8vgel8zm3qroiw7u",
+      "nphsmgmggxz4wtidom0g3tfm",
+      "czrojyrql46acf0xd3ka03et",
+      "jtcqftf9kjnu50c82g7947t6",
+      "ps4kcfmfr1p56swm7eciu2gk",
+      "n4r4otgerr9vpebhtb347uyi",
+      "prxlv13u8bef5xq2u2lu5zro",
+      "fiuogl98k7wy84vlyl55efgx",
+      "arc72jpm13y8m5gp2kk9ob7x",
+      "r33rqqnppjhxzmo69wm992bf",
+      "enezjflpprl2fgro91wuxpq1",
+      "s9rngtnbhhkjiakh89aa5k7t",
+      "k1mc8ynp3hxdoel6s4ok3emt",
       ...SEED_ENTITY_SEARCH.manyOrganizations.map(({ id }) => id),
     ],
     projectNames: [
-      "picker-assigned-canonical",
-      "picker-unassigned-canonical",
-      "picker-foreign-project-canonical",
+      "f1jy9mt5aes134zezdsz9rjh",
+      "kf2n2hsv5yt7snkoqahw7012",
+      "c0ayqb71wobyyir727zdy669",
     ].map((id) => `Project ${id}`),
     ownedOrganizations: SEED_ENTITY_SEARCH.ownedOrganizations,
     manyOrganizations: SEED_ENTITY_SEARCH.manyOrganizations,
   },
   costTrackerOnboardingProgress: {
     userIds: [
-      "progress-coordinator-canonical",
-      "progress-joined-canonical",
-      "progress-pending-canonical",
-      "progress-revoked-canonical",
-      "progress-outsider-canonical",
+      "d430zzfeqqkly5ldh6taz24l",
+      "g2wwxic53eufnwlmzl8vplam",
+      "hz7hq50rox2931x2g6fvnm9x",
+      "pn2pja15f3t265bd805eiztb",
+      "y81ceaq0pmv2oqk3wkvqd6xo",
     ],
-    userEmails: ["coordinator", "joined", "pending", "revoked", "outsider"].map(
-      (name) => `progress-${name}-canonical-canonical@example.org`,
-    ),
+    userEmails: [
+      "d430zzfeqqkly5ldh6taz24l@example.org",
+      "g2wwxic53eufnwlmzl8vplam@example.org",
+      "hz7hq50rox2931x2g6fvnm9x@example.org",
+      "pn2pja15f3t265bd805eiztb@example.org",
+      "y81ceaq0pmv2oqk3wkvqd6xo@example.org",
+    ],
     organizationIds: [
-      "progress-host-canonical",
-      "progress-partner-canonical",
-      "progress-other-canonical",
+      "pb8rir6gvcyfqiwaqtnk5xec",
+      "yi608vzxygcikogkqozy7r81",
+      "y62zsfzl3timebonzploar04",
     ],
     projectNames: [
       "Seed Onboarding Progress Project",
       "Seed Expired Onboarding Progress Project",
     ],
-    projectIds: [
-      "progress-project-canonical",
-      "progress-expired-project-canonical",
-    ],
+    projectIds: ["q1jwax2hm79a3iian3hs5x73", "seryv88axzvwqw9oqb2midp3"],
     participationIds: [
-      "progress-joined-participation-canonical",
-      "progress-outsider-participation-canonical",
-      "progress-unlinked-participation-canonical",
-      "progress-expired-joined-participation-canonical",
+      "hzjspo0pgd775157t62xn601",
+      "kmmag9cniqtn1rijzld8d6qg",
+      "j4i5tx5ldiy172qhxzo1zjiw",
+      "q2wk2356hxwg4uww2dkje2ri",
     ],
-    projectId: "progress-project-canonical",
-    coordinatorId: "progress-coordinator-canonical",
-    partnershipId: "progress-own-canonical",
-    pendingInvitationId: "new-canonical",
+    projectId: "q1jwax2hm79a3iian3hs5x73",
+    coordinatorId: "d430zzfeqqkly5ldh6taz24l",
+    partnershipId: "kpy26vaupifiqe3vuu554twi",
+    pendingInvitationId: "gxtubvf8mav6w9c8do4fey2f",
     invitationExpiresAt: null,
-    expiredPartnershipId: "progress-expired-partnership-canonical",
-    expiredInvitationId: "progress-expired-invitation-canonical",
+    expiredPartnershipId: "xs8n7xoutdn7nm0fx0pcdge3",
+    expiredInvitationId: "p82fofnhve803i7nzxxsdb8d",
   },
   costTrackerClaims: {
     userIds: [
-      "claim-coordinator-canonical",
-      "claim-participant-canonical",
-      "claim-owner-canonical",
+      "nol2sd5ye6kezxgvovi7q5f0",
+      "fhmed3rl5eut51ok5j81rodo",
+      "u58a1drm42imnu2fu4304ajw",
     ],
     payoutAccountIds: [
-      "claim-account-canonical",
-      "claim-second-account-canonical",
-      "claim-foreign-account-canonical",
+      "b0196l2ew39i22ursbv48p3s",
+      "dsj2rua1gdb4x4jvknmymoi4",
+      "n6i6klamj4v5mxrz6sv78cwf",
     ],
     userEmails: [
-      "claim-coordinator-canonical@example.org",
-      "claim-participant-canonical@example.org",
-      "claim-owner-canonical@example.org",
+      "nol2sd5ye6kezxgvovi7q5f0@example.org",
+      "fhmed3rl5eut51ok5j81rodo@example.org",
+      "u58a1drm42imnu2fu4304ajw@example.org",
     ],
     organizationIds: [
-      "claim-host-canonical",
-      "claim-partner-canonical",
-      "claim-other-canonical",
+      "rvvkpmsj6futf7oh5w6fc8ck",
+      "dgj0r3bf101hos6d7z5tsn61",
+      "z8a5atkfd0mf8o8b24eze2ui",
     ],
     projectNames: [
       "Seed Claim Project",
@@ -841,24 +1015,24 @@ export const SEED_SCENARIOS = {
       "Seed Submitted Claim Project",
       "Seed Submitted Selected Claim Project",
     ],
-    projectId: "claim-project-canonical",
-    coordinatorId: "claim-coordinator-canonical",
-    participantId: "claim-participant-canonical",
-    partnershipId: "claim-own-canonical",
-    editablePartnershipId: "claim-editable-canonical",
-    submittedPartnershipId: "claim-submitted-canonical",
-    submittedSelectedPartnershipId: "claim-submitted-selected-canonical",
+    projectId: "rmqohj3gpdw0f9detkz6osga",
+    coordinatorId: "nol2sd5ye6kezxgvovi7q5f0",
+    participantId: "fhmed3rl5eut51ok5j81rodo",
+    partnershipId: "llej1oakvcdzp64hvqmwyfoi",
+    editablePartnershipId: "sf9t6fbzyfur5lqqhn799mf5",
+    submittedPartnershipId: "kp9h78jm6bn5ob0b82bqlitb",
+    submittedSelectedPartnershipId: "l0ttgu2m4ieljze7t4mbzgs1",
   },
   costTrackerCosts: {
-    userIds: ["cost-coordinator-canonical", "cost-user-canonical"],
+    userIds: ["fmpfieidsqgfc697xgnvynuw", "u3pnyfkioeyhxtjks1ukfqag"],
     userEmails: [
-      "cost-coordinator-canonical@example.org",
-      "cost-user-canonical@example.org",
+      "fmpfieidsqgfc697xgnvynuw@example.org",
+      "u3pnyfkioeyhxtjks1ukfqag@example.org",
     ],
     organizationIds: [
-      "cost-host-canonical",
-      "cost-partner-canonical",
-      "cost-other-canonical",
+      "c8tzqmrknhg2bov465e90f43",
+      "shhydrtzn64k6rorh9k8nx86",
+      "dl4som7bu1sb6xtdwnyyo63p",
     ],
     projectNames: [
       "Seed Cost Project",
@@ -866,24 +1040,24 @@ export const SEED_SCENARIOS = {
       "Seed Submitted Cost Project",
     ],
     participationIds: [
-      "cost-first-canonical",
-      "cost-second-canonical",
-      "cost-third-canonical",
-      "cost-outside-canonical",
-      "cost-later-canonical",
-      "cost-locked-participant-canonical",
+      "qic2agmxqt1h9nzdxxd7ulgm",
+      "m5dxpif4ebx10jnihqtd98ew",
+      "je703i9hoq9ly4ii2kjs6d4v",
+      "ev1234of98bh7eek94kefkt1",
+      "q9rtygav622rqw8e47zxrprh",
+      "fvzf02owu002f9wbrtiydulc",
     ],
-    projectId: "cost-project-canonical",
-    coordinatorId: "cost-coordinator-canonical",
-    participantId: "cost-user-canonical",
-    partnershipId: "cost-own-canonical",
-    claimId: "cost-claim-canonical",
-    proofDocumentId: "cost-proof-canonical",
-    submittedPartnershipId: "cost-locked-partnership-canonical",
-    submittedClaimId: "cost-locked-claim-canonical",
-    submittedEntryId: "cost-locked-entry-canonical",
-    submittedProofDocumentId: "cost-locked-proof-canonical",
-    submittedParticipantId: "cost-locked-participant-canonical",
+    projectId: "fu1lgjy9x1bjmbhkgebeg85u",
+    coordinatorId: "fmpfieidsqgfc697xgnvynuw",
+    participantId: "u3pnyfkioeyhxtjks1ukfqag",
+    partnershipId: "nyh1okg2p6hf8lwkpurt2wjz",
+    claimId: "lc1i74hr7ioc31ynaxr0vmub",
+    proofDocumentId: "foilan4c5q220go0d56v5sxx",
+    submittedPartnershipId: "cwudh3bpklwgtvyphhw088ox",
+    submittedClaimId: "iodp4iuvgjfjsx0t2fy82zj1",
+    submittedEntryId: "t8b7y7gkyi51cjifgwonkns8",
+    submittedProofDocumentId: "ometzoa7791cs0vulc4cwnzh",
+    submittedParticipantId: "fvzf02owu002f9wbrtiydulc",
   },
   hostingOrganization: {
     kind: "organization",
@@ -970,7 +1144,7 @@ export const SEED_SCENARIOS = {
   participantEntryPreconditions: {
     kind: "participant-entry",
     description:
-      "Assigned seed-coordinator on all entry Projects; login-free seed-entry-details@example.org Participation; pending seed-entry-colleague@example.org staff invitation (runtime ID, canonical expiry 9999-12-31). Dedicated seed-onboarding-{owner,admin,participant,coordinator,combined}@example.org and seed-invitation-coordinator@example.org Hosting role actors preserve Membership-grant coverage. Restore changed preconditions after every case.",
+      "Assigned seed-coordinator on all entry Projects; login-free seed-entry-details@example.org Participation; pending seed-entry-colleague@example.org staff invitation (runtime ID, seed expiry 9999-12-31). Dedicated seed-onboarding-{owner,admin,participant,coordinator,combined}@example.org and seed-invitation-coordinator@example.org Hosting role actors preserve Membership-grant coverage. Restore changed preconditions after every case.",
   },
   secondPartnerOrganization: {
     kind: "organization",
@@ -993,28 +1167,28 @@ export const SEED_SCENARIOS = {
     email: "seed-invitee@example.org",
     name: "Seed Invitee",
     description:
-      "Canonical Participant Invitation recipient; joins through procedures under test. Restore to no Membership/Participation after use.",
+      "Seeded Participant Invitation recipient; joins through procedures under test. Restore to no Membership/Participation after use.",
   },
   secondInviteeUser: {
     kind: "user",
     email: "seed-second-invitee@example.org",
     name: "Seed Second Invitee",
     description:
-      "Second canonical joiner for wrong-account and multi-user link checks. Restore to no Membership/Participation after use.",
+      "Second seed joiner for wrong-account and multi-user link checks. Restore to no Membership/Participation after use.",
   },
   onboardingInviteeUser: {
     kind: "user",
     email: "seed-onboarding-invitee@example.org",
     name: "Seed Onboarding Invitee",
     description:
-      "Canonical joiner for the onboarding Project; isolated from the invitation Project Invitees so parallel files never contend on one host Membership. Restore to no Membership/Participation after use.",
+      "Seed joiner for the onboarding Project; isolated from the invitation Project Invitees so parallel files never contend on one host Membership. Restore to no Membership/Participation after use.",
   },
   secondOnboardingInviteeUser: {
     kind: "user",
     email: "seed-second-onboarding-invitee@example.org",
     name: "Seed Second Onboarding Invitee",
     description:
-      "Second canonical joiner for the onboarding Project multi-user link check. Restore to no Membership/Participation after use.",
+      "Second seed joiner for the onboarding Project multi-user link check. Restore to no Membership/Participation after use.",
   },
   showcaseProject: {
     kind: "project",
@@ -1309,8 +1483,8 @@ async function ensureSeedProject(
     await db.insert(hostProjectAssignmentsTable).values({ projectId, userId });
   }
 
-  // Converge the canonical travel legs without touching hand-added rows:
-  // only exact canonical tuples are inserted when missing.
+  // Converge the seed travel legs without touching hand-added rows:
+  // only exact seed tuples are inserted when missing.
   const existingLegs = await db.query.projectSharedTravelLegsTable.findMany({
     where: eq(projectSharedTravelLegsTable.projectId, projectId),
   });
@@ -1517,7 +1691,7 @@ async function ensureParticipantEntryState(
   }
   // Staff invitation is a list precondition, never participant issuance. Its ID is
   // generated at runtime. Pending-list checks do not redeem it; a far-future
-  // canonical expiry keeps this reference-calendar scenario independent of today.
+  // Seed expiry keeps this reference-calendar scenario independent of today.
   const staffInvitation = await db.query.invitation.findFirst({
     where: and(
       eq(schema.invitation.organizationId, secondPartnerId),
@@ -1537,7 +1711,7 @@ async function ensureParticipantEntryState(
 }
 
 /**
- * Run the canonical seed against the given database. Every step is
+ * Run the seed against the given database. Every step is
  * find-or-create: repeat runs converge to the same logical dataset instead
  * of adding duplicates, and development records are never deleted.
  */
@@ -1584,8 +1758,7 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
   const showcaseCoordinator = await db.query.user.findFirst({
     where: eq(user.email, SEED_SCENARIOS.coordinatorUser.email),
   });
-  if (!showcaseCoordinator)
-    throw new Error("Canonical Seed Coordinator is missing.");
+  if (!showcaseCoordinator) throw new Error("Seed Coordinator is missing.");
   await ensureSeedHostAssignments(db, [
     { projectId: projectIds[0]!, userId: showcaseCoordinator.id },
   ]);
@@ -1927,7 +2100,7 @@ export async function seedDatabase(db: SeedDatabase): Promise<SeedSummary> {
 
 /**
  * A seed Organization is removable only when no Projects, Memberships, incoming
- * Partnerships or Payout Accounts outside the canonical seed still reference it. Canonical projects and the
+ * Partnerships or Payout Accounts outside the seed still reference it. Seed projects and the
  * seed User's memberships are already deleted by the time this runs, so any
  * remaining reference is developer data worth keeping.
  */
@@ -1960,10 +2133,10 @@ async function findRemovableSeedOrgIds(
 }
 
 /**
- * Explicit, safely targeted removal of canonical seed rows only. Requires
+ * Explicit, safely targeted removal of seed rows only. Requires
  * `{ confirmSeedReset: true }` — without it the function throws before
- * deleting anything. Rows that do not match canonical seed identities
- * (unrelated organizations, non-canonical projects, hand-added travel legs
+ * deleting anything. Rows that do not match seed identities
+ * (unrelated organizations, non-seed projects, hand-added travel legs
  * on surviving projects) are preserved. A seed Organization with remaining
  * non-seed dependents is retained instead of cascade-deleting them, and its
  * slug is reported in `retainedOrganizationSlugs`.
@@ -2019,7 +2192,7 @@ export async function resetSeedData(
     ]),
   });
   const seedOrgIds = seedOrganizations.map((org) => org.id);
-  const canonicalNames = [
+  const seedNames = [
     ...SEED_PROJECTS.map((project) => project.name),
     SEED_PARTNER_PROJECT.name,
     ...SEED_REVIEW_SCENARIOS.restProjects.map(({ name }) => name),
@@ -2042,12 +2215,12 @@ export async function resetSeedData(
       ? await db.query.projectsTable.findMany({
           where: and(
             inArray(projectsTable.organizationId, seedOrgIds),
-            inArray(projectsTable.name, canonicalNames),
+            inArray(projectsTable.name, seedNames),
           ),
         })
       : [];
   const seedProjectIds = seedProjects.map((project) => project.id);
-  const canonicalLegKeys = new Set(
+  const seedLegKeys = new Set(
     SEED_PROJECTS.flatMap((project) =>
       project.travelLegs.map(
         (leg) =>
@@ -2071,20 +2244,18 @@ export async function resetSeedData(
     const projectNamesById = new Map(
       seedProjects.map((project) => [project.id, project.name]),
     );
-    const canonicalLegIds = legs
+    const seedLegIds = legs
       .filter((leg) =>
-        canonicalLegKeys.has(
+        seedLegKeys.has(
           `${projectNamesById.get(leg.projectId)}|${leg.transportEmissionProfile}|${leg.distanceKm}|${leg.description ?? ""}`,
         ),
       )
       .map((leg) => leg.id);
-    if (canonicalLegIds.length > 0) {
+    if (seedLegIds.length > 0) {
       await db
         .delete(projectSharedTravelLegsTable)
-        .where(
-          inArray(projectSharedTravelLegsTable.id, canonicalLegIds as string[]),
-        );
-      travelLegs = canonicalLegIds.length;
+        .where(inArray(projectSharedTravelLegsTable.id, seedLegIds as string[]));
+      travelLegs = seedLegIds.length;
     }
     const partnerships = await db.query.projectPartnerOrganizationsTable.findMany(
       {
@@ -2150,7 +2321,7 @@ export async function resetSeedData(
         seedProjectIds as string[],
       ),
     });
-    // Seed-owned Participations on canonical Projects: the showcase Owner
+    // Seed-owned Participations on seed Projects: the showcase Owner
     // row plus the #267 journey-scenario rows (linked bare Participation,
     // login-free Participation) plus #268 Invitee rows left by interrupted
     // runs. Matched by stable seed email so developer Participations on the
@@ -2239,22 +2410,22 @@ export async function resetSeedData(
         ),
       );
   }
-  // A canonical Payout Account can be reused by a developer Partnership.
+  // A seed Payout Account can be reused by a developer Partnership.
   // Preserve it when a surviving selection references it, just like other dependents.
-  const canonicalPayoutAccountIds = [
+  const seedPayoutAccountIds = [
     ...SEED_SCENARIOS.costTrackerClaims.payoutAccountIds,
     ...SEED_SCENARIOS.costTrackerSubmission.payoutAccountIds,
   ];
   const survivingSelections =
     await db.query.partnershipPayoutAccountsTable.findMany({
       where: inArray(partnershipPayoutAccountsTable.payoutAccountId, [
-        ...canonicalPayoutAccountIds,
+        ...seedPayoutAccountIds,
       ]),
     });
   const referencedPayoutAccountIds = new Set(
     survivingSelections.map((selection) => selection.payoutAccountId),
   );
-  const removablePayoutAccountIds = canonicalPayoutAccountIds.filter(
+  const removablePayoutAccountIds = seedPayoutAccountIds.filter(
     (id) => !referencedPayoutAccountIds.has(id),
   );
   if (removablePayoutAccountIds.length > 0) {
@@ -2277,7 +2448,7 @@ export async function resetSeedData(
   }
   let users = 0;
   if (seedUserIds.length > 0) {
-    // Canonical Project dependents and Memberships are gone. Remaining domain
+    // Seed Project dependents and Memberships are gone. Remaining domain
     // references belong to developer data: retain their actors, profiles and
     // login credentials rather than allowing CASCADE/SET NULL to erase links.
     const removableUsers = await db
@@ -2427,11 +2598,11 @@ async function runFromEnvironment(): Promise<void> {
         console.error(
           "❌ Refusing to reset seed data without explicit confirmation: " +
             "rerun with the --reset-seed-data flag and SEED_ALLOW_DEV_RESET=true. " +
-            "Only canonical seed rows are removed; other development records are preserved.",
+            "Only seed rows are removed; other development records are preserved.",
         );
         process.exit(1);
       }
-      console.log("🧹 Removing canonical seed rows...\n");
+      console.log("🧹 Removing seed rows...\n");
       const report = await resetSeedData(db, { confirmSeedReset: true });
       console.log("\n🧹 SEED RESET COMPLETED!");
       console.log("=".repeat(60));

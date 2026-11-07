@@ -28,14 +28,14 @@ vi.mock("server-only", () => ({}));
 import { router } from "@/lib/orpc/router";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). The permission matrix resolves the
  * seeded Hosting Organization and its named Memberships instead of
  * inserting a private Organization/User/Membership dataset. Case
- * invitations created below are removed in their own test; canonical rows
+ * invitations created below are removed in their own test; seed rows
  * are never deleted. Auth stays mocked: only the database is real.
  */
-const SEED_ORG_SLUG = "seed-staff-invites-org";
+const SEED_ORG_SLUG = "e2ipggjte8s6j0wylj2kipry";
 const SEED_OWNER_EMAIL = "owner@sieh.org";
 const SEED_ADMIN_EMAIL = "seed-admin@example.org";
 const SEED_COORDINATOR_EMAIL = "seed-coordinator@example.org";
@@ -135,7 +135,7 @@ describe("organizations staff invites", () => {
       if (!stored) throw new Error(`Seed staff Invitation is missing: ${key}`);
       seedInvitations[key] = stored.id;
     }
-    // Fail fast when the canonical role matrix drifts from the seed.
+    // Fail fast when the seed role matrix drifts from the seed.
     const memberships = await db
       .select({ userId: member.userId, role: member.role })
       .from(member)
@@ -166,7 +166,7 @@ describe("organizations staff invites", () => {
   });
 
   afterAll(async () => {
-    // Case invitations are removed in their own tests; canonical
+    // Case invitations are removed in their own tests; seed
     // Organizations, Memberships, and Users are never deleted. Fail loudly
     // when a case leaked a row onto the seeded Organization.
     const leftovers = await db
@@ -181,7 +181,7 @@ describe("organizations staff invites", () => {
       await db.query.organization.findFirst({
         where: eq(organization.slug, SEED_ORG_SLUG),
       }),
-      "canonical seed Organization was deleted",
+      "seed Organization was deleted",
     ).not.toBeUndefined();
   });
 
@@ -212,7 +212,7 @@ describe("organizations staff invites", () => {
         `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
         ORGANIZATION_ROLES.OrganizationOwner,
         ORGANIZATION_ROLES.Participant,
-        // Canonical onboarding/invitation actors also belong to the Hosting Organization.
+        // Seed onboarding/invitation actors also belong to the Hosting Organization.
         ORGANIZATION_ROLES.ProjectCoordinator,
         ORGANIZATION_ROLES.OrganizationAdmin,
         `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.Participant}`,
@@ -221,7 +221,7 @@ describe("organizations staff invites", () => {
         ORGANIZATION_ROLES.Participant,
       ].sort(),
     );
-    // The canonical seed owner signs in from a real mailbox domain while
+    // The seed owner signs in from a real mailbox domain while
     // role actors use the example domain: assert email shape, not domain.
     expect(asOwner.members[0]).toMatchObject({
       email: expect.stringContaining("@"),

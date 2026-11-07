@@ -94,7 +94,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
       const actor = await db.query.user.findFirst({
         where: eq(user.email, email),
       });
-      if (!actor) throw new Error("Canonical HTTP actor missing.");
+      if (!actor) throw new Error("Seed HTTP actor missing.");
       const response = await post("authentication/signIn", { email, password });
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ success: true });

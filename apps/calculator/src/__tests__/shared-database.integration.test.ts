@@ -24,7 +24,7 @@ const SEED_ORG_ENV = "SHARED_DB_SEED_ORG";
 const SEED_PROJECT_ENV = "SHARED_DB_SEED_PROJECT";
 
 /**
- * Canonical seed identities (see `SEED_SCENARIOS` in
+ * Seed identities (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). Both app environments must observe
  * the same seeded Organization, Project, and showcase Journey rows —
  * shared records, not two separately generated lookalike datasets. The
@@ -60,18 +60,18 @@ function runInApp(
 }
 
 describe("shared Calculator and Cost Tracker database", () => {
-  it("reads identical canonical domain IDs and observes writes from both app environments", async () => {
+  it("reads identical seeded domain IDs and observes writes from both app environments", async () => {
     const seedOrg = await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     });
-    if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+    if (!seedOrg) throw new Error("Seed Organization is missing");
     const showcase = await db.query.projectsTable.findFirst({
       where: and(
         eq(projectsTable.organizationId, seedOrg.id),
         eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
       ),
     });
-    if (!showcase) throw new Error("Canonical showcase Project is missing");
+    if (!showcase) throw new Error("Seeded showcase Project is missing");
     const id = `shared-db-${randomUUID()}`;
     const caseEmail = `${id}@example.org`;
     const env = {
@@ -102,7 +102,7 @@ describe("shared Calculator and Cost Tracker database", () => {
       expect(calculatorRead.projects).toEqual([{ id: showcase.id }]);
       expect(calculatorRead.journeys).toEqual([{ destination: "Berlin" }]);
       expect(calculatorRead.cases).toEqual(expectedCases);
-      // Cost Tracker observes the identical canonical rows plus the case write.
+      // Cost Tracker observes the identical seed rows plus the case write.
       expect(JSON.parse(runInApp("cost-tracker", read, env))).toEqual(
         calculatorRead,
       );
