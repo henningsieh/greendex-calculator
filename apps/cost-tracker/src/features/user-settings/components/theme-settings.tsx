@@ -46,7 +46,7 @@ export function ThemeSettings() {
         <h2 className="mb-3 text-xs font-semibold uppercase" id={titleId}>
           {t("title")}
         </h2>
-        <p className="text-left text-sm/normal leading-normal font-normal tracking-normal text-muted-foreground normal-case last:mt-0 nth-last-2:-mt-1 [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary">
+        <p className="text-left text-sm/normal leading-normal font-normal tracking-normal text-muted-foreground normal-case last:mt-0 nth-last-2:-mt-1 [&>a]:link-prose">
           {t("description")}
         </p>
         <Tabs

@@ -299,6 +299,32 @@
   line-height: 1;
 }
 
+/* Prose-link treatment. Opt-in via this utility or the Button link variant
+   (which composes it) — never bare-element selectors, so navigation controls
+   need no exemption list. */
+@utility link-prose {
+  color: var(--link);
+  text-underline-offset: 3px;
+
+  &:focus-visible {
+    color: var(--link-hover);
+    text-decoration: underline;
+    text-decoration-color: var(--brand);
+    text-decoration-thickness: 2px;
+    outline: 3px solid var(--ring);
+    outline-offset: 4px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--link-hover);
+      text-decoration: underline;
+      text-decoration-color: var(--brand);
+      text-decoration-thickness: 2px;
+    }
+  }
+}
+
 /* Ember brand extensions — documented customs, not shadcn slots. */
 .ember-aura {
   background: radial-gradient(ellipse, rgb(255 184 0 / 0.16), transparent 70%);
@@ -425,37 +451,6 @@
   }
   body {
     @apply bg-background text-foreground;
-  }
-  /* Button links, menu items, primary navigation, and the site brand are controls,
-     not prose links; retain their existing component treatments. */
-  a:where(
-    :not(
-      .group\/button,
-      [data-slot="dropdown-menu-item"],
-      nav[aria-label="Primary navigation"] a,
-      .font-heading
-    )
-  ) {
-    color: var(--link);
-    text-underline-offset: 3px;
-
-    &:focus-visible {
-      color: var(--link-hover);
-      text-decoration: underline;
-      text-decoration-color: var(--brand);
-      text-decoration-thickness: 2px;
-      outline: 3px solid var(--ring);
-      outline-offset: 4px;
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-      &:hover {
-        color: var(--link-hover);
-        text-decoration: underline;
-        text-decoration-color: var(--brand);
-        text-decoration-thickness: 2px;
-      }
-    }
   }
   :focus-visible {
     @apply outline-3 outline-offset-4 outline-ring;

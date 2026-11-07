@@ -172,7 +172,7 @@ export function ResolvedProjectListResults({
         header: t("project"),
         cell: ({ row }) => (
           <Link
-            className="font-medium text-foreground underline-offset-4 hover:underline"
+            className="font-medium link-prose"
             href={`/projects/${encodeURIComponent(row.original.id)}?${new URLSearchParams({ returnTo })}`}
             data-testid={`project-link-${row.original.id}`}
           >
@@ -219,7 +219,7 @@ export function ResolvedProjectListResults({
               header: t("participants"),
               cell: ({ row }: { row: { original: ProjectListRow } }) => (
                 <Link
-                  className="underline-offset-4 hover:underline"
+                  className="link-prose"
                   href={`/projects/${encodeURIComponent(row.original.id)}/participants`}
                   data-testid={`project-participants-${row.original.id}`}
                 >

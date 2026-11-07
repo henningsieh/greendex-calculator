@@ -56,7 +56,7 @@ export default function ProtectedPageHeader({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <p className="mt-4 text-sm font-medium text-primary">{eyebrow}</p>
+        <p className="mt-4 type-ember-eyebrow">{eyebrow}</p>
         <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight">
           {title}
         </h1>

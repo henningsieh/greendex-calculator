@@ -323,6 +323,7 @@ function InvitationNextSteps({
       {(decision?.nextStep === "create-organization" ||
         decision?.nextStep === "continue") && (
         <Link
+          className="link-prose"
           href="/projects"
           onClick={() => router.refresh()}
           data-testid="invitation-next-step"
@@ -354,7 +355,7 @@ function InvitationNextSteps({
         decision.availableActions.map((action) =>
           action.kind === "authenticate" ? (
             <Link
-              className="mt-4 block underline underline-offset-4"
+              className="mt-4 block link-prose"
               data-testid="invitation-recovery-sign-in"
               key={action.kind}
               href={`/login?next=${encodeURIComponent(action.returnTo)}`}
