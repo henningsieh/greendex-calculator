@@ -402,7 +402,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       `/projects/${projectId}`,
       `/partnerships/${ids.partnership}/participants`,
       `/partnerships/${ids.partnership}/claim`,
-      `/claims/review/${ids.partnership}`,
+      `/partnerships/${ids.partnership}/claim/review`,
     ]) {
       await x.goto(route);
       // Text-free: access-denied state hook instead of visible copy.
@@ -448,7 +448,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       baseURL,
     }) => {
       const page = await pageFor(browser, actor, baseURL!);
-      await page.goto(`/claims/review/${ids.partnership}`);
+      await page.goto(`/partnerships/${ids.partnership}/claim/review`);
       await denied(page);
       if (actor === "P") {
         await expect(page.getByTestId("organization-switcher")).toBeVisible();

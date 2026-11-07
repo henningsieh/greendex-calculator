@@ -23,9 +23,13 @@ vi.mock("@/features/authentication/components/invitation-acceptance", () => ({
   ),
 }));
 
-import OrganizationInvitationPage from "@/app/(setup)/accept-invitation/[[...invitationId]]/page";
+import UnprefixedOrganizationInvitationPage from "@/app/(setup)/accept-invitation/[[...invitationId]]/page";
+import LocalizedOrganizationInvitationPage from "@/app/[locale]/(setup)/accept-invitation/[[...invitationId]]/page";
 
-describe("Organization Invitation route", () => {
+describe.each([
+  ["unprefixed", UnprefixedOrganizationInvitationPage],
+  ["localized", LocalizedOrganizationInvitationPage],
+])("Organization Invitation route (%s)", (_label, OrganizationInvitationPage) => {
   beforeEach(() => vi.clearAllMocks());
   it("enters registration with the server-approved destination", async () => {
     mocks.next.mockResolvedValue({

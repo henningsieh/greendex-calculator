@@ -31,7 +31,7 @@ All ten protected routes that prefetch into `HydrateClient`:
 | `/projects/[id]/participants`                       | Hosting Participant report                          | route and inner section | `useSuspenseQuery`                          |
 | `/partnerships/[id]/claim`                          | eight parallel queries                              | route and inner section | `useSuspenseQueries`                        |
 | `/claims/review`                                    | partnership list, then parallel draft reads         | route and inner section | `useSuspenseQuery` and `useSuspenseQueries` |
-| `/claims/review/[id]`                               | four parallel queries                               | route and inner section | `useSuspenseQueries`                        |
+| `/partnerships/[partnershipId]/claim/review`        | four parallel queries                               | route and inner section | `useSuspenseQueries`                        |
 | `/organization`                                     | three parallel queries                              | route and inner section | `useSuspenseQueries`                        |
 
 Sources: `src/app/(protected)/**/page.tsx`, `src/app/(protected)/**/loading.tsx`,
@@ -167,7 +167,7 @@ layout fallback above the shared segment.
 | `/partnerships/[id]/participants/[participationId]` | Improved                      | Neutral entry shell; identities/Participant detail inside boundary     |
 | `/partnerships/[id]/claim`                          | Improved                      | Neutral entry shell; identity/eight Claim queries inside boundary      |
 | `/claims/review`                                    | Improved                      | Neutral entry shell; list then drafts inside boundary                  |
-| `/claims/review/[id]`                               | Improved                      | Neutral entry shell; identity/four review queries inside boundary      |
+| `/partnerships/[partnershipId]/claim/review`        | Improved                      | Neutral entry shell; identity/four review queries inside boundary      |
 | `/organization`                                     | Improved                      | Neutral entry shell; three queries inside boundary                     |
 | `/user-settings`                                    | Improved entry; page deferred | Existing request-bound session read; no page restructuring             |
 

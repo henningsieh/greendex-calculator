@@ -1,7 +1,7 @@
 // @vitest-environment node
 
-import { globSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, globSync, readFileSync } from "node:fs";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -11,49 +11,96 @@ const sourceRoutes = globSync("**/{page,layout,loading}.tsx", {
   cwd: app,
 }).filter((file) => !file.startsWith("[locale]/") && file !== "layout.tsx");
 
-// These three chains reach permitted lib/auth persistence. The guard treats
-// re-export syntax as client exposure, so use identical imported bindings.
-const identityFacades: Record<string, string> = {
-  "(protected)/layout.tsx": `import ProtectedLayout from "@/app/(protected)/layout";
-// Identity export: re-export syntax falsely exposes transitive auth to the persistence guard.
-export default ProtectedLayout;`,
-  "(protected)/organization/page.tsx": `import OrganizationPage, { metadata as routeMetadata } from "@/app/(protected)/organization/page";
-// Identity exports: re-export syntax falsely exposes transitive auth to the persistence guard.
-export default OrganizationPage;
-export const metadata = routeMetadata;`,
-  "(protected)/partner-organizations/page.tsx": `import PartnerOrganizationsPage, { metadata as routeMetadata } from "@/app/(protected)/partner-organizations/page";
-// Identity exports: re-export syntax falsely exposes transitive auth to the persistence guard.
-export default PartnerOrganizationsPage;
-export const metadata = routeMetadata;`,
-};
+function publicExports(path: string) {
+  const source = readFileSync(path, "utf8");
+  const names = new Set<string>();
+  if (/export default\b/.test(source)) names.add("default");
+  for (const match of source.matchAll(/export\s*\{([^}]+)\}/g)) {
+    for (const binding of match[1].split(",")) {
+      const name = binding
+        .trim()
+        .split(/\s+as\s+/)
+        .at(-1);
+      if (name) names.add(name);
+    }
+  }
+  for (const match of source.matchAll(
+    /export\s+(?:const|(?:async\s+)?function)\s+(\w+)/g,
+  ))
+    names.add(match[1]);
+  return names;
+}
 
-describe("Cost Tracker localized route facades", () => {
-  it.each(sourceRoutes)(
-    "preserves the implementation and exports of %s",
-    (route) => {
-      const source = readFileSync(resolve(app, route), "utf8");
-      const facade = readFileSync(resolve(app, "[locale]", route), "utf8");
-      const exports = ["default"];
-      if (source.includes("export const metadata")) exports.push("metadata");
-      if (source.includes("export async function generateMetadata"))
-        exports.push("generateMetadata");
-      // The unprefixed landing page alone opts out of instant validation.
-      if (route === "page.tsx") {
-        expect(source).toContain("export const instant = false");
+describe("Cost Tracker localized route contracts", () => {
+  // Rendering, streaming and parameter scoping are exercised for both URL
+  // forms in project-partnership-streaming.test.tsx and loading-skeletons.unit.test.tsx.
+  it.each(sourceRoutes)("preserves public route exports for %s", (route) => {
+    const source = publicExports(resolve(app, route));
+    const localized = publicExports(resolve(app, "[locale]", route));
+    for (const name of ["default", "metadata", "generateMetadata", "instant"]) {
+      // Only the unprefixed landing page opts out of instant validation.
+      if (route === "page.tsx" && name === "instant") continue;
+      expect(localized.has(name), `${route}: ${name}`).toBe(source.has(name));
+    }
+    expect(localized.has("default")).toBe(true);
+    if (source.has("instant")) {
+      expect(readFileSync(resolve(app, route), "utf8")).toMatch(
+        /export const instant = false;/,
+      );
+      if (route !== "page.tsx")
+        expect(readFileSync(resolve(app, "[locale]", route), "utf8")).toMatch(
+          /export const instant = false;/,
+        );
+      else expect(localized.has("instant")).toBe(false);
+    }
+  });
+
+  it("keeps all production modules independent of other app route entries", () => {
+    const source = resolve(app, "..");
+    const files = globSync("**/*.{ts,tsx}", { cwd: source }).filter(
+      (file) => !/\.(?:test|spec)\./.test(file) && !file.startsWith("__tests__/"),
+    );
+    const routeFiles = new Set([
+      "page",
+      "layout",
+      "loading",
+      "route",
+      "template",
+      "error",
+      "global-error",
+      "not-found",
+      "default",
+    ]);
+    for (const file of files) {
+      const path = resolve(source, file);
+      const imports = readFileSync(path, "utf8").matchAll(
+        /(?:from\s*|import\s*\(\s*|import\s*)["']([^"']+)["']/g,
+      );
+      for (const [, specifier] of imports) {
+        const target = specifier.startsWith("@/")
+          ? resolve(source, specifier.slice(2))
+          : specifier.startsWith("@greendex/cost-tracker/")
+            ? resolve(source, specifier.slice("@greendex/cost-tracker/".length))
+            : specifier.startsWith(".")
+              ? resolve(dirname(path), specifier)
+              : null;
+        if (!target?.startsWith(app)) continue;
+        expect(
+          routeFiles.has(basename(target).replace(/\.(?:tsx?|jsx?)$/, "")),
+          `${file} imports route entry ${specifier}`,
+        ).toBe(false);
       }
-      const reexport = `export { ${exports.join(", ")} } from "@/app/${route.slice(0, -4)}";`;
-      const expected =
-        identityFacades[route] ??
-        (route !== "page.tsx" && source.includes("export const instant = false")
-          ? `${reexport}\n\nexport const instant = false;\n`
-          : `${reexport}\n`);
-      const normalize = (value: string) =>
-        value
-          .replace(/^\s*\/\/[^\n]*$/gm, "")
-          .replace(/,\s*}/g, " }")
-          .replace(/\s+/g, " ")
-          .trim();
-      expect(normalize(facade)).toBe(normalize(expected));
-    },
-  );
+    }
+  });
+
+  it("removes the former Claim review detail URLs without replacement routes", () => {
+    for (const prefix of ["(protected)", "[locale]/(protected)"]) {
+      expect(
+        existsSync(resolve(app, prefix, "claims/review/[id]/page.tsx")),
+      ).toBe(false);
+      expect(
+        existsSync(resolve(app, prefix, "claims/review/[id]/route.ts")),
+      ).toBe(false);
+    }
+  });
 });

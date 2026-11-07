@@ -29,7 +29,8 @@
     "page": {
       "eyebrow": "Partner Claim",
       "back": "Back to Projects",
-      "title": "Claim workspace"
+      "title": "Claim workspace",
+      "projects": "Projects"
     },
     "review": {
       "eyebrow": "Claim review",
@@ -71,7 +72,11 @@
       "confirmReopen": "Ponovno odpiranje vrne zahtevek v pregled; urejanje za partnerja ostane zaklenjeno. Po potrebi ločeno zahtevajte popravek.",
       "confirmAction": "Potrdite {action} za ta zahtevek.",
       "unavailable": "Ni na voljo",
-      "equalShare": "Enak delež (izračunan ob oddaji)"
+      "equalShare": "Enak delež (izračunan ob oddaji)",
+      "title": "Review claim",
+      "queueTitle": "Claim reviews",
+      "contextLoading": "Loading context",
+      "contextUnavailable": "Claim context unavailable"
     },
     "submission": {
       "title": "Submission",

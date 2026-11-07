@@ -1,7 +1,8 @@
-export {
-  default,
+import OrganizationInvitationPage, {
   generateMetadata,
-} from "@/app/(setup)/accept-invitation/[[...invitationId]]/page";
+} from "@/features/authentication/components/organization-invitation-page";
 
-// Next.js requires route configuration to be declared locally.
+export default OrganizationInvitationPage;
+export { generateMetadata };
+
 export const instant = false;

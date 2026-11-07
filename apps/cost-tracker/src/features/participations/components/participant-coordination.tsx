@@ -270,9 +270,6 @@ export function ParticipantCoordination({
       data-entry-denial={entryAccess.permitted ? undefined : entryAccess.reason}
     >
       {dialog}
-      <p className="text-sm text-muted-foreground">
-        {t("page.project")} {data.projectName}
-      </p>
       {entryAccess.permitted && (
         <Card>
           <CardHeader>

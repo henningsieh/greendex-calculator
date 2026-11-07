@@ -146,6 +146,9 @@ vi.mock("@/lib/orpc/orpc", () => ({
     },
   },
 }));
+vi.mock("@/features/participations/components/participant-page-header", () => ({
+  ParticipantPageHeader: () => null,
+}));
 vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
 }));
@@ -170,7 +173,7 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
 }));
 
 import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
-import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[id]/participants/page";
+import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[partnershipId]/participants/page";
 import ProjectPage from "@/app/(protected)/projects/[id]/page";
 import HostedParticipantsPage from "@/app/(protected)/projects/[id]/participants/page";
 import ProjectsPage from "@/app/(protected)/projects/page";
@@ -219,7 +222,7 @@ describe("Cost Tracker Project data routes", () => {
   it("shows a friendly note instead of a denial when nothing is viewable", async () => {
     mocks.hasCostTrackerPermissions.mockResolvedValue(false);
     render(await PartnerOrganizationsPage());
-    expect(screen.getByTestId("hosting-staff-note")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(
       screen.queryByTestId("project-partnership-section"),
     ).not.toBeInTheDocument();
@@ -241,7 +244,7 @@ describe("Cost Tracker Project data routes", () => {
     render(await PartnerOrganizationsPage());
     render(
       await PartnershipParticipantsPage({
-        params: Promise.resolve({ id: "partnership-1" }),
+        params: Promise.resolve({ partnershipId: "partnership-1" }),
       }),
     );
     render(
@@ -364,7 +367,7 @@ describe("Cost Tracker Project data routes", () => {
   it("prefetches only the requested Partnership's server-authorized list", async () => {
     render(
       await RealPartnershipParticipantsSection({
-        params: Promise.resolve({ id: "own-partnership" }),
+        params: Promise.resolve({ partnershipId: "own-partnership" }),
       }),
     );
     expect(mocks.query).toHaveBeenCalledWith({

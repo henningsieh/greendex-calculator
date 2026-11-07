@@ -111,7 +111,8 @@
       "open": "open",
       "closed": "closed",
       "completing": "Completing…",
-      "complete": "Complete Project"
+      "complete": "Complete Project",
+      "projects": "Projects"
     }
   }
 }

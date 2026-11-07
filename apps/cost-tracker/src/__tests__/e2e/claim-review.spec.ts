@@ -556,6 +556,47 @@ test.describe.serial("Claim review journey 25–26", () => {
     }
   });
 
+  test("canonical review routes preserve Partnership input with and without a locale", async ({
+    browser,
+    baseURL,
+  }) => {
+    const host = await pageFor(browser, "H", baseURL!);
+    const badRequests: string[] = [];
+    host.on("response", (response) => {
+      const pathname = new URL(response.url()).pathname;
+      if (pathname.startsWith("/api/rpc/claims/") && response.status() === 400)
+        badRequests.push(pathname);
+    });
+    for (const prefix of ["", "/en", "/de"]) {
+      await host.goto(
+        `${prefix}/partnerships/${ids.partnerships[0]}/claim/review`,
+      );
+      await expect(
+        host
+          .getByTestId("claim-review")
+          .locator('[data-review-status="submitted"]'),
+      ).toBeVisible();
+      // Exercise the exact browser RPC contract as well as the hydrated SSR page.
+      for (const procedure of [
+        "getDraft",
+        "getHistory",
+        "getReviewDetails",
+        "reviewerAccess",
+      ]) {
+        const response = await host.request.get(`/api/rpc/claims/${procedure}`, {
+          params: {
+            data: JSON.stringify({
+              json: { partnershipId: ids.partnerships[0] },
+            }),
+          },
+          headers: { "sec-fetch-site": "same-origin" },
+        });
+        expect(response.status(), procedure).toBe(200);
+      }
+    }
+    expect(badRequests).toEqual([]);
+  });
+
   test("25 Hosting requests a required correction; Partner corrects its Participant Journey and resubmits", async ({
     browser,
     baseURL,
@@ -563,18 +604,55 @@ test.describe.serial("Claim review journey 25–26", () => {
     const host = await pageFor(browser, "H", baseURL!);
     await host.goto("/claims/review");
     await expect(host.locator('[data-testid="review-queue"]')).toBeVisible();
-    const first = host.locator(`a[href="/claims/review/${ids.partnerships[0]}"]`);
+    const first = host.locator(
+      `a[href="/partnerships/${ids.partnerships[0]}/claim/review"]`,
+    );
     await expect(first).toBeVisible();
     await expect(
-      host.locator(`a[href="/claims/review/${ids.partnerships[1]}"]`),
+      host.locator(`a[href="/partnerships/${ids.partnerships[1]}/claim/review"]`),
     ).toBeVisible();
     await first.click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
-    await expectPrivateURL(host, `/claims/review/${ids.partnerships[0]}`);
+    await expectPrivateURL(
+      host,
+      `/partnerships/${ids.partnerships[0]}/claim/review`,
+    );
     reviewURL = host.url();
     expect(new URL(reviewURL).pathname).toBe(
-      `/claims/review/${ids.partnerships[0]}`,
+      `/partnerships/${ids.partnerships[0]}/claim/review`,
     );
+    const header = host.locator("main header");
+    await expect(header.getByRole("heading", { level: 1 })).toBeVisible();
+    const breadcrumb = header.getByRole("navigation");
+    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(breadcrumb.locator('[aria-current="page"]')).not.toHaveAttribute(
+      "href",
+    );
+    await expect(breadcrumb.locator("a")).toHaveAttribute(
+      "href",
+      "/claims/review",
+    );
+    await expect(breadcrumb.getByRole("listitem")).toHaveCount(3);
+    await host.setViewportSize({ width: 375, height: 812 });
+    const fits = await breadcrumb.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return (
+        bounds.left >= 0 &&
+        bounds.right <= window.innerWidth &&
+        element.scrollWidth <= element.clientWidth
+      );
+    });
+    expect(fits).toBe(true);
+    await breadcrumb.locator("a").focus();
+    await host.keyboard.press("Enter");
+    await expectPrivateURL(host, "/claims/review");
+    await expect(first).toBeVisible();
+    await first.click();
+    await expectPrivateURL(
+      host,
+      `/partnerships/${ids.partnerships[0]}/claim/review`,
+    );
+    await host.setViewportSize({ width: 1280, height: 720 });
     const review = host.getByTestId("claim-review");
     await expect(
       review.locator('[data-review-status="submitted"]'),
@@ -650,7 +728,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect((await claimState(0))!.status).toBe("correction_requested");
     await host.goto("/claims/review");
     await expect(
-      host.locator(`a[href="/claims/review/${ids.partnerships[1]}"]`),
+      host.locator(`a[href="/partnerships/${ids.partnerships[1]}/claim/review"]`),
     ).toBeVisible();
     await expect(first).toHaveCount(0);
 
@@ -796,11 +874,16 @@ test.describe.serial("Claim review journey 25–26", () => {
 
     await host.goto("/claims/review");
     await expect(
-      host.locator(`a[href="/claims/review/${ids.partnerships[0]}"]`),
+      host.locator(`a[href="/partnerships/${ids.partnerships[0]}/claim/review"]`),
     ).toHaveCount(0);
-    await host.locator(`a[href="/claims/review/${ids.partnerships[1]}"]`).click();
+    await host
+      .locator(`a[href="/partnerships/${ids.partnerships[1]}/claim/review"]`)
+      .click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
-    await expectPrivateURL(host, `/claims/review/${ids.partnerships[1]}`);
+    await expectPrivateURL(
+      host,
+      `/partnerships/${ids.partnerships[1]}/claim/review`,
+    );
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();

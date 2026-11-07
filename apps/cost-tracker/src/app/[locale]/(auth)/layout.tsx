@@ -1,1 +1,3 @@
-export { default } from "@/app/(auth)/layout";
+import AuthLayout from "@/features/authentication/components/auth-layout";
+
+export default AuthLayout;

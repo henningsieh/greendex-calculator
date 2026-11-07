@@ -1,0 +1,33 @@
+import { ParticipantJoin } from "@/features/participant-onboarding/components/participant-onboarding";
+import {
+  AGREEMENT_COPY,
+  CURRENT_PARTICIPANT_AGREEMENT_VERSION,
+} from "@/features/participant-onboarding/participant-agreement";
+import { requireSession } from "@/lib/session";
+
+// Link id plus secret source gate precedes the onboarding state machine.
+export default async function ParticipantLinkPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ secret?: string | string[] }>;
+}) {
+  await requireSession();
+  const [{ id }, { secret }] = await Promise.all([params, searchParams]);
+  return (
+    <main className="mx-auto w-full max-w-2xl px-5 py-10">
+      <ParticipantJoin
+        agreement={{
+          ...CURRENT_PARTICIPANT_AGREEMENT_VERSION,
+          content: AGREEMENT_COPY,
+        }}
+        source={
+          id && typeof secret === "string" && secret
+            ? { kind: "link", id, secret }
+            : null
+        }
+      />
+    </main>
+  );
+}

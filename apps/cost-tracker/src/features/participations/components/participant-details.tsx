@@ -10,14 +10,13 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -164,17 +163,6 @@ export function ParticipantDetails({
       aria-label={t("label")}
       data-testid="participant-details"
     >
-      <div className="space-y-2">
-        <Link
-          className={buttonVariants({ variant: "ghost" })}
-          href={`/partnerships/${encodeURIComponent(partnershipId)}/participants`}
-        >
-          {t("back")}
-        </Link>
-        <p className="text-sm text-muted-foreground">
-          {t("project")} {data.projectName}
-        </p>
-      </div>
       <Card>
         <CardHeader>
           <CardTitle>{participation.displayName}</CardTitle>

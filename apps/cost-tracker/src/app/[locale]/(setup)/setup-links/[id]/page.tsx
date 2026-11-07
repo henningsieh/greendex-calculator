@@ -1,4 +1,9 @@
-export { default, metadata } from "@/app/(setup)/setup-links/[id]/page";
+import type { Metadata } from "next";
 
-// Next.js requires route configuration to be declared locally.
+import SetupLinkPage from "@/features/partnerships/components/setup-link-page";
+
+export default SetupLinkPage;
+
+export const metadata: Metadata = { title: "Partner Organization setup" };
+
 export const instant = false;

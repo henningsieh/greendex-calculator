@@ -105,15 +105,13 @@ export function ProjectWorkspace({
               : t("partnerProject")
           }
           title={project.name}
-          bottomLink={
-            <Link
-              className={buttonVariants({ variant: "ghost" })}
-              href={getProjectListReturnDestination(returnTo)}
-              data-testid="back-to-projects"
-            >
-              {t("back")}
-            </Link>
-          }
+          breadcrumbs={[
+            {
+              label: t("projects"),
+              href: getProjectListReturnDestination(returnTo),
+              testId: "back-to-projects",
+            },
+          ]}
           rightButton={
             canComplete ? (
               <Button
