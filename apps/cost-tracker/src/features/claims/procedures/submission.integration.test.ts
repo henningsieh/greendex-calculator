@@ -30,11 +30,11 @@ const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
+import { submissionSeedId } from "#repo/apps/calculator/scripts/seed-claim-review-ids";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerSubmission.
-const suffix = "canonical";
-const id = (part: string) => `submit-${part}-${suffix}`;
+const id = submissionSeedId;
 const host = id("host"),
   partner = id("partner"),
   other = id("other");
@@ -1310,6 +1310,26 @@ describe("Host Claim review", () => {
       (await db.select().from(claims).where(eq(claims.id, claimId)))[0].status,
     ).toBe("paid");
   }, 15_000);
+
+  it("returns Project and Partner context only to authorized Hosting reviewers", async () => {
+    useScenario("submitted");
+    await asHost(ORGANIZATION_ROLES.ProjectCoordinator);
+    expect(
+      await client.claims.getReviewDetails({ partnershipId: own }),
+    ).toMatchObject({
+      projectName: "Seed Submission Project submitted",
+      organizationName: "Seed Submission Partner Organization",
+    });
+    await asHost(ORGANIZATION_ROLES.ProjectCoordinator, participantUser);
+    await expect(
+      client.claims.getReviewDetails({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    activeOrg = partner;
+    activeActor = actor;
+    await expect(
+      client.claims.getReviewDetails({ partnershipId: own }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
 
   it("enforces the Hosting role matrix on every review action and every Partnership", async () => {
     await submittedClaim();

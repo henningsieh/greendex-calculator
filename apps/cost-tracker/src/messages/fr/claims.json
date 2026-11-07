@@ -29,7 +29,8 @@
     "page": {
       "eyebrow": "Partner Claim",
       "back": "Back to Projects",
-      "title": "Claim workspace"
+      "title": "Claim workspace",
+      "projects": "Projects"
     },
     "review": {
       "eyebrow": "Claim review",
@@ -71,7 +72,11 @@
       "confirmReopen": "La réouverture renvoie la demande en vérification et maintient le blocage des modifications du partenaire. Demandez une correction séparément si nécessaire.",
       "confirmAction": "Confirmez {action} pour cette demande.",
       "unavailable": "Indisponible",
-      "equalShare": "Part égale (calculée à la soumission)"
+      "equalShare": "Part égale (calculée à la soumission)",
+      "title": "Review claim",
+      "queueTitle": "Claim reviews",
+      "contextLoading": "Loading context",
+      "contextUnavailable": "Claim context unavailable"
     },
     "submission": {
       "title": "Submission",

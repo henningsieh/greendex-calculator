@@ -114,7 +114,10 @@
       "correctCountry": "Land korrigieren",
       "correctCountryDescription": "Die teilnehmende Person setzt das beim Beitritt. Nur die Partnerorganisation darf es korrigieren.",
       "noEmail": "Keine E-Mail-Adresse erfasst",
-      "cannotCorrect": "Du darfst diese Projektteilnahme nicht korrigieren."
+      "cannotCorrect": "Du darfst diese Projektteilnahme nicht korrigieren.",
+      "eyebrow": "Teilnahmen",
+      "participants": "Project Participations",
+      "projects": "Projekte"
     },
     "app": {
       "eyebrow": "Teilnahmen",
@@ -124,7 +127,8 @@
       "projectParticipations": "Project Participations",
       "coordinateDescription": "Koordiniere Teilnehmende für diese Projektpartnerschaft.",
       "participantDetails": "Teilnehmendendetails",
-      "participantDetailsDescription": "Lies diese Project Participation und korrigiere die Daten, die du korrigieren darfst."
+      "participantDetailsDescription": "Lies diese Project Participation und korrigiere die Daten, die du korrigieren darfst.",
+      "projects": "Projekte"
     },
     "participantOnboarding": {
       "agreementUnavailable": {

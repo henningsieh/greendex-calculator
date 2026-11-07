@@ -1,7 +1,9 @@
-export {
-  default,
-  metadata,
-} from "@/app/(setup)/participant-invitations/[invitationId]/page";
+import type { Metadata } from "next";
 
-// Next.js requires route configuration to be declared locally.
+import ParticipantInvitationPage from "@/features/participant-onboarding/components/participant-invitation-page";
+
+export default ParticipantInvitationPage;
+
+export const metadata: Metadata = { title: "Accept Project invitation" };
+
 export const instant = false;

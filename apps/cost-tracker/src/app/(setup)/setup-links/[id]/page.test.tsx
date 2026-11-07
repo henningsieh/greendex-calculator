@@ -11,9 +11,13 @@ vi.mock("@/features/partnerships/components/setup-link", () => ({
   ),
 }));
 
-import SetupLinkPage from "@/app/(setup)/setup-links/[id]/page";
+import UnprefixedSetupLinkPage from "@/app/(setup)/setup-links/[id]/page";
+import LocalizedSetupLinkPage from "@/app/[locale]/(setup)/setup-links/[id]/page";
 
-describe("Setup Link route", () => {
+describe.each([
+  ["unprefixed", UnprefixedSetupLinkPage],
+  ["localized", LocalizedSetupLinkPage],
+])("Setup Link route (%s)", (_label, SetupLinkPage) => {
   it("requires sign-in but not Organization membership for a new recipient", async () => {
     render(
       await SetupLinkPage({

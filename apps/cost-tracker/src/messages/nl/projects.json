@@ -111,7 +111,8 @@
       "open": "open",
       "closed": "gesloten",
       "completing": "Afronden…",
-      "complete": "Project afronden"
+      "complete": "Project afronden",
+      "projects": "Projects"
     }
   }
 }

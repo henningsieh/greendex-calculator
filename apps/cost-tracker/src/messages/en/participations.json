@@ -114,7 +114,10 @@
       "correctCountry": "Correct country",
       "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it.",
       "noEmail": "No email recorded",
-      "cannotCorrect": "You cannot correct this Project Participation."
+      "cannotCorrect": "You cannot correct this Project Participation.",
+      "eyebrow": "Participations",
+      "participants": "Project Participations",
+      "projects": "Projects"
     },
     "app": {
       "eyebrow": "Participations",
@@ -124,7 +127,8 @@
       "projectParticipations": "Project Participations",
       "coordinateDescription": "Coordinate Participants for this Project Partnership.",
       "participantDetails": "Participant details",
-      "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct."
+      "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct.",
+      "projects": "Projects"
     },
     "participantOnboarding": {
       "agreementUnavailable": {

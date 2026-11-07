@@ -2,14 +2,19 @@ import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
-import ClaimReviewLoading from "@/app/(protected)/claims/review/[id]/loading";
 import ClaimReviewQueueLoading from "@/app/(protected)/claims/review/loading";
 import PartnerOrganizationsLoading from "@/app/(protected)/partner-organizations/loading";
-import ClaimLoading from "@/app/(protected)/partnerships/[id]/claim/loading";
-import ParticipantDetailsLoading from "@/app/(protected)/partnerships/[id]/participants/[participationId]/loading";
-import PartnershipParticipantsLoading from "@/app/(protected)/partnerships/[id]/participants/loading-skeletons";
+import ClaimLoading from "@/app/(protected)/partnerships/[partnershipId]/claim/loading";
+import ClaimReviewLoading from "@/app/(protected)/partnerships/[partnershipId]/claim/review/loading";
+import ParticipantDetailsLoading from "@/app/(protected)/partnerships/[partnershipId]/participants/[participationId]/loading";
+import PartnershipParticipantsLoading from "@/app/(protected)/partnerships/[partnershipId]/participants/loading-skeletons";
 import ProjectLoading from "@/app/(protected)/projects/[id]/loading";
 import HostedParticipantsLoading from "@/app/(protected)/projects/[id]/participants/loading";
+import LocalizedClaimLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/loading";
+import LocalizedClaimReviewLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/review/loading";
+import LocalizedParticipantDetailsLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/[participationId]/loading";
+import LocalizedPartnershipParticipantsLoading from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/loading";
+import LocalizedHostedParticipantsLoading from "@/app/[locale]/(protected)/projects/[id]/participants/loading";
 import {
   ClaimWorkspaceSkeleton,
   ClaimReviewSkeleton,
@@ -102,3 +107,41 @@ it("includes the Claim document and decision sections", () => {
   expect(container.querySelector('[data-variant="document"]')).toBeTruthy();
   expect(container.querySelector('[data-variant="action"]')).toBeTruthy();
 });
+
+it.each([
+  ["Loading Claim workspace", ClaimLoading, LocalizedClaimLoading],
+  ["Loading Claim review", ClaimReviewLoading, LocalizedClaimReviewLoading],
+  [
+    "Loading Participant details",
+    ParticipantDetailsLoading,
+    LocalizedParticipantDetailsLoading,
+  ],
+  [
+    "Loading Project Participations",
+    PartnershipParticipantsLoading,
+    LocalizedPartnershipParticipantsLoading,
+  ],
+  [
+    "Loading the Participants report",
+    HostedParticipantsLoading,
+    LocalizedHostedParticipantsLoading,
+  ],
+] as const)(
+  "%s has matching localized navigation content",
+  (label, Loading, LocalizedLoading) => {
+    const unprefixed = render(<Loading />);
+    const cards =
+      unprefixed.container.querySelectorAll('[data-slot="card"]').length;
+    unprefixed.unmount();
+    const localized = render(<LocalizedLoading />);
+    expect(screen.getByRole("status", { name: label })).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(
+      localized.container.querySelectorAll('[data-slot="card"]'),
+    ).toHaveLength(cards);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  },
+);

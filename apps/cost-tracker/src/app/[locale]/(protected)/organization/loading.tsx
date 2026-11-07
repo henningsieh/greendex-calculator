@@ -1,1 +1,1 @@
-export { default } from "@/app/(protected)/organization/loading";
+export { default } from "@/features/organizations/components/organization-loading";

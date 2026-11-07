@@ -98,6 +98,7 @@ import { and, eq, inArray, ne, notExists, or } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import { submissionSeedId } from "./seed-claim-review-ids";
 import {
   ensureCostTrackerScenarios,
   SUBMISSION_PAYOUT_ACCOUNT_IDS,
@@ -469,20 +470,20 @@ export const SEED_SCENARIOS = {
   costTrackerSubmission: {
     payoutAccountIds: SUBMISSION_PAYOUT_ACCOUNT_IDS,
     userIds: [
-      "submit-actor-canonical",
-      "submit-participant-user-canonical",
+      submissionSeedId("actor"),
+      submissionSeedId("participant-user"),
       ...["host", "partner"].flatMap((side) =>
         ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
           (side === "partner" && (role === "owner" || role === "admin")
             ? ["unassigned"]
             : ["assigned", "unassigned"]
-          ).map((scope) => `submit-matrix-${side}-${role}-${scope}-canonical`),
+          ).map((scope) => submissionSeedId(`matrix-${side}-${role}-${scope}`)),
         ),
       ),
     ],
     userEmails: [
-      "submit-actor-canonical@example.org",
-      "submit-participant-user-canonical@example.org",
+      `${submissionSeedId("actor")}@example.org`,
+      `${submissionSeedId("participant-user")}@example.org`,
       ...["host", "partner"].flatMap((side) =>
         ["owner", "admin", "coordinator", "participant"].flatMap((role) =>
           (side === "partner" && (role === "owner" || role === "admin")
@@ -490,13 +491,13 @@ export const SEED_SCENARIOS = {
             : ["assigned", "unassigned"]
           ).map(
             (scope) =>
-              `submit-matrix-${side}-${role}-${scope}-canonical@example.org`,
+              `${submissionSeedId(`matrix-${side}-${role}-${scope}`)}@example.org`,
           ),
         ),
       ),
     ],
-    organizationIds: ["host", "partner", "other"].map(
-      (name) => `submit-${name}-canonical`,
+    organizationIds: ["host", "partner", "other"].map((name) =>
+      submissionSeedId(name),
     ),
     projectNames: [
       "editable",
@@ -517,8 +518,8 @@ export const SEED_SCENARIOS = {
       "paid",
       "correction",
     ].flatMap((name) =>
-      ["robin", "sam", "outsider", "third"].map(
-        (part) => `submit-${name}-${part}-canonical`,
+      ["robin", "sam", "outsider", "third"].map((part) =>
+        submissionSeedId(`${name}-${part}`),
       ),
     ),
   },

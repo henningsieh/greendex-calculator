@@ -67,7 +67,7 @@ vi.mock("@/features/authentication/components/select-organization", () => ({
 }));
 
 import ProtectedLayout from "@/app/(protected)/layout";
-import { ProtectedShell } from "@/app/(protected)/protected-shell";
+import { ProtectedShell } from "@/components/protected-shell";
 
 const ownerMembership = {
   id: "org-a",

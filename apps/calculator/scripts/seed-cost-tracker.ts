@@ -25,6 +25,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 
 import type { SeedDatabase } from "./seed";
+import { submissionSeedId } from "./seed-claim-review-ids";
 import {
   SEED_ENTITY_SEARCH,
   SEED_READ_ONLY_INVITATION_EXPIRY,
@@ -53,8 +54,8 @@ import {
 } from "./seed-tables";
 
 export const SUBMISSION_PAYOUT_ACCOUNT_IDS = [
-  "submit-account-canonical",
-  "submit-alternate-canonical",
+  submissionSeedId("account"),
+  submissionSeedId("alternate"),
 ] as const;
 
 /** Cost Tracker's canonical scenarios. Domain dates use the fixed 2024 reference
@@ -2600,7 +2601,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
 }
 
 async function ensureSubmissionRoleUsers(db: SeedDatabase): Promise<string[]> {
-  const id = (part: string) => `submit-${part}-canonical`;
+  const id = submissionSeedId;
   const host = id("host"),
     partner = id("partner");
   const actor = id("actor"),
@@ -2649,8 +2650,7 @@ async function ensureSubmissionRoleUsers(db: SeedDatabase): Promise<string[]> {
 }
 
 async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
-  const suffix = "canonical";
-  const id = (part: string) => `submit-${part}-${suffix}`;
+  const id = submissionSeedId;
   const host = id("host"),
     partner = id("partner"),
     other = id("other");
@@ -2680,7 +2680,7 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
     const rows = [host, partner, other].map((org) => ({
       country: "DE" as const,
       id: org,
-      name: org,
+      name: `Seed Submission ${org === host ? "Hosting Organization" : org === partner ? "Partner Organization" : "Other Organization"}`,
       slug: org,
       createdAt: now,
     })) satisfies (typeof organization.$inferInsert)[];

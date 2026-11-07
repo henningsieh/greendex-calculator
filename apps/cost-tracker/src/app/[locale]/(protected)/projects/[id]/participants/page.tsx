@@ -1,4 +1,5 @@
-export {
-  default,
-  metadata,
-} from "@/app/(protected)/projects/[id]/participants/page";
+import type { Metadata } from "next";
+
+export { default } from "@/features/participations/components/hosted-participants-page";
+
+export const metadata: Metadata = { title: "Participants report" };

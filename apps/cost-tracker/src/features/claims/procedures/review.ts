@@ -1,6 +1,9 @@
 import "server-only";
 import { db } from "@greendex/database";
 import {
+  organization,
+  projectsTable as projects,
+  projectPartnerOrganizationsTable as partnerships,
   claimHistoryTable as history,
   claimsTable as claims,
   costAllocationsTable as allocations,
@@ -138,6 +141,8 @@ export const getReviewDetails = authorized
   .input(ClaimInputSchema)
   .output(
     z.object({
+      projectName: z.string(),
+      organizationName: z.string(),
       payoutAccount: z
         .object({
           accountHolder: z.string(),
@@ -193,11 +198,16 @@ export const getReviewDetails = authorized
       throw createSituationErrors(errors).hostingClaimReviewRequired();
     const [claim] = await db
       .select({
+        projectName: projects.name,
+        organizationName: organization.name,
         id: claims.id,
         status: claims.status,
         approvedAmountEur: claims.approvedAmountEur,
       })
       .from(claims)
+      .innerJoin(partnerships, eq(partnerships.id, claims.partnershipId))
+      .innerJoin(projects, eq(projects.id, partnerships.projectId))
+      .innerJoin(organization, eq(organization.id, partnerships.organizationId))
       .where(eq(claims.partnershipId, input.partnershipId))
       .limit(1);
     if (!claim) throw createSituationErrors(errors).claimNotFound();
@@ -295,6 +305,8 @@ export const getReviewDetails = authorized
         ])
       : [[], []];
     return {
+      projectName: claim.projectName,
+      organizationName: claim.organizationName,
       payoutAccount: payout[0] ?? null,
       approvedAmountEur: claim.approvedAmountEur,
       journeys: journeyRows,

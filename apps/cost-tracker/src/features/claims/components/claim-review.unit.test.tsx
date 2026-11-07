@@ -107,6 +107,8 @@ describe("Claim decisions", () => {
       <ClaimReviewDetails
         partnershipId="partner"
         details={{
+          projectName: "Workshop",
+          organizationName: "Partner Organization",
           approvedAmountEur: "726.00",
           payoutAccount: { accountHolder: "Partner", iban: "DE123", bic: null },
           entries: [

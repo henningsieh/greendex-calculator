@@ -26,8 +26,11 @@ export const messageBundleRoutes = [
   ["components/error-presentation/", "apiErrors"],
   ["components/", "shell"],
   ["app/(protected)/projects/[id]/participants/", "participations"],
-  ["app/(protected)/partnerships/[id]/participants/", "participations"],
-  ["app/(protected)/partnerships/[id]/claim/", "claims"],
+  [
+    "app/(protected)/partnerships/[partnershipId]/participants/",
+    "participations",
+  ],
+  ["app/(protected)/partnerships/[partnershipId]/claim/", "claims"],
   ["app/(protected)/claims/", "claims"],
   ["app/(protected)/organization/", "organizations"],
   ["app/(protected)/partner-organizations/", "partnerships"],

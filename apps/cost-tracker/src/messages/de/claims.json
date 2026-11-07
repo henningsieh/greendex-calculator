@@ -29,7 +29,8 @@
     "page": {
       "eyebrow": "Partner-Claim",
       "back": "Zurück zu Projekten",
-      "title": "Claim-Arbeitsbereich"
+      "title": "Claim-Arbeitsbereich",
+      "projects": "Projekte"
     },
     "review": {
       "eyebrow": "Claim-Prüfung",
@@ -71,7 +72,11 @@
       "confirmReopen": "Erneutes Öffnen gibt den Antrag zur Gastgeberprüfung zurück. Die Partnerbearbeitung bleibt gesperrt. Fordere bei Bedarf separat eine Korrektur an.",
       "confirmAction": "{action} für diesen Erstattungsantrag bestätigen.",
       "unavailable": "Nicht verfügbar",
-      "equalShare": "Gleicher Anteil (bei Einreichung berechnet)"
+      "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
+      "title": "Claim prüfen",
+      "queueTitle": "Claim-Prüfungen",
+      "contextLoading": "Kontext wird geladen",
+      "contextUnavailable": "Claim-Kontext nicht verfügbar"
     },
     "submission": {
       "title": "Einreichung",

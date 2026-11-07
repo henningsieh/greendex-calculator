@@ -4,7 +4,6 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PROJECT_PARTICIPATION_CREATE } from "@greendex/auth/project-authorization";
 import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -492,7 +491,6 @@ export function ClaimReview({ partnershipId }: { partnershipId: string }) {
       data-testid="claim-review"
       className="min-w-0 space-y-5"
     >
-      <Link href="/claims/review">{t("back")}</Link>
       <div className="min-w-0">
         <ClaimBand title={t("bandTitle")} status={claim?.status} />
         <div className="min-w-0 border border-t-0 bg-card">

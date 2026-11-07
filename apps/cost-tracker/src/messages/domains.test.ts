@@ -113,7 +113,7 @@ it.each([
   ["app/(setup)/participant-links/[id]/page.tsx", "participations"],
   ["app/(setup)/participant-other/page.tsx", "onboarding"],
   ["app/(setup)/accept-invitation/[[...invitationId]]/page.tsx", "onboarding"],
-  ["app/(protected)/partnerships/[id]/claim/page.tsx", "claims"],
+  ["app/(protected)/partnerships/[partnershipId]/claim/page.tsx", "claims"],
 ])("maps %s to %s", (file, domain) => {
   expect(getMessageDomain(file)).toBe(domain);
 });
