@@ -2,7 +2,6 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { ClipboardCheckIcon } from "lucide-react";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 
@@ -105,7 +104,7 @@ export function AppSidebar({
       href: "/claims/review",
       label: t("nav.claimReview"),
       testId: "sidebar-nav-claim-review",
-      icon: <ClipboardCheckIcon />,
+      icon: <EntityIcon entity="claim" />,
     },
     ...(showPartnerOrganizations
       ? [
