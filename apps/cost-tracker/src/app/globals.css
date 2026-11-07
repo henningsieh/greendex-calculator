@@ -464,3 +464,15 @@
     @apply font-sans;
   }
 }
+
+/* Vendor override (keep outside shadcn primitives so `shadcn add` updates can't
+   wipe it): the mobile sidebar sheet must track the dynamic viewport height.
+   Its fixed inset-y-0 anchoring alone follows the large viewport, so on a real
+   phone the sheet extends behind the URL toolbar by the toolbar height and the
+   footer hides there. Same-layer, later-in-file wins the tie against the sheet
+   primitive's data-[side]:h-full. */
+@layer utilities {
+  [data-slot="sidebar"][data-mobile="true"] {
+    height: 100dvh;
+  }
+}

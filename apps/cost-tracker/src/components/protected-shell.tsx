@@ -2,7 +2,9 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { AppNavigation } from "@/components/app-navigation";
+import { AppSidebar } from "@/components/app-sidebar";
 import { ProtectedPageSkeleton } from "@/components/protected-shell-skeleton";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
@@ -68,21 +70,29 @@ export async function ProtectedShell({
   const canViewOrganization = await canManageOrganization();
 
   return (
-    <div className="min-h-svh bg-muted/35">
-      <header className="border-b bg-background">
-        <AppNavigation
-          activeOrganizationId={context.activeOrganizationId}
-          email={session.user.email}
-          name={session.user.name}
-          showOrganization={canViewOrganization}
-          showOrganizationSwitcher={context.showSwitcher}
-          showPartnerOrganizations={await canViewPartnerNetwork()}
-          staffOrganizations={context.memberships}
-        />
-      </header>
-      <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-        <Suspense fallback={<ProtectedPageSkeleton />}>{children}</Suspense>
-      </main>
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <div className="min-h-svh w-full bg-muted/35">
+        <header className="border-b bg-background">
+          <div className="flex items-start gap-1">
+            <SidebarTrigger className="mt-4 ml-3 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <AppNavigation
+                activeOrganizationId={context.activeOrganizationId}
+                email={session.user.email}
+                name={session.user.name}
+                showOrganization={canViewOrganization}
+                showOrganizationSwitcher={context.showSwitcher}
+                showPartnerOrganizations={await canViewPartnerNetwork()}
+                staffOrganizations={context.memberships}
+              />
+            </div>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+          <Suspense fallback={<ProtectedPageSkeleton />}>{children}</Suspense>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 }
