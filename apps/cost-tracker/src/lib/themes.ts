@@ -7,7 +7,7 @@
 
 export const THEMES = [
   {
-    value: "light",
+    value: "theme-erasmus-light",
     label: "Erasmus Light",
     description: "Calm EU Erasmus identity — blue base, yellow accents.",
     // Preview dot: amplified stage hue so options stay distinguishable at
