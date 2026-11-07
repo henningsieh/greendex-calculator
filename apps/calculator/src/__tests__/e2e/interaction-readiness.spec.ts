@@ -29,7 +29,7 @@ test("Project tabs accept the first available click after a slow script load", a
     .innerJoin(organization, eq(projectsTable.organizationId, organization.id))
     .where(eq(organization.slug, "seed-org"))
     .limit(1);
-  expect(project, "Canonical Hosting Project must exist").toBeDefined();
+  expect(project, "Seeded hosting Project must exist").toBeDefined();
 
   const release = await holdClientScripts(page);
   try {
@@ -61,7 +61,7 @@ test("Participation starts with one click after a slow script load", async ({
     .innerJoin(organization, eq(projectsTable.organizationId, organization.id))
     .where(eq(organization.slug, "seed-org"))
     .limit(1);
-  expect(project, "Canonical Hosting Project must exist").toBeDefined();
+  expect(project, "Seeded hosting Project must exist").toBeDefined();
 
   const release = await holdClientScripts(page);
   try {

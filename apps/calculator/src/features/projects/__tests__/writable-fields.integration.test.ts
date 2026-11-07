@@ -14,12 +14,12 @@ import { auth } from "@/lib/better-auth";
 import { router } from "@/lib/orpc/router";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). The Coordinator creates and edits
  * through the supported procedures, the Owner crosses the dedicated
  * archive boundary; the attempted foreign Organization is ignored because
  * creation stays app-owned. Case Projects and sessions are removed
- * afterwards; canonical actors are never deleted or re-roled.
+ * afterwards; seed actors are never deleted or re-roled.
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_PARTNER_ORG_SLUG = "seed-partner-org";
@@ -63,20 +63,19 @@ beforeAll(async () => {
   const seedOrg = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+  if (!seedOrg) throw new Error("Seed Organization is missing");
   const partnerOrg = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_PARTNER_ORG_SLUG),
   });
-  if (!partnerOrg)
-    throw new Error("Canonical seed Partner Organization is missing");
+  if (!partnerOrg) throw new Error("Seed Partner Organization is missing");
   const coordinator = await db.query.user.findFirst({
     where: (users, { eq: eqUser }) => eqUser(users.email, SEED_COORDINATOR_EMAIL),
   });
-  if (!coordinator) throw new Error("Canonical seed Coordinator is missing");
+  if (!coordinator) throw new Error("Seed Coordinator is missing");
   const owner = await db.query.user.findFirst({
     where: (users, { eq: eqUser }) => eqUser(users.email, SEED_USER.email),
   });
-  if (!owner) throw new Error("Canonical seed Owner is missing");
+  if (!owner) throw new Error("Seed Owner is missing");
   seedOrgId = seedOrg.id;
   partnerOrgId = partnerOrg.id;
   coordinatorUserId = coordinator.id;
@@ -91,12 +90,12 @@ afterAll(async () => {
   for (const id of sessionIds.splice(0)) {
     await db.delete(session).where(eq(session.id, id));
   }
-  // Canonical actors survive every case: fail loudly on accidental deletion.
+  // Seed actors survive every case: fail loudly on accidental deletion.
   expect(
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Organization was deleted",
+    "seed Organization was deleted",
   ).not.toBeUndefined();
 });
 

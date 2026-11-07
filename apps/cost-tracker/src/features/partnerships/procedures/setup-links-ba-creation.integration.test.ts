@@ -45,7 +45,7 @@ let recipientOrganizationId: string;
 
 async function signInHeaders(email: string) {
   const actor = await db.query.user.findFirst({ where: eq(user.email, email) });
-  if (!actor) throw new Error("Canonical seed actor missing.");
+  if (!actor) throw new Error("Seed actor missing.");
   const existing = await db.query.session.findMany({
     where: eq(session.userId, actor.id),
   });
@@ -79,9 +79,7 @@ beforeAll(async () => {
     where: eq(user.email, recipientEmail),
   });
   if (!seededProject || !recipient)
-    throw new Error(
-      "Canonical seed required: run the isolated seeded lifecycle.",
-    );
+    throw new Error("Seed required: run the isolated seeded lifecycle.");
   projectId = seededProject.id;
   recipientUserId = recipient.id;
   hostHeaders = await signInHeaders(hostEmail);

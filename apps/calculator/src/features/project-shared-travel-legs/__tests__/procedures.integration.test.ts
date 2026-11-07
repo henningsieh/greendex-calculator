@@ -34,17 +34,16 @@ vi.mock("@/lib/better-auth", () => ({
 import { router } from "@/lib/orpc/router";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). Legs are created, updated, and
- * deleted through the supported procedures on a canonical Project owned by the
+ * deleted through the supported procedures on a seed Project owned by the
  * seeded Hosting Organization; the seeded Partner-owned Project covers
- * cross-Organization scoping. Cleanup removes only case rows — canonical
- * seed Projects and showcase legs are never deleted.
+ * cross-Organization scoping. Cleanup removes only case rows — seed
+ * Projects and showcase legs are never deleted.
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_PARTNER_PROJECT_NAME = "Seed Partner Project";
-const SEED_SHARED_TRAVEL_PROJECT_ID =
-  "shared-travel-procedures-project-canonical";
+const SEED_SHARED_TRAVEL_PROJECT_ID = "c1zz2adok63lcjyti6wkf4c7";
 const caseLegIds: string[] = [];
 
 let ownerUserId = "";
@@ -78,16 +77,15 @@ beforeAll(async () => {
   const seedOrg = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+  if (!seedOrg) throw new Error("Seed Organization is missing");
   const owner = await db.query.user.findFirst({
     where: (users, { eq: eqUser }) => eqUser(users.email, SEED_USER.email),
   });
-  if (!owner) throw new Error("Canonical seed Owner is missing");
+  if (!owner) throw new Error("Seed Owner is missing");
   const partnerProject = await db.query.projectsTable.findFirst({
     where: eq(projectsTable.name, SEED_PARTNER_PROJECT_NAME),
   });
-  if (!partnerProject)
-    throw new Error("Canonical seed Partner Project is missing");
+  if (!partnerProject) throw new Error("Seed Partner Project is missing");
   ownerUserId = owner.id;
   ownerUserEmail = owner.email ?? SEED_USER.email;
   seedOrgId = seedOrg.id;
@@ -96,7 +94,7 @@ beforeAll(async () => {
     where: eq(projectsTable.id, SEED_SHARED_TRAVEL_PROJECT_ID),
   });
   if (!sharedTravelProject || sharedTravelProject.organizationId !== seedOrgId)
-    throw new Error("Canonical Shared Travel Procedures Project is missing");
+    throw new Error("Seeded Shared Travel Procedures Project is missing");
   sharedTravelProjectId = sharedTravelProject.id;
 });
 
@@ -105,7 +103,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  // Remove only legs created by behavior under test, never the canonical Project.
+  // Remove only legs created by behavior under test, never the seed Project.
   if (caseLegIds.length)
     await db
       .delete(projectSharedTravelLegsTable)
@@ -118,25 +116,25 @@ afterAll(async () => {
     await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, SEED_SHARED_TRAVEL_PROJECT_ID),
     }),
-    "canonical Shared Travel Procedures Project was deleted",
+    "seeded Shared Travel Procedures Project was deleted",
   ).not.toBeUndefined();
-  // Canonical actors survive every case: fail loudly on accidental deletion.
+  // Seed actors survive every case: fail loudly on accidental deletion.
   expect(
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Organization was deleted",
+    "seed Organization was deleted",
   ).not.toBeUndefined();
   expect(
     await db.query.projectsTable.findFirst({
       where: eq(projectsTable.name, SEED_PARTNER_PROJECT_NAME),
     }),
-    "canonical seed Partner Project was deleted",
+    "seed Partner Project was deleted",
   ).not.toBeUndefined();
 });
 
-describe("canonical Project Shared Travel Leg procedures", () => {
-  it("creates and lists an electric-car leg with canonical fields over the existing storage", async () => {
+describe("seeded Project Shared Travel Leg procedures", () => {
+  it("creates and lists an electric-car leg with standard fields over the existing storage", async () => {
     const travelDate = new Date("2026-05-12T00:00:00.000Z");
 
     const created = await client.projectSharedTravelLegs.create({
@@ -173,7 +171,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
     ).resolves.toEqual([created.sharedTravelLeg]);
   });
 
-  it("updates a leg through the canonical contract", async () => {
+  it("updates a leg through the standard contract", async () => {
     const created = await client.projectSharedTravelLegs.create({
       projectId: sharedTravelProjectId,
       transportEmissionProfile: "train",
@@ -222,7 +220,7 @@ describe("canonical Project Shared Travel Leg procedures", () => {
     ).resolves.toMatchObject([{ transportEmissionProfile: "bus" }]);
   });
 
-  it("deletes a leg through the canonical contract", async () => {
+  it("deletes a leg through the standard contract", async () => {
     const created = await client.projectSharedTravelLegs.create({
       projectId: sharedTravelProjectId,
       transportEmissionProfile: "boat",

@@ -1,6 +1,5 @@
 // @vitest-environment node
 
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { TRAVEL_FUNDING_RULES } from "@greendex/config/travel-funding-rules";
 import { db } from "@greendex/database";
 import {
@@ -29,11 +28,10 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerJourneys.
-const id = (part: string) => `journey-${part}-canonical`;
-const host = id("host"),
-  partner = id("partner");
-const coordinator = id(ORGANIZATION_ROLES.ProjectCoordinator),
-  participantUser = id("user");
+const host = "vx9gyxubkxro0lssmyroxe75",
+  partner = "qkygpb1cfcfftazz91qywhrn";
+const coordinator = "njj93kk5qvwteuv9nptk9ryb",
+  participantUser = "b21etdwq5uyop54hnqideez1";
 const scenarioNames = [
   "empty",
   "editable",
@@ -53,17 +51,107 @@ let project: string,
 let first: string, second: string, outside: string, later: string;
 let claimId: string | undefined;
 const baselineClaims = new Map<JourneyScenario, string>();
+const journeyScenarioIds = [
+  {
+    project: "xf74qtwtye2yvslr7o7i8y34",
+    "second-project": "w4uxcjyp1go2q461goegu7sv",
+    own: "k8gaqhl38tx5zhue5cu8c0st",
+    foreign: "v6t5aqxihtula24tlc32f1up",
+    next: "jl71gr77c1ugmst6nu65q2n3",
+    first: "qsv67xo722qe1b00w0g9qi0o",
+    second: "adrq31kxemsrho7vxin91xii",
+    outside: "p0i8js1lix8zfh0bhcpz8kcr",
+    later: "hcw9cmnc0tjdg95vefyjnkg0",
+  }, // empty
+  {
+    project: "s9ehhnzr79666m99ub41kh43",
+    "second-project": "mni2rdfwwwjqx8yc1mqr21xb",
+    own: "c701ddgerxilbliului1u9bb",
+    foreign: "pgqfrrwy26ex3j1ycrqebte9",
+    next: "v6t1mcfrjs1h0c1ylgrftdau",
+    first: "dnhbmektk3b0kymk67gijh5v",
+    second: "c6rzw7mjcfzouw011z6glezo",
+    outside: "ce90d9m4ox9pcsa6gnvzeukc",
+    later: "mz3gl3c4s9dx05kxpacgab1h",
+  }, // editable
+  {
+    project: "bow8reilzlhbyt54sgqrgvk8",
+    "second-project": "q9fs98msyjij0r2lxyq6dy4k",
+    own: "khznv3ljbgkwh3n2kr2fgh50",
+    foreign: "zel9micdp5alsz6737o6312j",
+    next: "bbfe1u7sdhxnwir6amwkt2tr",
+    first: "diwsigd48oyf7giaz6d5m76e",
+    second: "weapsdhv2og96fqrblgjr8fw",
+    outside: "v28trsvdlxszdjbrslj7jzhe",
+    later: "o5mbhevxssukttfo6wdb7t3v",
+  }, // legacy
+  {
+    project: "cbffrmmttjsm36zbb4oj4b0f",
+    "second-project": "yjlexiy2l38wyiz6xhp5c5b4",
+    own: "wh63gm0yng191ljpdiz23hli",
+    foreign: "oistv3g8cqps1mvco4t7ices",
+    next: "tykyaixv9rmrjzda5e87hw49",
+    first: "vzb305ommel0h8t52pmicku8",
+    second: "k1f28nyl1dr0j09felqn1p65",
+    outside: "htyn28cu0n1kaqbxu4bb0u60",
+    later: "e0oy0n9nhhi7y1yo8iaouhji",
+  }, // correction_requested
+  {
+    project: "i0t9ar9uv1o9ujognpfx03wr",
+    "second-project": "xzitoetsc65bzwh7b309b516",
+    own: "sgw7akbszqdrsh8hohzdodho",
+    foreign: "rrcolgxmdjsscu9258ghxnfe",
+    next: "k4xpsu8ewl0kedpdcqqqv72b",
+    first: "wq9ldyrvwbjcqoledih3950p",
+    second: "wexe0nzi53wk9yxpjcyz2s5b",
+    outside: "i2au75gjcz4x8vcc8f1t1avw",
+    later: "kuf0x8zecl929omfs7ufyxqb",
+  }, // submitted
+  {
+    project: "jo1xnzk227xvf5rm29q943ev",
+    "second-project": "xflmv8mn5mq8bn3hcawrk914",
+    own: "t5khvfs2g70vozdznokq1ddx",
+    foreign: "nwyc54b8o8ixudydw2e4tow6",
+    next: "eku8jl6ur1gz9k2or59jb2tx",
+    first: "liixtwq2c9307qgchtzlk4sr",
+    second: "q6x77i77fmcghbtj9nfb3fux",
+    outside: "cox16dq4rldrb27vhbduncc8",
+    later: "uean2qifj1oh7t3ztwyi391n",
+  }, // approved
+  {
+    project: "t3t443dc4zs057sxm5ns56al",
+    "second-project": "junkjnumchq0l9f0zj4ubj4g",
+    own: "z0cb8bz1yg5z72pctem0y4cz",
+    foreign: "rzur7eq20mjcrrdvr6sj1gcv",
+    next: "kmt5a8mrf0l75328sczod5sx",
+    first: "tsvkwpwofp3dm6xj1lhl9xqn",
+    second: "zjp4m9ssm5eejv3is118vb5a",
+    outside: "trcmao8ecc90cbynik4tvdad",
+    later: "qugg501l00hypycy2zmiggqr",
+  }, // rejected
+  {
+    project: "i3i6jq6eutzj7hblwcuefrp4",
+    "second-project": "kzcqabii9g43hw9bn185krqe",
+    own: "il0j5p0sugn78sr5uvn58zqv",
+    foreign: "v17pgcsxny5fnxgnpmz1792d",
+    next: "icq58a7oeek8d088h2mhcwlq",
+    first: "bj65q8qk8xu452az5stmvmfn",
+    second: "duwh2xksyo3wkffxpy779j9w",
+    outside: "z3k1zkw7poy8ccatgqm7ixix",
+    later: "y145ox23z8dwq68p4trp0hja",
+  }, // paid
+] as const;
 function useScenario(name: JourneyScenario) {
-  const scenarioId = (part: string) => id(`${name}-${part}`);
-  project = scenarioId("project");
-  secondProject = scenarioId("second-project");
-  own = scenarioId("own");
-  foreign = scenarioId("foreign");
-  next = scenarioId("next");
-  first = scenarioId("first");
-  second = scenarioId("second");
-  outside = scenarioId("outside");
-  later = scenarioId("later");
+  const ids = journeyScenarioIds[scenarioNames.indexOf(name)]!;
+  project = ids.project;
+  secondProject = ids["second-project"];
+  own = ids.own;
+  foreign = ids.foreign;
+  next = ids.next;
+  first = ids.first;
+  second = ids.second;
+  outside = ids.outside;
+  later = ids.later;
   claimId = baselineClaims.get(name);
   journey.partnershipId = own;
   journey.projectParticipantId = first;
@@ -83,15 +171,14 @@ const journey = {
 };
 
 beforeAll(async () => {
-  for (const name of scenarioNames) {
-    const partnershipId = id(`${name}-own`);
+  for (const [nameIndex, name] of scenarioNames.entries()) {
+    const ids = journeyScenarioIds[nameIndex]!;
+    const partnershipId = ids.own;
     const row = await db.query.projectsTable.findFirst({
-      where: (row, { eq }) => eq(row.id, id(`${name}-project`)),
+      where: (row, { eq }) => eq(row.id, ids.project),
     });
     if (!row)
-      throw new Error(
-        "Canonical seed required: run the isolated seeded lifecycle.",
-      );
+      throw new Error("Seed required: run the isolated seeded lifecycle.");
     const claim = await db.query.claimsTable.findFirst({
       where: eq(claims.partnershipId, partnershipId),
     });
@@ -110,25 +197,22 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  // Only procedure outputs are removed; canonical Claims and the legacy Journey remain.
+  // Only procedure outputs are removed; seeded Claims and the legacy Journey remain.
   for (const name of scenarioNames) {
     const baselineClaimId = baselineClaims.get(name);
     if (baselineClaimId)
       await db.delete(history).where(eq(history.claimId, baselineClaimId));
-    for (const part of ["first", "second", "later"]) {
+    const ids = journeyScenarioIds[scenarioNames.indexOf(name)]!;
+    for (const part of [ids.first, ids.second, ids.later] as const) {
       if (
         ["legacy", "submitted", "approved", "rejected", "paid"].includes(name) &&
-        part === "first"
+        part === ids.first
       )
         continue;
-      await db
-        .delete(journeys)
-        .where(eq(journeys.projectParticipantId, id(`${name}-${part}`)));
+      await db.delete(journeys).where(eq(journeys.projectParticipantId, part));
     }
-    for (const part of ["project", "second-project"])
-      await db
-        .delete(snapshots)
-        .where(eq(snapshots.projectId, id(`${name}-${part}`)));
+    for (const part of [ids.project, ids["second-project"]] as const)
+      await db.delete(snapshots).where(eq(snapshots.projectId, part));
   }
 });
 

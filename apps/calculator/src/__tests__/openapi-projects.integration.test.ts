@@ -39,19 +39,19 @@ vi.mock("@/lib/better-auth", () => ({
 import * as routes from "@/app/api/openapi/[[...rest]]/route";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). Authentication resolves the seeded
  * Hosting Organization, Owner, and named REST Projects. Creation through
  * REST is pinned as unsupported for date inputs (see the date-string test).
- * REST mutation/deletion operates on those canonical scenario Projects;
+ * REST mutation/deletion operates on those seed scenario Projects;
  * narrowly scoped cleanup restores their snapshots after each case.
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_OWNER_EMAIL = "owner@sieh.org";
 
-/** Canonical scenario Project ids touched by the case; restored in cleanup. */
+/** Seed scenario Project ids touched by the case; restored in cleanup. */
 const caseProjectIds: string[] = [];
-const canonicalProjects: (typeof projectsTable.$inferSelect)[] = [];
+const seedProjects: (typeof projectsTable.$inferSelect)[] = [];
 
 async function request(path: string, method = "GET", body?: unknown) {
   return routes[method as keyof typeof routes](
@@ -71,9 +71,9 @@ const dates = {
   startDate: "2026-01-01T00:00:00.000Z",
   endDate: "2026-12-31T00:00:00.000Z",
 };
-async function resolveCanonicalRestProject() {
-  const seeded = canonicalProjects[caseProjectIds.length];
-  if (!seeded) throw new Error("Canonical REST scenario Project is missing");
+async function resolveSeedRestProject() {
+  const seeded = seedProjects[caseProjectIds.length];
+  if (!seeded) throw new Error("Seed REST scenario Project is missing");
   caseProjectIds.push(seeded.id);
   return seeded.id;
 }
@@ -82,44 +82,41 @@ beforeAll(async () => {
   const seedOrg = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+  if (!seedOrg) throw new Error("Seed Organization is missing");
   const owner = await db.query.user.findFirst({
     where: (users, { eq: eqUser }) => eqUser(users.email, SEED_OWNER_EMAIL),
   });
-  if (!owner) throw new Error("Canonical seed Owner is missing");
+  if (!owner) throw new Error("Seed Owner is missing");
   fixture.userId = owner.id;
   fixture.organizationId = seedOrg.id;
   const { randomUUID } = await import("node:crypto");
   fixture.sessionId = randomUUID();
   fixture.permitted = true;
-  for (const id of [
-    "rest-contract-project-canonical",
-    "rest-batch-project-canonical",
-  ]) {
+  for (const id of ["tpsr7ufu9ad9sx6jgustyrez", "qx1x6k1hj0xsi28dajsdchya"]) {
     const project = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, id),
     });
-    if (!project) throw new Error("Canonical REST scenario Project is missing");
-    canonicalProjects.push(project);
+    if (!project) throw new Error("Seed REST scenario Project is missing");
+    seedProjects.push(project);
   }
 });
 afterEach(async () => {
   const ids = caseProjectIds.splice(0);
   if (ids.length) {
-    // Cleanup alone restores the exact canonical snapshots after REST
+    // Cleanup alone restores the exact seed snapshots after REST
     // deletion/archive/leg mutations. No private setup rows are inserted.
     await db.delete(projectsTable).where(inArray(projectsTable.id, ids));
     await db
       .insert(projectsTable)
-      .values(canonicalProjects.filter(({ id }) => ids.includes(id)));
+      .values(seedProjects.filter(({ id }) => ids.includes(id)));
   }
   fixture.permitted = true;
-  // Canonical actors survive every case: fail loudly on accidental deletion.
+  // Seed actors survive every case: fail loudly on accidental deletion.
   expect(
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Organization was deleted",
+    "seed Organization was deleted",
   ).not.toBeUndefined();
 });
 
@@ -128,7 +125,7 @@ it("serves organization details, role, stats and member search shapes", async ()
     id: fixture.organizationId,
   });
   expect(await ok("/organizations/role")).toBe("owner");
-  // Canonical seed: ten base Projects plus two REST and three review Projects;
+  // Seed: ten base Projects plus two REST and three review Projects;
   // two linked showcase Users (login-free Participations do not add a User);
   // 39 template Shared Travel Legs plus the travel-management scenario leg.
   const stats = await ok("/organizations/stats", "POST", {
@@ -152,7 +149,7 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
   const baselineIds = new Set(
     (baseline as { id: string }[]).map((project) => project.id),
   );
-  const id = await resolveCanonicalRestProject();
+  const id = await resolveSeedRestProject();
   const path = `/projects/${id}`;
   expect(await ok("/projects?sort_by=name")).toEqual(
     expect.arrayContaining([expect.objectContaining({ id, ...dates })]),
@@ -205,7 +202,7 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
     project: { id, archived: true },
   });
   expect(await ok(path, "DELETE", {})).toEqual({ success: true });
-  const second = await resolveCanonicalRestProject();
+  const second = await resolveSeedRestProject();
   expect(await ok("/projects/batch", "DELETE", { projectIds: [second] })).toEqual(
     { success: true, deletedCount: 1 },
   );
@@ -223,7 +220,7 @@ it("round-trips date-free Project and Shared Travel Leg REST operations", async 
         eq(projectsTable.organizationId, fixture.organizationId),
       ),
     }),
-    "REST deletion must remove the selected canonical scenario Project",
+    "REST deletion must remove the selected seed scenario Project",
   ).toBeUndefined();
 });
 

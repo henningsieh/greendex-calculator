@@ -2,12 +2,12 @@
 //
 // Email-bound Participant Invitations on the shared app-owned entry flow
 // (ADR-0013/0015, issue #213): lifecycle, email binding, and flavour parity
-// through the oRPC procedure interface. Canonical seed actors (see
+// through the oRPC procedure interface. Seed actors (see
 // `SEED_SCENARIOS` in `apps/calculator/scripts/seed.ts`) own the Hosting
 // Organization, Partner Organization, Project, and Partnership; Invitees are
 // seeded membership-free joiners. Issuance and redemption go through the
 // procedures under test; per-test tokens, Participations, profiles, and
-// acceptances are removed afterwards without deleting canonical actors.
+// acceptances are removed afterwards without deleting seed actors.
 
 import { randomUUID } from "node:crypto";
 
@@ -64,11 +64,11 @@ import { createParticipantOnboardingProcedures } from "@/features/participant-on
 import { createParticipationProcedures } from "@/features/participations/procedures/core";
 
 /**
- * Canonical seed identities for the invitation Project (Green Energy
+ * Seed identities for the invitation Project (Green Energy
  * Symposium) and its Partnership to the second Partner Organization.
  * The Owner issues; the two seeded Invitees join. Case tokens,
  * Participations, profiles, acceptances, and Memberships are removed
- * afterwards; canonical actors are never deleted.
+ * afterwards; seed actors are never deleted.
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_PARTNER_SLUG = "seed-second-partner-org";
@@ -133,20 +133,18 @@ beforeAll(async () => {
   const seedHost = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  if (!seedHost)
-    throw new Error("Canonical seed Hosting Organization is missing");
+  if (!seedHost) throw new Error("Seed Hosting Organization is missing");
   const seedPartner = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_PARTNER_SLUG),
   });
-  if (!seedPartner)
-    throw new Error("Canonical seed Partner Organization is missing");
+  if (!seedPartner) throw new Error("Seed Partner Organization is missing");
   const seedProject = await db.query.projectsTable.findFirst({
     where: and(
       eq(projectsTable.organizationId, seedHost.id),
       eq(projectsTable.name, SEED_INVITATION_PROJECT_NAME),
     ),
   });
-  if (!seedProject) throw new Error("Canonical invitation Project is missing");
+  if (!seedProject) throw new Error("Seed invitation Project is missing");
   const seedPartnership =
     await db.query.projectPartnerOrganizationsTable.findFirst({
       where: and(
@@ -154,13 +152,12 @@ beforeAll(async () => {
         eq(partnerships.organizationId, seedPartner.id),
       ),
     });
-  if (!seedPartnership)
-    throw new Error("Canonical invitation Partnership is missing");
+  if (!seedPartnership) throw new Error("Seed invitation Partnership is missing");
   async function userIdFor(email: string): Promise<string> {
     const stored = await db.query.user.findFirst({
       where: eq(user.email, email),
     });
-    if (!stored) throw new Error(`Canonical seed User is missing: ${email}`);
+    if (!stored) throw new Error(`Seed User is missing: ${email}`);
     return stored.id;
   }
   host = seedHost.id;
@@ -263,7 +260,7 @@ afterAll(async () => {
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Hosting Organization was deleted",
+    "seed Hosting Organization was deleted",
   ).not.toBeUndefined();
   expect(
     await db.query.projectsTable.findFirst({
@@ -272,12 +269,12 @@ afterAll(async () => {
         eq(projectsTable.name, SEED_INVITATION_PROJECT_NAME),
       ),
     }),
-    "canonical invitation Project was deleted",
+    "seed invitation Project was deleted",
   ).not.toBeUndefined();
   for (const email of [SEED_OWNER_EMAIL, recipientEmail, strangerEmail]) {
     expect(
       await db.query.user.findFirst({ where: eq(user.email, email) }),
-      `canonical seed User was deleted: ${email}`,
+      `seed User was deleted: ${email}`,
     ).not.toBeUndefined();
   }
   for (const inviteeId of [recipient, stranger]) {

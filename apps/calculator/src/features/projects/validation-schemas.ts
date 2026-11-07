@@ -79,7 +79,7 @@ const sharedTravelLegEditFormSchema = ProjectSharedTravelLegFormSchema.extend({
 });
 
 /**
- * Project editing values, including canonical Project Shared Travel Legs.
+ * Project editing values, including seeded Project Shared Travel Legs.
  * Existing leg IDs are retained so the form can update or delete the right row.
  */
 export const EditProjectWithSharedTravelLegsSchema =
@@ -88,7 +88,7 @@ export const EditProjectWithSharedTravelLegsSchema =
   });
 
 /**
- * Project creation values, including zero or more canonical Project Shared
+ * Project creation values, including zero or more seeded Project Shared
  * Travel Legs. The leg fields intentionally reuse the management form schema.
  */
 export const CreateProjectWithSharedTravelLegsSchema =
@@ -101,7 +101,7 @@ export type CreateProjectWithSharedTravelLegs = z.infer<
 >;
 
 /**
- * Public participation contract with canonical Project Shared Travel Legs.
+ * Public participation contract with seeded Project Shared Travel Legs.
  */
 export const ProjectForParticipationSchema = createSelectSchema(
   projectsTable,

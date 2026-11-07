@@ -89,7 +89,7 @@ const ownedProjectNames = [...fixture.projectNames, adminProjectName];
 const invitationId = randomUUID();
 const contexts: BrowserContext[] = [];
 const issuedLinks: string[] = [];
-const canonicalSessionIds: string[] = [];
+const sessionIds: string[] = [];
 let projectURLs: string[] = [];
 let setupURL = "";
 let existingSetupURL = "";
@@ -428,8 +428,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
   });
   test.afterAll(async () => {
     await Promise.all(contexts.map((context) => context.close()));
-    if (canonicalSessionIds.length)
-      await db.delete(session).where(inArray(session.id, canonicalSessionIds));
+    if (sessionIds.length)
+      await db.delete(session).where(inArray(session.id, sessionIds));
     // Remove link references before deleting the UI-created Projects/Partnerships.
     if (issuedLinks.length)
       await db.delete(setupLinks).where(inArray(setupLinks.id, issuedLinks));
@@ -899,27 +899,27 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const beforeSessions = await db
       .select({ id: session.id })
       .from(session)
-      .where(eq(session.userId, "picker-user-canonical"));
+      .where(eq(session.userId, "un3tvw49u59cn2d2a9rop8dl"));
     const signedIn = await postSignInWithRateLimitRetry(
       context.request,
-      "picker-user-canonical@example.com",
+      "un3tvw49u59cn2d2a9rop8dl@example.com",
       SEED_USER.password,
     );
     expect(signedIn.ok()).toBe(true);
     const afterSessions = await db
       .select({ id: session.id })
       .from(session)
-      .where(eq(session.userId, "picker-user-canonical"));
-    canonicalSessionIds.push(
+      .where(eq(session.userId, "un3tvw49u59cn2d2a9rop8dl"));
+    sessionIds.push(
       ...afterSessions
         .filter(
           ({ id }) => !beforeSessions.some((previous) => previous.id === id),
         )
         .map(({ id }) => id),
     );
-    const unrelatedId = "owned-result-30-canonical";
-    const targetId = "owned-result-31-canonical";
-    const targetName = "Owned Search canonical 31";
+    const unrelatedId = "nmqjlr6hu7ler9gg46waa4yp";
+    const targetId = "c8xev643s2o9pn4u6vz1nrj0";
+    const targetName = "Owned Search 31";
     const selected = await context.request.post(
       "/api/auth/organization/set-active",
       {
@@ -931,10 +931,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const membershipsBefore = await db
       .select({ id: member.id })
       .from(member)
-      .where(eq(member.userId, "picker-user-canonical"));
+      .where(eq(member.userId, "un3tvw49u59cn2d2a9rop8dl"));
     const url = await issueInSetup(
       fixture.projectNames[0]!,
-      "picker-user-canonical@example.com",
+      "un3tvw49u59cn2d2a9rop8dl@example.com",
     );
     const page = await context.newPage();
     const linkId = new URL(url, baseURL).pathname.split("/").at(-1)!;
@@ -990,7 +990,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const membershipsAfter = await db
       .select({ id: member.id })
       .from(member)
-      .where(eq(member.userId, "picker-user-canonical"));
+      .where(eq(member.userId, "un3tvw49u59cn2d2a9rop8dl"));
     expect(membershipsAfter.map(({ id }) => id).sort()).toEqual(
       membershipsBefore.map(({ id }) => id).sort(),
     );

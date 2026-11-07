@@ -37,7 +37,7 @@ describe("project shared travel form schemas", () => {
     ).toBe(true);
   });
 
-  it("uses the canonical profile contract instead of accepting plane", () => {
+  it("uses the standard profile contract instead of accepting plane", () => {
     expect(
       CreateProjectWithSharedTravelLegsSchema.safeParse({
         ...projectFields,

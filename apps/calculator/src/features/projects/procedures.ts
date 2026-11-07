@@ -791,7 +791,7 @@ export const batchDeleteProjects = authorized
  * Get project for public participation (no auth required)
  *
  * This is a public endpoint used by the participation form.
- * Returns project details with canonical Project Shared Travel Legs.
+ * Returns project details with seeded Project Shared Travel Legs.
  */
 export const getProjectForParticipation = base
   .meta(

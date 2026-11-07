@@ -58,7 +58,7 @@ interface CreateProjectFormProps {
  * Render a two-step form for creating a project and optional Project Shared Travel Legs.
  *
  * Step 1 collects project details (name, dates, country, location, welcome message).
- * Step 2 collects zero or more shared travel legs using the canonical profile and validation contract.
+ * Step 2 collects zero or more shared travel legs using the standard profile and validation contract.
  * Submitting creates the project and its provided shared travel legs, then navigates to the project details page.
  *
  * @param activeOrganizationId - ID of the active organization used as the project's organizationId default

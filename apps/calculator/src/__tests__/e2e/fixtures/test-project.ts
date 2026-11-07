@@ -70,7 +70,7 @@ export class TestProjectFixture {
       .insert(hostProjectAssignmentsTable)
       .values({ projectId: this.projectId, userId: this.userId });
 
-    // Add canonical Project Shared Travel for participant-visible coverage.
+    // Add seeded Project Shared Travel for participant-visible coverage.
     const sharedTravelLegs: Omit<
       ProjectSharedTravelLeg,
       "createdAt" | "updatedAt" | "travelDate" | "description"

@@ -556,7 +556,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     }
   });
 
-  test("canonical review routes preserve Partnership input with and without a locale", async ({
+  test("partnership review routes preserve Partnership input with and without a locale", async ({
     browser,
     baseURL,
   }) => {

@@ -13,18 +13,16 @@ vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 import { createOnboardingProgressProcedure } from "@/features/participant-onboarding/procedures/onboarding-progress";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerOnboardingProgress.
-const suffix = "canonical";
-const host = `progress-host-${suffix}`;
-const partner = `progress-partner-${suffix}`;
-const project = `progress-project-${suffix}`;
-const own = `progress-own-${suffix}`;
-const foreign = `progress-foreign-${suffix}`;
-const coordinator = `progress-coordinator-${suffix}`;
-const joined = `progress-joined-${suffix}`;
-const pending = `progress-pending-${suffix}`;
-const revoked = `progress-revoked-${suffix}`;
-const outsider = `progress-outsider-${suffix}`;
-const mail = (key: string) => `${key}-${suffix}@example.org`;
+const host = "pb8rir6gvcyfqiwaqtnk5xec";
+const partner = "yi608vzxygcikogkqozy7r81";
+const project = "q1jwax2hm79a3iian3hs5x73";
+const own = "kpy26vaupifiqe3vuu554twi";
+const foreign = "li8ummqf6runglocgx76791z";
+const coordinator = "d430zzfeqqkly5ldh6taz24l";
+const joined = "g2wwxic53eufnwlmzl8vplam";
+const pending = "hz7hq50rox2931x2g6fvnm9x";
+const revoked = "pn2pja15f3t265bd805eiztb";
+const outsider = "y81ceaq0pmv2oqk3wkvqd6xo";
 const version = { id: "fixture-v2", contentHash: "fixture-hash-v2" };
 let actor = coordinator;
 let activeOrg = partner;
@@ -38,9 +36,7 @@ beforeAll(async () => {
   if (
     !(await db.query.projectsTable.findFirst({ where: eq(projects.id, project) }))
   )
-    throw new Error(
-      "Canonical seed required: run the isolated seeded lifecycle.",
-    );
+    throw new Error("Seed required: run the isolated seeded lifecycle.");
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
@@ -67,7 +63,9 @@ describe("Partner invitee onboarding progress", () => {
       membership: "missing",
       bridge: "none",
     });
-    expect(rows.find((row) => row.email === mail(joined))).toMatchObject({
+    expect(
+      rows.find((row) => row.email === `${joined}@example.org`),
+    ).toMatchObject({
       participationId: expect.any(String),
       participation: "joined",
       profile: "complete",
@@ -75,34 +73,40 @@ describe("Partner invitee onboarding progress", () => {
       membership: ORGANIZATION_ROLES.Participant,
       bridge: "pending",
     });
-    expect(rows.find((row) => row.email === mail(pending))).toMatchObject({
+    expect(
+      rows.find((row) => row.email === `${pending}@example.org`),
+    ).toMatchObject({
       participationId: null,
       participation: "not-joined",
-      invitationId: `new-${suffix}`,
+      invitationId: "gxtubvf8mav6w9c8do4fey2f",
       profile: "complete",
       agreement: "outdated",
       membership: "missing",
       bridge: "pending",
     });
-    expect(rows.find((row) => row.email === mail(revoked))).toMatchObject({
+    expect(
+      rows.find((row) => row.email === `${revoked}@example.org`),
+    ).toMatchObject({
       profile: "missing",
       agreement: "missing",
       membership: "missing",
       bridge: "revoked",
     });
-    expect(rows.some((row) => row.email === mail(outsider))).toBe(false);
+    expect(rows.some((row) => row.email === `${outsider}@example.org`)).toBe(
+      false,
+    );
   });
 
   it("does not claim an unpublished agreement is current", async () => {
     agreement = { id: "PENDING-LEGAL-001", contentHash: "" };
     try {
       const rows = await client.progress({ partnershipId: own });
-      expect(rows.find((row) => row.email === mail(joined))?.agreement).toBe(
-        "unavailable",
-      );
-      expect(rows.find((row) => row.email === mail(pending))?.agreement).toBe(
-        "unavailable",
-      );
+      expect(
+        rows.find((row) => row.email === `${joined}@example.org`)?.agreement,
+      ).toBe("unavailable");
+      expect(
+        rows.find((row) => row.email === `${pending}@example.org`)?.agreement,
+      ).toBe("unavailable");
     } finally {
       agreement = version;
     }
@@ -111,14 +115,14 @@ describe("Partner invitee onboarding progress", () => {
   it("requires the current content hash and reports expired invitations", async () => {
     agreement = { ...version, contentHash: "superseded-current-version-hash" };
     const rows = await client.progress({
-      partnershipId: "progress-expired-partnership-canonical",
+      partnershipId: "xs8n7xoutdn7nm0fx0pcdge3",
     });
-    expect(rows.find((row) => row.email === mail(joined))?.agreement).toBe(
-      "outdated",
-    );
-    expect(rows.find((row) => row.email === mail(pending))?.bridge).toBe(
-      "expired",
-    );
+    expect(
+      rows.find((row) => row.email === `${joined}@example.org`)?.agreement,
+    ).toBe("outdated");
+    expect(
+      rows.find((row) => row.email === `${pending}@example.org`)?.bridge,
+    ).toBe("expired");
   });
 
   it("denies foreign scope, Host-side access and Participants", async () => {

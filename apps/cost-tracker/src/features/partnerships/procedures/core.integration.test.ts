@@ -28,17 +28,16 @@ vi.mock("server-only", () => ({}));
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerPartnerships.
-const suffix = "canonical";
-const userId = `partnership-user-${suffix}`;
-const hostId = `partnership-host-${suffix}`;
-const foreignHostId = `partnership-foreign-host-${suffix}`;
-const assignedOrganizationId = `partnership-assigned-org-${suffix}`;
-const candidateOrganizationId = `partnership-candidate-org-${suffix}`;
-const raceOrganizationId = `partnership-race-org-${suffix}`;
-const projectId = `partnership-project-${suffix}`;
-const foreignProjectId = `partnership-foreign-project-${suffix}`;
-const assignedPartnershipId = `partnership-assigned-${suffix}`;
-const removablePartnershipId = `partnership-removable-${suffix}`;
+const userId = "j3il3a249ve1ptmg95avdlgv";
+const hostId = "bju7ngb3cgo3pdl2mus0fd1x";
+const foreignHostId = "lgiqk6xb0z0fmc5mt2a14c2h";
+const assignedOrganizationId = "qzk86wnb1aey5g57xszuapg7";
+const candidateOrganizationId = "i1vygof18xbl8888j7h6dlxv";
+const raceOrganizationId = "pbsbg6s5g2p5cmc2z4kfo03v";
+const projectId = "oe5auzlmxm92s21kxpoy2po7";
+const foreignProjectId = "fjt5l9ol15czsgt9utly4k7i";
+const assignedPartnershipId = "tevcjre6m3rlqajvg3628nd5";
+const removablePartnershipId = "ocv8adv9zbl8h4z6xg91hj1b";
 let removableBaseline: typeof projectPartnerOrganizationsTable.$inferSelect;
 const createdPartnershipIds: string[] = [];
 const headers = new Headers();
@@ -78,10 +77,7 @@ beforeAll(async () => {
   const row = await db.query.projectPartnerOrganizationsTable.findFirst({
     where: eq(projectPartnerOrganizationsTable.id, removablePartnershipId),
   });
-  if (!row)
-    throw new Error(
-      "Canonical seed required: run the isolated seeded lifecycle.",
-    );
+  if (!row) throw new Error("Seed required: run the isolated seeded lifecycle.");
   removableBaseline = row;
 });
 
@@ -98,7 +94,7 @@ afterEach(async () => {
       .where(inArray(projectPartnerOrganizationsTable.id, createdPartnershipIds));
     createdPartnershipIds.length = 0;
   }
-  // Removal is the behavior under test; restore the exact canonical baseline
+  // Removal is the behavior under test; restore the exact seed baseline
   // (including its metadata) rather than recreating ordinary setup per case.
   if (
     removableBaseline &&
@@ -251,12 +247,11 @@ describe("Project Partnership procedures", () => {
   });
 
   describe("assigned coordinator partnership visibility", () => {
-    // Read-only assigned/unassigned coordinator scenarios are canonical too.
-    const suffix = "canonical";
-    const coord = `partnership-visibility-coord-${suffix}`;
-    const stranger = `partnership-visibility-stranger-${suffix}`;
-    const partner = `partnership-visibility-partner-${suffix}`;
-    const ownPartnership = `partnership-visibility-link-own-${suffix}`;
+    // Read-only assigned/unassigned coordinator scenarios are seeded too.
+    const coord = "tqsbp0h0ue0r9f3cucsau6ub";
+    const stranger = "c7zd4q31mcarkmy6gj8ohr05";
+    const partner = "kbw5d47mmfruysu3eseo7gdk";
+    const ownPartnership = "jxj0285f2i5m3seadecd1i61";
     const useViewer = (viewerId: string) => {
       authMocks.getSession.mockResolvedValue({
         session: {

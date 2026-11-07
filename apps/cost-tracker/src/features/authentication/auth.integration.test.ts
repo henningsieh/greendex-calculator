@@ -207,9 +207,9 @@ describe("Cost Tracker Better Auth", () => {
   it("assigns the newest membership to a new session so dashboard reads are authorized", async () => {
     // SEED_SCENARIOS.reviewFixes.newestMembership owns the ordered Membership
     // precondition. Sign-in is the behavior that selects the newest one.
-    const email = "auth-newest-membership-canonical@example.org";
+    const email = "ovd9vm66cznmy9v7i2bdy1q8@example.org";
     const password = SEED_USER.password;
-    const newestOrganizationId = "auth-newest-organization-canonical";
+    const newestOrganizationId = "p9zp8d8duowzxn3nmygy5194";
 
     const response = await auth.api.signInEmail({
       body: { email, password },

@@ -32,7 +32,7 @@ const distanceKmSchema = z
     message: "Distance must use increments of 0.1 km",
   });
 
-/** Canonical persisted contract derived from the Drizzle model. */
+/** Standard persisted contract derived from the Drizzle model. */
 export const ProjectSharedTravelLegSchema = z.object({
   id: persistedSelectSchema.shape.id,
   projectId: persistedSelectSchema.shape.projectId,

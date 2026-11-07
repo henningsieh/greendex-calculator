@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* eslint-disable import/no-relative-parent-imports -- Consume canonical cross-app seed identities without loading the seed implementation. */
+/* eslint-disable import/no-relative-parent-imports -- Consume cross-app seed identities without loading the seed implementation. */
 
 import { hasOrganizationRole } from "@greendex/auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
@@ -21,14 +21,13 @@ import { router } from "@/lib/orpc/router";
 import { SEED_ENTITY_SEARCH } from "../../../../../calculator/scripts/seed-scenarios";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerEntitySearch.
-const suffix = "canonical";
 const scenario = SEED_ENTITY_SEARCH;
-const actor = `picker-user-${suffix}`;
-const host = `picker-host-${suffix}`;
-const partner = `picker-partner-${suffix}`;
-const foreign = `picker-foreign-${suffix}`;
-const assigned = `picker-assigned-${suffix}`;
-const unassigned = `picker-unassigned-${suffix}`;
+const actor = "un3tvw49u59cn2d2a9rop8dl";
+const host = "mdeufadg0pokz21yilwj20zh";
+const partner = "jc81zdxvsmhn9amf5cd7b2z8";
+const foreign = "y4l7cye3sx531uc750fe1dfu";
+const assigned = "f1jy9mt5aes134zezdsz9rjh";
+const unassigned = "kf2n2hsv5yt7snkoqahw7012";
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });
@@ -50,10 +49,10 @@ describe("entity picker procedures", () => {
   it("searches Organizations by ID or name with id/name projection and create permission", async () => {
     expect(
       await client.organizations.search({ search: partner.slice(0, 12) }),
-    ).toEqual([{ id: partner, name: `Partner ${suffix}` }]);
-    expect(
-      await client.organizations.search({ search: `Partner ${suffix}` }),
-    ).toEqual([{ id: partner, name: `Partner ${suffix}` }]);
+    ).toEqual([{ id: partner, name: "Partner" }]);
+    expect(await client.organizations.search({ search: partner })).toEqual([
+      { id: partner, name: "Partner" },
+    ]);
     expect(await client.organizations.search({ search: "%_" })).toEqual([]);
     await expect(
       client.organizations.search({ search: "p" }),
@@ -75,7 +74,7 @@ describe("entity picker procedures", () => {
 
   it("caps Organization search at 20 id/name matches", async () => {
     const result = await client.organizations.search({
-      search: `Searchable ${suffix}`,
+      search: "Searchable",
     });
     expect(result).toHaveLength(20);
     expect(
@@ -85,11 +84,11 @@ describe("entity picker procedures", () => {
 
   it("searches only owned Organizations by name or ID and enforces min 2", async () => {
     expect(await client.organizations.listMine({ search: partner })).toEqual([
-      { id: partner, name: `Partner ${suffix}` },
+      { id: partner, name: "Partner" },
     ]);
-    expect(
-      await client.organizations.listMine({ search: `Host ${suffix}` }),
-    ).toEqual([{ id: host, name: `Host ${suffix}` }]);
+    expect(await client.organizations.listMine({ search: "Host" })).toEqual([
+      { id: host, name: "Host" },
+    ]);
     expect(await client.organizations.listMine({ search: foreign })).toEqual([]);
     expect(await client.organizations.listMine({ search: "%_" })).toEqual([]);
     await expect(
@@ -107,14 +106,14 @@ describe("entity picker procedures", () => {
       hasOrganizationRole(combinedRole, ORGANIZATION_ROLES.OrganizationOwner),
     ).toBe(true);
     expect(await client.organizations.listMine({ search: partner })).toEqual([
-      { id: partner, name: `Partner ${suffix}` },
+      { id: partner, name: "Partner" },
     ]);
   });
 
   it("finds owned Organizations beyond the first 50 while capping each result at 20", async () => {
     const owned = scenario.ownedOrganizations;
     expect(
-      await client.organizations.listMine({ search: `Owned Search ${suffix}` }),
+      await client.organizations.listMine({ search: "Owned Search" }),
     ).toHaveLength(20);
     expect(
       await client.organizations.listMine({ search: owned[54]!.id }),
@@ -124,7 +123,7 @@ describe("entity picker procedures", () => {
   it("finds an owner after more than 1000 preceding non-owner matches", async () => {
     const last = scenario.manyOrganizations[1001]!;
     expect(
-      await client.organizations.listMine({ search: `Many Matches ${suffix}` }),
+      await client.organizations.listMine({ search: "Many Matches" }),
     ).toEqual([{ id: last.id, name: last.name }]);
   }, 20_000);
 
@@ -168,21 +167,21 @@ describe("entity picker procedures", () => {
       .update(projects)
       .set({ createdAt: new Date("2024-06-01T00:00:00.000Z") })
       .where(eq(projects.id, unassigned));
-    expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
-      { id: assigned, name: `Project ${assigned}` },
-      { id: unassigned, name: `Project ${unassigned}` },
+    expect(await client.projects.searchHosted({ search: "Picker " })).toEqual([
+      { id: assigned, name: "Picker Assigned Project" },
+      { id: unassigned, name: "Picker Unassigned Project" },
     ]);
     // Browse preload: newest first. Typed search above stays alphabetical.
     expect(await client.projects.searchHosted({ search: "" })).toEqual([
-      { id: unassigned, name: `Project ${unassigned}` },
-      { id: assigned, name: `Project ${assigned}` },
+      { id: unassigned, name: "Picker Unassigned Project" },
+      { id: assigned, name: "Picker Assigned Project" },
     ]);
     session(host, scenario.coordinatorUserId);
-    expect(await client.projects.searchHosted({ search: "picker-" })).toEqual([
-      { id: assigned, name: `Project ${assigned}` },
+    expect(await client.projects.searchHosted({ search: "Picker " })).toEqual([
+      { id: assigned, name: "Picker Assigned Project" },
     ]);
     expect(await client.projects.searchHosted({ search: "" })).toEqual([
-      { id: assigned, name: `Project ${assigned}` },
+      { id: assigned, name: "Picker Assigned Project" },
     ]);
     session(host, scenario.unassignedCoordinatorUserId);
     expect(await client.projects.searchHosted({ search: "" })).toEqual([]);
@@ -192,7 +191,7 @@ describe("entity picker procedures", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     session(foreign);
     await expect(
-      client.projects.searchHosted({ search: "picker-" }),
+      client.projects.searchHosted({ search: "Picker " }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
