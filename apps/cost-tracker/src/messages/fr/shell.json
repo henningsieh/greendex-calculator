@@ -15,7 +15,10 @@
       "primaryLabel": "Primary navigation",
       "projects": "Projects",
       "partnerOrganizations": "Partner organizations",
-      "organization": "Organization"
+      "organization": "Organization",
+      "workspace": "Workspace",
+      "manage": "Manage",
+      "claimReview": "Claim review"
     },
     "account": {
       "openMenu": "Open account menu for {name}",

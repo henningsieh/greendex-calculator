@@ -15,7 +15,10 @@
       "primaryLabel": "Hauptnavigation",
       "projects": "Projekte",
       "partnerOrganizations": "Partnerorganisationen",
-      "organization": "Organisation"
+      "organization": "Organisation",
+      "workspace": "Arbeitsbereich",
+      "manage": "Verwalten",
+      "claimReview": "Claim-Prüfung"
     },
     "account": {
       "openMenu": "Kontomenü für {name} öffnen",

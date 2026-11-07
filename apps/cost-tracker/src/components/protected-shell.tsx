@@ -71,20 +71,23 @@ export async function ProtectedShell({
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar
+        activeOrganizationId={context.activeOrganizationId}
+        showOrganization={canViewOrganization}
+        showOrganizationSwitcher={context.showSwitcher}
+        showPartnerOrganizations={await canViewPartnerNetwork()}
+        staffOrganizations={context.memberships}
+      />
       <div className="min-h-svh w-full bg-muted/35">
         <header className="border-b bg-background">
           <div className="flex items-start gap-1">
             <SidebarTrigger className="mt-4 ml-3 shrink-0" />
             <div className="min-w-0 flex-1">
               <AppNavigation
-                activeOrganizationId={context.activeOrganizationId}
                 email={session.user.email}
                 name={session.user.name}
                 showOrganization={canViewOrganization}
-                showOrganizationSwitcher={context.showSwitcher}
                 showPartnerOrganizations={await canViewPartnerNetwork()}
-                staffOrganizations={context.memberships}
               />
             </div>
           </div>

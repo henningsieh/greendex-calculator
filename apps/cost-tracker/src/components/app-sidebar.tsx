@@ -1,18 +1,12 @@
-/* eslint-disable greendex/no-hardcoded-ui-copy -- Mock sidebar labels; real i18n wiring follows after layout debate. */
+/* eslint-disable greendex/no-hardcoded-ui-copy -- Sidebar footer is still a mock; real AccountMenu wiring lands with the session-menu step. */
 "use client";
 
-import {
-  Building2Icon,
-  ChevronsUpDownIcon,
-  ClipboardCheckIcon,
-  FolderIcon,
-  PaletteIcon,
-  PlusIcon,
-  ReceiptTextIcon,
-  Settings2Icon,
-  UsersIcon,
-} from "lucide-react";
+import { useTranslations } from "@greendex/i18n/client";
+import { ClipboardCheckIcon } from "lucide-react";
+import type { Route } from "next";
+import type { ReactNode } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import {
   Sidebar,
   SidebarContent,
@@ -26,77 +20,152 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
+import { Link, usePathname } from "@/lib/i18n/routing";
 
-const workspaceItems = [
-  { icon: FolderIcon, label: "Projects", active: true },
-  { icon: ClipboardCheckIcon, label: "Claim review", active: false },
-  { icon: UsersIcon, label: "Partner organizations", active: false },
-];
+type SidebarNavItem = {
+  href: Route;
+  label: string;
+  testId: string;
+  icon: ReactNode;
+};
 
-const manageItems = [
-  { icon: Building2Icon, label: "Organization", active: false },
-  { icon: Settings2Icon, label: "User settings", active: false },
-];
+type AppSidebarProps = {
+  showOrganization: boolean;
+  showPartnerOrganizations: boolean;
+  showOrganizationSwitcher: boolean;
+  staffOrganizations: { id: string; name: string }[];
+  activeOrganizationId?: string;
+};
 
-const shortcutItems = [
-  { icon: PlusIcon, label: "New project", active: false },
-  { icon: ReceiptTextIcon, label: "New claim", active: false },
-];
+function isItemActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
-const systemItems = [
-  { icon: PaletteIcon, label: "Design system", active: false },
-];
-
-function MockGroup({
+function SidebarNavGroup({
   label,
   items,
 }: {
   label: string;
-  items: { icon: typeof FolderIcon; label: string; active: boolean }[];
+  items: SidebarNavItem[];
 }) {
+  const pathname = usePathname();
+
+  if (items.length === 0) return null;
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton isActive={item.active} tooltip={item.label}>
-                <item.icon />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const active = isItemActive(pathname, item.href);
+
+            return (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  aria-current={active ? "page" : undefined}
+                  data-testid={item.testId}
+                  isActive={active}
+                  render={<Link href={item.href} />}
+                  tooltip={item.label}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
   );
 }
 
-export function AppSidebar() {
+export function AppSidebar({
+  showOrganization,
+  showPartnerOrganizations,
+  showOrganizationSwitcher,
+  staffOrganizations,
+  activeOrganizationId,
+}: AppSidebarProps) {
+  const t = useTranslations("shell");
+  const activeOrganization = staffOrganizations.find(
+    (organization) => organization.id === activeOrganizationId,
+  );
+
+  const workspaceItems: SidebarNavItem[] = [
+    {
+      href: "/projects",
+      label: t("nav.projects"),
+      testId: "sidebar-nav-projects",
+      icon: <EntityIcon entity="project" />,
+    },
+    {
+      href: "/claims/review",
+      label: t("nav.claimReview"),
+      testId: "sidebar-nav-claim-review",
+      icon: <ClipboardCheckIcon />,
+    },
+    ...(showPartnerOrganizations
+      ? [
+          {
+            href: "/partner-organizations",
+            label: t("nav.partnerOrganizations"),
+            testId: "sidebar-nav-partner-organizations",
+            icon: <EntityIcon entity="partnerOrganization" />,
+          } satisfies SidebarNavItem,
+        ]
+      : []),
+  ];
+
+  const manageItems: SidebarNavItem[] = showOrganization
+    ? [
+        {
+          href: "/organization",
+          label: t("nav.organization"),
+          testId: "sidebar-nav-organization",
+          icon: <EntityIcon entity="organization" />,
+        },
+      ]
+    : [];
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Organization">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Building2Icon className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm/tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold">GreenDex Org</span>
-                <span className="truncate text-xs">Erasmus Edition</span>
-              </div>
-              <ChevronsUpDownIcon className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {showOrganizationSwitcher && activeOrganizationId ? (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <OrganizationSwitcher
+                activeOrganizationId={activeOrganizationId}
+                layout="sidebar"
+                organizations={staffOrganizations}
+              />
+            </SidebarMenuItem>
+          </SidebarMenu>
+        ) : (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size="lg"
+                tooltip={activeOrganization?.name ?? t("nav.organization")}
+              >
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <EntityIcon entity="organization" className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm/tight group-data-[collapsible=icon]:hidden">
+                  <span className="truncate font-semibold">
+                    {activeOrganization?.name ?? t("nav.organization")}
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
       </SidebarHeader>
       <SidebarContent>
-        <MockGroup label="Workspace" items={workspaceItems} />
-        <MockGroup label="Manage" items={manageItems} />
-        <MockGroup label="Shortcuts" items={shortcutItems} />
-        <MockGroup label="System" items={systemItems} />
+        <SidebarNavGroup label={t("nav.workspace")} items={workspaceItems} />
+        <SidebarNavGroup label={t("nav.manage")} items={manageItems} />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -109,7 +178,6 @@ export function AppSidebar() {
                 <span className="truncate font-semibold">Jane Doe</span>
                 <span className="truncate text-xs">jane@example.org</span>
               </div>
-              <ChevronsUpDownIcon className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

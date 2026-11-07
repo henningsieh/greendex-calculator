@@ -24,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
-import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { cn } from "@/lib/utils";
 
 const baseNavigationItems = [
@@ -50,9 +49,6 @@ type AppNavigationProps = {
   actions?: ReactNode;
   showOrganization?: boolean;
   showPartnerOrganizations?: boolean;
-  showOrganizationSwitcher?: boolean;
-  staffOrganizations?: { id: string; name: string }[];
-  activeOrganizationId?: string;
 };
 
 export function AppNavigation({
@@ -62,9 +58,6 @@ export function AppNavigation({
   actions,
   showOrganization = false,
   showPartnerOrganizations = true,
-  showOrganizationSwitcher = false,
-  staffOrganizations = [],
-  activeOrganizationId,
 }: AppNavigationProps) {
   const t = useTranslations("shell");
   const pathname = usePathname();
@@ -84,12 +77,6 @@ export function AppNavigation({
         {account ? (
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
-            {showOrganizationSwitcher && activeOrganizationId ? (
-              <OrganizationSwitcher
-                activeOrganizationId={activeOrganizationId}
-                organizations={staffOrganizations}
-              />
-            ) : null}
             <div className="lg:hidden">
               <AccountMenu
                 compact
