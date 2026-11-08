@@ -15,7 +15,7 @@ import {
   travelCostEntriesTable as entries,
 } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   afterEach,
   beforeAll,
@@ -145,22 +145,31 @@ async function restoreScenario(name: SubmissionScenario) {
   const baseline = baselines.get(name);
   if (!baseline) throw new Error("Seed Submission baseline missing.");
   const ids = scenarioIds[scenarioNames.indexOf(name)]!;
-  // Exact baseline restoration removes procedure outputs and deliberate corruptions.
-  await db.delete(history).where(eq(history.claimId, baseline.claim.id));
-  await db.delete(claims).where(eq(claims.id, baseline.claim.id));
-  await db.insert(claims).values(baseline.claim);
-  await db.insert(documents).values(baseline.doc);
-  await db
-    .delete(selections)
-    .where(eq(selections.partnershipId, baseline.selection.partnershipId));
-  await db.insert(selections).values(baseline.selection);
-  for (const part of [ids.robin, ids.sam, ids.third] as const)
-    await db.delete(journeys).where(eq(journeys.projectParticipantId, part));
-  await db.delete(snapshots).where(eq(snapshots.projectId, ids.project));
-  if (name === "correction") {
-    const event = baselineCorrectionEvent;
-    if (event) await db.insert(history).values(event);
-  }
+  // One transaction, keyed by Partnership rather than Claim id: a test may
+  // replace the Claim row, and a half-applied restore (worker killed or a
+  // unique violation) would otherwise leave the seeded Scenario unrecoverable.
+  // proof_document and travel_cost_entry cascade from their Claim.
+  await db.transaction(async (tx) => {
+    const partnershipClaims = tx
+      .select({ id: claims.id })
+      .from(claims)
+      .where(eq(claims.partnershipId, ids.own));
+    await tx.delete(history).where(inArray(history.claimId, partnershipClaims));
+    await tx.delete(claims).where(eq(claims.partnershipId, ids.own));
+    await tx.insert(claims).values(baseline.claim);
+    await tx.insert(documents).values(baseline.doc).onConflictDoNothing();
+    await tx
+      .delete(selections)
+      .where(eq(selections.partnershipId, baseline.selection.partnershipId));
+    await tx.insert(selections).values(baseline.selection);
+    for (const part of [ids.robin, ids.sam, ids.third] as const)
+      await tx.delete(journeys).where(eq(journeys.projectParticipantId, part));
+    await tx.delete(snapshots).where(eq(snapshots.projectId, ids.project));
+    if (name === "correction") {
+      const event = baselineCorrectionEvent;
+      if (event) await tx.insert(history).values(event).onConflictDoNothing();
+    }
+  });
 }
 let baselineCorrectionEvent: typeof history.$inferSelect | undefined;
 let claimId: string;
@@ -187,7 +196,10 @@ beforeAll(async () => {
       where: eq(selections.partnershipId, own),
     });
     if (!claim || !doc || !selection)
-      throw new Error("Seed Submission seed required.");
+      throw new Error(
+        `Seed Submission fixtures missing for "${name}" (claim ${claimId}, proof ${proof}). ` +
+          "Run `pnpm run db:reset` to restore reproducible seed data.",
+      );
     baselines.set(name, { claim, doc, selection });
   }
   authMocks.getSession.mockImplementation(async () => ({
