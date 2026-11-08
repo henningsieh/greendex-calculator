@@ -1,12 +1,10 @@
 {
   "projects": {
-    "confirmations": {},
     "page": {
       "eyebrow": "Projektarbeitsbereich",
       "title": "Projekte",
       "description": "Prüfe Projekte, die von deiner aktiven Organisation gehostet oder ihr zugewiesen sind."
     },
-    "detail": {},
     "assigned": {
       "label": "Zugewiesene Projekte",
       "title": "Deine Projekte",

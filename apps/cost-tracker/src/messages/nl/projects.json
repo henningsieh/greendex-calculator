@@ -1,12 +1,10 @@
 {
   "projects": {
-    "confirmations": {},
     "page": {
       "eyebrow": "Project workspace",
       "title": "Projects",
       "description": "Review Projects hosted by or assigned to your active Organization."
     },
-    "detail": {},
     "assigned": {
       "label": "Assigned Projects",
       "title": "Your Projects",
