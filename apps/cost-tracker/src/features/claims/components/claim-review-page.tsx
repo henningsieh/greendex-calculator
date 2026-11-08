@@ -1,5 +1,4 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { ORPCError } from "@orpc/client";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -29,14 +28,10 @@ async function ReviewContext({
         meta: { costTrackerORPC: true },
       }),
     )
-    .catch((error: unknown) => {
-      if (
-        !(error instanceof ORPCError) ||
-        !["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code)
-      )
-        throw error;
-      return null;
-    });
+    // Header context is decorative chrome: any failure degrades to the fallback
+    // copy instead of taking the page down. The sections below keep the real
+    // error boundary and still surface failures.
+    .catch(() => null);
   if (!details) return <>{t("contextUnavailable")}</>;
   return <>{`${details.projectName} · ${details.organizationName}`}</>;
 }
