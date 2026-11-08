@@ -52,10 +52,9 @@ vi.mock("@/lib/orpc/middleware", () => ({
   hasCostTrackerPermissions: async () => false,
 }));
 
-import UnprefixedProjectsPage from "@/app/(protected)/projects/page";
 import LocalizedProjectsPage from "@/app/[locale]/(protected)/projects/page";
 
-it.each([UnprefixedProjectsPage, LocalizedProjectsPage])(
+it.each([LocalizedProjectsPage])(
   "streams the Projects header and list fallback before scope prefetch finishes",
   async (ProjectsPage) => {
     const scopes = new Promise<{ hosted: boolean; partner: boolean }>(

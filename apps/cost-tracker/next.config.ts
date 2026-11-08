@@ -22,7 +22,10 @@ const nextConfig = {
   // Prefetch shared static shells; private and URL-dependent data streams per request.
   partialPrefetching: true,
   reactCompiler: true,
-  typedRoutes: true,
+  // Typed routes are temporarily off: pages live only under app/[locale], and
+  // Next's generated union knows only /[locale]/... URLs. The next-intl
+  // pathnames migration restores typed hrefs without stub page files.
+  typedRoutes: false,
   experimental: {
     requestInsights: true,
     turbopackFileSystemCacheForBuild: true,

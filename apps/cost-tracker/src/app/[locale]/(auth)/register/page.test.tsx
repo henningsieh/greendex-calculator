@@ -22,17 +22,13 @@ vi.mock("@/lib/session", async (original) => ({
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: {} }));
 
-import LoginPage from "@/app/(auth)/login/page";
-import UnprefixedRegisterPage from "@/app/(auth)/register/page";
 import LocalizedLoginPage from "@/app/[locale]/(auth)/login/page";
 import LocalizedRegisterPage from "@/app/[locale]/(auth)/register/page";
 
 beforeEach(() => vi.clearAllMocks());
 
 describe.each([
-  ["unprefixed register", "register", UnprefixedRegisterPage],
   ["localized register", "register", LocalizedRegisterPage],
-  ["unprefixed login", "login", LoginPage],
   ["localized login", "login", LocalizedLoginPage],
 ])("Authentication route (%s)", (_label, authEntry, RegisterPage) => {
   it.each([

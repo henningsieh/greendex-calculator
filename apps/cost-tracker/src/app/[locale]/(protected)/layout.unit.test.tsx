@@ -11,10 +11,9 @@ vi.mock("@/components/site-brand", () => ({
   SiteBrand: () => <span>Greendex</span>,
 }));
 
-import UnprefixedProtectedLayout from "@/app/(protected)/layout";
 import LocalizedProtectedLayout from "@/app/[locale]/(protected)/layout";
 
-it.each([UnprefixedProtectedLayout, LocalizedProtectedLayout])(
+it.each([LocalizedProtectedLayout])(
   "names the loading status without placing page landmarks in its phrasing content",
   (ProtectedLayout) => {
     const { container } = render(

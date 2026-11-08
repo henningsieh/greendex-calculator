@@ -15,20 +15,11 @@ vi.mock(
   }),
 );
 
-import UnprefixedParticipantInvitationPage from "@/app/(setup)/participant-invitations/[invitationId]/page";
-import UnprefixedParticipantLinkPage from "@/app/(setup)/participant-links/[id]/page";
-import UnprefixedParticipantPage from "@/app/(setup)/participant/page";
 import LocalizedParticipantInvitationPage from "@/app/[locale]/(setup)/participant-invitations/[invitationId]/page";
 import LocalizedParticipantLinkPage from "@/app/[locale]/(setup)/participant-links/[id]/page";
 import LocalizedParticipantPage from "@/app/[locale]/(setup)/participant/page";
 
 describe.each([
-  {
-    label: "unprefixed",
-    ParticipantInvitationPage: UnprefixedParticipantInvitationPage,
-    ParticipantLinkPage: UnprefixedParticipantLinkPage,
-    ParticipantPage: UnprefixedParticipantPage,
-  },
   {
     label: "localized",
     ParticipantInvitationPage: LocalizedParticipantInvitationPage,

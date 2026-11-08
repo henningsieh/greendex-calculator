@@ -75,7 +75,7 @@ vi.mock("@/features/authentication/components/select-organization", () => ({
   SelectOrganization: () => <p>Select Organization recovery</p>,
 }));
 
-import ProtectedLayout from "@/app/(protected)/layout";
+import ProtectedLayout from "@/app/[locale]/(protected)/layout";
 import { ProtectedShell } from "@/components/protected-shell";
 
 const ownerMembership = {
@@ -235,12 +235,13 @@ it("streams neutral chrome before the session gate resolves", async () => {
   expect(html).toContain('data-partner-network="false"');
 });
 
-it("renders the signed-out child segment so its page can enforce authentication", async () => {
+it("redirects a signed-out request to sign-in instead of rendering the page", async () => {
   vi.clearAllMocks();
   mocks.getSession.mockResolvedValue(null);
-  const html = renderToStaticMarkup(
-    await ProtectedShell({ children: <p>Page guard</p> }),
-  );
-  expect(html).toContain("Page guard");
+
+  // redirect() throws a framework control-flow error carrying NEXT_REDIRECT.
+  await expect(
+    ProtectedShell({ children: <p>Page guard</p> }),
+  ).rejects.toMatchObject({ digest: expect.stringContaining("NEXT_REDIRECT") });
   expect(mocks.listMemberships).not.toHaveBeenCalled();
 });

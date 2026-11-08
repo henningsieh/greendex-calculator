@@ -97,24 +97,8 @@ vi.mock("@/features/partnerships/components/setup-link", () => ({
   SetupLinkCreator: () => <p>Setup link creator</p>,
 }));
 
-import ClaimReviewQueuePage from "@/app/(protected)/claims/review/page";
-import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
-import ClaimPage, {
-  metadata as ClaimPageMetadata,
-} from "@/app/(protected)/partnerships/[partnershipId]/claim/page";
-import ClaimReviewPage, {
-  metadata as ClaimReviewPageMetadata,
-} from "@/app/(protected)/partnerships/[partnershipId]/claim/review/page";
-import ParticipantDetailsPage, {
-  metadata as ParticipantDetailsPageMetadata,
-} from "@/app/(protected)/partnerships/[partnershipId]/participants/[participationId]/page";
-import PartnershipParticipantsPage, {
-  metadata as PartnershipParticipantsPageMetadata,
-} from "@/app/(protected)/partnerships/[partnershipId]/participants/page";
-import ProjectPage from "@/app/(protected)/projects/[id]/page";
-import HostedParticipantsPage, {
-  metadata as HostedParticipantsPageMetadata,
-} from "@/app/(protected)/projects/[id]/participants/page";
+import LocalizedClaimReviewQueuePage from "@/app/[locale]/(protected)/claims/review/page";
+import LocalizedPartnerOrganizationsPage from "@/app/[locale]/(protected)/partner-organizations/page";
 import LocalizedClaimPage, {
   metadata as LocalizedClaimPageMetadata,
 } from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/page";
@@ -127,92 +111,69 @@ import LocalizedParticipantDetailsPage, {
 import LocalizedPartnershipParticipantsPage, {
   metadata as LocalizedPartnershipParticipantsPageMetadata,
 } from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/page";
+import LocalizedProjectPage from "@/app/[locale]/(protected)/projects/[id]/page";
 import LocalizedHostedParticipantsPage, {
   metadata as LocalizedHostedParticipantsPageMetadata,
 } from "@/app/[locale]/(protected)/projects/[id]/participants/page";
 
-const unprefixedRoutes = [
+const routes = [
   {
-    path: "/partnerships/[partnershipId]/claim",
-    Page: ClaimPage,
+    path: "/[locale]/partnerships/[partnershipId]/claim",
+    Page: LocalizedClaimPage,
     heading: "Claim workspace",
     label: "Loading Claim workspace",
     content: "Resolved Claim workspace",
   },
   {
-    path: "/claims/review",
-    Page: ClaimReviewQueuePage,
+    path: "/[locale]/claims/review",
+    Page: LocalizedClaimReviewQueuePage,
     heading: "Hosting Claim review",
     label: "Loading submitted Claims",
     content: "Resolved Claim queue",
   },
   {
-    path: "/partnerships/[partnershipId]/claim/review",
-    Page: ClaimReviewPage,
+    path: "/[locale]/partnerships/[partnershipId]/claim/review",
+    Page: LocalizedClaimReviewPage,
     heading: "Review claim",
     label: "Loading Claim review",
     content: "Resolved Claim review",
   },
   {
-    path: "/partnerships/[partnershipId]/participants",
-    Page: PartnershipParticipantsPage,
+    path: "/[locale]/partnerships/[partnershipId]/participants",
+    Page: LocalizedPartnershipParticipantsPage,
     heading: "Project Participations",
     label: "Loading Project Participations",
     content: "Resolved Participations",
   },
   {
-    path: "/partnerships/[partnershipId]/participants/[participationId]",
-    Page: ParticipantDetailsPage,
+    path: "/[locale]/partnerships/[partnershipId]/participants/[participationId]",
+    Page: LocalizedParticipantDetailsPage,
     heading: "Participant details",
     label: "Loading Participant details",
     content: "Resolved Participant details",
   },
   {
-    path: "/projects/[id]/participants",
-    Page: HostedParticipantsPage,
+    path: "/[locale]/projects/[id]/participants",
+    Page: LocalizedHostedParticipantsPage,
     heading: "Participants report",
     label: "Loading the Participants report",
     content: "Resolved Hosted report",
   },
   {
-    path: "/partner-organizations",
-    Page: PartnerOrganizationsPage,
+    path: "/[locale]/partner-organizations",
+    Page: LocalizedPartnerOrganizationsPage,
     heading: "Partner Organizations",
     label: "Loading Project Partnerships",
     content: "Resolved Partnerships",
   },
   {
-    path: "/projects/[id]",
-    Page: ProjectPage,
+    path: "/[locale]/projects/[id]",
+    Page: LocalizedProjectPage,
     heading: "Project workspace",
     label: "Loading Project workspace",
     content: "Resolved Project workspace",
   },
 ];
-
-import LocalizedClaimReviewQueuePage from "@/app/[locale]/(protected)/claims/review/page";
-import LocalizedPartnerOrganizationsPage from "@/app/[locale]/(protected)/partner-organizations/page";
-import LocalizedProjectPage from "@/app/[locale]/(protected)/projects/[id]/page";
-
-const localizedPages = new Map<
-  (typeof unprefixedRoutes)[number]["Page"],
-  (typeof unprefixedRoutes)[number]["Page"]
->([
-  [ClaimPage, LocalizedClaimPage],
-  [ClaimReviewQueuePage, LocalizedClaimReviewQueuePage],
-  [PartnerOrganizationsPage, LocalizedPartnerOrganizationsPage],
-  [ProjectPage, LocalizedProjectPage],
-  [ClaimReviewPage, LocalizedClaimReviewPage],
-  [PartnershipParticipantsPage, LocalizedPartnershipParticipantsPage],
-  [ParticipantDetailsPage, LocalizedParticipantDetailsPage],
-  [HostedParticipantsPage, LocalizedHostedParticipantsPage],
-]);
-const routes = unprefixedRoutes.flatMap((route) => {
-  const Page = localizedPages.get(route.Page);
-  return Page
-    ? [route, { ...route, path: `/[locale]${route.path}`, Page }]
-    : [route];
-});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -220,8 +181,6 @@ beforeEach(() => {
 });
 
 it.each([
-  { path: "claim", Page: ClaimPage },
-  { path: "claim/review", Page: ClaimReviewPage },
   { path: "[locale]/claim", Page: LocalizedClaimPage },
   { path: "[locale]/claim/review", Page: LocalizedClaimReviewPage },
 ])(
@@ -270,7 +229,7 @@ it("prefetches the authorized Claim review snapshot", async () => {
   const errors: unknown[] = [];
   const { pipe } = renderToPipeableStream(
     <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
-      <ClaimReviewPage
+      <LocalizedClaimReviewPage
         params={Promise.resolve({ partnershipId: "requested-partnership" })}
       />
     </NextIntlClientProvider>,
@@ -420,24 +379,11 @@ it.each(
 );
 
 it.each([
-  ["Claim workspace", ClaimPageMetadata, LocalizedClaimPageMetadata],
-  ["Review claim", ClaimReviewPageMetadata, LocalizedClaimReviewPageMetadata],
-  [
-    "Project Participations",
-    PartnershipParticipantsPageMetadata,
-    LocalizedPartnershipParticipantsPageMetadata,
-  ],
-  [
-    "Participant details",
-    ParticipantDetailsPageMetadata,
-    LocalizedParticipantDetailsPageMetadata,
-  ],
-  [
-    "Participants report",
-    HostedParticipantsPageMetadata,
-    LocalizedHostedParticipantsPageMetadata,
-  ],
-])("preserves %s metadata for both URL forms", (title, unprefixed, localized) => {
-  expect(unprefixed).toEqual({ title });
-  expect(localized).toEqual(unprefixed);
+  ["Claim workspace", LocalizedClaimPageMetadata],
+  ["Review claim", LocalizedClaimReviewPageMetadata],
+  ["Project Participations", LocalizedPartnershipParticipantsPageMetadata],
+  ["Participant details", LocalizedParticipantDetailsPageMetadata],
+  ["Participants report", LocalizedHostedParticipantsPageMetadata],
+])("preserves %s metadata", (title, localized) => {
+  expect(localized).toEqual({ title });
 });
