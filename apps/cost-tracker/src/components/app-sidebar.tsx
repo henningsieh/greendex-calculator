@@ -1,10 +1,10 @@
-/* eslint-disable greendex/no-hardcoded-ui-copy -- Sidebar footer is still a mock; real AccountMenu wiring lands with the session-menu step. */
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 
+import { AccountMenu } from "@/components/account-menu";
 import { EntityIcon } from "@/components/entity-icon";
 import {
   Sidebar,
@@ -30,6 +30,8 @@ type SidebarNavItem = {
 };
 
 type AppSidebarProps = {
+  userName: string;
+  userEmail: string;
   showOrganization: boolean;
   showPartnerOrganizations: boolean;
   showOrganizationSwitcher: boolean;
@@ -82,6 +84,8 @@ function SidebarNavGroup({
 }
 
 export function AppSidebar({
+  userName,
+  userEmail,
   showOrganization,
   showPartnerOrganizations,
   showOrganizationSwitcher,
@@ -169,15 +173,12 @@ export function AppSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Account">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-xs font-semibold text-primary">
-                JD
-              </div>
-              <div className="grid flex-1 text-left text-sm/tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-semibold">Jane Doe</span>
-                <span className="truncate text-xs">jane@example.org</span>
-              </div>
-            </SidebarMenuButton>
+            <AccountMenu
+              className="h-12 w-full justify-start"
+              email={userEmail}
+              name={userName}
+              variant="ghost"
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

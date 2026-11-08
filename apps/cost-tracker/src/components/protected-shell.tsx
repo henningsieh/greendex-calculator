@@ -80,6 +80,8 @@ export async function ProtectedShell({
   return (
     <SidebarProvider defaultOpen={sidebarDefaultOpen}>
       <AppSidebar
+        userName={session.user.name}
+        userEmail={session.user.email}
         activeOrganizationId={context.activeOrganizationId}
         showOrganization={canViewOrganization}
         showOrganizationSwitcher={context.showSwitcher}
