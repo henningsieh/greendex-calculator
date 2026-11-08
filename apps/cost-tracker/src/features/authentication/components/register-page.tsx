@@ -1,9 +1,9 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/features/authentication/components/auth-form";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { onboardingReturnTo } from "@/features/authentication/onboarding-decision";
+import { redirect } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 import { getSession, safeSignInReturnTo } from "@/lib/session";
 
@@ -13,8 +13,10 @@ export async function generateMetadata() {
 }
 
 export default async function RegisterPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
   const returnTo = onboardingReturnTo((await searchParams).next);
@@ -33,7 +35,8 @@ export default async function RegisterPage({
     );
   }
   const next = safeSignInReturnTo(returnTo);
-  if (await getSession()) redirect(next ?? "/projects");
+  if (await getSession())
+    redirect({ href: next ?? "/projects", locale: (await params).locale });
   return (
     <AuthForm
       mode="sign-up"

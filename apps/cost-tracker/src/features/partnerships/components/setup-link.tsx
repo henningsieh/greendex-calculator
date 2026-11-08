@@ -4,11 +4,9 @@ import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Route } from "next";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 
+import type { AppHref } from "@/app/routes";
 import { EntityCombobox } from "@/components/entity-combobox";
 import {
   ErrorPresentation,
@@ -40,6 +38,8 @@ import {
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { authClient } from "@/lib/auth-client";
+import { Link } from "@/lib/i18n/routing";
+import { useRouter } from "@/lib/i18n/routing";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
@@ -444,7 +444,7 @@ function SetupOrganizationAccess({
       data-testid="open-partner-project"
       className={buttonVariants()}
       prefetch={false}
-      href={decision.availableActions[0].destination as Route}
+      href={decision.availableActions[0].destination as AppHref}
     >
       {t("openPartnerProject")}
     </Link>

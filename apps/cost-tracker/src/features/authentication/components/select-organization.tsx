@@ -2,10 +2,9 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { LoaderCircleIcon } from "lucide-react";
-import type { Route } from "next";
-import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
+import type { AppHref } from "@/app/routes";
 import { EntityIcon } from "@/components/entity-icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,11 +18,12 @@ import {
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import type { OrganizationMembershipSummary } from "@/features/organizations/staff-eligibility";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "@/lib/i18n/routing";
 
 type SelectOrganizationProps = {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];
   onSelected?: () => Promise<void>;
-  signOutDestination?: Route;
+  signOutDestination?: AppHref;
 };
 
 export function SelectOrganization({

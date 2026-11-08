@@ -1,10 +1,10 @@
 import "server-only";
-import type { Route } from "next";
 import { io } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
+import type { AppRoute } from "@/app/routes";
 import { auth } from "@/lib/auth";
 
 export const getSession = cache(async () => {
@@ -15,10 +15,10 @@ export const getSession = cache(async () => {
 
 export function invitationReturnTo(
   value: string | string[] | undefined,
-): Route | undefined {
+): AppRoute | undefined {
   if (typeof value !== "string") return undefined;
   return /^\/accept-invitation\/[a-zA-Z0-9_-]{1,128}$/.test(value)
-    ? (value as Route)
+    ? (value as AppRoute)
     : undefined;
 }
 
@@ -29,19 +29,19 @@ export function invitationReturnTo(
  */
 export function setupLinkReturnTo(
   value: string | string[] | undefined,
-): Route | undefined {
+): AppRoute | undefined {
   if (typeof value !== "string") return undefined;
   return /^\/setup-links\/[A-Za-z0-9_-]{1,128}(?:\?secret=[A-Za-z0-9_-]{1,256})?$/.test(
     value,
   )
-    ? (value as Route)
+    ? (value as AppRoute)
     : undefined;
 }
 
 /** Any setup destination a signed-out recipient may resume after sign-in. */
 export function safeSignInReturnTo(
   value: string | string[] | undefined,
-): Route | undefined {
+): AppRoute | undefined {
   return invitationReturnTo(value) ?? setupLinkReturnTo(value);
 }
 

@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   listSetupLinks: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
   useRouter: () => ({ refresh: mocks.refresh }),
 }));
 vi.mock("@/lib/auth-client", () => ({

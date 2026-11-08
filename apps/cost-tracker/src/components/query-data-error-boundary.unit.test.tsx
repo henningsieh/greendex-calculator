@@ -67,7 +67,7 @@ describe("ProjectDataErrorBoundary", () => {
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByTestId("project-data-sign-in").getAttribute("href")).toBe(
-      "/login",
+      "/en/login",
     );
   });
 
@@ -123,7 +123,7 @@ it.each(["en", "de"] as const)("preserves session recovery in %s", (locale) => {
   );
   expect(screen.getByTestId("project-data-sign-in")).toHaveAttribute(
     "href",
-    "/login",
+    `/${locale}/login`,
   );
   expect(screen.queryByTestId("retry-project-data")).toBeNull();
   vi.restoreAllMocks();

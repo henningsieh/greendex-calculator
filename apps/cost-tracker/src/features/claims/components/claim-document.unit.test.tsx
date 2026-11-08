@@ -1,6 +1,4 @@
 import { fireEvent, screen, within } from "@testing-library/react";
-import type { Route } from "next";
-import Link from "next/link";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
@@ -11,6 +9,7 @@ import {
   ClaimCostTable,
   PayoutAccountLines,
 } from "@/features/claims/components/claim-document";
+import { Link } from "@/lib/i18n/routing";
 
 const filename = `${"long-receipt-name-".repeat(12)}.pdf`;
 
@@ -121,9 +120,7 @@ describe("Claim document presentation", () => {
             ),
             documents: (
               // Public asset, not an app route: typed routes only cover pages.
-              <Link href={"/proof-documents/receipt.pdf" as Route}>
-                {filename}
-              </Link>
+              <Link href="/proof-documents/receipt.pdf">{filename}</Link>
             ),
             action: (
               <Button
@@ -151,7 +148,7 @@ describe("Claim document presentation", () => {
     expect(within(row).getAllByRole("listitem")).toHaveLength(2);
     expect(within(row).getByRole("link")).toHaveAttribute(
       "href",
-      "/proof-documents/receipt.pdf",
+      "/en/proof-documents/receipt.pdf",
     );
     fireEvent.click(within(row).getByTestId("fixture-edit-cost"));
     expect(edit).toHaveBeenCalledOnce();

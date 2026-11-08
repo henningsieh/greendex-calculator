@@ -1,11 +1,9 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import type { Route } from "next";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { AppHref } from "@/app/routes";
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,6 +15,8 @@ import type {
   OnboardingDecision,
   OnboardingInput,
 } from "@/features/authentication/onboarding-decision";
+import { Link } from "@/lib/i18n/routing";
+import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 
 export function InvitationAcceptance({
@@ -35,7 +35,12 @@ export function InvitationAcceptance({
   onRejected?: (organizationName: string) => void;
 }) {
   const { confirm, dialog } = useConfirmDialog();
-  const router = useRouter();
+  const { replace } = useRouter();
+  // next-intl recreates the router object; keep the callback identity stable.
+  const replaceRef = useRef(replace);
+  useEffect(() => {
+    replaceRef.current = replace;
+  }, [replace]);
   const t = useTranslations("onboarding");
   const [decision, setDecision] = useState(initialDecision);
   const [observedInitialDecision, setObservedInitialDecision] =
@@ -53,16 +58,16 @@ export function InvitationAcceptance({
     (next: OnboardingDecision) => {
       onDecision?.(next);
       if (next.nextStep === "continue")
-        router.replace(next.availableActions[0].destination as Route);
+        replaceRef.current(next.availableActions[0].destination as AppHref);
       if (next.nextStep === "authenticate") {
         onAuthenticate?.();
         const action = next.availableActions[0];
-        router.replace(
+        replaceRef.current(
           `/${"entry" in action ? action.entry : "login"}${action.returnTo ? `?next=${encodeURIComponent(action.returnTo)}` : ""}`,
         );
       }
     },
-    [router, onAuthenticate, onDecision],
+    [onAuthenticate, onDecision],
   );
 
   const continueJourney = useCallback(
@@ -370,7 +375,7 @@ function InvitationNextSteps({
             <SignOutButton
               destination={
                 "destination" in action
-                  ? (action.destination as Route)
+                  ? (action.destination as AppHref)
                   : undefined
               }
             />
@@ -408,7 +413,7 @@ function InvitationOrganizationChoice({
         onSelected={recheck}
         signOutDestination={
           "destination" in decision.availableActions[1]
-            ? (decision.availableActions[1].destination as Route)
+            ? (decision.availableActions[1].destination as AppHref)
             : undefined
         }
       />

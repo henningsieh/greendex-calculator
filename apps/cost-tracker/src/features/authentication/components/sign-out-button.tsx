@@ -2,9 +2,9 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { LoaderCircleIcon, LogOutIcon } from "lucide-react";
-import type { Route } from "next";
 import type { ComponentProps } from "react";
 
+import type { AppHref } from "@/app/routes";
 import { Button } from "@/components/ui/button";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 
@@ -17,7 +17,7 @@ type SignOutButtonProps = Omit<
   "children" | "disabled" | "className" | "style"
 > & {
   compact?: boolean;
-  destination?: Route;
+  destination?: AppHref;
 };
 
 export function SignOutButton({

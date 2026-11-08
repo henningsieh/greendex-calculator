@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
 /* LandingCtaButton — the single brand exception (#367).

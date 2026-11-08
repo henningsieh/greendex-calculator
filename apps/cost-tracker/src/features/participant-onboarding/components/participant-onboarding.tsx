@@ -3,7 +3,6 @@
 import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -17,6 +16,7 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/participant-onboarding/participant-agreement";
+import { useRouter } from "@/lib/i18n/routing";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { orpc } from "@/lib/orpc/orpc";
 

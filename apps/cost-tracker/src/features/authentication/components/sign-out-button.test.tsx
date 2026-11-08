@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
   useRouter: () => ({ refresh: mocks.refresh, replace: mocks.replace }),
 }));
 
@@ -70,7 +72,7 @@ describe("SignOutButton", () => {
       within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
 
-    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en");
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
@@ -103,6 +105,6 @@ it("returns invitation sign-out to the retained journey", async () => {
     within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
   );
   expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
-    "/register?next=%2Faccept-invitation%2Finvite-1",
+    "/en/register?next=%2Faccept-invitation%2Finvite-1",
   );
 });

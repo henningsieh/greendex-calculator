@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
   useRouter: () => ({ refresh: mocks.refresh, replace: mocks.replace }),
 }));
 
@@ -73,7 +75,7 @@ describe("AuthForm", () => {
     await user.click(screen.getByTestId("auth-submit"));
 
     await waitFor(() =>
-      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects"),
+      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en/projects"),
     );
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
@@ -179,7 +181,7 @@ it("renders the server receipt with named progress and destination-preserving si
   expect(screen.getByTestId("email")).not.toHaveAttribute("readonly");
   expect(screen.getByTestId("auth-account-navigation")).toHaveAttribute(
     "href",
-    "/login?next=%2Faccept-invitation%2Finvite-1",
+    "/en/login?next=%2Faccept-invitation%2Finvite-1",
   );
   await userEvent.type(screen.getByTestId("name"), "Alex Morgan");
   await userEvent.type(screen.getByTestId("email"), "submitted@example.org");
@@ -198,7 +200,7 @@ it("renders the server receipt with named progress and destination-preserving si
   expect(screen.getByTestId("verification-address")).toBeVisible();
   expect(screen.getByTestId("inbox-sign-in")).toHaveAttribute(
     "href",
-    "/login?next=%2Faccept-invitation%2Finvite-1",
+    "/en/login?next=%2Faccept-invitation%2Finvite-1",
   );
   expect(screen.queryByTestId("create-organization")).toBeNull();
 });
@@ -232,7 +234,7 @@ it("shows wrong-address signup recovery before inbox instructions and rechecks w
   expect(screen.queryByTestId("accept-organization-invitation")).toBeNull();
   expect(screen.getByTestId("invitation-recovery-sign-in")).toHaveAttribute(
     "href",
-    `/login?next=${encodeURIComponent(returnTo)}`,
+    `/en/login?next=${encodeURIComponent(returnTo)}`,
   );
   mocks.onboardingNextStep.mockResolvedValue({
     entryContext: "organization-invitation",

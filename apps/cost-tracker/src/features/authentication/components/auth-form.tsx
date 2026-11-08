@@ -3,12 +3,10 @@
 import { GoogleIcon } from "@greendex/auth/oauth-icons";
 import { useTranslations } from "@greendex/i18n/client";
 import { ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
-import type { Route } from "next";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFormStatus } from "react-dom";
 
+import type { AppHref } from "@/app/routes";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -24,6 +22,8 @@ import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
+import { Link } from "@/lib/i18n/routing";
+import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +92,7 @@ export function AuthForm({
       }
 
       // replace fetches the destination; a following refresh would start a second RSC request.
-      router.replace((destination ?? "/projects") as Route);
+      router.replace((destination ?? "/projects") as AppHref);
     } catch (error) {
       showError(error);
     }

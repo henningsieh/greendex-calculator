@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import Link from "next/link";
 
 import type { useConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Link } from "@/lib/i18n/routing";
 import type { Outputs } from "@/lib/orpc/router";
 
 export function JoinedParticipants({

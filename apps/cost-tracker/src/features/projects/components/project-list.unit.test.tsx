@@ -167,10 +167,10 @@ describe("Project list", { timeout: 20_000 }, () => {
           },
         )
       ).getAttribute("href"),
-    ).toBe("/projects/project-1/participants");
+    ).toBe("/en/projects/project-1/participants");
   });
 
-  it("preserves the complete list state when opening a Project", async () => {
+  it("links to the Project without carrying list state", async () => {
     renderList();
 
     expect(
@@ -181,9 +181,7 @@ describe("Project list", { timeout: 20_000 }, () => {
           { timeout: 10_000 },
         )
       ).getAttribute("href"),
-    ).toBe(
-      "/projects/project-1?returnTo=%2Fprojects%3Fscope%3Dpartner%26search%3Dclimate%26window%3Dopen%26dateFrom%3D2026-01-01%26dateTo%3D2026-12-31%26partnerOrganizationIds%3Dpartner-1%26sort%3Dstart-desc%26pageSize%3D50%26cursor%3Dopaque",
-    );
+    ).toBe("/en/projects/project-1");
   });
 
   it("clears the cursor when scope or filters change", async () => {

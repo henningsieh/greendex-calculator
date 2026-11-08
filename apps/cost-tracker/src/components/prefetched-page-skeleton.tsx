@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Route-level fallback for server-prefetched protected workspaces. */
+/** AppHref-level fallback for server-prefetched protected workspaces. */
 export function PrefetchedPageSkeleton({ label }: { label: string }) {
   return (
     <output aria-label={label} aria-live="polite">

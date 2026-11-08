@@ -1,16 +1,16 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import type { Route } from "next";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import type { AppHref } from "@/app/routes";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
 import { authClient } from "@/lib/auth-client";
+import { Link } from "@/lib/i18n/routing";
 
 type VerificationDecision = Extract<
   OnboardingDecision,
@@ -148,7 +148,7 @@ export function CheckInbox({
             <SignOutButton
               destination={
                 "destination" in action
-                  ? (action.destination as Route)
+                  ? (action.destination as AppHref)
                   : undefined
               }
             />

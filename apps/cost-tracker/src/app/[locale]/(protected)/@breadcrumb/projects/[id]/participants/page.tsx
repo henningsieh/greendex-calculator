@@ -1,9 +1,9 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { ORPCError } from "@orpc/client";
-import type { Route } from "next";
 import { io } from "next/cache";
 import { Suspense } from "react";
 
+import type { AppHref } from "@/app/routes";
 import BreadcrumbTrail, {
   BreadcrumbTrailFallback,
 } from "@/components/breadcrumb-trail";
@@ -45,7 +45,7 @@ async function HostedParticipantsBreadcrumbContent({
         { label: t("nav.projects"), href: "/projects" },
         {
           label: kindLabel,
-          href: `/projects/${encodeURIComponent(id)}` as Route,
+          href: `/projects/${encodeURIComponent(id)}` as AppHref,
         },
       ]}
       current={t("crumbs.participants")}

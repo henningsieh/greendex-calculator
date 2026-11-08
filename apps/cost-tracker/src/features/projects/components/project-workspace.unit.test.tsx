@@ -90,10 +90,10 @@ describe("Project workspace", () => {
     expect(partnerships[0]).toHaveAttribute("data-organization-id", "partner-1");
     expect(
       screen.getByTestId("manage-project-partnerships").getAttribute("href"),
-    ).toBe("/partner-organizations");
+    ).toBe("/en/partner-organizations");
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
     expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
-      "/projects/project-1/participants",
+      "/en/projects/project-1/participants",
     );
     expect(screen.queryByTestId("open-claim-workspace")).not.toBeInTheDocument();
   });
@@ -265,9 +265,9 @@ describe("Project workspace", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByTestId("coordinate-participants").getAttribute("href"),
-    ).toBe("/partnerships/partnership-1/participants");
+    ).toBe("/en/partnerships/partnership-1/participants");
     expect(screen.getByTestId("open-claim-workspace").getAttribute("href")).toBe(
-      "/partnerships/partnership-1/claim",
+      "/en/partnerships/partnership-1/claim",
     );
     expect(screen.queryByTestId("hosted-participants")).toBeNull();
     expect(screen.queryByTestId("complete-project")).toBeNull();

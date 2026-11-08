@@ -2,11 +2,11 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
-import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { isClaimAwaitingReview } from "@/features/claims/claim-lifecycle";
+import { Link } from "@/lib/i18n/routing";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 export function ClaimReviewQueue() {

@@ -1,12 +1,14 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import Link from "next/link";
 import { expect, it, vi } from "vitest";
 
 import { renderWithMessages } from "@/__tests__/render-with-messages";
+import { Link } from "@/lib/i18n/routing";
 
 const mocks = vi.hoisted(() => ({ signOut: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
   usePathname: () => "/projects",
   useRouter: () => ({ replace: mocks.replace }),
 }));
@@ -24,12 +26,12 @@ it("renders public actions with a custom brand destination and no account contro
   renderWithMessages(
     <AppNavigation brandHref="/" actions={<Link href="/login">Sign in</Link>} />,
   );
-  expect(screen.getByTestId("site-brand")).toHaveAttribute("href", "/");
+  expect(screen.getByTestId("site-brand")).toHaveAttribute("href", "/en");
   const navigations = screen.getAllByRole("navigation");
   expect(navigations).toHaveLength(1);
   expect(within(navigations[0]!).getByRole("link")).toHaveAttribute(
     "href",
-    "/login",
+    "/en/login",
   );
   expect(screen.queryByTestId("account-menu-trigger")).not.toBeInTheDocument();
 });

@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import BreadcrumbTrail, {
   BreadcrumbTrailFallback,
 } from "@/components/breadcrumb-trail";
-import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { getQueryClient } from "@/lib/tanstack-react-query/hydration";
 
@@ -39,23 +38,17 @@ async function projectKindLabel(projectId: string) {
 /* Exported for the route test: the default export only wires the Suspense boundary. */
 export async function ProjectDetailsBreadcrumbContent({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ id }, rawSearchParams] = await Promise.all([
-    params,
-    searchParams ??
-      Promise.resolve<Record<string, string | string[] | undefined>>({}),
-  ]);
+  const { id } = await params;
   const t = await getTranslations("shell");
   return (
     <BreadcrumbTrail
       items={[
         {
           label: t("nav.projects"),
-          href: getProjectListReturnDestination(rawSearchParams.returnTo),
+          href: "/projects",
           testId: "back-to-projects",
         },
       ]}
@@ -66,17 +59,12 @@ export async function ProjectDetailsBreadcrumbContent({
 
 export default function ProjectDetailsBreadcrumb({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   return (
     <Suspense fallback={<BreadcrumbTrailFallback />}>
-      <ProjectDetailsBreadcrumbContent
-        params={params}
-        searchParams={searchParams}
-      />
+      <ProjectDetailsBreadcrumbContent params={params} />
     </Suspense>
   );
 }

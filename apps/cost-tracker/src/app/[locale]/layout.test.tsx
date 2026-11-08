@@ -30,7 +30,12 @@ vi.mock("@greendex/i18n/client", () => ({
 }));
 vi.mock("@/lib/i18n/routing", () => ({ routing: { locales: LANGUAGE_CODES } }));
 vi.mock("next/cache", () => ({ cacheLife: vi.fn() }));
-vi.mock("next/navigation", () => ({ notFound: mocks.notFound }));
+vi.mock("next/navigation", () => ({
+  notFound: mocks.notFound,
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
+  usePathname: () => "/",
+}));
 
 import LocaleLayout, { generateStaticParams } from "@/app/[locale]/layout";
 

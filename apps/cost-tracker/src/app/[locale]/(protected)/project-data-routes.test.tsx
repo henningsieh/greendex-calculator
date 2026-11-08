@@ -1,7 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@greendex/i18n/server", async () => ({
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+
+vi.mock("@greendex/i18n/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@greendex/i18n/server")>()),
   getTranslations: (await import("@/__tests__/i18n")).getTranslations,
 }));
 

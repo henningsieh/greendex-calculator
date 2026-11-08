@@ -15,7 +15,6 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { RefreshCwIcon } from "lucide-react";
-import Link from "next/link";
 import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +40,7 @@ import {
 import { getProjectListQueryOptions } from "@/features/projects/list-query-options";
 import type { ProjectListState } from "@/features/projects/list-query-options";
 import type { ProjectListRow } from "@/features/projects/types";
+import { Link } from "@/lib/i18n/routing";
 
 const projectListTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -136,13 +136,11 @@ export function ResolvedProjectListResults({
   state,
   urlState,
   setUrlState,
-  returnTo,
 }: {
   scope: "hosted" | "partner";
   state: ProjectListState;
   urlState: ProjectListQueryState[0];
   setUrlState: ProjectListQueryState[1];
-  returnTo: string;
 }) {
   const t = useTranslations("projects.list");
 
@@ -173,7 +171,7 @@ export function ResolvedProjectListResults({
         cell: ({ row }) => (
           <Link
             className="font-medium link-prose"
-            href={`/projects/${encodeURIComponent(row.original.id)}?${new URLSearchParams({ returnTo })}`}
+            href={`/projects/${encodeURIComponent(row.original.id)}`}
             data-testid={`project-link-${row.original.id}`}
           >
             {row.original.name}
@@ -249,7 +247,7 @@ export function ResolvedProjectListResults({
         ),
       },
     ],
-    [returnTo, scope, t],
+    [scope, t],
   );
   const table = useTable({
     columns,

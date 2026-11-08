@@ -1,4 +1,3 @@
-import type { Route } from "next";
 import {
   createLoader,
   parseAsIsoDate,
@@ -30,8 +29,6 @@ export {
 
 const MAX_PARTNER_FILTERS = 20;
 const MINIMUM_SEARCH_LENGTH = 3;
-const PROJECT_LIST_PATH = "/projects";
-const LOCAL_URL_ORIGIN = "https://cost-tracker.local";
 
 export const projectListParsers = {
   scope: parseAsStringLiteral(PROJECT_LIST_SCOPES),
@@ -77,29 +74,6 @@ export type ResolvedProjectListState = {
   state: ProjectListState;
   didPartnerToHostedFallback: boolean;
 };
-
-/**
- * Accepts only a local Project list URL. This keeps return context out of
- * workspace authorization and prevents open redirects from crafted links.
- */
-export function getProjectListReturnDestination(returnTo: unknown): Route {
-  if (
-    typeof returnTo !== "string" ||
-    !returnTo.startsWith("/") ||
-    returnTo.startsWith("//")
-  ) {
-    return PROJECT_LIST_PATH;
-  }
-
-  try {
-    const url = new URL(returnTo, LOCAL_URL_ORIGIN);
-    return url.origin === LOCAL_URL_ORIGIN && url.pathname === PROJECT_LIST_PATH
-      ? (returnTo as Route)
-      : PROJECT_LIST_PATH;
-  } catch {
-    return PROJECT_LIST_PATH;
-  }
-}
 
 export function normalizeProjectListState(
   state: ProjectListUrlState,

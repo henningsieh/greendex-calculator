@@ -1,7 +1,7 @@
 import { getTranslations } from "@greendex/i18n/server";
-import type { Route } from "next";
 import { Suspense } from "react";
 
+import type { AppHref } from "@/app/routes";
 import BreadcrumbTrail, {
   BreadcrumbTrailFallback,
 } from "@/components/breadcrumb-trail";
@@ -19,11 +19,11 @@ async function ParticipantDetailsBreadcrumbContent({
         { label: t("nav.projects"), href: "/projects" },
         {
           label: t("crumbs.partnership"),
-          href: `/partnerships/${encodeURIComponent(partnershipId)}` as Route,
+          href: `/partnerships/${encodeURIComponent(partnershipId)}` as AppHref,
         },
         {
           label: t("crumbs.participants"),
-          href: `/partnerships/${encodeURIComponent(partnershipId)}/participants` as Route,
+          href: `/partnerships/${encodeURIComponent(partnershipId)}/participants` as AppHref,
         },
       ]}
       current={t("crumbs.participantDetails")}

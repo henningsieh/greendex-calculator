@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import type { Route } from "next";
 import type { ReactNode } from "react";
 
+import type { AppHref } from "@/app/routes";
 import { AccountMenu } from "@/components/account-menu";
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -11,7 +11,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 type AppNavigationProps = {
   email?: string;
   name?: string;
-  brandHref?: Route;
+  brandHref?: AppHref;
   actions?: ReactNode;
 };
 

@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
   useRouter: () => ({ refresh: mocks.refresh, replace: mocks.replace }),
 }));
 
@@ -73,7 +75,7 @@ describe("NoOrganizationAccess", () => {
     expect(screen.getByTestId("no-organization-access")).toHaveRole("main");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mocks.refresh).toHaveBeenCalledExactlyOnceWith();
-    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects");
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en/projects");
   });
 
   it("clears pending state and gives safe feedback when Organization creation rejects", async () => {

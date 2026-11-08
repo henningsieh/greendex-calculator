@@ -1,8 +1,8 @@
 import { screen, within } from "@testing-library/react";
-import type { Route } from "next";
 import { expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import type { AppHref } from "@/app/routes";
 import BreadcrumbTrail from "@/components/breadcrumb-trail";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
@@ -28,12 +28,12 @@ it("links earlier crumbs to their destinations and leaves the current page unlin
         items={[
           {
             label: "Projects",
-            href: "/projects" as Route,
+            href: "/projects" as AppHref,
             testId: "back-to-projects",
           },
           {
             label: "Partnership",
-            href: "/partnerships/partnership-1" as Route,
+            href: "/partnerships/partnership-1" as AppHref,
           },
         ]}
       />
@@ -45,10 +45,10 @@ it("links earlier crumbs to their destinations and leaves the current page unlin
     within(navigation)
       .getAllByRole("link")
       .map((link) => link.getAttribute("href")),
-  ).toEqual(["/projects", "/partnerships/partnership-1", null]);
+  ).toEqual(["/en/projects", "/en/partnerships/partnership-1", null]);
   expect(within(navigation).getByTestId("back-to-projects")).toHaveAttribute(
     "href",
-    "/projects",
+    "/en/projects",
   );
   expect(within(navigation).getAllByRole("listitem")).toHaveLength(3);
   expect(

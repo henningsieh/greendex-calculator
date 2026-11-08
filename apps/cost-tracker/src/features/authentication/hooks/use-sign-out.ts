@@ -1,16 +1,16 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import type { Route } from "next";
-import { useRouter } from "next/navigation";
 import { useState, type RefObject } from "react";
 
+import type { AppHref } from "@/app/routes";
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/ui/toast";
+import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 
 export function useSignOut(
-  destination: Route = "/",
+  destination: AppHref = "/",
   finalFocus?: RefObject<HTMLElement | null>,
 ) {
   const { confirm, dialog } = useConfirmDialog(finalFocus);

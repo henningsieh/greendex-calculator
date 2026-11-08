@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getProjectListReturnDestination,
   loadProjectListSearchParams,
   normalizeProjectListState,
   resolveProjectListState,
@@ -75,25 +74,6 @@ describe("Project list URL state", () => {
       },
       didPartnerToHostedFallback: false,
     });
-  });
-
-  it("accepts a local Project list return destination", () => {
-    expect(
-      getProjectListReturnDestination(
-        "/projects?scope=partner&search=climate&cursor=opaque",
-      ),
-    ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
-  });
-
-  it.each([
-    undefined,
-    ["/projects"],
-    "projects?scope=hosted",
-    "/projects/project-1",
-    "//attacker.example/projects",
-    "https://attacker.example/projects",
-  ])("falls back for an unsafe Project return destination: %j", (returnTo) => {
-    expect(getProjectListReturnDestination(returnTo)).toBe("/projects");
   });
 
   it("omits search values shorter than three normalized characters", () => {

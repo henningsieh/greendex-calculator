@@ -3,7 +3,6 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarDaysIcon, MapPinIcon } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 import { EntityIcon } from "@/components/entity-icon";
@@ -16,6 +15,7 @@ import {
   type ClaimStatus,
   canCompleteProject,
 } from "@/features/claims/claim-lifecycle";
+import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {

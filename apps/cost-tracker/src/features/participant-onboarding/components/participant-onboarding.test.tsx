@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   refresh: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
   useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }),
 }));
 vi.mock("@/lib/orpc/orpc", () => ({
@@ -106,7 +108,7 @@ describe("ParticipantJoin", () => {
         agreement: { accepted: true },
       }),
     );
-    expect(mocks.replace).toHaveBeenCalledWith("/participant");
+    expect(mocks.replace).toHaveBeenCalledWith("/en/participant");
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 

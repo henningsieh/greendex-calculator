@@ -6,7 +6,6 @@ import {
   SplitIcon,
   TrainFrontIcon,
 } from "lucide-react";
-import Link from "next/link";
 
 import { AppNavigation } from "@/components/app-navigation";
 import { Aura } from "@/components/brand/aura";
@@ -26,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 
 const journeySteps = [

@@ -10,7 +10,6 @@ import {
   ChevronsUpDownIcon,
   LoaderCircleIcon,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { EntityIcon } from "@/components/entity-icon";
@@ -26,6 +25,7 @@ import {
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import type { OrganizationMembershipSummary } from "@/features/organizations/staff-eligibility";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "@/lib/i18n/routing";
 
 type OrganizationSwitcherProps = {
   organizations: Pick<OrganizationMembershipSummary, "id" | "name">[];

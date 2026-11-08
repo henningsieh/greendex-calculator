@@ -23,10 +23,16 @@ vi.mock("@/lib/orpc/orpc", () => ({
     },
   },
 }));
-vi.mock("next/navigation", () => {
-  const router = { replace: mocks.replace, refresh: mocks.refresh };
-  return { useRouter: () => router };
-});
+vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
+  usePathname: () => "/login",
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: mocks.refresh,
+    replace: mocks.replace,
+  }),
+}));
 vi.mock("@/lib/auth-client", () => ({
   authClient: { organization: { setActive: mocks.setActive } },
 }));
@@ -129,7 +135,7 @@ describe("Organization Invitation acceptance", () => {
     mocks.onboardingNextStep.mockResolvedValue(complete);
     fireEvent.click(button);
     await waitFor(() =>
-      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/projects"),
+      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en/projects"),
     );
     expect(mocks.acceptInvitation).toHaveBeenCalledExactlyOnceWith({
       invitationId: "invite-1",
@@ -150,7 +156,7 @@ describe("Organization Invitation acceptance", () => {
     render(<InvitationAcceptance returnTo={returnTo} />);
     await waitFor(() =>
       expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
-        "/register?next=%2Faccept-invitation%2Finvite-1",
+        "/en/register?next=%2Faccept-invitation%2Finvite-1",
       ),
     );
   });
@@ -269,7 +275,9 @@ describe("Organization Invitation acceptance", () => {
     expect(screen.queryByTestId("create-organization")).toBeNull();
     mocks.onboardingNextStep.mockResolvedValue(complete);
     fireEvent.click(screen.getByTestId("select-organization-org-1"));
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/projects"));
+    await waitFor(() =>
+      expect(mocks.replace).toHaveBeenCalledWith("/en/projects"),
+    );
     expect(mocks.setActive).toHaveBeenCalledExactlyOnceWith({
       organizationId: "org-1",
     });
@@ -313,7 +321,7 @@ it("rejects the named invitation and shows the refreshed creation next step", as
   expect(await screen.findByTestId("invitation-rejected")).toBeVisible();
   expect(screen.getByTestId("invitation-next-step")).toHaveAttribute(
     "href",
-    "/projects",
+    "/en/projects",
   );
   expect(screen.queryByTestId("accept-organization-invitation")).toBeNull();
 });
@@ -412,7 +420,7 @@ it("applies changed initial decisions without fetching and preserves callbacks a
     </NextIntlClientProvider>,
   );
   await waitFor(() =>
-    expect(mocks.replace).toHaveBeenLastCalledWith("/projects"),
+    expect(mocks.replace).toHaveBeenLastCalledWith("/en/projects"),
   );
   expect(onDecision).toHaveBeenLastCalledWith(complete);
   const signedOut: OnboardingDecision = {
@@ -437,7 +445,7 @@ it("applies changed initial decisions without fetching and preserves callbacks a
   );
   await waitFor(() =>
     expect(mocks.replace).toHaveBeenLastCalledWith(
-      "/register?next=%2Faccept-invitation%2Finvite-1",
+      "/en/register?next=%2Faccept-invitation%2Finvite-1",
     ),
   );
   expect(onAuthenticate).toHaveBeenCalledTimes(1);

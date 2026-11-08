@@ -10,6 +10,6 @@ describe("SiteBrand", () => {
 
     expect(screen.getByTestId("site-brand-name")).toBeVisible();
     expect(screen.getByTestId("site-brand-mark")).toBeVisible();
-    expect(screen.getByTestId("site-brand")).toHaveAttribute("href", "/");
+    expect(screen.getByTestId("site-brand")).toHaveAttribute("href", "/en");
   });
 });

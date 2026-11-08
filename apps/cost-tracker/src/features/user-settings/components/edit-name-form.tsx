@@ -3,7 +3,6 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircleIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -20,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import type { EditNameValues } from "@/features/user-settings/types";
 import { EditNameSchema } from "@/features/user-settings/validation-schemas";
+import { useRouter } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
 
 type EditNameFormProps = {

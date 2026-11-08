@@ -8,7 +8,11 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   push: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
+  useRouter: () => ({ push: mocks.push }),
+}));
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { create: mocks.create } },
 }));
@@ -86,7 +90,7 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     });
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(mocks.push).toHaveBeenCalledWith("/projects/created-project"),
+      expect(mocks.push).toHaveBeenCalledWith("/en/projects/created-project"),
     );
     await user.click(screen.getByTestId("new-project"));
     await user.click(
@@ -156,7 +160,7 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     mocks.create.mockResolvedValueOnce({ id: "created-project" });
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(mocks.push).toHaveBeenCalledWith("/projects/created-project"),
+      expect(mocks.push).toHaveBeenCalledWith("/en/projects/created-project"),
     );
     expect(mocks.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ country: "DE" }),

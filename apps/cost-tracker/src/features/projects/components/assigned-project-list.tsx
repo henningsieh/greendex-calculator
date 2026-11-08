@@ -2,9 +2,9 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import Link from "next/link";
 
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Link } from "@/lib/i18n/routing";
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 /** Browse the same bounded, assignment-scoped results as the hosted search picker. */

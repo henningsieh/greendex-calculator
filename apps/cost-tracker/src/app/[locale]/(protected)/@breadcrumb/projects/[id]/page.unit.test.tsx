@@ -1,7 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
-vi.mock("@greendex/i18n/server", async () => ({
+import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+
+vi.mock("@greendex/i18n/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@greendex/i18n/server")>()),
   getTranslations: (await import("@/__tests__/i18n")).getTranslations,
 }));
 
@@ -49,44 +52,21 @@ beforeEach(() => {
   mocks.io.mockReset();
 });
 
-async function renderSlot(searchParams: Record<string, string>) {
+it("links to the Projects table and marks the current crumb", async () => {
+  mocks.query.mockResolvedValue({ relationship: "hosted" });
+  mocks.io.mockResolvedValue(undefined);
+
   render(
     <SidebarProvider>
       {await ProjectDetailsBreadcrumbContent({
         params: Promise.resolve({ id: "project-1" }),
-        searchParams: Promise.resolve(searchParams),
       })}
     </SidebarProvider>,
   );
-}
-
-it("returns to the filtered Project list that linked here", async () => {
-  mocks.query.mockResolvedValue({ relationship: "hosted" });
-
-  await renderSlot({
-    returnTo: "/projects?scope=partner&search=climate&cursor=opaque",
-  });
 
   expect(screen.getByTestId("back-to-projects")).toHaveAttribute(
     "href",
-    "/projects?scope=partner&search=climate&cursor=opaque",
-  );
-  // The slot must defer its clock reads (TanStack stamp + Better Auth) to
-  // request time before touching the query.
-  expect(mocks.io).toHaveBeenCalledOnce();
-  expect(screen.getByRole("link", { current: "page" })).not.toHaveAttribute(
-    "href",
-  );
-});
-
-it("falls back to the bare Project list for an unsafe return destination", async () => {
-  mocks.query.mockResolvedValue({ relationship: "partner" });
-
-  await renderSlot({ returnTo: "https://attacker.example/projects" });
-
-  expect(screen.getByTestId("back-to-projects")).toHaveAttribute(
-    "href",
-    "/projects",
+    "/en/projects",
   );
   expect(screen.getAllByRole("link", { current: "page" })).toHaveLength(1);
 });

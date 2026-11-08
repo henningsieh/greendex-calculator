@@ -8,10 +8,13 @@ const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   redirect: vi.fn(),
 }));
-vi.mock("next/navigation", () => {
-  const router = { replace: mocks.redirect };
-  return { redirect: mocks.redirect, useRouter: () => router };
-});
+// next-intl's navigation reads these from next/navigation at import time.
+vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: mocks.redirect,
+  usePathname: () => "/login",
+  useRouter: () => ({ refresh: vi.fn(), replace: mocks.redirect, push: vi.fn() }),
+}));
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { authentication: { onboardingNextStep: mocks.next } },
 }));
@@ -54,7 +57,10 @@ describe.each([
         entryContext: "direct",
         nextStep: "authenticate",
       });
-      await RegisterPage({ searchParams: Promise.resolve({ next }) });
+      await RegisterPage({
+        params: Promise.resolve({ locale: "en" }),
+        searchParams: Promise.resolve({ next }),
+      });
       expect(mocks.next).toHaveBeenCalledExactlyOnceWith({
         returnTo: expected,
         authEntry,
@@ -82,6 +88,7 @@ describe.each([
       });
       render(
         await RegisterPage({
+          params: Promise.resolve({ locale: "en" }),
           searchParams: Promise.resolve({ next: "/accept-invitation/bad!" }),
         }),
       );

@@ -88,7 +88,7 @@ describe("Host submitted Claim queue", () => {
     );
     expect(await screen.findByTestId("review-claim-one")).toHaveAttribute(
       "href",
-      "/partnerships/one/claim/review",
+      "/en/partnerships/one/claim/review",
     );
     expect(screen.queryByTestId("review-claim-two")).toBeNull();
   });

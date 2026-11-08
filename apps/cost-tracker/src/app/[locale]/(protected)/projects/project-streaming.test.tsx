@@ -8,7 +8,8 @@ import { expect, it, vi } from "vitest";
 
 import { messages } from "@/__tests__/i18n";
 
-vi.mock("@greendex/i18n/server", async () => ({
+vi.mock("@greendex/i18n/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@greendex/i18n/server")>()),
   getTranslations: (await import("@/__tests__/i18n")).getTranslations,
 }));
 

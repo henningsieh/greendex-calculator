@@ -2,7 +2,6 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { usePathname, useSearchParams } from "next/navigation";
 import { type UseQueryStatesReturn, useQueryStates } from "nuqs";
 import { Suspense, useEffect, useRef, useSyncExternalStore } from "react";
 
@@ -23,7 +22,6 @@ import { ProjectListSkeleton } from "@/features/projects/components/project-load
 import { ProjectScopeTabs } from "@/features/projects/components/project-scope-tabs";
 import { getProjectAvailableScopesQueryOptions } from "@/features/projects/list-query-options";
 import {
-  getProjectListReturnDestination,
   normalizeProjectListState,
   projectListParsers,
   resolveProjectListState,
@@ -82,8 +80,6 @@ function AvailableProjectList({
     history: "push",
     shallow: true,
   });
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const requestedState = normalizeProjectListState(urlState);
   const resolution = resolveProjectListState(requestedState, availableScopes);
 
@@ -95,10 +91,8 @@ function AvailableProjectList({
     <ResolvedProjectList
       availableScopes={availableScopes}
       didPartnerToHostedFallback={resolution.didPartnerToHostedFallback}
-      pathname={pathname}
       requestedState={requestedState}
       scope={resolution.scope}
-      searchParams={searchParams}
       setUrlState={setUrlState}
       state={resolution.state}
       urlState={urlState}
@@ -109,20 +103,16 @@ function AvailableProjectList({
 function ResolvedProjectList({
   availableScopes,
   didPartnerToHostedFallback,
-  pathname,
   requestedState,
   scope,
-  searchParams,
   setUrlState,
   state,
   urlState,
 }: {
   availableScopes: ProjectListScopeAvailability;
   didPartnerToHostedFallback: boolean;
-  pathname: string;
   requestedState: ProjectListState;
   scope: "hosted" | "partner";
-  searchParams: ReturnType<typeof useSearchParams>;
   setUrlState: ProjectListQueryState[1];
   state: ProjectListState;
   urlState: ProjectListQueryState[0];
@@ -156,15 +146,6 @@ function ResolvedProjectList({
     scope,
     setUrlState,
   ]);
-
-  const browserUrl =
-    typeof window === "undefined"
-      ? { pathname: "/projects", search: "" }
-      : window.location;
-  const search = searchParams?.toString() ?? browserUrl.search.slice(1);
-  const returnTo = getProjectListReturnDestination(
-    `${pathname ?? browserUrl.pathname}${search ? `?${search}` : ""}`,
-  );
 
   const updateListState = (patch: Parameters<typeof setUrlState>[0]) =>
     void setUrlState({ ...patch, cursor: null });
@@ -206,7 +187,6 @@ function ResolvedProjectList({
           state={state}
           urlState={urlState}
           setUrlState={setUrlState}
-          returnTo={returnTo}
         />
       </Suspense>
     </section>

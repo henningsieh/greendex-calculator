@@ -1,7 +1,6 @@
-import type { Route } from "next";
-import Link from "next/link";
 import { Fragment } from "react";
 
+import type { AppHref } from "@/app/routes";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,10 +10,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Link } from "@/lib/i18n/routing";
 
 export type BreadcrumbTrailItem = {
   label: string;
-  href?: Route;
+  href?: AppHref;
   testId?: string;
 };
 
@@ -51,7 +51,7 @@ export default function BreadcrumbTrail({
         <Breadcrumb>
           <BreadcrumbList>
             {items.map((item, index) => (
-              <Fragment key={item.href ?? item.label ?? index}>
+              <Fragment key={item.label ?? index}>
                 <BreadcrumbItem className="max-w-full min-w-0">
                   {item.href ? (
                     <BreadcrumbLink

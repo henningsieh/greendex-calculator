@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import type { Route } from "next";
 import type { ReactNode } from "react";
 
+import type { AppRoute } from "@/app/routes";
 import { AccountMenu } from "@/components/account-menu";
 import { EntityIcon } from "@/components/entity-icon";
 import {
@@ -23,7 +23,7 @@ import { OrganizationSwitcher } from "@/features/organizations/components/organi
 import { Link, usePathname } from "@/lib/i18n/routing";
 
 type SidebarNavItem = {
-  href: Route;
+  href: AppRoute;
   label: string;
   testId: string;
   icon: ReactNode;
@@ -39,7 +39,7 @@ type AppSidebarProps = {
   activeOrganizationId?: string;
 };
 
-function isItemActive(pathname: string, href: string) {
+function isItemActive(pathname: string, href: AppRoute) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

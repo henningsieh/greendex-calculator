@@ -4,7 +4,6 @@ import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
 import { ORPCError } from "@orpc/client";
 import { LoaderCircleIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -14,6 +13,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
 import { slugifyOrganizationName as slugify } from "@/features/organizations/slug";
+import { useRouter } from "@/lib/i18n/routing";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { orpc } from "@/lib/orpc/orpc";
 

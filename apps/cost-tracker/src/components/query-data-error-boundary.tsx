@@ -2,7 +2,6 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
-import Link from "next/link";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
@@ -13,6 +12,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Link } from "@/lib/i18n/routing";
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 
 type ProjectDataErrorBoundaryProps = {

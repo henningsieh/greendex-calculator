@@ -34,6 +34,8 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: { organization: { setActive: mocks.select } },
 }));
 vi.mock("next/navigation", () => ({
+  permanentRedirect: vi.fn(),
+  redirect: vi.fn(),
   useRouter: () => ({ refresh: mocks.refresh }),
 }));
 vi.mock("@/features/authentication/components/sign-out-button", () => ({
@@ -194,7 +196,7 @@ it("re-resolves after creation and binding, then selects explicitly before Proje
   await userEvent.click(action);
   expect(await screen.findByTestId("open-partner-project")).toHaveAttribute(
     "href",
-    "/projects/partner-project",
+    "/en/projects/partner-project",
   );
   expect(mocks.select).toHaveBeenCalledExactlyOnceWith({
     organizationId: "retained",
