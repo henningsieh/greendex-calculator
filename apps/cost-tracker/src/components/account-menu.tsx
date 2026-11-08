@@ -26,6 +26,8 @@ type AccountMenuProps = {
   email: string;
   name: string;
   compact?: boolean;
+  /** `sidebar` mirrors the Organization switcher's collapsed-rail behaviour. */
+  layout?: "header" | "sidebar";
   /** Stock Button variant; layout-only className may be added separately. */
   variant?: ComponentProps<typeof Button>["variant"];
   className?: string;
@@ -50,11 +52,13 @@ function getInitials(name: string) {
  */
 export function AccountMenu({
   compact = false,
+  layout = "header",
   email,
   name,
   variant = "outline",
   className,
 }: AccountMenuProps) {
+  const inSidebar = layout === "sidebar";
   const t = useTranslations("shell");
   const pathname = usePathname();
   const active = pathname === "/user-settings";
@@ -89,7 +93,13 @@ export function AccountMenu({
           >
             {getInitials(name)}
           </span>
-          <span className={cn("min-w-0", compact && "sr-only")}>
+          <span
+            className={cn(
+              "min-w-0",
+              compact && "sr-only",
+              inSidebar && "group-data-[collapsible=icon]:hidden",
+            )}
+          >
             <span className="block max-w-44 truncate text-sm/5 font-semibold">
               {name}
             </span>
@@ -97,7 +107,12 @@ export function AccountMenu({
               {email}
             </span>
           </span>
-          {!compact && <ChevronDownIcon aria-hidden="true" />}
+          {!compact && (
+            <ChevronDownIcon
+              aria-hidden="true"
+              className={cn(inSidebar && "group-data-[collapsible=icon]:hidden")}
+            />
+          )}
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">

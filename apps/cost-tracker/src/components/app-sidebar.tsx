@@ -176,6 +176,7 @@ export function AppSidebar({
             <AccountMenu
               className="h-12 w-full justify-start"
               email={userEmail}
+              layout="sidebar"
               name={userName}
               variant="ghost"
             />
