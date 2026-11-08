@@ -1,28 +1,16 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { KeyboardIcon, MoonIcon, SunIcon } from "lucide-react";
+import { KeyboardIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import * as React from "react";
 
+import { ThemeSwatch } from "@/components/theme-swatch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FieldDescription, FieldLegend, FieldSet } from "@/components/ui/field";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { THEMES, isThemeValue } from "@/lib/themes";
 
 const subscribeToHydration = () => () => undefined;
-
-function themeIcon(value: string) {
-  if (value === "light") {
-    return <SunIcon data-icon="inline-start" />;
-  }
-
-  if (value === "dark") {
-    return <MoonIcon data-icon="inline-start" />;
-  }
-
-  return <span aria-hidden="true" className="size-3 rounded-full bg-primary" />;
-}
 
 export function ThemeSettings() {
   const t = useTranslations("settings.theme");
@@ -32,43 +20,54 @@ export function ThemeSettings() {
     () => false,
   );
   const { setTheme, theme } = useTheme();
-  const selectedValues = mounted && theme && isThemeValue(theme) ? [theme] : [];
+  const titleId = React.useId();
+  const selectedTheme = mounted && theme && isThemeValue(theme) ? theme : null;
 
-  function changeTheme(values: string[]) {
-    changeFullTheme(values.at(-1) ?? null);
-  }
+  const themeTriggers = THEMES.map((entry) => (
+    <TabsTrigger
+      aria-label={t("use", { theme: entry.label })}
+      key={entry.value}
+      value={entry.value}
+    >
+      <ThemeSwatch value={entry.value} />
+      {entry.label}
+    </TabsTrigger>
+  ));
 
-  function changeFullTheme(value: string | null) {
+  const handleThemeChange = (value: string) => {
     if (value && isThemeValue(value)) {
       setTheme(value);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col gap-6">
-      <FieldSet>
-        <FieldLegend variant="label">{t("title")}</FieldLegend>
-        <FieldDescription>{t("description")}</FieldDescription>
-        <ToggleGroup
+      <section aria-labelledby={titleId} className="flex flex-col gap-6">
+        <h2 className="mb-3 text-xs font-semibold uppercase" id={titleId}>
+          {t("title")}
+        </h2>
+        <p className="text-left text-sm/normal leading-normal font-normal tracking-normal text-muted-foreground normal-case last:mt-0 nth-last-2:-mt-1 [&>a]:link-prose">
+          {t("description")}
+        </p>
+        <Tabs
           aria-label={t("ariaLabel")}
-          className="flex-wrap justify-start"
-          disabled={!mounted}
-          onValueChange={changeTheme}
-          value={selectedValues}
-          variant="outline"
+          className="max-sm:hidden"
+          orientation="horizontal"
+          value={selectedTheme ?? ""}
+          onValueChange={handleThemeChange}
         >
-          {THEMES.map((entry) => (
-            <ToggleGroupItem
-              key={entry.value}
-              aria-label={t("use", { theme: entry.label })}
-              value={entry.value}
-            >
-              {themeIcon(entry.value)}
-              {entry.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </FieldSet>
+          <TabsList>{themeTriggers}</TabsList>
+        </Tabs>
+        <Tabs
+          aria-label={t("ariaLabel")}
+          className="sm:hidden"
+          orientation="vertical"
+          value={selectedTheme ?? ""}
+          onValueChange={handleThemeChange}
+        >
+          <TabsList>{themeTriggers}</TabsList>
+        </Tabs>
+      </section>
 
       <Alert variant="accent">
         <KeyboardIcon aria-hidden="true" className="text-primary" />

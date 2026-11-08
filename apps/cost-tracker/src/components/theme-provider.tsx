@@ -16,6 +16,17 @@ function ThemeProvider({
       enableSystem
       disableTransitionOnChange
       themes={[...THEME_VALUES]}
+      value={{
+        light: "theme-erasmus-light",
+        // System dark resolves to the literal name "dark".
+        dark: "theme-erasmus-dark",
+        // Identity entries are required: with `value` present next-themes
+        // applies `value[name]` with no fallback, so unlisted themes would
+        // lose their <html> class entirely.
+        "theme-erasmus-dark": "theme-erasmus-dark",
+        "theme-erasmus-midnight": "theme-erasmus-midnight",
+        "theme-erasmus-violet": "theme-erasmus-violet",
+      }}
       {...props}
     >
       <ThemeHotkey />
@@ -58,7 +69,7 @@ function ThemeHotkey() {
         return;
       }
 
-      setTheme(resolvedTheme === "dark" ? "light" : "dark");
+      setTheme(resolvedTheme === "light" ? "dark" : "light");
     }
 
     window.addEventListener("keydown", onKeyDown);

@@ -49,7 +49,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
 
 import { ParticipantsList } from "./participants-list";
 
-it("displays the canonical Participant Journey beside its Participant without pretending it is carbon travel data", () => {
+it("displays the seeded Participant Journey beside its Participant without pretending it is carbon travel data", () => {
   mocks.journey = {
     origin: "Paris",
     destination: "Berlin",

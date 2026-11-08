@@ -2,6 +2,7 @@ import { hasOrganizationRole } from "@greendex/auth";
 import "server-only";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { headers } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
@@ -18,10 +19,13 @@ export async function canManageOrganization(): Promise<boolean> {
     // auth/email/env chain in light rendering or test environments.
     const { auth } = await import("@/lib/auth");
     const requestHeaders = await headers();
-    const [session, organization] = await Promise.all([
-      getSession(),
-      auth.api.getFullOrganization({ headers: requestHeaders }),
-    ]);
+    // Sequential on purpose: `getSession()` suspends the render before Better
+    // Auth validates the session against the clock, so `getFullOrganization`
+    // must not start reading the clock concurrently in a `Promise.all`.
+    const session = await getSession();
+    const organization = await auth.api.getFullOrganization({
+      headers: requestHeaders,
+    });
     const membership = organization?.members.find(
       (entry) => entry.userId === session?.user.id,
     );
@@ -31,6 +35,8 @@ export async function canManageOrganization(): Promise<boolean> {
       hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
     );
   } catch (error) {
+    // Prerender interruptions are framework control flow, not access denials.
+    unstable_rethrow(error);
     console.error("Organization management access lookup failed", { error });
     return false;
   }
@@ -59,6 +65,8 @@ export async function canViewPartnerNetwork(): Promise<boolean> {
     const assigned = await assignedPartnershipIds(userId, activeOrganizationId);
     return assigned.length > 0;
   } catch (error) {
+    // Prerender interruptions are framework control flow, not access denials.
+    unstable_rethrow(error);
     console.error("Partner network access lookup failed", { error });
     return false;
   }

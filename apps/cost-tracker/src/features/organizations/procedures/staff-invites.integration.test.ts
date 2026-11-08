@@ -31,7 +31,7 @@ import { auth } from "@/lib/auth";
 import { router } from "@/lib/orpc/router";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). Cost Tracker permits Organization
  * creation only for membership-free callers (single-Organization flag), so
  * the membership-free seed creator owns this file's creation lane (the
@@ -39,7 +39,7 @@ import { router } from "@/lib/orpc/router";
  * memberless gate races under parallel files).
  * Invitations, acceptances, and role changes go through the supported
  * behavior as the action under test. Case Organizations, Memberships, and
- * invitations are removed afterwards; canonical actors are never deleted.
+ * invitations are removed afterwards; seed actors are never deleted.
  * Case-only users (cancelled/expired invitees) still sign up through the
  * supported signup behavior and are tracked for cleanup.
  */
@@ -118,13 +118,13 @@ afterEach(async () => {
     await db.delete(member).where(eq(member.userId, userId));
     await db.delete(user).where(eq(user.id, userId));
   }
-  // Canonical actors survive every case: fail loudly on accidental deletion,
+  // Seed actors survive every case: fail loudly on accidental deletion,
   // and the seed outsider stays membership-free for the next case creator.
   expect(
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Organization was deleted",
+    "seed Organization was deleted",
   ).not.toBeUndefined();
   for (const email of [
     SEED_CREATOR_EMAIL,
@@ -133,7 +133,7 @@ afterEach(async () => {
   ]) {
     expect(
       await db.query.user.findFirst({ where: eq(user.email, email) }),
-      `canonical seed User was deleted: ${email}`,
+      `seed User was deleted: ${email}`,
     ).not.toBeUndefined();
   }
   const creator = await db.query.user.findFirst({

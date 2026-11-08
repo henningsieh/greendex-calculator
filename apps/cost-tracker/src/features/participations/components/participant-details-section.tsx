@@ -10,14 +10,14 @@ import {
 export async function ParticipantDetailsSection({
   params,
 }: {
-  params: Promise<{ id: string; participationId: string }>;
+  params: Promise<{ partnershipId: string; participationId: string }>;
 }) {
-  const { id, participationId } = await params;
+  const { partnershipId, participationId } = await params;
   const queryClient = getQueryClient();
   await queryClient
     .query(
       orpcQuery.participations.get.queryOptions({
-        input: { partnershipId: id, id: participationId },
+        input: { partnershipId, id: participationId },
         meta: { costTrackerORPC: true },
       }),
     )
@@ -27,7 +27,7 @@ export async function ParticipantDetailsSection({
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Participant details">
         <ParticipantDetails
-          partnershipId={id}
+          partnershipId={partnershipId}
           participationId={participationId}
         />
       </ProjectDataErrorBoundary>

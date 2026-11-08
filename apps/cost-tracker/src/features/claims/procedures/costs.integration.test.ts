@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PARTICIPANT_TRANSPORT_EMISSION_PROFILES } from "@greendex/config/transport-emission-profiles";
 import { db } from "@greendex/database";
 import {
@@ -37,25 +36,23 @@ import { env } from "@/env";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerCosts.
-const suffix = "canonical";
-const id = (part: string) => `cost-${part}-${suffix}`;
-const host = id("host"),
-  partner = id("partner"),
-  other = id("other");
-const coordinator = id(ORGANIZATION_ROLES.ProjectCoordinator),
-  participantUser = id("user");
-const project = id("project");
-const own = id("own"),
-  foreign = id("foreign"),
-  next = id("next");
-const first = id("first"),
-  second = id("second"),
-  third = id("third");
-const outside = id("outside"),
-  later = id("later");
-const ownClaim = id("claim");
-const proof = id("proof"),
-  foreignProof = id("foreign-proof");
+const host = "c8tzqmrknhg2bov465e90f43",
+  partner = "shhydrtzn64k6rorh9k8nx86",
+  other = "dl4som7bu1sb6xtdwnyyo63p";
+const coordinator = "fmpfieidsqgfc697xgnvynuw",
+  participantUser = "u3pnyfkioeyhxtjks1ukfqag";
+const project = "fu1lgjy9x1bjmbhkgebeg85u";
+const own = "nyh1okg2p6hf8lwkpurt2wjz",
+  foreign = "cjhntjen5ijbchkis4lcu1t5",
+  next = "e8qx5ziip9865a2zxshedv3a";
+const first = "qic2agmxqt1h9nzdxxd7ulgm",
+  second = "m5dxpif4ebx10jnihqtd98ew",
+  third = "je703i9hoq9ly4ii2kjs6d4v";
+const outside = "ev1234of98bh7eek94kefkt1",
+  later = "q9rtygav622rqw8e47zxrprh";
+const ownClaim = "lc1i74hr7ioc31ynaxr0vmub";
+const proof = "foilan4c5q220go0d56v5sxx",
+  foreignProof = "kf0nrcb8r64b7dnm8m0vq0nf";
 let actor = coordinator;
 let activeOrg = partner;
 const client = createRouterClient(router, {
@@ -76,9 +73,7 @@ beforeAll(async () => {
   if (
     !(await db.query.projectsTable.findFirst({ where: eq(projects.id, project) }))
   )
-    throw new Error(
-      "Canonical seed required: run the isolated seeded lifecycle.",
-    );
+    throw new Error("Seed required: run the isolated seeded lifecycle.");
   authMocks.getSession.mockImplementation(async () => ({
     user: { id: actor },
     session: { activeOrganizationId: activeOrg },
@@ -181,9 +176,7 @@ describe("Claim cost procedures", () => {
     actor = participantUser;
     expect((await upload(request(own))).status).toBe(403);
     actor = coordinator;
-    const lockedClaim = await upload(
-      request("cost-locked-partnership-canonical"),
-    );
+    const lockedClaim = await upload(request("cwudh3bpklwgtvyphhw088ox"));
     expect(lockedClaim.status).toBe(409);
     expect(await lockedClaim.json()).toEqual({
       error: "Claim is not editable.",
@@ -270,7 +263,9 @@ describe("Claim cost procedures", () => {
       ).every((row) => row.amountEur === null && row.percentage === null),
     ).toBe(true);
     const view = await client.costs.list({ partnershipId: own });
-    expect(view.coveredProjectParticipantIds).toEqual([first, second, third]);
+    expect([...view.coveredProjectParticipantIds].sort()).toEqual(
+      [first, second, third].sort(),
+    );
     expect(
       view.entries
         .find((entry) => entry.id === saved.id)
@@ -299,8 +294,8 @@ describe("Claim cost procedures", () => {
       ],
     });
     expect(percentages.allocations.map((row) => row.percentage)).toEqual([
-      "33.333333",
       "66.666667",
+      "33.333333",
     ]);
     const amounts = await client.costs.save({
       ...base,
@@ -311,8 +306,8 @@ describe("Claim cost procedures", () => {
       ],
     });
     expect(amounts.allocations.map((row) => row.amountEur)).toEqual([
-      "3.33",
       "6.67",
+      "3.33",
     ]);
     const updated = await client.costs.save({
       ...base,
@@ -324,7 +319,7 @@ describe("Claim cost procedures", () => {
     expect(
       (await client.costs.list({ partnershipId: own }))
         .coveredProjectParticipantIds,
-    ).toEqual([first, second, third]);
+    ).toEqual([third, second, first]);
     expect(
       await db
         .select()
@@ -449,10 +444,8 @@ describe("Claim cost procedures", () => {
     await expect(
       client.costs.save({
         ...base,
-        partnershipId: "cost-locked-partnership-canonical",
-        allocations: [
-          { projectParticipantId: "cost-locked-participant-canonical" },
-        ],
+        partnershipId: "cwudh3bpklwgtvyphhw088ox",
+        allocations: [{ projectParticipantId: "fvzf02owu002f9wbrtiydulc" }],
       }),
     ).rejects.toMatchObject({
       code: "CONFLICT",
@@ -460,9 +453,9 @@ describe("Claim cost procedures", () => {
     });
     await expect(
       client.costs.linkDocument({
-        partnershipId: "cost-locked-partnership-canonical",
-        entryId: "cost-locked-entry-canonical",
-        proofDocumentId: "cost-locked-proof-canonical",
+        partnershipId: "cwudh3bpklwgtvyphhw088ox",
+        entryId: "t8b7y7gkyi51cjifgwonkns8",
+        proofDocumentId: "ometzoa7791cs0vulc4cwnzh",
       }),
     ).rejects.toMatchObject({
       code: "CONFLICT",

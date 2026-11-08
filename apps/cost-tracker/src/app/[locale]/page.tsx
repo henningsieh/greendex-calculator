@@ -1,1 +1,3 @@
-export { default } from "@/app/page";
+import LandingPage from "@/components/landing-page";
+
+export default LandingPage;

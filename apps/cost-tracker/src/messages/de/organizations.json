@@ -11,7 +11,7 @@
       }
     },
     "page": {
-      "eyebrow": "Organisation",
+      "eyebrow": "Administration & Team",
       "title": "Organisation",
       "restricted": "Die Verwaltung des Organisationsteams ist für Owner und Admins verfügbar.",
       "description": "Verwalte Teammitglieder und ausstehende Einladungen für die aktive Organisation."

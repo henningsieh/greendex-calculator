@@ -134,7 +134,7 @@ export function CheckInbox({
       {decision?.availableActions.map((action) =>
         action.kind === "authenticate" ? (
           <Link
-            className="mt-4 block underline underline-offset-4"
+            className="mt-4 block link-prose"
             key={action.kind}
             data-testid="inbox-sign-in"
             href={`/login?next=${encodeURIComponent(action.returnTo ?? "")}`}

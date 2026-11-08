@@ -27,10 +27,13 @@
       "empty": "No submitted Claims available for review."
     },
     "page": {
+      "eyebrow": "Partner Claim",
       "back": "Back to Projects",
-      "title": "Claim workspace"
+      "title": "Claim workspace",
+      "projects": "Projects"
     },
     "review": {
+      "eyebrow": "Claim review",
       "sectionLabel": "Claim review",
       "bandTitle": "Claim review",
       "back": "Back to submitted Claims",
@@ -69,7 +72,11 @@
       "confirmReopen": "Reopening returns the Claim to Hosting review and keeps Partner editing locked. Request a correction separately if edits are needed.",
       "confirmAction": "Confirm {action} for this Claim.",
       "unavailable": "Unavailable",
-      "equalShare": "Equal share (computed on submission)"
+      "equalShare": "Equal share (computed on submission)",
+      "title": "Review claim",
+      "queueTitle": "Claim reviews",
+      "contextLoading": "Loading context",
+      "contextUnavailable": "Claim context unavailable"
     },
     "submission": {
       "title": "Submission",

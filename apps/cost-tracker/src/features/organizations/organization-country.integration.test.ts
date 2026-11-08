@@ -30,14 +30,14 @@ vi.mock("next/server", async (importOriginal) => ({
 import { auth } from "@/lib/auth";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). Cost Tracker permits Organization
  * creation only for membership-free callers (single-Organization flag), so
  * the membership-free seed outsider owns this file's creation lane (the
  * staff-invites suite owns the seed creator lane; sharing one memberless
  * gate races under parallel files) and is restored to memberless in
  * cleanup. Creation, invitation, and role changes go through the supported Better Auth behavior as the action under test;
- * canonical actors are never deleted.
+ * seed actors are never deleted.
  */
 const SEED_OUTSIDER_EMAIL = "seed-outsider@example.org";
 const SEED_PARTICIPANT_EMAIL = "seed-participant@example.org";
@@ -97,12 +97,12 @@ afterEach(async () => {
       .where(inArray(invitation.organizationId, caseOrgIds));
     await db.delete(organization).where(inArray(organization.id, caseOrgIds));
   }
-  // Canonical actors survive every case: fail loudly on accidental deletion.
+  // Seed actors survive every case: fail loudly on accidental deletion.
   expect(
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Organization was deleted",
+    "seed Organization was deleted",
   ).not.toBeUndefined();
   for (const email of [
     SEED_OUTSIDER_EMAIL,
@@ -111,7 +111,7 @@ afterEach(async () => {
   ]) {
     expect(
       await db.query.user.findFirst({ where: eq(user.email, email) }),
-      `canonical seed User was deleted: ${email}`,
+      `seed User was deleted: ${email}`,
     ).not.toBeUndefined();
   }
   // The seed outsider stays membership-free for the next case creator.

@@ -20,7 +20,7 @@ interface ParticipateHeaderProps {
  * Render the participation header for a project, including its Project Shared
  * Travel contribution when present.
  *
- * @param project - Project to display; this component reads its canonical
+ * @param project - Project to display; this component reads its authoritative
  * `sharedTravelLegs` to compute and present the emissions contribution.
  * @returns The header JSX element containing the badge, title/subtitle, project
  * name, and a shared-travel contribution with a per-leg breakdown when present.

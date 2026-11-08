@@ -80,6 +80,11 @@
         "description": "Remove {organization} from {project}? This removal cannot be undone.",
         "execute": "Remove Project Partnership"
       }
+    },
+    "detail": {
+      "eyebrow": "Partnership",
+      "title": "Partnership details",
+      "description": "An overview of this Project Partnership. More sections follow."
     }
   }
 }

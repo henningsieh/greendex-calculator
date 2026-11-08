@@ -83,15 +83,17 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
   }),
 }));
 
+import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
 import { ProjectList } from "@/features/projects/components/project-list";
 
-function renderList() {
+function renderList(withCreation = false) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading Projects</p>}>
+        {withCreation && mocks.canCreate ? <CreateProjectDialog /> : null}
         <ProjectList />
       </Suspense>
     </QueryClientProvider>,
@@ -114,12 +116,14 @@ beforeEach(() => {
 
 describe("Project list", { timeout: 20_000 }, () => {
   it("shows the creation dialog trigger only with active host membership", async () => {
-    const first = renderList();
+    // Creation moved to the page shell (projects-page.tsx): the shell renders
+    // <CreateProjectDialog /> beside <ProjectList /> when canCreate holds.
+    const first = renderList(false);
     await screen.findByTestId("project-link-project-1", {}, { timeout: 10_000 });
     expect(screen.queryByTestId("new-project")).toBeNull();
     first.unmount();
     mocks.canCreate = true;
-    renderList();
+    renderList(true);
     expect(
       await screen.findByTestId("new-project", {}, { timeout: 10_000 }),
     ).toBeTruthy();
@@ -134,14 +138,15 @@ describe("Project list", { timeout: 20_000 }, () => {
         { timeout: 10_000 },
       ),
     ).toBeTruthy();
-    expect(screen.getByTestId("project-list")).toHaveAttribute(
-      "data-project-count",
-      "3",
-    );
-    expect(screen.getByTestId("project-list")).toHaveAttribute(
-      "data-filtered-project-count",
-      "1",
-    );
+    // Counts moved into the results module (project-list-results.tsx): the
+    // section keeps data-testid="project-list" while the inner results node
+    // carries the data-project-count attributes.
+    const counts = screen
+      .getByTestId("project-list")
+      .querySelector("[data-project-count]");
+    expect(counts).toBeTruthy();
+    expect(counts).toHaveAttribute("data-project-count", "3");
+    expect(counts).toHaveAttribute("data-filtered-project-count", "1");
     expect(screen.getByTestId("project-window-project-1")).toHaveAttribute(
       "data-state",
       "open",

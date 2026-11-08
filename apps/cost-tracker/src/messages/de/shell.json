@@ -15,7 +15,10 @@
       "primaryLabel": "Hauptnavigation",
       "projects": "Projekte",
       "partnerOrganizations": "Partnerorganisationen",
-      "organization": "Organisation"
+      "organization": "Organisation",
+      "workspace": "Arbeitsbereich",
+      "manage": "Verwalten",
+      "claimReview": "Claim-Prüfung"
     },
     "account": {
       "openMenu": "Kontomenü für {name} öffnen",
@@ -139,9 +142,9 @@
       "titleLead": "Ember",
       "titleAccent": "Design",
       "titleTail": "System",
-      "intro": "Sieben Themes, ein Feuer-Akzent. Tokens, Button-Matrix, Karten, Schriftspezimen und die fixierten Brand-Erweiterungen — live gerendert.",
+      "intro": "Vier Themes, ein Feuer-Akzent. Tokens, Button-Matrix, Karten, Schriftspezimen und die fixierten Brand-Erweiterungen — live gerendert.",
       "themes": {
-        "eyebrow": "Themes · 7 Plätze",
+        "eyebrow": "Themes · 4 Plätze",
         "title": "Theme-Umschalter",
         "active": "aktiv:",
         "system": "System"
@@ -198,7 +201,7 @@
         "conformityDetail": "tabellarische Zahlen · Mono-Labels"
       },
       "terminal": {
-        "tokens": "Tokens zugeordnet — 7 Themes",
+        "tokens": "Tokens zugeordnet — 4 Themes",
         "buttons": "Buttons neu gebaut — Spinner ausstehend",
         "landing": "Landingpage — nächster Abschnitt",
         "status": "ember-c · alle Systeme nominal"
@@ -210,6 +213,18 @@
       "searchPlaceholder": "Länder suchen…",
       "noMatches": "Keine Länder gefunden.",
       "notSet": "Nicht festgelegt"
+    },
+    "crumbs": {
+      "projectDetails": "Projektdetails",
+      "partnership": "Partnerschaft",
+      "participants": "Teilnehmer",
+      "participantDetails": "Teilnehmerdetails",
+      "claimReviews": "Claim-Prüfungen",
+      "claimWorkspace": "Claim-Arbeitsbereich",
+      "userSettings": "Benutzereinstellungen",
+      "claimReview": "Claim prüfen",
+      "hostedProject": "Gehostetes Projekt",
+      "partnerProject": "Partnerprojekt"
     }
   }
 }

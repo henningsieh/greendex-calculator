@@ -1,7 +1,7 @@
-import OrganizationPage, {
-  metadata as routeMetadata,
-} from "@/app/(protected)/organization/page";
+import type { Metadata } from "next";
 
-// Identity exports: re-export syntax falsely exposes transitive auth to the persistence guard.
+import OrganizationPage from "@/features/organizations/components/organization-page";
+
 export default OrganizationPage;
-export const metadata = routeMetadata;
+
+export const metadata: Metadata = { title: "Organization" };

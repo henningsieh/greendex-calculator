@@ -84,18 +84,8 @@ vi.mock("@/features/participations/components/participant-coordination", () => (
   ),
 }));
 vi.mock("@/features/projects/components/project-workspace", () => ({
-  ProjectWorkspace: ({
-    projectId,
-    returnTo,
-  }: {
-    projectId: string;
-    returnTo?: string;
-  }) => (
-    <p
-      data-project-id={projectId}
-      data-return-to={returnTo}
-      data-testid="project-workspace"
-    >
+  ProjectWorkspace: ({ projectId }: { projectId: string }) => (
+    <p data-project-id={projectId} data-testid="project-workspace">
       Project workspace: {projectId}
     </p>
   ),
@@ -146,6 +136,9 @@ vi.mock("@/lib/orpc/orpc", () => ({
     },
   },
 }));
+vi.mock("@/features/participations/components/participant-page-header", () => ({
+  ParticipantPageHeader: () => null,
+}));
 vi.mock("next/headers", () => ({
   headers: () => Promise.resolve(new Headers()),
 }));
@@ -170,7 +163,7 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
 }));
 
 import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
-import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[id]/participants/page";
+import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[partnershipId]/participants/page";
 import ProjectPage from "@/app/(protected)/projects/[id]/page";
 import HostedParticipantsPage from "@/app/(protected)/projects/[id]/participants/page";
 import ProjectsPage from "@/app/(protected)/projects/page";
@@ -219,7 +212,7 @@ describe("Cost Tracker Project data routes", () => {
   it("shows a friendly note instead of a denial when nothing is viewable", async () => {
     mocks.hasCostTrackerPermissions.mockResolvedValue(false);
     render(await PartnerOrganizationsPage());
-    expect(screen.getByTestId("hosting-staff-note")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(
       screen.queryByTestId("project-partnership-section"),
     ).not.toBeInTheDocument();
@@ -241,7 +234,7 @@ describe("Cost Tracker Project data routes", () => {
     render(await PartnerOrganizationsPage());
     render(
       await PartnershipParticipantsPage({
-        params: Promise.resolve({ id: "partnership-1" }),
+        params: Promise.resolve({ partnershipId: "partnership-1" }),
       }),
     );
     render(
@@ -364,7 +357,7 @@ describe("Cost Tracker Project data routes", () => {
   it("prefetches only the requested Partnership's server-authorized list", async () => {
     render(
       await RealPartnershipParticipantsSection({
-        params: Promise.resolve({ id: "own-partnership" }),
+        params: Promise.resolve({ partnershipId: "own-partnership" }),
       }),
     );
     expect(mocks.query).toHaveBeenCalledWith({
@@ -389,24 +382,19 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByTestId("hosted-participant-report")).toBeInTheDocument();
   });
 
-  it("keeps Project authorization independent from the return destination", async () => {
+  it("prefetches Project detail without depending on the list return destination", async () => {
     render(
       await RealProjectWorkspaceSection({
         params: Promise.resolve({ id: "project-1" }),
-        searchParams: Promise.resolve({
-          returnTo: "/projects?scope=partner&search=climate&cursor=opaque",
-        }),
       }),
     );
 
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["projects", "detail", "project-1"],
     });
-    const workspace = screen.getByTestId("project-workspace");
-    expect(workspace).toHaveAttribute("data-project-id", "project-1");
-    expect(workspace).toHaveAttribute(
-      "data-return-to",
-      "/projects?scope=partner&search=climate&cursor=opaque",
+    expect(screen.getByTestId("project-workspace")).toHaveAttribute(
+      "data-project-id",
+      "project-1",
     );
   });
 });

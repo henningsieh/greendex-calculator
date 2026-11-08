@@ -2,10 +2,11 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Building2Icon, CalendarDaysIcon, MapPinIcon } from "lucide-react";
+import { CalendarDaysIcon, MapPinIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,6 @@ import {
   type ClaimStatus,
   canCompleteProject,
 } from "@/features/claims/claim-lifecycle";
-import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -46,13 +46,7 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   );
 }
 
-export function ProjectWorkspace({
-  projectId,
-  returnTo,
-}: {
-  projectId: string;
-  returnTo?: string;
-}) {
+export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const [completing, setCompleting] = useState(false);
@@ -104,14 +98,17 @@ export function ProjectWorkspace({
               : t("partnerProject")
           }
           title={project.name}
-          bottomLink={
-            <Link
-              className={buttonVariants({ variant: "ghost" })}
-              href={getProjectListReturnDestination(returnTo)}
-              data-testid="back-to-projects"
-            >
-              {t("back")}
-            </Link>
+          rightButton={
+            canComplete ? (
+              <Button
+                disabled={completing}
+                onClick={completeProject}
+                data-testid="complete-project"
+                type="button"
+              >
+                {completing ? t("completing") : t("complete")}
+              </Button>
+            ) : undefined
           }
         />
         <div className="flex flex-wrap items-center gap-3">
@@ -137,16 +134,6 @@ export function ProjectWorkspace({
             {t("completed")} {dateTimeFormatter.format(project.completedAt)}{" "}
             {t("by")} {project.completedByUserId}
           </p>
-        )}
-        {canComplete && (
-          <Button
-            disabled={completing}
-            onClick={completeProject}
-            data-testid="complete-project"
-            type="button"
-          >
-            {completing ? t("completing") : t("complete")}
-          </Button>
         )}
         {feedback && (
           <div
@@ -215,8 +202,8 @@ export function ProjectWorkspace({
                     key={partner.id}
                   >
                     <span className="flex items-center gap-3 font-medium">
-                      <Building2Icon
-                        aria-hidden="true"
+                      <EntityIcon
+                        entity="partnerOrganization"
                         className="size-5 text-muted-foreground"
                       />
                       {partner.organizationName}
@@ -234,7 +221,7 @@ export function ProjectWorkspace({
             )}
             <div className="flex flex-wrap gap-3">
               <Link
-                className={buttonVariants({ variant: "outline" })}
+                className={buttonVariants({ variant: "secondary" })}
                 href={`/projects/${encodeURIComponent(project.id)}/participants`}
                 data-testid="hosted-participants"
               >
@@ -247,7 +234,7 @@ export function ProjectWorkspace({
                 {t("reviewClaims")}
               </Link>
               <Link
-                className={buttonVariants({ variant: "outline" })}
+                className={buttonVariants({ variant: "ghost" })}
                 href="/partner-organizations"
                 data-testid="manage-project-partnerships"
               >

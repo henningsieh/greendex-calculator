@@ -72,7 +72,7 @@ const actors = Object.fromEntries(
   { id: string; email: string; name: string; password: string }
 >;
 const claimURL = `/partnerships/${ids.partnership}/claim`;
-const reviewURL = `/claims/review/${ids.partnership}`;
+const reviewURL = `/partnerships/${ids.partnership}/claim/review`;
 const projectName = `CT ${suffix} Main`;
 const contexts: BrowserContext[] = [];
 let claimId: string | undefined;

@@ -26,9 +26,15 @@ export const messageBundleRoutes = [
   ["components/error-presentation/", "apiErrors"],
   ["components/", "shell"],
   ["app/(protected)/projects/[id]/participants/", "participations"],
-  ["app/(protected)/partnerships/[id]/participants/", "participations"],
-  ["app/(protected)/partnerships/[id]/claim/", "claims"],
+  [
+    "app/(protected)/partnerships/[partnershipId]/participants/",
+    "participations",
+  ],
+  ["app/(protected)/partnerships/[partnershipId]/claim/", "claims"],
   ["app/(protected)/claims/", "claims"],
+  // The shell owns the header breadcrumb slots and their copy.
+  ["app/(protected)/@breadcrumb/", "shell"],
+  ["app/(protected)/partnerships/[partnershipId]/", "partnerships"],
   ["app/(protected)/organization/", "organizations"],
   ["app/(protected)/partner-organizations/", "partnerships"],
   ["app/(protected)/projects/", "projects"],
@@ -43,8 +49,13 @@ export const messageBundleRoutes = [
   ["app/page.tsx", "shell"],
 ] as const satisfies readonly (readonly [string, MessageDomain])[];
 
+/**
+ * App Router sources may sit under the `[locale]` segment; domain ownership is
+ * defined on the routing tree below it, so strip the prefix before matching.
+ */
 export function getMessageDomain(sourcePath: string): MessageDomain | undefined {
+  const normalized = sourcePath.replace(/^app\/\[locale\]\//, "app/");
   return messageBundleRoutes.find(([prefix]) =>
-    sourcePath.startsWith(prefix),
+    normalized.startsWith(prefix),
   )?.[1];
 }

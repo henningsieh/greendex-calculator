@@ -11,7 +11,7 @@
       }
     },
     "page": {
-      "eyebrow": "Organization",
+      "eyebrow": "Administration & Team",
       "title": "Organization",
       "restricted": "Organization staff management is available to owners and admins.",
       "description": "Manage staff members and pending invitations for the active Organization."

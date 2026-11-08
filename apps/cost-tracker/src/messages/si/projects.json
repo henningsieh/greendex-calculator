@@ -111,7 +111,8 @@
       "open": "odprto",
       "closed": "zaprto",
       "completing": "Zaključevanje…",
-      "complete": "Zaključi projekt"
+      "complete": "Zaključi projekt",
+      "projects": "Projects"
     }
   }
 }

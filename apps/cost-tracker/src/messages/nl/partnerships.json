@@ -80,6 +80,11 @@
         "description": "{organization} uit {project} verwijderen? Dit kan niet ongedaan worden gemaakt.",
         "execute": "Projectpartnerschap verwijderen"
       }
+    },
+    "detail": {
+      "eyebrow": "Partnership",
+      "title": "Partnership details",
+      "description": "An overview of this Project Partnership. More sections follow."
     }
   }
 }

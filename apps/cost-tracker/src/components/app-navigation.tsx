@@ -3,19 +3,14 @@
 /* eslint-disable shadcn/no-restyle -- Account-menu bespoke treatments: none of the shared Button/DropdownMenu variants provide this screen's exact shape, spacing, typography, and color. Zero visual change intended; revisit with a variant if the pattern repeats. */
 
 import { useTranslations } from "@greendex/i18n/client";
-import {
-  Building2Icon,
-  ChevronDownIcon,
-  FolderKanbanIcon,
-  LogOutIcon,
-  UsersIcon,
-} from "lucide-react";
+import { ChevronDownIcon, LogOutIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useRef } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import { SiteBrand } from "@/components/site-brand";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
@@ -29,35 +24,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
-import { OrganizationSwitcher } from "@/features/organizations/components/organization-switcher";
 import { cn } from "@/lib/utils";
-
-const baseNavigationItems = [
-  { href: "/projects", icon: FolderKanbanIcon, labelKey: "nav.projects" },
-] as const;
-
-const partnerOrganizationsNavigationItem = {
-  href: "/partner-organizations",
-  icon: Building2Icon,
-  labelKey: "nav.partnerOrganizations",
-} as const;
-
-const organizationNavigationItem = {
-  href: "/organization",
-  icon: UsersIcon,
-  labelKey: "nav.organization",
-} as const;
 
 type AppNavigationProps = {
   email?: string;
   name?: string;
   brandHref?: Route;
   actions?: ReactNode;
-  showOrganization?: boolean;
-  showPartnerOrganizations?: boolean;
-  showOrganizationSwitcher?: boolean;
-  staffOrganizations?: { id: string; name: string }[];
-  activeOrganizationId?: string;
 };
 
 export function AppNavigation({
@@ -65,22 +38,10 @@ export function AppNavigation({
   name,
   brandHref = "/",
   actions,
-  showOrganization = false,
-  showPartnerOrganizations = true,
-  showOrganizationSwitcher = false,
-  staffOrganizations = [],
-  activeOrganizationId,
 }: AppNavigationProps) {
   const t = useTranslations("shell");
   const pathname = usePathname();
   const account = email != null && name != null ? { email, name } : null;
-  // Presentation-only: each page and its procedures gate access. The Partner
-  // Organizations tab hides for people who cannot use that page.
-  const navigationItems = [
-    ...(showOrganization ? [organizationNavigationItem] : []),
-    ...baseNavigationItems,
-    ...(showPartnerOrganizations ? [partnerOrganizationsNavigationItem] : []),
-  ];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
@@ -89,15 +50,16 @@ export function AppNavigation({
         {account ? (
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
-            {showOrganizationSwitcher && activeOrganizationId ? (
-              <OrganizationSwitcher
-                activeOrganizationId={activeOrganizationId}
-                organizations={staffOrganizations}
-              />
-            ) : null}
             <div className="lg:hidden">
               <AccountMenu
                 compact
+                email={account.email}
+                name={account.name}
+                pathname={pathname}
+              />
+            </div>
+            <div className="hidden lg:block">
+              <AccountMenu
                 email={account.email}
                 name={account.name}
                 pathname={pathname}
@@ -114,45 +76,6 @@ export function AppNavigation({
           </nav>
         )}
       </div>
-
-      {account ? (
-        <div className="flex min-w-0 items-end justify-between gap-6">
-          <nav
-            aria-label={t("nav.primaryLabel")}
-            className="-ml-2 flex min-w-0 overflow-x-auto sm:-ml-3"
-          >
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
-
-              return (
-                <Link
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex shrink-0 items-center gap-2 border-b-2 px-2 py-4 text-sm font-medium transition-colors sm:px-3",
-                    active
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                  href={item.href}
-                  key={item.href}
-                >
-                  <Icon aria-hidden="true" className="hidden size-4 sm:block" />
-                  {t(item.labelKey)}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="hidden shrink-0 pb-2 lg:block">
-            <AccountMenu
-              email={account.email}
-              name={account.name}
-              pathname={pathname}
-            />
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -199,7 +122,7 @@ function AccountMenu({
               data-testid="account-menu-trigger"
               aria-label={compact ? t("account.openMenu", { name }) : undefined}
               className={cn(
-                "group h-11 gap-3 rounded-lg px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
+                "group h-11 gap-3 rounded-md px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
                 active && "bg-muted",
                 compact &&
                   "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
@@ -248,6 +171,7 @@ function AccountMenu({
                 />
               }
             >
+              <EntityIcon entity="account" />
               {t("account.settings")}
             </DropdownMenuItem>
             <DropdownMenuItem

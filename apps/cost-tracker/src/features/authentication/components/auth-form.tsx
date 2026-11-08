@@ -167,7 +167,7 @@ export function AuthForm({
         {t(isSignIn ? "auth.newAccount" : "auth.existingAccount")}{" "}
         <Link
           data-testid="auth-account-navigation"
-          className="font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+          className="font-medium link-prose"
           href={`${isSignIn ? "/register" : "/login"}${destination ? `?next=${encodeURIComponent(destination)}` : ""}`}
         >
           {t(isSignIn ? "auth.createAccount" : "auth.signIn")}

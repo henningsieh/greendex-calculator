@@ -29,6 +29,9 @@ const privateInvariantThrows: Record<string, string[]> = {
     "new Error( `No frozen funding band for Participation ${journey.participantId}.`, )",
   ],
   "lib/orpc/orpc.ts": ['new Error("RPCLink is not allowed on the server side.")'],
+  "components/ui/sidebar.tsx": [
+    'new Error("useSidebar must be used within a SidebarProvider.")',
+  ],
   "messages/merge.ts": ["new Error(`Duplicate message namespace: ${namespace}`)"],
   "lib/proof-storage.ts": ['new Error("Proof file has no body.")'],
 };

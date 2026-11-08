@@ -1,4 +1,9 @@
-export { default, metadata } from "@/app/(setup)/participant-links/[id]/page";
+import type { Metadata } from "next";
 
-// Next.js requires route configuration to be declared locally.
+import ParticipantLinkPage from "@/features/participant-onboarding/components/participant-link-page";
+
+export default ParticipantLinkPage;
+
+export const metadata: Metadata = { title: "Join Project" };
+
 export const instant = false;

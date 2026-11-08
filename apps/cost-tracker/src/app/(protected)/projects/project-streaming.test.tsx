@@ -47,41 +47,54 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   swallowPrefetchError: vi.fn(),
 }));
 
-import ProjectsPage from "@/app/(protected)/projects/page";
+vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("@/lib/orpc/middleware", () => ({
+  hasCostTrackerPermissions: async () => false,
+}));
 
-it("streams the Projects header and list fallback before scope prefetch finishes", async () => {
-  const scopes = new Promise<{ hosted: boolean; partner: boolean }>((resolve) => {
-    mocks.resolveScopes = resolve;
-  });
-  mocks.query.mockImplementation(({ queryKey }: { queryKey: string[] }) =>
-    queryKey[0] === "scopes" ? scopes : Promise.resolve({}),
-  );
+import UnprefixedProjectsPage from "@/app/(protected)/projects/page";
+import LocalizedProjectsPage from "@/app/[locale]/(protected)/projects/page";
 
-  const destination = new PassThrough();
-  let html = "";
-  destination.setEncoding("utf8");
-  const shell = new Promise<void>((resolve) => {
-    destination.on("data", (chunk: string) => {
-      html += chunk;
-      if (html.includes("Loading Project list")) resolve();
+it.each([UnprefixedProjectsPage, LocalizedProjectsPage])(
+  "streams the Projects header and list fallback before scope prefetch finishes",
+  async (ProjectsPage) => {
+    const scopes = new Promise<{ hosted: boolean; partner: boolean }>(
+      (resolve) => {
+        mocks.resolveScopes = resolve;
+      },
+    );
+    mocks.query.mockImplementation(({ queryKey }: { queryKey: string[] }) =>
+      queryKey[0] === "scopes" ? scopes : Promise.resolve({}),
+    );
+
+    const destination = new PassThrough();
+    let html = "";
+    destination.setEncoding("utf8");
+    const shell = new Promise<void>((resolve) => {
+      destination.on("data", (chunk: string) => {
+        html += chunk;
+        if (html.includes("Loading Project list")) resolve();
+      });
     });
-  });
-  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
-  const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
-      <div>
-        <ProjectsPage searchParams={Promise.resolve({})} />
-      </div>
-    </NextIntlClientProvider>,
-    { onShellReady: () => pipe(destination) },
-  );
+    const complete = new Promise<void>((resolve) =>
+      destination.on("end", resolve),
+    );
+    const { pipe } = renderToPipeableStream(
+      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <div>
+          <ProjectsPage searchParams={Promise.resolve({})} />
+        </div>
+      </NextIntlClientProvider>,
+      { onShellReady: () => pipe(destination) },
+    );
 
-  await shell;
-  expect(html).toContain("Project workspace");
-  expect(html).toContain("Loading Project list");
-  expect(html).not.toContain("Hydrated Project list");
-  mocks.resolveScopes?.({ hosted: true, partner: false });
-  await complete;
-  expect(html).toContain("Hydrated Project list");
-  expect(mocks.query).toHaveBeenCalledTimes(2);
-});
+    await shell;
+    expect(html).toContain("Project workspace");
+    expect(html).toContain("Loading Project list");
+    expect(html).not.toContain("Hydrated Project list");
+    mocks.resolveScopes?.({ hosted: true, partner: false });
+    await complete;
+    expect(html).toContain("Hydrated Project list");
+    expect(mocks.query).toHaveBeenCalledTimes(2);
+  },
+);

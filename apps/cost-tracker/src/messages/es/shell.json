@@ -15,7 +15,10 @@
       "primaryLabel": "Primary navigation",
       "projects": "Projects",
       "partnerOrganizations": "Partner organizations",
-      "organization": "Organization"
+      "organization": "Organization",
+      "workspace": "Workspace",
+      "manage": "Manage",
+      "claimReview": "Claim review"
     },
     "account": {
       "openMenu": "Open account menu for {name}",
@@ -139,9 +142,9 @@
       "titleLead": "Ember",
       "titleAccent": "design",
       "titleTail": "system",
-      "intro": "Seven themes, one fire accent. Tokens, button matrix, cards, type specimen, and the locked brand extensions — rendered live.",
+      "intro": "Four themes, one fire accent. Tokens, button matrix, cards, type specimen, and the locked brand extensions — rendered live.",
       "themes": {
-        "eyebrow": "Themes · 7 slots",
+        "eyebrow": "Themes · 4 slots",
         "title": "Theme switcher",
         "active": "active:",
         "system": "system"
@@ -198,7 +201,7 @@
         "conformityDetail": "tabular numbers · mono labels"
       },
       "terminal": {
-        "tokens": "tokens mapped — 7 themes",
+        "tokens": "tokens mapped — 4 themes",
         "buttons": "buttons rebuilt — spinner pending",
         "landing": "landing page — next section",
         "status": "ember-c · all systems nominal"
@@ -210,6 +213,18 @@
       "searchPlaceholder": "Buscar países…",
       "noMatches": "No se encontraron países.",
       "notSet": "Sin especificar"
+    },
+    "crumbs": {
+      "projectDetails": "Project details",
+      "partnership": "Partnership",
+      "participants": "Participants",
+      "participantDetails": "Participant details",
+      "claimReviews": "Claim reviews",
+      "claimWorkspace": "Claim workspace",
+      "userSettings": "User settings",
+      "claimReview": "Review claim",
+      "hostedProject": "Hosted Project",
+      "partnerProject": "Partner Project"
     }
   }
 }

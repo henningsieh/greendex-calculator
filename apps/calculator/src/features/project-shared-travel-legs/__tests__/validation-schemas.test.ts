@@ -14,7 +14,7 @@ const validCreateInput = {
 };
 
 describe("Project Shared Travel Leg contract schemas", () => {
-  it("accepts canonical create and update fields including electric car", () => {
+  it("accepts standard create and update fields including electric car", () => {
     expect(
       CreateProjectSharedTravelLegInputSchema.safeParse(validCreateInput).success,
     ).toBe(true);

@@ -114,16 +114,21 @@
       "correctCountry": "Correct country",
       "correctCountryDescription": "The Participant sets this when joining. Only the Partner Organization may correct it.",
       "noEmail": "Geen e-mailadres vastgelegd",
-      "cannotCorrect": "Je kunt deze projectdeelname niet corrigeren."
+      "cannotCorrect": "Je kunt deze projectdeelname niet corrigeren.",
+      "eyebrow": "Participations",
+      "participants": "Project Participations",
+      "projects": "Projects"
     },
     "app": {
+      "eyebrow": "Participations",
       "backToProjects": "Back to Projects",
       "reportTitle": "Participants report",
       "reportDescription": "Read how onboarding is progressing across this Project, grouped by Partner Organization.",
       "projectParticipations": "Project Participations",
       "coordinateDescription": "Coordinate Participants for this Project Partnership.",
       "participantDetails": "Participant details",
-      "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct."
+      "participantDetailsDescription": "Read this Project Participation and correct the data you are permitted to correct.",
+      "projects": "Projects"
     },
     "participantOnboarding": {
       "agreementUnavailable": {

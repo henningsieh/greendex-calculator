@@ -80,6 +80,11 @@
         "description": "Odstraniti {organization} iz projekta {project}? Tega dejanja ni mogoče razveljaviti.",
         "execute": "Odstrani projektno partnerstvo"
       }
+    },
+    "detail": {
+      "eyebrow": "Partnership",
+      "title": "Partnership details",
+      "description": "An overview of this Project Partnership. More sections follow."
     }
   }
 }

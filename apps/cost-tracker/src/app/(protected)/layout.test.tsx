@@ -16,9 +16,13 @@ const mocks = vi.hoisted(() => ({
   listMemberships: vi.fn(),
   canManageOrganization: vi.fn(),
   canViewPartnerNetwork: vi.fn(),
+  cookies: vi.fn(),
 }));
 
 vi.mock("next/server", () => ({ connection: mocks.connection }));
+
+// The shell restores the persisted sidebar state from this cookie.
+vi.mock("next/headers", () => ({ cookies: mocks.cookies }));
 
 vi.mock("@/lib/session", () => ({
   getSession: mocks.getSession,
@@ -37,7 +41,12 @@ vi.mock("@/features/organizations/access", () => ({
 }));
 
 vi.mock("@/components/app-navigation", () => ({
-  AppNavigation: ({
+  AppNavigation: ({ email }: { email?: string }) => <p data-email={email}>nav</p>,
+}));
+
+// Navigation visibility moved into the sidebar; the shell passes the flags there.
+vi.mock("@/components/app-sidebar", () => ({
+  AppSidebar: ({
     showOrganizationSwitcher,
     activeOrganizationId,
     showOrganization,
@@ -67,7 +76,7 @@ vi.mock("@/features/authentication/components/select-organization", () => ({
 }));
 
 import ProtectedLayout from "@/app/(protected)/layout";
-import { ProtectedShell } from "@/app/(protected)/protected-shell";
+import { ProtectedShell } from "@/components/protected-shell";
 
 const ownerMembership = {
   id: "org-a",
@@ -102,6 +111,7 @@ describe("ProtectedLayout Organization context", () => {
     });
     mocks.canManageOrganization.mockResolvedValue(true);
     mocks.canViewPartnerNetwork.mockResolvedValue(true);
+    mocks.cookies.mockResolvedValue({ get: () => undefined });
   });
 
   it("offers creation recovery without Memberships", async () => {

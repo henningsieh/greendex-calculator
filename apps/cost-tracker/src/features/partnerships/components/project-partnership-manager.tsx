@@ -6,10 +6,11 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { Building2Icon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 import { useConfirmDialog } from "@/components/confirm-dialog";
+import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
@@ -98,8 +99,8 @@ export function ProjectPartnershipManager({
                 key={partnership.id}
               >
                 <div className="flex gap-3">
-                  <Building2Icon
-                    aria-hidden="true"
+                  <EntityIcon
+                    entity="partnerOrganization"
                     className="mt-1 size-5 text-muted-foreground"
                   />
                   <div>

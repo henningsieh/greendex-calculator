@@ -1,7 +1,8 @@
 {
   "settings": {
     "page": {
-      "title": "Benutzereinstellungen",
+      "eyebrow": "Einstellungen",
+      "title": "Kontoeinstellungen",
       "description": "Wähle, wie Cost Tracker aussieht, und halte deine Kontodaten aktuell."
     },
     "tabs": {
@@ -22,7 +23,7 @@
     },
     "theme": {
       "title": "Farbschema",
-      "description": "Alle sieben Themes nebeneinander — EU Erasmus hell, fünf Ember-Varianten und das Legacy-Dark-Theme.",
+      "description": "Alle vier Themes nebeneinander — Erasmus hell und drei dunkle Erasmus-Varianten.",
       "ariaLabel": "Farbschema",
       "use": "{theme} verwenden",
       "shortcutTitle": "Überall wechseln",

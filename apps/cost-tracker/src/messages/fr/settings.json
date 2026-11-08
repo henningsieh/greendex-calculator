@@ -1,7 +1,8 @@
 {
   "settings": {
     "page": {
-      "title": "User settings",
+      "eyebrow": "Settings",
+      "title": "Account settings",
       "description": "Choose how Cost Tracker looks and keep your account details current."
     },
     "tabs": {
@@ -22,7 +23,7 @@
     },
     "theme": {
       "title": "Color theme",
-      "description": "All seven themes side by side — EU Erasmus light, five Ember vibes, and legacy dark.",
+      "description": "All four themes side by side — Erasmus light and three Erasmus dark vibes.",
       "ariaLabel": "Color theme",
       "use": "Use {theme}",
       "shortcutTitle": "Switch from anywhere",

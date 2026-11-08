@@ -40,7 +40,7 @@ function present(
 
 describe("shared localized error presentation", () => {
   it.each(Object.entries(situationCatalog))(
-    "renders canonical %s safely in English",
+    "renders %s safely in English",
     (_name, situation) => {
       const error = new ORPCError(situation.code, {
         message: "private SQL token",

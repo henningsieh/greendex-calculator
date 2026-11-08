@@ -49,12 +49,12 @@ import { createParticipantOnboardingProcedures } from "@/features/participant-on
 import { createParticipationProcedures } from "@/features/participations/procedures/core";
 
 /**
- * Canonical seed identities (see `SEED_SCENARIOS` in
+ * Seed identities (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). This file owns the Sustainability
  * Conference Project plus its Partnership to the second Partner Organization.
  * Issuance goes through the procedures under test. Details reads/corrections
  * use the seeded Participation; every case restores that record and the
- * canonical assignment, and removes its issued tokens. The primary Partner Organization is the
+ * seed assignment, and removes its issued tokens. The primary Partner Organization is the
  * unrelated scope; Hosting reads use the seed Hosting Organization.
  */
 const SEED_ORG_SLUG = "seed-org";
@@ -180,24 +180,22 @@ beforeAll(async () => {
   const seedHost = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_ORG_SLUG),
   });
-  if (!seedHost)
-    throw new Error("Canonical seed Hosting Organization is missing");
+  if (!seedHost) throw new Error("Seed Hosting Organization is missing");
   const seedPartner = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_PARTNER_SLUG),
   });
-  if (!seedPartner)
-    throw new Error("Canonical seed Partner Organization is missing");
+  if (!seedPartner) throw new Error("Seed Partner Organization is missing");
   const seedSecond = await db.query.organization.findFirst({
     where: eq(organization.slug, SEED_UNRELATED_SLUG),
   });
-  if (!seedSecond) throw new Error("Canonical unrelated Organization is missing");
+  if (!seedSecond) throw new Error("Seed unrelated Organization is missing");
   const seedProject = await db.query.projectsTable.findFirst({
     where: and(
       eq(projectsTable.organizationId, seedHost.id),
       eq(projectsTable.name, SEED_ENTRY_PROJECT_NAME),
     ),
   });
-  if (!seedProject) throw new Error("Canonical entry Project is missing");
+  if (!seedProject) throw new Error("Seed entry Project is missing");
   const seedPartnership =
     await db.query.projectPartnerOrganizationsTable.findFirst({
       where: and(
@@ -205,12 +203,12 @@ beforeAll(async () => {
         eq(partnerships.organizationId, seedPartner.id),
       ),
     });
-  if (!seedPartnership) throw new Error("Canonical entry Partnership is missing");
+  if (!seedPartnership) throw new Error("Seed entry Partnership is missing");
   async function userIdFor(email: string): Promise<string> {
     const stored = await db.query.user.findFirst({
       where: eq(user.email, email),
     });
-    if (!stored) throw new Error(`Canonical seed User is missing: ${email}`);
+    if (!stored) throw new Error(`Seed User is missing: ${email}`);
     return stored.id;
   }
   host = seedHost.id;
@@ -253,7 +251,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await db.delete(entryTokens).where(eq(entryTokens.projectId, project));
-  // Begin the authorization matrix with the canonical assignment revoked;
+  // Begin the authorization matrix with the seed assignment revoked;
   // afterEach restores it even if a refusal/assertion fails.
   await db.delete(assignments).where(eq(assignments.partnershipId, partnership));
 
@@ -292,7 +290,7 @@ afterAll(async () => {
     await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     }),
-    "canonical seed Hosting Organization was deleted",
+    "seed Hosting Organization was deleted",
   ).not.toBeUndefined();
   expect(
     await db.query.projectsTable.findFirst({
@@ -301,7 +299,7 @@ afterAll(async () => {
         eq(projectsTable.name, SEED_ENTRY_PROJECT_NAME),
       ),
     }),
-    "canonical entry Project was deleted",
+    "seed entry Project was deleted",
   ).not.toBeUndefined();
   for (const email of [
     SEED_OWNER_EMAIL,
@@ -311,7 +309,7 @@ afterAll(async () => {
   ]) {
     expect(
       await db.query.user.findFirst({ where: eq(user.email, email) }),
-      `canonical seed User was deleted: ${email}`,
+      `seed User was deleted: ${email}`,
     ).not.toBeUndefined();
   }
 });
@@ -358,7 +356,7 @@ describe("Project-scope participant entry authorization", () => {
 
   it("permits an assigned Partner Group Organizer and refuses the same role without an assignment", async () => {
     actor = organizer;
-    // Restore the canonical assignment after the unassigned branch.
+    // Restore the seed assignment after the unassigned branch.
     await db.insert(assignments).values(baselineAssignment);
     try {
       await expect(
@@ -397,7 +395,7 @@ describe("Project-scope participant entry authorization", () => {
 
   it("refuses a stale client decision after the assignment is revoked", async () => {
     actor = organizer;
-    // Restore the canonical assignment after the unassigned branch.
+    // Restore the seed assignment after the unassigned branch.
     await db.insert(assignments).values(baselineAssignment);
     expect(await clientDecision()).toEqual({ permitted: true });
     await db
@@ -503,7 +501,7 @@ describe("Project-scope participant entry authorization", () => {
     });
     expect(await clientDecision()).toEqual({ permitted: true });
     actor = organizer;
-    // Restore the canonical assignment after the unassigned branch.
+    // Restore the seed assignment after the unassigned branch.
     await db.insert(assignments).values(baselineAssignment);
     expect(
       (
@@ -607,7 +605,7 @@ describe("Participant details authorization", () => {
       permitted: false,
       reason: "ASSIGNMENT_MISSING",
     });
-    // Restore the canonical assignment after the unassigned branch.
+    // Restore the seed assignment after the unassigned branch.
     await db.insert(assignments).values(baselineAssignment);
     try {
       expect(

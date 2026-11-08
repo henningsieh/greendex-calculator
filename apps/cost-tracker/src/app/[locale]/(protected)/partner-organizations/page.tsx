@@ -1,7 +1,7 @@
-import PartnerOrganizationsPage, {
-  metadata as routeMetadata,
-} from "@/app/(protected)/partner-organizations/page";
+import type { Metadata } from "next";
 
-// Identity exports: re-export syntax falsely exposes transitive auth to the persistence guard.
+import PartnerOrganizationsPage from "@/features/partnerships/components/partner-organizations-page";
+
 export default PartnerOrganizationsPage;
-export const metadata = routeMetadata;
+
+export const metadata: Metadata = { title: "Partner Organizations" };

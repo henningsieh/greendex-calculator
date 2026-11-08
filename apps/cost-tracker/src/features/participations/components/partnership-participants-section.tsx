@@ -10,14 +10,14 @@ import {
 export async function PartnershipParticipantsSection({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ partnershipId: string }>;
 }) {
-  const { id } = await params;
+  const { partnershipId } = await params;
   const queryClient = getQueryClient();
   await queryClient
     .query(
       orpcQuery.participations.listPartnership.queryOptions({
-        input: { partnershipId: id },
+        input: { partnershipId },
         meta: { costTrackerORPC: true },
       }),
     )
@@ -26,7 +26,7 @@ export async function PartnershipParticipantsSection({
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Project Participations">
-        <ParticipantCoordination partnershipId={id} />
+        <ParticipantCoordination partnershipId={partnershipId} />
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );

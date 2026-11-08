@@ -1,4 +1,8 @@
-import ProtectedLayout from "@/app/(protected)/layout";
+import ProtectedLayout from "@/components/protected-layout";
 
-// Identity export: re-export syntax falsely exposes transitive auth to the persistence guard.
-export default ProtectedLayout;
+export default function LocaleProtectedLayout({
+  children,
+  breadcrumb,
+}: Readonly<{ children: React.ReactNode; breadcrumb?: React.ReactNode }>) {
+  return <ProtectedLayout breadcrumb={breadcrumb}>{children}</ProtectedLayout>;
+}

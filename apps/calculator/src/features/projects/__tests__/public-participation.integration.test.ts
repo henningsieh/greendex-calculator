@@ -23,12 +23,12 @@ import { auth } from "@/lib/better-auth";
 import { router } from "@/lib/orpc/router";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). The public participation contract
- * reads the seeded showcase Project with its canonical shared travel
+ * reads the seeded showcase Project with its seeded shared travel
  * records; the country contract creates case Organizations through the
  * supported Better Auth behavior as the seeded Owner. Case Organizations
- * and sessions are removed afterwards; canonical actors are never deleted.
+ * and sessions are removed afterwards; seed actors are never deleted.
  */
 const SEED_ORG_SLUG = "seed-org";
 const SEED_SHOWCASE_PROJECT_NAME = "Carbon Footprint Workshop";
@@ -44,28 +44,28 @@ describe("public participation contract", () => {
     const seedOrg = await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     });
-    if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+    if (!seedOrg) throw new Error("Seed Organization is missing");
     const showcase = await db.query.projectsTable.findFirst({
       where: and(
         eq(projectsTable.organizationId, seedOrg.id),
         eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
       ),
     });
-    if (!showcase) throw new Error("Canonical showcase Project is missing");
+    if (!showcase) throw new Error("Seeded showcase Project is missing");
     showcaseProjectId = showcase.id;
   });
 
   afterAll(async () => {
-    // Canonical actors survive every case: fail loudly on accidental deletion.
+    // Seed actors survive every case: fail loudly on accidental deletion.
     expect(
       await db.query.projectsTable.findFirst({
         where: eq(projectsTable.id, showcaseProjectId),
       }),
-      "canonical showcase Project was deleted",
+      "showcase Project was deleted",
     ).not.toBeUndefined();
   });
 
-  it("exposes only canonical shared travel records", async () => {
+  it("exposes only seeded shared travel records", async () => {
     const project = await client.projects.getForParticipation({
       id: showcaseProjectId,
     });
@@ -132,11 +132,11 @@ describe("organization country contract", () => {
     const seedOrg = await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     });
-    if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+    if (!seedOrg) throw new Error("Seed Organization is missing");
     const owner = await db.query.user.findFirst({
       where: (users, { eq: eqUser }) => eqUser(users.email, SEED_USER.email),
     });
-    if (!owner) throw new Error("Canonical seed Owner is missing");
+    if (!owner) throw new Error("Seed Owner is missing");
     ownerUserId = owner.id;
     ownerHeaders = await sessionHeaders(owner.id, seedOrg.id);
     const slug = `country-${randomUUID()}`;
@@ -167,12 +167,12 @@ describe("organization country contract", () => {
         .where(inArray(invitation.organizationId, caseOrgIds));
       await db.delete(organization).where(inArray(organization.id, caseOrgIds));
     }
-    // Canonical actors survive every case: fail loudly on accidental deletion.
+    // Seed actors survive every case: fail loudly on accidental deletion.
     expect(
       await db.query.organization.findFirst({
         where: eq(organization.slug, SEED_ORG_SLUG),
       }),
-      "canonical seed Organization was deleted",
+      "seed Organization was deleted",
     ).not.toBeUndefined();
   });
   it.each([undefined, null, "", "US", "de"])(

@@ -293,7 +293,7 @@ test.describe.serial("guided Organization Invitation", () => {
     { width: 1280, height: 800 },
   ]) {
     for (const fontSize of [16, 24]) {
-      for (const theme of ["light", "dark"] as const) {
+      for (const theme of ["light", "theme-erasmus-midnight"] as const) {
         test(`named invitation states fit ${viewport.width} ${fontSize}px ${theme}`, async ({
           page,
           browser,
@@ -305,8 +305,8 @@ test.describe.serial("guided Organization Invitation", () => {
               ({ fontSize, theme }) => {
                 document.documentElement.style.fontSize = `${fontSize}px`;
                 document.documentElement.classList.toggle(
-                  "dark",
-                  theme === "dark",
+                  "theme-erasmus-midnight",
+                  theme === "theme-erasmus-midnight",
                 );
                 window.scrollTo(0, 0);
               },

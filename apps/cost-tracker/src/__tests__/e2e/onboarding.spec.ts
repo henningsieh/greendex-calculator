@@ -83,9 +83,12 @@ for (const { viewport, fontSize } of [
     ).toBe(true);
     const evidence = resolve("src/__tests__/e2e/.playwright/evidence");
     await mkdir(evidence, { recursive: true, mode: 0o700 });
-    for (const theme of ["light", "dark"]) {
+    for (const theme of ["light", "theme-erasmus-midnight"]) {
       await page.evaluate((value) => {
-        document.documentElement.classList.toggle("dark", value === "dark");
+        document.documentElement.classList.toggle(
+          "theme-erasmus-midnight",
+          value === "theme-erasmus-midnight",
+        );
       }, theme);
       await expect(progress).toBeVisible();
       await page.screenshot({

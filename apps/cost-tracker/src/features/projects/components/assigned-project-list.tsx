@@ -35,13 +35,13 @@ export function AssignedProjectList() {
           {projects.map((project) => (
             <li className="flex flex-wrap items-center gap-3" key={project.id}>
               <Link
-                className="font-medium underline-offset-4 hover:underline"
+                className="font-medium link-prose"
                 href={`/projects/${encodeURIComponent(project.id)}`}
               >
                 {project.name}
               </Link>
               <Link
-                className="text-sm underline-offset-4 hover:underline"
+                className="text-sm link-prose"
                 href={`/projects/${encodeURIComponent(project.id)}/participants`}
               >
                 {t("viewParticipants")}

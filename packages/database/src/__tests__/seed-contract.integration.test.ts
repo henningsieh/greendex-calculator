@@ -46,10 +46,10 @@ describe("seed contract on the shared development database", () => {
       const client = pool();
       try {
         expect(await duplicates(client)).toBe(0);
-        const canonical = await client.query<{ slug: string }>(
+        const seeded = await client.query<{ slug: string }>(
           "SELECT slug FROM organization WHERE slug IN ('seed-org', 'seed-partner-org') ORDER BY slug",
         );
-        expect(canonical.rows.map(({ slug }) => slug)).toEqual([
+        expect(seeded.rows.map(({ slug }) => slug)).toEqual([
           "seed-org",
           "seed-partner-org",
         ]);

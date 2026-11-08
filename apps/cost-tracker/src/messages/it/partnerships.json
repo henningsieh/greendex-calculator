@@ -80,6 +80,11 @@
         "description": "Rimuovere {organization} da {project}? Questa rimozione è irreversibile.",
         "execute": "Rimuovi Partenariato di Progetto"
       }
+    },
+    "detail": {
+      "eyebrow": "Partnership",
+      "title": "Partnership details",
+      "description": "An overview of this Project Partnership. More sections follow."
     }
   }
 }

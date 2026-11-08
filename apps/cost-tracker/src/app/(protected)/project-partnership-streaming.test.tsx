@@ -97,18 +97,43 @@ vi.mock("@/features/partnerships/components/setup-link", () => ({
   SetupLinkCreator: () => <p>Setup link creator</p>,
 }));
 
-import ClaimReviewPage from "@/app/(protected)/claims/review/[id]/page";
 import ClaimReviewQueuePage from "@/app/(protected)/claims/review/page";
 import PartnerOrganizationsPage from "@/app/(protected)/partner-organizations/page";
-import ClaimPage from "@/app/(protected)/partnerships/[id]/claim/page";
-import ParticipantDetailsPage from "@/app/(protected)/partnerships/[id]/participants/[participationId]/page";
-import PartnershipParticipantsPage from "@/app/(protected)/partnerships/[id]/participants/page";
+import ClaimPage, {
+  metadata as ClaimPageMetadata,
+} from "@/app/(protected)/partnerships/[partnershipId]/claim/page";
+import ClaimReviewPage, {
+  metadata as ClaimReviewPageMetadata,
+} from "@/app/(protected)/partnerships/[partnershipId]/claim/review/page";
+import ParticipantDetailsPage, {
+  metadata as ParticipantDetailsPageMetadata,
+} from "@/app/(protected)/partnerships/[partnershipId]/participants/[participationId]/page";
+import PartnershipParticipantsPage, {
+  metadata as PartnershipParticipantsPageMetadata,
+} from "@/app/(protected)/partnerships/[partnershipId]/participants/page";
 import ProjectPage from "@/app/(protected)/projects/[id]/page";
-import HostedParticipantsPage from "@/app/(protected)/projects/[id]/participants/page";
+import HostedParticipantsPage, {
+  metadata as HostedParticipantsPageMetadata,
+} from "@/app/(protected)/projects/[id]/participants/page";
+import LocalizedClaimPage, {
+  metadata as LocalizedClaimPageMetadata,
+} from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/page";
+import LocalizedClaimReviewPage, {
+  metadata as LocalizedClaimReviewPageMetadata,
+} from "@/app/[locale]/(protected)/partnerships/[partnershipId]/claim/review/page";
+import LocalizedParticipantDetailsPage, {
+  metadata as LocalizedParticipantDetailsPageMetadata,
+} from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/[participationId]/page";
+import LocalizedPartnershipParticipantsPage, {
+  metadata as LocalizedPartnershipParticipantsPageMetadata,
+} from "@/app/[locale]/(protected)/partnerships/[partnershipId]/participants/page";
+import LocalizedHostedParticipantsPage, {
+  metadata as LocalizedHostedParticipantsPageMetadata,
+} from "@/app/[locale]/(protected)/projects/[id]/participants/page";
 
-const routes = [
+const unprefixedRoutes = [
   {
-    path: "/partnerships/[id]/claim",
+    path: "/partnerships/[partnershipId]/claim",
     Page: ClaimPage,
     heading: "Claim workspace",
     label: "Loading Claim workspace",
@@ -122,21 +147,21 @@ const routes = [
     content: "Resolved Claim queue",
   },
   {
-    path: "/claims/review/[id]",
+    path: "/partnerships/[partnershipId]/claim/review",
     Page: ClaimReviewPage,
-    heading: "Claim review",
+    heading: "Review claim",
     label: "Loading Claim review",
     content: "Resolved Claim review",
   },
   {
-    path: "/partnerships/[id]/participants",
+    path: "/partnerships/[partnershipId]/participants",
     Page: PartnershipParticipantsPage,
     heading: "Project Participations",
     label: "Loading Project Participations",
     content: "Resolved Participations",
   },
   {
-    path: "/partnerships/[id]/participants/[participationId]",
+    path: "/partnerships/[partnershipId]/participants/[participationId]",
     Page: ParticipantDetailsPage,
     heading: "Participant details",
     label: "Loading Participant details",
@@ -165,9 +190,103 @@ const routes = [
   },
 ];
 
+import LocalizedClaimReviewQueuePage from "@/app/[locale]/(protected)/claims/review/page";
+import LocalizedPartnerOrganizationsPage from "@/app/[locale]/(protected)/partner-organizations/page";
+import LocalizedProjectPage from "@/app/[locale]/(protected)/projects/[id]/page";
+
+const localizedPages = new Map<
+  (typeof unprefixedRoutes)[number]["Page"],
+  (typeof unprefixedRoutes)[number]["Page"]
+>([
+  [ClaimPage, LocalizedClaimPage],
+  [ClaimReviewQueuePage, LocalizedClaimReviewQueuePage],
+  [PartnerOrganizationsPage, LocalizedPartnerOrganizationsPage],
+  [ProjectPage, LocalizedProjectPage],
+  [ClaimReviewPage, LocalizedClaimReviewPage],
+  [PartnershipParticipantsPage, LocalizedPartnershipParticipantsPage],
+  [ParticipantDetailsPage, LocalizedParticipantDetailsPage],
+  [HostedParticipantsPage, LocalizedHostedParticipantsPage],
+]);
+const routes = unprefixedRoutes.flatMap((route) => {
+  const Page = localizedPages.get(route.Page);
+  return Page
+    ? [route, { ...route, path: `/[locale]${route.path}`, Page }]
+    : [route];
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.membership.mockResolvedValue(true);
+});
+
+it.each([
+  { path: "claim", Page: ClaimPage },
+  { path: "claim/review", Page: ClaimReviewPage },
+  { path: "[locale]/claim", Page: LocalizedClaimPage },
+  { path: "[locale]/claim/review", Page: LocalizedClaimReviewPage },
+])(
+  "$path uses partnershipId without the former id parameter",
+  async ({ Page }) => {
+    mocks.query.mockResolvedValue(undefined);
+    const destination = new PassThrough();
+    destination.resume();
+    const complete = new Promise<void>((resolve) =>
+      destination.on("end", resolve),
+    );
+    const errors: unknown[] = [];
+    const { pipe } = renderToPipeableStream(
+      <NextIntlClientProvider locale="de" messages={messages} timeZone="UTC">
+        <Page
+          params={Promise.resolve({ partnershipId: "requested-partnership" })}
+        />
+      </NextIntlClientProvider>,
+      {
+        onShellReady: () => pipe(destination),
+        onError: (error) => {
+          errors.push(error);
+        },
+      },
+    );
+    await complete;
+    expect(errors).toEqual([]);
+    const scopedInputs = mocks.query.mock.calls
+      .map(([options]) => options.input)
+      .filter((input) => input !== undefined);
+    expect(scopedInputs.length).toBeGreaterThan(0);
+    expect(scopedInputs).toEqual(
+      scopedInputs.map(() => ({ partnershipId: "requested-partnership" })),
+    );
+  },
+);
+
+it("prefetches the authorized Claim review snapshot", async () => {
+  mocks.query.mockResolvedValue({
+    projectName: "Workshop",
+    organizationName: "Partner Organization",
+  });
+  const destination = new PassThrough();
+  destination.resume();
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const errors: unknown[] = [];
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <ClaimReviewPage
+        params={Promise.resolve({ partnershipId: "requested-partnership" })}
+      />
+    </NextIntlClientProvider>,
+    {
+      onShellReady: () => pipe(destination),
+      onError: (error) => {
+        errors.push(error);
+      },
+    },
+  );
+  await complete;
+  expect(errors).toEqual([]);
+  expect(mocks.query).toHaveBeenCalledWith({
+    input: { partnershipId: "requested-partnership" },
+  });
+  expect(mocks.query).toHaveBeenCalledTimes(4);
 });
 
 it.each(routes)(
@@ -197,6 +316,7 @@ it.each(routes)(
           <Page
             params={Promise.resolve({
               id: "partnership-1",
+              partnershipId: "partnership-1",
               participationId: "participation-1",
             })}
           />
@@ -231,6 +351,7 @@ it.each(routes)(
       await Page({
         params: Promise.resolve({
           id: "partnership-1",
+          partnershipId: "partnership-1",
           participationId: "participation-1",
         }),
       }),
@@ -239,15 +360,23 @@ it.each(routes)(
   },
 );
 
-it.each(routes.filter(({ path }) => path.includes("[id]")))(
+it.each(
+  routes.filter(({ path }) => /\[[^\]]+\]/.test(path.replace("/[locale]", ""))),
+)(
   "$path streams the shell without resolving route identity",
   async ({ Page, label, content }) => {
-    let resolveParams!: (value: { id: string; participationId: string }) => void;
-    const params = new Promise<{ id: string; participationId: string }>(
-      (resolve) => {
-        resolveParams = resolve;
-      },
-    );
+    let resolveParams!: (value: {
+      id: string;
+      partnershipId: string;
+      participationId: string;
+    }) => void;
+    const params = new Promise<{
+      id: string;
+      partnershipId: string;
+      participationId: string;
+    }>((resolve) => {
+      resolveParams = resolve;
+    });
     mocks.query.mockResolvedValue(undefined);
     const destination = new PassThrough();
     let html = "";
@@ -276,10 +405,37 @@ it.each(routes.filter(({ path }) => path.includes("[id]")))(
       expect(mocks.query).not.toHaveBeenCalled();
       expect(html).not.toContain(content);
     } finally {
-      resolveParams({ id: "partnership-1", participationId: "participation-1" });
+      resolveParams({
+        id: "partnership-1",
+        partnershipId: "partnership-1",
+        participationId: "participation-1",
+      });
       await complete;
     }
     expect(html).toContain(content);
     expect(mocks.query).toHaveBeenCalled();
   },
 );
+
+it.each([
+  ["Claim workspace", ClaimPageMetadata, LocalizedClaimPageMetadata],
+  ["Review claim", ClaimReviewPageMetadata, LocalizedClaimReviewPageMetadata],
+  [
+    "Project Participations",
+    PartnershipParticipantsPageMetadata,
+    LocalizedPartnershipParticipantsPageMetadata,
+  ],
+  [
+    "Participant details",
+    ParticipantDetailsPageMetadata,
+    LocalizedParticipantDetailsPageMetadata,
+  ],
+  [
+    "Participants report",
+    HostedParticipantsPageMetadata,
+    LocalizedHostedParticipantsPageMetadata,
+  ],
+])("preserves %s metadata for both URL forms", (title, unprefixed, localized) => {
+  expect(unprefixed).toEqual({ title });
+  expect(localized).toEqual(unprefixed);
+});

@@ -1,1 +1,3 @@
-export { default } from "@/app/design-system/page";
+import DesignSystemPage from "@/components/design-system-page";
+
+export default DesignSystemPage;

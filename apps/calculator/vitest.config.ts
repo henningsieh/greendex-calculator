@@ -8,7 +8,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
-    // Router/auth mocks must not leak between suites sharing the canonical database.
+    // Router/auth mocks must not leak between suites sharing the seed database.
     isolate: true,
     fileParallelism: false,
     environment: "jsdom",

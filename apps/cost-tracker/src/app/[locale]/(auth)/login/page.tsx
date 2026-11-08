@@ -1,4 +1,8 @@
-export { default, generateMetadata } from "@/app/(auth)/login/page";
+import LoginPage, {
+  generateMetadata,
+} from "@/features/authentication/components/login-page";
 
-// Next.js requires route configuration to be declared locally.
+export default LoginPage;
+export { generateMetadata };
+
 export const instant = false;

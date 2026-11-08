@@ -1,6 +1,5 @@
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
-import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import {
   getQueryClient,
@@ -10,17 +9,10 @@ import {
 
 export async function ProjectWorkspaceSection({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ id }, rawSearchParams] = await Promise.all([
-    params,
-    searchParams ??
-      Promise.resolve<Record<string, string | string[] | undefined>>({}),
-  ]);
-  const returnTo = getProjectListReturnDestination(rawSearchParams.returnTo);
+  const { id } = await params;
   const queryClient = getQueryClient();
   await queryClient
     .query(
@@ -34,7 +26,7 @@ export async function ProjectWorkspaceSection({
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="this Project">
-        <ProjectWorkspace projectId={id} returnTo={returnTo} />
+        <ProjectWorkspace projectId={id} />
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );

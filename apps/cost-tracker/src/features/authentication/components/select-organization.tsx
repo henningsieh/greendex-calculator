@@ -1,11 +1,12 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { Building2Icon, LoaderCircleIcon } from "lucide-react";
+import { LoaderCircleIcon } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
+import { EntityIcon } from "@/components/entity-icon";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -64,7 +65,7 @@ export function SelectOrganization({
       <Empty variant="outlined">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <Building2Icon />
+            <EntityIcon entity="organization" />
           </EmptyMedia>
           <EmptyTitle>
             <h1 ref={heading} tabIndex={-1}>

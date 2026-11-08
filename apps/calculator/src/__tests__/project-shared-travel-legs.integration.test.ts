@@ -22,11 +22,11 @@ import type { ProjectSharedTravelLeg } from "@/features/project-shared-travel-le
 import type { ProjectType } from "@/features/projects/types";
 
 /**
- * Canonical seed actors (see `SEED_SCENARIOS` in
+ * Seed actors (see `SEED_SCENARIOS` in
  * `apps/calculator/scripts/seed.ts`). Persistence checks run against the
  * seeded Hosting Organization; Projects and Shared Travel Legs below are
  * the rows under test, created directly because persistence is the
- * behavior under test here, and removed afterwards. Canonical seed rows
+ * behavior under test here, and removed afterwards. Seed rows
  * are never deleted: cleanup is scoped to case Project ids, and the
  * showcase leg count is pinned across the suite.
  */
@@ -39,7 +39,7 @@ describe("Project Shared Travel Legs integration", () => {
   let sharedTravelLegId: string;
   let showcaseLegCount = 0;
   const caseProjectIds: string[] = [];
-  const managementProjectId = "travel-leg-management-project-canonical";
+  const managementProjectId = "lptux3nxa88dj5c3yx8p844t";
   let baselineProject: typeof projectsTable.$inferSelect;
   let baselineLegs: (typeof projectSharedTravelLegsTable.$inferSelect)[];
 
@@ -52,20 +52,20 @@ describe("Project Shared Travel Legs integration", () => {
     const seedOrg = await db.query.organization.findFirst({
       where: eq(organization.slug, SEED_ORG_SLUG),
     });
-    if (!seedOrg) throw new Error("Canonical seed Organization is missing");
+    if (!seedOrg) throw new Error("Seed Organization is missing");
     orgId = seedOrg.id;
     const seededProject = await db.query.projectsTable.findFirst({
       where: eq(projectsTable.id, managementProjectId),
     });
     if (!seededProject)
-      throw new Error("Canonical Travel Leg Management Project is missing");
+      throw new Error("Seed Travel Leg Management Project is missing");
     baselineProject = seededProject;
     baselineLegs = await db
       .select()
       .from(projectSharedTravelLegsTable)
       .where(eq(projectSharedTravelLegsTable.projectId, managementProjectId));
     expect(baselineLegs.map(({ id }) => id)).toContain(
-      "travel-leg-management-bus-canonical",
+      "cptik4xu7qn1logufr8mi19e",
     );
     const showcase = await db.query.projectsTable.findFirst({
       where: and(
@@ -73,7 +73,7 @@ describe("Project Shared Travel Legs integration", () => {
         eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
       ),
     });
-    if (!showcase) throw new Error("Canonical showcase Project is missing");
+    if (!showcase) throw new Error("Seeded showcase Project is missing");
     showcaseLegCount = await db.$count(
       projectSharedTravelLegsTable,
       eq(projectSharedTravelLegsTable.projectId, showcase.id),
@@ -81,16 +81,16 @@ describe("Project Shared Travel Legs integration", () => {
   });
 
   beforeEach(() => {
-    // Every management case resolves the same canonical preconditions afresh;
+    // Every management case resolves the same seed preconditions afresh;
     // no id produced by another case is consumed.
     projectId = managementProjectId;
-    sharedTravelLegId = "travel-leg-management-bus-canonical";
+    sharedTravelLegId = "cptik4xu7qn1logufr8mi19e";
   });
   afterEach(async () => {
     const ids = caseProjectIds.splice(0);
     if (ids.length)
       await db.delete(projectsTable).where(inArray(projectsTable.id, ids));
-    // Interference cleanup restores the canonical snapshot, not private setup.
+    // Interference cleanup restores the seed snapshot, not private setup.
     await db
       .update(projectsTable)
       .set(baselineProject)
@@ -107,21 +107,21 @@ describe("Project Shared Travel Legs integration", () => {
         eq(projectsTable.name, SEED_SHOWCASE_PROJECT_NAME),
       ),
     });
-    expect(showcase, "canonical showcase Project was deleted").toBeDefined();
+    expect(showcase, "showcase Project was deleted").toBeDefined();
     if (showcase) {
       await expect(
         db.$count(
           projectSharedTravelLegsTable,
           eq(projectSharedTravelLegsTable.projectId, showcase.id),
         ),
-        "canonical showcase legs changed during the suite",
+        "showcase legs changed during the suite",
       ).resolves.toBe(showcaseLegCount);
     }
     expect(
       await db.query.organization.findFirst({
         where: eq(organization.slug, SEED_ORG_SLUG),
       }),
-      "canonical seed Organization was deleted",
+      "seed Organization was deleted",
     ).not.toBeUndefined();
   });
 
@@ -347,7 +347,7 @@ describe("Project Shared Travel Legs integration", () => {
   describe("Validation Tests", () => {
     it("persists a valid Transport Emission Profile", async () => {
       // TypeScript and Drizzle constrain persisted Project Shared Travel Legs to
-      // the canonical Transport Emission Profile set.
+      // the seed Transport Emission Profile set.
       const validSharedTravelLeg = {
         id: randomUUID(),
         projectId,

@@ -80,6 +80,11 @@
         "description": "¿Eliminar {organization} de {project}? Esta acción no se puede deshacer.",
         "execute": "Eliminar colaboración del Proyecto"
       }
+    },
+    "detail": {
+      "eyebrow": "Partnership",
+      "title": "Partnership details",
+      "description": "An overview of this Project Partnership. More sections follow."
     }
   }
 }
