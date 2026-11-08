@@ -1,19 +1,25 @@
-import * as React from "react";
+import { useSyncExternalStore } from "react";
 
 const MOBILE_BREAKPOINT = 768;
+const MOBILE_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
+
+function subscribe(onStoreChange: () => void) {
+  const mediaQueryList = window.matchMedia(MOBILE_QUERY);
+  mediaQueryList.addEventListener("change", onStoreChange);
+  return () => mediaQueryList.removeEventListener("change", onStoreChange);
+}
+
+function getSnapshot() {
+  return window.innerWidth < MOBILE_BREAKPOINT;
+}
+
+/** The server has no viewport, so it renders the desktop layout. */
+function getServerSnapshot() {
+  return false;
+}
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
-
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    };
-    mql.addEventListener("change", onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
-
-  return !!isMobile;
+  // A media query is an external store: subscribing through it keeps the
+  // viewport derived during render instead of syncing it from an effect.
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
