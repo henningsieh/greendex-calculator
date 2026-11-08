@@ -1,4 +1,5 @@
 import { getTranslations } from "@greendex/i18n/server";
+import { ORPCError } from "@orpc/client";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -12,6 +13,33 @@ import {
   HydrateClient,
   swallowPrefetchError,
 } from "@/lib/tanstack-react-query/hydration";
+
+/** "Project name · Partner Organization" for the review header (#390). */
+async function ReviewContext({
+  params,
+}: {
+  params: Promise<{ partnershipId: string }>;
+}) {
+  const { partnershipId } = await params;
+  const t = await getTranslations("claims.review");
+  const details = await getQueryClient()
+    .query(
+      orpcQuery.claims.getReviewDetails.queryOptions({
+        input: { partnershipId },
+        meta: { costTrackerORPC: true },
+      }),
+    )
+    .catch((error: unknown) => {
+      if (
+        !(error instanceof ORPCError) ||
+        !["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code)
+      )
+        throw error;
+      return null;
+    });
+  if (!details) return <>{t("contextUnavailable")}</>;
+  return <>{`${details.projectName} · ${details.organizationName}`}</>;
+}
 
 async function ClaimReviewSection({
   params,
@@ -51,7 +79,15 @@ export default async function ClaimReviewPage({
 
   return (
     <div className="space-y-6">
-      <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <ProtectedPageHeader
+        description={
+          <Suspense fallback={t("contextLoading")}>
+            <ReviewContext params={params} />
+          </Suspense>
+        }
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+      />
       <Suspense fallback={<ClaimReviewSkeleton />}>
         <ClaimReviewSection params={params} />
       </Suspense>

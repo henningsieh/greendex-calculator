@@ -286,7 +286,9 @@ it("prefetches the authorized Claim review snapshot", async () => {
   expect(mocks.query).toHaveBeenCalledWith({
     input: { partnershipId: "requested-partnership" },
   });
-  expect(mocks.query).toHaveBeenCalledTimes(4);
+  // Header context + the four section prefetches. The mocked QueryClient does
+  // not dedupe by key; the request-scoped client does, so this is a superset.
+  expect(mocks.query).toHaveBeenCalledTimes(5);
 });
 
 it.each(routes)(

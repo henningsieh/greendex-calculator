@@ -1,7 +1,8 @@
 type ProtectedPageHeaderProps = {
   eyebrow: string;
   title: string;
-  description?: string;
+  /** A string or a streamed node (the shell renders it inside one paragraph). */
+  description?: React.ReactNode;
   rightButton?: React.ReactNode;
 };
 
