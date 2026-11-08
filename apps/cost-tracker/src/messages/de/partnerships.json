@@ -80,6 +80,11 @@
         "description": "{organization} aus {project} entfernen? Dies kann nicht rückgängig gemacht werden.",
         "execute": "Projektpartnerschaft entfernen"
       }
+    },
+    "detail": {
+      "eyebrow": "Partnerschaft",
+      "title": "Partnerschaftsdetails",
+      "description": "Eine Übersicht über diese Projektpartnerschaft. Weitere Bereiche folgen."
     }
   }
 }

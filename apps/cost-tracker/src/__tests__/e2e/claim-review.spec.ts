@@ -623,12 +623,13 @@ test.describe.serial("Claim review journey 25–26", () => {
     );
     const header = host.locator("main header");
     await expect(header.getByRole("heading", { level: 1 })).toBeVisible();
-    const breadcrumb = header.getByRole("navigation");
+    // Breadcrumbs render in the shell header, above the main content.
+    const breadcrumb = host.locator('[data-slot="breadcrumb"]');
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveCount(1);
     await expect(breadcrumb.locator('[aria-current="page"]')).not.toHaveAttribute(
       "href",
     );
-    await expect(breadcrumb.locator("a")).toHaveAttribute(
+    await expect(breadcrumb.locator("a").first()).toHaveAttribute(
       "href",
       "/claims/review",
     );
@@ -643,7 +644,7 @@ test.describe.serial("Claim review journey 25–26", () => {
       );
     });
     expect(fits).toBe(true);
-    await breadcrumb.locator("a").focus();
+    await breadcrumb.locator("a").first().focus();
     await host.keyboard.press("Enter");
     await expectPrivateURL(host, "/claims/review");
     await expect(first).toBeVisible();

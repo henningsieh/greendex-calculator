@@ -1,31 +1,33 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import ProtectedPageHeader from "@/components/protected-page-header";
 
-it("preserves explicit return destinations and identifies the current page without a destination", () => {
-  render(
+it("renders one page identity and its action without owning navigation", () => {
+  const { container } = render(
     <ProtectedPageHeader
       eyebrow="Claims"
       title="Review claim"
-      breadcrumbs={[
-        { label: "Claim reviews", href: "/claims/review" },
-        { label: "Project · Partner" },
-      ]}
+      description="Check the claim before approving it."
+      rightButton={<button type="button">Approve</button>}
     />,
   );
-  const navigation = screen.getByRole("navigation");
-  expect(
-    within(navigation).getByRole("link", { current: false }),
-  ).toHaveAttribute("href", "/claims/review");
-  expect(within(navigation).getAllByRole("listitem")[1]!).not.toHaveAttribute(
-    "href",
+
+  expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  expect(screen.getAllByRole("button")).toHaveLength(1);
+  // Eyebrow + description paragraphs.
+  expect(container.querySelectorAll("p")).toHaveLength(2);
+  // Breadcrumbs belong to the shell slot, so the header must not render a nav.
+  expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+});
+
+it("omits optional description and action", () => {
+  const { container } = render(
+    <ProtectedPageHeader eyebrow="Projects" title="Projects" />,
   );
-  expect(
-    within(navigation).getByRole("link", { current: "page" }),
-  ).toHaveAttribute("aria-current", "page");
-  expect(
-    within(navigation).getByRole("link", { current: "page" }),
-  ).not.toHaveAttribute("href");
+
+  expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  expect(container.querySelectorAll("p")).toHaveLength(1);
 });

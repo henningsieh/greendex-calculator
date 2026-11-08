@@ -1,6 +1,5 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { ORPCError } from "@orpc/client";
-import type { Route } from "next";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { orpcQuery } from "@/lib/orpc/orpc";
@@ -14,8 +13,6 @@ export async function ParticipantPageHeader({
   const { partnershipId, participationId } = await params;
   const t = await getTranslations("participations.app");
   const client = getQueryClient();
-  let authorized = false;
-  let projectName: string | undefined;
   let participantName: string | undefined;
   try {
     if (participationId) {
@@ -25,17 +22,14 @@ export async function ParticipantPageHeader({
           meta: { costTrackerORPC: true },
         }),
       );
-      authorized = Boolean(data);
-      projectName = data?.projectName;
       participantName = data?.participation.displayName;
     } else {
-      const data = await client.query(
+      await client.query(
         orpcQuery.participations.listPartnership.queryOptions({
           input: { partnershipId },
           meta: { costTrackerORPC: true },
         }),
       );
-      projectName = data?.projectName;
     }
   } catch (error) {
     if (
@@ -56,18 +50,6 @@ export async function ParticipantPageHeader({
           ? "participantDetailsDescription"
           : "coordinateDescription",
       )}
-      breadcrumbs={[
-        { label: t("projects"), href: "/projects" },
-        ...(projectName ? [{ label: projectName }] : []),
-        ...(participationId && authorized
-          ? [
-              {
-                label: t("projectParticipations"),
-                href: `/partnerships/${encodeURIComponent(partnershipId)}/participants` as Route,
-              },
-            ]
-          : []),
-      ]}
     />
   );
 }

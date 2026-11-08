@@ -84,18 +84,8 @@ vi.mock("@/features/participations/components/participant-coordination", () => (
   ),
 }));
 vi.mock("@/features/projects/components/project-workspace", () => ({
-  ProjectWorkspace: ({
-    projectId,
-    returnTo,
-  }: {
-    projectId: string;
-    returnTo?: string;
-  }) => (
-    <p
-      data-project-id={projectId}
-      data-return-to={returnTo}
-      data-testid="project-workspace"
-    >
+  ProjectWorkspace: ({ projectId }: { projectId: string }) => (
+    <p data-project-id={projectId} data-testid="project-workspace">
       Project workspace: {projectId}
     </p>
   ),
@@ -392,24 +382,19 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByTestId("hosted-participant-report")).toBeInTheDocument();
   });
 
-  it("keeps Project authorization independent from the return destination", async () => {
+  it("prefetches Project detail without depending on the list return destination", async () => {
     render(
       await RealProjectWorkspaceSection({
         params: Promise.resolve({ id: "project-1" }),
-        searchParams: Promise.resolve({
-          returnTo: "/projects?scope=partner&search=climate&cursor=opaque",
-        }),
       }),
     );
 
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["projects", "detail", "project-1"],
     });
-    const workspace = screen.getByTestId("project-workspace");
-    expect(workspace).toHaveAttribute("data-project-id", "project-1");
-    expect(workspace).toHaveAttribute(
-      "data-return-to",
-      "/projects?scope=partner&search=climate&cursor=opaque",
+    expect(screen.getByTestId("project-workspace")).toHaveAttribute(
+      "data-project-id",
+      "project-1",
     );
   });
 });

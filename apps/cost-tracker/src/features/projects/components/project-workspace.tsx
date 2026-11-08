@@ -16,7 +16,6 @@ import {
   type ClaimStatus,
   canCompleteProject,
 } from "@/features/claims/claim-lifecycle";
-import { getProjectListReturnDestination } from "@/features/projects/list-query-options";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -47,13 +46,7 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   );
 }
 
-export function ProjectWorkspace({
-  projectId,
-  returnTo,
-}: {
-  projectId: string;
-  returnTo?: string;
-}) {
+export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const [completing, setCompleting] = useState(false);
@@ -105,13 +98,6 @@ export function ProjectWorkspace({
               : t("partnerProject")
           }
           title={project.name}
-          breadcrumbs={[
-            {
-              label: t("projects"),
-              href: getProjectListReturnDestination(returnTo),
-              testId: "back-to-projects",
-            },
-          ]}
           rightButton={
             canComplete ? (
               <Button

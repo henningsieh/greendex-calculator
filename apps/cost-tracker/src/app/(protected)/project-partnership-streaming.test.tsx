@@ -259,17 +259,13 @@ it.each([
   },
 );
 
-it("renders Claim review context from the authorized review snapshot", async () => {
+it("prefetches the authorized Claim review snapshot", async () => {
   mocks.query.mockResolvedValue({
     projectName: "Workshop",
     organizationName: "Partner Organization",
   });
   const destination = new PassThrough();
-  let html = "";
-  destination.setEncoding("utf8");
-  destination.on("data", (chunk: string) => {
-    html += chunk;
-  });
+  destination.resume();
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const errors: unknown[] = [];
   const { pipe } = renderToPipeableStream(
@@ -287,7 +283,10 @@ it("renders Claim review context from the authorized review snapshot", async () 
   );
   await complete;
   expect(errors).toEqual([]);
-  expect(html).toContain("Workshop · Partner Organization");
+  expect(mocks.query).toHaveBeenCalledWith({
+    input: { partnershipId: "requested-partnership" },
+  });
+  expect(mocks.query).toHaveBeenCalledTimes(4);
 });
 
 it.each(routes)(

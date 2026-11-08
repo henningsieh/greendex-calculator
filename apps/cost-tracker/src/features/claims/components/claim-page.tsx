@@ -1,5 +1,4 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { ORPCError } from "@orpc/client";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -46,30 +45,6 @@ async function ClaimWorkspaceSection({
   );
 }
 
-async function ClaimProjectContext({
-  params,
-}: {
-  params: Promise<{ partnershipId: string }>;
-}) {
-  const { partnershipId } = await params;
-  const data = await getQueryClient()
-    .query(
-      orpcQuery.participations.listPartnership.queryOptions({
-        input: { partnershipId },
-        meta: { costTrackerORPC: true },
-      }),
-    )
-    .catch((error: unknown) => {
-      if (
-        !(error instanceof ORPCError) ||
-        !["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code)
-      )
-        throw error;
-      return null;
-    });
-  return data?.projectName ?? null;
-}
-
 export default async function ClaimPage({
   params,
 }: {
@@ -80,20 +55,7 @@ export default async function ClaimPage({
 
   return (
     <div className="space-y-8">
-      <ProtectedPageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        breadcrumbs={[
-          { label: t("projects"), href: "/projects" },
-          {
-            label: (
-              <Suspense fallback={null}>
-                <ClaimProjectContext params={params} />
-              </Suspense>
-            ),
-          },
-        ]}
-      />
+      <ProtectedPageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <Suspense fallback={<ClaimWorkspaceSkeleton />}>
         <ClaimWorkspaceSection params={params} />
       </Suspense>

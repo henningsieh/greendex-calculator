@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/client";
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
@@ -24,11 +24,13 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
 import { ParticipantPageHeader } from "@/features/participations/components/participant-page-header";
 
 beforeEach(() => vi.clearAllMocks());
-it("keeps the participant return link and contextual title outside the data view", async () => {
+
+it("prefetches the participant snapshot behind the page identity", async () => {
   mocks.query.mockResolvedValue({
     projectName: "Workshop",
     participation: { displayName: "Alex" },
   });
+
   render(
     await ParticipantPageHeader({
       params: Promise.resolve({
@@ -37,21 +39,39 @@ it("keeps the participant return link and contextual title outside the data view
       }),
     }),
   );
-  expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
-  const navigation = screen.getByRole("navigation");
-  expect(
-    within(navigation)
-      .getAllByRole("link")
-      .map((link) => link.getAttribute("href")),
-  ).toEqual(["/projects", "/partnerships/partnership-1/participants", null]);
-  expect(
-    within(navigation).getByRole("link", { current: "page" }),
-  ).not.toHaveAttribute("href");
+
+  expect(mocks.query).toHaveBeenCalledOnce();
+  expect(mocks.query).toHaveBeenCalledWith({
+    input: { partnershipId: "partnership-1", id: "person-1" },
+    meta: { costTrackerORPC: true },
+  });
+  expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  // The header owns identity only; breadcrumbs render in the shell slot.
+  expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
 });
+
+it("prefetches the Partnership snapshot for the coordination route", async () => {
+  mocks.query.mockResolvedValue({ projectName: "Workshop" });
+
+  render(
+    await ParticipantPageHeader({
+      params: Promise.resolve({ partnershipId: "partnership-1" }),
+    }),
+  );
+
+  expect(mocks.query).toHaveBeenCalledOnce();
+  expect(mocks.query).toHaveBeenCalledWith({
+    input: { partnershipId: "partnership-1" },
+    meta: { costTrackerORPC: true },
+  });
+  expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+});
+
 it.each([undefined, "person-1"])(
   "retains a static header when context is refused (%s)",
   async (participationId) => {
     mocks.query.mockRejectedValue(new ORPCError("FORBIDDEN"));
+
     render(
       await ParticipantPageHeader({
         params: Promise.resolve({
@@ -60,20 +80,17 @@ it.each([undefined, "person-1"])(
         }),
       }),
     );
-    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
-    const navigation = screen.getByRole("navigation");
-    expect(
-      within(navigation)
-        .getAllByRole("link")
-        .map((link) => link.getAttribute("href")),
-    ).toEqual(["/projects", null]);
-    expect(navigation.querySelectorAll("a")).toHaveLength(1);
+
+    expect(mocks.query).toHaveBeenCalledOnce();
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   },
 );
 
 it("propagates unexpected context failures instead of showing an authorized fallback", async () => {
   const error = new Error("unexpected request failure");
   mocks.query.mockRejectedValue(error);
+
   await expect(
     ParticipantPageHeader({
       params: Promise.resolve({

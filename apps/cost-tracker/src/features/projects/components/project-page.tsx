@@ -6,19 +6,15 @@ import { ProjectWorkspaceSection } from "@/features/projects/components/project-
 
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function ProjectPage({
-  params,
-  searchParams,
-}: ProjectPageProps) {
+export default async function ProjectPage({ params }: ProjectPageProps) {
   await connection();
 
   return (
     <div>
       <Suspense fallback={<ProjectWorkspaceSkeleton />}>
-        <ProjectWorkspaceSection params={params} searchParams={searchParams} />
+        <ProjectWorkspaceSection params={params} />
       </Suspense>
     </div>
   );

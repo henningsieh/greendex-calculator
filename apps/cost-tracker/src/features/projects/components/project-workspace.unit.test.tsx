@@ -38,14 +38,14 @@ const baseProject = {
   costSubmissionWindowOpen: true,
 };
 
-function renderWorkspace(returnTo?: string) {
+function renderWorkspace() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading workspace</p>}>
-        <ProjectWorkspace projectId="project-1" returnTo={returnTo} />
+        <ProjectWorkspace projectId="project-1" />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -57,32 +57,6 @@ beforeEach(() => {
 });
 
 describe("Project workspace", () => {
-  it("returns to the exact Project list URL", async () => {
-    mocks.detail = {
-      ...baseProject,
-      relationship: "hosted",
-      partnerOrganizations: [],
-    };
-    renderWorkspace("/projects?scope=partner&search=climate&cursor=opaque");
-
-    expect(
-      (await screen.findByTestId("back-to-projects")).getAttribute("href"),
-    ).toBe("/projects?scope=partner&search=climate&cursor=opaque");
-  });
-
-  it("falls back to Projects for an unsafe return destination", async () => {
-    mocks.detail = {
-      ...baseProject,
-      relationship: "hosted",
-      partnerOrganizations: [],
-    };
-    renderWorkspace("https://attacker.example/projects");
-
-    expect(
-      (await screen.findByTestId("back-to-projects")).getAttribute("href"),
-    ).toBe("/projects");
-  });
-
   it("renders the Hosted-safe shell and management navigation", async () => {
     mocks.detail = {
       ...baseProject,
