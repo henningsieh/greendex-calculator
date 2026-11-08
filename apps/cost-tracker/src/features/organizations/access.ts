@@ -19,10 +19,13 @@ export async function canManageOrganization(): Promise<boolean> {
     // auth/email/env chain in light rendering or test environments.
     const { auth } = await import("@/lib/auth");
     const requestHeaders = await headers();
-    const [session, organization] = await Promise.all([
-      getSession(),
-      auth.api.getFullOrganization({ headers: requestHeaders }),
-    ]);
+    // Sequential on purpose: `getSession()` suspends the render before Better
+    // Auth validates the session against the clock, so `getFullOrganization`
+    // must not start reading the clock concurrently in a `Promise.all`.
+    const session = await getSession();
+    const organization = await auth.api.getFullOrganization({
+      headers: requestHeaders,
+    });
     const membership = organization?.members.find(
       (entry) => entry.userId === session?.user.id,
     );

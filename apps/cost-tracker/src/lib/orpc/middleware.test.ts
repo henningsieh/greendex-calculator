@@ -9,6 +9,15 @@ const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   permission: vi.fn(),
   operation: vi.fn(),
+  ioPending: [] as (() => void)[],
+  ioGated: false,
+}));
+// Simulates the prerender store: `io()` suspends instead of resolving.
+vi.mock("next/cache", () => ({
+  io: () =>
+    mocks.ioGated
+      ? new Promise<void>((resolve) => mocks.ioPending.push(resolve))
+      : Promise.resolve(),
 }));
 vi.mock("@/lib/auth", () => ({
   auth: { api: { getSession: mocks.session, hasPermission: mocks.permission } },
@@ -28,6 +37,8 @@ const client = createRouterClient(
 );
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.ioPending.length = 0;
+  mocks.ioGated = false;
   mocks.session.mockResolvedValue({
     user: { id: "actor" },
     session: { activeOrganizationId: "own" },
@@ -96,6 +107,28 @@ describe("Cost Tracker permission middleware outcome matrix", () => {
   it("retains successful permission behavior", async () => {
     await expect(client.procedure()).resolves.toBe("allowed");
     expect(mocks.operation).toHaveBeenCalledOnce();
+    expect(mocks.session).toHaveBeenCalledOnce();
+    expect(mocks.permission).toHaveBeenCalledOnce();
+  });
+
+  it("defers the auth clock reads until prerendering is allowed to continue", async () => {
+    // Better Auth validates expiry against `new Date()`, which is unstable while
+    // prerendering. Both gates must suspend through `io()` first, so a prerender
+    // stage never reaches them (regression guard for #390).
+    mocks.ioGated = true;
+    const outcome = client.procedure();
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    expect(mocks.session).not.toHaveBeenCalled();
+    expect(mocks.permission).not.toHaveBeenCalled();
+
+    for (let pending = mocks.ioPending.splice(0); pending.length > 0;) {
+      for (const resolve of pending) resolve();
+      await new Promise<void>((done) => setTimeout(done, 0));
+      pending = mocks.ioPending.splice(0);
+    }
+
+    await expect(outcome).resolves.toBe("allowed");
     expect(mocks.session).toHaveBeenCalledOnce();
     expect(mocks.permission).toHaveBeenCalledOnce();
   });
