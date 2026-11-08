@@ -1,18 +1,12 @@
 {
   "projects": {
-    "confirmations": {
-      "cancel": "Abbrechen",
-      "close": "Schließen",
-      "pending": "Wird ausgeführt…"
-    },
+    "confirmations": {},
     "page": {
       "eyebrow": "Projektarbeitsbereich",
       "title": "Projekte",
       "description": "Prüfe Projekte, die von deiner aktiven Organisation gehostet oder ihr zugewiesen sind."
     },
-    "detail": {
-      "eyebrow": "Projektarbeitsbereich"
-    },
+    "detail": {},
     "assigned": {
       "label": "Zugewiesene Projekte",
       "title": "Deine Projekte",
@@ -27,7 +21,6 @@
       "endDate": "Enddatum",
       "location": "Ort",
       "country": "Land",
-      "countryPlaceholder": "EU-Land auswählen",
       "welcomeMessage": "Willkommensnachricht (optional)",
       "cancel": "Abbrechen",
       "creating": "Wird erstellt…",
@@ -85,7 +78,6 @@
       "workspace": "Projektarbeitsbereich wird geladen"
     },
     "workspace": {
-      "back": "Zurück zu Projekten",
       "archived": "Archiviert",
       "completed": "Abgeschlossen",
       "submissionWindow": "Kosteneinreichungsfenster",
@@ -111,8 +103,7 @@
       "open": "offen",
       "closed": "geschlossen",
       "completing": "Wird abgeschlossen…",
-      "complete": "Projekt abschließen",
-      "projects": "Projekte"
+      "complete": "Projekt abschließen"
     }
   }
 }

@@ -1,18 +1,12 @@
 {
   "projects": {
-    "confirmations": {
-      "cancel": "Cancel",
-      "close": "Close",
-      "pending": "Working…"
-    },
+    "confirmations": {},
     "page": {
       "eyebrow": "Project workspace",
       "title": "Projects",
       "description": "Review Projects hosted by or assigned to your active Organization."
     },
-    "detail": {
-      "eyebrow": "Project workspace"
-    },
+    "detail": {},
     "assigned": {
       "label": "Assigned Projects",
       "title": "Your Projects",
@@ -27,7 +21,6 @@
       "endDate": "End date",
       "location": "Location",
       "country": "Country",
-      "countryPlaceholder": "Select an EU country",
       "welcomeMessage": "Welcome message (optional)",
       "cancel": "Cancel",
       "creating": "Creating…",
@@ -85,7 +78,6 @@
       "workspace": "Loading Project workspace"
     },
     "workspace": {
-      "back": "Back to Projects",
       "archived": "Archived",
       "completed": "Completed",
       "submissionWindow": "Cost Submission Window",
@@ -111,8 +103,7 @@
       "open": "open",
       "closed": "closed",
       "completing": "Completing…",
-      "complete": "Complete Project",
-      "projects": "Projects"
+      "complete": "Complete Project"
     }
   }
 }

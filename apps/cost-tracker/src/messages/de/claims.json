@@ -28,15 +28,12 @@
     },
     "page": {
       "eyebrow": "Partner-Claim",
-      "back": "Zurück zu Projekten",
-      "title": "Claim-Arbeitsbereich",
-      "projects": "Projekte"
+      "title": "Claim-Arbeitsbereich"
     },
     "review": {
       "eyebrow": "Claim-Prüfung",
       "sectionLabel": "Claim-Prüfung",
       "bandTitle": "Claim-Prüfung",
-      "back": "Zurück zu eingereichten Claims",
       "historyLabel": "Claim-Verlauf",
       "historyTitle": "Claim-Verlauf",
       "historyEmpty": "Noch keine Prüfereignisse.",
@@ -74,7 +71,6 @@
       "unavailable": "Nicht verfügbar",
       "equalShare": "Gleicher Anteil (bei Einreichung berechnet)",
       "title": "Claim prüfen",
-      "queueTitle": "Claim-Prüfungen",
       "contextLoading": "Kontext wird geladen",
       "contextUnavailable": "Claim-Kontext nicht verfügbar"
     },

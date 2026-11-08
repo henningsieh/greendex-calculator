@@ -28,15 +28,12 @@
     },
     "page": {
       "eyebrow": "Partner Claim",
-      "back": "Back to Projects",
-      "title": "Claim workspace",
-      "projects": "Projects"
+      "title": "Claim workspace"
     },
     "review": {
       "eyebrow": "Claim review",
       "sectionLabel": "Claim review",
       "bandTitle": "Claim review",
-      "back": "Back to submitted Claims",
       "historyLabel": "Claim history",
       "historyTitle": "Claim history",
       "historyEmpty": "No review events yet.",
@@ -74,7 +71,6 @@
       "unavailable": "Niet beschikbaar",
       "equalShare": "Gelijk aandeel (berekend bij indiening)",
       "title": "Review claim",
-      "queueTitle": "Claim reviews",
       "contextLoading": "Loading context",
       "contextUnavailable": "Claim context unavailable"
     },
