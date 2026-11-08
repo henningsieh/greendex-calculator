@@ -4,7 +4,6 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { ChevronDownIcon, LogOutIcon } from "lucide-react";
-import { usePathname } from "next/navigation";
 import { type ComponentProps, useRef } from "react";
 
 import { EntityIcon } from "@/components/entity-icon";
@@ -19,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
+import { usePathname } from "@/lib/i18n/routing";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
 

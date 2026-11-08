@@ -143,7 +143,7 @@ async function openPartnership(
   await page.locator(`a[href$="/projects/${projectId}"]`).click();
   await page
     .locator(
-      `a[href="${destination === "participants" ? participantsURL : claimURL}"]`,
+      `a[href$="${destination === "participants" ? participantsURL : claimURL}"]`,
     )
     .click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
@@ -457,7 +457,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .from(projectParticipantsTable)
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
-      await page.locator(`a[href="${participantsURL}"]`).click();
+      await page.locator(`a[href$="${participantsURL}"]`).click();
       await expectPrivateURL(page, participantsURL);
       const [savedCountry] = await db
         .select({ country: projectParticipantsTable.country })
@@ -973,7 +973,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.goBack();
       await expectPrivateURL(page, `/projects/${projectId}?returnTo=%2Fprojects`);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(page.locator(`a[href="${claimURL}"]`)).toBeVisible();
+      await expect(page.locator(`a[href$="${claimURL}"]`)).toBeVisible();
       // Text-free: readiness card carries the submitted claim state (no copy).
       await expect(
         page.locator('[data-slot="card"]').filter({

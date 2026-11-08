@@ -2,6 +2,7 @@
 
 import { PassThrough } from "node:stream";
 
+import { ORPCError } from "@orpc/client";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToPipeableStream } from "react-dom/server";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -248,6 +249,60 @@ it("prefetches the authorized Claim review snapshot", async () => {
   // Header context + the four section prefetches. The mocked QueryClient does
   // not dedupe by key; the request-scoped client does, so this is a superset.
   expect(mocks.query).toHaveBeenCalledTimes(5);
+});
+
+it("renders the authorized review context in the page header", async () => {
+  mocks.query.mockResolvedValue({
+    projectName: "Workshop",
+    organizationName: "Partner Organization",
+  });
+  const destination = new PassThrough();
+  let html = "";
+  destination.setEncoding("utf8");
+  destination.on("data", (chunk: string) => {
+    html += chunk;
+  });
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const errors: unknown[] = [];
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <LocalizedClaimReviewPage
+        params={Promise.resolve({ partnershipId: "requested-partnership" })}
+      />
+    </NextIntlClientProvider>,
+    {
+      onShellReady: () => pipe(destination),
+      onError: (error) => {
+        errors.push(error);
+      },
+    },
+  );
+  await complete;
+  expect(errors).toEqual([]);
+  expect(html).toContain("Workshop · Partner Organization");
+});
+
+it("degrades the review context instead of failing the page when refused", async () => {
+  mocks.query.mockRejectedValue(new ORPCError("FORBIDDEN"));
+  const destination = new PassThrough();
+  destination.resume();
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const errors: unknown[] = [];
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <LocalizedClaimReviewPage
+        params={Promise.resolve({ partnershipId: "requested-partnership" })}
+      />
+    </NextIntlClientProvider>,
+    {
+      onShellReady: () => pipe(destination),
+      onError: (error) => {
+        errors.push(error);
+      },
+    },
+  );
+  await complete;
+  expect(errors).toEqual([]);
 });
 
 it.each(routes)(

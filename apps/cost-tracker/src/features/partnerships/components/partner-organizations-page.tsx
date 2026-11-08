@@ -8,6 +8,7 @@ import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/
 import { ProjectPartnershipSection } from "@/features/partnerships/components/project-partnership-section";
 import { SetupLinkCreator } from "@/features/partnerships/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
+import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 
 export default async function PartnerOrganizationsPage() {
   const t = await getTranslations("partnerships.partnerOrganizations.page");
@@ -31,7 +32,10 @@ export default async function PartnerOrganizationsPage() {
     {
       projectPartnership: ["create"],
     },
-  );
+  ).catch((error: unknown) => {
+    if (isPresentationRefusal(error)) return false;
+    throw error;
+  });
   return (
     <div>
       <ProtectedPageHeader

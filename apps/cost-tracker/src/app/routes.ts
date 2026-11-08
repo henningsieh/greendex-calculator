@@ -26,7 +26,14 @@ type PrefixedRoute<T extends string = UnprefixedRoute> = T extends string
   ? `/${LanguageCode}${T}`
   : never;
 
-export type AppRoute = UnprefixedRoute | PrefixedRoute;
+/**
+ * Hrefs passed to navigation APIs are always unprefixed: next-intl adds the
+ * active locale itself, so accepting a prefixed value here would produce
+ * `/de/en/...`. Full localized URLs use `LocalePrefixedRoute` instead.
+ */
+export type AppRoute = UnprefixedRoute;
+
+export type LocalePrefixedRoute = PrefixedRoute;
 
 /** A route target, optionally carrying a query string or a hash. */
 export type AppHref =

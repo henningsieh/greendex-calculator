@@ -1,9 +1,8 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { ORPCError } from "@orpc/client";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
-import { situationCatalog } from "@/lib/orpc/error-contract";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { getQueryClient } from "@/lib/tanstack-react-query/hydration";
 
 export async function ParticipantPageHeader({
@@ -33,15 +32,9 @@ export async function ParticipantPageHeader({
       );
     }
   } catch (error) {
-    // Presentation refusal, not a data failure: the shell already renders the
-    // Organization-selection screen and keeps this header hidden behind it.
-    const refusal =
-      error instanceof ORPCError &&
-      (["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code) ||
-        (error.code === situationCatalog.selectOrganization.code &&
-          (error.data as { reason?: string } | undefined)?.reason ===
-            situationCatalog.selectOrganization.reason));
-    if (!refusal) throw error;
+    // Presentation refusal, not a data failure: the shell already renders its
+    // recovery screen and keeps this header hidden behind it.
+    if (!isPresentationRefusal(error)) throw error;
   }
   return (
     <ProtectedPageHeader

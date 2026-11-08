@@ -369,7 +369,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await confirm.dblclick();
     await submissionState(p); // inspect uncertain mutation result before any retry
     await p.goto("/projects");
-    await expect(p).toHaveURL("/projects");
+    await expect(p).toHaveURL(/\/projects$/);
     await expect(
       p.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
@@ -388,7 +388,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     });
     await submissionState(p);
     await p.goForward();
-    await expect(p).toHaveURL("/projects");
+    await expect(p).toHaveURL(/\/projects$/);
     await expect(
       p.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
@@ -417,9 +417,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
         .locator('[data-history-event="submitted"]'),
     ).toBeVisible();
     await h.goto("/claims/review");
-    await expect(h.locator(`a[href="${reviewURL}"]`)).toBeVisible();
+    await expect(h.locator(`a[href$="${reviewURL}"]`)).toBeVisible();
     await h.goBack();
-    await expect(h).toHaveURL(reviewURL);
+    await expect(h).toHaveURL(new RegExp(`${reviewURL}$`));
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
@@ -428,10 +428,10 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     expect((await counts())[4]).toBe(1);
     expect((await counts())[5]).toBe(1);
     await h.goForward();
-    await expect(h).toHaveURL("/claims/review");
-    await expect(h.locator(`a[href="${reviewURL}"]`)).toBeVisible();
+    await expect(h).toHaveURL(/\/claims\/review$/);
+    await expect(h.locator(`a[href$="${reviewURL}"]`)).toBeVisible();
     await h.goBack();
-    await expect(h).toHaveURL(reviewURL);
+    await expect(h).toHaveURL(new RegExp(`${reviewURL}$`));
     await expect(
       review.locator('[data-review-status="submitted"]'),
     ).toBeVisible();
@@ -456,13 +456,13 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     ).toBeVisible();
     await h
       .getByTestId("project-workspace")
-      .locator('main a[href$="/claims/review"]')
+      .locator('a[href$="/claims/review"]')
       .click();
-    await expect(h).toHaveURL("/claims/review");
-    const queued = h.locator(`a[href="${reviewURL}"]`);
+    await expect(h).toHaveURL(/\/claims\/review$/);
+    const queued = h.locator(`a[href$="${reviewURL}"]`);
     await expect(queued).toBeVisible();
     await queued.click();
-    await expect(h).toHaveURL(reviewURL);
+    await expect(h).toHaveURL(new RegExp(`${reviewURL}$`));
     const review = h.getByTestId("claim-review");
     await expect(
       review.locator('[data-review-status="submitted"]'),
@@ -470,7 +470,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await review.getByTestId("claim-decision-approve").click();
     await review.getByTestId("claim-decision-confirm-approve").click();
     const approved = async () => {
-      await expect(h).toHaveURL(reviewURL);
+      await expect(h).toHaveURL(new RegExp(`${reviewURL}$`));
       await expect(
         review.locator('[data-review-status="approved"]'),
       ).toBeVisible();
@@ -492,7 +492,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     };
     await approved();
     await h.goBack();
-    await expect(h).toHaveURL("/claims/review");
+    await expect(h).toHaveURL(/\/claims\/review$/);
     await expect(h.locator('[data-testid="review-queue-empty"]')).toBeVisible();
     await h.goBack();
     await expect(h).toHaveURL(`/projects/${ids.project}`);
@@ -501,7 +501,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
       readiness.locator('[data-claim-status="approved"]'),
     ).toBeVisible();
     await h.goForward();
-    await expect(h).toHaveURL("/claims/review");
+    await expect(h).toHaveURL(/\/claims\/review$/);
     await expect(h.locator('[data-testid="review-queue-empty"]')).toBeVisible();
     await h.goForward();
     await approved();

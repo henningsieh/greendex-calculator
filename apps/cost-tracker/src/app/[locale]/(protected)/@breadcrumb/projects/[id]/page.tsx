@@ -1,5 +1,4 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { ORPCError } from "@orpc/client";
 import { io } from "next/cache";
 import { Suspense } from "react";
 
@@ -7,6 +6,7 @@ import BreadcrumbTrail, {
   BreadcrumbTrailFallback,
 } from "@/components/breadcrumb-trail";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { getQueryClient } from "@/lib/tanstack-react-query/hydration";
 
 async function projectKindLabel(projectId: string) {
@@ -23,11 +23,7 @@ async function projectKindLabel(projectId: string) {
       }),
     )
     .catch((error: unknown) => {
-      if (
-        !(error instanceof ORPCError) ||
-        !["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code)
-      )
-        throw error;
+      if (!isPresentationRefusal(error)) throw error;
       return null;
     });
   return project?.relationship === "partner"

@@ -408,11 +408,15 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await expect(x.getByTestId("no-organization-access")).toHaveRole("main");
       await expect(x.locator("#organization-name")).toBeEditable();
       // Text-free: no links to the protected entities leak (stable ids, not copy).
-      await expect(x.locator(`main a[href*="${projectId}"]:visible`)).toHaveCount(
-        0,
-      );
       await expect(
-        x.locator(`main a[href*="${ids.partnership}"]:visible`),
+        x.locator(
+          `main a[href*="${projectId}"], [hidden] a[href*="${projectId}"]`,
+        ),
+      ).toHaveCount(0);
+      await expect(
+        x.locator(
+          `main a[href*="${ids.partnership}"], [hidden] a[href*="${ids.partnership}"]`,
+        ),
       ).toHaveCount(0);
       await expect(
         x.locator(
@@ -434,7 +438,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await denied(f);
       // Text-free: no link to the protected partnership leaks.
       await expect(
-        f.locator(`main a[href*="${ids.partnership}"]:visible`),
+        f.locator(
+          `main a[href*="${ids.partnership}"], [hidden] a[href*="${ids.partnership}"]`,
+        ),
       ).toHaveCount(0);
       await expect(
         f.locator(

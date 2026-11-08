@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/client";
 import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -231,6 +232,20 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(screen.getByTestId("project-list-section")).toBeInTheDocument();
     expect(mocks.query).not.toHaveBeenCalled();
+  });
+
+  it("renders instead of throwing when the viewer has no active Organization", async () => {
+    // The shell keeps children mounted behind its Organization-recovery screen;
+    // a refusal here must not replace that screen with an error page.
+    mocks.hasCostTrackerPermissions.mockRejectedValue(
+      new ORPCError("BAD_REQUEST", {
+        data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+      }),
+    );
+
+    render(await ProjectsPage());
+
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
   it("keeps the other Project page shells outside their async sections", async () => {

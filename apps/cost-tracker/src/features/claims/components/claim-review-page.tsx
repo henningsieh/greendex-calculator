@@ -7,6 +7,7 @@ import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary
 import { ClaimReviewSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimReview } from "@/features/claims/components/claim-review";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import {
   getQueryClient,
   HydrateClient,
@@ -28,10 +29,12 @@ async function ReviewContext({
         meta: { costTrackerORPC: true },
       }),
     )
-    // Header context is decorative chrome: any failure degrades to the fallback
-    // copy instead of taking the page down. The sections below keep the real
-    // error boundary and still surface failures.
-    .catch(() => null);
+    // Header context is decorative chrome: a refusal degrades to the fallback
+    // copy, while real failures still reach the section error boundary.
+    .catch((error: unknown) => {
+      if (!isPresentationRefusal(error)) throw error;
+      return null;
+    });
   if (!details) return <>{t("contextUnavailable")}</>;
   return <>{`${details.projectName} · ${details.organizationName}`}</>;
 }
