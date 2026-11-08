@@ -5,10 +5,11 @@ import { ProtectedShellSkeleton } from "@/components/protected-shell-skeleton";
 
 export default function ProtectedLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  breadcrumb,
+}: Readonly<{ children: React.ReactNode; breadcrumb?: React.ReactNode }>) {
   return (
     <Suspense fallback={<ProtectedShellSkeleton />}>
-      <ProtectedShell>{children}</ProtectedShell>
+      <ProtectedShell breadcrumb={breadcrumb}>{children}</ProtectedShell>
     </Suspense>
   );
 }

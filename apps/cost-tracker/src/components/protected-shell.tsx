@@ -1,10 +1,12 @@
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { AppNavigation } from "@/components/app-navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { BreadcrumbTrailFallback } from "@/components/breadcrumb-trail";
 import { ProtectedPageSkeleton } from "@/components/protected-shell-skeleton";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
@@ -20,7 +22,8 @@ import { getSession } from "@/lib/session";
 
 export async function ProtectedShell({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  breadcrumb,
+}: Readonly<{ children: React.ReactNode; breadcrumb?: React.ReactNode }>) {
   await connection();
   const session = await getSession();
   if (!session) return children;
@@ -68,9 +71,14 @@ export async function ProtectedShell({
   if (context.status !== "ready") return null;
 
   const canViewOrganization = await canManageOrganization();
-
+  // The provider writes this cookie on toggle but never reads it (upstream
+  // design); restore persisted collapsed state here so reloads keep it.
+  // Missing cookie (first visit) stays open.
+  // Cookie name hardcoded (not imported) so this read has zero dependencies.
+  const sidebarDefaultOpen =
+    (await cookies()).get("sidebar_state")?.value !== "false";
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={sidebarDefaultOpen}>
       <AppSidebar
         activeOrganizationId={context.activeOrganizationId}
         showOrganization={canViewOrganization}
@@ -81,16 +89,14 @@ export async function ProtectedShell({
       <div className="min-h-svh w-full bg-muted/35">
         <header className="border-b bg-background">
           <div className="flex items-start gap-1">
-            <SidebarTrigger className="mt-4 ml-3 shrink-0" />
             <div className="min-w-0 flex-1">
               <AppNavigation
                 email={session.user.email}
                 name={session.user.name}
-                showOrganization={canViewOrganization}
-                showPartnerOrganizations={await canViewPartnerNetwork()}
               />
             </div>
           </div>
+          <Suspense fallback={<BreadcrumbTrailFallback />}>{breadcrumb}</Suspense>
         </header>
         <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
           <Suspense fallback={<ProtectedPageSkeleton />}>{children}</Suspense>

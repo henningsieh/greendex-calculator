@@ -3,6 +3,7 @@
 import * as React from "react"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
+import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
@@ -60,14 +61,33 @@ function BreadcrumbLink({
   })
 }
 
-function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
+/* Dimmed current-page treatment for the shell header breadcrumb nav: quiet
+   utility chrome, not content. The variant exists because the header design
+   explicitly calls for it — callers must not recolor the primitive inline. */
+const breadcrumbPageVariants = cva("font-normal", {
+  variants: {
+    variant: {
+      default: "text-foreground",
+      muted: "text-muted-foreground",
+    },
+  },
+  defaultVariants: { variant: "default" },
+})
+
+function BreadcrumbPage({
+  className,
+  variant = "default",
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof breadcrumbPageVariants>) {
   return (
     <span
       data-slot="breadcrumb-page"
+      data-variant={variant}
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("font-normal text-foreground", className)}
+      className={cn(breadcrumbPageVariants({ variant }), className)}
       {...props}
     />
   )

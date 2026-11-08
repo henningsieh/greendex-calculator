@@ -26,29 +26,11 @@ import {
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 import { cn } from "@/lib/utils";
 
-const baseNavigationItems = [
-  { entity: "project", href: "/projects", labelKey: "nav.projects" },
-] as const;
-
-const partnerOrganizationsNavigationItem = {
-  entity: "partnerOrganization",
-  href: "/partner-organizations",
-  labelKey: "nav.partnerOrganizations",
-} as const;
-
-const organizationNavigationItem = {
-  entity: "organization",
-  href: "/organization",
-  labelKey: "nav.organization",
-} as const;
-
 type AppNavigationProps = {
   email?: string;
   name?: string;
   brandHref?: Route;
   actions?: ReactNode;
-  showOrganization?: boolean;
-  showPartnerOrganizations?: boolean;
 };
 
 export function AppNavigation({
@@ -56,19 +38,10 @@ export function AppNavigation({
   name,
   brandHref = "/",
   actions,
-  showOrganization = false,
-  showPartnerOrganizations = true,
 }: AppNavigationProps) {
   const t = useTranslations("shell");
   const pathname = usePathname();
   const account = email != null && name != null ? { email, name } : null;
-  // Presentation-only: each page and its procedures gate access. The Partner
-  // Organizations tab hides for people who cannot use that page.
-  const navigationItems = [
-    ...(showOrganization ? [organizationNavigationItem] : []),
-    ...baseNavigationItems,
-    ...(showPartnerOrganizations ? [partnerOrganizationsNavigationItem] : []),
-  ];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
@@ -103,39 +76,6 @@ export function AppNavigation({
           </nav>
         )}
       </div>
-
-      {account ? (
-        <div className="flex min-w-0 items-end justify-between gap-6">
-          <nav
-            aria-label={t("nav.primaryLabel")}
-            className="-ml-2 flex min-w-0 overflow-x-auto sm:-ml-3"
-          >
-            {navigationItems.map((item) => {
-              const active = pathname === item.href;
-
-              return (
-                <Link
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex shrink-0 items-center gap-2 border-b-2 px-2 py-4 text-sm font-medium transition-colors sm:px-3",
-                    active
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                  href={item.href}
-                  key={item.href}
-                >
-                  <EntityIcon
-                    entity={item.entity}
-                    className="hidden size-4 sm:block"
-                  />
-                  {t(item.labelKey)}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -213,6 +213,18 @@
       "searchPlaceholder": "Länder suchen…",
       "noMatches": "Keine Länder gefunden.",
       "notSet": "Nicht festgelegt"
+    },
+    "crumbs": {
+      "projectDetails": "Projektdetails",
+      "partnership": "Partnerschaft",
+      "participants": "Teilnehmer",
+      "participantDetails": "Teilnehmerdetails",
+      "claimReviews": "Claim-Prüfungen",
+      "claimWorkspace": "Claim-Arbeitsbereich",
+      "userSettings": "Benutzereinstellungen",
+      "claimReview": "Claim prüfen",
+      "hostedProject": "Gehostetes Projekt",
+      "partnerProject": "Partnerprojekt"
     }
   }
 }
