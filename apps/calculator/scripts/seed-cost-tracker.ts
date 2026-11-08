@@ -25,6 +25,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 
 import type { SeedDatabase } from "./seed";
+import { SEED_IDS } from "./seed-ids";
 import {
   SEED_ENTITY_SEARCH,
   SEED_READ_ONLY_INVITATION_EXPIRY,
@@ -53,8 +54,8 @@ import {
 } from "./seed-tables";
 
 export const SUBMISSION_PAYOUT_ACCOUNT_IDS = [
-  "qi6haiste5mxtl7ubdgkpsty",
-  "mimkarr03v5k3znklrhap4c2",
+  SEED_IDS.payoutAccount.submissionPayoutAccount0,
+  SEED_IDS.payoutAccount.submissionPayoutAccount1,
 ] as const;
 
 /** Cost Tracker's seed scenarios. Domain dates use the fixed 2024 reference
@@ -64,18 +65,18 @@ export const SUBMISSION_PAYOUT_ACCOUNT_IDS = [
 async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
   // Claims: named Partner authorization and payout scenarios.
   {
-    const host = "rvvkpmsj6futf7oh5w6fc8ck";
-    const partner = "dgj0r3bf101hos6d7z5tsn61";
-    const other = "z8a5atkfd0mf8o8b24eze2ui";
-    const coordinator = "nol2sd5ye6kezxgvovi7q5f0";
-    const participant = "fhmed3rl5eut51ok5j81rodo";
-    const owner = "u58a1drm42imnu2fu4304ajw";
-    const project = "rmqohj3gpdw0f9detkz6osga";
-    const own = "llej1oakvcdzp64hvqmwyfoi";
-    const foreign = "btgjwuma0gvy6a89ovz5w4yx";
-    const account = "b0196l2ew39i22ursbv48p3s";
-    const secondAccount = "dsj2rua1gdb4x4jvknmymoi4";
-    const foreignAccount = "n6i6klamj4v5mxrz6sv78cwf";
+    const host = SEED_IDS.organization.claimHost;
+    const partner = SEED_IDS.organization.claimPartner;
+    const other = SEED_IDS.organization.claimOther;
+    const coordinator = SEED_IDS.user.claimCoordinator;
+    const participant = SEED_IDS.user.claimParticipant;
+    const owner = SEED_IDS.user.claimOwner;
+    const project = SEED_IDS.project.claimProject3;
+    const own = SEED_IDS.partnership.claimOwn;
+    const foreign = SEED_IDS.partnership.claimForeign;
+    const account = SEED_IDS.payoutAccount.claimAccount;
+    const secondAccount = SEED_IDS.payoutAccount.claimSecondAccount;
+    const foreignAccount = SEED_IDS.payoutAccount.claimForeignAccount;
 
     const now = new Date();
     {
@@ -227,19 +228,19 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
   // Read-only Claim refusal states have their own Projects and Partnerships.
   const claimScenarioIds = [
     {
-      project: "bg62wgf3ow4kypv2vobcw1bx",
-      partnership: "sf9t6fbzyfur5lqqhn799mf5",
-      state: "gac169ru4rlq4ztqg9ox4xaw",
+      project: SEED_IDS.project.claimProject0,
+      partnership: SEED_IDS.partnership.claimsEditablePartnership,
+      state: SEED_IDS.claim.claimState0,
     }, // editable
     {
-      project: "o2l8mxic6vtl94n6r7v4sx6f",
-      partnership: "kp9h78jm6bn5ob0b82bqlitb",
-      state: "x0cywzx7xb4jxjvwhwlveeln",
+      project: SEED_IDS.project.claimProject2,
+      partnership: SEED_IDS.partnership.claimsSubmittedPartnership,
+      state: SEED_IDS.claim.claimState2,
     }, // submitted
     {
-      project: "chhsra4epya74qt51zna4wnw",
-      partnership: "l0ttgu2m4ieljze7t4mbzgs1",
-      state: "jue0et7q2j2u650yu3x4pt41",
+      project: SEED_IDS.project.claimProject1,
+      partnership: SEED_IDS.partnership.claimsSubmittedSelectedPartnership,
+      state: SEED_IDS.claim.claimState1,
     }, // submitted-selected
   ] as const;
   const claimScenarios = ["editable", "submitted", "submitted-selected"] as const;
@@ -257,7 +258,7 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
               : state === "submitted"
                 ? "Seed Submitted Claim Project"
                 : "Seed Submitted Selected Claim Project",
-          organizationId: "rvvkpmsj6futf7oh5w6fc8ck",
+          organizationId: SEED_IDS.organization.claimHost,
           startDate: new Date("2024-04-01"),
           endDate: new Date("2024-04-03"),
           location: "Riga",
@@ -268,7 +269,7 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
     }
     {
       const rows = [
-        { projectId, userId: "nol2sd5ye6kezxgvovi7q5f0" },
+        { projectId, userId: SEED_IDS.user.claimCoordinator },
       ] satisfies (typeof hostAssignments.$inferInsert)[];
       await ensureSeedHostAssignments(db, rows);
     }
@@ -277,14 +278,14 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
         {
           id: partnershipId,
           projectId,
-          organizationId: "dgj0r3bf101hos6d7z5tsn61",
+          organizationId: SEED_IDS.organization.claimPartner,
         },
       ] satisfies (typeof partnerships.$inferInsert)[];
       await ensureSeedPartnerships(db, rows);
     }
     {
       const rows = [
-        { partnershipId, userId: "nol2sd5ye6kezxgvovi7q5f0" },
+        { partnershipId, userId: SEED_IDS.user.claimCoordinator },
       ] satisfies (typeof assignments.$inferInsert)[];
       await ensureSeedPartnerAssignments(db, rows);
     }
@@ -302,7 +303,7 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
           .insert(selections)
           .values({
             partnershipId,
-            payoutAccountId: "dsj2rua1gdb4x4jvknmymoi4",
+            payoutAccountId: SEED_IDS.payoutAccount.claimSecondAccount,
           })
           .onConflictDoNothing();
       }
@@ -313,25 +314,25 @@ async function ensureClaimScenarios(db: SeedDatabase): Promise<void> {
 async function ensureCostScenarios(db: SeedDatabase): Promise<void> {
   // Costs: named Partner authorization and allocation scenarios.
   {
-    const host = "c8tzqmrknhg2bov465e90f43",
-      partner = "shhydrtzn64k6rorh9k8nx86",
-      other = "dl4som7bu1sb6xtdwnyyo63p";
-    const coordinator = "fmpfieidsqgfc697xgnvynuw",
-      participantUser = "u3pnyfkioeyhxtjks1ukfqag";
-    const project = "fu1lgjy9x1bjmbhkgebeg85u",
-      secondProject = "sr4b0zq9pv4u0hpz6flne3zy";
-    const own = "nyh1okg2p6hf8lwkpurt2wjz",
-      foreign = "cjhntjen5ijbchkis4lcu1t5",
-      next = "e8qx5ziip9865a2zxshedv3a";
-    const first = "qic2agmxqt1h9nzdxxd7ulgm",
-      second = "m5dxpif4ebx10jnihqtd98ew",
-      third = "je703i9hoq9ly4ii2kjs6d4v";
-    const outside = "ev1234of98bh7eek94kefkt1",
-      later = "q9rtygav622rqw8e47zxrprh";
-    const ownClaim = "lc1i74hr7ioc31ynaxr0vmub",
-      foreignClaim = "lv4pnwv30x1ogs6oyi78vmpq";
-    const proof = "foilan4c5q220go0d56v5sxx",
-      foreignProof = "kf0nrcb8r64b7dnm8m0vq0nf";
+    const host = SEED_IDS.organization.costHost,
+      partner = SEED_IDS.organization.costPartner,
+      other = SEED_IDS.organization.costOther;
+    const coordinator = SEED_IDS.user.costCoordinator,
+      participantUser = SEED_IDS.user.costParticipantUser;
+    const project = SEED_IDS.project.costProject,
+      secondProject = SEED_IDS.project.costSecondProject;
+    const own = SEED_IDS.partnership.costOwn,
+      foreign = SEED_IDS.partnership.costForeign,
+      next = SEED_IDS.partnership.costNext;
+    const first = SEED_IDS.participation.costFirst,
+      second = SEED_IDS.participation.costSecond,
+      third = SEED_IDS.participation.costThird;
+    const outside = SEED_IDS.participation.costOutside,
+      later = SEED_IDS.participation.costLater;
+    const ownClaim = SEED_IDS.claim.costOwnClaim,
+      foreignClaim = SEED_IDS.claim.costForeignClaim;
+    const proof = SEED_IDS.proofDocument.costProof,
+      foreignProof = SEED_IDS.proofDocument.costForeignProof;
 
     const now = new Date();
     {
@@ -478,17 +479,17 @@ async function ensureCostScenarios(db: SeedDatabase): Promise<void> {
 }
 
 async function ensureLockedCostScenario(db: SeedDatabase): Promise<void> {
-  const projectId = "ryxgqpmuhb5tubdl3wjm0kpl";
-  const partnershipId = "cwudh3bpklwgtvyphhw088ox";
-  const claimId = "iodp4iuvgjfjsx0t2fy82zj1";
-  const participantId = "fvzf02owu002f9wbrtiydulc";
-  const entryId = "t8b7y7gkyi51cjifgwonkns8";
+  const projectId = SEED_IDS.project.lockedCostProjectId;
+  const partnershipId = SEED_IDS.partnership.lockedCostPartnershipId;
+  const claimId = SEED_IDS.claim.lockedCostClaimId;
+  const participantId = SEED_IDS.participation.lockedCostParticipantId;
+  const entryId = SEED_IDS.travelEntry.lockedCostEntryId;
   {
     const rows = [
       {
         id: projectId,
         name: "Seed Submitted Cost Project",
-        organizationId: "c8tzqmrknhg2bov465e90f43",
+        organizationId: SEED_IDS.organization.costHost,
         startDate: new Date("2024-04-01"),
         endDate: new Date("2024-04-03"),
         location: "Riga",
@@ -502,14 +503,14 @@ async function ensureLockedCostScenario(db: SeedDatabase): Promise<void> {
       {
         id: partnershipId,
         projectId,
-        organizationId: "shhydrtzn64k6rorh9k8nx86",
+        organizationId: SEED_IDS.organization.costPartner,
       },
     ] satisfies (typeof partnerships.$inferInsert)[];
     await ensureSeedPartnerships(db, rows);
   }
   {
     const rows = [
-      { partnershipId, userId: "fmpfieidsqgfc697xgnvynuw" },
+      { partnershipId, userId: SEED_IDS.user.costCoordinator },
     ] satisfies (typeof assignments.$inferInsert)[];
     await ensureSeedPartnerAssignments(db, rows);
   }
@@ -524,7 +525,7 @@ async function ensureLockedCostScenario(db: SeedDatabase): Promise<void> {
       {
         id: participantId,
         projectId,
-        representedOrganizationId: "shhydrtzn64k6rorh9k8nx86",
+        representedOrganizationId: SEED_IDS.organization.costPartner,
         displayName: "Submitted Cost Participant",
       },
     ] satisfies (typeof participants.$inferInsert)[];
@@ -533,7 +534,7 @@ async function ensureLockedCostScenario(db: SeedDatabase): Promise<void> {
   {
     const rows = [
       {
-        id: "ometzoa7791cs0vulc4cwnzh",
+        id: SEED_IDS.proofDocument.costsSubmittedProofDocument,
         claimId,
         fileReference: "seed/locked-cost-proof",
         originalFileName: "ticket.pdf",
@@ -571,17 +572,17 @@ async function ensureLockedCostScenario(db: SeedDatabase): Promise<void> {
 async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void> {
   // Partner-initiated app-owned Participant Invitations, never Organization Invitations.
   {
-    const host = "pb8rir6gvcyfqiwaqtnk5xec";
-    const partner = "yi608vzxygcikogkqozy7r81";
-    const other = "y62zsfzl3timebonzploar04";
-    const project = "q1jwax2hm79a3iian3hs5x73";
-    const own = "kpy26vaupifiqe3vuu554twi";
-    const foreign = "li8ummqf6runglocgx76791z";
-    const coordinator = "d430zzfeqqkly5ldh6taz24l";
-    const joined = "g2wwxic53eufnwlmzl8vplam";
-    const pending = "hz7hq50rox2931x2g6fvnm9x";
-    const revoked = "pn2pja15f3t265bd805eiztb";
-    const outsider = "y81ceaq0pmv2oqk3wkvqd6xo";
+    const host = SEED_IDS.organization.onboardingHost;
+    const partner = SEED_IDS.organization.onboardingPartner;
+    const other = SEED_IDS.organization.onboardingOther;
+    const project = SEED_IDS.project.onboardingProject;
+    const own = SEED_IDS.partnership.onboardingOwn;
+    const foreign = SEED_IDS.partnership.onboardingForeign;
+    const coordinator = SEED_IDS.user.onboardingCoordinator;
+    const joined = SEED_IDS.user.onboardingJoined;
+    const pending = SEED_IDS.user.onboardingPending;
+    const revoked = SEED_IDS.user.onboardingRevoked;
+    const outsider = SEED_IDS.user.onboardingOutsider;
     const version = { id: "fixture-v2", contentHash: "fixture-hash-v2" };
 
     const now = new Date();
@@ -707,7 +708,7 @@ async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void>
     {
       const rows = [
         {
-          id: "hzjspo0pgd775157t62xn601",
+          id: SEED_IDS.participation.onboardingProgressParticipation0,
           projectId: project,
           representedOrganizationId: partner,
           userId: joined,
@@ -716,7 +717,7 @@ async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void>
         },
         {
           projectId: project,
-          id: "kmmag9cniqtn1rijzld8d6qg",
+          id: SEED_IDS.participation.onboardingProgressParticipation1,
           representedOrganizationId: other,
           userId: outsider,
           email: `${outsider}@example.org`,
@@ -724,7 +725,7 @@ async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void>
         },
         {
           projectId: project,
-          id: "j4i5tx5ldiy172qhxzo1zjiw",
+          id: SEED_IDS.participation.onboardingProgressParticipation2,
           representedOrganizationId: partner,
           displayName: "Unlinked",
         },
@@ -735,35 +736,35 @@ async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void>
     // cannot age out; runtime hashes have no usable seeded bearer secret.
     const invites = [
       {
-        id: "umtbxajk2vn5tdm92j50q1lv",
+        id: SEED_IDS.entryToken.onboardingId2,
         email: `${pending}@example.org`,
         status: "revoked",
         partnershipId: own,
         issuedAt: new Date(now.getTime() - 10000),
       },
       {
-        id: "gxtubvf8mav6w9c8do4fey2f",
+        id: SEED_IDS.entryToken.onboardingProgressPendingInvitation,
         email: `${pending}@example.org`,
         status: "pending",
         partnershipId: own,
         issuedAt: now,
       },
       {
-        id: "onwrl0w9h1c9h5kjwzqncaen",
+        id: SEED_IDS.entryToken.onboardingId1,
         email: `${joined}@example.org`,
         status: "pending",
         partnershipId: own,
         issuedAt: now,
       },
       {
-        id: "gxlpav73u6x949vj4m82wv45",
+        id: SEED_IDS.entryToken.onboardingId0,
         email: `${revoked}@example.org`,
         status: "revoked",
         partnershipId: own,
         issuedAt: now,
       },
       {
-        id: "yjkb018277x8670ihswsqhsi",
+        id: SEED_IDS.entryToken.onboardingId3,
         email: `${outsider}@example.org`,
         status: "pending",
         partnershipId: foreign,
@@ -792,16 +793,16 @@ async function ensureOnboardingProgressScenario(db: SeedDatabase): Promise<void>
 async function ensureExpiredOnboardingProgressScenario(
   db: SeedDatabase,
 ): Promise<void> {
-  const projectId = "seryv88axzvwqw9oqb2midp3";
-  const partnershipId = "xs8n7xoutdn7nm0fx0pcdge3";
-  const joined = "g2wwxic53eufnwlmzl8vplam";
-  const pending = "hz7hq50rox2931x2g6fvnm9x";
+  const projectId = SEED_IDS.project.expiredOnboardingProjectId;
+  const partnershipId = SEED_IDS.partnership.expiredOnboardingPartnershipId;
+  const joined = SEED_IDS.user.onboardingJoined;
+  const pending = SEED_IDS.user.onboardingPending;
   {
     const rows = [
       {
         id: projectId,
         name: "Seed Expired Onboarding Progress Project",
-        organizationId: "pb8rir6gvcyfqiwaqtnk5xec",
+        organizationId: SEED_IDS.organization.onboardingHost,
         startDate: new Date("2024-04-01"),
         endDate: new Date("2024-04-03"),
         location: "Riga",
@@ -815,23 +816,23 @@ async function ensureExpiredOnboardingProgressScenario(
       {
         id: partnershipId,
         projectId,
-        organizationId: "yi608vzxygcikogkqozy7r81",
+        organizationId: SEED_IDS.organization.onboardingPartner,
       },
     ] satisfies (typeof partnerships.$inferInsert)[];
     await ensureSeedPartnerships(db, rows);
   }
   {
     const rows = [
-      { partnershipId, userId: "d430zzfeqqkly5ldh6taz24l" },
+      { partnershipId, userId: SEED_IDS.user.onboardingCoordinator },
     ] satisfies (typeof assignments.$inferInsert)[];
     await ensureSeedPartnerAssignments(db, rows);
   }
   {
     const rows = [
       {
-        id: "q2wk2356hxwg4uww2dkje2ri",
+        id: SEED_IDS.participation.onboardingProgressParticipation3,
         projectId,
-        representedOrganizationId: "yi608vzxygcikogkqozy7r81",
+        representedOrganizationId: SEED_IDS.organization.onboardingPartner,
         userId: joined,
         email: `${joined}@example.org`,
         displayName: "Joined with outdated agreement",
@@ -843,14 +844,14 @@ async function ensureExpiredOnboardingProgressScenario(
   {
     const rows = [
       {
-        id: "p82fofnhve803i7nzxxsdb8d",
+        id: SEED_IDS.entryToken.onboardingProgressExpiredInvitation,
         partnershipId,
         projectId,
         email: `${pending}@example.org`,
         status: "pending",
         expiresAt: new Date(0),
         secretHash: createHash("sha256").update(randomUUID()).digest("hex"),
-        issuedByUserId: "d430zzfeqqkly5ldh6taz24l",
+        issuedByUserId: SEED_IDS.user.onboardingCoordinator,
         issuedAt: new Date("2024-04-01"),
       },
     ] satisfies (typeof entryTokens.$inferInsert)[];
@@ -859,16 +860,16 @@ async function ensureExpiredOnboardingProgressScenario(
 }
 
 async function ensureEntitySearchScenario(db: SeedDatabase): Promise<string[]> {
-  const actor = "un3tvw49u59cn2d2a9rop8dl";
-  const coordinator = "vos8x8p742eg5c2vj6cry4l5";
-  const unassignedCoordinator = "fsvc5hi90jub4no6rp7sk4qt";
-  const participant = "w0vmksmuqkmwxcb21weiuzwv";
-  const host = "mdeufadg0pokz21yilwj20zh";
-  const partner = "jc81zdxvsmhn9amf5cd7b2z8";
-  const foreign = "y4l7cye3sx531uc750fe1dfu";
-  const assigned = "f1jy9mt5aes134zezdsz9rjh";
-  const unassigned = "kf2n2hsv5yt7snkoqahw7012";
-  const foreignProject = "c0ayqb71wobyyir727zdy669";
+  const actor = SEED_IDS.user.entitySearchActor;
+  const coordinator = SEED_IDS.user.entitySearchCoordinator;
+  const unassignedCoordinator = SEED_IDS.user.entitySearchUnassignedCoordinator;
+  const participant = SEED_IDS.user.entitySearchParticipant;
+  const host = SEED_IDS.organization.entitySearchHost;
+  const partner = SEED_IDS.organization.entitySearchPartner;
+  const foreign = SEED_IDS.organization.entitySearchForeign;
+  const assigned = SEED_IDS.project.entitySearchAssigned;
+  const unassigned = SEED_IDS.project.entitySearchUnassigned;
+  const foreignProject = SEED_IDS.project.entitySearchForeignProject;
   const now = new Date();
   const owned = SEED_ENTITY_SEARCH.ownedOrganizations;
   const many = SEED_ENTITY_SEARCH.manyOrganizations;
@@ -889,91 +890,91 @@ async function ensureEntitySearchScenario(db: SeedDatabase): Promise<string[]> {
       { id: partner, name: "Partner" },
       { id: foreign, name: "Foreign" },
       {
-        id: "yy0c67wkivbca05auv1830ye",
+        id: SEED_IDS.organization.entitySearchOrg3,
         name: "Searchable 0",
       },
       {
-        id: "j2wgduuhmd5eh4cojqp69xzp",
+        id: SEED_IDS.organization.entitySearchOrg4,
         name: "Searchable 1",
       },
       {
-        id: "qbn0uzj86zkigrxudyaejgmv",
+        id: SEED_IDS.organization.entitySearchOrg5,
         name: "Searchable 2",
       },
       {
-        id: "m3mu9h0xfsz60852s0nld0y5",
+        id: SEED_IDS.organization.entitySearchOrg6,
         name: "Searchable 3",
       },
       {
-        id: "jf5rux41z37qdydcb97zipeu",
+        id: SEED_IDS.organization.entitySearchOrg7,
         name: "Searchable 4",
       },
       {
-        id: "nncgadszm4lpmb08onb65sv7",
+        id: SEED_IDS.organization.entitySearchOrg8,
         name: "Searchable 5",
       },
       {
-        id: "rx44zi293x82pe3eurpfgjli",
+        id: SEED_IDS.organization.entitySearchOrg9,
         name: "Searchable 6",
       },
       {
-        id: "yz3mcrb41afje6cr0dz7dkjs",
+        id: SEED_IDS.organization.entitySearchOrg10,
         name: "Searchable 7",
       },
       {
-        id: "ta5saza94oe6dsbgzp3oneyz",
+        id: SEED_IDS.organization.entitySearchOrg11,
         name: "Searchable 8",
       },
       {
-        id: "h70dzw4s67yq89p7drk41xl5",
+        id: SEED_IDS.organization.entitySearchOrg12,
         name: "Searchable 9",
       },
       {
-        id: "ad0utktcx37zhffpmpaaypfp",
+        id: SEED_IDS.organization.entitySearchOrg13,
         name: "Searchable 10",
       },
       {
-        id: "btiinsn1adtr1j5moxq7l6yk",
+        id: SEED_IDS.organization.entitySearchOrg14,
         name: "Searchable 11",
       },
       {
-        id: "uga7jk013dgum1puajj8vmw5",
+        id: SEED_IDS.organization.entitySearchOrg15,
         name: "Searchable 12",
       },
       {
-        id: "rhxsn23wqetmalzbghjs08nb",
+        id: SEED_IDS.organization.entitySearchOrg16,
         name: "Searchable 13",
       },
       {
-        id: "dux616zf0efcn67decpu7s5x",
+        id: SEED_IDS.organization.entitySearchOrg17,
         name: "Searchable 14",
       },
       {
-        id: "by4tf8repgrmat6p8gpgptaj",
+        id: SEED_IDS.organization.entitySearchOrg18,
         name: "Searchable 15",
       },
       {
-        id: "lydl4eqihkam129oxptfm9wj",
+        id: SEED_IDS.organization.entitySearchOrg19,
         name: "Searchable 16",
       },
       {
-        id: "mlztoxxn3yspsqr8b80y9pi7",
+        id: SEED_IDS.organization.entitySearchOrg20,
         name: "Searchable 17",
       },
       {
-        id: "pzqpxvga1b4lhv9rel98nv32",
+        id: SEED_IDS.organization.entitySearchOrg21,
         name: "Searchable 18",
       },
       {
-        id: "w5wbrjeb5djj09zwshgsbbc9",
+        id: SEED_IDS.organization.entitySearchOrg22,
         name: "Searchable 19",
       },
       {
-        id: "jkhzrd5nf21y36tutuio2mta",
+        id: SEED_IDS.organization.entitySearchOrg23,
         name: "Searchable 20",
       },
       {
-        id: "wteulge3nc0tiassog1pl31r",
+        id: SEED_IDS.organization.entitySearchOrg24,
         name: "Searchable 21",
       },
       ...owned,
@@ -1066,17 +1067,17 @@ async function ensureEntitySearchScenario(db: SeedDatabase): Promise<string[]> {
 }
 
 async function ensurePartnershipScenarios(db: SeedDatabase): Promise<string[]> {
-  const actor = "j3il3a249ve1ptmg95avdlgv";
-  const coord = "tqsbp0h0ue0r9f3cucsau6ub";
-  const stranger = "c7zd4q31mcarkmy6gj8ohr05";
-  const host = "bju7ngb3cgo3pdl2mus0fd1x";
-  const foreignHost = "lgiqk6xb0z0fmc5mt2a14c2h";
-  const project = "oe5auzlmxm92s21kxpoy2po7";
-  const foreignProject = "fjt5l9ol15czsgt9utly4k7i";
-  const visibilityHost = "eear0jif4y85mgfp3egcs35t";
-  const visibilityPartner = "kbw5d47mmfruysu3eseo7gdk";
-  const ownProject = "s72n412ll4eehimlyctpc5u4";
-  const otherProject = "ihi2lq4bmhm3k7kwyc4ru3ca";
+  const actor = SEED_IDS.user.partnershipsActor;
+  const coord = SEED_IDS.user.partnershipsCoord;
+  const stranger = SEED_IDS.user.partnershipsStranger;
+  const host = SEED_IDS.organization.partnershipsHost;
+  const foreignHost = SEED_IDS.organization.partnershipsForeignHost;
+  const project = SEED_IDS.project.partnershipsProject;
+  const foreignProject = SEED_IDS.project.partnershipsForeignProject;
+  const visibilityHost = SEED_IDS.organization.partnershipsVisibilityHost;
+  const visibilityPartner = SEED_IDS.organization.partnershipsVisibilityPartner;
+  const ownProject = SEED_IDS.project.partnershipsOwnProject;
+  const otherProject = SEED_IDS.project.partnershipsOtherProject;
   const now = new Date();
   {
     const rows = [actor, coord, stranger].map((id) => ({
@@ -1091,10 +1092,19 @@ async function ensurePartnershipScenarios(db: SeedDatabase): Promise<string[]> {
     const rows = [
       { id: host, name: "Partnership Host" },
       { id: foreignHost, name: "Partnership Foreign Host" },
-      { id: "qzk86wnb1aey5g57xszuapg7", name: "Assigned Organization" },
-      { id: "ru7qr7r69sz7qq4x6a7sfdjk", name: "Removable Organization" },
-      { id: "i1vygof18xbl8888j7h6dlxv", name: "Candidate Organization" },
-      { id: "pbsbg6s5g2p5cmc2z4kfo03v", name: "Race Organization" },
+      {
+        id: SEED_IDS.organization.partnershipsOrg2,
+        name: "Assigned Organization",
+      },
+      {
+        id: SEED_IDS.organization.partnershipsOrg3,
+        name: "Removable Organization",
+      },
+      {
+        id: SEED_IDS.organization.partnershipsOrg4,
+        name: "Candidate Organization",
+      },
+      { id: SEED_IDS.organization.partnershipsOrg5, name: "Race Organization" },
       { id: visibilityHost, name: visibilityHost },
       { id: visibilityPartner, name: visibilityPartner },
     ].map((row) => ({
@@ -1155,22 +1165,22 @@ async function ensurePartnershipScenarios(db: SeedDatabase): Promise<string[]> {
   {
     const rows = [
       {
-        id: "tevcjre6m3rlqajvg3628nd5",
+        id: SEED_IDS.partnership.partnershipsId3,
         projectId: project,
-        organizationId: "qzk86wnb1aey5g57xszuapg7",
+        organizationId: SEED_IDS.organization.partnershipsOrg2,
       },
       {
-        id: "ocv8adv9zbl8h4z6xg91hj1b",
+        id: SEED_IDS.partnership.partnershipsId2,
         projectId: project,
-        organizationId: "ru7qr7r69sz7qq4x6a7sfdjk",
+        organizationId: SEED_IDS.organization.partnershipsOrg3,
       },
       {
-        id: "jxj0285f2i5m3seadecd1i61",
+        id: SEED_IDS.partnership.partnershipsId0,
         projectId: ownProject,
         organizationId: visibilityPartner,
       },
       {
-        id: "o23snk0g72l78kypo19c5l50",
+        id: SEED_IDS.partnership.partnershipsId1,
         projectId: otherProject,
         organizationId: visibilityPartner,
       },
@@ -1179,16 +1189,16 @@ async function ensurePartnershipScenarios(db: SeedDatabase): Promise<string[]> {
   }
   {
     const rows = [
-      { partnershipId: "jxj0285f2i5m3seadecd1i61", userId: coord },
+      { partnershipId: SEED_IDS.partnership.partnershipsId0, userId: coord },
     ] satisfies (typeof assignments.$inferInsert)[];
     await ensureSeedPartnerAssignments(db, rows);
   }
   {
     const rows = [
       {
-        id: "s4hxs7xxvi2anxjzg482zo0q",
+        id: SEED_IDS.participation.partnershipsParticipation0,
         projectId: project,
-        representedOrganizationId: "qzk86wnb1aey5g57xszuapg7",
+        representedOrganizationId: SEED_IDS.organization.partnershipsOrg2,
         displayName: "Assigned Participant",
       },
     ] satisfies (typeof participants.$inferInsert)[];
@@ -1198,11 +1208,11 @@ async function ensurePartnershipScenarios(db: SeedDatabase): Promise<string[]> {
 }
 
 async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
-  const host = "vx9gyxubkxro0lssmyroxe75",
-    partner = "qkygpb1cfcfftazz91qywhrn",
-    other = "wqrtqzx3xvvhlhef4f8sau4l";
-  const coordinator = "njj93kk5qvwteuv9nptk9ryb",
-    participantUser = "b21etdwq5uyop54hnqideez1";
+  const host = SEED_IDS.organization.journeyHost,
+    partner = SEED_IDS.organization.journeyPartner,
+    other = SEED_IDS.organization.journeyOther;
+  const coordinator = SEED_IDS.user.journeyCoordinator,
+    participantUser = SEED_IDS.user.journeyParticipantUser;
   const now = new Date();
   {
     const rows = [
@@ -1252,108 +1262,108 @@ async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
   }
   const journeyScenarioIds = [
     {
-      project: "xf74qtwtye2yvslr7o7i8y34",
-      "second-project": "w4uxcjyp1go2q461goegu7sv",
-      own: "k8gaqhl38tx5zhue5cu8c0st",
-      foreign: "v6t5aqxihtula24tlc32f1up",
-      next: "jl71gr77c1ugmst6nu65q2n3",
-      first: "qsv67xo722qe1b00w0g9qi0o",
-      second: "adrq31kxemsrho7vxin91xii",
-      outside: "p0i8js1lix8zfh0bhcpz8kcr",
-      later: "hcw9cmnc0tjdg95vefyjnkg0",
-      claim: "o9nti1yavwwnnttwkmhanht0",
-      "legacy-journey": "c6tghowe8qfzyeyo0kz6g18p",
+      project: SEED_IDS.project.journeyProject7,
+      "second-project": SEED_IDS.project.journeySecondProject4,
+      own: SEED_IDS.partnership.journeyOwn2,
+      foreign: SEED_IDS.partnership.journeyForeign6,
+      next: SEED_IDS.partnership.journeyNext3,
+      first: SEED_IDS.participation.journeysParticipation0,
+      second: SEED_IDS.participation.journeysParticipation1,
+      outside: SEED_IDS.participation.journeysParticipation2,
+      later: SEED_IDS.participation.journeysParticipation3,
+      claim: SEED_IDS.claim.journeyClaim2,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney0,
     }, // empty
     {
-      project: "s9ehhnzr79666m99ub41kh43",
-      "second-project": "mni2rdfwwwjqx8yc1mqr21xb",
-      own: "c701ddgerxilbliului1u9bb",
-      foreign: "pgqfrrwy26ex3j1ycrqebte9",
-      next: "v6t1mcfrjs1h0c1ylgrftdau",
-      first: "dnhbmektk3b0kymk67gijh5v",
-      second: "c6rzw7mjcfzouw011z6glezo",
-      outside: "ce90d9m4ox9pcsa6gnvzeukc",
-      later: "mz3gl3c4s9dx05kxpacgab1h",
-      claim: "w7nc5wfqxs162560vrkhvod9",
-      "legacy-journey": "jn9kcflhyqgeo1e7i9qwfb7v",
+      project: SEED_IDS.project.journeyProject5,
+      "second-project": SEED_IDS.project.journeySecondProject2,
+      own: SEED_IDS.partnership.journeyOwn0,
+      foreign: SEED_IDS.partnership.journeyForeign2,
+      next: SEED_IDS.partnership.journeyNext7,
+      first: SEED_IDS.participation.journeysParticipation4,
+      second: SEED_IDS.participation.journeysParticipation5,
+      outside: SEED_IDS.participation.journeysParticipation6,
+      later: SEED_IDS.participation.journeysParticipation7,
+      claim: SEED_IDS.claim.journeyClaim4,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney1,
     }, // editable
     {
-      project: "bow8reilzlhbyt54sgqrgvk8",
-      "second-project": "q9fs98msyjij0r2lxyq6dy4k",
-      own: "khznv3ljbgkwh3n2kr2fgh50",
-      foreign: "zel9micdp5alsz6737o6312j",
-      next: "bbfe1u7sdhxnwir6amwkt2tr",
-      first: "diwsigd48oyf7giaz6d5m76e",
-      second: "weapsdhv2og96fqrblgjr8fw",
-      outside: "v28trsvdlxszdjbrslj7jzhe",
-      later: "o5mbhevxssukttfo6wdb7t3v",
-      claim: "u0odwgoee870pdkinls1ocjb",
-      "legacy-journey": "z31d4uuibabgkk4dr46dq8s4",
+      project: SEED_IDS.project.journeyProject0,
+      "second-project": SEED_IDS.project.journeySecondProject3,
+      own: SEED_IDS.partnership.journeyOwn3,
+      foreign: SEED_IDS.partnership.journeyForeign7,
+      next: SEED_IDS.partnership.journeyNext0,
+      first: SEED_IDS.participation.journeysParticipation8,
+      second: SEED_IDS.participation.journeysParticipation9,
+      outside: SEED_IDS.participation.journeysParticipation10,
+      later: SEED_IDS.participation.journeysParticipation11,
+      claim: SEED_IDS.claim.journeyClaim3,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney6,
     }, // legacy
     {
-      project: "cbffrmmttjsm36zbb4oj4b0f",
-      "second-project": "yjlexiy2l38wyiz6xhp5c5b4",
-      own: "wh63gm0yng191ljpdiz23hli",
-      foreign: "oistv3g8cqps1mvco4t7ices",
-      next: "tykyaixv9rmrjzda5e87hw49",
-      first: "vzb305ommel0h8t52pmicku8",
-      second: "k1f28nyl1dr0j09felqn1p65",
-      outside: "htyn28cu0n1kaqbxu4bb0u60",
-      later: "e0oy0n9nhhi7y1yo8iaouhji",
-      claim: "y5t65ua0tn4of7agptp47utj",
-      "legacy-journey": "zscqghs3a5i3k0vh0v7ievta",
+      project: SEED_IDS.project.journeyProject1,
+      "second-project": SEED_IDS.project.journeySecondProject7,
+      own: SEED_IDS.partnership.journeyOwn6,
+      foreign: SEED_IDS.partnership.journeyForeign1,
+      next: SEED_IDS.partnership.journeyNext6,
+      first: SEED_IDS.participation.journeysParticipation12,
+      second: SEED_IDS.participation.journeysParticipation13,
+      outside: SEED_IDS.participation.journeysParticipation14,
+      later: SEED_IDS.participation.journeysParticipation15,
+      claim: SEED_IDS.claim.journeyClaim7,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney7,
     }, // correction_requested
     {
-      project: "i0t9ar9uv1o9ujognpfx03wr",
-      "second-project": "xzitoetsc65bzwh7b309b516",
-      own: "sgw7akbszqdrsh8hohzdodho",
-      foreign: "rrcolgxmdjsscu9258ghxnfe",
-      next: "k4xpsu8ewl0kedpdcqqqv72b",
-      first: "wq9ldyrvwbjcqoledih3950p",
-      second: "wexe0nzi53wk9yxpjcyz2s5b",
-      outside: "i2au75gjcz4x8vcc8f1t1avw",
-      later: "kuf0x8zecl929omfs7ufyxqb",
-      claim: "xlpqdftexv8wks2jdgxu2ux4",
-      "legacy-journey": "wq5rfkvgsav08isx0fw6ouri",
+      project: SEED_IDS.project.journeyProject2,
+      "second-project": SEED_IDS.project.journeySecondProject6,
+      own: SEED_IDS.partnership.journeyOwn4,
+      foreign: SEED_IDS.partnership.journeyForeign3,
+      next: SEED_IDS.partnership.journeyNext4,
+      first: SEED_IDS.participation.journeysParticipation16,
+      second: SEED_IDS.participation.journeysParticipation17,
+      outside: SEED_IDS.participation.journeysParticipation18,
+      later: SEED_IDS.participation.journeysParticipation19,
+      claim: SEED_IDS.claim.journeyClaim5,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney4,
     }, // submitted
     {
-      project: "jo1xnzk227xvf5rm29q943ev",
-      "second-project": "xflmv8mn5mq8bn3hcawrk914",
-      own: "t5khvfs2g70vozdznokq1ddx",
-      foreign: "nwyc54b8o8ixudydw2e4tow6",
-      next: "eku8jl6ur1gz9k2or59jb2tx",
-      first: "liixtwq2c9307qgchtzlk4sr",
-      second: "q6x77i77fmcghbtj9nfb3fux",
-      outside: "cox16dq4rldrb27vhbduncc8",
-      later: "uean2qifj1oh7t3ztwyi391n",
-      claim: "b52ejmrg1s8pcd05dy0sr2yl",
-      "legacy-journey": "nz20q63vpzvgqplkgkjgufpq",
+      project: SEED_IDS.project.journeyProject4,
+      "second-project": SEED_IDS.project.journeySecondProject5,
+      own: SEED_IDS.partnership.journeyOwn5,
+      foreign: SEED_IDS.partnership.journeyForeign0,
+      next: SEED_IDS.partnership.journeyNext1,
+      first: SEED_IDS.participation.journeysParticipation20,
+      second: SEED_IDS.participation.journeysParticipation21,
+      outside: SEED_IDS.participation.journeysParticipation22,
+      later: SEED_IDS.participation.journeysParticipation23,
+      claim: SEED_IDS.claim.journeyClaim0,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney2,
     }, // approved
     {
-      project: "t3t443dc4zs057sxm5ns56al",
-      "second-project": "junkjnumchq0l9f0zj4ubj4g",
-      own: "z0cb8bz1yg5z72pctem0y4cz",
-      foreign: "rzur7eq20mjcrrdvr6sj1gcv",
-      next: "kmt5a8mrf0l75328sczod5sx",
-      first: "tsvkwpwofp3dm6xj1lhl9xqn",
-      second: "zjp4m9ssm5eejv3is118vb5a",
-      outside: "trcmao8ecc90cbynik4tvdad",
-      later: "qugg501l00hypycy2zmiggqr",
-      claim: "xnmqjkszxo8e6mz8ke92f9xn",
-      "legacy-journey": "wqqe26q4fcd4a8xuabrx1loa",
+      project: SEED_IDS.project.journeyProject6,
+      "second-project": SEED_IDS.project.journeySecondProject0,
+      own: SEED_IDS.partnership.journeyOwn7,
+      foreign: SEED_IDS.partnership.journeyForeign4,
+      next: SEED_IDS.partnership.journeyNext5,
+      first: SEED_IDS.participation.journeysParticipation24,
+      second: SEED_IDS.participation.journeysParticipation25,
+      outside: SEED_IDS.participation.journeysParticipation26,
+      later: SEED_IDS.participation.journeysParticipation27,
+      claim: SEED_IDS.claim.journeyClaim6,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney5,
     }, // rejected
     {
-      project: "i3i6jq6eutzj7hblwcuefrp4",
-      "second-project": "kzcqabii9g43hw9bn185krqe",
-      own: "il0j5p0sugn78sr5uvn58zqv",
-      foreign: "v17pgcsxny5fnxgnpmz1792d",
-      next: "icq58a7oeek8d088h2mhcwlq",
-      first: "bj65q8qk8xu452az5stmvmfn",
-      second: "duwh2xksyo3wkffxpy779j9w",
-      outside: "z3k1zkw7poy8ccatgqm7ixix",
-      later: "y145ox23z8dwq68p4trp0hja",
-      claim: "g7wxnm8kklyy3csi5vkhgezd",
-      "legacy-journey": "qocftxioovgk2opbfphoins1",
+      project: SEED_IDS.project.journeyProject3,
+      "second-project": SEED_IDS.project.journeySecondProject1,
+      own: SEED_IDS.partnership.journeyOwn1,
+      foreign: SEED_IDS.partnership.journeyForeign5,
+      next: SEED_IDS.partnership.journeyNext2,
+      first: SEED_IDS.participation.journeysParticipation28,
+      second: SEED_IDS.participation.journeysParticipation29,
+      outside: SEED_IDS.participation.journeysParticipation30,
+      later: SEED_IDS.participation.journeysParticipation31,
+      claim: SEED_IDS.claim.journeyClaim1,
+      "legacy-journey": SEED_IDS.journey.journeyLegacyJourney3,
     }, // paid
   ] as const;
   const journeyScenarioNames = [
@@ -1463,19 +1473,19 @@ async function ensureJourneyScenarios(db: SeedDatabase): Promise<string[]> {
 }
 
 async function ensureSetupLinkScenarios(db: SeedDatabase): Promise<string[]> {
-  const owner = "sg35qwjva9v00sz5lal6nq5k",
-    host = "bv8cv1pccaghkuhwcrnvk87p",
-    partner = "xecuissn7aiyiyezm3jfkkc1";
-  const project = "k0asthvexnqg5oqseo2q5var",
-    otherProject = "rir02zzb2jrzgh8maaa4qh4u";
+  const owner = SEED_IDS.user.setupLinksOwner,
+    host = SEED_IDS.organization.setupLinksHost,
+    partner = SEED_IDS.organization.setupLinksPartner;
+  const project = SEED_IDS.project.setupLinksProject,
+    otherProject = SEED_IDS.project.setupLinksOtherProject;
   const actorIds = [
     owner,
-    "e4kdv5xbdh7mdks1s5whazy0",
-    "c7lv2v4wbrkggzotjnyn4y11",
-    "mh9zd08yyzmjqy3t684r8us9",
-    "zdvjl3sxo874wg59dfxp88ti",
-    "y4c99qnw9bbaiz4cqqjpm3sb",
-    "wy5shwjouvxfad8epx3t966h",
+    SEED_IDS.user.setupLinksUser1,
+    SEED_IDS.user.setupLinksUser2,
+    SEED_IDS.user.setupLinksUser3,
+    SEED_IDS.user.setupLinksUser4,
+    SEED_IDS.user.setupLinksUser5,
+    SEED_IDS.user.setupLinksUser6,
   ];
   const now = new Date();
   {
@@ -1497,15 +1507,18 @@ async function ensureSetupLinkScenarios(db: SeedDatabase): Promise<string[]> {
         name: `Seed Setup Link Organization ${id}`,
       })),
       {
-        id: "ue3fwothynemqt2ywrszcase",
+        id: SEED_IDS.organization.setupLinksOrg2,
         name: "Combined coordinator,owner",
       },
       {
-        id: "ihfwcjl6hn2epqdid5rgkari",
+        id: SEED_IDS.organization.setupLinksOrg3,
         name: "Combined owner,participant",
       },
-      { id: "taap3sr6rz40ho5ojh4dzrfa", name: "Bind Target" },
-      ...["iijo00f0gw3fgf80j6k7jha7", "epdqai2n6zc14d4myu5e3b38"].map((id) => ({
+      { id: SEED_IDS.organization.setupLinksOrg4, name: "Bind Target" },
+      ...[
+        SEED_IDS.organization.setupLinksOrg5,
+        SEED_IDS.organization.setupLinksOrg6,
+      ].map((id) => ({
         id,
         name: `Race ${id}`,
       })),
@@ -1522,9 +1535,9 @@ async function ensureSetupLinkScenarios(db: SeedDatabase): Promise<string[]> {
       ...[
         host,
         partner,
-        "taap3sr6rz40ho5ojh4dzrfa",
-        "iijo00f0gw3fgf80j6k7jha7",
-        "epdqai2n6zc14d4myu5e3b38",
+        SEED_IDS.organization.setupLinksOrg4,
+        SEED_IDS.organization.setupLinksOrg5,
+        SEED_IDS.organization.setupLinksOrg6,
       ].map((organizationId) => ({
         id: createId(),
         userId: owner,
@@ -1535,55 +1548,55 @@ async function ensureSetupLinkScenarios(db: SeedDatabase): Promise<string[]> {
       {
         id: createId(),
         userId: owner,
-        organizationId: "ue3fwothynemqt2ywrszcase",
+        organizationId: SEED_IDS.organization.setupLinksOrg2,
         role: "coordinator,owner",
         createdAt: now,
       },
       {
         id: createId(),
         userId: owner,
-        organizationId: "ihfwcjl6hn2epqdid5rgkari",
+        organizationId: SEED_IDS.organization.setupLinksOrg3,
         role: "owner,participant",
         createdAt: now,
       },
       {
         id: createId(),
-        userId: "e4kdv5xbdh7mdks1s5whazy0",
+        userId: SEED_IDS.user.setupLinksUser1,
         organizationId: host,
         role: ORGANIZATION_ROLES.ProjectCoordinator,
         createdAt: now,
       },
       {
         id: createId(),
-        userId: "c7lv2v4wbrkggzotjnyn4y11",
+        userId: SEED_IDS.user.setupLinksUser2,
         organizationId: host,
         role: ORGANIZATION_ROLES.Participant,
         createdAt: now,
       },
       {
         id: createId(),
-        userId: "mh9zd08yyzmjqy3t684r8us9",
+        userId: SEED_IDS.user.setupLinksUser3,
         organizationId: host,
         role: ORGANIZATION_ROLES.OrganizationAdmin,
         createdAt: now,
       },
       {
         id: createId(),
-        userId: "zdvjl3sxo874wg59dfxp88ti",
+        userId: SEED_IDS.user.setupLinksUser4,
         organizationId: host,
         role: ORGANIZATION_ROLES.OrganizationOwner,
         createdAt: now,
       },
       {
         id: createId(),
-        userId: "y4c99qnw9bbaiz4cqqjpm3sb",
+        userId: SEED_IDS.user.setupLinksUser5,
         organizationId: host,
         role: ORGANIZATION_ROLES.ProjectCoordinator,
         createdAt: now,
       },
       {
         id: createId(),
-        userId: "wy5shwjouvxfad8epx3t966h",
+        userId: SEED_IDS.user.setupLinksUser6,
         organizationId: partner,
         role: ORGANIZATION_ROLES.Participant,
         createdAt: now,
@@ -1606,9 +1619,9 @@ async function ensureSetupLinkScenarios(db: SeedDatabase): Promise<string[]> {
   {
     const rows = [
       { projectId: project, userId: owner },
-      { projectId: project, userId: "e4kdv5xbdh7mdks1s5whazy0" },
-      { projectId: project, userId: "y4c99qnw9bbaiz4cqqjpm3sb" },
-      { projectId: otherProject, userId: "y4c99qnw9bbaiz4cqqjpm3sb" },
+      { projectId: project, userId: SEED_IDS.user.setupLinksUser1 },
+      { projectId: project, userId: SEED_IDS.user.setupLinksUser5 },
+      { projectId: otherProject, userId: SEED_IDS.user.setupLinksUser5 },
     ] satisfies (typeof hostAssignments.$inferInsert)[];
     await ensureSeedHostAssignments(db, rows);
   }
@@ -1619,19 +1632,19 @@ async function ensureProjectReadinessScenarios(
   db: SeedDatabase,
 ): Promise<string[]> {
   const userIds: string[] = [];
-  const actor = "v3mlz2g5clg8w6ah4ksaxyhs";
+  const actor = SEED_IDS.user.readinessActor;
   const roles = [
     ORGANIZATION_ROLES.OrganizationOwner,
     ORGANIZATION_ROLES.OrganizationAdmin,
     ORGANIZATION_ROLES.ProjectCoordinator,
     ORGANIZATION_ROLES.Participant,
   ];
-  const otherUser = "cl3p954elr9yulp1cmy17bdt";
-  const host = "qktk52yxvs7xld84b1tvuoh9";
+  const otherUser = SEED_IDS.user.readinessOtherUser;
+  const host = SEED_IDS.organization.readinessHost;
   const partnerIds = [
-    "qoqjcz9wkb9w1cu1jciykycq",
-    "xykexg4zokyx3xmwsqoarbne",
-    "ci9hh94qpeqiqkdd9r3bh6kv",
+    SEED_IDS.organization.projectsOrg1,
+    SEED_IDS.organization.projectsOrg2,
+    SEED_IDS.organization.projectsOrg3,
   ];
 
   const now = new Date();
@@ -1671,14 +1684,14 @@ async function ensureProjectReadinessScenarios(
     await ensureSeedMemberships(db, rows);
   }
   const readinessUserIds = [
-    "g1uqbte2iau4cota7ihqvsd7",
-    "dnaqpymw7b42kf84mh8cjtj4",
-    "ht74tddcca1pd57ckhan9jyn",
-    "ozww4cen0d8jhtwwf5dpgez5",
-    "cy9lv43gdjuksbp2dt3ipdb8",
-    "kqndalgew54w27ztll9b2xyh",
-    "tq9lhc4pcvh7m23xctv46olw",
-    "n9n8i1cvwpmn65lpk3xgk1kh",
+    SEED_IDS.user.projectsUser2,
+    SEED_IDS.user.projectsUser3,
+    SEED_IDS.user.projectsUser4,
+    SEED_IDS.user.projectsUser5,
+    SEED_IDS.user.projectsUser6,
+    SEED_IDS.user.projectsUser7,
+    SEED_IDS.user.projectsUser8,
+    SEED_IDS.user.projectsUser9,
   ];
   let readinessUserIndex = 0;
   for (const role of roles)
@@ -1702,7 +1715,7 @@ async function ensureProjectReadinessScenarios(
         where: (row, { and, eq }) =>
           and(
             eq(row.userId, userId),
-            eq(row.organizationId, "qktk52yxvs7xld84b1tvuoh9"),
+            eq(row.organizationId, SEED_IDS.organization.readinessHost),
           ),
       });
       if (!membership)
@@ -1711,7 +1724,7 @@ async function ensureProjectReadinessScenarios(
           .values({
             id: createId(),
             userId,
-            organizationId: "qktk52yxvs7xld84b1tvuoh9",
+            organizationId: SEED_IDS.organization.readinessHost,
             role,
             createdAt: new Date(),
           })
@@ -1720,122 +1733,122 @@ async function ensureProjectReadinessScenarios(
 
   const readinessScenarioIds = [
     {
-      project: "yw0j74vrct2t82f1rgqtrs4t",
-      otherProject: "b5giqvh1tv51xwcsaqeucmke",
+      project: SEED_IDS.project.projectsProject0,
+      otherProject: SEED_IDS.project.projectsProject1,
       partnershipIds: [
-        "l1itj52kn8m7o3wz5qashvpq",
-        "cknsvj11ywg2xdo47tcw64e2",
-        "woshp5cwqlxrb792vpapk4fy",
+        SEED_IDS.partnership.readinessPartnershipIds11,
+        SEED_IDS.partnership.readinessPartnershipIds4,
+        SEED_IDS.partnership.readinessPartnershipIds21,
       ],
-      otherPartnership: "klt10qtlacbwvzzsnm0vhhnp",
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership4,
       claims: [],
       otherClaim: null,
     }, // empty
     {
-      project: "qglynmc75ava9l2jpyyos5cp",
-      otherProject: "rcggqd5tiwuyfqcivd6qs2z8",
+      project: SEED_IDS.project.projectsProject2,
+      otherProject: SEED_IDS.project.projectsProject3,
       partnershipIds: [
-        "fkw18w1v3iih7wo0p58xryfo",
-        "z8q8zdxqim244ru6105gs70n",
-        "rj38qifx3znjd6xlpfd89ng8",
+        SEED_IDS.partnership.readinessPartnershipIds6,
+        SEED_IDS.partnership.readinessPartnershipIds23,
+        SEED_IDS.partnership.readinessPartnershipIds16,
       ],
-      otherPartnership: "ijkq778umxq5eqvezq0rjlpf",
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership2,
       claims: [
-        "n73pnnekz3jhqukacbebh928",
-        "yf3ok5vimpg44bdrvrebv4k4",
-        "wowehcwju4ud724ttsbcn19d",
+        SEED_IDS.claim.readinessClaims9,
+        SEED_IDS.claim.readinessClaims19,
+        SEED_IDS.claim.readinessClaims17,
       ],
-      otherClaim: "s573zoe5xtglcmy0uraj128d",
+      otherClaim: SEED_IDS.claim.readinessOtherClaim,
     }, // mixed
     {
-      project: "aa8p1gyxlst0fkc06npqp227",
-      otherProject: "xj7hc44t4oz92u8cfm6jwoim",
+      project: SEED_IDS.project.projectsProject4,
+      otherProject: SEED_IDS.project.projectsProject5,
       partnershipIds: [
-        "rk7bjf2x68ao6l634fxhkt24",
-        "w7nffddjy4tjkl5rvgp14iee",
-        "dg31nc77wf70psxu31v63q41",
+        SEED_IDS.partnership.readinessPartnershipIds17,
+        SEED_IDS.partnership.readinessPartnershipIds20,
+        SEED_IDS.partnership.readinessPartnershipIds5,
       ],
-      otherPartnership: "i018kq21fjdyq00plv76y4rj",
-      claims: ["y4oooedj20iujmy11zcuy7tf", "adi523x12ms0xwd3zfbszkjr"],
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership1,
+      claims: [SEED_IDS.claim.readinessClaims18, SEED_IDS.claim.readinessClaims0],
       otherClaim: null,
     }, // claimless-partial
     {
-      project: "wmexswb9vwkzkemjgb0fuio8",
-      otherProject: "mwqzfluw6sf7prnwgqj0b41u",
+      project: SEED_IDS.project.projectsProject6,
+      otherProject: SEED_IDS.project.projectsProject7,
       partnershipIds: [
-        "q13g4ivn0cq2z4veuhqxjf6p",
-        "iiqjhvncs4j5w5r9doz69zfs",
-        "ba3fd8u58q8iw1w0th11t22e",
+        SEED_IDS.partnership.readinessPartnershipIds13,
+        SEED_IDS.partnership.readinessPartnershipIds8,
+        SEED_IDS.partnership.readinessPartnershipIds2,
       ],
-      otherPartnership: "jyz9kwzohqe5wun24i0chbgv",
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership3,
       claims: [
-        "np093j3wdwsj5qtuv6g1kpco",
-        "wmdznz75s2uhnl0vhsdxtua8",
-        "u281ji80jv5ik1obui3ecpa0",
+        SEED_IDS.claim.readinessClaims10,
+        SEED_IDS.claim.readinessClaims16,
+        SEED_IDS.claim.readinessClaims13,
       ],
       otherClaim: null,
     }, // terminal
     {
-      project: "qhj5ysoj4rhmeakufdfcnjha",
-      otherProject: "yzj71wxq73ycvvnfvxbq3ibn",
+      project: SEED_IDS.project.projectsProject8,
+      otherProject: SEED_IDS.project.projectsProject9,
       partnershipIds: [
-        "rci5s2vtnlbmze2iejtn0kcc",
-        "vq44p86w8b8a7l992zonmk63",
-        "rkusxmlozr9utujcob6b7lxj",
+        SEED_IDS.partnership.readinessPartnershipIds14,
+        SEED_IDS.partnership.readinessPartnershipIds19,
+        SEED_IDS.partnership.readinessPartnershipIds18,
       ],
-      otherPartnership: "w4bq7pdsunn9duwjwx4x97v2",
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership7,
       claims: [
-        "qjci422lf9laqpvwkmkd4m66",
-        "p79whficzo4nwkcgpxfzx48r",
-        "ggdjm8yqc921ibvotgbpxtgs",
+        SEED_IDS.claim.readinessClaims12,
+        SEED_IDS.claim.readinessClaims11,
+        SEED_IDS.claim.readinessClaims5,
       ],
       otherClaim: null,
     }, // editable
     {
-      project: "mxszdqbyysrail9pf3t8x0f0",
-      otherProject: "sz13k9ez22w1avn1gpimre5w",
+      project: SEED_IDS.project.projectsProject10,
+      otherProject: SEED_IDS.project.projectsProject11,
       partnershipIds: [
-        "b4bk95067sgdzg1a16kjypbz",
-        "rdjzox5bcah8xrp49ozt30wd",
-        "bmefshg635x4ebb5srsvxr78",
+        SEED_IDS.partnership.readinessPartnershipIds1,
+        SEED_IDS.partnership.readinessPartnershipIds15,
+        SEED_IDS.partnership.readinessPartnershipIds3,
       ],
-      otherPartnership: "u8tb9xne59fmb86lzvznq3gc",
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership6,
       claims: [
-        "vhk7w3ec7sk3zk9lsh2xkwwj",
-        "jtbi7np59qu78bwrfo630ms2",
-        "g57ttmnw94zenllezjfqu182",
+        SEED_IDS.claim.readinessClaims14,
+        SEED_IDS.claim.readinessClaims6,
+        SEED_IDS.claim.readinessClaims4,
       ],
       otherClaim: null,
     }, // submitted
     {
-      project: "q769rcuir0ts8v9pxxra44hz",
-      otherProject: "gk8s7m7qce7egn73x0p3tbmu",
+      project: SEED_IDS.project.projectsProject12,
+      otherProject: SEED_IDS.project.projectsProject13,
       partnershipIds: [
-        "awin69wb41p5xelki8g41vxe",
-        "gl6rsfdo814angjd44rh903c",
-        "jugzsrf7lqrqjm6ym6tu787w",
+        SEED_IDS.partnership.readinessPartnershipIds0,
+        SEED_IDS.partnership.readinessPartnershipIds7,
+        SEED_IDS.partnership.readinessPartnershipIds9,
       ],
-      otherPartnership: "qiajyssswo0wvoitc3thucqk",
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership5,
       claims: [
-        "bxdrpjbsozrolih5iu88xgbl",
-        "wk03gohlwh0japrfl5v9iamh",
-        "ljhl94znqtws6tf85wpk44y0",
+        SEED_IDS.claim.readinessClaims1,
+        SEED_IDS.claim.readinessClaims15,
+        SEED_IDS.claim.readinessClaims8,
       ],
       otherClaim: null,
     }, // correction_requested
     {
-      project: "lw7lrv1wm139zv4qgnzjkao7",
-      otherProject: "jl95anvdi1dwvyco65alx4fn",
+      project: SEED_IDS.project.projectsProject14,
+      otherProject: SEED_IDS.project.projectsProject15,
       partnershipIds: [
-        "kq035445vavip4ni7mat3dl8",
-        "olqmp3okr9xkyjhngtsae857",
-        "x9bsy8s1xb15aty8g5d0zv8p",
+        SEED_IDS.partnership.readinessPartnershipIds10,
+        SEED_IDS.partnership.readinessPartnershipIds12,
+        SEED_IDS.partnership.readinessPartnershipIds22,
       ],
-      otherPartnership: "clklgjj0jprwnmzhmproxjzd",
+      otherPartnership: SEED_IDS.partnership.readinessOtherPartnership0,
       claims: [
-        "ekjea4hn46fiq5mbdck5pst2",
-        "g4nbs9bhqherl3eax4d1fopz",
-        "ke0bfhdu9exb4apipisclhh4",
+        SEED_IDS.claim.readinessClaims2,
+        SEED_IDS.claim.readinessClaims3,
+        SEED_IDS.claim.readinessClaims7,
       ],
       otherClaim: null,
     }, // approved
@@ -1870,7 +1883,7 @@ async function ensureProjectReadinessScenarios(
     }
     {
       const rows = [projectId, secondProjectId].flatMap((projectId) =>
-        [actor, "cy9lv43gdjuksbp2dt3ipdb8", "tq9lhc4pcvh7m23xctv46olw"].map(
+        [actor, SEED_IDS.user.projectsUser6, SEED_IDS.user.projectsUser8].map(
           (userId) => ({ projectId, userId }),
         ),
       ) satisfies (typeof hostAssignments.$inferInsert)[];
@@ -1941,12 +1954,12 @@ async function ensureProjectReadinessScenarios(
 async function ensureProjectDetailScenarios(db: SeedDatabase): Promise<string[]> {
   const userIds: string[] = [];
 
-  const userId = "b9ry2h2ubab6tis178d99t25";
-  const hostId = "y3vs6znh5b2au1r8larqs1c8";
-  const partnerId = "g8vhp8dyvh25i35adrvuurai";
-  const unrelatedId = "dx661hzjhafd0l1uujpcmqfd";
-  const projectId = "zfwddd3leo8hgyzf2zqg4ka5";
-  const partnershipId = "rxp8zb3d1e4bxxl3iln80q89";
+  const userId = SEED_IDS.user.projectDetailUserId;
+  const hostId = SEED_IDS.organization.projectDetailHostId;
+  const partnerId = SEED_IDS.organization.projectDetailPartnerId;
+  const unrelatedId = SEED_IDS.organization.projectDetailUnrelatedId;
+  const projectId = SEED_IDS.project.projectDetailProjectId;
+  const partnershipId = SEED_IDS.partnership.projectDetailPartnershipId;
   const assignedAt = new Date("2024-02-01T10:00:00.000Z");
   const updatedAt = new Date("2024-02-02T10:00:00.000Z");
 
@@ -2048,50 +2061,50 @@ async function ensureProjectDetailScenarios(db: SeedDatabase): Promise<string[]>
 async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
   const userIds: string[] = [];
 
-  const userId = "jir0evdydult8a6bs4zn9nof";
-  const hostId = "d7mj5abcpjlp433v6xveq0xc";
-  const foreignHostId = "bm03ehh30ylx3eh32xzlm0li";
-  const partnerId = "z7s6cxlk5ix6xpjd45nf0syj";
-  const secondPartnerId = "om6l4k0d4454dbi59xs6an9i";
-  const unrelatedId = "xpajvpxll5xfoqlql3p1j557";
-  const alphaId = "ydkxm6dm66gz2nwqtf4fdogz";
-  const betaId = "rcv3v5zci48pu3jvaq6mgse3";
-  const climateId = "c6fx5qgb3hzbvggwe5bvldgd";
-  const foreignId = "jl6dlxaq2upt0smkcgprnlwk";
-  const archivedId = "s7hehnz4kzwdtfoh7sgaia63";
+  const userId = SEED_IDS.user.projectListUserId;
+  const hostId = SEED_IDS.organization.projectListHostId;
+  const foreignHostId = SEED_IDS.organization.projectListForeignHostId;
+  const partnerId = SEED_IDS.organization.projectListPartnerId;
+  const secondPartnerId = SEED_IDS.organization.projectListSecondPartnerId;
+  const unrelatedId = SEED_IDS.organization.projectListUnrelatedId;
+  const alphaId = SEED_IDS.project.projectListAlphaId;
+  const betaId = SEED_IDS.project.projectListBetaId;
+  const climateId = SEED_IDS.project.projectListClimateId;
+  const foreignId = SEED_IDS.project.projectListForeignId;
+  const archivedId = SEED_IDS.project.projectListArchivedId;
   const generatedIds = [
-    "uublntsdq8phzxitszl5pphh",
-    "m96f40eqatgg1kjfdf7eit4r",
-    "wz481cam626hakr70llfmd9h",
-    "d1eexz5h1rsdn133vbre1dzs",
-    "cor2ktk9tilsmocpeho1v9xa",
-    "vop5splkx8r053t5z04lecml",
-    "acq67i27s9wr0afmjyw5k69j",
-    "l6u9jegawid2bvoucwjd1fzv",
-    "ayuk6zy78uiccgbglrrvljyu",
-    "bqo2bj5avlv2r2g5c5u1mjib",
-    "r9w50lfsctegegci5olvsfef",
-    "z5pbxp6kzwnn121zj9w8189u",
-    "viqjik69q2na0xzor8qu93gf",
-    "s6awv84wu2u993g1ft9ybzrl",
-    "i70ipwb3ane9pyarekayxdp0",
-    "wk0agdfuz53imcvvhthk3md1",
-    "mi6y9u5x2f8orjzxlrw301op",
-    "iu8stqw5gvje2ixvc8457n88",
-    "y8drj5vslb777smskw4u4ae8",
-    "g0gg06kvv8uteahrgyn620pg",
-    "ntkxph615bxqdvsyjvdla9yu",
-    "pv0hqiw1aob6astt8bnkrfre",
-    "gqrwewm5ce4uiuqwah8cbg67",
-    "wp88zd1er5on3wfhng8xduuu",
-    "qmklifbkbe8hh4gwcyod79db",
-    "dk37thtvz40czzokbqgfhsoz",
+    SEED_IDS.project.projectListGeneratedIds18,
+    SEED_IDS.project.projectListGeneratedIds11,
+    SEED_IDS.project.projectListGeneratedIds23,
+    SEED_IDS.project.projectListGeneratedIds4,
+    SEED_IDS.project.projectListGeneratedIds3,
+    SEED_IDS.project.projectListGeneratedIds20,
+    SEED_IDS.project.projectListGeneratedIds0,
+    SEED_IDS.project.projectListGeneratedIds10,
+    SEED_IDS.project.projectListGeneratedIds1,
+    SEED_IDS.project.projectListGeneratedIds2,
+    SEED_IDS.project.projectListGeneratedIds16,
+    SEED_IDS.project.projectListGeneratedIds25,
+    SEED_IDS.project.projectListGeneratedIds19,
+    SEED_IDS.project.projectListGeneratedIds17,
+    SEED_IDS.project.projectListGeneratedIds8,
+    SEED_IDS.project.projectListGeneratedIds21,
+    SEED_IDS.project.projectListGeneratedIds12,
+    SEED_IDS.project.projectListGeneratedIds9,
+    SEED_IDS.project.projectListGeneratedIds24,
+    SEED_IDS.project.projectListGeneratedIds6,
+    SEED_IDS.project.projectListGeneratedIds13,
+    SEED_IDS.project.projectListGeneratedIds14,
+    SEED_IDS.project.projectListGeneratedIds7,
+    SEED_IDS.project.projectListGeneratedIds22,
+    SEED_IDS.project.projectListGeneratedIds15,
+    SEED_IDS.project.projectListGeneratedIds5,
   ];
   const partnershipIds = [
-    "g8c463xpa602g4fqazlasxwx",
-    "sks92zecje0ielxkfcb45xk5",
-    "ljl061dqzmh8j88uieasvgr7",
-    "tdp3qojgwt7j3emex6i8nz9t",
+    SEED_IDS.partnership.projectListPartnershipIds0,
+    SEED_IDS.partnership.projectListPartnershipIds2,
+    SEED_IDS.partnership.projectListPartnershipIds1,
+    SEED_IDS.partnership.projectListPartnershipIds3,
     ...generatedIds.map((id) => `list-link-${id}`),
   ];
   function getGeneratedDate(index: number) {
@@ -2254,17 +2267,17 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
   const listActors = [
     {
       role: ORGANIZATION_ROLES.Participant,
-      id: "r4lbmg3rydm9whnikhr8uk39",
+      id: SEED_IDS.user.projectsUser12,
       email: "r4lbmg3rydm9whnikhr8uk39@example.org",
     },
     {
       role: ORGANIZATION_ROLES.ProjectCoordinator,
-      id: "weegow6wmcg6tmuc0zy0v5s4",
+      id: SEED_IDS.user.projectsUser13,
       email: "weegow6wmcg6tmuc0zy0v5s4@example.org",
     },
     {
       role: `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
-      id: "u5j0wa97s7pbjl95gb8pju0h",
+      id: SEED_IDS.user.projectsUser14,
       email: "kpdbi3tev42k6epgarud6fie@example.org",
     },
   ] as const;
@@ -2309,13 +2322,16 @@ async function ensureProjectRelationshipScenarios(
 ): Promise<string[]> {
   const userIds: string[] = [];
 
-  const userId = "qxc6jkqps0gxemssxs47zjye";
-  const hostingOrganizationId = "co377paio4zfz1q1bx4whjkw";
-  const partnerOrganizationId = "c12l1bn346722vdnxwfacqbx";
-  const unrelatedOrganizationId = "hbsugr6cxctsen7wi6e27r20";
-  const projectId = "i4vsksni1dnopm3ja3px21o0";
-  const archivedProjectId = "uyjahddmbuz8d8pl10jd3al4";
-  const partnershipId = "sq5kowvk1v13377kn53ktu0a";
+  const userId = SEED_IDS.user.projectRelationshipUserId;
+  const hostingOrganizationId =
+    SEED_IDS.organization.projectRelationshipHostingOrganizationId;
+  const partnerOrganizationId =
+    SEED_IDS.organization.projectRelationshipPartnerOrganizationId;
+  const unrelatedOrganizationId =
+    SEED_IDS.organization.projectRelationshipUnrelatedOrganizationId;
+  const projectId = SEED_IDS.project.projectRelationshipProjectId;
+  const archivedProjectId = SEED_IDS.project.projectRelationshipArchivedProjectId;
+  const partnershipId = SEED_IDS.partnership.projectRelationshipPartnershipId;
 
   const now = new Date();
   {
@@ -2402,14 +2418,16 @@ async function ensureProjectDiscoveryScenarios(
 ): Promise<string[]> {
   const userIds: string[] = [];
 
-  const coord = "pny51623ftjwk3daduipft1b";
-  const stranger = "txknveoktb9jsg1svevjy5yd";
-  const host = "j2h6zbf5nluzl5i69updxed9";
-  const partner = "k9p9253nsdvi27fggezdv43d";
-  const assignedProject = "csxxr9afisxdchhhwad3g3x0";
-  const foreignProject = "lciizaru87wgg6zi7vn08d6h";
-  const assignedPartnership = "a6abn8gwmau5e291yiku1a2u";
-  const foreignPartnership = "vthey54pz5ed9yh7rozxrp1q";
+  const coord = SEED_IDS.user.projectDiscoveryCoord;
+  const stranger = SEED_IDS.user.projectDiscoveryStranger;
+  const host = SEED_IDS.organization.projectDiscoveryHost;
+  const partner = SEED_IDS.organization.projectDiscoveryPartner;
+  const assignedProject = SEED_IDS.project.projectDiscoveryAssignedProject;
+  const foreignProject = SEED_IDS.project.projectDiscoveryForeignProject;
+  const assignedPartnership =
+    SEED_IDS.partnership.projectDiscoveryAssignedPartnership;
+  const foreignPartnership =
+    SEED_IDS.partnership.projectDiscoveryForeignPartnership;
 
   const now = new Date();
   {
@@ -2503,14 +2521,14 @@ async function ensureProjectScenarios(db: SeedDatabase): Promise<string[]> {
 }
 
 async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]> {
-  const host = "ycvohy4h4kwieafr6898z8kv";
-  const partner = "y1trk5u6aktm6ydac8hkedqw";
-  const other = "qm1q3p423syonhiz03hapvo2";
-  const coordinator = "yk6wubi79tj3ebwz8yd9x08t";
-  const candidate = "qvgz7f1iyhnu7gp1lgxxo0xr";
-  const unassigned = "f5i4bmbo7wrhagns7u47kg9i";
-  const currentAcceptor = "e7oprdkk819b6w8w68u761vp";
-  const oldAcceptor = "yufbvup9o0m6ohqvfhu3fxv2";
+  const host = SEED_IDS.organization.participationHost;
+  const partner = SEED_IDS.organization.participationPartner;
+  const other = SEED_IDS.organization.participationOther;
+  const coordinator = SEED_IDS.user.participationCoordinator;
+  const candidate = SEED_IDS.user.participationCandidate;
+  const unassigned = SEED_IDS.user.participationUnassigned;
+  const currentAcceptor = SEED_IDS.user.participationCurrentAcceptor;
+  const oldAcceptor = SEED_IDS.user.participationOldAcceptor;
   const email = "qvgz7f1iyhnu7gp1lgxxo0xr@example.org";
 
   const version = { id: "fixture-v1", contentHash: "fixture-hash" };
@@ -2617,11 +2635,11 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
     await ensureSeedAgreementAcceptances(db, rows);
   }
 
-  const mixedUser = "r8ekilum3fbuhjkmk4hkx9lc",
-    owner = "pht5o8jyya3mxpghmyuvllso",
-    secondAssignee = "bccrlmqtthueqebjmltfaa3n";
-  const missingAgreement = "jwgmepz6x7kuk7n3y5c4cmkx",
-    missingProfile = "h6fk257q3py9rhd1rmo60jcz";
+  const mixedUser = SEED_IDS.user.participationMixedUser,
+    owner = SEED_IDS.user.participationOwner,
+    secondAssignee = SEED_IDS.user.participationSecondAssignee;
+  const missingAgreement = SEED_IDS.user.participationMissingAgreement,
+    missingProfile = SEED_IDS.user.participationMissingProfile;
   {
     const rows = [
       {
@@ -2642,7 +2660,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
   {
     const rows = [
       {
-        id: "kpdndnmev8v79jf62vod9cod",
+        id: SEED_IDS.membership.participationId,
         userId: candidate,
         organizationId: partner,
         role: ORGANIZATION_ROLES.ProjectCoordinator,
@@ -2744,90 +2762,90 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
     } as const;
     const participationScenarioIds = [
       {
-        project: "qy0kb70zdth2bsozm38lyyal",
-        own: "buqd9fv4ybyktdek9p64m7jm",
-        foreign: "mgz4dfav64uk03sv0h0aa2es",
-        rowId: "smgigb9xx99tr8kqpc2w5amk",
+        project: SEED_IDS.project.participationProject8,
+        own: SEED_IDS.partnership.participationOwn1,
+        foreign: SEED_IDS.partnership.participationForeign3,
+        rowId: SEED_IDS.participation.participationRowId3,
         token: null,
         claim: null,
       }, // empty
       {
-        project: "niym6uhqv3ab67no8xczirfm",
-        own: "qb2kl16qn1hu2ohtrryck7m6",
-        foreign: "bxq8dw1qgqr1ado7aj2t5pnh",
-        rowId: "sl84191j69cov4uufubu7vr1",
+        project: SEED_IDS.project.participationProject6,
+        own: SEED_IDS.partnership.participationOwn6,
+        foreign: SEED_IDS.partnership.participationForeign0,
+        rowId: SEED_IDS.participation.participationsParticipation0,
         token: null,
         claim: null,
       }, // email
       {
-        project: "jkpjg005rsnnk5wu8vu19l4y",
-        own: "ey2yp9oh84cx5ejrx2r34vod",
-        foreign: "wuwbqgb048nzlvs9i48hp5ix",
-        rowId: "mfbuvifruot8cgf124qosc6w",
+        project: SEED_IDS.project.participationProject3,
+        own: SEED_IDS.partnership.participationOwn2,
+        foreign: SEED_IDS.partnership.participationForeign9,
+        rowId: SEED_IDS.participation.participationsParticipation1,
         token: null,
         claim: null,
       }, // mixed
       {
-        project: "pcejbr6jijv9xku2ryk2cmcg",
-        own: "oe0a8sv4vhr01f9m3uj9dqty",
-        foreign: "w8dgvghe9vqy9betz3vfnr3c",
-        rowId: "tsveb7nvf5usg4bv477yeutt",
+        project: SEED_IDS.project.participationProject7,
+        own: SEED_IDS.partnership.participationOwn4,
+        foreign: SEED_IDS.partnership.participationForeign8,
+        rowId: SEED_IDS.participation.participationsParticipation2,
         token: null,
         claim: null,
       }, // old-email
       {
-        project: "iy7j18jcstttime1pek0v8i6",
-        own: "gywyrmx7v842y3173n2m691w",
-        foreign: "m85eipkiekpa8p4gjyt14rmr",
-        rowId: "xrzxvkbeut3c8pei21jreniq",
-        token: "x1k1ow5nlxfpievn0jfkzwmd",
+        project: SEED_IDS.project.participationProject2,
+        own: SEED_IDS.partnership.participationOwn3,
+        foreign: SEED_IDS.partnership.participationForeign2,
+        rowId: SEED_IDS.participation.participationRowId4,
+        token: SEED_IDS.entryToken.participationToken1,
         claim: null,
       }, // foreign-invitation
       {
-        project: "u8ttgplmlamal88vzjc71ghm",
-        own: "a5uk96o7uxw9eqfdmtdjzcsg",
-        foreign: "lm51d924zdrwauk77oy66rwy",
-        rowId: "gtdyvctdawbdeo1ta2cspoa2",
-        token: "rethju5g600q1rp1n8atpz30",
+        project: SEED_IDS.project.participationProject9,
+        own: SEED_IDS.partnership.participationOwn0,
+        foreign: SEED_IDS.partnership.participationForeign1,
+        rowId: SEED_IDS.participation.participationRowId1,
+        token: SEED_IDS.entryToken.participationToken0,
         claim: null,
       }, // own-invitation
       {
-        project: "y2lt460o2dp1zdz3dxtc7az0",
-        own: "rrgnrplv6g4wx6etvt0uorp0",
-        foreign: "v29eadhvqwogioedzai0lpwi",
-        rowId: "ypo125qjxk231y00bi0u4fw2",
+        project: SEED_IDS.project.participationProject10,
+        own: SEED_IDS.partnership.participationOwn8,
+        foreign: SEED_IDS.partnership.participationForeign7,
+        rowId: SEED_IDS.participation.participationsParticipation3,
         token: null,
         claim: null,
       }, // referenced
       {
-        project: "bvddx0xi4oj1umogqqpe1f0z",
-        own: "sxpfxlvmh9fqlagl4p9ho9ry",
-        foreign: "yid1un03hn6x3snfhh607n7q",
-        rowId: "g303rlwxq17ioi7opy96382x",
+        project: SEED_IDS.project.participationProject1,
+        own: SEED_IDS.partnership.participationOwn9,
+        foreign: SEED_IDS.partnership.participationForeign10,
+        rowId: SEED_IDS.participation.participationsParticipation4,
         token: null,
-        claim: "p485wpswqwia8fhgbklnsc01",
+        claim: SEED_IDS.claim.participationClaim0,
       }, // submitted
       {
-        project: "k585rjkr7rymcz8wju1oz5ey",
-        own: "oh6z766sc05cjol3glr9jyzf",
-        foreign: "q4r357azwi64ibqzic5vhy0o",
-        rowId: "d8cqmpxlvlyjvvki4gyzl32f",
+        project: SEED_IDS.project.participationProject4,
+        own: SEED_IDS.partnership.participationOwn5,
+        foreign: SEED_IDS.partnership.participationForeign5,
+        rowId: SEED_IDS.participation.participationsParticipation5,
         token: null,
-        claim: "umjodh9mfgj2aee9vkmub98j",
+        claim: SEED_IDS.claim.participationClaim1,
       }, // correction
       {
-        project: "a4ol9541l649heo3fdt1sdsq",
-        own: "r11iu43lohcnxcs3immmv7q5",
-        foreign: "t9ykibatvqqu4ogg8xfkm6jy",
-        rowId: "doobmn3bzc1yczqr5z0msqzt",
+        project: SEED_IDS.project.participationProject0,
+        own: SEED_IDS.partnership.participationOwn7,
+        foreign: SEED_IDS.partnership.participationForeign6,
+        rowId: SEED_IDS.participation.participationRowId0,
         token: null,
         claim: null,
       }, // report
       {
-        project: "kpygjkont86bnf0papoa4kc8",
-        own: "wy0ehkrybncqx4tdjx8hmb8r",
-        foreign: "o98tmj5zsnen8q1vw8qpwtgj",
-        rowId: "lbkm0mqf8ntop4qrvokn65kv",
+        project: SEED_IDS.project.participationProject5,
+        own: SEED_IDS.partnership.participationOwn10,
+        foreign: SEED_IDS.partnership.participationForeign4,
+        rowId: SEED_IDS.participation.participationRowId2,
         token: null,
         claim: null,
       }, // report-empty
@@ -2914,7 +2932,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
         {
           const rows = [
             {
-              id: "os88qkwub98r4wuyue9pud16",
+              id: SEED_IDS.journey.participationId,
               projectParticipantId: rowId,
               origin: "Riga",
               destination: "Berlin",
@@ -2941,14 +2959,14 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
         {
           const rows = [
             {
-              id: "ahz5je5a4nth2jst8wamm1vo",
+              id: SEED_IDS.participation.participationsParticipation6,
               projectId: project,
               representedOrganizationId: partner,
               displayName: "Amy Unlinked",
               email: "ut1b4diuxogz62bx2lp6ei4k@example.org",
             },
             {
-              id: "g885oopdixosp0sawcpcs3yj",
+              id: SEED_IDS.participation.participationsParticipation7,
               projectId: project,
               representedOrganizationId: partner,
               displayName: "Zoe Current",
@@ -2957,7 +2975,7 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
               country: "PT",
             },
             {
-              id: "yx2j5gov3tgk9304xs8j4hke",
+              id: SEED_IDS.participation.participationsParticipation8,
               projectId: project,
               representedOrganizationId: other,
               displayName: "Yan Outdated",
@@ -3017,11 +3035,11 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
         },
       ];
       const ids = [
-        "l0w9g4n0cbb3wza1tzuu847m",
-        "x7t57jutj2wmcih2pvlqjopb",
-        "rornt3es93uoymcfmw6md2he",
-        "h3ginec0jtgjtp8c9bxpkv2w",
-        "faev6x3yt3v8nynvbnvych45",
+        SEED_IDS.user.participationsUser10,
+        SEED_IDS.user.participationsUser11,
+        SEED_IDS.user.participationsUser12,
+        SEED_IDS.user.participationsUser13,
+        SEED_IDS.user.participationsUser14,
       ];
       const directoryEmails = [
         "l0w9g4n0cbb3wza1tzuu847m@example.org",
@@ -3075,28 +3093,28 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
     }
     {
       const ids = [
-        "t63xd4ofymlmp0al0qxd2vlj",
-        "rt2cyydpzmcdo28io5pph2db",
-        "zw71b90n0w4ujzk4mlmlbxtd",
-        "vy1ehwrj5u3j9lghkmu4qhko",
-        "g44wak6rn3hj020u4iw8ineq",
-        "uffzylfkiw7nf95obsdhulfg",
-        "vckhuuz4zfq95ygfpd3jrty2",
-        "f1gw8yvqbz78a5p3tdpjk9x9",
-        "vtq7ld6rtni257j6759aizsq",
-        "e41azp2t3vgfjb0a7dm2zyfb",
-        "d9g7za72p2k227ep6jsgnqsy",
-        "hl17dpmivnhjmgscsnokle95",
-        "vtxulzkhcck6w40nc0otb0gc",
-        "nl8jwh3w9wtq2o25u6hzru9b",
-        "k2zdnrt37uygy4psomwvtr3u",
-        "yspskow867h74685x073obff",
-        "va1eqcn3nj3y9xpknh98rfn4",
-        "m2rona103x576xenlao9avtl",
-        "j779j3h8zt61xqrqgv2657sf",
-        "aqgjsirvhbep9cpu26ui1j83",
-        "zm1kpzoo8r265izy4ewoa2ma",
-        "mdfm7dbi38yc0wcvnng2rxni",
+        SEED_IDS.user.participationsUser15,
+        SEED_IDS.user.participationsUser16,
+        SEED_IDS.user.participationsUser17,
+        SEED_IDS.user.participationsUser18,
+        SEED_IDS.user.participationsUser19,
+        SEED_IDS.user.participationsUser20,
+        SEED_IDS.user.participationsUser21,
+        SEED_IDS.user.participationsUser22,
+        SEED_IDS.user.participationsUser23,
+        SEED_IDS.user.participationsUser24,
+        SEED_IDS.user.participationsUser25,
+        SEED_IDS.user.participationsUser26,
+        SEED_IDS.user.participationsUser27,
+        SEED_IDS.user.participationsUser28,
+        SEED_IDS.user.participationsUser29,
+        SEED_IDS.user.participationsUser30,
+        SEED_IDS.user.participationsUser31,
+        SEED_IDS.user.participationsUser32,
+        SEED_IDS.user.participationsUser33,
+        SEED_IDS.user.participationsUser34,
+        SEED_IDS.user.participationsUser35,
+        SEED_IDS.user.participationsUser36,
       ];
       {
         const rows = ids.map((id) => ({
@@ -3148,58 +3166,58 @@ async function ensureParticipationScenarios(db: SeedDatabase): Promise<string[]>
     secondAssignee,
     missingAgreement,
     missingProfile,
-    "l0w9g4n0cbb3wza1tzuu847m",
-    "x7t57jutj2wmcih2pvlqjopb",
-    "rornt3es93uoymcfmw6md2he",
-    "h3ginec0jtgjtp8c9bxpkv2w",
-    "faev6x3yt3v8nynvbnvych45",
-    "t63xd4ofymlmp0al0qxd2vlj",
-    "rt2cyydpzmcdo28io5pph2db",
-    "zw71b90n0w4ujzk4mlmlbxtd",
-    "vy1ehwrj5u3j9lghkmu4qhko",
-    "g44wak6rn3hj020u4iw8ineq",
-    "uffzylfkiw7nf95obsdhulfg",
-    "vckhuuz4zfq95ygfpd3jrty2",
-    "f1gw8yvqbz78a5p3tdpjk9x9",
-    "vtq7ld6rtni257j6759aizsq",
-    "e41azp2t3vgfjb0a7dm2zyfb",
-    "d9g7za72p2k227ep6jsgnqsy",
-    "hl17dpmivnhjmgscsnokle95",
-    "vtxulzkhcck6w40nc0otb0gc",
-    "nl8jwh3w9wtq2o25u6hzru9b",
-    "k2zdnrt37uygy4psomwvtr3u",
-    "yspskow867h74685x073obff",
-    "va1eqcn3nj3y9xpknh98rfn4",
-    "m2rona103x576xenlao9avtl",
-    "j779j3h8zt61xqrqgv2657sf",
-    "aqgjsirvhbep9cpu26ui1j83",
-    "zm1kpzoo8r265izy4ewoa2ma",
-    "mdfm7dbi38yc0wcvnng2rxni",
+    SEED_IDS.user.participationsUser10,
+    SEED_IDS.user.participationsUser11,
+    SEED_IDS.user.participationsUser12,
+    SEED_IDS.user.participationsUser13,
+    SEED_IDS.user.participationsUser14,
+    SEED_IDS.user.participationsUser15,
+    SEED_IDS.user.participationsUser16,
+    SEED_IDS.user.participationsUser17,
+    SEED_IDS.user.participationsUser18,
+    SEED_IDS.user.participationsUser19,
+    SEED_IDS.user.participationsUser20,
+    SEED_IDS.user.participationsUser21,
+    SEED_IDS.user.participationsUser22,
+    SEED_IDS.user.participationsUser23,
+    SEED_IDS.user.participationsUser24,
+    SEED_IDS.user.participationsUser25,
+    SEED_IDS.user.participationsUser26,
+    SEED_IDS.user.participationsUser27,
+    SEED_IDS.user.participationsUser28,
+    SEED_IDS.user.participationsUser29,
+    SEED_IDS.user.participationsUser30,
+    SEED_IDS.user.participationsUser31,
+    SEED_IDS.user.participationsUser32,
+    SEED_IDS.user.participationsUser33,
+    SEED_IDS.user.participationsUser34,
+    SEED_IDS.user.participationsUser35,
+    SEED_IDS.user.participationsUser36,
   ];
 }
 
 async function ensureSubmissionRoleUsers(db: SeedDatabase): Promise<string[]> {
-  const host = "rvcaur1km9mca7jjin85kj5m",
-    partner = "k2nbcl2vpykg3cxy9f8lz3fl";
-  const actor = "uxeutxj67uas64bo7vsey4sr",
-    participantUser = "zvs4tq30t3y59whwb4t3knqp";
+  const host = SEED_IDS.organization.submissionRoleHost,
+    partner = SEED_IDS.organization.submissionRolePartner;
+  const actor = SEED_IDS.user.submissionRoleActor,
+    participantUser = SEED_IDS.user.submissionRoleParticipantUser;
   const now = new Date();
-  const userIds = [actor, participantUser];
-  const matrixPersonIds = [
-    "gxv18y1pzjnp9c662zti90y7",
-    "hhwhygf6tfpm9wspoko2bya8",
-    "jkbudjbygh7pecbslkalsh3f",
-    "uxyaz38ise25t23otabtuo5t",
-    "pdfzs3i83b72k15yw2has3ep",
-    "d28e0jt5scc82g7zcop5og4y",
-    "k7o2d2mrkj6t3i2if6jx17ox",
-    "cjzyp4u7nmguzlna05kw9b4i",
-    "lp4bh5itvvwgxhjjfi8lp53i",
-    "aac5ia5l456jhxkqtve53kw9",
-    "wyiaggmoo57nbdfxsuro92ly",
-    "tsqcugbwilakc07141vpx353",
-    "nkd49pvzgccbn3c5vj77u935",
-    "qj684zdgr4rzy2wn6cf2pkev",
+  const userIds: string[] = [actor, participantUser];
+  const matrixPersonIds: string[] = [
+    SEED_IDS.user.submissionUser2,
+    SEED_IDS.user.submissionUser3,
+    SEED_IDS.user.submissionUser4,
+    SEED_IDS.user.submissionUser5,
+    SEED_IDS.user.submissionUser6,
+    SEED_IDS.user.submissionUser7,
+    SEED_IDS.user.submissionUser8,
+    SEED_IDS.user.submissionUser9,
+    SEED_IDS.user.submissionUser10,
+    SEED_IDS.user.submissionUser11,
+    SEED_IDS.user.submissionUser12,
+    SEED_IDS.user.submissionUser13,
+    SEED_IDS.user.submissionUser14,
+    SEED_IDS.user.submissionUser15,
   ];
   let matrixPersonIndex = 0;
   for (const side of ["host", "partner"] as const)
@@ -3244,11 +3262,11 @@ async function ensureSubmissionRoleUsers(db: SeedDatabase): Promise<string[]> {
 }
 
 async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
-  const host = "rvcaur1km9mca7jjin85kj5m",
-    partner = "k2nbcl2vpykg3cxy9f8lz3fl",
-    other = "gxian35umt6xb38qa9liisys";
-  const actor = "uxeutxj67uas64bo7vsey4sr",
-    participantUser = "zvs4tq30t3y59whwb4t3knqp";
+  const host = SEED_IDS.organization.submissionRoleHost,
+    partner = SEED_IDS.organization.submissionRolePartner,
+    other = SEED_IDS.organization.submissionOther;
+  const actor = SEED_IDS.user.submissionRoleActor,
+    participantUser = SEED_IDS.user.submissionRoleParticipantUser;
   const [account, alternate] = SUBMISSION_PAYOUT_ACCOUNT_IDS;
 
   const now = new Date();
@@ -3332,82 +3350,82 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
   const userIds = await ensureSubmissionRoleUsers(db);
   const submissionScenarioIds = [
     {
-      project: "luh2gfkwy1qlbobg3fhggmz6",
-      "second-project": "sx0t9gmel9o0ounwrqpjlla3",
-      own: "m2tamlimqmu4p3073psrkb2u",
-      foreign: "izdjfs9otehxynijhxhchvb9",
-      elsewhere: "ewmn8f8p709ttn877rdihhxk",
-      robin: "bc2g6sjjzrlcpdkoqscvq2zh",
-      sam: "qgxc4i0fduva2k6dy99xqojt",
-      outsider: "da5vgzf6c2h4o4cq4t2vogik",
-      third: "f5h3tu1f0i7zonmgdauskb44",
-      claim: "ldnogv8cruaflqrhrhbqx1qj",
-      proof: "pct9jkyjz1mdy9bgxaw472lc",
+      project: SEED_IDS.project.submissionProject3,
+      "second-project": SEED_IDS.project.submissionSecondProject3,
+      own: SEED_IDS.partnership.submissionOwn4,
+      foreign: SEED_IDS.partnership.submissionForeign2,
+      elsewhere: SEED_IDS.partnership.submissionElsewhere2,
+      robin: SEED_IDS.participation.submissionParticipation0,
+      sam: SEED_IDS.participation.submissionParticipation1,
+      outsider: SEED_IDS.participation.submissionParticipation2,
+      third: SEED_IDS.participation.submissionParticipation3,
+      claim: SEED_IDS.claim.submissionClaim1,
+      proof: SEED_IDS.proofDocument.submissionProof2,
     }, // editable
     {
-      project: "gsomgvvmjy64i4whn11obpy6",
-      "second-project": "pplpkq7blor7o4emvfb2aa5i",
-      own: "kk2cafpklhtfyiw2xqjkrdtg",
-      foreign: "fzoa5tg6otyfo5742en8gd76",
-      elsewhere: "f9wp76921jciuptwaxaimumq",
-      robin: "dg5ye1kjmzpabhztlghfkzx2",
-      sam: "dhf16yprotcujlx82vs3iuyp",
-      outsider: "p4shlsz7b7fqkcz5dbinjakk",
-      third: "heutu0d8adspp94g7tsp82k6",
-      claim: "sxn9qzymvu56hdd7yy2cxcmr",
-      proof: "peem2suosx2y21f8bhu7t9r6",
+      project: SEED_IDS.project.submissionProject2,
+      "second-project": SEED_IDS.project.submissionSecondProject2,
+      own: SEED_IDS.partnership.submissionOwn3,
+      foreign: SEED_IDS.partnership.submissionForeign1,
+      elsewhere: SEED_IDS.partnership.submissionElsewhere3,
+      robin: SEED_IDS.participation.submissionParticipation4,
+      sam: SEED_IDS.participation.submissionParticipation5,
+      outsider: SEED_IDS.participation.submissionParticipation6,
+      third: SEED_IDS.participation.submissionParticipation7,
+      claim: SEED_IDS.claim.submissionClaim3,
+      proof: SEED_IDS.proofDocument.submissionProof3,
     }, // submitted
     {
-      project: "dbwtgd36aiev0ivcgrf73zlj",
-      "second-project": "v05h7mn87olv2ycypdq1uo7z",
-      own: "kcpn5m5gvh8765khby63bumd",
-      foreign: "bsql0y7jhg7c28qd8pgec8if",
-      elsewhere: "csw8oinkqhlr1bl5dyw7ukqo",
-      robin: "mng7k5xp3zb04hkxxjmtqznj",
-      sam: "pal7vxgj2tmdp0ege6onf0ov",
-      outsider: "ev1fb9mfco8ieglzme7lom8g",
-      third: "tbzrz76i1eaoqc85u7ysvpx8",
-      claim: "t3ssn4t8gxv3a3ggz2n6h5r0",
-      proof: "wzbmtsf4n668w43mag53a7tr",
+      project: SEED_IDS.project.submissionProject1,
+      "second-project": SEED_IDS.project.submissionSecondProject4,
+      own: SEED_IDS.partnership.submissionOwn2,
+      foreign: SEED_IDS.partnership.submissionForeign0,
+      elsewhere: SEED_IDS.partnership.submissionElsewhere1,
+      robin: SEED_IDS.participation.submissionParticipation8,
+      sam: SEED_IDS.participation.submissionParticipation9,
+      outsider: SEED_IDS.participation.submissionParticipation10,
+      third: SEED_IDS.participation.submissionParticipation11,
+      claim: SEED_IDS.claim.submissionClaim4,
+      proof: SEED_IDS.proofDocument.submissionProof4,
     }, // rejected
     {
-      project: "bejcs4i97dof6cmvyb3luodw",
-      "second-project": "wzo1te021cpxcj9rq4blcfyg",
-      own: "gwpumb113ddri3v28lhms4uy",
-      foreign: "q0uzkmbjotnvk5l316qpmxh4",
-      elsewhere: "bznqh94nptyxvpk7ybs7fwa6",
-      robin: "t4qu1gu6pztjgathhqwrnvud",
-      sam: "ew1kqx424ysv4mocn6awopne",
-      outsider: "e8009v5lorrjbrlb13f1g52g",
-      third: "ogqcxxymvrunn0l92z8bkj04",
-      claim: "e7ul210pvegdxxd148vs9u23",
-      proof: "jaydcbf1bqenp5nfjez5vaeh",
+      project: SEED_IDS.project.submissionProject0,
+      "second-project": SEED_IDS.project.submissionSecondProject5,
+      own: SEED_IDS.partnership.submissionOwn1,
+      foreign: SEED_IDS.partnership.submissionForeign5,
+      elsewhere: SEED_IDS.partnership.submissionElsewhere0,
+      robin: SEED_IDS.participation.submissionParticipation12,
+      sam: SEED_IDS.participation.submissionParticipation13,
+      outsider: SEED_IDS.participation.submissionParticipation14,
+      third: SEED_IDS.participation.submissionParticipation15,
+      claim: SEED_IDS.claim.submissionClaim0,
+      proof: SEED_IDS.proofDocument.submissionProof1,
     }, // approved
     {
-      project: "t82gnzi6yaxobn0c8mfcsu0b",
-      "second-project": "fdkrcwhb07pvxb7ka561pt3j",
-      own: "viop9j0fgg4y8jvvg1afar1v",
-      foreign: "pk0bkccpbwbe18a4fywwp74b",
-      elsewhere: "x44sqidcb7tj53zpjsk2ej1f",
-      robin: "ewx7htm2lf7avxu1ajkzf0u6",
-      sam: "ur9n1nv3vv9o8xeyc50bcusj",
-      outsider: "jh5o7w7tz6eqzb0aabxdpdr0",
-      third: "likedwohbzvrl74w78h8xp9a",
-      claim: "xdp911g90lrnw5l14s80m2os",
-      proof: "a8xuggw1tmx8j18wmqyybx2t",
+      project: SEED_IDS.project.submissionProject5,
+      "second-project": SEED_IDS.project.submissionSecondProject1,
+      own: SEED_IDS.partnership.submissionOwn5,
+      foreign: SEED_IDS.partnership.submissionForeign4,
+      elsewhere: SEED_IDS.partnership.submissionElsewhere5,
+      robin: SEED_IDS.participation.submissionParticipation16,
+      sam: SEED_IDS.participation.submissionParticipation17,
+      outsider: SEED_IDS.participation.submissionParticipation18,
+      third: SEED_IDS.participation.submissionParticipation19,
+      claim: SEED_IDS.claim.submissionClaim5,
+      proof: SEED_IDS.proofDocument.submissionProof0,
     }, // paid
     {
-      project: "qjgboeu1c40q7s1934akvqo6",
-      "second-project": "ecddy5i6el5prpfepmnw0mrg",
-      own: "cpa0z6v9653245f5h1zgzk4s",
-      foreign: "l0oo403hnolh3507uuljivvc",
-      elsewhere: "peyc17o4u7xlozlevn5be6y2",
-      robin: "j31v4ka2dobbgqn1ipghxr63",
-      sam: "uh36vnua59x39wqks082aq9k",
-      outsider: "am1fvf3tengy5wa2yjfq1asw",
-      third: "diwbsj2a33ixrtt05mvdbtsx",
-      claim: "m7ucc9h6942vji76np31cwyc",
-      proof: "ycrm6550judv7pmx76z110dn",
+      project: SEED_IDS.project.submissionProject4,
+      "second-project": SEED_IDS.project.submissionSecondProject0,
+      own: SEED_IDS.partnership.submissionOwn0,
+      foreign: SEED_IDS.partnership.submissionForeign3,
+      elsewhere: SEED_IDS.partnership.submissionElsewhere4,
+      robin: SEED_IDS.participation.submissionParticipation20,
+      sam: SEED_IDS.participation.submissionParticipation21,
+      outsider: SEED_IDS.participation.submissionParticipation22,
+      third: SEED_IDS.participation.submissionParticipation23,
+      claim: SEED_IDS.claim.submissionClaim2,
+      proof: SEED_IDS.proofDocument.submissionProof5,
     }, // correction
   ] as const;
   const submissionScenarioNames = [
@@ -3512,17 +3530,17 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
 
     {
       const rows = [
-        { projectId: project, userId: "gxv18y1pzjnp9c662zti90y7" },
-        { projectId: project, userId: "jkbudjbygh7pecbslkalsh3f" },
-        { projectId: project, userId: "pdfzs3i83b72k15yw2has3ep" },
-        { projectId: project, userId: "k7o2d2mrkj6t3i2if6jx17ox" },
+        { projectId: project, userId: SEED_IDS.user.submissionUser2 },
+        { projectId: project, userId: SEED_IDS.user.submissionUser4 },
+        { projectId: project, userId: SEED_IDS.user.submissionUser6 },
+        { projectId: project, userId: SEED_IDS.user.submissionUser8 },
       ] satisfies (typeof hostAssignments.$inferInsert)[];
       await ensureSeedHostAssignments(db, rows);
     }
     {
       const rows = [
-        { partnershipId: own, userId: "wyiaggmoo57nbdfxsuro92ly" },
-        { partnershipId: own, userId: "nkd49pvzgccbn3c5vj77u935" },
+        { partnershipId: own, userId: SEED_IDS.user.submissionUser12 },
+        { partnershipId: own, userId: SEED_IDS.user.submissionUser14 },
       ] satisfies (typeof assignments.$inferInsert)[];
       await ensureSeedPartnerAssignments(db, rows);
     }
@@ -3566,7 +3584,7 @@ async function ensureSubmissionScenarios(db: SeedDatabase): Promise<string[]> {
     if (name === "correction") {
       const rows = [
         {
-          id: "a3xevm2bfj6nd3ku2qz1069w",
+          id: SEED_IDS.claimHistory.submissionId,
           claimId,
           eventType: "submitted",
           actorUserId: actor,
@@ -3603,15 +3621,15 @@ export async function ensureCostTrackerScenarios(
     ...journeyUserIds,
     ...partnershipUserIds,
     ...entitySearchUserIds,
-    "nol2sd5ye6kezxgvovi7q5f0",
-    "fhmed3rl5eut51ok5j81rodo",
-    "u58a1drm42imnu2fu4304ajw",
-    "fmpfieidsqgfc697xgnvynuw",
-    "u3pnyfkioeyhxtjks1ukfqag",
-    "d430zzfeqqkly5ldh6taz24l",
-    "g2wwxic53eufnwlmzl8vplam",
-    "hz7hq50rox2931x2g6fvnm9x",
-    "pn2pja15f3t265bd805eiztb",
-    "y81ceaq0pmv2oqk3wkvqd6xo",
+    SEED_IDS.user.claimCoordinator,
+    SEED_IDS.user.claimParticipant,
+    SEED_IDS.user.claimOwner,
+    SEED_IDS.user.costCoordinator,
+    SEED_IDS.user.costParticipantUser,
+    SEED_IDS.user.onboardingCoordinator,
+    SEED_IDS.user.onboardingJoined,
+    SEED_IDS.user.onboardingPending,
+    SEED_IDS.user.onboardingRevoked,
+    SEED_IDS.user.onboardingOutsider,
   ];
 }
