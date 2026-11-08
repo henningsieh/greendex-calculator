@@ -67,6 +67,25 @@ it("prefetches the Partnership snapshot for the coordination route", async () =>
   expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
 });
 
+it("retains a static header when the viewer has no active Organization", async () => {
+  mocks.query.mockRejectedValue(
+    new ORPCError("BAD_REQUEST", {
+      data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    }),
+  );
+
+  render(
+    await ParticipantPageHeader({
+      params: Promise.resolve({
+        partnershipId: "partnership-1",
+        participationId: "person-1",
+      }),
+    }),
+  );
+
+  expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+});
+
 it.each([undefined, "person-1"])(
   "retains a static header when context is refused (%s)",
   async (participationId) => {

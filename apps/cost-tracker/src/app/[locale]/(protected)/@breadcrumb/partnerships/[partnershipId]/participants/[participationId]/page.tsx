@@ -31,6 +31,9 @@ async function ParticipantDetailsBreadcrumbContent({
   );
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function ParticipantDetailsBreadcrumb({
   params,
 }: {

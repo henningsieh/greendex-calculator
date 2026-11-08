@@ -6,7 +6,8 @@ const fixture = new CostTrackerProjectFixture();
 
 function listURL(pageURL: string) {
   const url = new URL(pageURL);
-  return `${url.pathname}${url.search}`;
+  // Internal links render the active locale; compare the route, not the prefix.
+  return `${url.pathname.replace(/^\/[a-z]{2}(?=\/)/, "")}${url.search}`;
 }
 
 function isRPCRequest(url: string) {
@@ -47,9 +48,7 @@ test.describe("Cost Tracker Project production path", () => {
     await rpcResponse;
     await expect(page).toHaveURL(/search=Cost\+Tracker\+E2E/);
     await expect(
-      page.locator(
-        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
-      ),
+      page.locator(`a[href$="/projects/${fixture.projectId}"]`),
     ).toBeVisible();
     // Red if nuqs no longer writes list state to the URL or bypasses /api/rpc.
     expect(rpcRequests.length).toBeGreaterThan(0);
@@ -60,29 +59,24 @@ test.describe("Cost Tracker Project production path", () => {
       "Cost Tracker E2E",
     );
     await expect(
-      page.locator(
-        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
-      ),
+      page.locator(`a[href$="/projects/${fixture.projectId}"]`),
     ).toBeVisible();
     // Red if reloading loses the URL-backed state or its matching Project data.
     expect(listURL(page.url())).toBe(filteredListURL);
 
-    await page
-      .locator(
-        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
-      )
-      .click();
+    await page.locator(`a[href$="/projects/${fixture.projectId}"]`).click();
     await expect(page.getByTestId("project-workspace")).toHaveAttribute(
       "data-project-id",
       fixture.projectId,
     );
     const detailURL = page.url();
     await page.getByTestId("back-to-projects").click();
-    await expect(page).toHaveURL(filteredListURL);
-    // Red if Project detail no longer carries the exact local list URL home.
-    await expect(page.getByTestId("project-search")).toHaveValue(
-      "Cost Tracker E2E",
-    );
+    // The breadcrumb returns to the Projects table itself; list state is not
+    // carried through the detail page (no `returnTo` contract any more).
+    await expect(page).toHaveURL(/\/projects$/);
+
+    // No list state is carried back: the table opens unfiltered.
+    await expect(page.getByTestId("project-search")).toHaveValue("");
 
     await page.goBack();
     await expect(page).toHaveURL(detailURL);
@@ -91,17 +85,12 @@ test.describe("Cost Tracker Project production path", () => {
       fixture.projectId,
     );
     await page.goForward();
-    await expect(page).toHaveURL(filteredListURL);
-    await expect(page.getByTestId("project-search")).toHaveValue(
-      "Cost Tracker E2E",
-    );
+    await expect(page).toHaveURL(/\/projects$/);
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
     await expect(
-      page.locator(
-        `a[href="/projects/${fixture.projectId}"], a[href^="/projects/${fixture.projectId}?"]`,
-      ),
+      page.locator(`a[href$="/projects/${fixture.projectId}"]`),
     ).toBeVisible();
   });
 

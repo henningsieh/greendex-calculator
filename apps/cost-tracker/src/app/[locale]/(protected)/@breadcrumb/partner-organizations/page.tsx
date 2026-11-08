@@ -10,6 +10,9 @@ async function PartnerOrganizationsBreadcrumbContent() {
   return <BreadcrumbTrail items={[]} current={t("nav.partnerOrganizations")} />;
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function PartnerOrganizationsBreadcrumb() {
   return (
     <Suspense fallback={<BreadcrumbTrailFallback />}>

@@ -10,6 +10,9 @@ async function ClaimReviewQueueBreadcrumbContent() {
   return <BreadcrumbTrail items={[]} current={t("nav.claimReview")} />;
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function ClaimReviewQueueBreadcrumb() {
   return (
     <Suspense fallback={<BreadcrumbTrailFallback />}>

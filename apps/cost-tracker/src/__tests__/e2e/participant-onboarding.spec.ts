@@ -213,10 +213,10 @@ async function openPartnerParticipants(page: Page, projectName: string) {
   await page.getByTestId("project-scope-partner").click();
   await page
     .locator(
-      `a[href="/projects/${projectName === names.main ? ids.main : ids.other}"], a[href^="/projects/${projectName === names.main ? ids.main : ids.other}?"]`,
+      `a[href$="/projects/${projectName === names.main ? ids.main : ids.other}"]`,
     )
     .click();
-  await page.locator('a[href^="/partnerships/"][href$="/participants"]').click();
+  await page.locator('a[href*="/partnerships/"][href$="/participants"]').click();
   await expect(page.getByTestId("project-participations")).toBeVisible();
   // Text-free: the section above is already proven visible; the invitation
   // form interactions below prove the content (no heading-copy assertion).
@@ -835,11 +835,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(
       c.locator('[data-testid="assigned-projects-empty"]'),
     ).toBeVisible();
-    await expect(
-      c.locator(
-        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
-      ),
-    ).toHaveCount(0);
+    await expect(c.locator(`a[href$="/projects/${ids.main}"]`)).toHaveCount(0);
     await p.getByTestId("assign-group-organizer").click();
     await expect(
       p.locator('[role="alert"]:not(#__next-route-announcer__)'),
@@ -861,22 +857,10 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
       { role: ORGANIZATION_ROLES.ProjectCoordinator },
     ]);
     await c.goto("/projects");
-    await expect(
-      c.locator(
-        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
-      ),
-    ).toBeVisible();
-    await expect(
-      c.locator(
-        `a[href="/projects/${ids.other}"], a[href^="/projects/${ids.other}?"]`,
-      ),
-    ).toHaveCount(0);
-    await c
-      .locator(
-        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
-      )
-      .click();
-    await c.locator('a[href^="/partnerships/"][href$="/participants"]').click();
+    await expect(c.locator(`a[href$="/projects/${ids.main}"]`)).toBeVisible();
+    await expect(c.locator(`a[href$="/projects/${ids.other}"]`)).toHaveCount(0);
+    await c.locator(`a[href$="/projects/${ids.main}"]`).click();
+    await c.locator('a[href*="/partnerships/"][href$="/participants"]').click();
     await expect(c.getByTestId("project-participations")).toBeVisible();
     // Text-free: membership proven by assertJoined DB proof in this flow (no email copy).
     // (Joined-card presence already proven by the section assertion above.)
@@ -911,11 +895,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     await expect(
       c.locator('[data-testid="assigned-projects-empty"]'),
     ).toBeVisible();
-    await expect(
-      c.locator(
-        `a[href="/projects/${ids.main}"], a[href^="/projects/${ids.main}?"]`,
-      ),
-    ).toHaveCount(0);
+    await expect(c.locator(`a[href$="/projects/${ids.main}"]`)).toHaveCount(0);
     await c.goto(participantsURL);
     await expect(
       c.locator('[role="alert"]:not(#__next-route-announcer__)'),

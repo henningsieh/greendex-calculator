@@ -182,7 +182,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       page.locator('[data-testid="no-organization-access"]'),
     ).toBeVisible();
     // Text-free: no project-detail links leak to the unauthorized user.
-    await expect(page.locator('a[href^="/projects/"]')).toHaveCount(0);
+    await expect(page.locator('a[href*="/projects/"]')).toHaveCount(0);
     // Server authorization is separately covered by projects.integration.test.ts.
   });
 
@@ -256,7 +256,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await page.goto(mainProjectURL);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
-      await expect(page.locator('a[href="/claims/review"]')).toBeVisible();
+      await expect(page.locator('main a[href$="/claims/review"]')).toBeVisible();
     }
   });
 });

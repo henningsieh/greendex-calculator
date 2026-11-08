@@ -27,6 +27,9 @@ async function ClaimWorkspaceBreadcrumbContent({
   );
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function ClaimWorkspaceBreadcrumb({
   params,
 }: {

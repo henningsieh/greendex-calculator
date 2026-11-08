@@ -10,6 +10,9 @@ async function UserSettingsBreadcrumbContent() {
   return <BreadcrumbTrail items={[]} current={t("crumbs.userSettings")} />;
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function UserSettingsBreadcrumb() {
   return (
     <Suspense fallback={<BreadcrumbTrailFallback />}>

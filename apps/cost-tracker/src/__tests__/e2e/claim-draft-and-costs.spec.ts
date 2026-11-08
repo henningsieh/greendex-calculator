@@ -140,11 +140,7 @@ async function openPartnership(
     "aria-selected",
     "true",
   );
-  await page
-    .locator(
-      `a[href="/projects/${projectId}"], a[href^="/projects/${projectId}?"]`,
-    )
-    .click();
+  await page.locator(`a[href$="/projects/${projectId}"]`).click();
   await page
     .locator(
       `a[href="${destination === "participants" ? participantsURL : claimURL}"]`,

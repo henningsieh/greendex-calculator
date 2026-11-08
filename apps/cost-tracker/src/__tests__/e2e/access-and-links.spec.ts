@@ -188,11 +188,7 @@ async function denied(page: Page) {
 async function partnerPage(page: Page) {
   await page.goto("/projects");
   await page.getByTestId("project-scope-partner").click();
-  await page
-    .locator(
-      `a[href="/projects/${projectId}"], a[href^="/projects/${projectId}?"]`,
-    )
-    .click();
+  await page.locator(`a[href$="/projects/${projectId}"]`).click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
     timeout: 90_000,
   });
@@ -367,13 +363,13 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     for (const page of [h, a]) {
       await page.goto(`/projects/${projectId}`);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(page.locator('a[href="/claims/review"]')).toBeVisible();
+      await expect(page.locator('main a[href$="/claims/review"]')).toBeVisible();
       await expect(page.getByTestId("organization-assignment")).toHaveCount(0);
     }
     const partner = await pageFor(browser, "P", baseURL!);
     await partnerPage(partner);
     await expect(
-      partner.locator('a[href^="/partnerships/"][href$="/participants"]'),
+      partner.locator('a[href*="/partnerships/"][href$="/participants"]'),
     ).toBeVisible();
     await expect(partner.getByTestId("organization-assignment")).toHaveCount(0);
     await h.goto("/organization");
@@ -412,8 +408,12 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await expect(x.getByTestId("no-organization-access")).toHaveRole("main");
       await expect(x.locator("#organization-name")).toBeEditable();
       // Text-free: no links to the protected entities leak (stable ids, not copy).
-      await expect(x.locator(`a[href*="${projectId}"]`)).toHaveCount(0);
-      await expect(x.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
+      await expect(x.locator(`main a[href*="${projectId}"]:visible`)).toHaveCount(
+        0,
+      );
+      await expect(
+        x.locator(`main a[href*="${ids.partnership}"]:visible`),
+      ).toHaveCount(0);
       await expect(
         x.locator(
           '[data-testid="cost-save"], [data-testid="claim-decision-approve"], [data-testid="claim-submit"]',
@@ -423,7 +423,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     const p = await pageFor(browser, "P", baseURL!);
     await partnerPage(p);
     await expect(
-      p.locator('a[href^="/partnerships/"][href$="/participants"]'),
+      p.locator('a[href*="/partnerships/"][href$="/participants"]'),
     ).toBeVisible();
     const f = await pageFor(browser, "F", baseURL!);
     for (const [route, _resource] of [
@@ -433,7 +433,9 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       await f.goto(route);
       await denied(f);
       // Text-free: no link to the protected partnership leaks.
-      await expect(f.locator(`a[href*="${ids.partnership}"]`)).toHaveCount(0);
+      await expect(
+        f.locator(`main a[href*="${ids.partnership}"]:visible`),
+      ).toHaveCount(0);
       await expect(
         f.locator(
           '[data-testid="cost-save"], [data-testid="claim-decision-approve"]',

@@ -15,6 +15,9 @@ async function PartnershipBreadcrumbContent() {
   );
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function PartnershipBreadcrumb() {
   return (
     <Suspense fallback={<BreadcrumbTrailFallback />}>

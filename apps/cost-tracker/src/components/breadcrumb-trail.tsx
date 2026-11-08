@@ -50,8 +50,8 @@ export default function BreadcrumbTrail({
         <SidebarTrigger className="shrink-0 lg:m-0" />
         <Breadcrumb>
           <BreadcrumbList>
-            {items.map((item, index) => (
-              <Fragment key={item.label ?? index}>
+            {items.map((item) => (
+              <Fragment key={item.label}>
                 <BreadcrumbItem className="max-w-full min-w-0">
                   {item.href ? (
                     <BreadcrumbLink

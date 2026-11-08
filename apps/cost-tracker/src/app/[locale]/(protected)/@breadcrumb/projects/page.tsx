@@ -10,6 +10,9 @@ async function ProjectsBreadcrumbContent() {
   return <BreadcrumbTrail items={[]} current={t("nav.projects")} />;
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function ProjectsBreadcrumb() {
   return (
     <Suspense fallback={<BreadcrumbTrailFallback />}>

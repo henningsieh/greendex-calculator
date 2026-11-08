@@ -605,33 +605,39 @@ test.describe.serial("Claim review journey 25–26", () => {
     await host.goto("/claims/review");
     await expect(host.locator('[data-testid="review-queue"]')).toBeVisible();
     const first = host.locator(
-      `a[href="/partnerships/${ids.partnerships[0]}/claim/review"]`,
+      `a[href$="/partnerships/${ids.partnerships[0]}/claim/review"]`,
     );
     await expect(first).toBeVisible();
     await expect(
-      host.locator(`a[href="/partnerships/${ids.partnerships[1]}/claim/review"]`),
+      host.locator(
+        `a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`,
+      ),
     ).toBeVisible();
     await first.click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(
       host,
-      `/partnerships/${ids.partnerships[0]}/claim/review`,
+      new RegExp(`/partnerships/${ids.partnerships[0]}/claim/review$`),
     );
     reviewURL = host.url();
-    expect(new URL(reviewURL).pathname).toBe(
+    expect(new URL(reviewURL).pathname.replace(/^\/[a-z]{2}(?=\/)/, "")).toBe(
       `/partnerships/${ids.partnerships[0]}/claim/review`,
     );
     const header = host.locator("main header");
     await expect(header.getByRole("heading", { level: 1 })).toBeVisible();
     // Breadcrumbs render in the shell header, above the main content.
-    const breadcrumb = host.locator('[data-slot="breadcrumb"]');
-    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveCount(1);
-    await expect(breadcrumb.locator('[aria-current="page"]')).not.toHaveAttribute(
-      "href",
+    // Two renders exist while the slot transition settles: one hidden sibling.
+    const breadcrumb = host.locator('[data-slot="breadcrumb"]:visible');
+    // Next keeps the previous slot render as a hidden sibling; assert the visible one.
+    await expect(breadcrumb.locator('[aria-current="page"]:visible')).toHaveCount(
+      1,
     );
+    await expect(
+      breadcrumb.locator('[aria-current="page"]:visible'),
+    ).not.toHaveAttribute("href");
     await expect(breadcrumb.locator("a").first()).toHaveAttribute(
       "href",
-      "/claims/review",
+      "/en/claims/review",
     );
     await expect(breadcrumb.getByRole("listitem")).toHaveCount(3);
     await host.setViewportSize({ width: 375, height: 812 });
@@ -646,12 +652,12 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect(fits).toBe(true);
     await breadcrumb.locator("a").first().focus();
     await host.keyboard.press("Enter");
-    await expectPrivateURL(host, "/claims/review");
+    await expectPrivateURL(host, /\/claims\/review$/);
     await expect(first).toBeVisible();
     await first.click();
     await expectPrivateURL(
       host,
-      `/partnerships/${ids.partnerships[0]}/claim/review`,
+      new RegExp(`/partnerships/${ids.partnerships[0]}/claim/review$`),
     );
     await host.setViewportSize({ width: 1280, height: 720 });
     const review = host.getByTestId("claim-review");
@@ -729,7 +735,9 @@ test.describe.serial("Claim review journey 25–26", () => {
     expect((await claimState(0))!.status).toBe("correction_requested");
     await host.goto("/claims/review");
     await expect(
-      host.locator(`a[href="/partnerships/${ids.partnerships[1]}/claim/review"]`),
+      host.locator(
+        `a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`,
+      ),
     ).toBeVisible();
     await expect(first).toHaveCount(0);
 
@@ -875,15 +883,17 @@ test.describe.serial("Claim review journey 25–26", () => {
 
     await host.goto("/claims/review");
     await expect(
-      host.locator(`a[href="/partnerships/${ids.partnerships[0]}/claim/review"]`),
+      host.locator(
+        `a[href$="/partnerships/${ids.partnerships[0]}/claim/review"]`,
+      ),
     ).toHaveCount(0);
     await host
-      .locator(`a[href="/partnerships/${ids.partnerships[1]}/claim/review"]`)
+      .locator(`a[href$="/partnerships/${ids.partnerships[1]}/claim/review"]`)
       .click();
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(
       host,
-      `/partnerships/${ids.partnerships[1]}/claim/review`,
+      new RegExp(`/partnerships/${ids.partnerships[1]}/claim/review$`),
     );
     await expect(
       review.locator('[data-review-status="submitted"]'),

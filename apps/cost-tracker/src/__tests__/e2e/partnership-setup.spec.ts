@@ -346,7 +346,7 @@ async function selectAndOpenPartnerProject(
   expect(
     actingSessionSchema.parse(await acting.json()).session.activeOrganizationId,
   ).toBe(selectedOrganization!.id);
-  await page.locator('a[href^="/partnerships/"][href$="/claim"]').click();
+  await page.locator('a[href*="/partnerships/"][href$="/claim"]').click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByTestId("payout-account-create")).toBeEnabled();
   expect(
@@ -1243,7 +1243,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const context = await actorContext(browser, actor, baseURL!);
       const page = await context.newPage();
       await openPartnerProject(page, fixture.projectNames[0]!);
-      const claimLink = page.locator('a[href^="/partnerships/"][href$="/claim"]');
+      const claimLink = page.locator('a[href*="/partnerships/"][href$="/claim"]');
       await expect(claimLink).toBeVisible();
       const href = await claimLink.getAttribute("href");
       expect(href).toMatch(/^\/partnerships\/[^/]+\/claim$/);

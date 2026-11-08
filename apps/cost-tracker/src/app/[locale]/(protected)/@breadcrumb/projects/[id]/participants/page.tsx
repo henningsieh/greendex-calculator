@@ -53,6 +53,9 @@ async function HostedParticipantsBreadcrumbContent({
   );
 }
 
+// Request-time chrome: the breadcrumb resolves at request time.
+export const instant = false;
+
 export default function HostedParticipantsBreadcrumb({
   params,
 }: {
