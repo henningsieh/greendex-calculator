@@ -23,6 +23,7 @@ function ThemeProvider({
         // Identity entries are required: with `value` present next-themes
         // applies `value[name]` with no fallback, so unlisted themes would
         // lose their <html> class entirely.
+        "theme-erasmus-light": "theme-erasmus-light",
         "theme-erasmus-dark": "theme-erasmus-dark",
         "theme-erasmus-midnight": "theme-erasmus-midnight",
         "theme-erasmus-violet": "theme-erasmus-violet",
@@ -69,7 +70,10 @@ function ThemeHotkey() {
         return;
       }
 
-      setTheme(resolvedTheme === "light" ? "dark" : "light");
+      // An explicitly chosen light theme resolves to its own name, not "light".
+      const isLight =
+        resolvedTheme === "light" || resolvedTheme === "theme-erasmus-light";
+      setTheme(isLight ? "dark" : "light");
     }
 
     window.addEventListener("keydown", onKeyDown);
