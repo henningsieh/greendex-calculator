@@ -9,7 +9,10 @@ import { canManageOrganization } from "@/features/organizations/access";
 import { OrganizationSettings } from "@/features/organizations/components/organization-settings";
 import { OrganizationTeam } from "@/features/organizations/components/organization-team";
 import { orpcQuery } from "@/lib/orpc/orpc";
-import { requireActiveOrganization } from "@/lib/session";
+import {
+  hasOrganizationMembership,
+  requireActiveOrganization,
+} from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -58,8 +61,9 @@ async function OrganizationTeamSection({ email }: { email: string }) {
 
 export default async function OrganizationPage() {
   await connection();
-  // Guaranteed by ProtectedShell ("continue" = verified + org ready):
-  // session and active Organization are known here, typed non-null.
+  // The shell can show recovery while this page still runs. Do not redirect
+  // away from its creation form before an active Membership exists.
+  if (!(await hasOrganizationMembership())) return null;
   const { session, organization } = await requireActiveOrganization();
   const t = await getTranslations("organizations");
 

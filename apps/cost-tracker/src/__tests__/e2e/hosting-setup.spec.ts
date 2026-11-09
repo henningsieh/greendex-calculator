@@ -9,7 +9,7 @@ import {
   projectsTable,
 } from "@greendex/database/schema";
 import { type Page } from "@playwright/test";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { expectPrivateURL, expect, test } from "./fixtures/artifact-privacy";
 import { selectCountry } from "./fixtures/country-selector";
@@ -186,7 +186,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
     // Server authorization is separately covered by projects.integration.test.ts.
   });
 
-  test("04a a Participant Membership can create a disposable Project despite denied assigned-list access", async ({
+  test("04a a Participant Membership reads Projects without a create control", async ({
     browser,
     baseURL,
   }) => {
@@ -209,40 +209,28 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       const context = await fixture.actorContext(browser, "X", baseURL!);
       const page = await context.newPage();
       await page.goto("/projects");
-      const createButton = page
-        .getByTestId("new-project")
-        .filter({ visible: true });
-      await expect(createButton).toHaveCount(1);
-      await expect(createButton).toBeVisible();
-      const projectURL = await createProject(page, projectName);
-      const [createdMembership] = await db
+      // The shared role map grants Participant `project: ["read"]`, so no create
+      // control renders. Creating a Project must never escalate the Membership.
+      await expect(
+        page.getByTestId("new-project").filter({ visible: true }),
+      ).toHaveCount(0);
+      await expect(page.getByTestId("projects-unavailable")).toBeVisible();
+      const [unchanged] = await db
         .select({ role: member.role })
         .from(member)
         .where(eq(member.id, membershipId));
-      expect(createdMembership?.role).toBe(
-        `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
-      );
-      await page.goto("/projects");
-      await expect(await projectLink(page, projectName)).toBeVisible();
-      await page.goto(projectURL);
-      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      expect(unchanged?.role).toBe(ORGANIZATION_ROLES.Participant);
+      expect(
+        await db
+          .select({ id: projectsTable.id })
+          .from(projectsTable)
+          .where(eq(projectsTable.name, projectName)),
+      ).toHaveLength(0);
+      // Reading is allowed, but foreign Hosting Project data stays hidden.
       await page.goto(mainProjectURL);
       await expect(page.getByTestId("project-workspace")).toHaveCount(0);
     } finally {
-      await db
-        .delete(projectsTable)
-        .where(
-          and(
-            eq(projectsTable.organizationId, hosting!.id),
-            eq(projectsTable.name, projectName),
-          ),
-        );
       await db.delete(member).where(eq(member.id, membershipId));
-      const [remaining] = await db
-        .select({ id: projectsTable.id })
-        .from(projectsTable)
-        .where(eq(projectsTable.name, projectName));
-      expect(remaining).toBeUndefined();
     }
   });
 
@@ -270,16 +258,38 @@ test("creation from Organization management ends at the Project overview", async
   try {
     const context = await recovery.actorContext(browser, "H", baseURL!);
     const page = await context.newPage();
+    let runtimeErrors = 0;
+    page.on("pageerror", () => runtimeErrors++);
+    page.on("console", (message) => {
+      if (message.type() === "error") runtimeErrors++;
+    });
     await page.goto("/organization");
     await expect(page.getByRole("dialog")).toBeHidden();
     const dialog = page.getByTestId("no-organization-access");
     await expect(dialog).toBeVisible();
     await dialog.locator("#organization-name").fill(recovery.organizationName);
     await selectCountry(dialog.locator("#organization-country"), "DE");
-    await dialog.getByTestId("create-organization").click();
-    await expect(dialog).toBeHidden();
+    // The creation screen must not redirect while the User fills the form.
+    await expectPrivateURL(page, "/organization");
+    await expect(dialog.locator("#organization-name")).toHaveValue(
+      recovery.organizationName,
+    );
+    const [created] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname ===
+            "/api/rpc/authentication/createOrganization" &&
+          response.request().method() === "POST",
+      ),
+      dialog.getByTestId("create-organization").click(),
+    ]);
+    expect(created.ok()).toBe(true);
+    // The mutation response precedes the streamed replace/refresh navigation.
+    await expect(dialog).toBeHidden({ timeout: 30_000 });
     await expectPrivateURL(page, /\/projects$/);
+    // Opening and editing the new-Project dialog proves destination hydration.
     await expectFirstOrganizationProjects(page, recovery.organizationName);
+    expect(runtimeErrors).toBe(0);
   } finally {
     await recovery.teardown();
   }

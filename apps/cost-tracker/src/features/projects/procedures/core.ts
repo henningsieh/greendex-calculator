@@ -32,6 +32,7 @@ import {
   canCompleteProject,
   isSettledClaimStatus,
 } from "@/features/claims/claim-lifecycle";
+import { isStaffOrganizationRole } from "@/features/organizations/staff-eligibility";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
 import {
   decodeProjectListCursor,
@@ -714,7 +715,7 @@ export const availableScopes = authorized
     return {
       hosted: hostedRows.length > 0,
       partner: partnerRows.length > 0,
-      canCreate: !!membership,
+      canCreate: !!membership && isStaffOrganizationRole(membership.role),
     };
   });
 

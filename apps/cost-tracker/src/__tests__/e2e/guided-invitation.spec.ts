@@ -387,39 +387,61 @@ test.describe.serial("guided Organization Invitation", () => {
           const contrast = await page
             .getByTestId("verification-next-action")
             .evaluate((element) => {
-              const canvas = document.createElement("canvas");
-              canvas.width = canvas.height = 1;
-              const context = canvas.getContext("2d");
-              if (!context) throw new Error("Color measurement unavailable");
-              const luminance = (color: string) => {
-                context.clearRect(0, 0, 1, 1);
-                context.fillStyle = color;
-                context.fillRect(0, 0, 1, 1);
-                const channels = [...context.getImageData(0, 0, 1, 1).data]
-                  .slice(0, 3)
-                  .map((value) => {
-                    const channel = value / 255;
-                    return channel <= 0.04045
-                      ? channel / 12.92
-                      : ((channel + 0.055) / 1.055) ** 2.4;
-                  });
-                return (
-                  channels[0]! * 0.2126 +
-                  channels[1]! * 0.7152 +
-                  channels[2]! * 0.0722
-                );
+              type Color = { r: number; g: number; b: number; a: number };
+              const parse = (value: string): Color => {
+                const numbers = value.match(/[\d.]+/g)?.map(Number) ?? [];
+                const [r = 0, g = 0, b = 0, a = 1] = numbers;
+                return { r, g, b, a };
               };
+              const luminance = ({ r, g, b }: Color) => {
+                const [red, green, blue] = [r, g, b].map((channel) => {
+                  const value = channel / 255;
+                  return value <= 0.04045
+                    ? value / 12.92
+                    : ((value + 0.055) / 1.055) ** 2.4;
+                });
+                return red! * 0.2126 + green! * 0.7152 + blue! * 0.0722;
+              };
+              const over = (top: Color, bottom: Color): Color => ({
+                r: top.r * top.a + bottom.r * (1 - top.a),
+                g: top.g * top.a + bottom.g * (1 - top.a),
+                b: top.b * top.a + bottom.b * (1 - top.a),
+                a: 1,
+              });
               const alert = element.closest(
                 '[data-testid="auth-verification-message"]',
               );
               if (!alert) throw new Error("Verification status missing");
-              const foreground = luminance(getComputedStyle(element).color);
-              const background = luminance(
-                getComputedStyle(alert).backgroundColor,
+              // Accent tokens carry alpha (the midnight wash is 6% white), so a
+              // parsed layer is not the color it renders as. Composite the stack
+              // down to the first opaque ancestor before measuring.
+              const stack: Color[] = [];
+              for (
+                let node: Element | null = alert;
+                node;
+                node = node.parentElement
+              ) {
+                const layer = parse(getComputedStyle(node).backgroundColor);
+                stack.push(layer);
+                if (layer.a >= 1) break;
+              }
+              const opaque = stack.pop();
+              let background: Color = over(
+                opaque ?? { r: 255, g: 255, b: 255, a: 1 },
+                { r: 255, g: 255, b: 255, a: 1 },
               );
+              if (opaque) background = { ...opaque, a: 1 };
+              for (const layer of stack.reverse())
+                background = over(layer, background);
+              const foreground = over(
+                parse(getComputedStyle(element).color),
+                background,
+              );
+              const foregroundLuminance = luminance(foreground);
+              const backgroundLuminance = luminance(background);
               return (
-                (Math.max(foreground, background) + 0.05) /
-                (Math.min(foreground, background) + 0.05)
+                (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+                (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
               );
             });
           console.log(

@@ -105,7 +105,8 @@ async function ownedCounts() {
 
 async function openHostedProject(page: Page, url: string) {
   await page.goto("/projects");
-  await page.locator(`a[href^="${url}?"]`).click();
+  // ADR-0025: Project links carry identity only, so no query parameter follows.
+  await page.locator(`a[href$="${url}"]`).click();
   // Preserve the original full-URL match; only the diagnostic receives a boolean.
   await expectPrivateURL(page, new RegExp(`${url}(?:\\?.*)?$`));
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -247,7 +248,9 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
   test("28 shows independent terminal and claimless readiness without offering completion", async () => {
     const page = await hostContext!.newPage();
     await openHostedProject(page, mainURL);
-    const assigned = page.getByRole("listitem");
+    const assigned = page
+      .getByTestId("assigned-partner-organizations")
+      .getByRole("listitem");
     await expect(assigned).toHaveCount(2);
     await expect(
       partnerRow(page, ids.partnerA).locator('[data-claim-status="rejected"]'),
@@ -263,7 +266,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     await expect(
       page.locator('[aria-label="Project list"][data-hydrated="true"]'),
     ).toBeVisible();
-    await expect(page.locator(`a[href^="${mainURL}?"]`)).toBeVisible();
+    await expect(page.locator(`a[href$="${mainURL}"]`)).toBeVisible();
     await expect(page.locator(`a[href$="/projects/${ids.other}"]`)).toHaveCount(
       0,
     );

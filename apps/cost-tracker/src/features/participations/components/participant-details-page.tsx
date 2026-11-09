@@ -6,6 +6,7 @@ import ProtectedPageHeader from "@/components/protected-page-header";
 import { ParticipantDetailsSkeleton } from "@/features/participations/components/loading-skeletons";
 import { ParticipantDetailsSection } from "@/features/participations/components/participant-details-section";
 import { ParticipantPageHeader } from "@/features/participations/components/participant-page-header";
+import { hasOrganizationMembership } from "@/lib/session";
 
 export default async function ParticipantDetailsPage({
   params,
@@ -13,6 +14,7 @@ export default async function ParticipantDetailsPage({
   params: Promise<{ partnershipId: string; participationId: string }>;
 }) {
   await connection();
+  if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("participations.app");
 
   return (

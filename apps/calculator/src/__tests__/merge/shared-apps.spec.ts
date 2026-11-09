@@ -174,12 +174,15 @@ test("both apps expose the same seeded Project and Journey, and Cost Tracker ope
     await selectCostOrganization(partner.name);
     await expect(cost.locator('[data-relationship="partner"]')).toBeVisible();
     // Text-free: acting-organization context + claim link below prove the scope (no copy).
-    await cost
-      .locator(`a[href="/partnerships/${seed.partnershipId}/claim"]`)
-      .click();
-    await expect(cost).toHaveURL(
-      `${costTrackerOrigin}/partnerships/${seed.partnershipId}/claim`,
+    const claimLink = cost.locator(
+      `a[href$="/partnerships/${seed.partnershipId}/claim"]`,
     );
+    const claimHref = await claimLink.getAttribute("href");
+    expect(claimHref).not.toBeNull();
+    const claimURL = new URL(claimHref!, costTrackerOrigin);
+    expect(claimURL.origin).toBe(costTrackerOrigin);
+    await claimLink.click();
+    await expect(cost).toHaveURL(claimURL.href);
     const workspace = cost
       .getByRole("region")
       .filter({ has: cost.locator("[data-draft-status]") });

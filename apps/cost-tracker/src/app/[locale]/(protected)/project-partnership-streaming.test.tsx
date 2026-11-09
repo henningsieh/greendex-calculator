@@ -20,16 +20,22 @@ vi.mock("next/server", () => ({
 const mocks = vi.hoisted(() => ({
   membership: vi.fn().mockResolvedValue(true),
   query: vi.fn(),
+  requireSession: vi
+    .fn()
+    .mockResolvedValue({ session: { activeOrganizationId: null } }),
+  canViewPartnerNetwork: vi.fn().mockResolvedValue(true),
+  permissions: vi.fn().mockResolvedValue(false),
 }));
 vi.mock("@/lib/session", () => ({
   hasOrganizationMembership: mocks.membership,
+  requireSession: mocks.requireSession,
 }));
 vi.mock("@/features/organizations/access", () => ({
-  canViewPartnerNetwork: async () => true,
+  canViewPartnerNetwork: mocks.canViewPartnerNetwork,
 }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/orpc/middleware", () => ({
-  hasCostTrackerPermissions: async () => false,
+  hasCostTrackerPermissions: mocks.permissions,
 }));
 vi.mock("@/lib/orpc/orpc", () => {
   const queryOptions = ({ input }: { input?: unknown } = {}) => ({ input });
@@ -70,6 +76,12 @@ vi.mock("@/components/query-data-error-boundary", () => ({
   ProjectDataErrorBoundary: ({ children }: { children: React.ReactNode }) =>
     children,
 }));
+vi.mock(
+  "@/features/participant-onboarding/components/participant-onboarding",
+  () => ({
+    ParticipantDashboard: () => null,
+  }),
+);
 vi.mock("@/features/claims/components/claim-workspace", () => ({
   ClaimWorkspace: () => <p>Resolved Claim workspace</p>,
 }));
@@ -116,6 +128,7 @@ import LocalizedProjectPage from "@/app/[locale]/(protected)/projects/[id]/page"
 import LocalizedHostedParticipantsPage, {
   metadata as LocalizedHostedParticipantsPageMetadata,
 } from "@/app/[locale]/(protected)/projects/[id]/participants/page";
+import ParticipantPage from "@/app/[locale]/(setup)/participant/page";
 
 const routes = [
   {
@@ -360,7 +373,7 @@ it.each(routes)(
 );
 
 it.each(routes)(
-  "$path renders without consulting Organization Membership (shell owns the gate)",
+  "$path skips scoped work without active Organization Membership",
   async ({ Page }) => {
     mocks.membership.mockResolvedValue(false);
     expect(
@@ -371,10 +384,20 @@ it.each(routes)(
           participationId: "participation-1",
         }),
       }),
-    ).not.toBeNull();
+    ).toBeNull();
+    expect(mocks.membership).toHaveBeenCalledOnce();
     expect(mocks.query).not.toHaveBeenCalled();
+    expect(mocks.canViewPartnerNetwork).not.toHaveBeenCalled();
+    expect(mocks.permissions).not.toHaveBeenCalled();
   },
 );
+
+it("Participant personal page requires a session, not active Organization Membership", async () => {
+  mocks.membership.mockResolvedValue(false);
+  expect(await ParticipantPage()).not.toBeNull();
+  expect(mocks.requireSession).toHaveBeenCalledOnce();
+  expect(mocks.membership).not.toHaveBeenCalled();
+});
 
 it.each(
   routes.filter(({ path }) => /\[[^\]]+\]/.test(path.replace("/[locale]", ""))),

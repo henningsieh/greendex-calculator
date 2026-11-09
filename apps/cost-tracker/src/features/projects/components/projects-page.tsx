@@ -9,6 +9,7 @@ import { ProjectListSection } from "@/features/projects/components/project-list-
 import { ProjectListSkeleton } from "@/features/projects/components/project-loading-states";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
+import { hasOrganizationMembership } from "@/lib/session";
 
 type ProjectsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -20,6 +21,8 @@ export default async function ProjectsPage(
   },
 ) {
   await connection();
+  // Recovery has no Organization context yet; do not prefetch scoped data.
+  if (!(await hasOrganizationMembership())) return null;
   const t = await getTranslations("projects.page");
   // A refusal is the shell's recovery screens talking, not a broken page.
   const canCreate = await hasCostTrackerPermissions(await headers(), {

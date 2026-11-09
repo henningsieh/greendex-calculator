@@ -12,7 +12,7 @@ export async function projectLink(page: Page, name: string): Promise<Locator> {
     .where(eq(projectsTable.name, name));
   expect(project).toBeDefined();
   return page.locator(
-    `a[href="/projects/${project!.id}"], a[href^="/projects/${project!.id}?"]`,
+    `a[href$="/projects/${project!.id}"], a[href*="/projects/${project!.id}?"]`,
   );
 }
 

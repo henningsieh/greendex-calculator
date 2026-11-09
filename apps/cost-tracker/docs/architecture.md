@@ -64,7 +64,9 @@ render header chrome whose labels resolve per request. That state machine is
 outside this adoption scope. The export opts out of validation, not request
 handling.
 
-After the gate, initial data and URL promises resolve in async children behind
+Organization-scoped pages check active Membership readiness independently of the
+shell; procedures remain authoritative for permissions. Initial data and URL
+promises resolve in async children behind
 inner Suspense boundaries. Feature-owned skeletons match Claim document bands,
 responsive decision/summary columns, Participant cards, and Partnership lists.
 The same section skeletons are composed into route-level `loading.tsx` fallbacks;

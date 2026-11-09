@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { ProjectWorkspaceSkeleton } from "@/features/projects/components/project-loading-states";
 import { ProjectWorkspaceSection } from "@/features/projects/components/project-workspace-section";
+import { hasOrganizationMembership } from "@/lib/session";
 
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
@@ -10,6 +11,7 @@ type ProjectPageProps = {
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   await connection();
+  if (!(await hasOrganizationMembership())) return null;
 
   return (
     <div>

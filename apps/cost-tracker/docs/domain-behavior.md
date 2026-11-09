@@ -12,6 +12,10 @@ This reference owns Cost Tracker's behavioral and persistence rules; [the glossa
 - Rejection closes only the named Organization Invitation. Rejection and recheck reassess current eligibility and any remaining invitations while retaining the entry destination and Partner setup recovery checkpoint. An uncertain creation checkpoint continues to prevent repeat creation.
 - Review Tasks have open, assigned, and resolved states. Resolution feeds the merge-review flow that decides which duplicate Project Participation survives when the same User or email occurs twice in one Project.
 
+## Project creation
+
+Participant-only Memberships are read-only for Project management: neither the UI nor the creation API grants Project creation or creation-driven role escalation. A User who also holds a staff role retains that role's authority.
+
 ## Partner Organization setup
 
 - Setup links are recipient-bound. The authenticated User must have the verified recipient email address. The server validates the secret, enabled state, expiry, and Project availability before the UI offers Organization creation, and checks them again before binding.

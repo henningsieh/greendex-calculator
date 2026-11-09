@@ -8,6 +8,7 @@ import { ClaimReviewSkeleton } from "@/features/claims/components/claim-loading-
 import { ClaimReview } from "@/features/claims/components/claim-review";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
+import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -86,6 +87,8 @@ export default async function ClaimReviewPage({
   params: Promise<{ partnershipId: string }>;
 }) {
   await connection();
+  if (!(await hasOrganizationMembership())) return null;
+
   const t = await getTranslations("claims.review");
 
   return (

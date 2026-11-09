@@ -27,8 +27,7 @@ export async function ProtectedShell({
 }: Readonly<{ children: React.ReactNode; breadcrumb?: React.ReactNode }>) {
   await connection();
   const session = await getSession();
-  // A protected route without a session must never render its page: the page's
-  // own authorization gate would surface an error page instead of the sign-in.
+  // Redirect the shell for signed-out Users; route children execute independently.
   if (!session) redirect("/login");
   const decision = await orpc.authentication.onboardingNextStep({});
   if (decision.nextStep === "verify-email") {

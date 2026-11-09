@@ -34,7 +34,7 @@ import { requireCostTrackerRole } from "@/features/organizations/roles";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { router } from "@/lib/orpc/router";
 
-/** Seeded Participant has no Hosting assignments; creation owns only its new Projects. */
+/** Existing seeded roles prove Participant refusal and staff-owned creation. */
 let actor = "";
 let host = "";
 let otherHost = "";
@@ -147,24 +147,25 @@ describe("projects.create", () => {
           eq(projectsTable.name, input.name),
         ),
       );
-    // Output cleanup only: undo the role added by this case's projects.create.
-    // Never rewrite seeded Owner/Admin roles or manufacture setup preconditions.
-    await db
-      .update(member)
-      .set({ role: ORGANIZATION_ROLES.Participant })
-      .where(
-        and(
-          eq(member.userId, participantActor),
-          eq(member.organizationId, host),
-          eq(
-            member.role,
-            `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
-          ),
-        ),
-      );
   });
 
-  it("adds coordination to a Participant without removing roles and assigns only created Projects", async () => {
+  it("refuses Participant creation without writes or role escalation", async () => {
+    await expect(client.projects.create(input)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      data: { reason: "HOSTING_STAFF_REQUIRED" },
+    });
+    expect((await client.projects.scopes()).canCreate).toBe(false);
+    expect(await role()).toBe(ORGANIZATION_ROLES.Participant);
+    expect(await assignments()).toEqual([]);
+    expect(
+      await db
+        .select({ id: projectsTable.id })
+        .from(projectsTable)
+        .where(eq(projectsTable.name, input.name)),
+    ).toEqual([]);
+  });
+
+  it("preserves a Coordinator role and assigns only created Projects", async () => {
     // ADR-0012: fallback roles are refused in memory, never seeded or upgraded.
     for (const invalidRole of [
       "invalid-role",
@@ -184,11 +185,11 @@ describe("projects.create", () => {
         message: "Use a defined Organization role.",
       });
     }
+    actor = roleActors.get(ORGANIZATION_ROLES.ProjectCoordinator)!;
+    session(host);
     const first = await client.projects.create(input);
     expect(first).toEqual({ id: expect.any(String) });
-    expect(await role()).toBe(
-      `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
-    );
+    expect(await role()).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
     expect(await assignments()).toEqual([{ projectId: first.id }]);
     await expect(
       requireHostCoordination(first.id, actor, host, {
@@ -227,16 +228,14 @@ describe("projects.create", () => {
       data: { reason: "HOST_COORDINATION_REQUIRED" },
     });
     const second = await client.projects.create(input);
-    expect(await role()).toBe(
-      `${ORGANIZATION_ROLES.Participant},${ORGANIZATION_ROLES.ProjectCoordinator}`,
-    );
+    expect(await role()).toBe(ORGANIZATION_ROLES.ProjectCoordinator);
     expect(
       (await assignments()).map(({ projectId }) => projectId).sort(),
     ).toEqual([first.id, second.id].sort());
     // projects.create granted the creator assignment through supported
-    // behavior. The named seeded coordinator has no assignment to this new
-    // Project, so projects.get exercises refusal without removing any rows.
-    session(host, roleActors.get(ORGANIZATION_ROLES.ProjectCoordinator)!);
+    // behavior. The Participant has no assignment to this new Project, so
+    // projects.get exercises refusal without removing any rows.
+    session(host, participantActor);
     await expect(
       client.projects.get({ projectId: first.id }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });

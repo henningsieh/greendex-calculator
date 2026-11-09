@@ -7,6 +7,7 @@ import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary
 import { ClaimWorkspaceSkeleton } from "@/features/claims/components/claim-loading-states";
 import { ClaimWorkspace } from "@/features/claims/components/claim-workspace";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -51,6 +52,8 @@ export default async function ClaimPage({
   params: Promise<{ partnershipId: string }>;
 }) {
   await connection();
+  if (!(await hasOrganizationMembership())) return null;
+
   const t = await getTranslations("claims.page");
 
   return (

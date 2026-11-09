@@ -28,6 +28,7 @@ import { z } from "zod";
 import {
   expectPrivateURL,
   expect,
+  routePath,
   test,
   registerPrivateValues,
 } from "./fixtures/artifact-privacy";
@@ -1246,7 +1247,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       const claimLink = page.locator('a[href*="/partnerships/"][href$="/claim"]');
       await expect(claimLink).toBeVisible();
       const href = await claimLink.getAttribute("href");
-      expect(href).toMatch(/^\/partnerships\/[^/]+\/claim$/);
+      expect(routePath(href!)).toMatch(/^\/partnerships\/[^/]+\/claim$/);
       workspacePaths.push(href!);
       const ownPartnerships = await db
         .select({ id: partnerships.id })
@@ -1261,7 +1262,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         );
       expect(ownPartnerships).toHaveLength(1);
       const [ownPartnership] = ownPartnerships;
-      expect(href).toBe(`/partnerships/${ownPartnership!.id}/claim`);
+      expect(routePath(href!)).toBe(`/partnerships/${ownPartnership!.id}/claim`);
       // Text-free: own-partnership href equality above proves isolation (no name copy).
       await page.goto("/projects");
       await expect(

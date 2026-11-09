@@ -205,7 +205,7 @@ describe("Cost Tracker Project data routes", () => {
     mocks.hasCostTrackerPermissions
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
-    render(await PartnerOrganizationsPage());
+    render(<>{await PartnerOrganizationsPage()}</>);
     expect(
       screen
         .getByTestId("project-partnership-section")
@@ -215,7 +215,7 @@ describe("Cost Tracker Project data routes", () => {
 
   it("shows a friendly note instead of a denial when nothing is viewable", async () => {
     mocks.hasCostTrackerPermissions.mockResolvedValue(false);
-    render(await PartnerOrganizationsPage());
+    render(<>{await PartnerOrganizationsPage()}</>);
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(
       screen.queryByTestId("project-partnership-section"),
@@ -227,10 +227,27 @@ describe("Cost Tracker Project data routes", () => {
   });
 
   it("renders the page shell without awaiting section prefetches", async () => {
-    render(await ProjectsPage());
+    render(<>{await ProjectsPage()}</>);
 
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(screen.getByTestId("project-list-section")).toBeInTheDocument();
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
+
+  it("does not start Organization-scoped work while creation recovery is active", async () => {
+    mocks.hasOrganizationMembership.mockResolvedValueOnce(false);
+
+    await expect(ProjectsPage()).resolves.toBeNull();
+    expect(mocks.hasCostTrackerPermissions).not.toHaveBeenCalled();
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
+
+  it("does not load a direct Project workspace during Organization recovery", async () => {
+    mocks.hasOrganizationMembership.mockResolvedValueOnce(false);
+
+    await expect(
+      ProjectPage({ params: Promise.resolve({ id: "project-1" }) }),
+    ).resolves.toBeNull();
     expect(mocks.query).not.toHaveBeenCalled();
   });
 
@@ -243,27 +260,33 @@ describe("Cost Tracker Project data routes", () => {
       }),
     );
 
-    render(await ProjectsPage());
+    render(<>{await ProjectsPage()}</>);
 
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
   it("keeps the other Project page shells outside their async sections", async () => {
-    render(await PartnerOrganizationsPage());
+    render(<>{await PartnerOrganizationsPage()}</>);
     render(
-      await PartnershipParticipantsPage({
-        params: Promise.resolve({ partnershipId: "partnership-1" }),
-      }),
+      <>
+        {await PartnershipParticipantsPage({
+          params: Promise.resolve({ partnershipId: "partnership-1" }),
+        })}
+      </>,
     );
     render(
-      await ProjectPage({
-        params: Promise.resolve({ id: "project-1" }),
-      }),
+      <>
+        {await ProjectPage({
+          params: Promise.resolve({ id: "project-1" }),
+        })}
+      </>,
     );
     render(
-      await HostedParticipantsPage({
-        params: Promise.resolve({ id: "project-1" }),
-      }),
+      <>
+        {await HostedParticipantsPage({
+          params: Promise.resolve({ id: "project-1" }),
+        })}
+      </>,
     );
 
     expect(

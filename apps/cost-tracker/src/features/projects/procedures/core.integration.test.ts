@@ -620,7 +620,7 @@ describe("projects procedures", () => {
         expect(await client.projects.scopes()).toEqual({
           hosted: false,
           partner: false,
-          canCreate: true,
+          canCreate: userIdValue !== "r4lbmg3rydm9whnikhr8uk39",
         });
       },
     );

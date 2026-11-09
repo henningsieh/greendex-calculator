@@ -10,6 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireCostTrackerRole } from "@/features/organizations/roles";
+import { isStaffOrganizationRole } from "@/features/organizations/staff-eligibility";
 import { ProjectCreateInputSchema } from "@/features/projects/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
@@ -42,6 +43,9 @@ export const create = authorized
       requireCostTrackerRole(membership.role, () =>
         createSituationErrors(errors).invalidOrganizationRole(),
       );
+      if (!isStaffOrganizationRole(membership.role)) {
+        throw createSituationErrors(errors).hostingStaffRequired();
+      }
       const [project] = await tx
         .insert(projectsTable)
         .values({ ...input, organizationId })
