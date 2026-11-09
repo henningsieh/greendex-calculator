@@ -31,28 +31,29 @@ vi.mock("@/lib/proof-storage", () => ({
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { GET as download, POST as upload } from "@/app/api/proof-documents/route";
 import { env } from "@/env";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerCosts.
-const host = "c8tzqmrknhg2bov465e90f43",
-  partner = "shhydrtzn64k6rorh9k8nx86",
-  other = "dl4som7bu1sb6xtdwnyyo63p";
-const coordinator = "fmpfieidsqgfc697xgnvynuw",
-  participantUser = "u3pnyfkioeyhxtjks1ukfqag";
-const project = "fu1lgjy9x1bjmbhkgebeg85u";
-const own = "nyh1okg2p6hf8lwkpurt2wjz",
-  foreign = "cjhntjen5ijbchkis4lcu1t5",
-  next = "e8qx5ziip9865a2zxshedv3a";
-const first = "qic2agmxqt1h9nzdxxd7ulgm",
-  second = "m5dxpif4ebx10jnihqtd98ew",
-  third = "je703i9hoq9ly4ii2kjs6d4v";
-const outside = "ev1234of98bh7eek94kefkt1",
-  later = "q9rtygav622rqw8e47zxrprh";
-const ownClaim = "lc1i74hr7ioc31ynaxr0vmub";
-const proof = "foilan4c5q220go0d56v5sxx",
-  foreignProof = "kf0nrcb8r64b7dnm8m0vq0nf";
+const host = SEED_IDS.organization.costHost,
+  partner = SEED_IDS.organization.costPartner,
+  other = SEED_IDS.organization.costOther;
+const coordinator = SEED_IDS.user.costCoordinator,
+  participantUser = SEED_IDS.user.costParticipantUser;
+const project = SEED_IDS.project.costProject;
+const own = SEED_IDS.partnership.costOwn,
+  foreign = SEED_IDS.partnership.costForeign,
+  next = SEED_IDS.partnership.costNext;
+const first = SEED_IDS.participation.costFirst,
+  second = SEED_IDS.participation.costSecond,
+  third = SEED_IDS.participation.costThird;
+const outside = SEED_IDS.participation.costOutside,
+  later = SEED_IDS.participation.costLater;
+const ownClaim = SEED_IDS.claim.costOwnClaim;
+const proof = SEED_IDS.proofDocument.costProof,
+  foreignProof = SEED_IDS.proofDocument.costForeignProof;
 let actor = coordinator;
 let activeOrg = partner;
 const client = createRouterClient(router, {
@@ -176,7 +177,9 @@ describe("Claim cost procedures", () => {
     actor = participantUser;
     expect((await upload(request(own))).status).toBe(403);
     actor = coordinator;
-    const lockedClaim = await upload(request("cwudh3bpklwgtvyphhw088ox"));
+    const lockedClaim = await upload(
+      request(SEED_IDS.partnership.lockedCostPartnershipId),
+    );
     expect(lockedClaim.status).toBe(409);
     expect(await lockedClaim.json()).toEqual({
       error: "Claim is not editable.",
@@ -444,8 +447,12 @@ describe("Claim cost procedures", () => {
     await expect(
       client.costs.save({
         ...base,
-        partnershipId: "cwudh3bpklwgtvyphhw088ox",
-        allocations: [{ projectParticipantId: "fvzf02owu002f9wbrtiydulc" }],
+        partnershipId: SEED_IDS.partnership.lockedCostPartnershipId,
+        allocations: [
+          {
+            projectParticipantId: SEED_IDS.participation.lockedCostParticipantId,
+          },
+        ],
       }),
     ).rejects.toMatchObject({
       code: "CONFLICT",
@@ -453,9 +460,9 @@ describe("Claim cost procedures", () => {
     });
     await expect(
       client.costs.linkDocument({
-        partnershipId: "cwudh3bpklwgtvyphhw088ox",
-        entryId: "t8b7y7gkyi51cjifgwonkns8",
-        proofDocumentId: "ometzoa7791cs0vulc4cwnzh",
+        partnershipId: SEED_IDS.partnership.lockedCostPartnershipId,
+        entryId: SEED_IDS.travelEntry.lockedCostEntryId,
+        proofDocumentId: SEED_IDS.proofDocument.costsSubmittedProofDocument,
       }),
     ).rejects.toMatchObject({
       code: "CONFLICT",

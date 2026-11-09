@@ -25,6 +25,8 @@ import { hashPassword } from "better-auth/crypto";
 import { and, count, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
+
 import {
   expectPrivateURL,
   expect,
@@ -900,7 +902,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const beforeSessions = await db
       .select({ id: session.id })
       .from(session)
-      .where(eq(session.userId, "un3tvw49u59cn2d2a9rop8dl"));
+      .where(eq(session.userId, SEED_IDS.user.entitySearchActor));
     const signedIn = await postSignInWithRateLimitRetry(
       context.request,
       "un3tvw49u59cn2d2a9rop8dl@example.com",
@@ -910,7 +912,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const afterSessions = await db
       .select({ id: session.id })
       .from(session)
-      .where(eq(session.userId, "un3tvw49u59cn2d2a9rop8dl"));
+      .where(eq(session.userId, SEED_IDS.user.entitySearchActor));
     sessionIds.push(
       ...afterSessions
         .filter(
@@ -918,8 +920,8 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         )
         .map(({ id }) => id),
     );
-    const unrelatedId = "nmqjlr6hu7ler9gg46waa4yp";
-    const targetId = "c8xev643s2o9pn4u6vz1nrj0";
+    const unrelatedId = SEED_IDS.organization.entitySearchOrg55;
+    const targetId = SEED_IDS.organization.entitySearchOrg56;
     const targetName = "Owned Search 31";
     const selected = await context.request.post(
       "/api/auth/organization/set-active",
@@ -932,7 +934,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const membershipsBefore = await db
       .select({ id: member.id })
       .from(member)
-      .where(eq(member.userId, "un3tvw49u59cn2d2a9rop8dl"));
+      .where(eq(member.userId, SEED_IDS.user.entitySearchActor));
     const url = await issueInSetup(
       fixture.projectNames[0]!,
       "un3tvw49u59cn2d2a9rop8dl@example.com",
@@ -991,7 +993,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const membershipsAfter = await db
       .select({ id: member.id })
       .from(member)
-      .where(eq(member.userId, "un3tvw49u59cn2d2a9rop8dl"));
+      .where(eq(member.userId, SEED_IDS.user.entitySearchActor));
     expect(membershipsAfter.map(({ id }) => id).sort()).toEqual(
       membershipsBefore.map(({ id }) => id).sort(),
     );

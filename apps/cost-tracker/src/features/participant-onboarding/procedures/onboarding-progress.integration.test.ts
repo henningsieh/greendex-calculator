@@ -10,19 +10,20 @@ const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { createOnboardingProgressProcedure } from "@/features/participant-onboarding/procedures/onboarding-progress";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerOnboardingProgress.
-const host = "pb8rir6gvcyfqiwaqtnk5xec";
-const partner = "yi608vzxygcikogkqozy7r81";
-const project = "q1jwax2hm79a3iian3hs5x73";
-const own = "kpy26vaupifiqe3vuu554twi";
-const foreign = "li8ummqf6runglocgx76791z";
-const coordinator = "d430zzfeqqkly5ldh6taz24l";
-const joined = "g2wwxic53eufnwlmzl8vplam";
-const pending = "hz7hq50rox2931x2g6fvnm9x";
-const revoked = "pn2pja15f3t265bd805eiztb";
-const outsider = "y81ceaq0pmv2oqk3wkvqd6xo";
+const host = SEED_IDS.organization.onboardingHost;
+const partner = SEED_IDS.organization.onboardingPartner;
+const project = SEED_IDS.project.onboardingProject;
+const own = SEED_IDS.partnership.onboardingOwn;
+const foreign = SEED_IDS.partnership.onboardingForeign;
+const coordinator = SEED_IDS.user.onboardingCoordinator;
+const joined = SEED_IDS.user.onboardingJoined;
+const pending = SEED_IDS.user.onboardingPending;
+const revoked = SEED_IDS.user.onboardingRevoked;
+const outsider = SEED_IDS.user.onboardingOutsider;
 const version = { id: "fixture-v2", contentHash: "fixture-hash-v2" };
 let actor = coordinator;
 let activeOrg = partner;
@@ -78,7 +79,7 @@ describe("Partner invitee onboarding progress", () => {
     ).toMatchObject({
       participationId: null,
       participation: "not-joined",
-      invitationId: "gxtubvf8mav6w9c8do4fey2f",
+      invitationId: SEED_IDS.entryToken.onboardingProgressPendingInvitation,
       profile: "complete",
       agreement: "outdated",
       membership: "missing",
@@ -115,7 +116,7 @@ describe("Partner invitee onboarding progress", () => {
   it("requires the current content hash and reports expired invitations", async () => {
     agreement = { ...version, contentHash: "superseded-current-version-hash" };
     const rows = await client.progress({
-      partnershipId: "xs8n7xoutdn7nm0fx0pcdge3",
+      partnershipId: SEED_IDS.partnership.expiredOnboardingPartnershipId,
     });
     expect(
       rows.find((row) => row.email === `${joined}@example.org`)?.agreement,

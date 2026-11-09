@@ -16,6 +16,7 @@ const authMocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { PROJECT_SORT_MODES } from "@/features/projects/list-query-options";
 import { resolveRelationship } from "@/features/projects/procedures/core";
 import { router } from "@/lib/orpc/router";
@@ -23,22 +24,22 @@ import { router } from "@/lib/orpc/router";
 // Stable identities registered in SEED_SCENARIOS.costTrackerProjects.
 describe("projects procedures", () => {
   describe("derived readiness and completion", () => {
-    let actor = "v3mlz2g5clg8w6ah4ksaxyhs";
-    const host = "qktk52yxvs7xld84b1tvuoh9";
+    let actor = SEED_IDS.user.readinessActor;
+    const host = SEED_IDS.organization.readinessHost;
     const partnerIds = [
-      "qoqjcz9wkb9w1cu1jciykycq",
-      "xykexg4zokyx3xmwsqoarbne",
-      "ci9hh94qpeqiqkdd9r3bh6kv",
+      SEED_IDS.organization.projectsOrg1,
+      SEED_IDS.organization.projectsOrg2,
+      SEED_IDS.organization.projectsOrg3,
     ];
     const readinessProjectIds = [
-      "yw0j74vrct2t82f1rgqtrs4t", // empty
-      "qglynmc75ava9l2jpyyos5cp", // mixed
-      "aa8p1gyxlst0fkc06npqp227", // claimless-partial
-      "wmexswb9vwkzkemjgb0fuio8", // terminal
-      "qhj5ysoj4rhmeakufdfcnjha", // editable
-      "mxszdqbyysrail9pf3t8x0f0", // submitted
-      "q769rcuir0ts8v9pxxra44hz", // correction_requested
-      "lw7lrv1wm139zv4qgnzjkao7", // approved
+      SEED_IDS.project.projectsProject0, // empty
+      SEED_IDS.project.projectsProject2, // mixed
+      SEED_IDS.project.projectsProject4, // claimless-partial
+      SEED_IDS.project.projectsProject6, // terminal
+      SEED_IDS.project.projectsProject8, // editable
+      SEED_IDS.project.projectsProject10, // submitted
+      SEED_IDS.project.projectsProject12, // correction_requested
+      SEED_IDS.project.projectsProject14, // approved
     ] as const;
     const readinessScenarioNames = [
       "empty",
@@ -76,7 +77,7 @@ describe("projects procedures", () => {
     beforeEach(async () => {
       vi.clearAllMocks();
       authMocks.hasPermission.mockResolvedValue({ success: true });
-      actor = "v3mlz2g5clg8w6ah4ksaxyhs";
+      actor = SEED_IDS.user.readinessActor;
       useSession(host);
       useScenario("empty");
     });
@@ -113,7 +114,10 @@ describe("projects procedures", () => {
       expect(partner).not.toHaveProperty("partnerOrganizations");
 
       const baselineClaim = await db.query.claimsTable.findFirst({
-        where: eq(claimsTable.partnershipId, "fkw18w1v3iih7wo0p58xryfo"),
+        where: eq(
+          claimsTable.partnershipId,
+          SEED_IDS.partnership.readinessPartnershipIds6,
+        ),
       });
       if (!baselineClaim) throw new Error("Seed mixed-status Claim required.");
       // Same-Project refresh after a Claim state change is under test. No supported
@@ -221,9 +225,9 @@ describe("projects procedures", () => {
     });
 
     it.each([
-      "g1uqbte2iau4cota7ihqvsd7",
-      "ht74tddcca1pd57ckhan9jyn",
-      "cy9lv43gdjuksbp2dt3ipdb8",
+      SEED_IDS.user.projectsUser2,
+      SEED_IDS.user.projectsUser4,
+      SEED_IDS.user.projectsUser6,
     ] as const)(
       "allows Hosting %s with organization-wide or explicit assignment authority",
       async (actorId) => {
@@ -240,7 +244,7 @@ describe("projects procedures", () => {
     );
 
     it("denies assigned participants without the coordinator role", async () => {
-      actor = "tq9lhc4pcvh7m23xctv46olw";
+      actor = SEED_IDS.user.projectsUser8;
       useSession(host);
       await expect(complete()).rejects.toMatchObject({ code: "FORBIDDEN" });
       const [record] = await db
@@ -251,9 +255,9 @@ describe("projects procedures", () => {
     });
 
     it.each([
-      "n9n8i1cvwpmn65lpk3xgk1kh",
-      "n9n8i1cvwpmn65lpk3xgk1kh",
-      "kqndalgew54w27ztll9b2xyh",
+      SEED_IDS.user.projectsUser9,
+      SEED_IDS.user.projectsUser9,
+      SEED_IDS.user.projectsUser7,
     ] as const)("denies Hosting %s without assignment", async (actorId) => {
       actor = actorId;
       useSession(host);
@@ -271,12 +275,12 @@ describe("projects procedures", () => {
     });
   });
   describe("get", () => {
-    const userId = "b9ry2h2ubab6tis178d99t25";
-    const hostId = "y3vs6znh5b2au1r8larqs1c8";
-    const partnerId = "g8vhp8dyvh25i35adrvuurai";
-    const unrelatedId = "dx661hzjhafd0l1uujpcmqfd";
-    const projectId = "zfwddd3leo8hgyzf2zqg4ka5";
-    const partnershipId = "rxp8zb3d1e4bxxl3iln80q89";
+    const userId = SEED_IDS.user.projectDetailUserId;
+    const hostId = SEED_IDS.organization.projectDetailHostId;
+    const partnerId = SEED_IDS.organization.projectDetailPartnerId;
+    const unrelatedId = SEED_IDS.organization.projectDetailUnrelatedId;
+    const projectId = SEED_IDS.project.projectDetailProjectId;
+    const partnershipId = SEED_IDS.partnership.projectDetailPartnershipId;
     const assignedAt = new Date("2024-02-01T10:00:00.000Z");
     const updatedAt = new Date("2024-02-02T10:00:00.000Z");
     const headers = new Headers();
@@ -366,15 +370,15 @@ describe("projects procedures", () => {
   });
 
   describe("list", () => {
-    let userId = "jir0evdydult8a6bs4zn9nof";
-    const hostId = "d7mj5abcpjlp433v6xveq0xc";
-    const partnerId = "z7s6cxlk5ix6xpjd45nf0syj";
-    const secondPartnerId = "om6l4k0d4454dbi59xs6an9i";
-    const unrelatedId = "xpajvpxll5xfoqlql3p1j557";
-    const alphaId = "ydkxm6dm66gz2nwqtf4fdogz";
-    const betaId = "rcv3v5zci48pu3jvaq6mgse3";
-    const climateId = "c6fx5qgb3hzbvggwe5bvldgd";
-    const foreignId = "jl6dlxaq2upt0smkcgprnlwk";
+    let userId = SEED_IDS.user.projectListUserId;
+    const hostId = SEED_IDS.organization.projectListHostId;
+    const partnerId = SEED_IDS.organization.projectListPartnerId;
+    const secondPartnerId = SEED_IDS.organization.projectListSecondPartnerId;
+    const unrelatedId = SEED_IDS.organization.projectListUnrelatedId;
+    const alphaId = SEED_IDS.project.projectListAlphaId;
+    const betaId = SEED_IDS.project.projectListBetaId;
+    const climateId = SEED_IDS.project.projectListClimateId;
+    const foreignId = SEED_IDS.project.projectListForeignId;
     const headers = new Headers();
     const client = createRouterClient(router, {
       context: async () => ({ headers }),
@@ -391,7 +395,7 @@ describe("projects procedures", () => {
       vi.clearAllMocks();
       authMocks.hasPermission.mockResolvedValue({ success: true });
       useActiveOrganization(hostId);
-      userId = "jir0evdydult8a6bs4zn9nof";
+      userId = SEED_IDS.user.projectListUserId;
       useActiveOrganization(hostId);
     });
     it("returns a bounded Hosted page with whole-scope metrics", async () => {
@@ -605,10 +609,10 @@ describe("projects procedures", () => {
     });
 
     it.each([
-      "r4lbmg3rydm9whnikhr8uk39",
-      "r4lbmg3rydm9whnikhr8uk39",
-      "weegow6wmcg6tmuc0zy0v5s4",
-      "u5j0wa97s7pbjl95gb8pju0h",
+      SEED_IDS.user.projectsUser12,
+      SEED_IDS.user.projectsUser12,
+      SEED_IDS.user.projectsUser13,
+      SEED_IDS.user.projectsUser14,
     ] as const)(
       "denies org-wide hosted overview to %s even with project.read",
       async (userIdValue) => {
@@ -620,7 +624,7 @@ describe("projects procedures", () => {
         expect(await client.projects.scopes()).toEqual({
           hosted: false,
           partner: false,
-          canCreate: userIdValue !== "r4lbmg3rydm9whnikhr8uk39",
+          canCreate: userIdValue !== SEED_IDS.user.projectsUser12,
         });
       },
     );
@@ -649,12 +653,16 @@ describe("projects procedures", () => {
   });
 
   describe("relationship", () => {
-    const hostingOrganizationId = "co377paio4zfz1q1bx4whjkw";
-    const partnerOrganizationId = "c12l1bn346722vdnxwfacqbx";
-    const unrelatedOrganizationId = "hbsugr6cxctsen7wi6e27r20";
-    const projectId = "i4vsksni1dnopm3ja3px21o0";
-    const archivedProjectId = "uyjahddmbuz8d8pl10jd3al4";
-    const partnershipId = "sq5kowvk1v13377kn53ktu0a";
+    const hostingOrganizationId =
+      SEED_IDS.organization.projectRelationshipHostingOrganizationId;
+    const partnerOrganizationId =
+      SEED_IDS.organization.projectRelationshipPartnerOrganizationId;
+    const unrelatedOrganizationId =
+      SEED_IDS.organization.projectRelationshipUnrelatedOrganizationId;
+    const projectId = SEED_IDS.project.projectRelationshipProjectId;
+    const archivedProjectId =
+      SEED_IDS.project.projectRelationshipArchivedProjectId;
+    const partnershipId = SEED_IDS.partnership.projectRelationshipPartnershipId;
 
     it("resolves the Hosting Organization relationship", async () => {
       await expect(
@@ -709,12 +717,13 @@ describe("projects procedures", () => {
   });
 
   describe("assigned coordinator Partner discovery", () => {
-    const coord = "pny51623ftjwk3daduipft1b";
-    const stranger = "txknveoktb9jsg1svevjy5yd";
-    const partner = "k9p9253nsdvi27fggezdv43d";
-    const assignedProject = "csxxr9afisxdchhhwad3g3x0";
-    const foreignProject = "lciizaru87wgg6zi7vn08d6h";
-    const assignedPartnership = "a6abn8gwmau5e291yiku1a2u";
+    const coord = SEED_IDS.user.projectDiscoveryCoord;
+    const stranger = SEED_IDS.user.projectDiscoveryStranger;
+    const partner = SEED_IDS.organization.projectDiscoveryPartner;
+    const assignedProject = SEED_IDS.project.projectDiscoveryAssignedProject;
+    const foreignProject = SEED_IDS.project.projectDiscoveryForeignProject;
+    const assignedPartnership =
+      SEED_IDS.partnership.projectDiscoveryAssignedPartnership;
     const client = createRouterClient(router, {
       context: async () => ({ headers: new Headers() }),
     });

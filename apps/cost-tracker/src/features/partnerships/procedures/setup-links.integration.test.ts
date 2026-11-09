@@ -28,14 +28,15 @@ const authMocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerSetupLinks.
-const ownerId = "sg35qwjva9v00sz5lal6nq5k";
+const ownerId = SEED_IDS.user.setupLinksOwner;
 let userId = ownerId;
-const hostId = "bv8cv1pccaghkuhwcrnvk87p";
-const partnerId = "xecuissn7aiyiyezm3jfkkc1";
-const projectId = "k0asthvexnqg5oqseo2q5var";
+const hostId = SEED_IDS.organization.setupLinksHost;
+const partnerId = SEED_IDS.organization.setupLinksPartner;
+const projectId = SEED_IDS.project.setupLinksProject;
 const recipientEmail = "sg35qwjva9v00sz5lal6nq5k@example.com";
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
@@ -64,7 +65,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   // Setup Links and Partnerships are procedure outputs; never delete seed identities.
-  for (const ownedProjectId of [projectId, "rir02zzb2jrzgh8maaa4qh4u"]) {
+  for (const ownedProjectId of [
+    projectId,
+    SEED_IDS.project.setupLinksOtherProject,
+  ]) {
     await db.delete(links).where(eq(links.projectId, ownedProjectId));
     await db
       .delete(partnerships)
@@ -233,7 +237,7 @@ describe("Partner Organization setup links", () => {
       ...input,
       organizationId: partnerId,
     });
-    userId = "wy5shwjouvxfad8epx3t966h";
+    userId = SEED_IDS.user.setupLinksUser6;
     asUser();
     await expect(
       client.projectPartnerships.getSetupLinkEligibility(input),
@@ -356,11 +360,11 @@ describe("Partner Organization setup links", () => {
   it.each([
     {
       role: `${ORGANIZATION_ROLES.ProjectCoordinator},${ORGANIZATION_ROLES.OrganizationOwner}`,
-      orgId: "ue3fwothynemqt2ywrszcase",
+      orgId: SEED_IDS.organization.setupLinksOrg2,
     },
     {
       role: `${ORGANIZATION_ROLES.OrganizationOwner},${ORGANIZATION_ROLES.Participant}`,
-      orgId: "ihfwcjl6hn2epqdid5rgkari",
+      orgId: SEED_IDS.organization.setupLinksOrg3,
     },
   ])(
     "offers and consumes an existing Organization with %s membership",
@@ -434,7 +438,7 @@ describe("Partner Organization setup links", () => {
     // Redemption only binds: the Organization (and creator Ownership) is
     // created beforehand through the supported Better Auth flow (ADR-0013),
     // so consuming the link must not add Organization or Membership rows.
-    const freshOrgId = "taap3sr6rz40ho5ojh4dzrfa";
+    const freshOrgId = SEED_IDS.organization.setupLinksOrg4;
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
       recipientEmail,
@@ -476,8 +480,8 @@ describe("Partner Organization setup links", () => {
   });
 
   it("resolves competing redemption to one Partnership with a clear refusal", async () => {
-    const raceOrgId = "iijo00f0gw3fgf80j6k7jha7";
-    const rivalOrgId = "epdqai2n6zc14d4myu5e3b38";
+    const raceOrgId = SEED_IDS.organization.setupLinksOrg5;
+    const rivalOrgId = SEED_IDS.organization.setupLinksOrg6;
     const link = await client.projectPartnerships.createSetupLink({
       projectId,
       recipientEmail,
@@ -520,27 +524,27 @@ describe("Partner Organization setup links", () => {
     {
       role: ORGANIZATION_ROLES.ProjectCoordinator,
       allowed: true,
-      userId: "e4kdv5xbdh7mdks1s5whazy0",
+      userId: SEED_IDS.user.setupLinksUser1,
     },
     {
       role: ORGANIZATION_ROLES.Participant,
       allowed: false,
-      userId: "c7lv2v4wbrkggzotjnyn4y11",
+      userId: SEED_IDS.user.setupLinksUser2,
     },
     {
       role: ORGANIZATION_ROLES.Participant,
       allowed: false,
-      userId: "c7lv2v4wbrkggzotjnyn4y11",
+      userId: SEED_IDS.user.setupLinksUser2,
     },
     {
       role: ORGANIZATION_ROLES.OrganizationAdmin,
       allowed: true,
-      userId: "mh9zd08yyzmjqy3t684r8us9",
+      userId: SEED_IDS.user.setupLinksUser3,
     },
     {
       role: ORGANIZATION_ROLES.OrganizationOwner,
       allowed: true,
-      userId: "zdvjl3sxo874wg59dfxp88ti",
+      userId: SEED_IDS.user.setupLinksUser4,
     },
   ])("scopes setup-link issuance for $role", async (testCase) => {
     userId = testCase.userId;
@@ -555,8 +559,8 @@ describe("Partner Organization setup links", () => {
   });
 
   it("denies a coordinator on another hosted Project without its own assignment", async () => {
-    const otherProjectId = "rir02zzb2jrzgh8maaa4qh4u";
-    userId = "e4kdv5xbdh7mdks1s5whazy0";
+    const otherProjectId = SEED_IDS.project.setupLinksOtherProject;
+    userId = SEED_IDS.user.setupLinksUser1;
     asUser();
     await expect(
       client.projectPartnerships.createSetupLink({
@@ -572,7 +576,7 @@ describe("Partner Organization setup links", () => {
     await expect(
       client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
     ).resolves.toHaveProperty("secret");
-    userId = "y4c99qnw9bbaiz4cqqjpm3sb";
+    userId = SEED_IDS.user.setupLinksUser5;
     asUser();
     await expect(
       client.projectPartnerships.createSetupLink({
@@ -587,7 +591,7 @@ describe("Partner Organization setup links", () => {
       projectId,
       recipientEmail,
     });
-    userId = "wy5shwjouvxfad8epx3t966h";
+    userId = SEED_IDS.user.setupLinksUser6;
     asUser();
     await expect(
       client.projectPartnerships.consumeSetupLink({

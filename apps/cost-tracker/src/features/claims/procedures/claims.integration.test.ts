@@ -22,20 +22,21 @@ const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerClaims.
-const host = "rvvkpmsj6futf7oh5w6fc8ck";
-const partner = "dgj0r3bf101hos6d7z5tsn61";
-const coordinator = "nol2sd5ye6kezxgvovi7q5f0";
-const participant = "fhmed3rl5eut51ok5j81rodo";
-const owner = "u58a1drm42imnu2fu4304ajw";
-const project = "rmqohj3gpdw0f9detkz6osga";
-let own = "llej1oakvcdzp64hvqmwyfoi";
-const foreign = "btgjwuma0gvy6a89ovz5w4yx";
-const account = "b0196l2ew39i22ursbv48p3s";
-const secondAccount = "dsj2rua1gdb4x4jvknmymoi4";
-const foreignAccount = "n6i6klamj4v5mxrz6sv78cwf";
+const host = SEED_IDS.organization.claimHost;
+const partner = SEED_IDS.organization.claimPartner;
+const coordinator = SEED_IDS.user.claimCoordinator;
+const participant = SEED_IDS.user.claimParticipant;
+const owner = SEED_IDS.user.claimOwner;
+const project = SEED_IDS.project.claimProject3;
+let own = SEED_IDS.partnership.claimOwn;
+const foreign = SEED_IDS.partnership.claimForeign;
+const account = SEED_IDS.payoutAccount.claimAccount;
+const secondAccount = SEED_IDS.payoutAccount.claimSecondAccount;
+const foreignAccount = SEED_IDS.payoutAccount.claimForeignAccount;
 let actor = coordinator;
 let activeOrg = partner;
 const createdAccountIds = new Set<string>();
@@ -55,7 +56,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  own = "llej1oakvcdzp64hvqmwyfoi";
+  own = SEED_IDS.partnership.claimOwn;
   actor = coordinator;
   activeOrg = partner;
   await db.delete(claims).where(eq(claims.partnershipId, own));
@@ -65,10 +66,10 @@ beforeEach(async () => {
 afterEach(async () => {
   await db
     .delete(claims)
-    .where(eq(claims.partnershipId, "llej1oakvcdzp64hvqmwyfoi"));
+    .where(eq(claims.partnershipId, SEED_IDS.partnership.claimOwn));
   await db
     .delete(selections)
-    .where(eq(selections.partnershipId, "llej1oakvcdzp64hvqmwyfoi"));
+    .where(eq(selections.partnershipId, SEED_IDS.partnership.claimOwn));
   for (const id of createdAccountIds)
     await db.delete(accounts).where(eq(accounts.id, id));
   createdAccountIds.clear();
@@ -76,7 +77,7 @@ afterEach(async () => {
 
 describe("Claim drafts and Partnership payout selection", () => {
   it("does not expose unsubmitted drafts to Hosting review", async () => {
-    own = "sf9t6fbzyfur5lqqhn799mf5";
+    own = SEED_IDS.partnership.claimsEditablePartnership;
     activeOrg = host;
     await expect(
       client.claims.getReviewDetails({ partnershipId: own }),
@@ -259,7 +260,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       await db.select().from(selections).where(eq(selections.partnershipId, own)),
     ).toMatchObject([{ payoutAccountId: secondAccount }]);
     expect(draft.status).toBe("editable");
-    own = "l0ttgu2m4ieljze7t4mbzgs1";
+    own = SEED_IDS.partnership.claimsSubmittedSelectedPartnership;
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,
@@ -278,7 +279,7 @@ describe("Claim drafts and Partnership payout selection", () => {
   });
 
   it("locks payout selection for an already-submitted Claim", async () => {
-    own = "kp9h78jm6bn5ob0b82bqlitb";
+    own = SEED_IDS.partnership.claimsSubmittedPartnership;
     await expect(
       client.claims.selectPayoutAccount({
         partnershipId: own,

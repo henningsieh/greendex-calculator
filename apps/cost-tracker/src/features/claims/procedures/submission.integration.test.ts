@@ -30,18 +30,19 @@ const authMocks = vi.hoisted(() => ({ getSession: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerSubmission.
-const host = "rvcaur1km9mca7jjin85kj5m",
-  partner = "k2nbcl2vpykg3cxy9f8lz3fl",
-  other = "gxian35umt6xb38qa9liisys";
-const actor = "uxeutxj67uas64bo7vsey4sr",
-  participantUser = "zvs4tq30t3y59whwb4t3knqp";
+const host = SEED_IDS.organization.submissionRoleHost,
+  partner = SEED_IDS.organization.submissionRolePartner,
+  other = SEED_IDS.organization.submissionOther;
+const actor = SEED_IDS.user.submissionRoleActor,
+  participantUser = SEED_IDS.user.submissionRoleParticipantUser;
 let project: string, own: string, foreign: string;
 let robin: string, sam: string, outsider: string, third: string, proof: string;
-const account = "qi6haiste5mxtl7ubdgkpsty",
-  alternate = "mimkarr03v5k3znklrhap4c2";
+const account = SEED_IDS.payoutAccount.submissionPayoutAccount0,
+  alternate = SEED_IDS.payoutAccount.submissionPayoutAccount1;
 const scenarioNames = [
   "editable",
   "submitted",
@@ -62,70 +63,70 @@ const baselines = new Map<
 const touchedScenarios = new Set<SubmissionScenario>();
 const scenarioIds = [
   {
-    project: "luh2gfkwy1qlbobg3fhggmz6",
-    own: "m2tamlimqmu4p3073psrkb2u",
-    foreign: "izdjfs9otehxynijhxhchvb9",
-    robin: "bc2g6sjjzrlcpdkoqscvq2zh",
-    sam: "qgxc4i0fduva2k6dy99xqojt",
-    outsider: "da5vgzf6c2h4o4cq4t2vogik",
-    third: "f5h3tu1f0i7zonmgdauskb44",
-    proof: "pct9jkyjz1mdy9bgxaw472lc",
-    claim: "ldnogv8cruaflqrhrhbqx1qj",
+    project: SEED_IDS.project.submissionProject3,
+    own: SEED_IDS.partnership.submissionOwn4,
+    foreign: SEED_IDS.partnership.submissionForeign2,
+    robin: SEED_IDS.participation.submissionParticipation0,
+    sam: SEED_IDS.participation.submissionParticipation1,
+    outsider: SEED_IDS.participation.submissionParticipation2,
+    third: SEED_IDS.participation.submissionParticipation3,
+    proof: SEED_IDS.proofDocument.submissionProof2,
+    claim: SEED_IDS.claim.submissionClaim1,
   }, // editable
   {
-    project: "gsomgvvmjy64i4whn11obpy6",
-    own: "kk2cafpklhtfyiw2xqjkrdtg",
-    foreign: "fzoa5tg6otyfo5742en8gd76",
-    robin: "dg5ye1kjmzpabhztlghfkzx2",
-    sam: "dhf16yprotcujlx82vs3iuyp",
-    outsider: "p4shlsz7b7fqkcz5dbinjakk",
-    third: "heutu0d8adspp94g7tsp82k6",
-    proof: "peem2suosx2y21f8bhu7t9r6",
-    claim: "sxn9qzymvu56hdd7yy2cxcmr",
+    project: SEED_IDS.project.submissionProject2,
+    own: SEED_IDS.partnership.submissionOwn3,
+    foreign: SEED_IDS.partnership.submissionForeign1,
+    robin: SEED_IDS.participation.submissionParticipation4,
+    sam: SEED_IDS.participation.submissionParticipation5,
+    outsider: SEED_IDS.participation.submissionParticipation6,
+    third: SEED_IDS.participation.submissionParticipation7,
+    proof: SEED_IDS.proofDocument.submissionProof3,
+    claim: SEED_IDS.claim.submissionClaim3,
   }, // submitted
   {
-    project: "dbwtgd36aiev0ivcgrf73zlj",
-    own: "kcpn5m5gvh8765khby63bumd",
-    foreign: "bsql0y7jhg7c28qd8pgec8if",
-    robin: "mng7k5xp3zb04hkxxjmtqznj",
-    sam: "pal7vxgj2tmdp0ege6onf0ov",
-    outsider: "ev1fb9mfco8ieglzme7lom8g",
-    third: "tbzrz76i1eaoqc85u7ysvpx8",
-    proof: "wzbmtsf4n668w43mag53a7tr",
-    claim: "t3ssn4t8gxv3a3ggz2n6h5r0",
+    project: SEED_IDS.project.submissionProject1,
+    own: SEED_IDS.partnership.submissionOwn2,
+    foreign: SEED_IDS.partnership.submissionForeign0,
+    robin: SEED_IDS.participation.submissionParticipation8,
+    sam: SEED_IDS.participation.submissionParticipation9,
+    outsider: SEED_IDS.participation.submissionParticipation10,
+    third: SEED_IDS.participation.submissionParticipation11,
+    proof: SEED_IDS.proofDocument.submissionProof4,
+    claim: SEED_IDS.claim.submissionClaim4,
   }, // rejected
   {
-    project: "bejcs4i97dof6cmvyb3luodw",
-    own: "gwpumb113ddri3v28lhms4uy",
-    foreign: "q0uzkmbjotnvk5l316qpmxh4",
-    robin: "t4qu1gu6pztjgathhqwrnvud",
-    sam: "ew1kqx424ysv4mocn6awopne",
-    outsider: "e8009v5lorrjbrlb13f1g52g",
-    third: "ogqcxxymvrunn0l92z8bkj04",
-    proof: "jaydcbf1bqenp5nfjez5vaeh",
-    claim: "e7ul210pvegdxxd148vs9u23",
+    project: SEED_IDS.project.submissionProject0,
+    own: SEED_IDS.partnership.submissionOwn1,
+    foreign: SEED_IDS.partnership.submissionForeign5,
+    robin: SEED_IDS.participation.submissionParticipation12,
+    sam: SEED_IDS.participation.submissionParticipation13,
+    outsider: SEED_IDS.participation.submissionParticipation14,
+    third: SEED_IDS.participation.submissionParticipation15,
+    proof: SEED_IDS.proofDocument.submissionProof1,
+    claim: SEED_IDS.claim.submissionClaim0,
   }, // approved
   {
-    project: "t82gnzi6yaxobn0c8mfcsu0b",
-    own: "viop9j0fgg4y8jvvg1afar1v",
-    foreign: "pk0bkccpbwbe18a4fywwp74b",
-    robin: "ewx7htm2lf7avxu1ajkzf0u6",
-    sam: "ur9n1nv3vv9o8xeyc50bcusj",
-    outsider: "jh5o7w7tz6eqzb0aabxdpdr0",
-    third: "likedwohbzvrl74w78h8xp9a",
-    proof: "a8xuggw1tmx8j18wmqyybx2t",
-    claim: "xdp911g90lrnw5l14s80m2os",
+    project: SEED_IDS.project.submissionProject5,
+    own: SEED_IDS.partnership.submissionOwn5,
+    foreign: SEED_IDS.partnership.submissionForeign4,
+    robin: SEED_IDS.participation.submissionParticipation16,
+    sam: SEED_IDS.participation.submissionParticipation17,
+    outsider: SEED_IDS.participation.submissionParticipation18,
+    third: SEED_IDS.participation.submissionParticipation19,
+    proof: SEED_IDS.proofDocument.submissionProof0,
+    claim: SEED_IDS.claim.submissionClaim5,
   }, // paid
   {
-    project: "qjgboeu1c40q7s1934akvqo6",
-    own: "cpa0z6v9653245f5h1zgzk4s",
-    foreign: "l0oo403hnolh3507uuljivvc",
-    robin: "j31v4ka2dobbgqn1ipghxr63",
-    sam: "uh36vnua59x39wqks082aq9k",
-    outsider: "am1fvf3tengy5wa2yjfq1asw",
-    third: "diwbsj2a33ixrtt05mvdbtsx",
-    proof: "ycrm6550judv7pmx76z110dn",
-    claim: "m7ucc9h6942vji76np31cwyc",
+    project: SEED_IDS.project.submissionProject4,
+    own: SEED_IDS.partnership.submissionOwn0,
+    foreign: SEED_IDS.partnership.submissionForeign3,
+    robin: SEED_IDS.participation.submissionParticipation20,
+    sam: SEED_IDS.participation.submissionParticipation21,
+    outsider: SEED_IDS.participation.submissionParticipation22,
+    third: SEED_IDS.participation.submissionParticipation23,
+    proof: SEED_IDS.proofDocument.submissionProof5,
+    claim: SEED_IDS.claim.submissionClaim2,
   }, // correction
 ] as const;
 function useScenario(name: SubmissionScenario) {
@@ -182,7 +183,7 @@ const submit = () => client.claims.submit({ partnershipId: own });
 
 beforeAll(async () => {
   baselineCorrectionEvent = await db.query.claimHistoryTable.findFirst({
-    where: eq(history.id, "a3xevm2bfj6nd3ku2qz1069w"),
+    where: eq(history.id, SEED_IDS.claimHistory.submissionId),
   });
   for (const name of scenarioNames) {
     useScenario(name);
@@ -313,84 +314,84 @@ const roles = [
     side: "partner",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
-    userId: "wyiaggmoo57nbdfxsuro92ly",
+    userId: SEED_IDS.user.submissionUser12,
   },
   {
     name: "Partner owner",
     side: "partner",
     role: ORGANIZATION_ROLES.OrganizationOwner,
     assigned: false,
-    userId: "lp4bh5itvvwgxhjjfi8lp53i",
+    userId: SEED_IDS.user.submissionUser10,
   },
   {
     name: "Partner admin",
     side: "partner",
     role: ORGANIZATION_ROLES.OrganizationAdmin,
     assigned: false,
-    userId: "aac5ia5l456jhxkqtve53kw9",
+    userId: SEED_IDS.user.submissionUser11,
   },
   {
     name: "Partner unassigned coordinator",
     side: "partner",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: false,
-    userId: "tsqcugbwilakc07141vpx353",
+    userId: SEED_IDS.user.submissionUser13,
   },
   {
     name: "Partner unassigned participant",
     side: "partner",
     role: ORGANIZATION_ROLES.Participant,
     assigned: false,
-    userId: "qj684zdgr4rzy2wn6cf2pkev",
+    userId: SEED_IDS.user.submissionUser15,
   },
   {
     name: "Partner participant",
     side: "partner",
     role: ORGANIZATION_ROLES.Participant,
     assigned: true,
-    userId: "nkd49pvzgccbn3c5vj77u935",
+    userId: SEED_IDS.user.submissionUser14,
   },
   {
     name: "Hosting assigned coordinator",
     side: "host",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: true,
-    userId: "pdfzs3i83b72k15yw2has3ep",
+    userId: SEED_IDS.user.submissionUser6,
   },
   {
     name: "Hosting owner",
     side: "host",
     role: ORGANIZATION_ROLES.OrganizationOwner,
     assigned: false,
-    userId: "hhwhygf6tfpm9wspoko2bya8",
+    userId: SEED_IDS.user.submissionUser3,
   },
   {
     name: "Hosting admin",
     side: "host",
     role: ORGANIZATION_ROLES.OrganizationAdmin,
     assigned: false,
-    userId: "uxyaz38ise25t23otabtuo5t",
+    userId: SEED_IDS.user.submissionUser5,
   },
   {
     name: "Hosting unassigned coordinator",
     side: "host",
     role: ORGANIZATION_ROLES.ProjectCoordinator,
     assigned: false,
-    userId: "d28e0jt5scc82g7zcop5og4y",
+    userId: SEED_IDS.user.submissionUser7,
   },
   {
     name: "Hosting unassigned participant",
     side: "host",
     role: ORGANIZATION_ROLES.Participant,
     assigned: false,
-    userId: "cjzyp4u7nmguzlna05kw9b4i",
+    userId: SEED_IDS.user.submissionUser9,
   },
   {
     name: "Hosting participant",
     side: "host",
     role: ORGANIZATION_ROLES.Participant,
     assigned: true,
-    userId: "k7o2d2mrkj6t3i2if6jx17ox",
+    userId: SEED_IDS.user.submissionUser8,
   },
 ] as const;
 
@@ -1398,7 +1399,7 @@ describe("Host Claim review", () => {
       projectName: "Seed Submission Project submitted",
       organizationName: "Seed Submission Partner Organization",
     });
-    await asHost("d28e0jt5scc82g7zcop5og4y");
+    await asHost(SEED_IDS.user.submissionUser7);
     await expect(
       client.claims.getReviewDetails({ partnershipId: own }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -1413,9 +1414,9 @@ describe("Host Claim review", () => {
     await submittedClaim();
     const actions = ["requestCorrection", "approve", "reject", "reopen"] as const;
     for (const userId of [
-      "gxv18y1pzjnp9c662zti90y7",
-      "jkbudjbygh7pecbslkalsh3f",
-      "pdfzs3i83b72k15yw2has3ep",
+      SEED_IDS.user.submissionUser2,
+      SEED_IDS.user.submissionUser4,
+      SEED_IDS.user.submissionUser6,
     ] as const) {
       await asHost(userId);
       for (const action of actions) {
@@ -1434,14 +1435,14 @@ describe("Host Claim review", () => {
         });
       }
     }
-    await asHost("k7o2d2mrkj6t3i2if6jx17ox");
+    await asHost(SEED_IDS.user.submissionUser8);
     for (const action of actions) {
       useScenario(action === "reopen" ? "rejected" : "submitted");
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
     for (const userId of [
-      "cjzyp4u7nmguzlna05kw9b4i",
-      "d28e0jt5scc82g7zcop5og4y",
+      SEED_IDS.user.submissionUser9,
+      SEED_IDS.user.submissionUser7,
     ] as const) {
       await asHost(userId);
       for (const action of actions) {
@@ -1449,7 +1450,7 @@ describe("Host Claim review", () => {
         await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
       }
     }
-    await asHost("cjzyp4u7nmguzlna05kw9b4i");
+    await asHost(SEED_IDS.user.submissionUser9);
     for (const action of actions) {
       useScenario(action === "reopen" ? "rejected" : "submitted");
       await expect(review(action)).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -1725,15 +1726,15 @@ describe("Claim payment recording", () => {
   it("limits payment actions to Hosting owners, admins and assigned coordinators", async () => {
     const payable = await approvedClaim();
     for (const userId of [
-      "gxv18y1pzjnp9c662zti90y7",
-      "jkbudjbygh7pecbslkalsh3f",
-      "pdfzs3i83b72k15yw2has3ep",
+      SEED_IDS.user.submissionUser2,
+      SEED_IDS.user.submissionUser4,
+      SEED_IDS.user.submissionUser6,
     ] as const) {
       await asHost(userId);
       await markPaid(payable);
       await correctPayment("Incorrect flag");
     }
-    await asHost("cjzyp4u7nmguzlna05kw9b4i");
+    await asHost(SEED_IDS.user.submissionUser9);
     await expect(markPaid(payable)).rejects.toMatchObject({ code: "FORBIDDEN" });
     useScenario("paid");
     await expect(correctPayment("Incorrect flag")).rejects.toMatchObject({

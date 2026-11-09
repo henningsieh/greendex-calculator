@@ -16,18 +16,19 @@ const authMocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { router } from "@/lib/orpc/router";
 
 import { SEED_ENTITY_SEARCH } from "../../../../../calculator/scripts/seed-scenarios";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerEntitySearch.
 const scenario = SEED_ENTITY_SEARCH;
-const actor = "un3tvw49u59cn2d2a9rop8dl";
-const host = "mdeufadg0pokz21yilwj20zh";
-const partner = "jc81zdxvsmhn9amf5cd7b2z8";
-const foreign = "y4l7cye3sx531uc750fe1dfu";
-const assigned = "f1jy9mt5aes134zezdsz9rjh";
-const unassigned = "kf2n2hsv5yt7snkoqahw7012";
+const actor = SEED_IDS.user.entitySearchActor;
+const host = SEED_IDS.organization.entitySearchHost;
+const partner = SEED_IDS.organization.entitySearchPartner;
+const foreign = SEED_IDS.organization.entitySearchForeign;
+const assigned = SEED_IDS.project.entitySearchAssigned;
+const unassigned = SEED_IDS.project.entitySearchUnassigned;
 const client = createRouterClient(router, {
   context: async () => ({ headers: new Headers() }),
 });

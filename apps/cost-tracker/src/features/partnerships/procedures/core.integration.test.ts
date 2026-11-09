@@ -25,19 +25,20 @@ const authMocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
+import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerPartnerships.
-const userId = "j3il3a249ve1ptmg95avdlgv";
-const hostId = "bju7ngb3cgo3pdl2mus0fd1x";
-const foreignHostId = "lgiqk6xb0z0fmc5mt2a14c2h";
-const assignedOrganizationId = "qzk86wnb1aey5g57xszuapg7";
-const candidateOrganizationId = "i1vygof18xbl8888j7h6dlxv";
-const raceOrganizationId = "pbsbg6s5g2p5cmc2z4kfo03v";
-const projectId = "oe5auzlmxm92s21kxpoy2po7";
-const foreignProjectId = "fjt5l9ol15czsgt9utly4k7i";
-const assignedPartnershipId = "tevcjre6m3rlqajvg3628nd5";
-const removablePartnershipId = "ocv8adv9zbl8h4z6xg91hj1b";
+const userId = SEED_IDS.user.partnershipsActor;
+const hostId = SEED_IDS.organization.partnershipsHost;
+const foreignHostId = SEED_IDS.organization.partnershipsForeignHost;
+const assignedOrganizationId = SEED_IDS.organization.partnershipsOrg2;
+const candidateOrganizationId = SEED_IDS.organization.partnershipsOrg4;
+const raceOrganizationId = SEED_IDS.organization.partnershipsOrg5;
+const projectId = SEED_IDS.project.partnershipsProject;
+const foreignProjectId = SEED_IDS.project.partnershipsForeignProject;
+const assignedPartnershipId = SEED_IDS.partnership.partnershipsId3;
+const removablePartnershipId = SEED_IDS.partnership.partnershipsId2;
 let removableBaseline: typeof projectPartnerOrganizationsTable.$inferSelect;
 const createdPartnershipIds: string[] = [];
 const headers = new Headers();
@@ -248,10 +249,10 @@ describe("Project Partnership procedures", () => {
 
   describe("assigned coordinator partnership visibility", () => {
     // Read-only assigned/unassigned coordinator scenarios are seeded too.
-    const coord = "tqsbp0h0ue0r9f3cucsau6ub";
-    const stranger = "c7zd4q31mcarkmy6gj8ohr05";
-    const partner = "kbw5d47mmfruysu3eseo7gdk";
-    const ownPartnership = "jxj0285f2i5m3seadecd1i61";
+    const coord = SEED_IDS.user.partnershipsCoord;
+    const stranger = SEED_IDS.user.partnershipsStranger;
+    const partner = SEED_IDS.organization.partnershipsVisibilityPartner;
+    const ownPartnership = SEED_IDS.partnership.partnershipsId0;
     const useViewer = (viewerId: string) => {
       authMocks.getSession.mockResolvedValue({
         session: {

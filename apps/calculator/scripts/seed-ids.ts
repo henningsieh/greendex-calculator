@@ -12,7 +12,7 @@
  * Runtime secrets (secretHash via randomUUID, password salts) and email
  * local-parts that merely contain an id substring are not listed here.
  */
-export const SEED_IDS = {
+const seedIdentities = {
   user: {
     claimCoordinator: "nol2sd5ye6kezxgvovi7q5f0",
     claimOwner: "u58a1drm42imnu2fu4304ajw",
@@ -654,3 +654,14 @@ export const SEED_IDS = {
     participationId: "kpdndnmev8v79jf62vod9cod",
   },
 } as const;
+
+/**
+ * Values are widened to `string` so call sites can assign an identity to a
+ * variable, pass it to a helper or build arrays; the key paths stay fully
+ * checked, so a typo still fails to compile.
+ */
+type WidenSeedIds<T> = {
+  readonly [K in keyof T]: T[K] extends string ? string : WidenSeedIds<T[K]>;
+};
+
+export const SEED_IDS: WidenSeedIds<typeof seedIdentities> = seedIdentities;
