@@ -15,7 +15,7 @@ import {
 } from "@/lib/tanstack-react-query/hydration";
 
 /** "Project name · Partner Organization" for the review header (#390). */
-async function ReviewContext({
+export async function ReviewContext({
   params,
 }: {
   params: Promise<{ partnershipId: string }>;
@@ -29,14 +29,27 @@ async function ReviewContext({
         meta: { costTrackerORPC: true },
       }),
     )
-    // Header context is decorative chrome: a refusal degrades to the fallback
-    // copy, while real failures still reach the section error boundary.
+    // Header context is decorative chrome: it must never take the page down, so
+    // every failure degrades to the fallback copy. A refusal is the expected
+    // answer for a viewer without access; anything else is a real defect and is
+    // logged so it stays observable. The section keeps its own retryable
+    // boundary, which this header sits outside of.
     .catch((error: unknown) => {
-      if (!isPresentationRefusal(error)) throw error;
+      if (!isPresentationRefusal(error))
+        console.error("Claim review header context failed.");
       return null;
     });
-  if (!details) return <>{t("contextUnavailable")}</>;
-  return <>{`${details.projectName} · ${details.organizationName}`}</>;
+  if (!details)
+    return (
+      <span data-claim-review-context="unavailable">
+        {t("contextUnavailable")}
+      </span>
+    );
+  return (
+    <span data-claim-review-context="resolved">
+      {`${details.projectName} · ${details.organizationName}`}
+    </span>
+  );
 }
 
 async function ClaimReviewSection({
