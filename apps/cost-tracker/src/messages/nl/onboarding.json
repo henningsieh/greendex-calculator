@@ -44,7 +44,7 @@
       "accept": "Uitnodiging accepteren",
       "recheck": "Uitnodiging opnieuw controleren",
       "creationBlocked": "Je kunt geen Organisatie maken zolang je een openstaande uitnodiging voor {organization} hebt. Word lid of wijs de uitnodiging hieronder af. Andere uitnodigingen of een bestaand lidmaatschap kunnen het maken nog steeds verhinderen.",
-      "reject": "Uitnodiging voor {organization} afwijzen",
+      "reject": "Uitnodiging afwijzen",
       "rejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder.",
       "continue": "Doorgaan met huidige toegang",
       "options": "Word lid van deze Organisatie of wijs de uitnodiging hieronder af. Openstaande uitnodigingen voor collega’s verhinderen het maken van een nieuwe Organisatie. Afwijzen verwijdert alleen deze uitnodiging, geen andere uitnodigingen of bestaande lidmaatschappen.",

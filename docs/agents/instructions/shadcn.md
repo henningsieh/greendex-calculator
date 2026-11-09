@@ -52,6 +52,7 @@ Review generated dependencies and code before retaining them.
 - Prefer composition over adding domain-specific props to shared primitives.
 - Keep feature behavior and translations outside low-level UI primitives.
 - Use `cn`, existing variants, and Tailwind tokens before introducing custom styling APIs.
+- Controls carry action copy only: a button, link, or menu item is labelled with the verb it performs, never with interpolated domain data (Organization, Project, Participant, email, id). Interpolated values are unbounded, so they break narrow layouts and duplicate the context the surrounding screen or the confirmation dialog already shows. Put the object in that context or in the dialog body, where it can wrap.
 - Preserve Server Components unless interaction or browser APIs require a Client Component.
 
 ## Forms

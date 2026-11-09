@@ -44,7 +44,7 @@
       "accept": "Aceptar invitación",
       "recheck": "Comprobar de nuevo",
       "creationBlocked": "No puedes crear una Organización mientras tengas una invitación pendiente a {organization}. Únete o rechaza la invitación abajo. Otras invitaciones o una membresía existente pueden seguir impidiendo la creación.",
-      "reject": "Rechazar invitación a {organization}",
+      "reject": "Rechazar invitación",
       "rejected": "Has rechazado la invitación a {organization}. Se ha comprobado de nuevo tu acceso actual. Sigue el siguiente paso abajo.",
       "continue": "Continuar con el acceso actual",
       "options": "Únete a esta Organización o rechaza su invitación abajo. Las invitaciones de colegas pendientes impiden crear una nueva Organización. El rechazo solo elimina esta invitación, no otras invitaciones ni membresías existentes.",

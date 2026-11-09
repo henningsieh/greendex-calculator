@@ -44,7 +44,7 @@
       "accept": "Sprejmi povabilo",
       "recheck": "Znova preveri povabilo",
       "creationBlocked": "Organizacije ne morete ustvariti, dokler imate čakajoče vabilo v {organization}. Pridružite se ali spodaj zavrnite vabilo. Druga vabila ali obstoječe članstvo lahko še vedno preprečujejo ustvarjanje.",
-      "reject": "Zavrni vabilo v {organization}",
+      "reject": "Zavrni vabilo",
       "rejected": "Zavrnili ste vabilo v {organization}. Vaš trenutni dostop je bil znova preverjen. Sledite naslednjemu koraku spodaj.",
       "continue": "Nadaljuj s trenutnim dostopom",
       "options": "Pridružite se tej Organizaciji ali spodaj zavrnite njeno vabilo. Čakajoča vabila za sodelavce preprečujejo ustvarjanje nove Organizacije. Zavrnitev odstrani le to vabilo, ne drugih vabil ali obstoječih članstev.",

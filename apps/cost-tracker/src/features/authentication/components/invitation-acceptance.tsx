@@ -299,11 +299,7 @@ function InvitationActions({
         onClick={reject}
         type="button"
       >
-        {pending
-          ? t("invitation.confirmReject.pending")
-          : t("invitation.reject", {
-              organization: decision.invitation.organization.name,
-            })}
+        {pending ? t("invitation.confirmReject.pending") : t("invitation.reject")}
       </Button>
       <p className="mt-4">{t("invitation.options")}</p>
     </>

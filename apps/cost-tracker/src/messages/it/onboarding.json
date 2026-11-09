@@ -44,7 +44,7 @@
       "accept": "Accetta invito",
       "recheck": "Controlla di nuovo l'invito",
       "creationBlocked": "Non puoi creare un’Organizzazione mentre hai un invito in sospeso a {organization}. Unisciti oppure rifiuta l’invito qui sotto. Altri inviti o un’adesione esistente possono ancora impedire la creazione.",
-      "reject": "Rifiuta invito a {organization}",
+      "reject": "Rifiuta invito",
       "rejected": "Hai rifiutato l’invito a {organization}. Il tuo accesso attuale è stato verificato di nuovo. Segui il prossimo passo qui sotto.",
       "continue": "Continua con l’accesso attuale",
       "options": "Unisciti a questa Organizzazione o rifiuta il suo invito qui sotto. Gli inviti di colleghi in sospeso impediscono di creare una nuova Organizzazione. Il rifiuto rimuove solo questo invito, non altri inviti o adesioni esistenti.",

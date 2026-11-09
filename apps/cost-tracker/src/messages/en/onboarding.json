@@ -44,7 +44,7 @@
       "accept": "Accept invitation",
       "recheck": "Check invitation again",
       "creationBlocked": "You cannot create an Organization while you have a pending invitation to {organization}. Join this Organization or reject its invitation below. Other invitations or an existing Membership may still prevent creation.",
-      "reject": "Reject invitation to {organization}",
+      "reject": "Reject invitation",
       "rejected": "You rejected the invitation to {organization}. Your current access has been checked again. Follow the next step below.",
       "continue": "Continue with current access",
       "options": "Join this Organization or reject its invitation below. Pending colleague invitations prevent creating a new Organization. Rejection removes only this invitation, not other invitations or existing Memberships.",

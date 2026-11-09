@@ -44,7 +44,7 @@
       "accept": "Accepter l'invitation",
       "recheck": "Vérifier à nouveau",
       "creationBlocked": "Vous ne pouvez pas créer une Organisation tant qu’une invitation à {organization} est en attente. Rejoignez cette Organisation ou refusez son invitation ci-dessous. D’autres invitations ou une adhésion existante peuvent encore empêcher la création.",
-      "reject": "Refuser l’invitation à {organization}",
+      "reject": "Refuser l’invitation",
       "rejected": "Vous avez refusé l’invitation à {organization}. Votre accès actuel a été vérifié à nouveau. Suivez la prochaine étape ci-dessous.",
       "continue": "Continuer avec l’accès actuel",
       "options": "Rejoignez cette Organisation ou refusez son invitation ci-dessous. Les invitations de collègues en attente empêchent de créer une nouvelle Organisation. Le refus ne supprime que cette invitation, pas les autres invitations ni les adhésions existantes.",

@@ -44,7 +44,7 @@
       "accept": "Einladung annehmen",
       "recheck": "Einladung erneut prüfen",
       "creationBlocked": "Du kannst keine Organisation erstellen, solange eine Einladung zu {organization} aussteht. Tritt dieser Organisation bei oder lehne die Einladung unten ab. Weitere Einladungen oder eine bestehende Mitgliedschaft können die Erstellung weiterhin verhindern.",
-      "reject": "Einladung zu {organization} ablehnen",
+      "reject": "Einladung ablehnen",
       "rejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten.",
       "continue": "Mit aktuellem Zugriff fortfahren",
       "options": "Tritt dieser Organisation bei oder lehne ihre Einladung unten ab. Ausstehende Kollegeneinladungen verhindern die Erstellung einer neuen Organisation. Die Ablehnung entfernt nur diese Einladung, keine weiteren Einladungen oder bestehenden Mitgliedschaften.",
