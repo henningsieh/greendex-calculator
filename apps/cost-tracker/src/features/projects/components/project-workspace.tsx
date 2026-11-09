@@ -93,6 +93,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     <div
       className="space-y-8"
       data-project-id={project.id}
+      data-relationship={project.relationship}
       data-testid="project-workspace"
     >
       <header className="space-y-4">
