@@ -7,24 +7,39 @@ import { expect, test } from "./fixtures/artifact-privacy";
 // Text-free: assertions use test ids, roles and the live DOM focus state.
 test.use({ trace: "off", screenshot: "off", video: "off" });
 
-test("loading the login page leaves focus alone", async ({ page }) => {
-  await page.context().clearCookies();
-  await page.goto("/login");
-  // Wait for hydration, then for the window in which the old effect grabbed
-  // focus. Anything it does happens well inside this budget.
-  await expect(page.getByTestId("email")).toBeVisible();
-  await page.waitForTimeout(5_000);
-
-  const state = await page.evaluate(() => {
-    const heading = document.querySelector("h1");
-    return {
-      headingFocused: heading !== null && heading === document.activeElement,
-      headingFocusVisible: heading?.matches(":focus-visible") ?? false,
-    };
+test("loading the login page never focuses the heading", async ({ page }) => {
+  // Record every focus change from the first paint on. A single sample after a
+  // fixed delay would miss a transient focus and cannot distinguish a
+  // server-rendered field from a hydrated one; the log covers the whole load.
+  await page.addInitScript(() => {
+    const log: string[] = [];
+    Object.defineProperty(window, "__focusLog", { value: log });
+    document.addEventListener(
+      "focusin",
+      (event) => {
+        const target = event.target;
+        log.push(target instanceof Element ? target.tagName : "UNKNOWN");
+      },
+      true,
+    );
   });
 
-  expect(state.headingFocused).toBe(false);
-  expect(state.headingFocusVisible).toBe(false);
+  await page.context().clearCookies();
+  await page.goto("/login", { waitUntil: "load" });
+  await expect(page.getByTestId("email")).toBeVisible();
+  // Grace window for hydration work that starts after network idle.
+  await page.waitForTimeout(5_000);
+
+  const observed = await page.evaluate(() => ({
+    focusLog: (window as unknown as { __focusLog: string[] }).__focusLog,
+    headingFocused: document.querySelector("h1") === document.activeElement,
+    headingFocusVisible:
+      document.querySelector("h1")?.matches(":focus-visible") ?? false,
+  }));
+
+  expect(observed.focusLog).not.toContain("H1");
+  expect(observed.headingFocused).toBe(false);
+  expect(observed.headingFocusVisible).toBe(false);
 });
 
 test("submitting the sign-up form still moves focus to the new view heading", async ({
