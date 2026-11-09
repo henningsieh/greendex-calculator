@@ -2638,7 +2638,6 @@ async function runFromEnvironment(): Promise<void> {
       `Project Shared Travel Legs ensured this run: ${summary.travelLegsEnsured}`,
     );
     console.log("=".repeat(60));
-    console.log("\n✨ You can now sign in at http://localhost:3000\n");
   } catch (error) {
     console.error("\n❌ Seed failed:", error);
     throw error;

@@ -935,8 +935,9 @@ export async function verifyEmailWorkflows(
   const passed =
     results.length > 0 && results.every((result) => result.status === "passed");
   console.log(
-    `Real email workflows ${passed ? "PASSED" : "FAILED"} (${Date.now() - startedAt}ms). Mail retained. Existing servers and database retained.`,
+    `${passed ? "PASSED" : "FAILED"} real email workflows (${Date.now() - startedAt}ms)`,
   );
+  console.log("Mail retained. Existing servers and database retained.");
   for (const result of results)
     console.log(
       `${result.status.toUpperCase()} ${result.workflow} (${result.durationMs}ms)`,

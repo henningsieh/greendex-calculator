@@ -100,7 +100,7 @@ async function main(): Promise<void> {
       );
     }
   }
-  console.log("Reset, migration and seed completed.");
+  console.log("\n✨ Reset, migration and seed completed. 💾");
 }
 
 main().catch((error: unknown) => {
