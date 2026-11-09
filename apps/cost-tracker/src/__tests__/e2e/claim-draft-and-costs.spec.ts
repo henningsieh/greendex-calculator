@@ -146,10 +146,10 @@ async function openPartnership(
       `a[href$="${destination === "participants" ? participantsURL : claimURL}"]`,
     )
     .click();
-  // Preserve the original full-URL match; only the diagnostic receives a boolean.
+  // The browser URL carries the next-intl locale prefix, so match the route tail.
   await expectPrivateURL(
     page,
-    destination === "participants" ? participantsURL : claimURL,
+    new RegExp(`${destination === "participants" ? participantsURL : claimURL}$`),
   );
 }
 
@@ -441,7 +441,10 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       const detailsHref = await detailsLink.getAttribute("href");
       expect(detailsHref).not.toBeNull();
       await detailsLink.click();
-      await expectPrivateURL(page, detailsHref!);
+      // Compare pathnames: the link and the browser URL both carry the locale.
+      await expect
+        .poll(() => new URL(page.url()).pathname)
+        .toBe(new URL(detailsHref!, baseURL!).pathname);
       await expect(page.getByTestId("participant-details")).toBeVisible();
       await selectCountry(page.locator("#participation-country"), "DE");
       await page.getByTestId("participation-country-save").click();
@@ -458,7 +461,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .where(eq(projectParticipantsTable.projectId, projectId)),
       ).toHaveLength(3);
       await page.locator(`a[href$="${participantsURL}"]`).click();
-      await expectPrivateURL(page, participantsURL);
+      await expectPrivateURL(page, new RegExp(`${participantsURL}$`));
       const [savedCountry] = await db
         .select({ country: projectParticipantsTable.country })
         .from(projectParticipantsTable)
@@ -971,7 +974,9 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
           .locator('[data-history-event="submitted"]'),
       ).toBeVisible();
       await page.goBack();
-      await expectPrivateURL(page, `/projects/${projectId}?returnTo=%2Fprojects`);
+      // ADR-0025: Project links carry identity only, so back returns without a
+      // returnTo parameter.
+      await expectPrivateURL(page, new RegExp(`/projects/${projectId}$`));
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator(`a[href$="${claimURL}"]`)).toBeVisible();
       // Text-free: readiness card carries the submitted claim state (no copy).
@@ -981,7 +986,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
         }),
       ).toBeVisible();
       await page.goForward();
-      await expectPrivateURL(page, claimURL);
+      await expectPrivateURL(page, new RegExp(`${claimURL}$`));
       await expect(page.locator('[data-draft-status="submitted"]')).toBeVisible();
       await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
       await expect(

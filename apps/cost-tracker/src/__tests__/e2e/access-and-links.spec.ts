@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import { LANGUAGE_CODES } from "@greendex/config/languages";
 import { db } from "@greendex/database";
 import {
   account,
@@ -602,8 +603,14 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await expect(x.getByTestId("no-organization-access")).toHaveRole("main");
     await x.getByTestId("sign-out").click();
     await x.getByRole("dialog").getByTestId("confirm-dialog-execute").click();
-    // Preserve the original full-URL match; only the diagnostic receives a boolean.
-    await expectPrivateURL(x, new URL("/", baseURL!).toString());
+    // Sign-out replaces with the home route, which next-intl serves with its
+    // locale prefix. Match the root with or without that prefix.
+    await expectPrivateURL(
+      x,
+      new RegExp(
+        `^${baseURL!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/(?:${LANGUAGE_CODES.join("|")})?/?$`,
+      ),
+    );
     await x.goto(replacement);
     // Preserve the original full-URL match; only the diagnostic receives a boolean.
     await expectPrivateURL(x, /\/login/);
