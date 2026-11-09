@@ -215,11 +215,7 @@ function AuthEntryIntroduction({
   const t = useTranslations("onboarding");
   return (
     <div className="mb-5">
-      <h1
-        ref={heading}
-        tabIndex={-1}
-        className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl"
-      >
+      <h1 ref={heading} tabIndex={-1} className="text-3xl sm:text-4xl">
         {t(
           isSignIn
             ? "auth.signInHeading"

@@ -59,9 +59,7 @@ export function NoOrganizationAccess() {
     >
       <header>
         <p className="text-sm font-medium text-primary">{t("eyebrow")}</p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight">
-          {t("heading")}
-        </h1>
+        <h1 className="mt-2 text-3xl">{t("heading")}</h1>
         <p className="mt-4 leading-7 text-muted-foreground">{t("description")}</p>
       </header>
       <form onSubmit={createOrganization}>

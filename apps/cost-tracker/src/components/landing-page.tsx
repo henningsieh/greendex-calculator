@@ -152,7 +152,7 @@ export default async function LandingPage() {
       >
         <div>
           <p className="type-ember-eyebrow">{t("landing.process.eyebrow")}</p>
-          <h2 className="mt-4 max-w-md font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="mt-4 max-w-md text-3xl sm:text-4xl">
             {t("landing.process.title")}
           </h2>
           <p className="mt-5 max-w-prose leading-7 text-muted-foreground">
@@ -219,7 +219,7 @@ export default async function LandingPage() {
 
       <section className="mx-auto w-full max-w-7xl px-5 py-20 text-center sm:px-8 lg:px-10 lg:py-28">
         <p className="type-ember-eyebrow">{t("landing.cta.eyebrow")}</p>
-        <h2 className="mx-auto mt-4 max-w-2xl font-heading text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+        <h2 className="mx-auto mt-4 max-w-2xl text-3xl text-balance sm:text-5xl">
           {t("landing.cta.title")}
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
@@ -314,7 +314,7 @@ type ValuePointProps = {
 function ValuePoint({ description, title }: ValuePointProps) {
   return (
     <article className="py-8 md:px-8 md:py-10 md:first:pl-0 md:last:pr-0">
-      <h2 className="font-heading text-lg font-semibold">{title}</h2>
+      <h2 className="text-lg">{title}</h2>
       <p className="mt-3 max-w-sm leading-7 text-muted-foreground">
         {description}
       </p>
@@ -334,7 +334,7 @@ function ProcessStep({ description, number, title }: ProcessStepProps) {
       <span className="flex size-8 items-center justify-center rounded-full bg-secondary font-heading text-sm font-semibold text-secondary-foreground">
         {number}
       </span>
-      <h3 className="mt-10 font-heading text-xl font-semibold">{title}</h3>
+      <h3 className="mt-10 text-xl">{title}</h3>
       <p className="mt-2 leading-7 text-muted-foreground">{description}</p>
     </li>
   );

@@ -86,7 +86,7 @@ export function ClaimHistory({ events }: { events: History }) {
       data-testid="claim-history"
       className="min-w-0 space-y-4 px-8 py-7 max-sm:px-4"
     >
-      <h2 className="font-heading text-xl font-semibold">{t("historyTitle")}</h2>
+      <h2 className="text-xl">{t("historyTitle")}</h2>
       {events.length === 0 ? (
         <Empty>
           <EmptyHeader>
@@ -333,7 +333,7 @@ export function ClaimReviewDetails({
             {details.approvedAmountEur ?? t("unavailable")} {t("currencyEur")}
           </span>
         </p>
-        <h3 className="text-xl font-semibold">{t("costsAndDocuments")}</h3>
+        <h3 className="text-xl">{t("costsAndDocuments")}</h3>
         {details.entries.length === 0 ? (
           <p>{t("noCosts")}</p>
         ) : (
@@ -390,7 +390,7 @@ export function ClaimReviewDetails({
             }))}
           />
         )}
-        <h3 className="font-semibold">{t("journeysTitle")}</h3>
+        <h3>{t("journeysTitle")}</h3>
         {details.journeys.length === 0 ? (
           <p>{t("noJourneys")}</p>
         ) : (

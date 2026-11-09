@@ -163,7 +163,7 @@ export function SetupLinkCreator() {
           aria-label={t("existingLinks")}
           className="space-y-3"
         >
-          <h3 className="font-semibold">{t("existingLinks")}</h3>
+          <h3>{t("existingLinks")}</h3>
           <p>{t("existingLinksHint")}</p>
           {existingLinks.isPending ? (
             <output>{t("loading")}</output>

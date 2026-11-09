@@ -32,11 +32,11 @@ const cardVariants = cva(
 )
 
 const cardTitleVariants = cva(
-  "font-heading text-lg font-semibold tracking-wider uppercase",
+  "font-heading text-lg font-extrabold tracking-tight",
   {
     variants: {
       variant: {
-        default: "group-data-[variant=document]/card:text-xl group-data-[variant=document]/card:tracking-normal group-data-[variant=document]/card:normal-case group-data-[variant=action]/card:text-xl group-data-[variant=action]/card:tracking-normal group-data-[variant=action]/card:normal-case group-data-[variant=claim-band]/card:text-2xl group-data-[variant=claim-band]/card:tracking-normal group-data-[variant=claim-band]/card:normal-case sm:group-data-[variant=claim-band]/card:text-[28px]",
+        default: "group-data-[variant=document]/card:text-xl group-data-[variant=action]/card:text-xl group-data-[variant=claim-band]/card:text-2xl sm:group-data-[variant=claim-band]/card:text-[28px]",
       },
     },
     defaultVariants: { variant: "default" },

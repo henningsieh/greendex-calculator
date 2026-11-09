@@ -3,7 +3,7 @@ import { DEFAULT_LANGUAGE } from "@greendex/config/languages";
 import { NextIntlClientProvider } from "@greendex/i18n/client";
 import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
-import { Geist, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { NuqsProvider } from "@/components/nuqs-provider";
 import { QueryProvider } from "@/components/query-provider";
@@ -14,7 +14,6 @@ import shellMessages from "@/messages/en/shell.json";
 
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const fontMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -50,12 +49,7 @@ export default async function RootLayout({
     <html
       lang={DEFAULT_LANGUAGE}
       suppressHydrationWarning
-      className={cn(
-        "font-sans antialiased",
-        fontMono.variable,
-        geist.variable,
-        inter.variable,
-      )}
+      className={cn("font-sans antialiased", fontMono.variable, inter.variable)}
     >
       <body>
         {/* Unprefixed root routes render outside the localized layout and still

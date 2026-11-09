@@ -59,9 +59,7 @@ export function CreateProjectDialog() {
             data-testid="create-project-dialog"
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border bg-background p-6 shadow-xl outline-none"
           >
-            <Dialog.Title className="font-heading text-2xl font-semibold">
-              {t("title")}
-            </Dialog.Title>
+            <Dialog.Title className="text-2xl">{t("title")}</Dialog.Title>
             <Dialog.Description className="mt-2 text-sm text-muted-foreground">
               {t("description")}
             </Dialog.Description>

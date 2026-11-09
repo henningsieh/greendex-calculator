@@ -24,7 +24,7 @@ export function AssignedProjectList() {
       className="mt-10 space-y-4"
       data-testid="assigned-projects"
     >
-      <h2 className="font-heading text-2xl font-semibold">{t("title")}</h2>
+      <h2 className="text-2xl">{t("title")}</h2>
       {projects.length === 0 ? (
         <Empty data-testid="assigned-projects-empty">
           <EmptyHeader>

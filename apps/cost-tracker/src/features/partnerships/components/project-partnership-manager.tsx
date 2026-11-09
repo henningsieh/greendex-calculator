@@ -80,9 +80,7 @@ export function ProjectPartnershipManager({
       )}
 
       <div className="space-y-4">
-        <h2 className="font-heading text-2xl font-semibold">
-          {t("manager.current")}
-        </h2>
+        <h2 className="text-2xl">{t("manager.current")}</h2>
         {partnerships.length === 0 ? (
           <p
             data-testid="partnerships-empty"
