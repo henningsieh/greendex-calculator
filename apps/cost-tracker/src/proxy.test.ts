@@ -12,6 +12,13 @@ function request(path: string, headers?: Record<string, string>) {
   return new NextRequest(new URL(path, "http://localhost:3001"), { headers });
 }
 
+// Better Auth's session cookie under its default (non-secure) prefix.
+const SESSION = { cookie: "better-auth.session_token=token" };
+
+function signedIn(path: string, headers: Record<string, string> = {}) {
+  return request(path, { ...SESSION, ...headers });
+}
+
 describe("Cost Tracker locale proxy", () => {
   it("uses Calculator's prefix and shared language configuration", () => {
     expect(routing.locales).toEqual(LANGUAGE_CODES);
@@ -27,7 +34,7 @@ describe("Cost Tracker locale proxy", () => {
     "/setup-links/token",
     "/participant-invitations/token",
   ])("internally rewrites legacy %s without changing the browser URL", (path) => {
-    const response = proxy(request(path));
+    const response = proxy(signedIn(path));
     expect(response.status).toBe(200);
     expect(response.headers.has("location")).toBe(false);
     const destination = new URL(response.headers.get("x-middleware-rewrite")!);
@@ -43,7 +50,7 @@ describe("Cost Tracker locale proxy", () => {
   });
 
   it.each(LANGUAGE_CODES)("accepts explicit %s paths", (locale) => {
-    const response = proxy(request(`/${locale}/projects?scope=partner`));
+    const response = proxy(signedIn(`/${locale}/projects?scope=partner`));
     expect(response.status).toBe(200);
     expect(response.headers.has("location")).toBe(false);
     expect(response.headers.get("x-middleware-request-x-next-intl-locale")).toBe(
@@ -52,12 +59,15 @@ describe("Cost Tracker locale proxy", () => {
   });
 
   it("retains next-intl language negotiation and locale cookie precedence", () => {
-    const detected = proxy(request("/projects", { "accept-language": "de" }));
+    const detected = proxy(signedIn("/projects", { "accept-language": "de" }));
     expect(new URL(detected.headers.get("x-middleware-rewrite")!).pathname).toBe(
       "/de/projects",
     );
     const cookie = proxy(
-      request("/login", { cookie: "NEXT_LOCALE=fr", "accept-language": "de" }),
+      signedIn("/login", {
+        cookie: `NEXT_LOCALE=fr; ${SESSION.cookie}`,
+        "accept-language": "de",
+      }),
     );
     expect(new URL(cookie.headers.get("x-middleware-rewrite")!).pathname).toBe(
       "/fr/login",
@@ -117,5 +127,62 @@ describe("Cost Tracker locale proxy", () => {
     "/_next/accept-invitation/bad.token",
   ])("excludes %s from the proxy", (url) => {
     expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false);
+  });
+});
+
+describe("Cost Tracker anonymous gate", () => {
+  it.each([
+    "/projects",
+    "/projects/seed-project",
+    "/partnerships/seed-partnership/claim",
+    "/organization",
+    "/partner-organizations",
+    "/claims/review",
+    "/user-settings",
+  ])("redirects an anonymous %s to the sign-in", (path) => {
+    const response = proxy(request(path));
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost:3001/login");
+  });
+
+  it.each(LANGUAGE_CODES)(
+    "redirects an anonymous localized /%s/projects to the sign-in",
+    (locale) => {
+      const response = proxy(request(`/${locale}/projects`));
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(
+        "http://localhost:3001/login",
+      );
+    },
+  );
+
+  it.each([
+    "/",
+    "/login",
+    "/register",
+    "/accept-invitation/token",
+    "/participant",
+    "/participant-invitations/token",
+    "/participant-links/token",
+    "/setup-links/token",
+    "/design-system",
+  ])("leaves the public %s reachable without a session", (path) => {
+    const response = proxy(request(path));
+    expect(response.status).toBe(200);
+    expect(response.headers.has("location")).toBe(false);
+  });
+
+  it("accepts the __Secure- session cookie", () => {
+    const response = proxy(
+      request("/projects", {
+        cookie: "__Secure-better-auth.session_token=token",
+      }),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it("gates a protected request that only carries the locale cookie", () => {
+    const response = proxy(request("/projects", { cookie: "NEXT_LOCALE=de" }));
+    expect(response.status).toBe(307);
   });
 });
