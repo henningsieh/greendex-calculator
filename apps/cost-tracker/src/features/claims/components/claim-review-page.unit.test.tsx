@@ -7,6 +7,12 @@ vi.mock("@greendex/i18n/server", async (importOriginal) => ({
   getTranslations: (await import("@/__tests__/i18n")).getTranslations,
 }));
 
+// The page reads membership readiness through @/lib/session, which is server-only.
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/session", () => ({
+  hasOrganizationMembership: vi.fn(async () => true),
+}));
+
 const mocks = vi.hoisted(() => ({ query: vi.fn() }));
 
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
