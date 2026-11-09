@@ -1,13 +1,11 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { ORPCError } from "@orpc/client";
 import { io } from "next/cache";
-import { Suspense } from "react";
 
-import type { AppHref } from "@/app/routes";
-import BreadcrumbTrail, {
-  BreadcrumbTrailFallback,
-} from "@/components/breadcrumb-trail";
+import { projectPath } from "@/app/paths";
+import { BreadcrumbSlot } from "@/features/breadcrumbs/components/breadcrumb-slot";
+import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 import { orpcQuery } from "@/lib/orpc/orpc";
+import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { getQueryClient } from "@/lib/tanstack-react-query/hydration";
 
 async function HostedParticipantsBreadcrumbContent({
@@ -28,11 +26,9 @@ async function HostedParticipantsBreadcrumbContent({
       }),
     )
     .catch((error: unknown) => {
-      if (
-        !(error instanceof ORPCError) ||
-        !["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND"].includes(error.code)
-      )
-        throw error;
+      // This slot mounts hidden behind the shell's recovery screens, so a
+      // refusal must degrade to the Projects crumb instead of failing the page.
+      if (!isPresentationRefusal(error)) throw error;
       return null;
     });
   const kindLabel =
@@ -45,7 +41,7 @@ async function HostedParticipantsBreadcrumbContent({
         { label: t("nav.projects"), href: "/projects" },
         {
           label: kindLabel,
-          href: `/projects/${encodeURIComponent(id)}` as AppHref,
+          href: projectPath(id),
         },
       ]}
       current={t("crumbs.participants")}
@@ -62,8 +58,8 @@ export default function HostedParticipantsBreadcrumb({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <Suspense fallback={<BreadcrumbTrailFallback />}>
+    <BreadcrumbSlot>
       <HostedParticipantsBreadcrumbContent params={params} />
-    </Suspense>
+    </BreadcrumbSlot>
   );
 }

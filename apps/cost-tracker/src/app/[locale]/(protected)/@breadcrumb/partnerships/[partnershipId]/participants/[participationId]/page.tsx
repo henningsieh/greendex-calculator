@@ -1,10 +1,8 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { Suspense } from "react";
 
-import type { AppHref } from "@/app/routes";
-import BreadcrumbTrail, {
-  BreadcrumbTrailFallback,
-} from "@/components/breadcrumb-trail";
+import { partnershipPath, partnershipParticipantsPath } from "@/app/paths";
+import { BreadcrumbSlot } from "@/features/breadcrumbs/components/breadcrumb-slot";
+import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 
 async function ParticipantDetailsBreadcrumbContent({
   params,
@@ -19,11 +17,11 @@ async function ParticipantDetailsBreadcrumbContent({
         { label: t("nav.projects"), href: "/projects" },
         {
           label: t("crumbs.partnership"),
-          href: `/partnerships/${encodeURIComponent(partnershipId)}` as AppHref,
+          href: partnershipPath(partnershipId),
         },
         {
           label: t("crumbs.participants"),
-          href: `/partnerships/${encodeURIComponent(partnershipId)}/participants` as AppHref,
+          href: partnershipParticipantsPath(partnershipId),
         },
       ]}
       current={t("crumbs.participantDetails")}
@@ -40,8 +38,8 @@ export default function ParticipantDetailsBreadcrumb({
   params: Promise<{ partnershipId: string; participationId: string }>;
 }) {
   return (
-    <Suspense fallback={<BreadcrumbTrailFallback />}>
+    <BreadcrumbSlot>
       <ParticipantDetailsBreadcrumbContent params={params} />
-    </Suspense>
+    </BreadcrumbSlot>
   );
 }

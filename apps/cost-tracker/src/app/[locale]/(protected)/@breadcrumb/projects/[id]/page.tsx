@@ -1,10 +1,8 @@
 import { getTranslations } from "@greendex/i18n/server";
 import { io } from "next/cache";
-import { Suspense } from "react";
 
-import BreadcrumbTrail, {
-  BreadcrumbTrailFallback,
-} from "@/components/breadcrumb-trail";
+import { BreadcrumbSlot } from "@/features/breadcrumbs/components/breadcrumb-slot";
+import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { getQueryClient } from "@/lib/tanstack-react-query/hydration";
@@ -62,8 +60,8 @@ export default function ProjectDetailsBreadcrumb({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <Suspense fallback={<BreadcrumbTrailFallback />}>
+    <BreadcrumbSlot>
       <ProjectDetailsBreadcrumbContent params={params} />
-    </Suspense>
+    </BreadcrumbSlot>
   );
 }

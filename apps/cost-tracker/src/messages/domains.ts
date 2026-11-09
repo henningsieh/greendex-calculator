@@ -15,6 +15,7 @@ export type MessageDomain = (typeof messageDomains)[number];
 
 export const messageBundleRoutes = [
   ["features/authentication/", "onboarding"],
+  ["features/breadcrumbs/", "shell"],
   ["features/participant-onboarding/", "participations"],
   ["features/user-settings/", "settings"],
   ["features/claims/", "claims"],

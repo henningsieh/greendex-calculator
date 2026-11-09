@@ -1,10 +1,8 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { Suspense } from "react";
 
-import type { AppHref } from "@/app/routes";
-import BreadcrumbTrail, {
-  BreadcrumbTrailFallback,
-} from "@/components/breadcrumb-trail";
+import { partnershipPath } from "@/app/paths";
+import { BreadcrumbSlot } from "@/features/breadcrumbs/components/breadcrumb-slot";
+import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 
 async function ClaimReviewBreadcrumbContent({
   params,
@@ -19,7 +17,7 @@ async function ClaimReviewBreadcrumbContent({
         { label: t("crumbs.claimReviews"), href: "/claims/review" },
         {
           label: t("crumbs.partnership"),
-          href: `/partnerships/${encodeURIComponent(partnershipId)}` as AppHref,
+          href: partnershipPath(partnershipId),
         },
       ]}
       current={t("crumbs.claimReview")}
@@ -36,8 +34,8 @@ export default function ClaimReviewBreadcrumb({
   params: Promise<{ partnershipId: string }>;
 }) {
   return (
-    <Suspense fallback={<BreadcrumbTrailFallback />}>
+    <BreadcrumbSlot>
       <ClaimReviewBreadcrumbContent params={params} />
-    </Suspense>
+    </BreadcrumbSlot>
   );
 }

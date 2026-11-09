@@ -1,9 +1,7 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { Suspense } from "react";
 
-import BreadcrumbTrail, {
-  BreadcrumbTrailFallback,
-} from "@/components/breadcrumb-trail";
+import { BreadcrumbSlot } from "@/features/breadcrumbs/components/breadcrumb-slot";
+import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 
 async function PartnershipBreadcrumbContent() {
   const t = await getTranslations("shell");
@@ -20,8 +18,8 @@ export const instant = false;
 
 export default function PartnershipBreadcrumb() {
   return (
-    <Suspense fallback={<BreadcrumbTrailFallback />}>
+    <BreadcrumbSlot>
       <PartnershipBreadcrumbContent />
-    </Suspense>
+    </BreadcrumbSlot>
   );
 }

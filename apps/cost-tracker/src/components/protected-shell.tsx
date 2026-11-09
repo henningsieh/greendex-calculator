@@ -5,7 +5,6 @@ import { Suspense } from "react";
 
 import { AppNavigation } from "@/components/app-navigation";
 import { AppSidebar } from "@/components/app-sidebar";
-import { BreadcrumbTrailFallback } from "@/components/breadcrumb-trail";
 import { ProtectedPageSkeleton } from "@/components/protected-shell-skeleton";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
@@ -13,6 +12,7 @@ import { InvitationAcceptance } from "@/features/authentication/components/invit
 import { NoOrganizationAccess } from "@/features/authentication/components/no-organization-access";
 import { SelectOrganization } from "@/features/authentication/components/select-organization";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
+import { BreadcrumbTrailFallback } from "@/features/breadcrumbs/components/breadcrumb-trail";
 import {
   canManageOrganization,
   canViewPartnerNetwork,

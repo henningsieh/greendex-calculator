@@ -1,10 +1,8 @@
 import { getTranslations } from "@greendex/i18n/server";
-import { Suspense } from "react";
 
-import type { AppHref } from "@/app/routes";
-import BreadcrumbTrail, {
-  BreadcrumbTrailFallback,
-} from "@/components/breadcrumb-trail";
+import { partnershipPath } from "@/app/paths";
+import { BreadcrumbSlot } from "@/features/breadcrumbs/components/breadcrumb-slot";
+import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 
 async function ClaimWorkspaceBreadcrumbContent({
   params,
@@ -19,7 +17,7 @@ async function ClaimWorkspaceBreadcrumbContent({
         { label: t("nav.projects"), href: "/projects" },
         {
           label: t("crumbs.partnership"),
-          href: `/partnerships/${encodeURIComponent(partnershipId)}` as AppHref,
+          href: partnershipPath(partnershipId),
         },
       ]}
       current={t("crumbs.claimWorkspace")}
@@ -36,8 +34,8 @@ export default function ClaimWorkspaceBreadcrumb({
   params: Promise<{ partnershipId: string }>;
 }) {
   return (
-    <Suspense fallback={<BreadcrumbTrailFallback />}>
+    <BreadcrumbSlot>
       <ClaimWorkspaceBreadcrumbContent params={params} />
-    </Suspense>
+    </BreadcrumbSlot>
   );
 }

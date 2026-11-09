@@ -2,9 +2,8 @@ import { screen, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
-import type { AppHref } from "@/app/routes";
-import BreadcrumbTrail from "@/components/breadcrumb-trail";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import BreadcrumbTrail from "@/features/breadcrumbs/components/breadcrumb-trail";
 
 // jsdom has no matchMedia; the shell's sidebar trigger reads it on mount.
 vi.stubGlobal(
@@ -28,12 +27,12 @@ it("links earlier crumbs to their destinations and leaves the current page unlin
         items={[
           {
             label: "Projects",
-            href: "/projects" as AppHref,
+            href: "/projects",
             testId: "back-to-projects",
           },
           {
             label: "Partnership",
-            href: "/partnerships/partnership-1" as AppHref,
+            href: "/partnerships/partnership-1",
           },
         ]}
       />
