@@ -3,7 +3,7 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { AppHref } from "@/app/routes";
+import { destinationHref } from "@/app/paths";
 import { useConfirmDialog } from "@/components/confirm-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,7 @@ export function InvitationAcceptance({
     (next: OnboardingDecision) => {
       onDecision?.(next);
       if (next.nextStep === "continue")
-        replaceRef.current(next.availableActions[0].destination as AppHref);
+        replaceRef.current(destinationHref(next.availableActions[0].destination));
       if (next.nextStep === "authenticate") {
         onAuthenticate?.();
         const action = next.availableActions[0];
@@ -375,7 +375,7 @@ function InvitationNextSteps({
             <SignOutButton
               destination={
                 "destination" in action
-                  ? (action.destination as AppHref)
+                  ? destinationHref(action.destination)
                   : undefined
               }
             />
@@ -413,7 +413,7 @@ function InvitationOrganizationChoice({
         onSelected={recheck}
         signOutDestination={
           "destination" in decision.availableActions[1]
-            ? (decision.availableActions[1].destination as AppHref)
+            ? destinationHref(decision.availableActions[1].destination)
             : undefined
         }
       />

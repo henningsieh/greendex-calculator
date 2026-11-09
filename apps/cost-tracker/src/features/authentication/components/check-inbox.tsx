@@ -3,7 +3,7 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useEffect, useRef, useState } from "react";
 
-import type { AppHref } from "@/app/routes";
+import { destinationHref } from "@/app/paths";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { InvitationContext } from "@/features/authentication/components/invitation-context";
@@ -148,7 +148,7 @@ export function CheckInbox({
             <SignOutButton
               destination={
                 "destination" in action
-                  ? (action.destination as AppHref)
+                  ? destinationHref(action.destination)
                   : undefined
               }
             />

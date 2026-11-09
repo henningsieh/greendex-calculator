@@ -1,6 +1,6 @@
 import { getTranslations } from "@greendex/i18n/server";
 
-import type { AppHref } from "@/app/routes";
+import { destinationHref } from "@/app/paths";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { redirect } from "@/lib/i18n/routing";
 import { orpc } from "@/lib/orpc/orpc";
@@ -35,7 +35,7 @@ export default async function OrganizationInvitationPage({
   }
   if (decision.nextStep === "continue")
     redirect({
-      href: decision.availableActions[0].destination as AppHref,
+      href: destinationHref(decision.availableActions[0].destination),
       locale,
     });
   return (

@@ -6,7 +6,7 @@ import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 
-import type { AppHref } from "@/app/routes";
+import { destinationHref } from "@/app/paths";
 import { EntityCombobox } from "@/components/entity-combobox";
 import {
   ErrorPresentation,
@@ -444,7 +444,7 @@ function SetupOrganizationAccess({
       data-testid="open-partner-project"
       className={buttonVariants()}
       prefetch={false}
-      href={decision.availableActions[0].destination as AppHref}
+      href={destinationHref(decision.availableActions[0].destination)}
     >
       {t("openPartnerProject")}
     </Link>

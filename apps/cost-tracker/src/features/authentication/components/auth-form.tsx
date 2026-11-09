@@ -6,7 +6,7 @@ import { ArrowRightIcon, LoaderCircleIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFormStatus } from "react-dom";
 
-import type { AppHref } from "@/app/routes";
+import { destinationHref } from "@/app/paths";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -92,7 +92,7 @@ export function AuthForm({
       }
 
       // replace fetches the destination; a following refresh would start a second RSC request.
-      router.replace((destination ?? "/projects") as AppHref);
+      router.replace(destinationHref(destination ?? "/projects"));
     } catch (error) {
       showError(error);
     }
