@@ -18,6 +18,7 @@ import { assertExistingIntegrationDatabase } from "#repo/scripts/existing-integr
 import {
   expect,
   expectPrivateURL,
+  hrefPattern,
   registerPrivateValues,
   test,
 } from "./fixtures/artifact-privacy";
@@ -135,7 +136,7 @@ test.describe.serial("guided Organization Invitation", () => {
       page.getByTestId("auth-account-navigation").filter({ visible: true }),
     ).toHaveAttribute(
       "href",
-      `/register?next=${encodeURIComponent(destination)}`,
+      hrefPattern(`/register?next=${encodeURIComponent(destination)}`),
     );
     await signIn(page, "A");
     await expectPrivateURL(page, destination);
@@ -607,7 +608,7 @@ test.describe.serial("guided Organization Invitation", () => {
           page.getByTestId("invitation-recovery-sign-in"),
         ).toHaveAttribute(
           "href",
-          `/login?next=${encodeURIComponent(destination)}`,
+          hrefPattern(`/login?next=${encodeURIComponent(destination)}`),
         );
       }
       await noCreation(page);
@@ -721,7 +722,10 @@ test.describe.serial("guided Organization Invitation", () => {
       expect(created?.emailVerified).toBe(false);
       await expect(
         page.getByTestId("invitation-recovery-sign-in"),
-      ).toHaveAttribute("href", `/login?next=${encodeURIComponent(destination)}`);
+      ).toHaveAttribute(
+        "href",
+        hrefPattern(`/login?next=${encodeURIComponent(destination)}`),
+      );
       await page.getByTestId("recheck-organization-invitation").click();
       await expectPrivateURL(
         page,
@@ -837,7 +841,7 @@ test.describe.serial("guided Organization Invitation", () => {
       ).toHaveAttribute("data-organization-id", organizationId);
       await expect(page.getByTestId("inbox-sign-in")).toHaveAttribute(
         "href",
-        `/login?next=${encodeURIComponent(invitationPath)}`,
+        hrefPattern(`/login?next=${encodeURIComponent(invitationPath)}`),
       );
       await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
       await page.keyboard.press("Tab");

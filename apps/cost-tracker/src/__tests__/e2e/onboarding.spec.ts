@@ -184,7 +184,7 @@ test("delivered email verifies signup and verified registration continues into o
     await page.reload();
     await expect(setup).toBeVisible();
     await page.goto("/register");
-    await expect(page).toHaveURL(new URL("/projects", baseURL).href);
+    await expect(page).toHaveURL(/\/projects$/);
     await expect(setup).toBeVisible();
     await expect(page.getByTestId("auth-verification-message")).toHaveCount(0);
     const organizationInput = setup.locator("#organization-name");

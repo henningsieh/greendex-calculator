@@ -1,6 +1,11 @@
 import { SEED_USER } from "@greendex/auth/seed-user";
 
-import { expectPrivateURL, expect, test } from "./fixtures/artifact-privacy";
+import {
+  expectPrivateURL,
+  expect,
+  routePath,
+  test,
+} from "./fixtures/artifact-privacy";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
 // from traces. URL/value checks report booleans without weakening their matches.
@@ -16,7 +21,8 @@ test("sign-in starts only one Projects navigation and hydrates it", async ({
   await page.goto("/login");
   const projectRequests: string[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/projects") {
+    // Sign-in redirects to the locale-prefixed Projects route.
+    if (routePath(request.url()) === "/projects") {
       projectRequests.push(`${request.method()} ${request.resourceType()}`);
     }
   });

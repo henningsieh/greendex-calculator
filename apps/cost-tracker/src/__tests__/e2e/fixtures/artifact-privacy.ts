@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 
 import { SEED_USER } from "@greendex/auth/seed-user";
+import { LANGUAGE_CODES } from "@greendex/config/languages";
 import {
   expect,
   test as base,
@@ -182,6 +183,38 @@ export const experimentalTest = base.extend<{
 
 export const test = base.extend({});
 
+// The proxy *rewrites* an unprefixed request, so a direct goto keeps `/projects`
+// in the address bar, while a next-intl Link or server redirect produces
+// `/en/projects`. Both address the same route, so compare without the prefix.
+const localePrefix = new RegExp(`^/(?:${LANGUAGE_CODES.join("|")})(?=/|$)`);
+
+function comparableURL(href: string, baseURL: string | undefined) {
+  const url = new URL(href, baseURL);
+  return `${url.origin}${url.pathname.replace(localePrefix, "")}${url.search}${url.hash}`;
+}
+
+/**
+ * The route a URL addresses, without next-intl's locale prefix.
+ *
+ * A direct `goto()` keeps the unprefixed path (the proxy rewrites it), while a
+ * Link click or server redirect carries `/en`. Route identity must not depend
+ * on which of the two produced the URL.
+ */
+export function routePath(href: string): string {
+  return new URL(href, "http://localhost").pathname.replace(localePrefix, "");
+}
+
+/**
+ * Pattern for an `href` that the app renders with next-intl's locale prefix.
+ *
+ * Links carry `/en` while the same route typed into the address bar does not,
+ * so neither form may be asserted as an exact string.
+ */
+export function hrefPattern(path: string): RegExp {
+  const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^/(?:${LANGUAGE_CODES.join("|")})?${escaped}$`);
+}
+
 // Match the same complete URL that toHaveURL would, but never hand it to the
 // matcher diagnostic. In particular, login redirects can embed a private URL.
 export async function expectPrivateURL(
@@ -191,12 +224,12 @@ export async function expectPrivateURL(
 ) {
   const baseURL = test.info().project.use.baseURL;
   const exact =
-    typeof expected === "string" ? new URL(expected, baseURL).href : undefined;
+    typeof expected === "string" ? comparableURL(expected, baseURL) : undefined;
   await expect
     .poll(
       () =>
         typeof expected === "string"
-          ? page.url() === exact
+          ? comparableURL(page.url(), baseURL) === exact
           : expected.test(page.url()),
       {
         ...options,
