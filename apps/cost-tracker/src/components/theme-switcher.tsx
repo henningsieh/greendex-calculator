@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable shadcn/no-restyle -- Header-dropdown bespoke treatment, shared with AccountMenu + OrganizationSwitcher: same w-64 rounded-xl p-2 content + normal-case items for identical header look. Extract a ui variant post-MVP. */
-
 import { useTranslations } from "@greendex/i18n/client";
 import { CheckIcon, ChevronDownIcon, PaletteIcon } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -23,7 +21,7 @@ const subscribeToHydration = () => () => undefined;
 
 /* Header theme switcher — mirrors OrganizationSwitcher 1:1.
    Trigger: icon-only (palette + chevron), label lives in aria-label.
-   Content: w-64 rounded-xl p-2 + label + check items (same as AccountMenu).
+   Content: w-64 + theme dropdown defaults (same as AccountMenu).
    All 4 themes from lib/themes; dots preview each theme's swatch. */
 export function ThemeSwitcher() {
   const t = useTranslations("shell.themeSwitcher");
@@ -44,7 +42,6 @@ export function ThemeSwitcher() {
         render={
           <Button
             aria-label={t("ariaLabel", { theme: current?.label ?? t("system") })}
-            className="rounded-md lg:h-11"
             size="sm"
             variant="outline"
           />
@@ -53,7 +50,7 @@ export function ThemeSwitcher() {
         <PaletteIcon aria-hidden="true" data-icon="inline-start" />
         <ChevronDownIcon aria-hidden="true" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{t("label")}</DropdownMenuLabel>
           {THEMES.map((entry) => {
@@ -62,7 +59,6 @@ export function ThemeSwitcher() {
             return (
               <DropdownMenuItem
                 aria-current={active ? "true" : undefined}
-                className="rounded-md text-sm tracking-normal normal-case"
                 key={entry.value}
                 onClick={() => setTheme(entry.value)}
                 title={entry.description}

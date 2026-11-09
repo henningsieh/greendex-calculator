@@ -324,7 +324,7 @@ function SidebarInput({
       data-slot="sidebar-input"
       data-sidebar="input"
       className={cn(
-        "h-8 w-full border-input bg-transparent shadow-none",
+        "h-8 w-full bg-background shadow-none",
         className
       )}
       {...props}

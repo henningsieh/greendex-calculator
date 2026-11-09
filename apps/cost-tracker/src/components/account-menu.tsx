@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable shadcn/no-restyle -- Account-menu bespoke treatments: none of the shared Button/DropdownMenu variants provide this screen's exact shape, spacing, typography, and color. Zero visual change intended; revisit with a variant if the pattern repeats. */
-
 import { useTranslations } from "@greendex/i18n/client";
 import { ChevronDownIcon, LogOutIcon } from "lucide-react";
 import { type ComponentProps, useRef } from "react";
@@ -75,13 +73,7 @@ export function AccountMenu({
               ref={trigger}
               data-testid="account-menu-trigger"
               aria-label={compact ? t("account.openMenu", { name }) : undefined}
-              className={cn(
-                "group h-11 gap-3 rounded-md px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
-                active && "bg-muted",
-                compact &&
-                  "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
-                className,
-              )}
+              className={className}
               size={compact ? "icon-sm" : "sm"}
               variant={variant}
             />
@@ -115,9 +107,9 @@ export function AccountMenu({
           )}
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+        <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="px-3 py-2">
+            <DropdownMenuLabel>
               <span className="block truncate text-sm font-semibold text-foreground">
                 {name}
               </span>
@@ -129,7 +121,6 @@ export function AccountMenu({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem
-              className="rounded-md text-sm tracking-normal normal-case"
               render={
                 <Link
                   aria-current={active ? "page" : undefined}
