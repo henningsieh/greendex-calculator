@@ -28,7 +28,7 @@
   --accent-foreground: #003399;
   --destructive: oklch(0.577 0.245 27.325);
   --border: #cdd5e0;
-  --input: #788597;
+  --input: #b2cdff;
   --ring: #003399;
   --chart-1: oklch(0.871 0.15 154.449);
   --chart-2: oklch(0.723 0.219 149.579);
@@ -132,13 +132,6 @@
   --term: #080510;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 22px;
-  --radius-3xl: 22px;
-  --radius-4xl: 999px;
 }
 .theme-erasmus-violet {
   --background: #130b26;
@@ -192,13 +185,6 @@
   --term: #080510;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 22px;
-  --radius-3xl: 22px;
-  --radius-4xl: 999px;
 }
 .theme-erasmus-dark {
   --background: #070a16;
@@ -252,13 +238,6 @@
   --term: #080510;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 22px;
-  --radius-3xl: 22px;
-  --radius-4xl: 999px;
 }
 
 /* Ember keyframes — only the CTA breath loops (rare marketing element,
@@ -379,8 +358,8 @@
   }
 }
 
-/* Default radius + fonts (light behavior preserved exactly). Ember theme
-   blocks below override --radius-* and --font-sans/--font-heading per theme.
+/* Maia radius scale (shadcn base-maia, 1:1) + fonts. One --radius base in
+   :root; every theme inherits the same scale, no per-theme radius pins.
    These keys must NOT live in @theme inline (inlined values can't vary). */
 @theme {
   --radius-sm: calc(var(--radius) * 0.6);

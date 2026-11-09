@@ -183,6 +183,21 @@
         "exemptDescription": "data-disabled — völlig still, kein Hover, auch bei klebrigem Touch.",
         "exemptAction": "arbeitet…"
       },
+      "forms": {
+        "eyebrow": "Formulare · Partnerschaft",
+        "title": "Projekt-Partnerschaftsformular",
+        "cardTitle": "Bestehende Partnerschaft zuordnen",
+        "project": "Projekt",
+        "projectPlaceholder": "Projekt auswählen",
+        "organizationId": "Organisations-ID",
+        "organizationPlaceholder": "z. B. org_8f3a2c",
+        "assign": "Zuordnen",
+        "projects": {
+          "one": "Erasmus+ Jugendaustausch",
+          "two": "Donau-Reinigung",
+          "three": "Green Roots"
+        }
+      },
       "type": {
         "eyebrow": "Schrift · Spezimen",
         "title": "Typografie",

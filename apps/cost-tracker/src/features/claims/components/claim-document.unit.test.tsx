@@ -23,7 +23,7 @@ describe("Claim document presentation", () => {
     const button = screen.getByTestId("fixture-claim-action");
     expect(button).toHaveClass(
       "h-11",
-      "rounded-none",
+      "rounded-xl",
       "bg-primary",
       "text-primary-foreground",
       "hover:bg-primary/80",
@@ -48,7 +48,7 @@ describe("Claim document presentation", () => {
     const button = screen.getByTestId("fixture-claim-action");
     expect(button).toHaveClass(
       "h-11",
-      "rounded-none",
+      "rounded-xl",
       "bg-background",
       "shadow-xs",
       "hover:bg-accent",
@@ -81,7 +81,7 @@ describe("Claim document presentation", () => {
     expect(button).toHaveAttribute("aria-invalid", "true");
     expect(button).toHaveClass(
       "h-10",
-      "rounded-none",
+      "rounded-xl",
       "bg-primary",
       "text-primary-foreground",
       "disabled:cursor-not-allowed",

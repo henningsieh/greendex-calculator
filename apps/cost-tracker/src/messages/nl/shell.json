@@ -183,6 +183,21 @@
         "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
         "exemptAction": "working…"
       },
+      "forms": {
+        "eyebrow": "Formulieren · partnerschap",
+        "title": "Projectpartnerschapsformulier",
+        "cardTitle": "Bestaand partnerschap toewijzen",
+        "project": "Project",
+        "projectPlaceholder": "Selecteer een project",
+        "organizationId": "Organisatie-ID",
+        "organizationPlaceholder": "bijv. org_8f3a2c",
+        "assign": "Toewijzen",
+        "projects": {
+          "one": "Erasmus+ jongerenuitwisseling",
+          "two": "Donau-opruiming",
+          "three": "Green Roots"
+        }
+      },
       "type": {
         "eyebrow": "Type · specimen",
         "title": "Typography",

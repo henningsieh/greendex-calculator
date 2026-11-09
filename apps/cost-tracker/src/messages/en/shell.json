@@ -183,6 +183,21 @@
         "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
         "exemptAction": "working…"
       },
+      "forms": {
+        "eyebrow": "Forms · partnership",
+        "title": "Project partnership form",
+        "cardTitle": "Assign existing partnership",
+        "project": "Project",
+        "projectPlaceholder": "Select a project",
+        "organizationId": "Organization ID",
+        "organizationPlaceholder": "e.g. org_8f3a2c",
+        "assign": "Assign",
+        "projects": {
+          "one": "Erasmus+ Youth Exchange",
+          "two": "Danube Cleanup",
+          "three": "Green Roots"
+        }
+      },
       "type": {
         "eyebrow": "Type · specimen",
         "title": "Typography",

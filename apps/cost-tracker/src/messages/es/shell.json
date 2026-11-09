@@ -183,6 +183,21 @@
         "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
         "exemptAction": "working…"
       },
+      "forms": {
+        "eyebrow": "Formularios · colaboración",
+        "title": "Formulario de colaboración del proyecto",
+        "cardTitle": "Asignar colaboración existente",
+        "project": "Proyecto",
+        "projectPlaceholder": "Seleccionar un proyecto",
+        "organizationId": "ID de la organización",
+        "organizationPlaceholder": "p. ej. org_8f3a2c",
+        "assign": "Asignar",
+        "projects": {
+          "one": "Intercambio juvenil Erasmus+",
+          "two": "Limpieza del Danubio",
+          "three": "Green Roots"
+        }
+      },
       "type": {
         "eyebrow": "Type · specimen",
         "title": "Typography",
