@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { ChevronDownIcon, LogOutIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, LogOutIcon } from "lucide-react";
 import { type ComponentProps, useRef } from "react";
 
 import { EntityIcon } from "@/components/entity-icon";
@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 import { usePathname } from "@/lib/i18n/routing";
 import { Link } from "@/lib/i18n/routing";
@@ -69,14 +70,24 @@ export function AccountMenu({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              ref={trigger}
-              data-testid="account-menu-trigger"
-              aria-label={compact ? t("account.openMenu", { name }) : undefined}
-              className={className}
-              size={compact ? "icon-sm" : "sm"}
-              variant={variant}
-            />
+            inSidebar ? (
+              <SidebarMenuButton
+                ref={trigger}
+                data-testid="account-menu-trigger"
+                aria-label={t("account.openMenu", { name })}
+                size="lg"
+                tooltip={name}
+              />
+            ) : (
+              <Button
+                ref={trigger}
+                data-testid="account-menu-trigger"
+                aria-label={compact ? t("account.openMenu", { name }) : undefined}
+                className={className}
+                size={compact ? "icon-sm" : "sm"}
+                variant={variant}
+              />
+            )
           }
         >
           <span
@@ -88,6 +99,7 @@ export function AccountMenu({
           <span
             className={cn(
               "min-w-0",
+              inSidebar && "flex-1",
               compact && "sr-only",
               inSidebar && "group-data-[collapsible=icon]:hidden",
             )}
@@ -99,12 +111,15 @@ export function AccountMenu({
               {email}
             </span>
           </span>
-          {!compact && (
-            <ChevronDownIcon
-              aria-hidden="true"
-              className={cn(inSidebar && "group-data-[collapsible=icon]:hidden")}
-            />
-          )}
+          {!compact &&
+            (inSidebar ? (
+              <ChevronUpIcon
+                aria-hidden="true"
+                className="ml-auto size-4 group-data-[collapsible=icon]:hidden"
+              />
+            ) : (
+              <ChevronDownIcon aria-hidden="true" />
+            ))}
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-64">

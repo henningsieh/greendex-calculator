@@ -2,12 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronsUpDownIcon,
-  LoaderCircleIcon,
-} from "lucide-react";
+import { CheckIcon, ChevronDownIcon, LoaderCircleIcon } from "lucide-react";
 import { useState } from "react";
 
 import { EntityIcon } from "@/components/entity-icon";
@@ -118,7 +113,10 @@ export function OrganizationSwitcher({
                   className="animate-spin group-data-[collapsible=icon]:hidden"
                 />
               ) : (
-                <ChevronsUpDownIcon className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                <ChevronDownIcon
+                  aria-hidden="true"
+                  className="ml-auto size-4 group-data-[collapsible=icon]:hidden"
+                />
               )}
             </>
           ) : (
