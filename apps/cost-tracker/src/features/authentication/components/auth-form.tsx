@@ -49,7 +49,13 @@ export function AuthForm({
   const [error, setError] = useState<React.ReactNode>();
   const [submittedEmail, setSubmittedEmail] = useState<string>();
   const [receipt, setReceipt] = useState<OnboardingDecision>();
+  // Move focus only when the onboarding view actually changes. React runs the
+  // effect after the first render too, and focusing the heading on a plain
+  // page load painted the global focus ring around it (#390 follow-up).
+  const announcedReceipt = useRef(receipt);
   useEffect(() => {
+    if (announcedReceipt.current === receipt) return;
+    announcedReceipt.current = receipt;
     heading.current?.focus();
   }, [receipt]);
   const clearReceipt = useCallback(() => {

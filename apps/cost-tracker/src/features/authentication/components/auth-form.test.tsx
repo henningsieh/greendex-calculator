@@ -45,6 +45,12 @@ describe("AuthForm", () => {
     mocks.startGoogleSignIn.mockReset();
   });
 
+  it("does not grab heading focus on the first render", () => {
+    render(<AuthForm mode="sign-in" />);
+    // #390 follow-up: the announcement only belongs to a real view change.
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveFocus();
+  });
+
   it("keeps the direct invitation pointer and accessible personal login controls", () => {
     render(<AuthForm mode="sign-up" />);
     expect(screen.getByTestId("direct-invitation-pointer")).toBeVisible();
