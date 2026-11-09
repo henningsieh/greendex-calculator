@@ -3,6 +3,7 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 
+import { partnershipClaimReviewPath } from "@/app/paths";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { isClaimAwaitingReview } from "@/features/claims/claim-lifecycle";
@@ -48,7 +49,7 @@ export function ClaimReviewQueue() {
                 <Link
                   data-testid={`review-claim-${item.id}`}
                   className="block rounded-md px-3 py-2 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                  href={`/partnerships/${encodeURIComponent(item.id)}/claim/review`}
+                  href={partnershipClaimReviewPath(item.id)}
                 >
                   {item.projectName} · {item.organizationName}
                 </Link>

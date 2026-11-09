@@ -56,11 +56,13 @@ Memberships, active Organization recovery, and permission-dependent navigation.
 The fallback contains no private data or staff actions. A brief neutral-shell
 flash before a login redirect or Organization recovery is accepted. All gates
 remain server-side, and pages/procedures still authorize each request. This
-layout no longer exports `instant = false`. Seven pages outside it retain that
+layout no longer exports `instant = false`. Nineteen pages outside it retain that
 exception: login/register avoid a signed-in form flash; the five invitation,
 setup, and Participant entry pages preserve request-time secret handling and
-onboarding/recipient state-machine order. That state machine is outside this
-adoption scope. The export opts out of validation, not request handling.
+onboarding/recipient state-machine order; and the twelve `@breadcrumb` slots
+render header chrome whose labels resolve per request. That state machine is
+outside this adoption scope. The export opts out of validation, not request
+handling.
 
 After the gate, initial data and URL promises resolve in async children behind
 inner Suspense boundaries. Feature-owned skeletons match Claim document bands,
@@ -86,6 +88,30 @@ browser's fallback-to-content transition and hydration with `next-dev-loop`;
 a successful build or mocked stream alone does not verify browser behavior. See
 the [route audit](prefetch-suspense-audit.md) for coverage and remaining checks.
 
+## Navigation chrome
+
+The protected layout renders the header's `@breadcrumb` slot inside `Suspense`.
+Every slot segment is a thin file: it exports `instant = false` and renders
+`BreadcrumbSlot` from `src/features/breadcrumbs`, which owns the boundary, the
+fallback, and the label lookup. A leaf route passes its `shell` message key
+(`<BreadcrumbSlot current="nav.projects" />`); a nested route passes the async
+content that resolves its crumbs. Crumb labels stay static: no entity names or
+payload strings enter the trail.
+
+Hrefs are typed from Next's generated routes ([`src/app/routes.ts`](../src/app/routes.ts)).
+Dynamic Project and Project Partnership targets come from the builders in
+[`src/app/paths.ts`](../src/app/paths.ts), which own the one `AppHref` cast so
+callers never interpolate an id into a template literal.
+
+## Anonymous gate
+
+[`src/proxy.ts`](../src/proxy.ts) redirects a request that carries no Better Auth
+session cookie away from a protected path before the App Shell renders. It is an
+optimistic check only: it reads cookie presence, never the database, and keeps
+the public route segments in one explicit list so a new protected route is gated
+by default. `ProtectedShell` keeps the authoritative `getSession()` check, which
+also covers an expired session whose cookie is still present.
+
 ## oRPC error presentation
 
 Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh failures retain cached data and produce a toast. Identical refresh failures—same oRPC status and code, or the same local error type and message—share one toast within a two-second interval; distinct failures remain separately visible.
@@ -102,10 +128,11 @@ Initial Cost Tracker oRPC failures stay in the retryable error boundary. Refresh
 | `participant-onboarding` | Participant Invitations, Registration Links, required information, Agreement acceptance, and joining |
 | `claims`                 | Claim lifecycle, costs, allocations, documents, payout workflow, submission, review, and payment     |
 | `user-settings`          | Personal preferences                                                                                 |
+| `breadcrumbs`            | Per-route breadcrumb trails in the App Shell header, their slot boundary, and their labels           |
 
 Within each feature, `components/` owns UI and `procedures/` owns server operations. The nested Participant Onboarding workflow follows the same convention. Tests stay beside their implementation. Pure policies, calculations, schemas, and inferred types live with their owner rather than being presented as procedures.
 
-Routes compose these features without changing URL structure. Cross-feature imports are explicit through `@/`; do not add forwarding barrels or duplicate policies to make features artificially independent. Shared query error recovery, entity selection, skeleton building blocks, navigation, and provider mechanics live in `src/components/`. Each feature owns its own loading-state composition. Infrastructure stays in `src/lib/`.
+Routes compose these features without changing URL structure. Cross-feature imports are explicit through `@/`; do not add forwarding barrels or duplicate policies to make features artificially independent. Shared query error recovery, entity selection, skeleton building blocks, top navigation and sidebar chrome, and provider mechanics live in `src/components/`. Each feature owns its own loading-state composition. Infrastructure stays in `src/lib/`.
 
 Folder ownership does not alter domain relationships. Project Participation belongs to the Project, Agreement acceptance belongs to the User, and Payout Accounts belong to an Organization with selection by Project Partnership. The existing combined payout workflow remains within Claims.
 

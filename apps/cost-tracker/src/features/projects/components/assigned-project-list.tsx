@@ -3,6 +3,7 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
+import { projectParticipantsPath, projectPath } from "@/app/paths";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Link } from "@/lib/i18n/routing";
 import { orpcQuery } from "@/lib/orpc/orpc";
@@ -36,13 +37,13 @@ export function AssignedProjectList() {
             <li className="flex flex-wrap items-center gap-3" key={project.id}>
               <Link
                 className="font-medium link-prose"
-                href={`/projects/${encodeURIComponent(project.id)}`}
+                href={projectPath(project.id)}
               >
                 {project.name}
               </Link>
               <Link
                 className="text-sm link-prose"
-                href={`/projects/${encodeURIComponent(project.id)}/participants`}
+                href={projectParticipantsPath(project.id)}
               >
                 {t("viewParticipants")}
               </Link>

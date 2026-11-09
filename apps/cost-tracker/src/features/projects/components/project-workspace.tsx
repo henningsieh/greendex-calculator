@@ -5,6 +5,11 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarDaysIcon, MapPinIcon } from "lucide-react";
 import { useState } from "react";
 
+import {
+  partnershipClaimPath,
+  partnershipParticipantsPath,
+  projectParticipantsPath,
+} from "@/app/paths";
 import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import ProtectedPageHeader from "@/components/protected-page-header";
@@ -222,7 +227,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
             <div className="flex flex-wrap gap-3">
               <Link
                 className={buttonVariants({ variant: "secondary" })}
-                href={`/projects/${encodeURIComponent(project.id)}/participants`}
+                href={projectParticipantsPath(project.id)}
                 data-testid="hosted-participants"
               >
                 {t("participantView")}
@@ -275,14 +280,14 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
             </p>
             <Link
               className={buttonVariants({ variant: "outline" })}
-              href={`/partnerships/${encodeURIComponent(project.partnership.id)}/participants`}
+              href={partnershipParticipantsPath(project.partnership.id)}
               data-testid="coordinate-participants"
             >
               {t("coordinateParticipants")}
             </Link>
             <Link
               className={buttonVariants({ variant: "outline" })}
-              href={`/partnerships/${encodeURIComponent(project.partnership.id)}/claim`}
+              href={partnershipClaimPath(project.partnership.id)}
               data-testid="open-claim-workspace"
             >
               {t("openClaim")}

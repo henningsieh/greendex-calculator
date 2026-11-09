@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { projectPath } from "@/app/paths";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ export function CreateProjectDialog() {
       const { id } = await orpc.projects.create(values);
       setOpen(false);
       reset();
-      router.push(`/projects/${encodeURIComponent(id)}`);
+      router.push(projectPath(id));
     } catch (error) {
       setSubmitError(<ErrorPresentation error={error} />);
     }

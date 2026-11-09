@@ -6,6 +6,7 @@ import {
 } from "@greendex/auth";
 import { ORPCError } from "@orpc/server";
 
+import { projectPath } from "@/app/paths";
 import type {
   OnboardingFacts,
   OnboardingInput,
@@ -140,7 +141,7 @@ async function resolvePartnerSetupEntry(
       kind: entryContext,
       status: "complete",
       organization,
-      destination: `/projects/${encodeURIComponent(eligibility.projectId)}`,
+      destination: projectPath(eligibility.projectId),
     };
   } else if (input.setupRecovery && input.setupRecovery.phase !== "creating") {
     const organizationId = input.setupRecovery.organizationId;

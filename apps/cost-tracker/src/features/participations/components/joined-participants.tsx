@@ -2,6 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
+import { participationPath } from "@/app/paths";
 import type { useConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -87,7 +88,7 @@ export function JoinedParticipants({
                 {/* Editing belongs on the details page, never in a list row (ADR-0016). */}
                 <Link
                   className={buttonVariants({ variant: "outline" })}
-                  href={`/partnerships/${encodeURIComponent(partnershipId)}/participants/${encodeURIComponent(participant.id)}`}
+                  href={participationPath(partnershipId, participant.id)}
                   data-testid={`participant-details-${participant.id}`}
                 >
                   {t("joined.detailsFor")} {participant.displayName}

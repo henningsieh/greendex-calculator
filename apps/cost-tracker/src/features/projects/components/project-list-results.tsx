@@ -17,6 +17,7 @@ import {
 import { RefreshCwIcon } from "lucide-react";
 import { useMemo } from "react";
 
+import { projectParticipantsPath, projectPath } from "@/app/paths";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,7 +172,7 @@ export function ResolvedProjectListResults({
         cell: ({ row }) => (
           <Link
             className="font-medium link-prose"
-            href={`/projects/${encodeURIComponent(row.original.id)}`}
+            href={projectPath(row.original.id)}
             data-testid={`project-link-${row.original.id}`}
           >
             {row.original.name}
@@ -218,7 +219,7 @@ export function ResolvedProjectListResults({
               cell: ({ row }: { row: { original: ProjectListRow } }) => (
                 <Link
                   className="link-prose"
-                  href={`/projects/${encodeURIComponent(row.original.id)}/participants`}
+                  href={projectParticipantsPath(row.original.id)}
                   data-testid={`project-participants-${row.original.id}`}
                 >
                   {t("viewParticipants")}
