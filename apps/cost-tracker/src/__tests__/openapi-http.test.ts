@@ -87,8 +87,12 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
       throw new Error("Required existing seed Organizations are missing.");
     host = seededHost.id;
     other = seededOther.id;
+    // Reachability canary, not a latency assertion: the first reference request
+    // pays the dev server's lazy compile, which can exceed a few seconds right
+    // after a long procedure block. Keep the fail-fast for an unreachable
+    // server, and leave response-time expectations to the assertions below.
     await fetchWithTimeout(`${baseURL}/api/docs`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(30_000),
     });
     for (const [index, email] of actorEmails.entries()) {
       const actor = await db.query.user.findFirst({
