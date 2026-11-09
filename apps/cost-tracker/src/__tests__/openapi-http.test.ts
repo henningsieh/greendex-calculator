@@ -174,16 +174,16 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     if (cleanupFailed) throw new Error("HTTP fixture session cleanup failed.");
   }, 45_000);
 
-  it("gates both explicit docs paths as unmatched and serves pinned Scalar and the newest spec to sessions", async () => {
+  it("serves the reference and its pinned Scalar viewer without a session", async () => {
     for (const path of ["/api/docs", "/api/openapi-spec"]) {
-      expect((await fetchWithTimeout(`${baseURL}${path}`)).status).toBe(404);
+      expect((await fetchWithTimeout(`${baseURL}${path}`)).status).toBe(200);
       expect(
         (
           await fetchWithTimeout(`${baseURL}${path}`, {
             headers: { cookie: "better-auth.session_token=invalid" },
           })
         ).status,
-      ).toBe(404);
+      ).toBe(200);
     }
     const docs = await fetchWithTimeout(`${baseURL}/api/docs`, {
       headers: { cookie: cookies[0]! },

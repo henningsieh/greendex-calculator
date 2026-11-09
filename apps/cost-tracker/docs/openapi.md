@@ -7,7 +7,7 @@ Cost Tracker exposes the same procedure router over two transports:
 - `GET /api/docs`: Scalar reference, with its script pinned to 1.73.0.
 - `GET /api/openapi-spec`: generated OpenAPI JSON, using the generator's newest emitted version (currently 3.2.0).
 
-Both reference paths are served by the OpenAPI reference plugin on the same handler. Its `allow` condition requires a valid Better Auth session **in every environment**, including production. Missing, expired, or invalid sessions fall through as unmatched (404), not as a login redirect. The viewer embeds the generated spec. Its try-it behavior is owned by Scalar, not the backend transport.
+Both reference paths are served by the OpenAPI reference plugin on the same handler, and both are public: the viewer embeds the generated spec, and the specification describes procedures whose access is enforced per call. No session is needed to read either path, matching Calculator's public reference. The viewer's try-it behavior is owned by Scalar, not the backend transport.
 
 ## Authentication and deployment
 
