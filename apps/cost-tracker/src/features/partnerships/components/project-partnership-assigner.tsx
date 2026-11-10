@@ -1,19 +1,23 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { LinkIcon } from "lucide-react";
 import { useState } from "react";
 
 import { EntityCombobox } from "@/components/entity-combobox";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { orpc } from "@/lib/orpc/orpc";
 
 import { invalidatePartnershipProjectData } from "./invalidate-partnership-data";
 
@@ -21,80 +25,61 @@ const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
 const searchOrganizations = (search: string) =>
   orpc.organizations.search({ search });
 
-export type PartnershipFeedback = {
-  message: React.ReactNode;
-  status: "success" | "error";
-};
-
 /**
- * Assignment form for Partner Organizations. Only mounted for viewers who may
- * assign, so the hosted-project options query below runs exactly when the
- * form exists — never for viewers who only read the partnership list.
- * The preload shows the first 20 newest hosted projects; typing in the
- * picker searches the full table.
+ * Assign-an-existing-Organization dialog. The pickers search on demand, so
+ * the dialog issues no assign-only queries by itself, and the trigger below
+ * only renders for viewers who may assign — readers never fetch what they
+ * cannot use.
  */
-export function ProjectPartnershipAssigner({
-  partnerships,
-  feedback,
-  onFeedback,
-}: {
-  partnerships: { organizationId: string; organizationName: string }[];
-  feedback: PartnershipFeedback | undefined;
-  onFeedback: (feedback: PartnershipFeedback | undefined) => void;
-}) {
+export function AssignOrganizationDialog() {
   const queryClient = useQueryClient();
   const t = useTranslations("partnerships");
-  const { data: hostedProjects } = useSuspenseQuery(
-    orpcQuery.projects.searchHosted.queryOptions({
-      input: { search: "" },
-      meta: { costTrackerORPC: true },
-    }),
-  );
+  const [open, setOpen] = useState(false);
   const [projectId, setProjectId] = useState("");
   const [organizationId, setOrganizationId] = useState("");
+  const [error, setError] = useState<React.ReactNode>(null);
 
   const assignMutation = useMutation({
     mutationFn: () =>
       orpc.projectPartnerships.assign({ projectId, organizationId }),
     onSuccess: async () => {
-      onFeedback({
-        message: "Project Partnership assigned.",
-        status: "success",
-      });
-      setOrganizationId("");
       await invalidatePartnershipProjectData(queryClient);
+      setOpen(false);
+      setProjectId("");
+      setOrganizationId("");
+      setError(null);
     },
-    onError: (error) => {
-      onFeedback({
-        message: <ErrorPresentation error={error} />,
-        status: "error",
-      });
+    onError: (cause) => {
+      setError(<ErrorPresentation error={cause} />);
     },
   });
 
-  const projectPreload = Array.from(
-    new Map(hostedProjects.map(({ id, name }) => [id, { id, name }])).values(),
-  );
-  const organizationPreload = Array.from(
-    new Map(
-      partnerships.map(({ organizationId: id, organizationName: name }) => [
-        id,
-        { id, name },
-      ]),
-    ).values(),
-  );
-
   return (
-    <Card data-testid="organization-assignment">
-      <CardHeader>
-        <CardTitle>{t("manager.assignExisting")}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) setError(null);
+      }}
+      open={open}
+    >
+      <DialogTrigger
+        data-testid="assign-organization"
+        render={<Button type="button" />}
+      >
+        {t("manager.assignExisting")}
+      </DialogTrigger>
+      <DialogContent
+        data-testid="organization-assignment"
+        className="sm:max-w-lg"
+      >
+        <DialogHeader>
+          <DialogTitle>{t("manager.assignExisting")}</DialogTitle>
+        </DialogHeader>
         <form
-          className="grid gap-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
+          className="grid gap-5"
           onSubmit={(event) => {
             event.preventDefault();
-            onFeedback(undefined);
+            setError(null);
             assignMutation.mutate();
           }}
         >
@@ -107,7 +92,6 @@ export function ProjectPartnershipAssigner({
               value={projectId}
               onChange={setProjectId}
               search={searchHosted}
-              preload={projectPreload}
             />
           </div>
           <div data-testid="partner-organization-picker" className="grid gap-2">
@@ -119,31 +103,26 @@ export function ProjectPartnershipAssigner({
               value={organizationId}
               onChange={setOrganizationId}
               search={searchOrganizations}
-              preload={organizationPreload}
             />
           </div>
-          <Button
-            data-testid="assign-partnership"
-            disabled={assignMutation.isPending || !projectId || !organizationId}
-            type="submit"
-          >
-            <LinkIcon aria-hidden="true" />
-            {assignMutation.isPending
-              ? t("manager.assigning")
-              : t("manager.assign")}
-          </Button>
+          {error && <div role="alert">{error}</div>}
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              {t("manager.cancel")}
+            </DialogClose>
+            <Button
+              data-testid="assign-partnership"
+              disabled={assignMutation.isPending || !projectId || !organizationId}
+              type="submit"
+            >
+              <LinkIcon aria-hidden="true" />
+              {assignMutation.isPending
+                ? t("manager.assigning")
+                : t("manager.assign")}
+            </Button>
+          </DialogFooter>
         </form>
-        {feedback && (
-          <div
-            aria-live="polite"
-            className="mt-4 text-sm"
-            data-testid="partnership-feedback"
-            data-state={feedback.status}
-          >
-            {feedback.message}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -19,6 +19,16 @@ import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,33 +80,19 @@ function SetupStatus({ error }: SetupFeedback) {
   );
 }
 
-export function SetupLinkCreator() {
+function useRefreshSetupLinks() {
   const client = useQueryClient();
-  const t = useTranslations("partnerships.setup");
-  const existingLinks = useQuery(
-    orpcQuery.projectPartnerships.listSetupLinks.queryOptions({
-      meta: { costTrackerORPC: true },
-    }),
-  );
-  const [closingId, setClosingId] = useState<string>();
-  const refreshLinks = () =>
+  return () =>
     client.invalidateQueries({
       queryKey: orpcQuery.projectPartnerships.listSetupLinks.key({
         type: "query",
       }),
     });
-  async function closeLink(id: string) {
-    setError("");
-    setClosingId(id);
-    try {
-      await orpc.projectPartnerships.disableSetupLink({ id });
-      await refreshLinks();
-    } catch (cause) {
-      setError(<ErrorPresentation error={cause} />);
-    } finally {
-      setClosingId(undefined);
-    }
-  }
+}
+
+export function SetupLinkForm() {
+  const t = useTranslations("partnerships.setup");
+  const refreshLinks = useRefreshSetupLinks();
   const form = useForm<SetupLinkFormValues>({
     resolver: zodResolver(SetupLinkFormSchema),
     defaultValues: { projectId: "", recipientEmail: "" },
@@ -126,179 +122,226 @@ export function SetupLinkCreator() {
   }
 
   return (
-    <Card data-testid="setup-link-creator">
-      <CardHeader>
-        <CardTitle>{t("title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <p>{t("description")}</p>
-        <form
-          className="grid gap-4 sm:grid-cols-2"
-          onSubmit={form.handleSubmit(create)}
-        >
-          <Controller
-            control={form.control}
-            name="projectId"
-            render={({ field, fieldState }) => (
-              <Field
-                data-invalid={fieldState.invalid}
-                data-testid="hosted-project-picker"
-              >
-                <FieldLabel htmlFor="setup-hosted-project">
-                  {t("hostedProject")}
-                </FieldLabel>
-                <EntityCombobox
-                  aria-invalid={fieldState.invalid}
-                  label={t("hostedProject")}
-                  value={field.value}
-                  onChange={field.onChange}
-                  search={searchHosted}
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-          <Controller
-            control={form.control}
-            name="recipientEmail"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="setup-email">
-                  {t("recipientEmail")}
-                </FieldLabel>
-                <Input
-                  {...field}
-                  id="setup-email"
-                  data-testid="setup-email"
-                  aria-invalid={fieldState.invalid}
-                  type="email"
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-          <div>
-            <Button
-              data-testid="create-setup-link"
-              disabled={pending}
-              type="submit"
+    <div className="space-y-5">
+      <form
+        className="grid gap-4 sm:grid-cols-2"
+        onSubmit={form.handleSubmit(create)}
+      >
+        <Controller
+          control={form.control}
+          name="projectId"
+          render={({ field, fieldState }) => (
+            <Field
+              data-invalid={fieldState.invalid}
+              data-testid="hosted-project-picker"
             >
-              {pending ? t("creatingLink") : t("createLink")}
-            </Button>
-          </div>
-        </form>
-        {error && <div role="alert">{error}</div>}
-        <section
-          data-testid="setup-links"
-          aria-label={t("existingLinks")}
-          className="space-y-3"
-        >
-          <h3>{t("existingLinks")}</h3>
-          <p>{t("existingLinksHint")}</p>
-          {existingLinks.isPending ? (
-            <output>{t("loading")}</output>
-          ) : existingLinks.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>{t("loadError")}</AlertTitle>
-              <AlertDescription>
-                {<ErrorPresentation error={existingLinks.error} />}
-              </AlertDescription>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void existingLinks.refetch()}
-              >
-                {t("retry")}
-              </Button>
-            </Alert>
-          ) : existingLinks.data.length === 0 ? (
-            <p>{t("empty")}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("hostedProject")}</TableHead>
-                  <TableHead>{t("recipientEmail")}</TableHead>
-                  <TableHead>{t("status")}</TableHead>
-                  <TableHead>{t("expires")}</TableHead>
-                  <TableHead>{t("action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {existingLinks.data.map((existing) => (
-                  <TableRow key={existing.id} data-setup-link-id={existing.id}>
-                    <TableCell>{existing.projectName}</TableCell>
-                    <TableCell>{existing.recipientEmail}</TableCell>
-                    <TableCell
-                      data-link-status={
-                        !existing.enabled
-                          ? "closed"
-                          : existing.consumedAt
-                            ? "used"
-                            : existing.expired
-                              ? "expired"
-                              : "open"
-                      }
-                    >
-                      {!existing.enabled
-                        ? t("closed")
-                        : existing.consumedAt
-                          ? t("used")
-                          : existing.expired
-                            ? t("expired")
-                            : t("open")}
-                    </TableCell>
-                    <TableCell>
-                      {existing.expiresAt.toISOString().slice(0, 10)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        data-testid="close-setup-link"
-                        type="button"
-                        variant="outline"
-                        disabled={!existing.enabled || !!closingId}
-                        onClick={() => void closeLink(existing.id)}
-                      >
-                        {closingId === existing.id
-                          ? t("closing")
-                          : t("closeLink")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              <FieldLabel htmlFor="setup-hosted-project">
+                {t("hostedProject")}
+              </FieldLabel>
+              <EntityCombobox
+                aria-invalid={fieldState.invalid}
+                label={t("hostedProject")}
+                value={field.value}
+                onChange={field.onChange}
+                search={searchHosted}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
-        </section>
-        {link && (
-          <div className="space-y-2">
-            <Label htmlFor="recipient-link">{t("recipientLink")}</Label>
-            <Input
-              id="recipient-link"
-              data-testid="recipient-link"
-              readOnly
-              value={link}
-            />
-            <Button
-              data-testid="copy-setup-link"
-              type="button"
-              variant="outline"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(link);
-                  setCopied(true);
-                } catch {
-                  setError(t("copyError"));
-                }
-              }}
-            >
-              {t("copy")}
-            </Button>
-            {copied && <output>{t("copied")}</output>}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        />
+        <Controller
+          control={form.control}
+          name="recipientEmail"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="setup-email">{t("recipientEmail")}</FieldLabel>
+              <Input
+                {...field}
+                id="setup-email"
+                data-testid="setup-email"
+                aria-invalid={fieldState.invalid}
+                type="email"
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <div>
+          <Button
+            data-testid="create-setup-link"
+            disabled={pending}
+            type="submit"
+          >
+            {pending ? t("creatingLink") : t("createLink")}
+          </Button>
+        </div>
+      </form>
+      {error && <div role="alert">{error}</div>}
+      {link && (
+        <div className="space-y-2">
+          <Label htmlFor="recipient-link">{t("recipientLink")}</Label>
+          <Input
+            id="recipient-link"
+            data-testid="recipient-link"
+            readOnly
+            value={link}
+          />
+          <Button
+            data-testid="copy-setup-link"
+            type="button"
+            variant="outline"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(link);
+                setCopied(true);
+              } catch {
+                setError(t("copyError"));
+              }
+            }}
+          >
+            {t("copy")}
+          </Button>
+          {copied && <output>{t("copied")}</output>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function SetupLinkList() {
+  const t = useTranslations("partnerships.setup");
+  const refreshLinks = useRefreshSetupLinks();
+  const existingLinks = useQuery(
+    orpcQuery.projectPartnerships.listSetupLinks.queryOptions({
+      meta: { costTrackerORPC: true },
+    }),
+  );
+  const [closingId, setClosingId] = useState<string>();
+  const [error, setError] = useState<React.ReactNode>("");
+
+  async function closeLink(id: string) {
+    setError("");
+    setClosingId(id);
+    try {
+      await orpc.projectPartnerships.disableSetupLink({ id });
+      await refreshLinks();
+    } catch (cause) {
+      setError(<ErrorPresentation error={cause} />);
+    } finally {
+      setClosingId(undefined);
+    }
+  }
+
+  return (
+    <section
+      data-testid="setup-links"
+      aria-label={t("existingLinks")}
+      className="space-y-3"
+    >
+      <h2 className="text-2xl">{t("existingLinks")}</h2>
+      <p>{t("existingLinksHint")}</p>
+      {error && <div role="alert">{error}</div>}
+      {existingLinks.isPending ? (
+        <output>{t("loading")}</output>
+      ) : existingLinks.isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>{t("loadError")}</AlertTitle>
+          <AlertDescription>
+            {<ErrorPresentation error={existingLinks.error} />}
+          </AlertDescription>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void existingLinks.refetch()}
+          >
+            {t("retry")}
+          </Button>
+        </Alert>
+      ) : existingLinks.data.length === 0 ? (
+        <p>{t("empty")}</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("hostedProject")}</TableHead>
+              <TableHead>{t("recipientEmail")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead>{t("expires")}</TableHead>
+              <TableHead>{t("action")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {existingLinks.data.map((existing) => (
+              <TableRow key={existing.id} data-setup-link-id={existing.id}>
+                <TableCell>{existing.projectName}</TableCell>
+                <TableCell>{existing.recipientEmail}</TableCell>
+                <TableCell
+                  data-link-status={
+                    !existing.enabled
+                      ? "closed"
+                      : existing.consumedAt
+                        ? "used"
+                        : existing.expired
+                          ? "expired"
+                          : "open"
+                  }
+                >
+                  {!existing.enabled
+                    ? t("closed")
+                    : existing.consumedAt
+                      ? t("used")
+                      : existing.expired
+                        ? t("expired")
+                        : t("open")}
+                </TableCell>
+                <TableCell>
+                  {existing.expiresAt.toISOString().slice(0, 10)}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    data-testid="close-setup-link"
+                    type="button"
+                    variant="outline"
+                    disabled={!existing.enabled || !!closingId}
+                    onClick={() => void closeLink(existing.id)}
+                  >
+                    {closingId === existing.id ? t("closing") : t("closeLink")}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </section>
+  );
+}
+
+export function CreateSetupLinkDialog() {
+  const t = useTranslations("partnerships.setup");
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger
+        data-testid="new-setup-link"
+        render={<Button type="button" />}
+      >
+        {t("createLink")}
+      </DialogTrigger>
+      <DialogContent data-testid="setup-link-creator" className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
+        </DialogHeader>
+        <SetupLinkForm />
+        <DialogFooter>
+          <DialogClose render={<Button type="button" variant="outline" />}>
+            {t("cancel")}
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

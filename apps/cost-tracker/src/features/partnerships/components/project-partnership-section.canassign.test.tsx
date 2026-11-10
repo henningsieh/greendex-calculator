@@ -8,11 +8,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/orpc/orpc", () => ({
   orpcQuery: {
-    projects: {
-      searchHosted: {
-        queryOptions: () => ({ queryKey: ["projects", "search-hosted"] }),
-      },
-    },
     projectPartnerships: {
       list: {
         queryOptions: () => ({ queryKey: ["partnerships", "list"] }),
@@ -45,29 +40,19 @@ describe("ProjectPartnershipSection canAssign gate", () => {
     mocks.query.mockImplementation(() => Promise.resolve(undefined));
   });
 
-  it("does not prefetch hosted projects when canAssign is false", async () => {
-    render(await RealProjectPartnershipSection({ canAssign: false }));
+  it.each([false, true])(
+    "prefetches only the partnership list when canAssign is %s",
+    async (canAssign) => {
+      render(await RealProjectPartnershipSection({ canAssign }));
 
-    expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["partnerships", "list"],
-    });
-    expect(mocks.query).not.toHaveBeenCalledWith({
-      queryKey: ["projects", "search-hosted"],
-    });
-    expect(screen.getByTestId("project-partnership-manager")).toHaveAttribute(
-      "data-can-assign",
-      "false",
-    );
-  });
-
-  it("prefetches hosted projects when canAssign is true", async () => {
-    render(await RealProjectPartnershipSection({ canAssign: true }));
-
-    expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["partnerships", "list"],
-    });
-    expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["projects", "search-hosted"],
-    });
-  });
+      expect(mocks.query).toHaveBeenCalledTimes(1);
+      expect(mocks.query).toHaveBeenCalledWith({
+        queryKey: ["partnerships", "list"],
+      });
+      expect(screen.getByTestId("project-partnership-manager")).toHaveAttribute(
+        "data-can-assign",
+        String(canAssign),
+      );
+    },
+  );
 });

@@ -13,29 +13,15 @@ export async function ProjectPartnershipSection({
   canAssign: boolean;
 }) {
   const queryClient = getQueryClient();
-  await Promise.all(
-    [
-      queryClient.query(
-        orpcQuery.projectPartnerships.list.queryOptions({
-          meta: { costTrackerORPC: true },
-        }),
-      ),
-      // The assignment form below only renders for canAssign viewers, so
-      // only they need the hosted-project options prefetched. The preload
-      // shows the first 20 newest; typing in the picker searches the full
-      // table.
-      ...(canAssign
-        ? [
-            queryClient.query(
-              orpcQuery.projects.searchHosted.queryOptions({
-                input: { search: "" },
-                meta: { costTrackerORPC: true },
-              }),
-            ),
-          ]
-        : []),
-    ].map((promise) => promise.catch(swallowPrefetchError)),
-  );
+  // Creation lives in the page-header dialogs with search-on-demand pickers,
+  // so the list below is the only query any viewer needs prefetched.
+  await queryClient
+    .query(
+      orpcQuery.projectPartnerships.list.queryOptions({
+        meta: { costTrackerORPC: true },
+      }),
+    )
+    .catch(swallowPrefetchError);
 
   return (
     <HydrateClient client={queryClient}>

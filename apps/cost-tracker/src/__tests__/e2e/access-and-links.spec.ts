@@ -550,6 +550,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
   }) => {
     const h = await pageFor(browser, "H", baseURL!);
     await h.goto("/partner-organizations");
+    await h.getByTestId("new-setup-link").click();
     const creator = h.getByTestId("setup-link-creator");
     await creator
       .getByTestId("hosted-project-picker")

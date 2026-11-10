@@ -107,7 +107,8 @@ vi.mock("@/features/projects/components/project-workspace", () => ({
   ProjectWorkspace: () => <p>Resolved Project workspace</p>,
 }));
 vi.mock("@/features/partnerships/components/setup-link", () => ({
-  SetupLinkCreator: () => <p>Setup link creator</p>,
+  CreateSetupLinkDialog: () => <p>Setup link dialog</p>,
+  SetupLinkList: () => <p>Setup link list</p>,
 }));
 
 import LocalizedClaimReviewQueuePage from "@/app/[locale]/(protected)/claims/review/page";

@@ -246,6 +246,7 @@ async function issueThroughUI(
 ) {
   await page.goto("/partner-organizations");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.getByTestId("new-setup-link").click();
   const creator = page.getByTestId("setup-link-creator");
   await selectEntity(
     page,
@@ -1127,6 +1128,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
     const context = await fixture.actorContext(browser, "H", baseURL!);
     const page = await context.newPage();
     await page.goto("/partner-organizations");
+    await page.getByTestId("assign-organization").click();
     await expect(
       page.locator('[data-testid="organization-assignment"]'),
     ).toBeVisible();
@@ -1324,6 +1326,7 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
       country: "DE",
     });
     await page.goto("/partner-organizations");
+    await page.getByTestId("assign-organization").click();
     // Keep outgoing pickers mounted through the confirmation assertions.
     await page.evaluate(() => {
       document.addEventListener("animationstart", ({ target }) => {

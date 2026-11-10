@@ -14,6 +14,7 @@
       "updated": "· Updated",
       "assigning": "Assegnazione…",
       "assign": "Assegna",
+      "cancel": "Cancel",
       "remove": "Rimuovi"
     },
     "setup": {
@@ -55,6 +56,7 @@
       "inspect": "Inspect setup result",
       "creatingLink": "Creazione del link…",
       "createLink": "Crea link",
+      "cancel": "Cancel",
       "closed": "Chiuso",
       "used": "Utilizzato",
       "expired": "Scaduto",

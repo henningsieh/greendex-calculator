@@ -5,8 +5,12 @@ import { Suspense } from "react";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { canViewPartnerNetwork } from "@/features/organizations/access";
 import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/partnership-loading-states";
+import { AssignOrganizationDialog } from "@/features/partnerships/components/project-partnership-assigner";
 import { ProjectPartnershipSection } from "@/features/partnerships/components/project-partnership-section";
-import { SetupLinkCreator } from "@/features/partnerships/components/setup-link";
+import {
+  CreateSetupLinkDialog,
+  SetupLinkList,
+} from "@/features/partnerships/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -45,11 +49,19 @@ export default async function PartnerOrganizationsPage() {
         eyebrow={t("eyebrow")}
         title={t("title")}
         description={t("description")}
+        rightButton={
+          canCreateProjectPartnership ? (
+            <div className="flex gap-2">
+              <CreateSetupLinkDialog />
+              <AssignOrganizationDialog />
+            </div>
+          ) : undefined
+        }
       />
 
       {canCreateProjectPartnership && (
         <section className="mt-10">
-          <SetupLinkCreator />
+          <SetupLinkList />
         </section>
       )}
 

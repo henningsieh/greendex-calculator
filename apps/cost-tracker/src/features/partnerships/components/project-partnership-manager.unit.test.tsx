@@ -8,12 +8,8 @@ import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
-  assign: vi.fn(),
   list: vi.fn(),
   remove: vi.fn(),
-  searchHosted: vi.fn(),
-  searchHostedQuery: vi.fn(),
-  searchOrganizations: vi.fn(),
 }));
 
 vi.mock("@/components/ui/popover", async () => {
@@ -52,27 +48,14 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   return {
     ...original,
     orpc: {
-      projects: { searchHosted: mocks.searchHosted },
-      organizations: { search: mocks.searchOrganizations },
       projectPartnerships: {
-        assign: mocks.assign,
         remove: mocks.remove,
       },
     },
     orpcQuery: {
       // NB: orpcQuery is a lazy proxy — never spread it. Reference the
-      // routes the tree uses and override only the searchHosted queryFn.
+      // routes the tree uses and override only the list queryFn.
       projects: {
-        searchHosted: {
-          queryOptions: (
-            ...args: Parameters<
-              typeof original.orpcQuery.projects.searchHosted.queryOptions
-            >
-          ) => ({
-            ...original.orpcQuery.projects.searchHosted.queryOptions(...args),
-            queryFn: mocks.searchHostedQuery,
-          }),
-        },
         listHosted: original.orpcQuery.projects.listHosted,
         listPartner: original.orpcQuery.projects.listPartner,
         get: original.orpcQuery.projects.get,
@@ -116,16 +99,6 @@ const existingPartnership: Partnership = {
   assignedAt: new Date("2026-02-01T12:00:00.000Z"),
   updatedAt: new Date("2026-02-01T12:00:00.000Z"),
 };
-const assignedPartnership: Partnership = {
-  id: "partnership-assigned",
-  projectId: "project-new",
-  projectName: "New Project",
-  organizationId: "organization-new",
-  organizationName: "New Partner Organization",
-  assignedAt: new Date("2026-02-02T12:00:00.000Z"),
-  updatedAt: new Date("2026-02-02T12:00:00.000Z"),
-};
-
 async function renderManager(partnerships: Partnership[]) {
   const queryClient = createQueryClient();
   await queryClient.query(
@@ -163,23 +136,6 @@ function expectProjectDataInvalidation(
   });
 }
 
-async function selectAssignment(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(
-    within(screen.getByTestId("hosted-project-picker")).getByTestId(
-      "entity-combobox-trigger",
-    ),
-  );
-  await user.type(await screen.findByTestId("entity-search"), "New");
-  await user.click(await screen.findByRole("option"));
-  await user.click(
-    within(screen.getByTestId("partner-organization-picker")).getByTestId(
-      "entity-combobox-trigger",
-    ),
-  );
-  await user.type(await screen.findByTestId("entity-search"), "New");
-  await user.click(await screen.findByRole("option"));
-}
-
 describe("ProjectPartnershipManager", () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -191,20 +147,7 @@ describe("ProjectPartnershipManager", () => {
       },
     );
     Element.prototype.scrollIntoView = vi.fn();
-    mocks.assign.mockReset().mockResolvedValue(assignedPartnership);
     mocks.list.mockReset();
-    mocks.searchHosted
-      .mockReset()
-      .mockResolvedValue([{ id: "project-new", name: "New Project" }]);
-    // The "" preload query returns every hosted project, mirroring the
-    // endpoint; live search above stays filtered through the client mock.
-    mocks.searchHostedQuery.mockReset().mockResolvedValue([
-      { id: "project-existing", name: "Existing Project" },
-      { id: "project-new", name: "New Project" },
-    ]);
-    mocks.searchOrganizations
-      .mockReset()
-      .mockResolvedValue([{ id: "organization-new", name: "New Partner" }]);
     mocks.remove
       .mockReset()
       .mockResolvedValue({ id: existingPartnership.id, removed: true });
@@ -214,87 +157,7 @@ describe("ProjectPartnershipManager", () => {
     vi.unstubAllGlobals();
   });
 
-  it("preloads one option per entity while retaining every partnership row", async () => {
-    const partnerships = [
-      existingPartnership,
-      {
-        ...existingPartnership,
-        id: "partnership-shared-project",
-        organizationId: assignedPartnership.organizationId,
-        organizationName: assignedPartnership.organizationName,
-      },
-      assignedPartnership,
-    ];
-    mocks.list.mockResolvedValue(partnerships);
-    const user = userEvent.setup();
-    await renderManager(partnerships);
-
-    expect(screen.getAllByTestId(/^partnership-row-/)).toHaveLength(3);
-
-    const projectPicker = within(screen.getByTestId("hosted-project-picker"));
-    await user.click(projectPicker.getByTestId("entity-combobox-trigger"));
-    expect(
-      projectPicker
-        .getAllByTestId(/^entity-option-/)
-        .map((option) => option.getAttribute("data-entity-id")),
-    ).toEqual(["project-existing", "project-new"]);
-
-    const organizationPicker = within(
-      screen.getByTestId("partner-organization-picker"),
-    );
-    await user.click(organizationPicker.getByTestId("entity-combobox-trigger"));
-    expect(
-      organizationPicker
-        .getAllByTestId(/^entity-option-/)
-        .map((option) => option.getAttribute("data-entity-id")),
-    ).toEqual(["organization-existing", "organization-new"]);
-  });
-
-  it("invalidates generated Project query families and refreshes the visible list after assignment", async () => {
-    mocks.list
-      .mockResolvedValueOnce([existingPartnership])
-      .mockResolvedValueOnce([assignedPartnership]);
-    const user = userEvent.setup();
-    const { invalidateQueries } = await renderManager([existingPartnership]);
-
-    await selectAssignment(user);
-    await user.click(screen.getByTestId("assign-partnership"));
-
-    await waitFor(() => {
-      expect(mocks.assign).toHaveBeenCalledWith({
-        organizationId: assignedPartnership.organizationId,
-        projectId: assignedPartnership.projectId,
-      });
-    });
-    await screen.findByTestId("partnership-row-organization-new");
-    // Red if the list query is not invalidated and refetched after a successful assign.
-    expect(
-      screen.queryByTestId("partnership-row-organization-existing"),
-    ).toBeNull();
-    expectProjectDataInvalidation(invalidateQueries);
-  });
-
-  it("reports a failed assignment through the error feedback state", async () => {
-    mocks.assign.mockRejectedValue(
-      new ORPCError("INTERNAL_SERVER_ERROR", {
-        message: "postgres://internal-user:secret@database/private",
-      }),
-    );
-    mocks.list.mockResolvedValue([existingPartnership]);
-    const user = userEvent.setup();
-    await renderManager([existingPartnership]);
-
-    await selectAssignment(user);
-    await user.click(screen.getByTestId("assign-partnership"));
-
-    expect(await screen.findByTestId("partnership-feedback")).toBeTruthy();
-    expect(screen.getByTestId("partnership-feedback")).toHaveAttribute(
-      "data-state",
-      "error",
-    );
-  });
-
-  it("reports success after a failed removal followed by a successful assignment", async () => {
+  it("reports success after a failed removal followed by a successful removal", async () => {
     mocks.remove.mockRejectedValueOnce(
       new ORPCError("INTERNAL_SERVER_ERROR", { message: "db down" }),
     );
@@ -302,9 +165,10 @@ describe("ProjectPartnershipManager", () => {
     const user = userEvent.setup();
     await renderManager([existingPartnership]);
 
-    await user.click(
-      screen.getByTestId("remove-partnership-partnership-existing"),
+    const removeTrigger = screen.getByTestId(
+      "remove-partnership-partnership-existing",
     );
+    await user.click(removeTrigger);
     await user.click(
       within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
@@ -313,10 +177,12 @@ describe("ProjectPartnershipManager", () => {
       "error",
     );
 
-    await selectAssignment(user);
-    await user.click(screen.getByTestId("assign-partnership"));
+    await user.click(removeTrigger);
+    await user.click(
+      within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
+    );
     await waitFor(() => {
-      expect(mocks.assign).toHaveBeenCalled();
+      expect(mocks.remove).toHaveBeenCalledTimes(2);
     });
     expect(screen.getByTestId("partnership-feedback")).toHaveAttribute(
       "data-state",

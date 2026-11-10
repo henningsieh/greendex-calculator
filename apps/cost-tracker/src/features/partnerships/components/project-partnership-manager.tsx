@@ -16,10 +16,11 @@ import { Button } from "@/components/ui/button";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 import { invalidatePartnershipProjectData } from "./invalidate-partnership-data";
-import {
-  ProjectPartnershipAssigner,
-  type PartnershipFeedback,
-} from "./project-partnership-assigner";
+
+export type PartnershipFeedback = {
+  message: React.ReactNode;
+  status: "success" | "error";
+};
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -33,8 +34,8 @@ function mutationMessage(error: unknown) {
 
 /**
  * Lists Project Partnerships for the active Organization and handles removals.
- * The assignment form lives in a child that only mounts for viewers who may
- * assign, so assign-only data is never fetched for readers.
+ * Creation lives in the page-header dialogs, so this list fetches nothing
+ * assign-only — readers and assigners share exactly this query.
  */
 export function ProjectPartnershipManager({
   canAssign = false,
@@ -68,17 +69,16 @@ export function ProjectPartnershipManager({
   return (
     <section className="mt-10 space-y-8">
       {dialog}
-      {/* Mounted only for viewers who may assign: the form fetches its own
-          hosted-project options, so readers never fetch what they cannot use.
-          Feedback stays shared, so assignment and removal report into one slot. */}
-      {canAssign && (
-        <ProjectPartnershipAssigner
-          partnerships={partnerships}
-          feedback={feedback}
-          onFeedback={setFeedback}
-        />
+      {feedback && (
+        <div
+          aria-live="polite"
+          className="text-sm"
+          data-testid="partnership-feedback"
+          data-state={feedback.status}
+        >
+          {feedback.message}
+        </div>
       )}
-
       <div className="space-y-4">
         <h2 className="text-2xl">{t("manager.current")}</h2>
         {partnerships.length === 0 ? (

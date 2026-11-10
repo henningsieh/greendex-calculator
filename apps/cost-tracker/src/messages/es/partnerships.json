@@ -14,6 +14,7 @@
       "updated": "· Updated",
       "assigning": "Asignando…",
       "assign": "Asignar",
+      "cancel": "Cancel",
       "remove": "Eliminar"
     },
     "setup": {
@@ -55,6 +56,7 @@
       "inspect": "Inspect setup result",
       "creatingLink": "Creando enlace…",
       "createLink": "Crear enlace",
+      "cancel": "Cancel",
       "closed": "Cerrado",
       "used": "Utilizado",
       "expired": "Caducado",

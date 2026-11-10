@@ -14,6 +14,7 @@
       "updated": "· Aktualisiert",
       "assigning": "Wird zugewiesen…",
       "assign": "Zuweisen",
+      "cancel": "Abbrechen",
       "remove": "Entfernen"
     },
     "setup": {
@@ -55,6 +56,7 @@
       "inspect": "Setup-Ergebnis prüfen",
       "creatingLink": "Neuer Link…",
       "createLink": "Neuer Link",
+      "cancel": "Abbrechen",
       "closed": "Geschlossen",
       "used": "Verwendet",
       "expired": "Abgelaufen",

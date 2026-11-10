@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,7 +90,10 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
   };
 });
 
-import { SetupLinkCreator } from "@/features/partnerships/components/setup-link";
+import {
+  CreateSetupLinkDialog,
+  SetupLinkList,
+} from "@/features/partnerships/components/setup-link";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -138,15 +141,32 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function creator(locale: "en" | "de" = "en") {
+function page(locale: "en" | "de" = "en") {
   const client = createQueryClient();
   client.setDefaultOptions({ queries: { retry: false } });
   return render(
     <QueryClientProvider client={client}>
-      <SetupLinkCreator />
+      <CreateSetupLinkDialog />
+      <SetupLinkList />
     </QueryClientProvider>,
     { locale },
   );
+}
+
+function listOnly(locale: "en" | "de" = "en") {
+  const client = createQueryClient();
+  client.setDefaultOptions({ queries: { retry: false } });
+  return render(
+    <QueryClientProvider client={client}>
+      <SetupLinkList />
+    </QueryClientProvider>,
+    { locale },
+  );
+}
+
+async function openDialog(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("new-setup-link"));
+  return within(screen.getByTestId("setup-link-creator"));
 }
 
 describe("Setup Link UI", () => {
@@ -162,7 +182,7 @@ describe("Setup Link UI", () => {
         expiresAt: new Date("2099-01-01"),
       },
     ]);
-    creator();
+    listOnly();
     await screen.findByRole("table");
     expect(
       document.querySelector(
@@ -176,26 +196,25 @@ describe("Setup Link UI", () => {
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
       mocks.writeText,
     );
-    creator();
+    page();
+    const dialog = await openDialog(user);
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
-    expect(screen.queryByRole("table")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
-    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    await user.click(dialog.getByTestId("entity-combobox-trigger"));
     await user.type(screen.getByTestId("entity-search"), "Host");
     const projectOption = await screen.findByRole("option");
     expect(projectOption).toHaveAttribute("data-value", "project-1");
     await user.click(projectOption);
-    await user.type(screen.getByTestId("setup-email"), "partner@example.com");
-    await user.click(screen.getByTestId("create-setup-link"));
+    await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
+    await user.click(dialog.getByTestId("create-setup-link"));
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(2));
     expect(mocks.create).toHaveBeenCalledWith({
       projectId: "project-1",
       recipientEmail: "partner@example.com",
     });
-    const url = screen.getByTestId("recipient-link") as HTMLInputElement;
+    const url = dialog.getByTestId("recipient-link") as HTMLInputElement;
     expect(url.value).toContain("/setup-links/link-1?secret=private-secret");
-    await user.click(screen.getByTestId("copy-setup-link"));
+    await user.click(dialog.getByTestId("copy-setup-link"));
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
   });
 
@@ -206,30 +225,38 @@ describe("Setup Link UI", () => {
       vi.spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(
         new Error("denied"),
       );
-      creator(locale as "en" | "de");
+      page(locale as "en" | "de");
+      const dialog = await openDialog(user);
       await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
-      await user.click(screen.getByTestId("entity-combobox-trigger"));
+      await user.click(dialog.getByTestId("entity-combobox-trigger"));
       await user.type(screen.getByTestId("entity-search"), "Host");
       await user.click(await screen.findByRole("option"));
-      await user.type(screen.getByTestId("setup-email"), "partner@example.com");
-      await user.click(screen.getByTestId("create-setup-link"));
-      await screen.findByTestId("recipient-link");
-      await user.click(screen.getByTestId("copy-setup-link"));
-      await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
+      await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
+      await user.click(dialog.getByTestId("create-setup-link"));
+      await within(screen.getByTestId("setup-link-creator")).findByTestId(
+        "recipient-link",
+      );
+      await user.click(dialog.getByTestId("copy-setup-link"));
+      await waitFor(() =>
+        expect(
+          within(screen.getByTestId("setup-link-creator")).getByRole("alert"),
+        ).toBeVisible(),
+      );
     },
   );
 
   it("prevents repeat issuance while the new link is pending", async () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));
-    creator();
-    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    page();
+    const dialog = await openDialog(user);
+    await user.click(dialog.getByTestId("entity-combobox-trigger"));
     await user.type(screen.getByTestId("entity-search"), "Host");
     const projectOption = await screen.findByRole("option");
     expect(projectOption).toHaveAttribute("data-value", "project-1");
     await user.click(projectOption);
-    await user.type(screen.getByTestId("setup-email"), "partner@example.com");
-    const submit = screen.getByTestId("create-setup-link");
+    await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
+    const submit = dialog.getByTestId("create-setup-link");
     await user.click(submit);
     expect(submit).toBeDisabled();
   });
