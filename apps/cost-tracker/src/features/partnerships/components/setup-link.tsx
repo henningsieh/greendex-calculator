@@ -127,7 +127,7 @@ export function SetupLinkCreator() {
       <CardContent className="space-y-5">
         <p>{t("description")}</p>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={create}>
-          <div data-testid="hosted-project-picker" className="space-y-2">
+          <div data-testid="hosted-project-picker" className="grid gap-2">
             <span className="text-sm font-medium">{t("hostedProject")}</span>
             <EntityCombobox
               label={t("hostedProject")}
@@ -136,7 +136,7 @@ export function SetupLinkCreator() {
               search={searchHosted}
             />
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="setup-email">{t("recipientEmail")}</Label>
             <Input
               id="setup-email"

@@ -84,7 +84,7 @@ export function ProjectPartnershipManager({
         {partnerships.length === 0 ? (
           <p
             data-testid="partnerships-empty"
-            className="rounded-xl border p-8 text-center text-muted-foreground"
+            className="rounded-2xl border p-8 text-center text-muted-foreground"
           >
             {t("manager.none")}
           </p>
@@ -92,7 +92,7 @@ export function ProjectPartnershipManager({
           <ul className="grid gap-4">
             {partnerships.map((partnership) => (
               <li
-                className="flex flex-col justify-between gap-5 rounded-xl border p-5 sm:flex-row sm:items-center"
+                className="flex flex-col justify-between gap-5 rounded-2xl border p-5 sm:flex-row sm:items-center"
                 data-testid={`partnership-row-${partnership.organizationId}`}
                 key={partnership.id}
               >

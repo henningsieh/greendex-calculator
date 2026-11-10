@@ -98,7 +98,7 @@ export function ProjectPartnershipAssigner({
             assignMutation.mutate();
           }}
         >
-          <div data-testid="hosted-project-picker" className="space-y-2">
+          <div data-testid="hosted-project-picker" className="grid gap-2">
             <span className="text-sm font-medium">
               {t("manager.hostedProject")}
             </span>
@@ -110,7 +110,7 @@ export function ProjectPartnershipAssigner({
               preload={projectPreload}
             />
           </div>
-          <div data-testid="partner-organization-picker" className="space-y-2">
+          <div data-testid="partner-organization-picker" className="grid gap-2">
             <span className="text-sm font-medium">
               {t("manager.partnerOrganization")}
             </span>

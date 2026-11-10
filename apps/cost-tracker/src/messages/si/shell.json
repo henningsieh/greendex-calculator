@@ -183,6 +183,21 @@
         "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
         "exemptAction": "working…"
       },
+      "forms": {
+        "eyebrow": "Obrazci · partnerstvo",
+        "title": "Obrazec za partnersko povezavo projekta",
+        "cardTitle": "Dodeli obstoječe partnerstvo",
+        "project": "Projekt",
+        "projectPlaceholder": "Izberi projekt",
+        "organizationId": "ID organizacije",
+        "organizationPlaceholder": "npr. org_8f3a2c",
+        "assign": "Dodeli",
+        "projects": {
+          "one": "Erasmus+ mladinska izmenjava",
+          "two": "Čiščenje Donave",
+          "three": "Green Roots"
+        }
+      },
       "type": {
         "eyebrow": "Type · specimen",
         "title": "Typography",
