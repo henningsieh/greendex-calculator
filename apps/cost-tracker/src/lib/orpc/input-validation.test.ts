@@ -34,6 +34,31 @@ describe("input validation normalization", () => {
     });
   });
 
+  it.each([
+    ["emailRequired", "recipientEmail", "Email address is required."],
+    ["emailInvalid", "recipientEmail", "Enter a valid email address."],
+    ["projectIdRequired", "projectId", "Project ID is required."],
+    ["projectIdTooLong", "projectId", "Project ID is too long."],
+  ])("normalizes %s at its allowed path", (id, path, message) => {
+    const cause = new ValidationError({
+      message: "private",
+      invalidData: {},
+      issues: [
+        { path: [path], message: id },
+        { path: ["other"], message: id },
+      ],
+    });
+    expect(
+      normalizeInputValidationError(
+        new ORPCError("BAD_REQUEST", { cause }),
+        errors,
+      )?.data,
+    ).toEqual({
+      reason: "INVALID_INPUT",
+      issues: [{ id, path: [path], message }],
+    });
+  });
+
   it("returns known relative fields even when identifiers are absent", () => {
     const cause = new ValidationError({
       message: "private",

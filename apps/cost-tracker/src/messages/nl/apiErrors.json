@@ -136,6 +136,10 @@
       "networkFailure": "De server of het netwerk is niet bereikbaar. Controleer je verbinding en probeer het opnieuw."
     },
     "details": {
+      "emailRequired": "Het e-mailadres is verplicht.",
+      "emailInvalid": "Voer een geldig e-mailadres in.",
+      "projectIdRequired": "De project-ID is verplicht.",
+      "projectIdTooLong": "De project-ID is te lang.",
       "journeyDistanceOutsideBands": "De reisafstand moet binnen precies één vastgelegde financieringscategorie vallen.",
       "payoutAccountRequired": "Selecteer een uitbetalingsrekening van de partnerorganisatie.",
       "entryRequired": "Voeg ten minste één reiskostenpost toe.",

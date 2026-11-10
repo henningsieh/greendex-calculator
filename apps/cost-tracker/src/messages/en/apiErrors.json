@@ -136,6 +136,10 @@
       "networkFailure": "The server or network is unreachable. Check your connection and try again."
     },
     "details": {
+      "emailRequired": "Email address is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "projectIdRequired": "Project ID is required.",
+      "projectIdTooLong": "Project ID is too long.",
       "journeyDistanceOutsideBands": "Journey distance must have exactly one frozen funding band.",
       "payoutAccountRequired": "Select a Partner Payout Account.",
       "entryRequired": "Add at least one Travel Cost Entry.",

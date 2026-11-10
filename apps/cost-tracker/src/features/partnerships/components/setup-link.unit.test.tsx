@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
+import german from "@/messages/de/apiErrors.json";
+import english from "@/messages/en/apiErrors.json";
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -221,29 +223,70 @@ describe("Setup Link UI", () => {
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
   });
 
-  it("shows a Project field error and refuses an overlong ID", async () => {
-    const user = userEvent.setup();
-    mocks.searchHosted.mockResolvedValue([
-      { id: "x".repeat(129), name: "Hosted Example" },
-    ]);
-    page();
-    const dialog = await openDialog(user);
-    await user.click(dialog.getByTestId("entity-combobox-trigger"));
-    await user.type(screen.getByTestId("entity-search"), "Host");
-    await user.click(await screen.findByRole("option"));
-    await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
-    await user.click(dialog.getByTestId("create-setup-link"));
-    await waitFor(() =>
-      expect(dialog.getByTestId("hosted-project-picker")).toHaveAttribute(
-        "data-invalid",
-        "true",
-      ),
-    );
-    expect(
-      within(dialog.getByTestId("hosted-project-picker")).getByRole("alert"),
-    ).toBeVisible();
-    expect(mocks.create).not.toHaveBeenCalled();
-  });
+  it.each(["en", "de"] as const)(
+    "translates invalid setup fields in %s",
+    async (locale) => {
+      const user = userEvent.setup();
+      const details = (locale === "de" ? german : english).apiErrors.details;
+      page(locale);
+      const dialog = await openDialog(user);
+      await user.click(dialog.getByTestId("create-setup-link"));
+      await waitFor(() =>
+        expect(
+          dialog.getByTestId("entity-combobox-trigger"),
+        ).toHaveAccessibleDescription(details.projectIdRequired),
+      );
+      expect(dialog.getByTestId("setup-email")).toHaveAccessibleDescription(
+        details.emailRequired,
+      );
+      expect(dialog.getByTestId("setup-email")).toHaveAttribute(
+        "aria-describedby",
+        "setup-email-error",
+      );
+      expect(dialog.getByTestId("entity-combobox-trigger")).toHaveAttribute(
+        "aria-describedby",
+        "setup-project-error",
+      );
+      expect(mocks.create).not.toHaveBeenCalled();
+      await user.type(dialog.getByTestId("setup-email"), "not-an-email");
+      await user.click(dialog.getByTestId("create-setup-link"));
+      await waitFor(() =>
+        expect(dialog.getByTestId("setup-email")).toHaveAccessibleDescription(
+          details.emailInvalid,
+        ),
+      );
+      expect(mocks.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["en", "de"] as const)(
+    "shows a translated Project field error and refuses an overlong ID in %s",
+    async (locale) => {
+      const user = userEvent.setup();
+      mocks.searchHosted.mockResolvedValue([
+        { id: "x".repeat(129), name: "Hosted Example" },
+      ]);
+      page(locale);
+      const dialog = await openDialog(user);
+      await user.click(dialog.getByTestId("entity-combobox-trigger"));
+      await user.type(screen.getByTestId("entity-search"), "Host");
+      await user.click(await screen.findByRole("option"));
+      await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
+      await user.click(dialog.getByTestId("create-setup-link"));
+      await waitFor(() =>
+        expect(dialog.getByTestId("hosted-project-picker")).toHaveAttribute(
+          "data-invalid",
+          "true",
+        ),
+      );
+      expect(
+        dialog.getByTestId("entity-combobox-trigger"),
+      ).toHaveAccessibleDescription(
+        (locale === "de" ? german : english).apiErrors.details.projectIdTooLong,
+      );
+      expect(mocks.create).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(["en", "de"] as const)(
     "shows the copy fallback alert in %s when the clipboard write fails",

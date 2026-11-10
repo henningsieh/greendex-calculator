@@ -18,6 +18,8 @@ type Entity = { id: string; name: string };
 
 export function EntityCombobox<T extends Entity>({
   label,
+  id,
+  "aria-describedby": ariaDescribedby,
   value,
   onChange,
   search,
@@ -27,6 +29,8 @@ export function EntityCombobox<T extends Entity>({
   "aria-invalid": ariaInvalid,
 }: {
   label: string;
+  id?: string;
+  "aria-describedby"?: string;
   value: string;
   onChange: (id: string) => void;
   search?: (query: string) => Promise<T[]>;
@@ -88,6 +92,8 @@ export function EntityCombobox<T extends Entity>({
       <PopoverTrigger
         render={
           <Button
+            id={id}
+            aria-describedby={ariaDescribedby}
             aria-label={label}
             data-testid="entity-combobox-trigger"
             aria-expanded={open}

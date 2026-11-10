@@ -136,6 +136,10 @@
       "networkFailure": "Il server o la rete non sono raggiungibili. Controlla la connessione e riprova."
     },
     "details": {
+      "emailRequired": "L’indirizzo email è obbligatorio.",
+      "emailInvalid": "Inserisci un indirizzo email valido.",
+      "projectIdRequired": "L’ID del progetto è obbligatorio.",
+      "projectIdTooLong": "L’ID del progetto è troppo lungo.",
       "journeyDistanceOutsideBands": "La distanza del viaggio deve rientrare esattamente in una delle fasce di finanziamento fissate.",
       "payoutAccountRequired": "Seleziona un conto di pagamento dell'organizzazione partner.",
       "entryRequired": "Aggiungi almeno una voce di spesa di viaggio.",

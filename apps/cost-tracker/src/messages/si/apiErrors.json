@@ -136,6 +136,10 @@
       "networkFailure": "Strežnik ali omrežje nista dosegljiva. Preverite povezavo in poskusite znova."
     },
     "details": {
+      "emailRequired": "E-poštni naslov je obvezen.",
+      "emailInvalid": "Vnesite veljaven e-poštni naslov.",
+      "projectIdRequired": "ID projekta je obvezen.",
+      "projectIdTooLong": "ID projekta je predolg.",
       "journeyDistanceOutsideBands": "Razdalja potovanja mora ustrezati natanko enemu od fiksiranih razredov financiranja.",
       "payoutAccountRequired": "Izberite račun za izplačilo partnerske organizacije.",
       "entryRequired": "Dodajte vsaj eno postavko potnih stroškov.",

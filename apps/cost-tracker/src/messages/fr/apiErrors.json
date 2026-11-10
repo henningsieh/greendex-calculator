@@ -136,6 +136,10 @@
       "networkFailure": "Le serveur ou le réseau est inaccessible. Vérifiez votre connexion et réessayez."
     },
     "details": {
+      "emailRequired": "L’adresse e-mail est obligatoire.",
+      "emailInvalid": "Saisissez une adresse e-mail valide.",
+      "projectIdRequired": "L’identifiant du projet est obligatoire.",
+      "projectIdTooLong": "L’identifiant du projet est trop long.",
       "journeyDistanceOutsideBands": "La distance du voyage doit correspondre exactement à l'une des tranches de financement figées.",
       "payoutAccountRequired": "Sélectionnez un compte de versement de l'organisation partenaire.",
       "entryRequired": "Ajoutez au moins une ligne de frais de voyage.",

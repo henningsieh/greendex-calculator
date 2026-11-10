@@ -7,7 +7,9 @@ import { ProjectIdSchema } from "@/features/projects/validation-schemas";
 
 export { CoordinationIdSchema };
 export const SetupLinkEmailSchema = z
-  .email()
+  .email({
+    error: (issue) => (issue.input === "" ? "emailRequired" : "emailInvalid"),
+  })
   .transform((value) => value.toLowerCase());
 
 export const CreateSetupLinkInputSchema = z.object({

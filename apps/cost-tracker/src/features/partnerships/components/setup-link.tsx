@@ -14,6 +14,7 @@ import { EntityCombobox } from "@/components/entity-combobox";
 import {
   ErrorPresentation,
   ErrorReason,
+  FieldErrorMessage,
 } from "@/components/error-presentation/error-presentation";
 import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -120,6 +121,7 @@ export function SetupLinkForm() {
   return (
     <div className="space-y-5">
       <form
+        noValidate
         className="grid gap-4 sm:grid-cols-2"
         onSubmit={form.handleSubmit(create)}
       >
@@ -135,13 +137,21 @@ export function SetupLinkForm() {
                 {t("hostedProject")}
               </FieldLabel>
               <EntityCombobox
+                id="setup-hosted-project"
+                aria-describedby={
+                  fieldState.invalid ? "setup-project-error" : undefined
+                }
                 aria-invalid={fieldState.invalid}
                 label={t("hostedProject")}
                 value={field.value}
                 onChange={field.onChange}
                 search={searchHosted}
               />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && (
+                <FieldError id="setup-project-error">
+                  <FieldErrorMessage message={fieldState.error?.message} />
+                </FieldError>
+              )}
             </Field>
           )}
         />
@@ -156,9 +166,16 @@ export function SetupLinkForm() {
                 id="setup-email"
                 data-testid="setup-email"
                 aria-invalid={fieldState.invalid}
+                aria-describedby={
+                  fieldState.invalid ? "setup-email-error" : undefined
+                }
                 type="email"
               />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && (
+                <FieldError id="setup-email-error">
+                  <FieldErrorMessage message={fieldState.error?.message} />
+                </FieldError>
+              )}
             </Field>
           )}
         />
