@@ -24,6 +24,7 @@ export function EntityCombobox<T extends Entity>({
   preload = [],
   disabled,
   searchBy,
+  "aria-invalid": ariaInvalid,
 }: {
   label: string;
   value: string;
@@ -32,6 +33,7 @@ export function EntityCombobox<T extends Entity>({
   preload?: T[];
   disabled?: boolean;
   searchBy?: string;
+  "aria-invalid"?: boolean;
 }) {
   const t = useTranslations("shell");
   const [open, setOpen] = useState(false);
@@ -89,6 +91,7 @@ export function EntityCombobox<T extends Entity>({
             aria-label={label}
             data-testid="entity-combobox-trigger"
             aria-expanded={open}
+            aria-invalid={ariaInvalid}
             className="w-full justify-between"
             disabled={disabled}
             type="button"

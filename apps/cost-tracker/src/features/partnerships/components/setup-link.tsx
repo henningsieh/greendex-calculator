@@ -2,9 +2,12 @@
 
 import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { destinationHref } from "@/app/paths";
 import { EntityCombobox } from "@/components/entity-combobox";
@@ -16,7 +19,7 @@ import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,6 +40,7 @@ import {
 } from "@/features/authentication/onboarding-decision";
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
+import { SetupLinkEmailSchema } from "@/features/partnerships/validation-schemas";
 import { authClient } from "@/lib/auth-client";
 import { Link } from "@/lib/i18n/routing";
 import { useRouter } from "@/lib/i18n/routing";
@@ -45,6 +49,12 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
+
+const SetupLinkFormSchema = z.object({
+  projectId: z.string().trim().min(1, "Select a hosted Project."),
+  recipientEmail: SetupLinkEmailSchema,
+});
+type SetupLinkFormValues = z.infer<typeof SetupLinkFormSchema>;
 
 type SetupFeedback = { error: unknown };
 
@@ -87,24 +97,22 @@ export function SetupLinkCreator() {
       setClosingId(undefined);
     }
   }
-  const [projectId, setProjectId] = useState("");
-  const [recipientEmail, setRecipientEmail] = useState("");
+  const form = useForm<SetupLinkFormValues>({
+    resolver: zodResolver(SetupLinkFormSchema),
+    defaultValues: { projectId: "", recipientEmail: "" },
+    mode: "onTouched",
+  });
+  const pending = form.formState.isSubmitting;
   const [link, setLink] = useState("");
   const [error, setError] = useState<React.ReactNode>("");
   const [copied, setCopied] = useState(false);
-  const [pending, setPending] = useState(false);
 
-  async function create(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function create(values: SetupLinkFormValues) {
     setLink("");
     setCopied(false);
     setError("");
-    setPending(true);
     try {
-      const result = await orpc.projectPartnerships.createSetupLink({
-        projectId,
-        recipientEmail,
-      });
+      const result = await orpc.projectPartnerships.createSetupLink(values);
       const url = new URL(
         `/setup-links/${encodeURIComponent(result.id)}`,
         window.location.origin,
@@ -114,8 +122,6 @@ export function SetupLinkCreator() {
       await refreshLinks();
     } catch (cause) {
       setError(<ErrorPresentation error={cause} />);
-    } finally {
-      setPending(false);
     }
   }
 
@@ -126,31 +132,55 @@ export function SetupLinkCreator() {
       </CardHeader>
       <CardContent className="space-y-5">
         <p>{t("description")}</p>
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={create}>
-          <div data-testid="hosted-project-picker" className="grid gap-2">
-            <span className="text-sm font-medium">{t("hostedProject")}</span>
-            <EntityCombobox
-              label={t("hostedProject")}
-              value={projectId}
-              onChange={setProjectId}
-              search={searchHosted}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="setup-email">{t("recipientEmail")}</Label>
-            <Input
-              id="setup-email"
-              data-testid="setup-email"
-              required
-              type="email"
-              value={recipientEmail}
-              onChange={(event) => setRecipientEmail(event.target.value)}
-            />
-          </div>
+        <form
+          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={form.handleSubmit(create)}
+        >
+          <Controller
+            control={form.control}
+            name="projectId"
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                data-testid="hosted-project-picker"
+              >
+                <FieldLabel htmlFor="setup-hosted-project">
+                  {t("hostedProject")}
+                </FieldLabel>
+                <EntityCombobox
+                  aria-invalid={fieldState.invalid}
+                  label={t("hostedProject")}
+                  value={field.value}
+                  onChange={field.onChange}
+                  search={searchHosted}
+                />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="recipientEmail"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="setup-email">
+                  {t("recipientEmail")}
+                </FieldLabel>
+                <Input
+                  {...field}
+                  id="setup-email"
+                  data-testid="setup-email"
+                  aria-invalid={fieldState.invalid}
+                  type="email"
+                />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
           <div>
             <Button
               data-testid="create-setup-link"
-              disabled={pending || !projectId}
+              disabled={pending}
               type="submit"
             >
               {pending ? t("creatingLink") : t("createLink")}
