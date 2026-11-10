@@ -123,8 +123,14 @@ export const ProjectListScopeAvailabilitySchema = z.object({
   canCreate: z.boolean(),
 });
 
+export const PROJECT_ID_MAX_LENGTH = 128;
+export const ProjectIdSchema = createSelectSchema(projectsTable)
+  .shape.id.trim()
+  .min(1)
+  .max(PROJECT_ID_MAX_LENGTH);
+
 export const ProjectDetailInputSchema = z.object({
-  projectId: z.string().trim().min(1).max(128),
+  projectId: ProjectIdSchema,
 });
 
 const ProjectDetailBaseSchema = z.object({

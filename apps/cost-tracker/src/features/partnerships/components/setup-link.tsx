@@ -7,7 +7,7 @@ import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
+import { type z } from "zod";
 
 import { destinationHref } from "@/app/paths";
 import { EntityCombobox } from "@/components/entity-combobox";
@@ -50,7 +50,7 @@ import {
 } from "@/features/authentication/onboarding-decision";
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
-import { SetupLinkEmailSchema } from "@/features/partnerships/validation-schemas";
+import { CreateSetupLinkInputSchema } from "@/features/partnerships/validation-schemas";
 import { authClient } from "@/lib/auth-client";
 import { Link } from "@/lib/i18n/routing";
 import { useRouter } from "@/lib/i18n/routing";
@@ -60,11 +60,7 @@ import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
 
-const SetupLinkFormSchema = z.object({
-  projectId: z.string().trim().min(1, "Select a hosted Project."),
-  recipientEmail: SetupLinkEmailSchema,
-});
-type SetupLinkFormValues = z.infer<typeof SetupLinkFormSchema>;
+type SetupLinkFormValues = z.infer<typeof CreateSetupLinkInputSchema>;
 
 type SetupFeedback = { error: unknown };
 
@@ -94,7 +90,7 @@ export function SetupLinkForm() {
   const t = useTranslations("partnerships.setup");
   const refreshLinks = useRefreshSetupLinks();
   const form = useForm<SetupLinkFormValues>({
-    resolver: zodResolver(SetupLinkFormSchema),
+    resolver: zodResolver(CreateSetupLinkInputSchema),
     defaultValues: { projectId: "", recipientEmail: "" },
     mode: "onTouched",
   });

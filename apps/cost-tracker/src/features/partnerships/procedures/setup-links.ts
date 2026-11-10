@@ -14,7 +14,7 @@ import { z } from "zod";
 
 import {
   CoordinationIdSchema,
-  SetupLinkEmailSchema,
+  CreateSetupLinkInputSchema,
 } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -27,12 +27,7 @@ const hash = (secret: string) =>
 
 /** The caller delivers the returned secret through a private channel; it is never persisted raw. */
 export const createSetupLink = authorized
-  .input(
-    z.object({
-      projectId: CoordinationIdSchema,
-      recipientEmail: SetupLinkEmailSchema,
-    }),
-  )
+  .input(CreateSetupLinkInputSchema)
   .output(z.object({ id: z.string(), secret: z.string(), expiresAt: z.date() }))
   .handler(async ({ input, context, errors }) => {
     const secret = randomBytes(32).toString("base64url");

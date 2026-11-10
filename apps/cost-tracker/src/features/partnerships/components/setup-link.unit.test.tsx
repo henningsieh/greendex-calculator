@@ -196,6 +196,9 @@ describe("Setup Link UI", () => {
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
       mocks.writeText,
     );
+    mocks.searchHosted.mockResolvedValue([
+      { id: " project-1 ", name: "Hosted Example" },
+    ]);
     page();
     const dialog = await openDialog(user);
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
@@ -205,7 +208,7 @@ describe("Setup Link UI", () => {
     const projectOption = await screen.findByRole("option");
     expect(projectOption).toHaveAttribute("data-value", "project-1");
     await user.click(projectOption);
-    await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
+    await user.type(dialog.getByTestId("setup-email"), "Partner@Example.com");
     await user.click(dialog.getByTestId("create-setup-link"));
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(2));
     expect(mocks.create).toHaveBeenCalledWith({
@@ -216,6 +219,30 @@ describe("Setup Link UI", () => {
     expect(url.value).toContain("/setup-links/link-1?secret=private-secret");
     await user.click(dialog.getByTestId("copy-setup-link"));
     expect(mocks.writeText).toHaveBeenCalledWith(url.value);
+  });
+
+  it("shows a Project field error and refuses an overlong ID", async () => {
+    const user = userEvent.setup();
+    mocks.searchHosted.mockResolvedValue([
+      { id: "x".repeat(129), name: "Hosted Example" },
+    ]);
+    page();
+    const dialog = await openDialog(user);
+    await user.click(dialog.getByTestId("entity-combobox-trigger"));
+    await user.type(screen.getByTestId("entity-search"), "Host");
+    await user.click(await screen.findByRole("option"));
+    await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
+    await user.click(dialog.getByTestId("create-setup-link"));
+    await waitFor(() =>
+      expect(dialog.getByTestId("hosted-project-picker")).toHaveAttribute(
+        "data-invalid",
+        "true",
+      ),
+    );
+    expect(
+      within(dialog.getByTestId("hosted-project-picker")).getByRole("alert"),
+    ).toBeVisible();
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 
   it.each(["en", "de"] as const)(
