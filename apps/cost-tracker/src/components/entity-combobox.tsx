@@ -99,7 +99,10 @@ export function EntityCombobox<T extends Entity>({
           </Button>
         }
       />
-      <PopoverContent align="start" className="w-(--anchor-width) gap-0 p-0">
+      <PopoverContent
+        align="start"
+        className="w-(--anchor-width) gap-0 overflow-hidden p-0"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             data-testid="entity-search"
@@ -164,12 +167,7 @@ export function EntityCombobox<T extends Entity>({
                     setQuery("");
                   }}
                 >
-                  <span className="flex flex-col">
-                    <span>{item.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {item.id}
-                    </span>
-                  </span>
+                  <span>{item.name}</span>
                 </CommandItem>
               ))
             )}
