@@ -50,6 +50,42 @@ beforeEach(() => {
 });
 
 describe("EntityCombobox", () => {
+  it("shows every supplied local option and filters from the first character", async () => {
+    const user = userEvent.setup();
+    const projects = Array.from({ length: 25 }, (_, i) => ({
+      id: `id-${i}`,
+      name: `Project ${i}`,
+    }));
+    const onChange = vi.fn();
+    const view = render(
+      <EntityCombobox
+        label="Project"
+        value=""
+        onChange={onChange}
+        preload={projects}
+      />,
+    );
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    expect(screen.getAllByRole("option")).toHaveLength(25);
+    await user.type(screen.getByTestId("entity-search"), "I");
+    expect(screen.getAllByRole("option")).toHaveLength(25);
+    await user.clear(screen.getByTestId("entity-search"));
+    await user.type(screen.getByTestId("entity-search"), "id-24");
+    await user.click(screen.getByRole("option"));
+    expect(onChange).toHaveBeenCalledWith("id-24");
+    view.rerender(
+      <EntityCombobox
+        label="Project"
+        value="id-24"
+        onChange={onChange}
+        preload={[{ id: "id-24", name: "Renamed" }]}
+      />,
+    );
+    await user.click(screen.getByTestId("entity-combobox-trigger"));
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+    expect(screen.getByRole("option")).toHaveAttribute("data-entity-id", "id-24");
+  }, 15_000);
+
   it("preloads names, stores IDs, and searches name or ID after two characters", async () => {
     const user = userEvent.setup();
     const search = vi
