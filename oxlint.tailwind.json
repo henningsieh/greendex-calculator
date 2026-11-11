@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "node_modules/**",
+    ".next/**",
+    "dist/**",
+    "build/**",
+    "docs/**",
+    "specs/**",
+    "src/components/ui/**",
+    "apps/calculator/src/components/ui/**",
+    "apps/documentation/src/components/ui/**",
+    "apps/cost-tracker/src/components/ui/**",
+    "src/lib/drizzle/migrations/**",
+    "src/lib/drizzle/schemas/**"
+  ],
+  "jsPlugins": ["eslint-plugin-better-tailwindcss"],
+  "overrides": [
+    {
+      "files": [
+        "apps/calculator/src/**/*.{jsx,tsx}",
+        "apps/cost-tracker/src/**/*.{jsx,tsx}",
+        "apps/documentation/src/**/*.{jsx,tsx}",
+        "packages/auth/src/**/*.{jsx,tsx}",
+        "packages/email/src/**/*.{jsx,tsx}"
+      ],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.stories.*"
+      ],
+      "rules": {
+        "better-tailwindcss/no-deprecated-classes": "error",
+        "better-tailwindcss/no-duplicate-classes": "error",
+        "better-tailwindcss/enforce-canonical-classes": "error"
+      }
+    }
+  ]
+}

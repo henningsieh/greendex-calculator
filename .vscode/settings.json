@@ -7,10 +7,9 @@
   // ============================================================================
   // EDITOR — FORMAT ON SAVE / CODE ACTIONS
   // ============================================================================
-  "editor.formatOnPaste": true,
+  "editor.formatOnPaste": false,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit",
     "source.fixAll.oxc": "explicit"
   },
 
@@ -64,12 +63,20 @@
   // Keep the native editor service on the version pinned by the pnpm catalog.
   "js/ts.tsdk.path": "./node_modules/typescript",
   "js/ts.updateImportsOnFileMove.enabled": "always",
-  "js/ts.tsserver.tracing.enabled": true,
-  "js/ts.tsserver.experimental.enableProjectDiagnostics": true,
+  "js/ts.tsserver.tracing.enabled": false,
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
 
   // ============================================================================
   // TAILWIND CSS
+  // ----------------------------------------------------------------------------
+  // Three apps own three stylesheets. Map each entry to its app so the
+  // extension builds one Tailwind instance per app instead of guessing.
   // ============================================================================
+  "tailwindCSS.experimental.configFile": {
+    "apps/calculator/src/app/globals.css": "apps/calculator/**",
+    "apps/cost-tracker/src/app/globals.css": "apps/cost-tracker/**",
+    "apps/documentation/src/app/globals.css": "apps/documentation/**"
+  },
   "tailwindCSS.validate": true,
   "tailwindCSS.codeActions": true,
   "tailwindCSS.lint.cssConflict": "error",
