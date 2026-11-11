@@ -138,6 +138,8 @@
     "details": {
       "emailRequired": "Email address is required.",
       "emailInvalid": "Enter a valid email address.",
+      "organizationIdRequired": "Organization ID is required.",
+      "organizationIdTooLong": "Organization ID is too long.",
       "projectIdRequired": "Project ID is required.",
       "projectIdTooLong": "Project ID is too long.",
       "journeyDistanceOutsideBands": "Journey distance must have exactly one frozen funding band.",

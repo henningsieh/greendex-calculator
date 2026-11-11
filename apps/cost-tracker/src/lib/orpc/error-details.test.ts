@@ -58,6 +58,8 @@ describe("structured error details", () => {
     const checklist = ![
       "emailRequired",
       "emailInvalid",
+      "organizationIdRequired",
+      "organizationIdTooLong",
       "projectIdRequired",
       "projectIdTooLong",
     ].includes(issue.id);

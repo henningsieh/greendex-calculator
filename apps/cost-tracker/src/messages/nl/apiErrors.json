@@ -138,6 +138,8 @@
     "details": {
       "emailRequired": "Het e-mailadres is verplicht.",
       "emailInvalid": "Voer een geldig e-mailadres in.",
+      "organizationIdRequired": "De organisatie-ID is verplicht.",
+      "organizationIdTooLong": "De organisatie-ID is te lang.",
       "projectIdRequired": "De project-ID is verplicht.",
       "projectIdTooLong": "De project-ID is te lang.",
       "journeyDistanceOutsideBands": "De reisafstand moet binnen precies één vastgelegde financieringscategorie vallen.",

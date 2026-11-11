@@ -37,6 +37,8 @@ describe("input validation normalization", () => {
   it.each([
     ["emailRequired", "recipientEmail", "Email address is required."],
     ["emailInvalid", "recipientEmail", "Enter a valid email address."],
+    ["organizationIdRequired", "organizationId", "Organization ID is required."],
+    ["organizationIdTooLong", "organizationId", "Organization ID is too long."],
     ["projectIdRequired", "projectId", "Project ID is required."],
     ["projectIdTooLong", "projectId", "Project ID is too long."],
   ])("normalizes %s at its allowed path", (id, path, message) => {

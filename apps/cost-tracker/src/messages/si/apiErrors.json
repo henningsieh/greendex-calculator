@@ -138,6 +138,8 @@
     "details": {
       "emailRequired": "E-poštni naslov je obvezen.",
       "emailInvalid": "Vnesite veljaven e-poštni naslov.",
+      "organizationIdRequired": "ID organizacije je obvezen.",
+      "organizationIdTooLong": "ID organizacije je predolg.",
       "projectIdRequired": "ID projekta je obvezen.",
       "projectIdTooLong": "ID projekta je predolg.",
       "journeyDistanceOutsideBands": "Razdalja potovanja mora ustrezati natanko enemu od fiksiranih razredov financiranja.",

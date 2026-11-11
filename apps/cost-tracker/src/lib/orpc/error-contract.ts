@@ -721,6 +721,8 @@ export const ErrorReasonSchema = z.enum(situationReasons);
 export const fieldIssueCatalog = {
   emailRequired: "Email address is required.",
   emailInvalid: "Enter a valid email address.",
+  organizationIdRequired: "Organization ID is required.",
+  organizationIdTooLong: "Organization ID is too long.",
   projectIdRequired: "Project ID is required.",
   projectIdTooLong: "Project ID is too long.",
   journeyDistanceOutsideBands:
@@ -756,6 +758,8 @@ const issueEntityId = z.string().min(1).regex(/\S/);
 const fieldIssuePathSchemas = {
   emailRequired: z.tuple([z.literal("recipientEmail")]),
   emailInvalid: z.tuple([z.literal("recipientEmail")]),
+  organizationIdRequired: z.tuple([z.literal("organizationId")]),
+  organizationIdTooLong: z.tuple([z.literal("organizationId")]),
   projectIdRequired: z.tuple([z.literal("projectId")]),
   projectIdTooLong: z.tuple([z.literal("projectId")]),
   journeyDistanceOutsideBands: z.union([

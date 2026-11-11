@@ -138,6 +138,8 @@
     "details": {
       "emailRequired": "La dirección de correo electrónico es obligatoria.",
       "emailInvalid": "Introduce una dirección de correo electrónico válida.",
+      "organizationIdRequired": "El ID de la organización es obligatorio.",
+      "organizationIdTooLong": "El ID de la organización es demasiado largo.",
       "projectIdRequired": "El ID del proyecto es obligatorio.",
       "projectIdTooLong": "El ID del proyecto es demasiado largo.",
       "journeyDistanceOutsideBands": "La distancia del viaje debe corresponder exactamente a una de las bandas de financiación fijadas.",

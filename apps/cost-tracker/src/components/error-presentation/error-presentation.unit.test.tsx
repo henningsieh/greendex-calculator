@@ -99,6 +99,16 @@ describe("shared localized error presentation", () => {
     ],
 
     [
+      "organizationIdRequired",
+      english.apiErrors.details.organizationIdRequired,
+      german.apiErrors.details.organizationIdRequired,
+    ],
+    [
+      "organizationIdTooLong",
+      english.apiErrors.details.organizationIdTooLong,
+      german.apiErrors.details.organizationIdTooLong,
+    ],
+    [
       "journeyDistanceOutsideBands",
       "Journey distance must have exactly one frozen funding band.",
       "Die Reiseentfernung muss genau einer festgeschriebenen Entfernungsstufe für die Förderung zugeordnet sein.",

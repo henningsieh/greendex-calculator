@@ -45,8 +45,8 @@ export const AssignProjectPartnershipInputSchema =
     organizationId: z
       .string()
       .trim()
-      .min(1)
-      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+      .min(1, "organizationIdRequired")
+      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH, "organizationIdTooLong"),
   });
 
 export const RemoveProjectPartnershipInputSchema =

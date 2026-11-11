@@ -106,6 +106,22 @@ describe("Project Partnership persisted form schemas", () => {
     },
   );
 
+  it.each([
+    ["  ", "organizationIdRequired"],
+    ["x".repeat(129), "organizationIdTooLong"],
+  ])("validates organization ID %s", (organizationId, id) => {
+    const result = AssignProjectPartnershipInputSchema.safeParse({
+      projectId: "project",
+      organizationId,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success)
+      expect(result.error.issues[0]).toMatchObject({
+        path: ["organizationId"],
+        message: id,
+      });
+  });
+
   it("keeps assignment aligned with the Project Partnership table insert fields", () => {
     expectTypeOf<AssignProjectPartnershipInput>().toEqualTypeOf<
       Pick<ProjectPartnershipInsert, "projectId" | "organizationId">
