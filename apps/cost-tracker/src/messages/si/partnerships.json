@@ -4,6 +4,9 @@
       "partnerOrganizations": "Loading Partner Organizations",
       "projectPartnerships": "Loading Project Partnerships"
     },
+    "projectOptions": {
+      "loading": "Nalaganje možnosti izbire…"
+    },
     "manager": {
       "assignExisting": "Assign an existing Organization",
       "hostedProject": "Hosted Project",
@@ -62,7 +65,7 @@
       "expired": "Poteklo",
       "open": "Odprto",
       "closing": "Zapiranje…",
-      "closeLink": "Zapri nastavitveno povezavo partnerske organizacije",
+      "closeLink": "Zapri povezavo do opreme",
       "completing": "Dokončevanje…",
       "complete": "Dokončaj nastavitev",
       "invitationRejected": "Zavrnili ste vabilo v {organization}. Vaš trenutni dostop je bil znova preverjen. Sledite naslednjemu koraku spodaj."

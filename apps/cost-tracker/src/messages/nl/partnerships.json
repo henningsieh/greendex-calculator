@@ -4,6 +4,9 @@
       "partnerOrganizations": "Loading Partner Organizations",
       "projectPartnerships": "Loading Project Partnerships"
     },
+    "projectOptions": {
+      "loading": "Selectieopties laden…"
+    },
     "manager": {
       "assignExisting": "Assign an existing Organization",
       "hostedProject": "Hosted Project",
@@ -62,7 +65,7 @@
       "expired": "Verlopen",
       "open": "Open",
       "closing": "Sluiten…",
-      "closeLink": "Instellingslink voor partnerorganisatie sluiten",
+      "closeLink": "Link naar inrichting sluiten",
       "completing": "Voltooien…",
       "complete": "Instelling voltooien",
       "invitationRejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder."

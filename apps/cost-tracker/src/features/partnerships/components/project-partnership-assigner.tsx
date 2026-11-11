@@ -1,12 +1,18 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { LinkIcon } from "lucide-react";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { type z } from "zod";
 
 import { EntityCombobox } from "@/components/entity-combobox";
-import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import {
+  ErrorPresentation,
+  FieldErrorMessage,
+} from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,46 +23,50 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import type { OrganizationOption } from "@/features/organizations/validation-schemas";
+import { AssignProjectPartnershipInputSchema } from "@/features/partnerships/validation-schemas";
+import type { HostedProjectOption } from "@/features/projects/validation-schemas";
 import { orpc } from "@/lib/orpc/orpc";
 
 import { invalidatePartnershipProjectData } from "./invalidate-partnership-data";
 
-const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
-const searchOrganizations = (search: string) =>
-  orpc.organizations.search({ search });
+type Values = z.infer<typeof AssignProjectPartnershipInputSchema>;
 
-/**
- * Assign-an-existing-Organization dialog. The pickers search on demand, so
- * the dialog issues no assign-only queries by itself, and the trigger below
- * only renders for viewers who may assign — readers never fetch what they
- * cannot use.
- */
-export function AssignOrganizationDialog() {
+export function AssignOrganizationDialog({
+  projects,
+  organizations,
+}: {
+  projects: readonly HostedProjectOption[];
+  organizations: readonly OrganizationOption[];
+}) {
   const queryClient = useQueryClient();
   const t = useTranslations("partnerships");
   const [open, setOpen] = useState(false);
-  const [projectId, setProjectId] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
   const [error, setError] = useState<React.ReactNode>(null);
+  const form = useForm<Values>({
+    resolver: zodResolver(AssignProjectPartnershipInputSchema),
+    defaultValues: { projectId: "", organizationId: "" },
+    mode: "onTouched",
+  });
+  const pending = form.formState.isSubmitting;
 
-  const assignMutation = useMutation({
-    mutationFn: () =>
-      orpc.projectPartnerships.assign({ projectId, organizationId }),
-    onSuccess: async () => {
+  async function assign(values: Values) {
+    setError(null);
+    try {
+      await orpc.projectPartnerships.assign(values);
       await invalidatePartnershipProjectData(queryClient);
       setOpen(false);
-      setProjectId("");
-      setOrganizationId("");
-      setError(null);
-    },
-    onError: (cause) => {
+      form.reset();
+    } catch (cause) {
       setError(<ErrorPresentation error={cause} />);
-    },
-  });
+    }
+  }
 
   return (
     <Dialog
       onOpenChange={(next) => {
+        if (pending) return;
         setOpen(next);
         if (next) setError(null);
       }}
@@ -76,49 +86,88 @@ export function AssignOrganizationDialog() {
           <DialogTitle>{t("manager.assignExisting")}</DialogTitle>
         </DialogHeader>
         <form
+          noValidate
           className="grid gap-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setError(null);
-            assignMutation.mutate();
-          }}
+          onSubmit={form.handleSubmit(assign)}
         >
-          <div data-testid="hosted-project-picker" className="grid gap-2">
-            <span className="text-sm font-medium">
-              {t("manager.hostedProject")}
-            </span>
-            <EntityCombobox
-              label={t("manager.hostedProject")}
-              value={projectId}
-              onChange={setProjectId}
-              search={searchHosted}
-            />
-          </div>
-          <div data-testid="partner-organization-picker" className="grid gap-2">
-            <span className="text-sm font-medium">
-              {t("manager.partnerOrganization")}
-            </span>
-            <EntityCombobox
-              label={t("manager.partnerOrganization")}
-              value={organizationId}
-              onChange={setOrganizationId}
-              search={searchOrganizations}
-            />
-          </div>
+          <Controller
+            control={form.control}
+            name="projectId"
+            render={({ field, fieldState }) => (
+              <Field
+                data-testid="hosted-project-picker"
+                data-invalid={fieldState.invalid}
+              >
+                <FieldLabel htmlFor="assign-project">
+                  {t("manager.hostedProject")}
+                </FieldLabel>
+                <EntityCombobox
+                  id="assign-project"
+                  label={t("manager.hostedProject")}
+                  value={field.value}
+                  onChange={field.onChange}
+                  preload={projects}
+                  disabled={pending}
+                  aria-invalid={fieldState.invalid}
+                  aria-describedby={
+                    fieldState.invalid ? "assign-project-error" : undefined
+                  }
+                />
+                {fieldState.invalid && (
+                  <FieldError id="assign-project-error">
+                    <FieldErrorMessage message={fieldState.error?.message} />
+                  </FieldError>
+                )}
+              </Field>
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="organizationId"
+            render={({ field, fieldState }) => (
+              <Field
+                data-testid="partner-organization-picker"
+                data-invalid={fieldState.invalid}
+              >
+                <FieldLabel htmlFor="assign-organization">
+                  {t("manager.partnerOrganization")}
+                </FieldLabel>
+                <EntityCombobox
+                  id="assign-organization"
+                  label={t("manager.partnerOrganization")}
+                  value={field.value}
+                  onChange={field.onChange}
+                  preload={organizations}
+                  disabled={pending}
+                  aria-invalid={fieldState.invalid}
+                  aria-describedby={
+                    fieldState.invalid ? "assign-organization-error" : undefined
+                  }
+                />
+                {fieldState.invalid && (
+                  <FieldError id="assign-organization-error">
+                    <FieldErrorMessage message={fieldState.error?.message} />
+                  </FieldError>
+                )}
+              </Field>
+            )}
+          />
           {error && <div role="alert">{error}</div>}
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+          <DialogFooter className="flex-row justify-end">
+            <DialogClose
+              render={
+                <Button disabled={pending} type="button" variant="outline" />
+              }
+            >
               {t("manager.cancel")}
             </DialogClose>
             <Button
               data-testid="assign-partnership"
-              disabled={assignMutation.isPending || !projectId || !organizationId}
+              disabled={pending}
               type="submit"
             >
               <LinkIcon aria-hidden="true" />
-              {assignMutation.isPending
-                ? t("manager.assigning")
-                : t("manager.assign")}
+              {pending ? t("manager.assigning") : t("manager.assign")}
             </Button>
           </DialogFooter>
         </form>

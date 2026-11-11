@@ -13,8 +13,6 @@ export async function ProjectPartnershipSection({
   canAssign: boolean;
 }) {
   const queryClient = getQueryClient();
-  // Creation lives in the page-header dialogs with search-on-demand pickers,
-  // so the list below is the only query any viewer needs prefetched.
   await queryClient
     .query(
       orpcQuery.projectPartnerships.list.queryOptions({

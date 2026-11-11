@@ -19,6 +19,10 @@ const mocks = vi.hoisted(() => ({
   searchHosted: vi.fn(),
   listMine: vi.fn(),
   listSetupLinks: vi.fn(),
+  toastAdd: vi.fn(),
+}));
+vi.mock("@/components/ui/toast", () => ({
+  toast: { add: mocks.toastAdd },
 }));
 vi.mock("next/navigation", () => ({
   permanentRedirect: vi.fn(),
@@ -143,12 +147,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function page(locale: "en" | "de" = "en") {
+function page(
+  locale: "en" | "de" = "en",
+  projects = [{ id: "project-1", name: "Hosted Example" }],
+) {
   const client = createQueryClient();
   client.setDefaultOptions({ queries: { retry: false } });
   return render(
     <QueryClientProvider client={client}>
-      <CreateSetupLinkDialog />
+      <CreateSetupLinkDialog projects={projects} />
       <SetupLinkList />
     </QueryClientProvider>,
     { locale },
@@ -193,6 +200,19 @@ describe("Setup Link UI", () => {
     ).toHaveAttribute("data-link-status", "expired");
   });
 
+  it("places cancel and submit in one right-aligned row", async () => {
+    const user = userEvent.setup();
+    page();
+    const dialog = await openDialog(user);
+    const submit = dialog.getByTestId("create-setup-link");
+    const footer = submit.closest<HTMLElement>('[data-slot="dialog-footer"]')!;
+    expect(footer).toHaveClass("flex-row", "justify-end");
+    expect(within(footer).getAllByRole("button")).toEqual([
+      footer.querySelector('button[type="button"]'),
+      submit,
+    ]);
+  });
+
   it("creates a recipient-bound link, displays it and copies the URL", async () => {
     const user = userEvent.setup();
     vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
@@ -201,26 +221,33 @@ describe("Setup Link UI", () => {
     mocks.searchHosted.mockResolvedValue([
       { id: " project-1 ", name: "Hosted Example" },
     ]);
-    page();
+    page("en", [{ id: " project-1 ", name: "Hosted Example" }]);
     const dialog = await openDialog(user);
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole("alert")).toBeNull();
     await user.click(dialog.getByTestId("entity-combobox-trigger"));
-    await user.type(screen.getByTestId("entity-search"), "Host");
+    expect(screen.getByRole("option")).toBeVisible();
+    await user.type(screen.getByTestId("entity-search"), "H");
     const projectOption = await screen.findByRole("option");
     expect(projectOption).toHaveAttribute("data-value", "project-1");
     await user.click(projectOption);
     await user.type(dialog.getByTestId("setup-email"), "Partner@Example.com");
-    await user.click(dialog.getByTestId("create-setup-link"));
+    await user.keyboard("{Enter}");
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(2));
     expect(mocks.create).toHaveBeenCalledWith({
       projectId: "project-1",
       recipientEmail: "partner@example.com",
     });
-    const url = dialog.getByTestId("recipient-link") as HTMLInputElement;
-    expect(url.value).toContain("/setup-links/link-1?secret=private-secret");
-    await user.click(dialog.getByTestId("copy-setup-link"));
-    expect(mocks.writeText).toHaveBeenCalledWith(url.value);
+    const url = dialog.getByTestId("recipient-link");
+    const urlText = url instanceof HTMLOutputElement ? url.value : "";
+    expect(urlText).toContain("/setup-links/link-1?secret=private-secret");
+    const copyButton = dialog.getByTestId("copy-setup-link");
+    expect(copyButton).toHaveAccessibleName("Copy");
+    await user.click(copyButton);
+    expect(mocks.writeText).toHaveBeenCalledWith(urlText);
+    expect(mocks.toastAdd).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "success" }),
+    );
   });
 
   it.each(["en", "de"] as const)(
@@ -266,7 +293,7 @@ describe("Setup Link UI", () => {
       mocks.searchHosted.mockResolvedValue([
         { id: "x".repeat(129), name: "Hosted Example" },
       ]);
-      page(locale);
+      page(locale, [{ id: "x".repeat(129), name: "Hosted Example" }]);
       const dialog = await openDialog(user);
       await user.click(dialog.getByTestId("entity-combobox-trigger"));
       await user.type(screen.getByTestId("entity-search"), "Host");

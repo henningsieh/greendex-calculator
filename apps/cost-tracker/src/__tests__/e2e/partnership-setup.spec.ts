@@ -260,10 +260,18 @@ async function issueThroughUI(
   // Preserve the original setup-link value regex, without reporting its value.
   await expect
     .poll(async () =>
-      /\/setup-links\/[^?]+\?secret=/.test(await field.inputValue()),
+      /\/setup-links\/[^?]+\?secret=/.test(
+        await field.evaluate((node) =>
+          node instanceof HTMLOutputElement ? node.value : "",
+        ),
+      ),
     )
     .toBe(true);
-  const url = await field.inputValue();
+  const url = (
+    await field.evaluate((node) =>
+      node instanceof HTMLOutputElement ? node.value : "",
+    )
+  ).trim();
   const parsed = new URL(url);
   expect(parsed.origin).toBe(new URL(page.url()).origin);
   issuedLinks.push(parsed.pathname.split("/").at(-1)!);

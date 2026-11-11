@@ -4,6 +4,9 @@
       "partnerOrganizations": "Loading Partner Organizations",
       "projectPartnerships": "Loading Project Partnerships"
     },
+    "projectOptions": {
+      "loading": "Loading selection options…"
+    },
     "manager": {
       "assignExisting": "Assign an existing Organization",
       "hostedProject": "Hosted Project",
@@ -62,7 +65,7 @@
       "expired": "Expired",
       "open": "Open",
       "closing": "Closing…",
-      "closeLink": "Close Partner Organization Setup Link",
+      "closeLink": "Close Setup Link",
       "completing": "Completing…",
       "complete": "Complete setup",
       "invitationRejected": "You rejected the invitation to {organization}. Your current access has been checked again. Follow the next step below."

@@ -5,7 +5,8 @@ import { useTranslations } from "@greendex/i18n/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { CopyIcon } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { type z } from "zod";
 
@@ -41,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/components/ui/toast";
 import { CheckInbox } from "@/features/authentication/components/check-inbox";
 import { InvitationAcceptance } from "@/features/authentication/components/invitation-acceptance";
 import { SignOutButton } from "@/features/authentication/components/sign-out-button";
@@ -52,14 +54,13 @@ import {
 import { CreateOrganizationInputSchema } from "@/features/authentication/validation-schemas";
 import { slugifyOrganizationName } from "@/features/organizations/slug";
 import { CreateSetupLinkInputSchema } from "@/features/partnerships/validation-schemas";
+import type { HostedProjectOption } from "@/features/projects/validation-schemas";
 import { authClient } from "@/lib/auth-client";
 import { Link } from "@/lib/i18n/routing";
 import { useRouter } from "@/lib/i18n/routing";
 import { getSafeErrorSituation } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
-
-const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
 
 type SetupLinkFormValues = z.infer<typeof CreateSetupLinkInputSchema>;
 
@@ -87,9 +88,14 @@ function useRefreshSetupLinks() {
     });
 }
 
-export function SetupLinkForm() {
+export function SetupLinkForm({
+  projects,
+}: {
+  projects: readonly HostedProjectOption[];
+}) {
   const t = useTranslations("partnerships.setup");
   const refreshLinks = useRefreshSetupLinks();
+  const formId = useId();
   const form = useForm<SetupLinkFormValues>({
     resolver: zodResolver(CreateSetupLinkInputSchema),
     defaultValues: { projectId: "", recipientEmail: "" },
@@ -98,11 +104,9 @@ export function SetupLinkForm() {
   const pending = form.formState.isSubmitting;
   const [link, setLink] = useState("");
   const [error, setError] = useState<React.ReactNode>("");
-  const [copied, setCopied] = useState(false);
 
   async function create(values: SetupLinkFormValues) {
     setLink("");
-    setCopied(false);
     setError("");
     try {
       const result = await orpc.projectPartnerships.createSetupLink(values);
@@ -121,8 +125,9 @@ export function SetupLinkForm() {
   return (
     <div className="space-y-5">
       <form
+        id={formId}
         noValidate
-        className="grid gap-4 sm:grid-cols-2"
+        className="grid gap-4"
         onSubmit={form.handleSubmit(create)}
       >
         <Controller
@@ -145,7 +150,8 @@ export function SetupLinkForm() {
                 label={t("hostedProject")}
                 value={field.value}
                 onChange={field.onChange}
-                search={searchHosted}
+                preload={projects}
+                disabled={pending}
               />
               {fieldState.invalid && (
                 <FieldError id="setup-project-error">
@@ -170,6 +176,7 @@ export function SetupLinkForm() {
                   fieldState.invalid ? "setup-email-error" : undefined
                 }
                 type="email"
+                disabled={pending}
               />
               {fieldState.invalid && (
                 <FieldError id="setup-email-error">
@@ -179,44 +186,54 @@ export function SetupLinkForm() {
             </Field>
           )}
         />
-        <div>
-          <Button
-            data-testid="create-setup-link"
-            disabled={pending}
-            type="submit"
-          >
-            {pending ? t("creatingLink") : t("createLink")}
-          </Button>
-        </div>
       </form>
       {error && <div role="alert">{error}</div>}
       {link && (
         <div className="space-y-2">
           <Label htmlFor="recipient-link">{t("recipientLink")}</Label>
-          <Input
-            id="recipient-link"
-            data-testid="recipient-link"
-            readOnly
-            value={link}
-          />
-          <Button
-            data-testid="copy-setup-link"
-            type="button"
-            variant="outline"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(link);
-                setCopied(true);
-              } catch {
-                setError(t("copyError"));
-              }
-            }}
-          >
-            {t("copy")}
-          </Button>
-          {copied && <output>{t("copied")}</output>}
+          <div className="flex items-center gap-2">
+            <output
+              id="recipient-link"
+              data-testid="recipient-link"
+              className="min-w-0 flex-1 rounded-xl border bg-muted/50 px-3 py-2 text-sm break-all text-muted-foreground select-all"
+            >
+              {link}
+            </output>
+            <Button
+              data-testid="copy-setup-link"
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={t("copy")}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(link);
+                  toast.add({ title: t("copied"), type: "success" });
+                } catch {
+                  setError(t("copyError"));
+                }
+              }}
+            >
+              <CopyIcon />
+            </Button>
+          </div>
         </div>
       )}
+      <DialogFooter className="flex-row justify-end">
+        <DialogClose
+          render={<Button disabled={pending} type="button" variant="outline" />}
+        >
+          {t("cancel")}
+        </DialogClose>
+        <Button
+          data-testid="create-setup-link"
+          disabled={pending}
+          type="submit"
+          form={formId}
+        >
+          {pending ? t("creatingLink") : t("createLink")}
+        </Button>
+      </DialogFooter>
     </div>
   );
 }
@@ -280,7 +297,7 @@ export function SetupLinkList() {
               <TableHead>{t("recipientEmail")}</TableHead>
               <TableHead>{t("status")}</TableHead>
               <TableHead>{t("expires")}</TableHead>
-              <TableHead>{t("action")}</TableHead>
+              <TableHead className="text-right">{t("action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -310,7 +327,7 @@ export function SetupLinkList() {
                 <TableCell>
                   {existing.expiresAt.toISOString().slice(0, 10)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-right">
                   <Button
                     data-testid="close-setup-link"
                     type="button"
@@ -330,7 +347,11 @@ export function SetupLinkList() {
   );
 }
 
-export function CreateSetupLinkDialog() {
+export function CreateSetupLinkDialog({
+  projects,
+}: {
+  projects: readonly HostedProjectOption[];
+}) {
   const t = useTranslations("partnerships.setup");
   const [open, setOpen] = useState(false);
 
@@ -347,12 +368,7 @@ export function CreateSetupLinkDialog() {
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
-        <SetupLinkForm />
-        <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            {t("cancel")}
-          </DialogClose>
-        </DialogFooter>
+        <SetupLinkForm projects={projects} />
       </DialogContent>
     </Dialog>
   );
