@@ -10,8 +10,71 @@ import {
 import { and, asc, desc, eq, exists, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { HostedProjectOptionSchema } from "@/features/projects/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
+
+async function hostedScope(
+  organizationId: string | null | undefined,
+  userId: string,
+  errors: Parameters<typeof createSituationErrors>[0],
+) {
+  const activeOrganizationId = organizationId;
+  if (!activeOrganizationId)
+    throw createSituationErrors(errors).selectOrganization();
+  const [membership] = await db
+    .select({ role: member.role })
+    .from(member)
+    .where(
+      and(
+        eq(member.organizationId, activeOrganizationId),
+        eq(member.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (!membership) throw createSituationErrors(errors).notMember();
+  const isManager =
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationOwner) ||
+    hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin);
+  if (
+    !isManager &&
+    !hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
+  )
+    throw createSituationErrors(errors).hostingStaffRequired();
+
+  return and(
+    eq(projects.organizationId, activeOrganizationId),
+    eq(projects.archived, false),
+    isManager
+      ? undefined
+      : exists(
+          db
+            .select({ userId: assignments.userId })
+            .from(assignments)
+            .where(
+              and(
+                eq(assignments.projectId, projects.id),
+                eq(assignments.userId, userId),
+              ),
+            ),
+        ),
+  );
+}
+
+export const listHostedOptions = authorized
+  .output(z.array(HostedProjectOptionSchema))
+  .handler(async ({ context, errors }) => {
+    const scope = await hostedScope(
+      context.session.activeOrganizationId,
+      context.user.id,
+      errors,
+    );
+    return db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(scope)
+      .orderBy(asc(projects.name), asc(projects.id));
+  });
 
 /**
  * Picker search over hosted Projects. Two modes share one endpoint:
@@ -32,34 +95,13 @@ export const searchHosted = authorized
         .refine((value) => value.length !== 1),
     }),
   )
-  .output(z.array(z.object({ id: z.string(), name: z.string() })).max(20))
+  .output(z.array(HostedProjectOptionSchema).max(20))
   .handler(async ({ context, errors, input }) => {
-    const activeOrganizationId = context.session.activeOrganizationId;
-    if (!activeOrganizationId)
-      throw createSituationErrors(errors).selectOrganization();
-    const [membership] = await db
-      .select({ role: member.role })
-      .from(member)
-      .where(
-        and(
-          eq(member.organizationId, activeOrganizationId),
-          eq(member.userId, context.user.id),
-        ),
-      )
-      .limit(1);
-    if (!membership) throw createSituationErrors(errors).notMember();
-    const isManager =
-      hasOrganizationRole(
-        membership.role,
-        ORGANIZATION_ROLES.OrganizationOwner,
-      ) ||
-      hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin);
-    if (
-      !isManager &&
-      !hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
-    )
-      throw createSituationErrors(errors).hostingStaffRequired();
-
+    const scope = await hostedScope(
+      context.session.activeOrganizationId,
+      context.user.id,
+      errors,
+    );
     const escaped = input.search.replace(/[\\%_]/g, "\\$&");
     const pattern = `%${escaped}%`;
     return (
@@ -68,27 +110,13 @@ export const searchHosted = authorized
         .from(projects)
         .where(
           and(
-            eq(projects.organizationId, activeOrganizationId),
-            eq(projects.archived, false),
+            scope,
             input.search
               ? or(
                   sql`lower(${projects.name}) like lower(${pattern}) escape '\\'`,
                   sql`lower(${projects.id}) like lower(${pattern}) escape '\\'`,
                 )
               : undefined,
-            isManager
-              ? undefined
-              : exists(
-                  db
-                    .select({ userId: assignments.userId })
-                    .from(assignments)
-                    .where(
-                      and(
-                        eq(assignments.projectId, projects.id),
-                        eq(assignments.userId, context.user.id),
-                      ),
-                    ),
-                ),
           ),
         )
         .orderBy(

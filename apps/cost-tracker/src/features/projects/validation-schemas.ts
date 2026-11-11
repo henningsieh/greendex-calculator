@@ -3,6 +3,12 @@ import { claimsTable, projectsTable } from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const HostedProjectOptionSchema = createSelectSchema(projectsTable).pick({
+  id: true,
+  name: true,
+});
+export type HostedProjectOption = z.infer<typeof HostedProjectOptionSchema>;
+
 export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
   .pick({
     name: true,

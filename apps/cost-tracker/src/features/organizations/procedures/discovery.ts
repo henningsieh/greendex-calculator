@@ -6,14 +6,26 @@ import { member, organization } from "@greendex/database/schema";
 import { and, asc, eq, gt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { OrganizationOptionSchema } from "@/features/organizations/validation-schemas";
 import { authorized, requireCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 const searchInput = z.object({ search: z.string().trim().min(2).max(128) });
-const options = z.array(z.object({ id: z.string(), name: z.string() })).max(20);
+const options = z.array(OrganizationOptionSchema).max(20);
 const OWNED_SEARCH_PAGE_SIZE = 100;
+const partnershipCreation = authorized.use(
+  requireCostTrackerPermissions({ projectPartnership: ["create"] }),
+);
 
-export const searchOrganizations = authorized
-  .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
+export const listOrganizationOptions = partnershipCreation
+  .output(z.array(OrganizationOptionSchema))
+  .handler(async () =>
+    db
+      .select({ id: organization.id, name: organization.name })
+      .from(organization)
+      .orderBy(asc(organization.name), asc(organization.id)),
+  );
+
+export const searchOrganizations = partnershipCreation
   .input(searchInput)
   .output(options)
   .handler(async ({ input }) => {

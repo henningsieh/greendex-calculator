@@ -38,6 +38,7 @@ import {
 } from "@/features/claims/procedures/submission";
 import {
   searchOrganizations,
+  listOrganizationOptions,
   listMyOrganizations,
 } from "@/features/organizations/procedures/discovery";
 import { listMemberships as listOrganizationMemberships } from "@/features/organizations/procedures/memberships";
@@ -86,7 +87,10 @@ import {
   listPartner,
 } from "@/features/projects/procedures/core";
 import { create as createProject } from "@/features/projects/procedures/create";
-import { searchHosted } from "@/features/projects/procedures/search-hosted";
+import {
+  listHostedOptions,
+  searchHosted,
+} from "@/features/projects/procedures/search-hosted";
 
 export const router = {
   authentication: {
@@ -126,6 +130,7 @@ export const router = {
     getSettings,
     updateCountry,
     search: searchOrganizations,
+    listOptions: listOrganizationOptions,
     listMine: listMyOrganizations,
     listMemberships: listOrganizationMemberships,
     listMembers: listOrganizationMembers,
@@ -138,6 +143,7 @@ export const router = {
   projects: {
     create: createProject,
     searchHosted,
+    listHostedOptions,
     get: getProject,
     complete,
     listHosted,

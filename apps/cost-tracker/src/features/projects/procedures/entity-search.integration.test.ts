@@ -3,10 +3,11 @@
 
 import { hasOrganizationRole } from "@greendex/auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
 import { projectsTable as projects } from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -70,6 +71,29 @@ describe("entity picker procedures", () => {
       message:
         "Select an active Organization before accessing Cost Tracker data.",
       data: { reason: "ACTIVE_ORGANIZATION_REQUIRED" },
+    });
+  });
+
+  it("lists all Organization options with the same create permission", async () => {
+    const result = await client.organizations.listOptions();
+    expect(result).toEqual(
+      expect.arrayContaining([{ id: partner, name: "Partner" }]),
+    );
+    expect(result.length).toBeGreaterThan(20);
+    expect(
+      result.every((item) => Object.keys(item).sort().join() === "id,name"),
+    ).toBe(true);
+    expect(authMocks.hasPermission).toHaveBeenCalledWith({
+      headers: expect.any(Headers),
+      body: { permissions: { projectPartnership: ["create"] } },
+    });
+    authMocks.hasPermission.mockResolvedValue({ success: false });
+    await expect(client.organizations.listOptions()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    authMocks.getSession.mockResolvedValue(null);
+    await expect(client.organizations.listOptions()).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
     });
   });
 
@@ -154,6 +178,59 @@ describe("entity picker procedures", () => {
       message:
         "You need Hosting Organization Owner, Admin, or Project Coordinator access.",
       data: { reason: "HOSTING_STAFF_REQUIRED" },
+    });
+  });
+
+  it("returns all eligible options beyond the bounded search and excludes archived projects", async () => {
+    const prefix = `options-test-${crypto.randomUUID()}`;
+    const ids = Array.from({ length: 26 }, (_, index) => `${prefix}-${index}`);
+    const country: EUCountryCode = "DE";
+    await db.insert(projects).values(
+      ids.map((id, index) => ({
+        id,
+        name: `Options fixture ${index}`,
+        organizationId: host,
+        startDate: new Date("2024-01-01"),
+        endDate: new Date("2024-12-31"),
+        location: "Test",
+        country,
+        archived: index === 25,
+      })),
+    );
+    try {
+      const options = await client.projects.listHostedOptions();
+      expect(options.filter(({ id }) => ids.includes(id))).toHaveLength(25);
+      expect(options.some(({ id }) => id === ids[25])).toBe(false);
+      expect(
+        await client.projects.searchHosted({ search: "Options fixture" }),
+      ).toHaveLength(20);
+    } finally {
+      await db.delete(projects).where(inArray(projects.id, ids));
+    }
+  });
+
+  it("lists only eligible hosted options for each active membership", async () => {
+    expect(await client.projects.listHostedOptions()).toEqual([
+      { id: assigned, name: "Picker Assigned Project" },
+      { id: unassigned, name: "Picker Unassigned Project" },
+    ]);
+    session(host, scenario.coordinatorUserId);
+    expect(await client.projects.listHostedOptions()).toEqual([
+      { id: assigned, name: "Picker Assigned Project" },
+    ]);
+    session(host, scenario.unassignedCoordinatorUserId);
+    expect(await client.projects.listHostedOptions()).toEqual([]);
+    session(host, scenario.participantUserId);
+    await expect(client.projects.listHostedOptions()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    session(foreign);
+    await expect(client.projects.listHostedOptions()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    session(null);
+    await expect(client.projects.listHostedOptions()).rejects.toMatchObject({
+      code: "BAD_REQUEST",
     });
   });
 
