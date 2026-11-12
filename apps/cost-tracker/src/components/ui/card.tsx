@@ -10,17 +10,17 @@ import { cn } from "cn"
 const emberHover =
   "relative fine-hover:not-data-[disabled]:-translate-y-0.5 fine-hover:not-data-[disabled]:border-primary-border motion-reduce:fine-hover:translate-y-0 transition-[translate,scale,background-color,border-color] duration-220 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:bg-[radial-gradient(120%_90%_at_50%_0%,var(--amber-wash-strong),transparent_70%)] before:opacity-0 before:transition-opacity before:duration-220 fine-hover:not-data-[disabled]:before:opacity-100";
 const emberActive =
-  "border-primary-border bg-[var(--ember-active-wash)]";
+  "border border-primary-border bg-[image:var(--ember-active-wash)]";
 
 const documentAppearance = "gap-5 overflow-visible border-b border-border py-7 text-base shadow-none ring-0 [--card-spacing:--spacing(8)] max-sm:[--card-spacing:--spacing(4)]"
 
 const cardVariants = cva(
-  "group/card flex flex-col gap-(--card-spacing) overflow-hidden bg-card py-(--card-spacing) text-sm text-card-foreground shadow-sm ring-1 ring-foreground/5 [--card-spacing:--spacing(8)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(5)] *:[img:first-child]:rounded-none *:[img:last-child]:rounded-none",
+  "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-sm ring-1 ring-foreground/5 [--card-spacing:--spacing(8)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(5)] *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
   {
     variants: {
       variant: {
         default: "",
-        ember: `${emberHover} rounded-xl border border-border`,
+        ember: `${emberHover} border border-border`,
         "ember-active": emberActive,
         document: documentAppearance,
         action: `${documentAppearance} border-0 bg-muted [--card-spacing:--spacing(6)]`,
@@ -32,11 +32,11 @@ const cardVariants = cva(
 )
 
 const cardTitleVariants = cva(
-  "font-heading text-lg font-semibold tracking-wider uppercase",
+  "font-heading text-lg font-extrabold tracking-tight",
   {
     variants: {
       variant: {
-        default: "group-data-[variant=document]/card:text-xl group-data-[variant=document]/card:tracking-normal group-data-[variant=document]/card:normal-case group-data-[variant=action]/card:text-xl group-data-[variant=action]/card:tracking-normal group-data-[variant=action]/card:normal-case group-data-[variant=claim-band]/card:text-2xl group-data-[variant=claim-band]/card:tracking-normal group-data-[variant=claim-band]/card:normal-case sm:group-data-[variant=claim-band]/card:text-[28px]",
+        default: "group-data-[variant=document]/card:text-xl group-data-[variant=action]/card:text-xl group-data-[variant=claim-band]/card:text-2xl sm:group-data-[variant=claim-band]/card:text-[28px]",
       },
     },
     defaultVariants: { variant: "default" },
@@ -67,7 +67,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1.5 rounded-none px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1.5 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
         className
       )}
       {...props}

@@ -1,9 +1,7 @@
 "use client";
 
-/* eslint-disable shadcn/no-restyle -- Account-menu bespoke treatments: none of the shared Button/DropdownMenu variants provide this screen's exact shape, spacing, typography, and color. Zero visual change intended; revisit with a variant if the pattern repeats. */
-
 import { useTranslations } from "@greendex/i18n/client";
-import { ChevronDownIcon, LogOutIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, LogOutIcon } from "lucide-react";
 import { type ComponentProps, useRef } from "react";
 
 import { EntityIcon } from "@/components/entity-icon";
@@ -17,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { useSignOut } from "@/features/authentication/hooks/use-sign-out";
 import { usePathname } from "@/lib/i18n/routing";
 import { Link } from "@/lib/i18n/routing";
@@ -71,20 +70,24 @@ export function AccountMenu({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              ref={trigger}
-              data-testid="account-menu-trigger"
-              aria-label={compact ? t("account.openMenu", { name }) : undefined}
-              className={cn(
-                "group h-11 gap-3 rounded-md px-2.5 text-left tracking-normal normal-case hover:bg-muted/70",
-                active && "bg-muted",
-                compact &&
-                  "size-9 justify-center rounded-full bg-primary/10 p-0 hover:bg-primary/20",
-                className,
-              )}
-              size={compact ? "icon-sm" : "sm"}
-              variant={variant}
-            />
+            inSidebar ? (
+              <SidebarMenuButton
+                ref={trigger}
+                data-testid="account-menu-trigger"
+                aria-label={t("account.openMenu", { name })}
+                size="lg"
+                tooltip={name}
+              />
+            ) : (
+              <Button
+                ref={trigger}
+                data-testid="account-menu-trigger"
+                aria-label={compact ? t("account.openMenu", { name }) : undefined}
+                className={className}
+                size={compact ? "icon-sm" : "sm"}
+                variant={variant}
+              />
+            )
           }
         >
           <span
@@ -96,6 +99,7 @@ export function AccountMenu({
           <span
             className={cn(
               "min-w-0",
+              inSidebar && "flex-1",
               compact && "sr-only",
               inSidebar && "group-data-[collapsible=icon]:hidden",
             )}
@@ -107,17 +111,20 @@ export function AccountMenu({
               {email}
             </span>
           </span>
-          {!compact && (
-            <ChevronDownIcon
-              aria-hidden="true"
-              className={cn(inSidebar && "group-data-[collapsible=icon]:hidden")}
-            />
-          )}
+          {!compact &&
+            (inSidebar ? (
+              <ChevronUpIcon
+                aria-hidden="true"
+                className="ml-auto size-4 group-data-[collapsible=icon]:hidden"
+              />
+            ) : (
+              <ChevronDownIcon aria-hidden="true" />
+            ))}
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+        <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="px-3 py-2">
+            <DropdownMenuLabel>
               <span className="block truncate text-sm font-semibold text-foreground">
                 {name}
               </span>
@@ -129,7 +136,6 @@ export function AccountMenu({
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem
-              className="rounded-md text-sm tracking-normal normal-case"
               render={
                 <Link
                   aria-current={active ? "page" : undefined}

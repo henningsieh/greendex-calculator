@@ -4,6 +4,9 @@
       "partnerOrganizations": "Loading Partner Organizations",
       "projectPartnerships": "Loading Project Partnerships"
     },
+    "projectOptions": {
+      "loading": "Caricamento delle opzioni di selezione…"
+    },
     "manager": {
       "assignExisting": "Assign an existing Organization",
       "hostedProject": "Hosted Project",
@@ -14,6 +17,7 @@
       "updated": "· Updated",
       "assigning": "Assegnazione…",
       "assign": "Assegna",
+      "cancel": "Cancel",
       "remove": "Rimuovi"
     },
     "setup": {
@@ -55,12 +59,13 @@
       "inspect": "Inspect setup result",
       "creatingLink": "Creazione del link…",
       "createLink": "Crea link",
+      "cancel": "Cancel",
       "closed": "Chiuso",
       "used": "Utilizzato",
       "expired": "Scaduto",
       "open": "Aperto",
       "closing": "Chiusura…",
-      "closeLink": "Chiudi link di configurazione dell’organizzazione partner",
+      "closeLink": "Chiudi il link alle impostazioni",
       "completing": "Completamento…",
       "complete": "Completa configurazione",
       "invitationRejected": "Hai rifiutato l’invito a {organization}. Il tuo accesso attuale è stato verificato di nuovo. Segui il prossimo passo qui sotto."

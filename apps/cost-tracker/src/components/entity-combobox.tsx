@@ -18,20 +18,26 @@ type Entity = { id: string; name: string };
 
 export function EntityCombobox<T extends Entity>({
   label,
+  id,
+  "aria-describedby": ariaDescribedby,
   value,
   onChange,
   search,
   preload = [],
   disabled,
   searchBy,
+  "aria-invalid": ariaInvalid,
 }: {
   label: string;
+  id?: string;
+  "aria-describedby"?: string;
   value: string;
   onChange: (id: string) => void;
   search?: (query: string) => Promise<T[]>;
-  preload?: T[];
+  preload?: readonly T[];
   disabled?: boolean;
   searchBy?: string;
+  "aria-invalid"?: boolean;
 }) {
   const t = useTranslations("shell");
   const [open, setOpen] = useState(false);
@@ -68,27 +74,32 @@ export function EntityCombobox<T extends Entity>({
     };
   }, [open, search, term, retry]);
 
+  const filteredPreload = preload.filter((item) =>
+    `${item.name} ${item.id}`.toLowerCase().includes(term.toLowerCase()),
+  );
   const options =
     term.length >= 2 && search
       ? results
-      : preload
-          .filter((item) =>
-            `${item.name} ${item.id}`.toLowerCase().includes(term.toLowerCase()),
-          )
-          .slice(0, 20);
-  const display =
-    selected?.id === value
+      : search
+        ? filteredPreload.slice(0, 20)
+        : filteredPreload;
+  const display = search
+    ? selected?.id === value
       ? selected
-      : [...preload, ...results].find((item) => item.id === value);
+      : [...preload, ...results].find((item) => item.id === value)
+    : preload.find((item) => item.id === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
           <Button
+            id={id}
+            aria-describedby={ariaDescribedby}
             aria-label={label}
             data-testid="entity-combobox-trigger"
             aria-expanded={open}
+            aria-invalid={ariaInvalid}
             className="w-full justify-between"
             disabled={disabled}
             type="button"
@@ -99,7 +110,10 @@ export function EntityCombobox<T extends Entity>({
           </Button>
         }
       />
-      <PopoverContent align="start" className="w-(--anchor-width) gap-0 p-0">
+      <PopoverContent
+        align="start"
+        className="w-(--anchor-width) gap-0 overflow-hidden p-0"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             data-testid="entity-search"
@@ -164,12 +178,7 @@ export function EntityCombobox<T extends Entity>({
                     setQuery("");
                   }}
                 >
-                  <span className="flex flex-col">
-                    <span>{item.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {item.id}
-                    </span>
-                  </span>
+                  <span>{item.name}</span>
                 </CommandItem>
               ))
             )}

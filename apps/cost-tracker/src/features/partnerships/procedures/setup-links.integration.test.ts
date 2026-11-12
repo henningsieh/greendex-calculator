@@ -77,6 +77,42 @@ afterEach(async () => {
 });
 
 describe("Partner Organization setup links", () => {
+  it("refuses invalid, missing, inaccessible and archived Project issuance", async () => {
+    for (const id of [" ", "x".repeat(129)]) {
+      await expect(
+        client.projectPartnerships.createSetupLink({
+          projectId: id,
+          recipientEmail,
+        }),
+      ).rejects.toThrow();
+    }
+    await expect(
+      client.projectPartnerships.createSetupLink({
+        projectId: "missing-project",
+        recipientEmail,
+      }),
+    ).rejects.toMatchObject({ data: { reason: "PROJECT_NOT_FOUND" } });
+    asUser(recipientEmail, partnerId);
+    await expect(
+      client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
+    ).rejects.toMatchObject({ data: { reason: "PROJECT_NOT_FOUND" } });
+    asUser();
+    await db
+      .update(projectsTable)
+      .set({ archived: true })
+      .where(eq(projectsTable.id, projectId));
+    try {
+      await expect(
+        client.projectPartnerships.createSetupLink({ projectId, recipientEmail }),
+      ).rejects.toMatchObject({ data: { reason: "PROJECT_NOT_FOUND" } });
+    } finally {
+      await db
+        .update(projectsTable)
+        .set({ archived: false })
+        .where(eq(projectsTable.id, projectId));
+    }
+  });
+
   it("prevalidates without active Organization context and recovers the exact redeemed Organization", async () => {
     const hostingMembershipsBefore = await db
       .select({ id: member.id })

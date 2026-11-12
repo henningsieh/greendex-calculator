@@ -296,27 +296,6 @@
     },
     {
       "files": [
-        "apps/calculator/src/**/*.{jsx,tsx}",
-        "apps/cost-tracker/src/**/*.{jsx,tsx}",
-        "apps/documentation/src/**/*.{jsx,tsx}",
-        "packages/auth/src/**/*.{jsx,tsx}",
-        "packages/email/src/**/*.{jsx,tsx}"
-      ],
-      "excludeFiles": [
-        "**/__tests__/**",
-        "**/*.test.*",
-        "**/*.spec.*",
-        "**/*.stories.*"
-      ],
-      "rules": {
-        "better-tailwindcss/no-conflicting-classes": "error",
-        "better-tailwindcss/no-deprecated-classes": "error",
-        "better-tailwindcss/no-duplicate-classes": "error",
-        "better-tailwindcss/enforce-canonical-classes": "error"
-      }
-    },
-    {
-      "files": [
         "apps/calculator/playwright.config.ts",
         "apps/calculator/playwright.merge.config.ts",
         "apps/calculator/playwright.instant.config.ts",
@@ -370,9 +349,5 @@
       }
     }
   ],
-  "jsPlugins": [
-    "@shadcn/lint",
-    "eslint-plugin-better-tailwindcss",
-    "./scripts/oxlint-i18n.mjs"
-  ]
+  "jsPlugins": ["@shadcn/lint", "./scripts/oxlint-i18n.mjs"]
 }

@@ -1,15 +1,8 @@
 "use client";
 
-/* eslint-disable shadcn/no-restyle -- Header-dropdown bespoke treatment, shared with AccountMenu + ThemeSwitcher: same w-64 rounded-xl p-2 content + normal-case items for identical header look. Extract a ui variant post-MVP. */
-
 import { useTranslations } from "@greendex/i18n/client";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronsUpDownIcon,
-  LoaderCircleIcon,
-} from "lucide-react";
+import { CheckIcon, ChevronDownIcon, LoaderCircleIcon } from "lucide-react";
 import { useState } from "react";
 
 import { EntityIcon } from "@/components/entity-icon";
@@ -96,7 +89,6 @@ export function OrganizationSwitcher({
                 aria-label={t("aria", {
                   organization: active?.name ?? t("select"),
                 })}
-                className="rounded-md lg:h-11"
                 disabled={pendingId !== null}
                 size="sm"
                 variant="outline"
@@ -121,7 +113,10 @@ export function OrganizationSwitcher({
                   className="animate-spin group-data-[collapsible=icon]:hidden"
                 />
               ) : (
-                <ChevronsUpDownIcon className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                <ChevronDownIcon
+                  aria-hidden="true"
+                  className="ml-auto size-4 group-data-[collapsible=icon]:hidden"
+                />
               )}
             </>
           ) : (
@@ -138,7 +133,7 @@ export function OrganizationSwitcher({
             </>
           )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+        <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuGroup>
             <DropdownMenuLabel>{t("acting")}</DropdownMenuLabel>
             {organizations.map((organization) => {
@@ -148,7 +143,6 @@ export function OrganizationSwitcher({
                 <DropdownMenuItem
                   data-testid={`switch-organization-${organization.id}`}
                   aria-current={current ? "true" : undefined}
-                  className="rounded-md text-sm tracking-normal normal-case"
                   key={organization.id}
                   onClick={() => void switchOrganization(organization.id)}
                 >

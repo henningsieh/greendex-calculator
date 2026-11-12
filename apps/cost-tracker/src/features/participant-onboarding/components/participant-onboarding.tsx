@@ -60,7 +60,7 @@ function AgreementAcceptance({
   if (!hasAgreementCopy(agreement)) return <AgreementUnavailable />;
   return (
     <div className="space-y-3">
-      <h2 className="font-heading text-lg font-semibold">
+      <h2 className="text-lg">
         {t("agreement.label")}
         {agreement.id})
       </h2>
@@ -338,9 +338,7 @@ export function ParticipantDashboard({ agreement }: { agreement: Agreement }) {
                 data-testid={`participant-project-${project.projectId}`}
                 data-participation-id={project.participationId}
               >
-                <h2 className="font-heading text-lg font-semibold">
-                  {project.projectName}
-                </h2>
+                <h2 className="text-lg">{project.projectName}</h2>
                 <p data-organization-role="represented">
                   {t("dashboard.representing")}{" "}
                   {project.representedOrganizationName}

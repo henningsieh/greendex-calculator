@@ -173,13 +173,7 @@ export function AppSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <AccountMenu
-              className="h-12 w-full justify-start"
-              email={userEmail}
-              layout="sidebar"
-              name={userName}
-              variant="ghost"
-            />
+            <AccountMenu email={userEmail} layout="sidebar" name={userName} />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

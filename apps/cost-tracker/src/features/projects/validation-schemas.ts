@@ -3,6 +3,12 @@ import { claimsTable, projectsTable } from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const HostedProjectOptionSchema = createSelectSchema(projectsTable).pick({
+  id: true,
+  name: true,
+});
+export type HostedProjectOption = z.infer<typeof HostedProjectOptionSchema>;
+
 export const ProjectCreateInputSchema = createInsertSchema(projectsTable)
   .pick({
     name: true,
@@ -123,8 +129,14 @@ export const ProjectListScopeAvailabilitySchema = z.object({
   canCreate: z.boolean(),
 });
 
+export const PROJECT_ID_MAX_LENGTH = 128;
+export const ProjectIdSchema = createSelectSchema(projectsTable)
+  .shape.id.trim()
+  .min(1, "projectIdRequired")
+  .max(PROJECT_ID_MAX_LENGTH, "projectIdTooLong");
+
 export const ProjectDetailInputSchema = z.object({
-  projectId: z.string().trim().min(1).max(128),
+  projectId: ProjectIdSchema,
 });
 
 const ProjectDetailBaseSchema = z.object({

@@ -1,6 +1,12 @@
 import { createSafeFieldIssue } from "@/lib/orpc/error-contract";
 
 export const validFieldIssues = [
+  createSafeFieldIssue("emailRequired", ["recipientEmail"]),
+  createSafeFieldIssue("emailInvalid", ["recipientEmail"]),
+  createSafeFieldIssue("organizationIdRequired", ["organizationId"]),
+  createSafeFieldIssue("organizationIdTooLong", ["organizationId"]),
+  createSafeFieldIssue("projectIdRequired", ["projectId"]),
+  createSafeFieldIssue("projectIdTooLong", ["projectId"]),
   createSafeFieldIssue("journeyDistanceOutsideBands", [
     "participations",
     "person",

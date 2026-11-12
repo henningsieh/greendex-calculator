@@ -43,7 +43,7 @@ export function ThemeSettings() {
   return (
     <div className="flex flex-col gap-6">
       <section aria-labelledby={titleId} className="flex flex-col gap-6">
-        <h2 className="mb-3 text-xs font-semibold uppercase" id={titleId}>
+        <h2 className="mb-3 type-ember-eyebrow" id={titleId}>
           {t("title")}
         </h2>
         <p className="text-left text-sm/normal leading-normal font-normal tracking-normal text-muted-foreground normal-case last:mt-0 nth-last-2:-mt-1 [&>a]:link-prose">

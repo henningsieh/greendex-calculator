@@ -1,149 +1,177 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { LinkIcon } from "lucide-react";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { type z } from "zod";
 
 import { EntityCombobox } from "@/components/entity-combobox";
-import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
+import {
+  ErrorPresentation,
+  FieldErrorMessage,
+} from "@/components/error-presentation/error-presentation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import type { OrganizationOption } from "@/features/organizations/validation-schemas";
+import { AssignProjectPartnershipInputSchema } from "@/features/partnerships/validation-schemas";
+import type { HostedProjectOption } from "@/features/projects/validation-schemas";
+import { orpc } from "@/lib/orpc/orpc";
 
 import { invalidatePartnershipProjectData } from "./invalidate-partnership-data";
 
-const searchHosted = (search: string) => orpc.projects.searchHosted({ search });
-const searchOrganizations = (search: string) =>
-  orpc.organizations.search({ search });
+type Values = z.infer<typeof AssignProjectPartnershipInputSchema>;
 
-export type PartnershipFeedback = {
-  message: React.ReactNode;
-  status: "success" | "error";
-};
-
-/**
- * Assignment form for Partner Organizations. Only mounted for viewers who may
- * assign, so the hosted-project options query below runs exactly when the
- * form exists — never for viewers who only read the partnership list.
- * The preload shows the first 20 newest hosted projects; typing in the
- * picker searches the full table.
- */
-export function ProjectPartnershipAssigner({
-  partnerships,
-  feedback,
-  onFeedback,
+export function AssignOrganizationDialog({
+  projects,
+  organizations,
 }: {
-  partnerships: { organizationId: string; organizationName: string }[];
-  feedback: PartnershipFeedback | undefined;
-  onFeedback: (feedback: PartnershipFeedback | undefined) => void;
+  projects: readonly HostedProjectOption[];
+  organizations: readonly OrganizationOption[];
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("partnerships");
-  const { data: hostedProjects } = useSuspenseQuery(
-    orpcQuery.projects.searchHosted.queryOptions({
-      input: { search: "" },
-      meta: { costTrackerORPC: true },
-    }),
-  );
-  const [projectId, setProjectId] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
-
-  const assignMutation = useMutation({
-    mutationFn: () =>
-      orpc.projectPartnerships.assign({ projectId, organizationId }),
-    onSuccess: async () => {
-      onFeedback({
-        message: "Project Partnership assigned.",
-        status: "success",
-      });
-      setOrganizationId("");
-      await invalidatePartnershipProjectData(queryClient);
-    },
-    onError: (error) => {
-      onFeedback({
-        message: <ErrorPresentation error={error} />,
-        status: "error",
-      });
-    },
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<React.ReactNode>(null);
+  const form = useForm<Values>({
+    resolver: zodResolver(AssignProjectPartnershipInputSchema),
+    defaultValues: { projectId: "", organizationId: "" },
+    mode: "onTouched",
   });
+  const pending = form.formState.isSubmitting;
 
-  const projectPreload = Array.from(
-    new Map(hostedProjects.map(({ id, name }) => [id, { id, name }])).values(),
-  );
-  const organizationPreload = Array.from(
-    new Map(
-      partnerships.map(({ organizationId: id, organizationName: name }) => [
-        id,
-        { id, name },
-      ]),
-    ).values(),
-  );
+  async function assign(values: Values) {
+    setError(null);
+    try {
+      await orpc.projectPartnerships.assign(values);
+      await invalidatePartnershipProjectData(queryClient);
+      setOpen(false);
+      form.reset();
+    } catch (cause) {
+      setError(<ErrorPresentation error={cause} />);
+    }
+  }
 
   return (
-    <Card data-testid="organization-assignment">
-      <CardHeader>
-        <CardTitle>{t("manager.assignExisting")}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog
+      onOpenChange={(next) => {
+        if (pending) return;
+        setOpen(next);
+        if (next) setError(null);
+      }}
+      open={open}
+    >
+      <DialogTrigger
+        data-testid="assign-organization"
+        render={<Button type="button" />}
+      >
+        {t("manager.assignExisting")}
+      </DialogTrigger>
+      <DialogContent
+        data-testid="organization-assignment"
+        className="sm:max-w-lg"
+      >
+        <DialogHeader>
+          <DialogTitle>{t("manager.assignExisting")}</DialogTitle>
+        </DialogHeader>
         <form
-          className="grid gap-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onFeedback(undefined);
-            assignMutation.mutate();
-          }}
+          noValidate
+          className="grid gap-5"
+          onSubmit={form.handleSubmit(assign)}
         >
-          <div data-testid="hosted-project-picker" className="space-y-2">
-            <span className="text-sm font-medium">
-              {t("manager.hostedProject")}
-            </span>
-            <EntityCombobox
-              label={t("manager.hostedProject")}
-              value={projectId}
-              onChange={setProjectId}
-              search={searchHosted}
-              preload={projectPreload}
-            />
-          </div>
-          <div data-testid="partner-organization-picker" className="space-y-2">
-            <span className="text-sm font-medium">
-              {t("manager.partnerOrganization")}
-            </span>
-            <EntityCombobox
-              label={t("manager.partnerOrganization")}
-              value={organizationId}
-              onChange={setOrganizationId}
-              search={searchOrganizations}
-              preload={organizationPreload}
-            />
-          </div>
-          <Button
-            data-testid="assign-partnership"
-            disabled={assignMutation.isPending || !projectId || !organizationId}
-            type="submit"
-          >
-            <LinkIcon aria-hidden="true" />
-            {assignMutation.isPending
-              ? t("manager.assigning")
-              : t("manager.assign")}
-          </Button>
+          <Controller
+            control={form.control}
+            name="projectId"
+            render={({ field, fieldState }) => (
+              <Field
+                data-testid="hosted-project-picker"
+                data-invalid={fieldState.invalid}
+              >
+                <FieldLabel htmlFor="assign-project">
+                  {t("manager.hostedProject")}
+                </FieldLabel>
+                <EntityCombobox
+                  id="assign-project"
+                  label={t("manager.hostedProject")}
+                  value={field.value}
+                  onChange={field.onChange}
+                  preload={projects}
+                  disabled={pending}
+                  aria-invalid={fieldState.invalid}
+                  aria-describedby={
+                    fieldState.invalid ? "assign-project-error" : undefined
+                  }
+                />
+                {fieldState.invalid && (
+                  <FieldError id="assign-project-error">
+                    <FieldErrorMessage message={fieldState.error?.message} />
+                  </FieldError>
+                )}
+              </Field>
+            )}
+          />
+          <Controller
+            control={form.control}
+            name="organizationId"
+            render={({ field, fieldState }) => (
+              <Field
+                data-testid="partner-organization-picker"
+                data-invalid={fieldState.invalid}
+              >
+                <FieldLabel htmlFor="assign-organization">
+                  {t("manager.partnerOrganization")}
+                </FieldLabel>
+                <EntityCombobox
+                  id="assign-organization"
+                  label={t("manager.partnerOrganization")}
+                  value={field.value}
+                  onChange={field.onChange}
+                  preload={organizations}
+                  disabled={pending}
+                  aria-invalid={fieldState.invalid}
+                  aria-describedby={
+                    fieldState.invalid ? "assign-organization-error" : undefined
+                  }
+                />
+                {fieldState.invalid && (
+                  <FieldError id="assign-organization-error">
+                    <FieldErrorMessage message={fieldState.error?.message} />
+                  </FieldError>
+                )}
+              </Field>
+            )}
+          />
+          {error && <div role="alert">{error}</div>}
+          <DialogFooter className="flex-row justify-end">
+            <DialogClose
+              render={
+                <Button disabled={pending} type="button" variant="outline" />
+              }
+            >
+              {t("manager.cancel")}
+            </DialogClose>
+            <Button
+              data-testid="assign-partnership"
+              disabled={pending}
+              type="submit"
+            >
+              <LinkIcon aria-hidden="true" />
+              {pending ? t("manager.assigning") : t("manager.assign")}
+            </Button>
+          </DialogFooter>
         </form>
-        {feedback && (
-          <div
-            aria-live="polite"
-            className="mt-4 text-sm"
-            data-testid="partnership-feedback"
-            data-state={feedback.status}
-          >
-            {feedback.message}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

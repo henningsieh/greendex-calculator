@@ -1,12 +1,15 @@
+import "@/lib/orpc/client.server";
 import { getTranslations } from "@greendex/i18n/server";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { canViewPartnerNetwork } from "@/features/organizations/access";
+import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
 import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/partnership-loading-states";
+import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
 import { ProjectPartnershipSection } from "@/features/partnerships/components/project-partnership-section";
-import { SetupLinkCreator } from "@/features/partnerships/components/setup-link";
+import { SetupLinkList } from "@/features/partnerships/components/setup-link";
 import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { isPresentationRefusal } from "@/lib/orpc/presentation-refusal";
 import { hasOrganizationMembership } from "@/lib/session";
@@ -45,11 +48,18 @@ export default async function PartnerOrganizationsPage() {
         eyebrow={t("eyebrow")}
         title={t("title")}
         description={t("description")}
+        rightButton={
+          canCreateProjectPartnership ? (
+            <Suspense fallback={<ProjectOptionsLoading />}>
+              <PartnershipActionsSection />
+            </Suspense>
+          ) : undefined
+        }
       />
 
       {canCreateProjectPartnership && (
         <section className="mt-10">
-          <SetupLinkCreator />
+          <SetupLinkList />
         </section>
       )}
 

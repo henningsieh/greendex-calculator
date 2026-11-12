@@ -7,56 +7,14 @@ import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
   listQuery: vi.fn(),
-  searchHosted: vi.fn(),
-  searchHostedQuery: vi.fn(),
-  searchOrganizations: vi.fn(),
 }));
-
-vi.mock("@/components/ui/popover", async () => {
-  const { createContext, useContext, cloneElement } = await import("react");
-  const OpenContext = createContext({
-    open: false,
-    onOpenChange: (_open: boolean) => {},
-  });
-  return {
-    Popover: ({
-      children,
-      open,
-      onOpenChange,
-    }: {
-      children: React.ReactNode;
-      open: boolean;
-      onOpenChange: (open: boolean) => void;
-    }) => (
-      <OpenContext.Provider value={{ open, onOpenChange }}>
-        {children}
-      </OpenContext.Provider>
-    ),
-    PopoverTrigger: ({ render }: { render: React.ReactElement }) => {
-      const { onOpenChange } = useContext(OpenContext);
-      return cloneElement(render as React.ReactElement<{ onClick: () => void }>, {
-        onClick: () => onOpenChange(true),
-      });
-    },
-    PopoverContent: ({ children }: { children: React.ReactNode }) =>
-      useContext(OpenContext).open ? <div>{children}</div> : null,
-  };
-});
 
 vi.mock("@/lib/orpc/orpc", () => ({
   orpc: {
-    projects: { searchHosted: mocks.searchHosted },
-    organizations: { search: mocks.searchOrganizations },
-    projectPartnerships: { assign: vi.fn(), remove: vi.fn() },
+    projectPartnerships: { remove: vi.fn() },
   },
   orpcQuery: {
     projects: {
-      searchHosted: {
-        queryOptions: (options?: { input?: unknown }) => ({
-          queryKey: ["projects", "search-hosted", options?.input],
-          queryFn: mocks.searchHostedQuery,
-        }),
-      },
       listHosted: { key: () => ["projects", "hosted"] },
       listPartner: { key: () => ["projects", "partner"] },
       get: { key: () => ["projects", "detail"] },
@@ -99,34 +57,24 @@ async function renderManager(canAssign: boolean) {
 
 describe("ProjectPartnershipManager canAssign gate", () => {
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    Element.prototype.scrollIntoView = vi.fn();
     mocks.listQuery.mockReset().mockResolvedValue([existingPartnership]);
-    mocks.searchHostedQuery
-      .mockReset()
-      .mockResolvedValue([{ id: "project-new", name: "New Project" }]);
   });
 
-  it("does not execute the hosted-projects query when canAssign is false", async () => {
+  it("hides removal controls when canAssign is false", async () => {
     await renderManager(false);
 
     expect(mocks.listQuery).toHaveBeenCalled();
-    expect(mocks.searchHostedQuery).not.toHaveBeenCalled();
-    expect(screen.queryByTestId("organization-assignment")).toBeNull();
+    expect(
+      screen.queryByTestId(`remove-partnership-${existingPartnership.id}`),
+    ).toBeNull();
   });
 
-  it("executes the hosted-projects query when canAssign is true", async () => {
+  it("shows removal controls when canAssign is true", async () => {
     await renderManager(true);
 
     expect(mocks.listQuery).toHaveBeenCalled();
-    expect(mocks.searchHostedQuery).toHaveBeenCalled();
-    expect(screen.getByTestId("organization-assignment")).toBeTruthy();
+    expect(
+      screen.getByTestId(`remove-partnership-${existingPartnership.id}`),
+    ).toBeTruthy();
   });
 });

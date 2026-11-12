@@ -149,6 +149,7 @@ vi.mock("next/headers", () => ({
 vi.mock("next/server", () => ({
   connection: () => Promise.resolve(),
 }));
+vi.mock("@/lib/orpc/client.server", () => ({}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/features/partnerships/procedures/assigned-partnerships", () => ({
   assignedPartnershipIds: vi.fn(async () => []),
@@ -385,9 +386,6 @@ describe("Cost Tracker Project data routes", () => {
 
     expect(mocks.query).toHaveBeenCalledWith({
       queryKey: ["partnerships", "list"],
-    });
-    expect(mocks.query).toHaveBeenCalledWith({
-      queryKey: ["projects", "search-hosted"],
     });
     expect(screen.getByTestId("project-partnership-manager")).toHaveAttribute(
       "data-can-assign",

@@ -136,6 +136,12 @@
       "networkFailure": "Der Server oder das Netzwerk ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
     },
     "details": {
+      "emailRequired": "Die E-Mail-Adresse ist erforderlich.",
+      "emailInvalid": "Gib eine gültige E-Mail-Adresse ein.",
+      "organizationIdRequired": "Die Organisations-ID ist erforderlich.",
+      "organizationIdTooLong": "Die Organisations-ID ist zu lang.",
+      "projectIdRequired": "Die Projekt-ID ist erforderlich.",
+      "projectIdTooLong": "Die Projekt-ID ist zu lang.",
       "journeyDistanceOutsideBands": "Die Reiseentfernung muss genau einer festgeschriebenen Entfernungsstufe für die Förderung zugeordnet sein.",
       "payoutAccountRequired": "Wähle einen Payout Account der Partnerorganisation aus.",
       "entryRequired": "Füge mindestens einen Reisekosteneintrag hinzu.",

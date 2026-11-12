@@ -13,6 +13,10 @@ vi.mock("@greendex/i18n/server", async () => ({
   getTranslations: (await import("@/__tests__/i18n")).getTranslations,
 }));
 
+vi.mock("@/lib/orpc/client.server", () => ({}));
+vi.mock("@/lib/i18n/routing", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({
   connection: () => Promise.resolve(),
@@ -20,6 +24,8 @@ vi.mock("next/server", () => ({
 const mocks = vi.hoisted(() => ({
   membership: vi.fn().mockResolvedValue(true),
   query: vi.fn(),
+  listHostedOptions: vi.fn(),
+  listOrganizationOptions: vi.fn().mockResolvedValue([]),
   requireSession: vi
     .fn()
     .mockResolvedValue({ session: { activeOrganizationId: null } }),
@@ -40,6 +46,10 @@ vi.mock("@/lib/orpc/middleware", () => ({
 vi.mock("@/lib/orpc/orpc", () => {
   const queryOptions = ({ input }: { input?: unknown } = {}) => ({ input });
   return {
+    orpc: {
+      projects: { listHostedOptions: mocks.listHostedOptions },
+      organizations: { listOptions: mocks.listOrganizationOptions },
+    },
     orpcQuery: {
       claims: Object.fromEntries(
         [
@@ -62,6 +72,14 @@ vi.mock("@/lib/orpc/orpc", () => {
       projects: {
         get: { queryOptions },
         searchHosted: { queryOptions },
+        listHostedOptions: {
+          queryOptions: () => ({ queryKey: ["hosted-options"] }),
+        },
+      },
+      organizations: {
+        listOptions: {
+          queryOptions: () => ({ queryKey: ["organization-options"] }),
+        },
       },
       projectPartnerships: { list: { queryOptions } },
     },
@@ -100,6 +118,9 @@ vi.mock("@/features/participations/components/participant-details", () => ({
 vi.mock("@/features/participations/components/hosted-participant-report", () => ({
   HostedParticipantReport: () => <p>Resolved Hosted report</p>,
 }));
+vi.mock("@/features/partnerships/components/partnership-actions", () => ({
+  PartnershipActions: () => <p>Resolved selection options</p>,
+}));
 vi.mock("@/features/partnerships/components/project-partnership-manager", () => ({
   ProjectPartnershipManager: () => <p>Resolved Partnerships</p>,
 }));
@@ -107,7 +128,8 @@ vi.mock("@/features/projects/components/project-workspace", () => ({
   ProjectWorkspace: () => <p>Resolved Project workspace</p>,
 }));
 vi.mock("@/features/partnerships/components/setup-link", () => ({
-  SetupLinkCreator: () => <p>Setup link creator</p>,
+  CreateSetupLinkDialog: () => <p>Setup link dialog</p>,
+  SetupLinkList: () => <p>Setup link list</p>,
 }));
 
 import LocalizedClaimReviewQueuePage from "@/app/[locale]/(protected)/claims/review/page";
@@ -129,6 +151,7 @@ import LocalizedHostedParticipantsPage, {
   metadata as LocalizedHostedParticipantsPageMetadata,
 } from "@/app/[locale]/(protected)/projects/[id]/participants/page";
 import ParticipantPage from "@/app/[locale]/(setup)/participant/page";
+import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
 
 const routes = [
   {
@@ -192,6 +215,8 @@ const routes = [
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.membership.mockResolvedValue(true);
+  mocks.permissions.mockResolvedValue(false);
+  mocks.listHostedOptions.mockResolvedValue([]);
 });
 
 it.each([
@@ -391,6 +416,118 @@ it.each(routes)(
     expect(mocks.permissions).not.toHaveBeenCalled();
   },
 );
+
+it("does not load project options for viewers without assignment permission", async () => {
+  mocks.permissions.mockResolvedValue(false);
+  mocks.query.mockResolvedValue(undefined);
+  const destination = new PassThrough();
+  destination.resume();
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <LocalizedPartnerOrganizationsPage />
+    </NextIntlClientProvider>,
+    { onShellReady: () => pipe(destination) },
+  );
+  await complete;
+  expect(
+    mocks.query.mock.calls.map(([options]) => options.queryKey),
+  ).not.toContainEqual(["hosted-options"]);
+  expect(
+    mocks.query.mock.calls.map(([options]) => options.queryKey),
+  ).not.toContainEqual(["organization-options"]);
+});
+
+it("starts both optional selection queries before either resolves and streams the shell", async () => {
+  mocks.permissions.mockResolvedValue(true);
+  let resolveOptions!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    resolveOptions = resolve;
+  });
+  let startedOptions!: () => void;
+  const started = new Promise<void>((resolve) => {
+    startedOptions = resolve;
+  });
+  let count = 0;
+  mocks.query.mockImplementation((options) => {
+    if (!options.queryKey) return Promise.resolve();
+    if (++count === 2) startedOptions();
+    return pending;
+  });
+  const destination = new PassThrough();
+  let html = "";
+  const shell = new Promise<void>((resolve) => {
+    destination.setEncoding("utf8");
+    destination.on("data", (chunk: string) => {
+      html += chunk;
+      if (html.includes("Loading selection options")) resolve();
+    });
+  });
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const errors: unknown[] = [];
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <LocalizedPartnerOrganizationsPage />
+    </NextIntlClientProvider>,
+    {
+      onShellReady: () => pipe(destination),
+      onError: (error) => {
+        errors.push(error);
+      },
+    },
+  );
+  try {
+    await shell;
+    await started;
+    expect(html).toContain("Partner Organizations");
+    expect(html).not.toContain("Resolved selection options");
+    expect(mocks.query.mock.calls.map(([options]) => options.queryKey)).toEqual(
+      expect.arrayContaining([["hosted-options"], ["organization-options"]]),
+    );
+  } finally {
+    resolveOptions();
+    await complete;
+  }
+  expect(errors).toEqual([]);
+  expect(html).toContain("Resolved selection options");
+});
+
+it("keys the actions error boundary to the active Organization", async () => {
+  mocks.query.mockResolvedValue(undefined);
+  mocks.requireSession.mockResolvedValueOnce({
+    session: { activeOrganizationId: "first" },
+  });
+  const first = await PartnershipActionsSection();
+  mocks.requireSession.mockResolvedValueOnce({
+    session: { activeOrganizationId: "second" },
+  });
+  const second = await PartnershipActionsSection();
+  expect(first.props.children.key).toBe("first");
+  expect(second.props.children.key).toBe("second");
+});
+
+it("continues to the consumer when either optional prefetch fails", async () => {
+  mocks.permissions.mockResolvedValue(true);
+  mocks.query.mockImplementation((options) =>
+    options.queryKey ? Promise.reject(new Error("private")) : Promise.resolve(),
+  );
+  const destination = new PassThrough();
+  let html = "";
+  destination.setEncoding("utf8");
+  destination.on("data", (chunk: string) => {
+    html += chunk;
+  });
+  const complete = new Promise<void>((resolve) => destination.on("end", resolve));
+  const { pipe } = renderToPipeableStream(
+    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <LocalizedPartnerOrganizationsPage />
+    </NextIntlClientProvider>,
+    { onShellReady: () => pipe(destination) },
+  );
+  await complete;
+  expect(html).toContain("Resolved selection options");
+  expect(html).not.toContain("private");
+});
 
 it("Participant personal page requires a session, not active Organization Membership", async () => {
   mocks.membership.mockResolvedValue(false);

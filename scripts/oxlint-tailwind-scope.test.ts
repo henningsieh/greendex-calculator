@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
 import {
-  copyFileSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -35,15 +34,13 @@ it("limits Tailwind rules to production UI sources in all owning contexts", () =
   try {
     mkdirSync(join(fixture, "scripts"));
     symlinkSync(join(root, "node_modules"), join(fixture, "node_modules"), "dir");
-    copyFileSync(
-      join(root, "scripts/oxlint-i18n.mjs"),
-      join(fixture, "scripts/oxlint-i18n.mjs"),
+    const config = JSON.parse(
+      readFileSync(join(root, "oxlint.tailwind.json"), "utf8"),
     );
-    const config = JSON.parse(readFileSync(join(root, ".oxlintrc.json"), "utf8"));
-    config.options.typeAware = false;
+    config.options = { typeAware: false };
     const tailwindScope = config.overrides.find(
       (override: { rules?: Record<string, unknown> }) =>
-        override.rules?.["better-tailwindcss/no-conflicting-classes"] === "error",
+        override.rules?.["better-tailwindcss/no-duplicate-classes"] === "error",
     );
     for (const rule of [
       "no-duplicate-classes",
@@ -52,27 +49,35 @@ it("limits Tailwind rules to production UI sources in all owning contexts", () =
     ]) {
       expect(tailwindScope.rules[`better-tailwindcss/${rule}`]).toBe("error");
     }
+    // Only the duplicate rule stays active: the canonical rule resolves the
+    // whole design system per file and would make this scope test dominate the
+    // unit suite.
     config.overrides.push({
       files: ["**/*.{ts,tsx}"],
       rules: {
-        "better-tailwindcss/no-duplicate-classes": "off",
         "better-tailwindcss/enforce-canonical-classes": "off",
         "better-tailwindcss/no-deprecated-classes": "off",
       },
     });
-    writeFileSync(join(fixture, ".oxlintrc.json"), JSON.stringify(config));
+    writeFileSync(join(fixture, "oxlint.tailwind.json"), JSON.stringify(config));
     for (const file of [...uiFiles, ...excludedFiles]) {
       mkdirSync(dirname(join(fixture, file)), { recursive: true });
       writeFileSync(
         join(fixture, file),
         file.endsWith(".tsx")
-          ? 'export const view = <div className="p-2 p-4" />;\n'
-          : 'export const className = "p-2 p-4";\n',
+          ? 'export const view = <div className="p-2 p-2" />;\n'
+          : 'export const className = "p-2 p-2";\n',
       );
     }
     const result = spawnSync(
       join(root, "node_modules/.bin/oxlint"),
-      ["--threads=1", "--config", ".oxlintrc.json", ...uiFiles, ...excludedFiles],
+      [
+        "--threads=1",
+        "--config",
+        "oxlint.tailwind.json",
+        ...uiFiles,
+        ...excludedFiles,
+      ],
       { cwd: fixture, encoding: "utf8", timeout: 120_000 },
     );
     if (result.error) throw result.error;
@@ -84,9 +89,9 @@ it("limits Tailwind rules to production UI sources in all owning contexts", () =
         diagnostics.some(
           (diagnostic) =>
             diagnostic.includes(file) &&
-            diagnostic.includes("better-tailwindcss(no-conflicting-classes)"),
+            diagnostic.includes("better-tailwindcss(no-duplicate-classes)"),
         ),
-        `expected a no-conflicting-classes diagnostic for ${file}`,
+        `expected a no-duplicate-classes diagnostic for ${file}`,
       ).toBe(true);
     }
     expect(output).not.toContain("Internal error");

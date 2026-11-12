@@ -550,6 +550,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
   }) => {
     const h = await pageFor(browser, "H", baseURL!);
     await h.goto("/partner-organizations");
+    await h.getByTestId("new-setup-link").click();
     const creator = h.getByTestId("setup-link-creator");
     await creator
       .getByTestId("hosted-project-picker")
@@ -560,7 +561,11 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     await popup.locator(`[role="option"][data-entity-id="${projectId}"]`).click();
     await creator.locator("#setup-email").fill(actors.X.email);
     await creator.getByTestId("create-setup-link").click();
-    const first = await creator.locator("#recipient-link").inputValue();
+    const first = (
+      await creator
+        .locator("#recipient-link")
+        .evaluate((node) => (node instanceof HTMLOutputElement ? node.value : ""))
+    ).trim();
     setupId = new URL(first).pathname.split("/").at(-1)!;
     // No setup-link closure UI: DB revocation is a test-helper precondition,
     // not evidence of a browser revocation control.
@@ -575,7 +580,11 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       x.locator('[data-setup-reason="SETUP_LINK_DISABLED"]'),
     ).toBeVisible();
     await creator.getByTestId("create-setup-link").click();
-    const replacement = await creator.locator("#recipient-link").inputValue();
+    const replacement = (
+      await creator
+        .locator("#recipient-link")
+        .evaluate((node) => (node instanceof HTMLOutputElement ? node.value : ""))
+    ).trim();
     // Preserve the original pathname inequality without printing either private ID.
     expect(new URL(replacement).pathname !== new URL(first).pathname).toBe(true);
     await x.goto(first);

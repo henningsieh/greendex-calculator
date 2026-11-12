@@ -223,7 +223,7 @@ export function InvitationAcceptance({
         id="invitation-heading"
         ref={heading}
         tabIndex={-1}
-        className="font-heading text-3xl font-semibold"
+        className="text-3xl"
       >
         {t("invitation.heading")}
       </h1>

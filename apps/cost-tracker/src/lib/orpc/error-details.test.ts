@@ -55,14 +55,23 @@ describe("structured error details", () => {
   });
 
   it.each(validFieldIssues)("round-trips the closed $id detail", (issue) => {
-    const error = errors.submissionIncomplete([issue]);
+    const checklist = ![
+      "emailRequired",
+      "emailInvalid",
+      "organizationIdRequired",
+      "organizationIdTooLong",
+      "projectIdRequired",
+      "projectIdTooLong",
+    ].includes(issue.id);
+    const error = checklist
+      ? errors.submissionIncomplete([issue])
+      : errors.invalidInputWithIssues([issue]);
+    const reason = checklist ? "CLAIM_SUBMISSION_INCOMPLETE" : "INVALID_INPUT";
     expect(SafeErrorDataSchema.parse(error.data)).toMatchObject({
-      reason: "CLAIM_SUBMISSION_INCOMPLETE",
+      reason,
       issues: [issue],
     });
-    expect(getSafeErrorSituation(error)?.reason).toBe(
-      "CLAIM_SUBMISSION_INCOMPLETE",
-    );
+    expect(getSafeErrorSituation(error)?.reason).toBe(reason);
   });
 
   it.each(validFieldIssues)(
@@ -97,6 +106,10 @@ describe("structured error details", () => {
   );
 
   it.each([
+    createSafeFieldIssue("emailRequired", ["recipientEmail"]),
+    createSafeFieldIssue("emailInvalid", ["recipientEmail"]),
+    createSafeFieldIssue("projectIdRequired", ["projectId"]),
+    createSafeFieldIssue("projectIdTooLong", ["projectId"]),
     createSafeFieldIssue("journeyOriginRequired", ["origin"]),
     createSafeFieldIssue("allocationSharesInvalid", [
       "allocations",

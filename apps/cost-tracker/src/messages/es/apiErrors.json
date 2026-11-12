@@ -136,6 +136,12 @@
       "networkFailure": "No se puede acceder al servidor o a la red. Comprueba tu conexión y vuelve a intentarlo."
     },
     "details": {
+      "emailRequired": "La dirección de correo electrónico es obligatoria.",
+      "emailInvalid": "Introduce una dirección de correo electrónico válida.",
+      "organizationIdRequired": "El ID de la organización es obligatorio.",
+      "organizationIdTooLong": "El ID de la organización es demasiado largo.",
+      "projectIdRequired": "El ID del proyecto es obligatorio.",
+      "projectIdTooLong": "El ID del proyecto es demasiado largo.",
       "journeyDistanceOutsideBands": "La distancia del viaje debe corresponder exactamente a una de las bandas de financiación fijadas.",
       "payoutAccountRequired": "Selecciona una cuenta de pago de la organización socia.",
       "entryRequired": "Añade al menos un registro de gastos de viaje.",

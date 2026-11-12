@@ -3,11 +3,19 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { CoordinationIdSchema } from "@/features/partnerships/coordination-id-schema";
+import { ProjectIdSchema } from "@/features/projects/validation-schemas";
 
 export { CoordinationIdSchema };
 export const SetupLinkEmailSchema = z
-  .email()
+  .email({
+    error: (issue) => (issue.input === "" ? "emailRequired" : "emailInvalid"),
+  })
   .transform((value) => value.toLowerCase());
+
+export const CreateSetupLinkInputSchema = z.object({
+  projectId: ProjectIdSchema,
+  recipientEmail: SetupLinkEmailSchema,
+});
 
 export const ProjectPartnershipSchema = z.object({
   id: z.string(),
@@ -33,16 +41,12 @@ export const AssignProjectPartnershipInputSchema =
     projectId: true,
     organizationId: true,
   }).safeExtend({
-    projectId: z
-      .string()
-      .trim()
-      .min(1)
-      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+    projectId: ProjectIdSchema,
     organizationId: z
       .string()
       .trim()
-      .min(1)
-      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+      .min(1, "organizationIdRequired")
+      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH, "organizationIdTooLong"),
   });
 
 export const RemoveProjectPartnershipInputSchema =

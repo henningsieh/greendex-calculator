@@ -183,6 +183,21 @@
         "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
         "exemptAction": "working…"
       },
+      "forms": {
+        "eyebrow": "Moduli · partenariato",
+        "title": "Modulo di partenariato del progetto",
+        "cardTitle": "Assegna partenariato esistente",
+        "project": "Progetto",
+        "projectPlaceholder": "Seleziona un progetto",
+        "organizationId": "ID organizzazione",
+        "organizationPlaceholder": "es. org_8f3a2c",
+        "assign": "Assegna",
+        "projects": {
+          "one": "Scambio giovanile Erasmus+",
+          "two": "Pulizia del Danubio",
+          "three": "Green Roots"
+        }
+      },
       "type": {
         "eyebrow": "Type · specimen",
         "title": "Typography",

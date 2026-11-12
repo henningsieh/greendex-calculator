@@ -183,6 +183,21 @@
         "exemptDescription": "data-disabled — stock-still, no hover, even on sticky touch.",
         "exemptAction": "working…"
       },
+      "forms": {
+        "eyebrow": "Formulaires · partenariat",
+        "title": "Formulaire de partenariat de projet",
+        "cardTitle": "Attribuer un partenariat existant",
+        "project": "Projet",
+        "projectPlaceholder": "Sélectionner un projet",
+        "organizationId": "ID de l’organisation",
+        "organizationPlaceholder": "p. ex. org_8f3a2c",
+        "assign": "Attribuer",
+        "projects": {
+          "one": "Échange de jeunes Erasmus+",
+          "two": "Nettoyage du Danube",
+          "three": "Green Roots"
+        }
+      },
       "type": {
         "eyebrow": "Type · specimen",
         "title": "Typography",

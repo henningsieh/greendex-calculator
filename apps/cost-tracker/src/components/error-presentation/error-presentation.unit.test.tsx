@@ -78,6 +78,37 @@ describe("shared localized error presentation", () => {
 
   const detailMatrix = [
     [
+      "emailRequired",
+      english.apiErrors.details.emailRequired,
+      german.apiErrors.details.emailRequired,
+    ],
+    [
+      "emailInvalid",
+      english.apiErrors.details.emailInvalid,
+      german.apiErrors.details.emailInvalid,
+    ],
+    [
+      "projectIdRequired",
+      english.apiErrors.details.projectIdRequired,
+      german.apiErrors.details.projectIdRequired,
+    ],
+    [
+      "projectIdTooLong",
+      english.apiErrors.details.projectIdTooLong,
+      german.apiErrors.details.projectIdTooLong,
+    ],
+
+    [
+      "organizationIdRequired",
+      english.apiErrors.details.organizationIdRequired,
+      german.apiErrors.details.organizationIdRequired,
+    ],
+    [
+      "organizationIdTooLong",
+      english.apiErrors.details.organizationIdTooLong,
+      german.apiErrors.details.organizationIdTooLong,
+    ],
+    [
       "journeyDistanceOutsideBands",
       "Journey distance must have exactly one frozen funding band.",
       "Die Reiseentfernung muss genau einer festgeschriebenen Entfernungsstufe für die Förderung zugeordnet sein.",

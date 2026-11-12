@@ -99,7 +99,7 @@ export function CheckInbox({
       data-onboarding-state="verify-email"
     >
       <h1
-        className="mb-4 font-heading text-3xl font-semibold tracking-tight"
+        className="mb-4 text-3xl"
         id="check-inbox-heading"
         ref={heading}
         tabIndex={-1}

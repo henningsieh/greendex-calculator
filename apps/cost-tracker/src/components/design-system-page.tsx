@@ -29,6 +29,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { THEMES } from "@/lib/themes";
@@ -96,6 +105,7 @@ const TOKEN_PAIRS: { bg: string; fg: string; label: string }[] = [
 export default function DesignSystemPage() {
   const t = useTranslations("shell");
   const { theme, setTheme } = useTheme();
+  const [demoProject, setDemoProject] = React.useState("");
   const mounted = React.useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -259,6 +269,60 @@ export default function DesignSystemPage() {
             </CardContent>
           </Card>
         </div>
+      </Section>
+
+      <Section
+        eyebrow={t("designSystem.forms.eyebrow")}
+        title={t("designSystem.forms.title")}
+      >
+        <Card data-testid="design-system-partnership-form">
+          <CardHeader>
+            <CardTitle>{t("designSystem.forms.cardTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="grid gap-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
+              onSubmit={(event) => event.preventDefault()}
+            >
+              <div className="grid gap-2">
+                <Label htmlFor="ds-partnership-project">
+                  {t("designSystem.forms.project")}
+                </Label>
+                <Select
+                  value={demoProject}
+                  onValueChange={(value) => setDemoProject(value ?? "")}
+                >
+                  <SelectTrigger id="ds-partnership-project" className="w-full">
+                    <SelectValue
+                      placeholder={t("designSystem.forms.projectPlaceholder")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="erasmus-youth">
+                      {t("designSystem.forms.projects.one")}
+                    </SelectItem>
+                    <SelectItem value="danube-cleanup">
+                      {t("designSystem.forms.projects.two")}
+                    </SelectItem>
+                    <SelectItem value="green-roots">
+                      {t("designSystem.forms.projects.three")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="ds-partnership-organization">
+                  {t("designSystem.forms.organizationId")}
+                </Label>
+                <Input
+                  id="ds-partnership-organization"
+                  placeholder={t("designSystem.forms.organizationPlaceholder")}
+                />
+              </div>
+              <Button type="submit">{t("designSystem.forms.assign")}</Button>
+            </form>
+          </CardContent>
+        </Card>
       </Section>
 
       <Section
