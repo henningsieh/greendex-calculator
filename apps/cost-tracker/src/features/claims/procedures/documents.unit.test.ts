@@ -18,10 +18,8 @@ vi.mock("@/lib/proof-storage", () => ({
   putProofFile: mocks.put,
   getProofFile: mocks.get,
 }));
-vi.mock("@/features/partnerships/procedures/coordination", async () => {
-  const { z } = await import("zod");
+vi.mock("@/features/partnerships/procedures/coordination", () => {
   return {
-    coordinationId: z.string().min(1).max(128),
     requirePartnerCoordination: mocks.scope,
   };
 });

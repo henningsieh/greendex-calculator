@@ -1,9 +1,26 @@
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
-import { claimsTable, projectsTable } from "@greendex/database/schema";
+import {
+  IDENTIFIER_MAX_LENGTH,
+  claimsTable,
+  organization,
+  projectPartnerOrganizationsTable,
+  projectsTable,
+} from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const HostedProjectOptionSchema = createSelectSchema(projectsTable).pick({
+const projectColumns = createSelectSchema(projectsTable);
+const organizationColumns = createSelectSchema(organization);
+
+export const HostedProjectSearchInputSchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(128)
+    .refine((value) => value.length !== 1),
+});
+
+export const HostedProjectOptionSchema = projectColumns.pick({
   id: true,
   name: true,
 });
@@ -72,7 +89,7 @@ const ProjectListInputBaseSchema = z
 export const HostedProjectListInputSchema = ProjectListInputBaseSchema.safeExtend(
   {
     partnerOrganizationIds: z
-      .array(z.string().trim().min(1).max(128))
+      .array(z.string().trim().min(1).max(IDENTIFIER_MAX_LENGTH))
       .max(20)
       .default([])
       .transform((ids) => [...new Set(ids)].sort()),
@@ -81,14 +98,14 @@ export const HostedProjectListInputSchema = ProjectListInputBaseSchema.safeExten
 
 export const PartnerProjectListInputSchema = ProjectListInputBaseSchema;
 
-export const ProjectListRowSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  startDate: z.date(),
-  endDate: z.date(),
-  location: z.string(),
-  country: z.string(),
-  costSubmissionWindowOpen: z.boolean(),
+export const ProjectListRowSchema = projectColumns.pick({
+  id: true,
+  name: true,
+  startDate: true,
+  endDate: true,
+  location: true,
+  country: true,
+  costSubmissionWindowOpen: true,
 });
 
 const ProjectListMetricsSchema = z.object({
@@ -109,7 +126,9 @@ export const HostedProjectListSchema = z.object({
       partnerOrganizationCount: z.number().int().nonnegative(),
     }),
   }),
-  partnerOptions: z.array(z.object({ id: z.string(), name: z.string() })),
+  partnerOptions: z.array(
+    z.object({ id: organizationColumns.shape.id, name: z.string() }),
+  ),
 });
 
 export const PartnerProjectListSchema = z.object({
@@ -129,38 +148,41 @@ export const ProjectListScopeAvailabilitySchema = z.object({
   canCreate: z.boolean(),
 });
 
-export const PROJECT_ID_MAX_LENGTH = 128;
 export const ProjectIdSchema = createSelectSchema(projectsTable)
   .shape.id.trim()
   .min(1, "projectIdRequired")
-  .max(PROJECT_ID_MAX_LENGTH, "projectIdTooLong");
+  .max(IDENTIFIER_MAX_LENGTH, "projectIdTooLong");
 
 export const ProjectDetailInputSchema = z.object({
   projectId: ProjectIdSchema,
 });
 
-const ProjectDetailBaseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  startDate: z.date(),
-  endDate: z.date(),
-  location: z.string(),
-  country: z.string(),
-  archived: z.boolean(),
-  costSubmissionWindowOpen: z.boolean(),
-  completedAt: z.date().nullable(),
-  completedByUserId: z.string().nullable(),
+const ProjectDetailBaseSchema = projectColumns.pick({
+  id: true,
+  name: true,
+  startDate: true,
+  endDate: true,
+  location: true,
+  country: true,
+  archived: true,
+  costSubmissionWindowOpen: true,
+  completedAt: true,
+  completedByUserId: true,
 });
 
 const ProjectClaimStatusSchema = createSelectSchema(claimsTable).shape.status;
 
+const ProjectPartnershipColumns = createSelectSchema(
+  projectPartnerOrganizationsTable,
+);
+
 const ProjectPartnershipSummarySchema = z.object({
   claimStatus: ProjectClaimStatusSchema.nullable(),
-  id: z.string(),
-  organizationId: z.string(),
+  id: ProjectPartnershipColumns.shape.id,
+  organizationId: ProjectPartnershipColumns.shape.organizationId,
   organizationName: z.string(),
-  assignedAt: z.date(),
-  updatedAt: z.date(),
+  assignedAt: ProjectPartnershipColumns.shape.createdAt,
+  updatedAt: ProjectPartnershipColumns.shape.updatedAt,
 });
 
 export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
@@ -170,10 +192,13 @@ export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
   }),
   ProjectDetailBaseSchema.extend({
     relationship: z.literal("partner"),
-    hostingOrganization: z.object({ id: z.string(), name: z.string() }),
+    hostingOrganization: z.object({
+      id: organizationColumns.shape.id,
+      name: z.string(),
+    }),
     partnership: z.object({
       claimStatus: ProjectClaimStatusSchema.nullable(),
-      id: z.string(),
+      id: ProjectPartnershipColumns.shape.id,
       assignedAt: z.date(),
       updatedAt: z.date(),
     }),

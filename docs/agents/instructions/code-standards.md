@@ -13,6 +13,7 @@ Oxfmt and Oxlint enforce mechanical style. This file records decisions tooling c
 - Preserve inference inside implementations; add explicit types at exported APIs and integration boundaries when they clarify the contract.
 - Use `unknown` and narrow it instead of introducing `any` or unchecked assertions.
 - Reuse domain schemas and inferred types. Do not duplicate a Zod schema as a handwritten interface.
+- Declare Zod schemas in the owning feature's `validation-schemas.ts`, derived from the database tables through `createSelectSchema`, `createInsertSchema`, or a shared `<X>IdSchema`. Components import them; when messages are translated, export a `create…Schema(t)` factory instead of building the schema inline. `greendex-domain/validation-schema-location` rejects component-local schemas.
 - Model optional form values consistently across the schema, default values, and UI controls.
 - Name constants for protocol limits, validation bounds, and domain coefficients.
 - Keep workspace public APIs behind declared package exports; use `@greendex/*` imports across workspaces.

@@ -4,10 +4,12 @@ import { z } from "zod";
 
 import {
   AssignProjectPartnershipInputSchema,
-  CoordinationIdSchema,
+  ProjectPartnershipIdSchema,
+  SetupLinkIdSchema,
   CreateSetupLinkInputSchema,
   SetupLinkEmailSchema,
   RemoveProjectPartnershipInputSchema,
+  RemoveProjectPartnershipResultSchema,
 } from "@/features/partnerships/validation-schemas";
 import { ProjectDetailInputSchema } from "@/features/projects/validation-schemas";
 
@@ -23,10 +25,7 @@ type RemoveProjectPartnershipInput = z.infer<
 >;
 
 describe("Project Partnership persisted form schemas", () => {
-  it("validates shared coordination IDs and setup-link emails without trimming emails", () => {
-    expect(CoordinationIdSchema.parse("  id  ")).toBe("id");
-    expect(CoordinationIdSchema.safeParse(" ").success).toBe(false);
-    expect(CoordinationIdSchema.safeParse("a".repeat(129)).success).toBe(false);
+  it("validates setup-link emails without trimming emails", () => {
     expect(SetupLinkEmailSchema.parse("User@Example.com")).toBe(
       "user@example.com",
     );
@@ -155,4 +154,54 @@ describe("Project Partnership persisted form schemas", () => {
         .success,
     ).toBe(false);
   });
+});
+
+describe("Project Partnership removal output", () => {
+  it.each(["  id  ", "", "   ", "a".repeat(129)])(
+    "preserves the returned identifier %s",
+    (id) => {
+      expect(
+        RemoveProjectPartnershipResultSchema.parse({ id, removed: true }),
+      ).toEqual({
+        id,
+        removed: true,
+      });
+    },
+  );
+});
+
+describe("ProjectPartnershipIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(ProjectPartnershipIdSchema.parse("  id  ")).toBe("id");
+    expect(ProjectPartnershipIdSchema.parse("a".repeat(128))).toBe(
+      "a".repeat(128),
+    );
+    expect(ProjectPartnershipIdSchema.parse("  " + "a".repeat(128) + "  ")).toBe(
+      "a".repeat(128),
+    );
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(ProjectPartnershipIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
+});
+
+describe("SetupLinkIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(SetupLinkIdSchema.parse("  id  ")).toBe("id");
+    expect(SetupLinkIdSchema.parse("a".repeat(128))).toBe("a".repeat(128));
+    expect(SetupLinkIdSchema.parse("  " + "a".repeat(128) + "  ")).toBe(
+      "a".repeat(128),
+    );
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(SetupLinkIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
 });

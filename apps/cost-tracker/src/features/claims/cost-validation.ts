@@ -5,7 +5,9 @@ import {
   decimalUnits,
   TOTAL_ALLOCATION_PERCENTAGE_UNITS,
 } from "@/features/claims/payable";
-import { CoordinationIdSchema } from "@/features/partnerships/coordination-id-schema";
+import { TravelCostEntryIdSchema } from "@/features/claims/validation-schemas";
+import { ProjectParticipationIdSchema } from "@/features/participations/validation-schemas";
+import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 
 const money = z
   .string({ error: "entryAmountRequired" })
@@ -17,15 +19,15 @@ const percentage = z
   .string({ error: "allocationSharesInvalid" })
   .regex(/^\d{1,3}(?:\.\d{1,6})?$/, "allocationSharesInvalid");
 const allocationInput = z.object({
-  projectParticipantId: CoordinationIdSchema,
+  projectParticipantId: ProjectParticipationIdSchema,
   percentage: percentage.optional(),
   amountEur: allocationMoney.optional(),
 });
 
 export const CostSaveInputSchema = z
   .object({
-    partnershipId: CoordinationIdSchema,
-    entryId: CoordinationIdSchema.optional(),
+    partnershipId: ProjectPartnershipIdSchema,
+    entryId: TravelCostEntryIdSchema.optional(),
     transportProfile: z
       .string({ error: "transportProfileOutsideRules" })
       .min(1, "transportProfileOutsideRules"),

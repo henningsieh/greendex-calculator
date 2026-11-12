@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { JourneyInputSchema } from "@/features/participations/validation-schemas";
+import {
+  JourneyInputSchema,
+  ProjectParticipationIdSchema,
+  ReviewTaskIdSchema,
+} from "@/features/participations/validation-schemas";
 
 const valid = {
   partnershipId: " partnership ",
@@ -61,4 +65,32 @@ describe("Journey input", () => {
       ).toBe(true);
     },
   );
+});
+
+describe("ProjectParticipationIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(ProjectParticipationIdSchema.parse("  id  ")).toBe("id");
+    expect(ProjectParticipationIdSchema.parse("a".repeat(128))).toBe(
+      "a".repeat(128),
+    );
+    expect(
+      ProjectParticipationIdSchema.parse("  " + "a".repeat(128) + "  "),
+    ).toBe("a".repeat(128));
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(ProjectParticipationIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
+});
+
+describe("ReviewTaskIdSchema", () => {
+  it("trims and enforces the identifier boundaries", () => {
+    expect(ReviewTaskIdSchema.parse("  id  ")).toBe("id");
+    expect(ReviewTaskIdSchema.parse("x".repeat(128))).toBe("x".repeat(128));
+    expect(ReviewTaskIdSchema.safeParse(" ").success).toBe(false);
+    expect(ReviewTaskIdSchema.safeParse("x".repeat(129)).success).toBe(false);
+  });
 });

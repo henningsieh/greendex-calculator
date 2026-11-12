@@ -6,7 +6,7 @@ import { LogInIcon } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
+import type { z } from "zod";
 
 import {
   DASHBOARD_PATH,
@@ -35,6 +35,10 @@ import { env } from "@/env";
 import { normalizeRedirectPath } from "@/features/authentication/components/auth-flow-layout";
 import { LastUsedBadge } from "@/features/authentication/components/last-used-badge";
 import { SocialButtons } from "@/features/authentication/components/social-buttons";
+import {
+  createCredentialsSchema,
+  createMagicLinkSchema,
+} from "@/features/authentication/validation-schemas";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { authClient } from "@/lib/better-auth/auth-client";
 import { Link, useRouter } from "@/lib/i18n/routing";
@@ -77,21 +81,8 @@ export function LoginForm({
   const finalRedirect = normalizeRedirectPath(nextPageUrl, DASHBOARD_PATH);
   const callbackURL = env.NEXT_PUBLIC_BASE_URL + finalRedirect;
 
-  const credentialsSchema = useMemo(
-    () =>
-      z.object({
-        email: z.email(t("validation.emailInvalid")),
-        password: z.string().min(6, t("validation.passwordRequired")),
-      }),
-    [t],
-  );
-  const magicLinkSchema = useMemo(
-    () =>
-      z.object({
-        email: z.email(t("validation.emailInvalid")),
-      }),
-    [t],
-  );
+  const credentialsSchema = useMemo(() => createCredentialsSchema(t), [t]);
+  const magicLinkSchema = useMemo(() => createMagicLinkSchema(t), [t]);
 
   const form = useForm<z.infer<typeof credentialsSchema>>({
     resolver: zodResolver(credentialsSchema),

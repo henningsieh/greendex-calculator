@@ -331,6 +331,53 @@
     },
     {
       "files": [
+        "apps/*/src/features/**/components/**/*.{ts,tsx}",
+        "apps/*/src/components/**/*.{ts,tsx}"
+      ],
+      "excludeFiles": [
+        "**/components/ui/**",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.stories.*"
+      ],
+      "rules": {
+        "greendex-domain/validation-schema-location": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/*/src/**/validation-schemas.ts",
+        "packages/*/src/**/validation-schemas.ts"
+      ],
+      "rules": {
+        "greendex-domain/schema-derived-identifier": "warn"
+      }
+    },
+    {
+      "files": ["apps/cost-tracker/src/**/validation-schemas.ts"],
+      "rules": {
+        "greendex-domain/schema-derived-identifier": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/*/src/features/**/procedures.ts",
+        "apps/*/src/features/**/procedures/**/*.ts"
+      ],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.unit.*",
+        "**/*.integration.*"
+      ],
+      "rules": {
+        "greendex-domain/procedure-input-schema": "error"
+      }
+    },
+    {
+      "files": [
         "apps/cost-tracker/src/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
         "packages/**/src/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
       ],
@@ -349,5 +396,9 @@
       }
     }
   ],
-  "jsPlugins": ["@shadcn/lint", "./scripts/oxlint-i18n.mjs"]
+  "jsPlugins": [
+    "@shadcn/lint",
+    "./scripts/oxlint-i18n.mjs",
+    "./scripts/oxlint-domain.mjs"
+  ]
 }

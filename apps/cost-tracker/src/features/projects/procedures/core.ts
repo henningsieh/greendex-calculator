@@ -89,12 +89,10 @@ type ProjectCursorPosition = Pick<
   ProjectListCursor,
   "date" | "direction" | "id" | "open"
 >;
-type ProjectListCursorRow = {
-  costSubmissionWindowOpen: boolean;
-  endDate: Date;
-  id: string;
-  startDate: Date;
-};
+type ProjectListCursorRow = Pick<
+  typeof projectsTable.$inferSelect,
+  "costSubmissionWindowOpen" | "endDate" | "id" | "startDate"
+>;
 
 type ProjectSortDescription = {
   getCursorFilter: (cursor: ProjectCursorPosition) => SQL;

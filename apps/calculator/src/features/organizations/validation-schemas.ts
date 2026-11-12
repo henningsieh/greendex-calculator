@@ -8,7 +8,7 @@ import {
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { MEMBER_ROLES } from "@/features/organizations/types";
+import { MEMBER_ROLES, USERS_SORT_FIELDS } from "@/features/organizations/types";
 
 // ============================================================================
 // ORGANIZATION - Schemas
@@ -18,6 +18,24 @@ import { MEMBER_ROLES } from "@/features/organizations/types";
  * Schema for member role values
  */
 export const MemberRoleSchema = z.enum(Object.values(MEMBER_ROLES));
+
+const organizationId = createSelectSchema(organization).shape.id;
+
+export const SearchMembersInputSchema = z.object({
+  organizationId,
+  filters: z
+    .object({
+      roles: z.array(MemberRoleSchema).optional(),
+      search: z.string().optional(),
+      sortBy: z.enum(USERS_SORT_FIELDS).optional(),
+      sortDirection: z.enum(["asc", "desc"]).optional(),
+      limit: z.number().optional(),
+      offset: z.number().optional(),
+    })
+    .optional(),
+});
+
+export const OrganizationStatsInputSchema = z.object({ organizationId });
 
 /**
  * Extended member insert schema with associated user data

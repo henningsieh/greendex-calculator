@@ -5,14 +5,16 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+  ProjectParticipationIdSchema,
+  ReviewTaskIdSchema,
+} from "@/features/participations/validation-schemas";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
+import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const input = z.object({ partnershipId: coordinationId });
-const rowInput = input.extend({ id: coordinationId });
+const input = z.object({ partnershipId: ProjectPartnershipIdSchema });
+const rowInput = input.extend({ id: ReviewTaskIdSchema });
 const reviewTask = z.object({
   id: z.string(),
   partnershipId: z.string(),
@@ -107,7 +109,7 @@ const resolve = authorized
   .input(
     rowInput.extend({
       decision: z.enum(["same_person", "distinct_persons", "dismiss"]),
-      survivorParticipationId: coordinationId,
+      survivorParticipationId: ProjectParticipationIdSchema,
     }),
   )
   .output(reviewTask)

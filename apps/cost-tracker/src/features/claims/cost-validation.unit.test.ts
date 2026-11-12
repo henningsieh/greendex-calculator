@@ -11,6 +11,52 @@ const base = {
 };
 
 describe("cost save validation", () => {
+  it("normalizes optional entry and allocation identifiers before duplicate detection", () => {
+    expect(
+      CostSaveInputSchema.parse({
+        ...base,
+        partnershipId: " partner ",
+        entryId: " entry ",
+      }),
+    ).toEqual({
+      partnershipId: "partner",
+      entryId: "entry",
+      transportProfile: "train",
+      amountEur: "10.00",
+      allocationMethod: "equal",
+      allocations: [
+        { projectParticipantId: "one" },
+        { projectParticipantId: "two" },
+      ],
+    });
+    expect(CostSaveInputSchema.parse(base)).toEqual({
+      partnershipId: "partnership",
+      transportProfile: "train",
+      amountEur: "10.00",
+      allocationMethod: "equal",
+      allocations: [
+        { projectParticipantId: "one" },
+        { projectParticipantId: "two" },
+      ],
+    });
+    const result = CostSaveInputSchema.safeParse({
+      ...base,
+      allocations: [
+        { projectParticipantId: " one " },
+        { projectParticipantId: "one" },
+      ],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success)
+      expect(
+        result.error.issues.map(({ path, message }) => ({ path, message })),
+      ).toEqual([
+        {
+          path: ["allocations", 1, "projectParticipantId"],
+          message: "allocationSharesInvalid",
+        },
+      ]);
+  });
   it("accepts exact percentage and money totals without rounding", () => {
     expect(
       CostSaveInputSchema.safeParse({

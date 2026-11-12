@@ -9,6 +9,9 @@ import {
   ClaimPartnershipInputSchema,
   ClaimScopeInputSchema,
   ClaimStatusSchema,
+  TravelCostEntryIdSchema,
+  PayoutAccountIdSchema,
+  ProofDocumentIdSchema,
 } from "@/features/claims/validation-schemas";
 
 describe("Claim validation schemas", () => {
@@ -57,3 +60,32 @@ describe("Claim validation schemas", () => {
     ).toBe(false);
   });
 });
+
+describe("TravelCostEntryIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(TravelCostEntryIdSchema.parse("  id  ")).toBe("id");
+    expect(TravelCostEntryIdSchema.parse("a".repeat(128))).toBe("a".repeat(128));
+    expect(TravelCostEntryIdSchema.parse("  " + "a".repeat(128) + "  ")).toBe(
+      "a".repeat(128),
+    );
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(TravelCostEntryIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
+});
+
+describe.each([PayoutAccountIdSchema, ProofDocumentIdSchema])(
+  "entity identifier",
+  (schema) => {
+    it("trims and enforces the identifier boundaries", () => {
+      expect(schema.parse("  id  ")).toBe("id");
+      expect(schema.parse("x".repeat(128))).toBe("x".repeat(128));
+      expect(schema.safeParse(" ").success).toBe(false);
+      expect(schema.safeParse("x".repeat(129)).success).toBe(false);
+    });
+  },
+);

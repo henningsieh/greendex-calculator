@@ -1,5 +1,5 @@
-import { user } from "@greendex/database/schema";
-import { createUpdateSchema } from "drizzle-zod";
+import { IDENTIFIER_MAX_LENGTH, user } from "@greendex/database/schema";
+import { createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { z } from "zod";
 
 const USER_NAME_MAX_LENGTH = 80;
@@ -15,3 +15,8 @@ export const EditNameSchema = createUpdateSchema(user, {
 })
   .pick({ name: true })
   .required();
+
+export const UserIdSchema = createSelectSchema(user)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);

@@ -14,11 +14,9 @@ import {
   ClaimDraftSchema,
   ClaimPartnershipInputSchema,
   ClaimStatusSchema,
+  PayoutAccountIdSchema,
 } from "@/features/claims/validation-schemas";
-import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -204,7 +202,11 @@ export const createPayoutAccount = authorized
 
 /** Select by reference on the Partnership, without starting a Claim. */
 export const selectPayoutAccount = authorized
-  .input(ClaimPartnershipInputSchema.extend({ payoutAccountId: coordinationId }))
+  .input(
+    ClaimPartnershipInputSchema.extend({
+      payoutAccountId: PayoutAccountIdSchema,
+    }),
+  )
   .output(z.object({ partnershipId: z.string(), payoutAccountId: z.string() }))
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerSide(

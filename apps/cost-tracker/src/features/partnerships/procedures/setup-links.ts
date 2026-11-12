@@ -12,9 +12,11 @@ import {
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { OrganizationIdSchema } from "@/features/organizations/validation-schemas";
 import {
-  CoordinationIdSchema,
+  SetupLinkIdSchema,
   CreateSetupLinkInputSchema,
+  DisableSetupLinkInputSchema,
 } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -111,7 +113,7 @@ export const listSetupLinks = authorized
 
 export const disableSetupLink = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
-  .input(z.object({ id: CoordinationIdSchema }))
+  .input(DisableSetupLinkInputSchema)
   .output(z.object({ disabled: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
     const [link] = await db
@@ -131,7 +133,7 @@ export const disableSetupLink = authorized
   });
 
 const setupLinkInput = z.object({
-  id: CoordinationIdSchema,
+  id: SetupLinkIdSchema,
   secret: z.string().min(1),
 });
 const redemptionResult = z.object({
@@ -295,7 +297,7 @@ export async function readSetupBindingEligibility(
 
 /** Binds only. Better Auth owns Organization creation and Memberships (ADR-0013). */
 export const consumeSetupLink = authorized
-  .input(setupLinkInput.extend({ organizationId: CoordinationIdSchema }))
+  .input(setupLinkInput.extend({ organizationId: OrganizationIdSchema }))
   .output(redemptionResult)
   .handler(async ({ input, context, errors }) => {
     return db.transaction(async (tx) => {

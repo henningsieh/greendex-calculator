@@ -6,7 +6,7 @@ import { LockIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
+import type { z } from "zod";
 
 import { LOGIN_PATH } from "@/app/routes";
 import FormField from "@/components/form-field";
@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
+import { createResetPasswordSchema } from "@/features/authentication/validation-schemas";
 import { authClient } from "@/lib/better-auth/auth-client";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
@@ -36,21 +37,7 @@ export function ResetPasswordForm({
   const router = useRouter();
   const t = useTranslations("authentication");
 
-  const formSchema = useMemo(
-    () =>
-      z
-        .object({
-          password: z.string().min(6, t("validation.passwordMinLength")),
-          confirmPassword: z
-            .string()
-            .min(1, t("validation.passwordConfirmRequired")),
-        })
-        .refine((data) => data.password === data.confirmPassword, {
-          message: t("validation.passwordsNoMatch"),
-          path: ["confirmPassword"],
-        }),
-    [t],
-  );
+  const formSchema = useMemo(() => createResetPasswordSchema(t), [t]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

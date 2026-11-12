@@ -1,5 +1,6 @@
 "use client";
 
+import type { travelCostEntriesTable } from "@greendex/database/schema";
 import { useTranslations } from "@greendex/i18n/client";
 import type { ReactNode } from "react";
 
@@ -99,10 +100,12 @@ export function PayoutAccountLines({
   );
 }
 
-export type ClaimCostRow = {
-  id: string;
+export type ClaimCostRow = Pick<
+  typeof travelCostEntriesTable.$inferSelect,
+  "id" | "amountEur"
+> & {
+  // The server projects persisted enum columns as plain strings.
   transportProfile: string;
-  amountEur: string;
   allocationMethod: string;
   allocations: ReactNode;
   documents: ReactNode;

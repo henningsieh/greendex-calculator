@@ -33,11 +33,12 @@ import {
   groupHostedParticipants,
   type HostedParticipantRow,
 } from "@/features/participations/hosted-participant-report";
-import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+import { ProjectParticipationIdSchema } from "@/features/participations/validation-schemas";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
+import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
+import { ProjectDetailInputSchema } from "@/features/projects/validation-schemas";
+import { UserIdSchema } from "@/features/user-settings/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -68,8 +69,8 @@ const scopeContext = z.object({
   hostOrganizationId: z.string(),
   assignedCoordinator: z.boolean(),
 });
-const scopeInput = z.object({ partnershipId: coordinationId });
-const rowInput = scopeInput.extend({ id: coordinationId });
+const scopeInput = z.object({ partnershipId: ProjectPartnershipIdSchema });
+const rowInput = scopeInput.extend({ id: ProjectParticipationIdSchema });
 
 /**
  * The Hosting Participant view (ADR-0016): one group per
@@ -302,7 +303,7 @@ export function createParticipationProcedures(
     });
 
   const create = authorized
-    .input(scopeInput.extend({ userId: coordinationId }))
+    .input(scopeInput.extend({ userId: UserIdSchema }))
     .output(participation)
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(
@@ -596,7 +597,7 @@ export function createParticipationProcedures(
     });
 
   const listHosted = authorized
-    .input(z.object({ projectId: coordinationId }))
+    .input(ProjectDetailInputSchema)
     .output(z.array(participation))
     .handler(async ({ input, context, errors }) => {
       await requireHostCoordination(
@@ -623,7 +624,7 @@ export function createParticipationProcedures(
    * refused here too.
    */
   const listHostedReport = authorized
-    .input(z.object({ projectId: coordinationId }))
+    .input(ProjectDetailInputSchema)
     .output(hostedReport)
     .handler(async ({ input, context, errors }) => {
       await requireHostCoordination(
@@ -685,7 +686,7 @@ export function createParticipationProcedures(
     });
 
   const listMine = authorized
-    .input(z.object({ projectId: coordinationId }))
+    .input(ProjectDetailInputSchema)
     .output(z.array(participation))
     .handler(async ({ input, context, errors }) => {
       const agreement = currentAgreement();

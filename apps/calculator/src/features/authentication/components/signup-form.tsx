@@ -6,7 +6,7 @@ import { UserPlusIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
+import type { z } from "zod";
 
 import { DASHBOARD_PATH, LOGIN_PATH } from "@/app/routes";
 import FormField from "@/components/form-field";
@@ -28,6 +28,7 @@ import {
 import { env } from "@/env";
 import { normalizeRedirectPath } from "@/features/authentication/components/auth-flow-layout";
 import { SocialButtons } from "@/features/authentication/components/social-buttons";
+import { createSignupSchema } from "@/features/authentication/validation-schemas";
 import { authClient } from "@/lib/better-auth/auth-client";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
@@ -53,23 +54,7 @@ export function SignupForm({
   const t = useTranslations("authentication");
   const router = useRouter();
 
-  const formSchema = useMemo(
-    () =>
-      z
-        .object({
-          name: z.string().min(1, t("validation.fullNameRequired")),
-          email: z.email(t("validation.emailInvalid")),
-          password: z.string().min(6, t("validation.passwordMinLength")),
-          confirmPassword: z
-            .string()
-            .min(1, t("validation.passwordConfirmRequired")),
-        })
-        .refine((data) => data.password === data.confirmPassword, {
-          message: t("validation.passwordsNoMatch"),
-          path: ["confirmPassword"],
-        }),
-    [t],
-  );
+  const formSchema = useMemo(() => createSignupSchema(t), [t]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

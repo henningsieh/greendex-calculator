@@ -10,13 +10,16 @@ import { z } from "zod";
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
 import { issueEntryToken } from "@/features/participant-onboarding/procedures/entry-tokens";
 import { requirePartnerScopeAuthority } from "@/features/participant-onboarding/procedures/participant-entry";
-import { id } from "@/features/participant-onboarding/procedures/shared";
+import {
+  CreateParticipantRegistrationLinkInputSchema,
+  SetParticipantRegistrationLinkOpenInputSchema,
+} from "@/features/participant-onboarding/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildCreateRegistrationLink() {
   return authorized
-    .input(z.object({ partnershipId: id }))
+    .input(CreateParticipantRegistrationLinkInputSchema)
     .output(z.object({ id: z.string(), secret: z.string() }))
     .handler(async ({ input, context, errors }) => {
       const partnership = await requirePartnerScopeAuthority(
@@ -41,7 +44,7 @@ export function buildCreateRegistrationLink() {
 
 export function buildSetRegistrationLinkOpen() {
   return authorized
-    .input(z.object({ id, open: z.boolean() }))
+    .input(SetParticipantRegistrationLinkOpenInputSchema)
     .output(z.object({ open: z.boolean() }))
     .handler(async ({ input, context, errors }) => {
       const [token] = await db

@@ -1,12 +1,15 @@
 import type { ParticipantTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
+import type { projectSharedTravelLegsTable } from "@greendex/database/schema";
 
 /** A generated travel record displayed only in the mock live view. */
-export interface ParticipantTravelLeg {
-  id: string;
+export type ParticipantTravelLeg = Pick<
+  typeof projectSharedTravelLegsTable.$inferSelect,
+  "id" | "distanceKm"
+> & {
+  // Mock journeys can include plane, which the persisted table enum excludes.
   transportEmissionProfile: ParticipantTransportEmissionProfile;
-  distanceKm: number;
   co2Kg: number;
-}
+};
 
 /** Generated participant data displayed only in the mock live view. */
 export interface LiveViewParticipant {

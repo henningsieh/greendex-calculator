@@ -9,6 +9,7 @@ import {
   type ROOM_OCCUPANCY_VALUES,
 } from "@greendex/config/participate";
 import type { ParticipantTransportEmissionProfile } from "@greendex/config/transport-emission-profiles";
+import type { projectSharedTravelLegsTable } from "@greendex/database/schema";
 import type { z } from "zod";
 
 import type { ParticipantSchema } from "@/features/participants/validation-schemas";
@@ -150,12 +151,14 @@ export type ParticipantTravelLegTransportEmissionProfile =
  * A Participant Travel Leg computed from questionnaire responses for UI display.
  * It is not persisted in the database.
  */
-export interface ParticipantTravelLeg {
-  id: string;
+export type ParticipantTravelLeg = Pick<
+  typeof projectSharedTravelLegsTable.$inferSelect,
+  "id" | "distanceKm"
+> & {
+  // Participant journeys can include plane, which the persisted table enum excludes.
   transportEmissionProfile: ParticipantTravelLegTransportEmissionProfile;
-  distanceKm: number;
   co2Kg: number;
-}
+};
 
 // Computed fields type for participant statistics
 // These are calculated on-the-fly and are not stored in the database

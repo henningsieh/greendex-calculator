@@ -1,11 +1,19 @@
-import { projectPartnerOrganizationsTable } from "@greendex/database/schema";
+import {
+  IDENTIFIER_MAX_LENGTH,
+  organization,
+  partnerOrganizationSetupLinksTable,
+  projectPartnerOrganizationsTable,
+} from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { CoordinationIdSchema } from "@/features/partnerships/coordination-id-schema";
 import { ProjectIdSchema } from "@/features/projects/validation-schemas";
+import { UserIdSchema } from "@/features/user-settings/validation-schemas";
 
-export { CoordinationIdSchema };
+const ProjectPartnershipSelectSchema = createSelectSchema(
+  projectPartnerOrganizationsTable,
+);
+
 export const SetupLinkEmailSchema = z
   .email({
     error: (issue) => (issue.input === "" ? "emailRequired" : "emailInvalid"),
@@ -17,24 +25,19 @@ export const CreateSetupLinkInputSchema = z.object({
   recipientEmail: SetupLinkEmailSchema,
 });
 
-export const ProjectPartnershipSchema = z.object({
-  id: z.string(),
-  projectId: z.string(),
-  projectName: z.string(),
-  organizationId: z.string(),
-  organizationName: z.string(),
-  assignedAt: z.date(),
-  updatedAt: z.date(),
-});
-
-const PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH = 128;
-
 const ProjectPartnershipInsertSchema = createInsertSchema(
   projectPartnerOrganizationsTable,
 );
-const ProjectPartnershipSelectSchema = createSelectSchema(
-  projectPartnerOrganizationsTable,
-);
+export const ProjectPartnershipSchema = z.object({
+  id: ProjectPartnershipSelectSchema.shape.id,
+  projectId: ProjectPartnershipSelectSchema.shape.projectId,
+  projectName: z.string(),
+  organizationId: ProjectPartnershipSelectSchema.shape.organizationId,
+  organizationName: z.string(),
+  // The assignment time is the partnership row's creation time.
+  assignedAt: ProjectPartnershipSelectSchema.shape.createdAt,
+  updatedAt: ProjectPartnershipSelectSchema.shape.updatedAt,
+});
 
 export const AssignProjectPartnershipInputSchema =
   ProjectPartnershipInsertSchema.pick({
@@ -42,19 +45,37 @@ export const AssignProjectPartnershipInputSchema =
     organizationId: true,
   }).safeExtend({
     projectId: ProjectIdSchema,
-    organizationId: z
-      .string()
-      .trim()
+    organizationId: createSelectSchema(organization)
+      .shape.id.trim()
       .min(1, "organizationIdRequired")
-      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH, "organizationIdTooLong"),
+      .max(IDENTIFIER_MAX_LENGTH, "organizationIdTooLong"),
   });
+
+export const ProjectPartnershipIdSchema = ProjectPartnershipSelectSchema.shape.id
+  .trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);
 
 export const RemoveProjectPartnershipInputSchema =
   ProjectPartnershipSelectSchema.pick({ id: true }).safeExtend({
-    id: z.string().trim().min(1).max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+    id: ProjectPartnershipIdSchema,
   });
 
 export const RemoveProjectPartnershipResultSchema = z.object({
-  id: z.string(),
+  id: ProjectPartnershipSelectSchema.shape.id,
   removed: z.literal(true),
 });
+
+export const SetupLinkIdSchema = createSelectSchema(
+  partnerOrganizationSetupLinksTable,
+)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);
+
+export const PartnerCoordinatorInputSchema = z.object({
+  partnershipId: ProjectPartnershipIdSchema,
+  userId: UserIdSchema,
+});
+
+export const DisableSetupLinkInputSchema = z.object({ id: SetupLinkIdSchema });

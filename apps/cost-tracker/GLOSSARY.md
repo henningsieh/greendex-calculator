@@ -45,7 +45,7 @@ An invitation into an Organization role for colleagues, distinct from participan
 _Avoid_: Participant Invitation, Participant Registration Link
 
 **Review Task**:
-A coordination object scoped to one Project Partnership concerning duplicate identity within a Project.
+A review work item scoped to one Project Partnership concerning duplicate identity within a Project.
 _Avoid_: Claim review, inline notice (as storage)
 
 **Cost Submission Window**:
@@ -75,3 +75,7 @@ _Avoid_: Ticket (when referring to the cost record), Participant Journey
 **Cost Allocation**:
 The association between one Travel Cost Entry and one covered Project Participation.
 _Avoid_: Beneficiary, Claimant
+
+**Coordination** (internal, not a domain entity):
+The permission scope an actor holds inside one Project Partnership: the Hosting Organization side or the Partner Organization side. It is an authorization concept only, so schemas and identifiers name the entity whose data they describe instead of reusing this word.
+_Avoid_: CoordinationId, CoordinationIdSchema, coordination object, coordination helper module

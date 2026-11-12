@@ -6,7 +6,7 @@ import { KeyRoundIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
+import type { z } from "zod";
 
 import { LOGIN_PATH, RESET_PASSWORD_PATH } from "@/app/routes";
 import FormField from "@/components/form-field";
@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
+import { createForgotPasswordSchema } from "@/features/authentication/validation-schemas";
 import { authClient } from "@/lib/better-auth/auth-client";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
@@ -40,13 +41,7 @@ export function ForgotPasswordForm({
 }: React.ComponentProps<"div">) {
   const t = useTranslations("authentication");
 
-  const formSchema = useMemo(
-    () =>
-      z.object({
-        email: z.email(t("validation.emailInvalid")),
-      }),
-    [t],
-  );
+  const formSchema = useMemo(() => createForgotPasswordSchema(t), [t]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
