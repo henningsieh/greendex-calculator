@@ -11,6 +11,10 @@
     "oxlint-i18n.test.ts",
     "oxlint-tailwind-scope.test.ts",
     "check-cost-tracker-persistence-seam.ts",
-    "check-cost-tracker-persistence-seam.test.ts"
+    "check-cost-tracker-persistence-seam.test.ts",
+    "check-schema-derivation.ts",
+    "check-schema-derivation.test.ts",
+    "oxlint-domain.test.ts",
+    "schema-derivation.ts"
   ]
 }

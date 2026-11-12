@@ -8,6 +8,7 @@
     "check:agent-instructions": "tsx scripts/check-agent-instructions.ts && vitest run scripts/check-agent-instructions.policy.test.ts",
     "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
+    "check:schema-derivation": "tsx scripts/check-schema-derivation.ts",
     "check:tailwind": "oxlint -c oxlint.tailwind.json apps packages",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "turbo run db:generate",
@@ -17,7 +18,7 @@
     "db:studio": "turbo run db:studio",
     "dev": "turbo run dev",
     "format": "turbo run format && oxfmt scripts turbo.json tsconfig.json tsconfig.base.json vitest.config.mts package.json pnpm-workspace.yaml",
-    "lint": "turbo run lint --concurrency 1 && pnpm run check:tailwind && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam && pnpm run check:no-copy-assertions",
+    "lint": "turbo run lint --concurrency 1 && pnpm run check:tailwind && pnpm run check:schema-derivation && pnpm run check:agent-instructions && pnpm run check:cost-tracker-persistence-seam && pnpm run check:no-copy-assertions",
     "lint:design-system": "pnpm --filter @greendex/calculator run lint:design-system && pnpm --filter @greendex/cost-tracker run lint:design-system && pnpm --filter @greendex/documentation run lint:design-system",
     "predev": "pnpm run db:migrate && dotenv -e apps/calculator/.env -- dotenv -e apps/documentation/.env -- dotenv -e apps/cost-tracker/.env -- node scripts/prepare-dev-ports.mjs",
     "prepare": "husky",
@@ -34,6 +35,7 @@
     "turbo": "^2.11.10"
   },
   "devDependencies": {
+    "@greendex/database": "workspace:*",
     "@shadcn/lint": "^0.2.4",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
@@ -41,6 +43,7 @@
     "drizzle-orm": "catalog:",
     "eslint-plugin-better-tailwindcss": "catalog:",
     "husky": "^9.1.7",
+    "oxc-parser": "0.158.0",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "^7.0.2005",
