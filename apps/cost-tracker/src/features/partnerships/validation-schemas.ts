@@ -2,10 +2,15 @@ import { projectPartnerOrganizationsTable } from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { CoordinationIdSchema } from "@/features/partnerships/coordination-id-schema";
 import { ProjectIdSchema } from "@/features/projects/validation-schemas";
 
-export { CoordinationIdSchema };
+/**
+ * Opaque identifier shared by coordination-scoped records (Project,
+ * Partnership, Participant, Entry). Declared here so identifier policy has one
+ * owning module instead of a separate helper file.
+ */
+export const CoordinationIdSchema = z.string().trim().min(1).max(128);
+
 export const SetupLinkEmailSchema = z
   .email({
     error: (issue) => (issue.input === "" ? "emailRequired" : "emailInvalid"),

@@ -55,6 +55,27 @@ const schemaBuilders = new Set([
 
 const zodModules = new Set(["zod", "zod/mini", "zod/v4"]);
 
+/** `id`, `projectId`, `completedByUserId` — but not `valid` or `grid`. */
+const identifierKey = /^(?:id|[a-z][A-Za-z0-9]*Id)$/u;
+
+/** `ProjectIdSchema`, `CoordinationIdSchema` — identifier schemas themselves. */
+const identifierSchemaName = /^[A-Z][A-Za-z0-9]*IdSchema$/u;
+
+/** Composite builders describe a shape, not one identifier. */
+const compositeBuilders = new Set([
+  "array",
+  "discriminatedUnion",
+  "intersection",
+  "looseObject",
+  "map",
+  "object",
+  "record",
+  "set",
+  "strictObject",
+  "tuple",
+  "union",
+]);
+
 function importedBinding(context, identifier) {
   let scope = context.sourceCode.getScope(identifier);
   while (scope) {
@@ -80,6 +101,39 @@ function chainRoot(node) {
   let current = node;
   while (current.type === "MemberExpression") current = current.object;
   return current.type === "Identifier" ? current : undefined;
+}
+
+/** First schema builder in a value expression: `z.string().min(1)` -> `z.string()`. */
+function builderInChain(context, node) {
+  let current = node;
+  for (;;) {
+    if (current.type === "CallExpression") {
+      if (isSchemaBuilderCall(context, current)) return current;
+      current = current.callee;
+      continue;
+    }
+    if (current.type === "MemberExpression") {
+      current = current.object;
+      continue;
+    }
+    if (
+      current.type === "TSAsExpression" ||
+      current.type === "TSNonNullExpression" ||
+      current.type === "ParenthesizedExpression"
+    ) {
+      current = current.expression;
+      continue;
+    }
+    return undefined;
+  }
+}
+
+function propertyKey(node) {
+  if (!("key" in node) || node.computed) return undefined;
+  const { key } = node;
+  if (key.type === "Identifier") return key.name;
+  if (key.type === "Literal" && typeof key.value === "string") return key.value;
+  return undefined;
 }
 
 function isSchemaBuilderCall(context, node) {
@@ -136,6 +190,45 @@ export default {
               if (isSchemaBuilderCall(context, ancestor)) return;
             }
             context.report({ node: top, messageId: "local" });
+          },
+        };
+      },
+    },
+    "schema-derived-identifier": {
+      meta: {
+        type: "suggestion",
+        messages: {
+          local:
+            "Derive `{{key}}` from the table schema — reuse an <X>IdSchema or `createSelectSchema(table).shape.<column>` — instead of declaring a new Zod schema.",
+          declaration:
+            "Derive `{{key}}` from the table column (`createSelectSchema(table).shape.<column>`) instead of declaring a new Zod schema.",
+        },
+      },
+      create(context) {
+        return {
+          VariableDeclarator(node) {
+            if (node.id.type !== "Identifier") return;
+            if (!identifierSchemaName.test(node.id.name)) return;
+            if (!node.init) return;
+            const builder = builderInChain(context, node.init);
+            if (!builder || compositeBuilders.has(builder.callee.property.name)) {
+              return;
+            }
+            context.report({
+              node: node.init,
+              messageId: "declaration",
+              data: { key: node.id.name },
+            });
+          },
+          Property(node) {
+            const key = propertyKey(node);
+            if (!key || !identifierKey.test(key)) return;
+            if (!builderInChain(context, node.value)) return;
+            context.report({
+              node: node.value,
+              messageId: "local",
+              data: { key },
+            });
           },
         };
       },

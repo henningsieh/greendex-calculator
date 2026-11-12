@@ -5,7 +5,7 @@ import {
   decimalUnits,
   TOTAL_ALLOCATION_PERCENTAGE_UNITS,
 } from "@/features/claims/payable";
-import { CoordinationIdSchema } from "@/features/partnerships/coordination-id-schema";
+import { CoordinationIdSchema } from "@/features/partnerships/validation-schemas";
 
 const money = z
   .string({ error: "entryAmountRequired" })

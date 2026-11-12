@@ -15,7 +15,9 @@ import { describe, expect, it } from "vitest";
 const root = resolve(import.meta.dirname, "..");
 const scopedFile =
   "apps/cost-tracker/src/features/example/components/example-form.tsx";
+const schemaFile = "apps/cost-tracker/src/features/example/validation-schemas.ts";
 const rule = "greendex-domain(validation-schema-location)";
+const identifierRule = "greendex-domain(schema-derived-identifier)";
 
 function lint(source: string, file = scopedFile) {
   const fixture = mkdtempSync(join(tmpdir(), "oxlint-domain-"));
@@ -36,6 +38,10 @@ function lint(source: string, file = scopedFile) {
             files: ["apps/*/src/features/**/components/**/*.{ts,tsx}"],
             rules: { "greendex-domain/validation-schema-location": "warn" },
           },
+          {
+            files: ["apps/*/src/**/validation-schemas.ts"],
+            rules: { "greendex-domain/schema-derived-identifier": "warn" },
+          },
         ],
       }),
     );
@@ -52,8 +58,8 @@ function lint(source: string, file = scopedFile) {
   }
 }
 
-function findings(output: string) {
-  return output.split("\n").filter((line) => line.includes(rule));
+function findings(output: string, ruleId = rule) {
+  return output.split("\n").filter((line) => line.includes(ruleId));
 }
 
 describe("greendex-domain/validation-schema-location", () => {
@@ -128,5 +134,124 @@ describe("greendex-domain/validation-schema-location", () => {
       "apps/cost-tracker/src/features/example/validation-schemas.ts",
     );
     expect(findings(result.output)).toHaveLength(0);
+  });
+});
+
+describe("greendex-domain/schema-derived-identifier", () => {
+  it("reports hand-written identifier validation in a schema module", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const InputSchema = z.object({",
+        "  id: z.string(),",
+        "  projectId: z.string().trim().min(1).max(128),",
+        "});",
+      ].join("\n"),
+      schemaFile,
+    );
+    expect(result.status).toBe(0);
+    const reported = findings(result.output, identifierRule);
+    expect(reported).toHaveLength(2);
+    expect(reported[0]).toContain(`${schemaFile}:3:`);
+    expect(reported[1]).toContain(`${schemaFile}:4:`);
+  });
+
+  it("reports nested and refined identifier chains once each", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const DetailSchema = z.object({",
+        "  hostingOrganization: z.object({ id: z.string(), name: z.string() }),",
+        "  completedByUserId: z.string().nullable(),",
+        "});",
+      ].join("\n"),
+      schemaFile,
+    );
+    expect(findings(result.output, identifierRule)).toHaveLength(2);
+  });
+
+  it("allows identifiers derived from the table schema", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        'import { ProjectIdSchema } from "@/features/projects/validation-schemas";',
+        "export const InputSchema = z.object({",
+        "  projectId: ProjectIdSchema,",
+        "  id: projectsTable.shape.id,",
+        "  organizationId: persistedSelectSchema.shape.organizationId,",
+        "});",
+      ].join("\n"),
+      schemaFile,
+    );
+    expect(findings(result.output, identifierRule)).toHaveLength(0);
+  });
+
+  it("ignores non-identifier keys that end in other letters", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const InputSchema = z.object({",
+        "  name: z.string(),",
+        "  grid: z.string(),",
+        "  valid: z.string(),",
+        "  ids: z.array(z.string()),",
+        "});",
+      ].join("\n"),
+      schemaFile,
+    );
+    expect(findings(result.output, identifierRule)).toHaveLength(0);
+  });
+
+  it("reports a standalone identifier schema declaration", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const CoordinationIdSchema = z.string().trim().min(1).max(128);",
+      ].join("\n"),
+      schemaFile,
+    );
+    expect(findings(result.output, identifierRule)).toHaveLength(1);
+    expect(findings(result.output, identifierRule)[0]).toContain(
+      "`CoordinationIdSchema`",
+    );
+  });
+
+  it("allows schemas derived from the table column", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        'import { createSelectSchema } from "drizzle-zod";',
+        "export const ProjectIdSchema = createSelectSchema(projectsTable)",
+        "  .shape.id.trim()",
+        "  .min(1)",
+        "  .max(128);",
+      ].join("\n"),
+      schemaFile,
+    );
+    expect(findings(result.output, identifierRule)).toHaveLength(0);
+  });
+
+  it("does not treat an object wrapper named *IdSchema as an identifier", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const ClaimPartnershipIdSchema = z.object({",
+        "  partnershipId: CoordinationIdSchema,",
+        "});",
+      ].join("\n"),
+      schemaFile,
+    );
+    expect(findings(result.output, identifierRule)).toHaveLength(0);
+  });
+
+  it("stays silent outside schema modules", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const local = z.object({ id: z.string() });",
+      ].join("\n"),
+      scopedFile,
+    );
+    expect(findings(result.output, identifierRule)).toHaveLength(0);
   });
 });

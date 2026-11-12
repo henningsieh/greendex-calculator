@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { CoordinationIdSchema } from "@/features/partnerships/coordination-id-schema";
+import { CoordinationIdSchema } from "@/features/partnerships/validation-schemas";
 
 export const JourneyInputSchema = z.object({
   partnershipId: CoordinationIdSchema,
