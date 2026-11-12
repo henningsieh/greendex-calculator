@@ -88,6 +88,32 @@ describe("greendex-domain/validation-schema-location", () => {
     expect(findings(result.output)[0]).toContain(`${scopedFile}:2:`);
   });
 
+  it("reports a named zod builder import", () => {
+    const result = lint(
+      [
+        'import { email, object } from "zod";',
+        "export const schema = object({",
+        '  email: email("invalid"),',
+        "});",
+      ].join("\n"),
+    );
+    expect(result.status).toBe(0);
+    const reported = findings(result.output);
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toContain(`${scopedFile}:2:`);
+  });
+
+  it("reports an ISO datetime builder", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const createdAt = z.iso.datetime();",
+      ].join("\n"),
+    );
+    expect(findings(result.output)).toHaveLength(1);
+    expect(findings(result.output)[0]).toContain(`${scopedFile}:2:`);
+  });
+
   it("reports one finding per schema expression, not per nested builder", () => {
     const result = lint(
       [
@@ -224,6 +250,23 @@ describe("greendex-domain/schema-derived-identifier", () => {
     expect(findings(result.output, identifierRule)[0]).toContain(
       "`CoordinationIdSchema`",
     );
+  });
+
+  it("allows a hand-built base piped into a derived schema", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        'import { ProjectIdSchema } from "@/features/projects/validation-schemas";',
+        "export const InputSchema = z.object({",
+        "  projectId: z.string().trim().pipe(ProjectIdSchema),",
+        "  id: z.string(),",
+        "});",
+      ].join("\n"),
+      schemaFile,
+    );
+    const reported = findings(result.output, identifierRule);
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toContain(`${schemaFile}:5:`);
   });
 
   it("allows schemas derived from the table column", () => {

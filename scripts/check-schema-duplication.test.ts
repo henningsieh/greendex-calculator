@@ -76,6 +76,72 @@ describe("findDuplicates", () => {
     expect(groups).toHaveLength(0);
   });
 
+  it("ignores shapes with spread properties", () => {
+    const groups = findDuplicates([
+      {
+        file: fileA,
+        source: source(
+          [
+            "export const A = z.object({",
+            "  ...baseShape,",
+            "  id: z.string(),",
+            "  note: z.string(),",
+            "});",
+          ].join("\n"),
+        ),
+      },
+      {
+        file: fileB,
+        source: source(
+          [
+            "export const B = z.object({",
+            "  ...otherShape,",
+            "  id: z.string(),",
+            "  note: z.string(),",
+            "});",
+          ].join("\n"),
+        ),
+      },
+    ]);
+    expect(groups).toHaveLength(0);
+  });
+
+  it("keeps whitespace inside string literals significant", () => {
+    const groups = findDuplicates([
+      {
+        file: fileA,
+        source: source(
+          'export const A = z.object({ city: z.literal("New York"), status: z.string() });',
+        ),
+      },
+      {
+        file: fileB,
+        source: source(
+          'export const B = z.object({ city: z.literal("NewYork"), status: z.string() });',
+        ),
+      },
+    ]);
+    expect(groups).toHaveLength(0);
+  });
+
+  it("scans an object shape wrapped in modifiers", () => {
+    const groups = findDuplicates([
+      {
+        file: fileA,
+        source: source(
+          "export const A = z.object({ id: z.string(), note: z.string() }).partial();",
+        ),
+      },
+      {
+        file: fileB,
+        source: source(
+          "export const B = z.object({ id: z.string(), note: z.string() });",
+        ),
+      },
+    ]);
+    expect(groups).toHaveLength(1);
+  });
+
   it("ignores single-property literals", () => {
     const groups = findDuplicates([
       {

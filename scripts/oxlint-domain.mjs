@@ -17,7 +17,9 @@ const schemaBuilders = new Set([
   "coerce",
   "custom",
   "date",
+  "datetime",
   "discriminatedUnion",
+  "duration",
   "email",
   "enum",
   "function",
@@ -44,6 +46,7 @@ const schemaBuilders = new Set([
   "string",
   "symbol",
   "templateLiteral",
+  "time",
   "tuple",
   "undefined",
   "union",
@@ -88,6 +91,16 @@ function importedBinding(context, identifier) {
     scope = scope.upper;
   }
   return undefined;
+}
+
+/** Imported name of a binding: `import { object as shape }` -> `object`. */
+function importedName(definition) {
+  const specifier = definition.node;
+  if (specifier?.type === "ImportDefaultSpecifier") return "default";
+  if (specifier?.type !== "ImportSpecifier") return undefined;
+  return specifier.imported?.type === "Identifier"
+    ? specifier.imported.name
+    : undefined;
 }
 
 function isZodNamespace(context, identifier) {
@@ -139,6 +152,12 @@ function propertyKey(node) {
 function isSchemaBuilderCall(context, node) {
   if (node.type !== "CallExpression") return false;
   const { callee } = node;
+  if (callee.type === "Identifier") {
+    const imported = importedBinding(context, callee);
+    if (!imported) return false;
+    if (!zodModules.has(imported.parent?.source?.value)) return false;
+    return schemaBuilders.has(importedName(imported));
+  }
   if (callee.type !== "MemberExpression" || callee.computed) return false;
   const { property } = callee;
   if (property.type !== "Identifier") return false;
@@ -162,6 +181,18 @@ function expressionTop(node) {
     if (!continuesChain) return current;
     current = parent;
   }
+}
+
+/** A final `.pipe(...)` delegates validation to the derived schema. */
+function endsInPipe(node) {
+  const top = expressionTop(node);
+  return (
+    top.type === "CallExpression" &&
+    top.callee.type === "MemberExpression" &&
+    top.callee.computed !== true &&
+    top.callee.property.type === "Identifier" &&
+    top.callee.property.name === "pipe"
+  );
 }
 
 export default {
@@ -214,6 +245,7 @@ export default {
             if (!builder || compositeBuilders.has(builder.callee.property.name)) {
               return;
             }
+            if (endsInPipe(node.init)) return;
             context.report({
               node: node.init,
               messageId: "declaration",
@@ -224,6 +256,7 @@ export default {
             const key = propertyKey(node);
             if (!key || !identifierKey.test(key)) return;
             if (!builderInChain(context, node.value)) return;
+            if (endsInPipe(node.value)) return;
             context.report({
               node: node.value,
               messageId: "local",

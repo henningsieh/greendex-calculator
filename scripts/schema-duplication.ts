@@ -9,12 +9,13 @@ import type { Node } from "oxc-parser";
 import { parseSync } from "oxc-parser";
 
 import {
+  getZodObjectCall,
   importsZodSchema,
-  isZodObjectCall,
   lineAt,
   lineStarts,
   propertyName,
   walk,
+  zodNamespaceNames,
 } from "./schema-ast";
 
 export type DuplicateEntry = {
@@ -36,13 +37,45 @@ type Candidate = {
   signature: string;
 };
 
+/** Remove formatting whitespace without touching string or template literals. */
+function stripWhitespaceOutsideLiterals(value: string): string {
+  let result = "";
+  let quote: string | undefined;
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (quote !== undefined) {
+      result += character;
+      if (character === "\\") {
+        index += 1;
+        if (index < value.length) result += value[index];
+      } else if (character === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (character === "'" || character === '"' || character === "`") {
+      quote = character;
+      result += character;
+      continue;
+    }
+    if (!/\s/u.test(character)) result += character;
+  }
+  return result;
+}
+
 function candidateOf(
   source: string,
   literal: { properties: readonly unknown[] },
 ): Candidate | undefined {
-  const entries = literal.properties
-    .filter((property) => property !== null && typeof property === "object")
-    .filter((property) => (property as { type?: string }).type === "Property")
+  const properties = literal.properties.filter(
+    (property): property is { type?: string } =>
+      property !== null && typeof property === "object",
+  );
+  if (properties.some((property) => property.type === "SpreadElement")) {
+    return undefined;
+  }
+  const entries = properties
+    .filter((property) => property.type === "Property")
     .map((property) => {
       const typed = property as Parameters<typeof propertyName>[0];
       const key = propertyName(typed);
@@ -50,7 +83,9 @@ function candidateOf(
       const value = (typed as { value: { start: number; end: number } }).value;
       return {
         key,
-        value: source.slice(value.start, value.end).replace(/\s+/gu, ""),
+        value: stripWhitespaceOutsideLiterals(
+          source.slice(value.start, value.end),
+        ),
       };
     })
     .filter((entry): entry is { key: string; value: string } => Boolean(entry));
@@ -74,14 +109,15 @@ export function findDuplicates(
       throw new Error(`${file}: ${errors[0].message}`);
     }
     if (!importsZodSchema(program)) continue;
+    const namespaces = zodNamespaceNames(program);
     const starts = lineStarts(source);
 
     walk(program as unknown as Node, (node) => {
       if (node.type !== "VariableDeclarator") return;
       if (node.id.type !== "Identifier") return;
-      const init = node.init;
-      if (!isZodObjectCall(init)) return;
-      const literal = init.arguments[0];
+      const objectCall = getZodObjectCall(node.init, namespaces);
+      if (!objectCall) return;
+      const literal = objectCall.arguments[0];
       if (!literal || literal.type !== "ObjectExpression") return;
 
       const candidate = candidateOf(source, literal);

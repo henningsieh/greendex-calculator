@@ -11,12 +11,13 @@ import type { Expression, Node } from "oxc-parser";
 import { parseSync } from "oxc-parser";
 
 import {
+  getZodObjectCall,
   importsZodSchema,
-  isZodObjectCall,
   lineAt,
   lineStarts,
   propertyName,
   walk,
+  zodNamespaceNames,
 } from "./schema-ast";
 
 export type TableIndex = ReadonlyMap<string, ReadonlySet<string>>;
@@ -34,8 +35,34 @@ const MIN_OVERLAP = 3;
 /** Most of the literal's keys must belong to the matched table. */
 const MIN_SHARE = 0.5;
 
-/** Combinators that delegate validation to another schema. */
-const derivedCombinators = new Set(["and", "or", "pipe"]);
+/** Combinators that derive when any branch derives. */
+const anyBranchCombinators = new Set(["and", "pipe"]);
+/** Union combinators are hand-typed as soon as one branch is. */
+const unionFormingCombinators = new Set(["or", "union"]);
+
+type CallNode = Extract<Expression, { type: "CallExpression" }>;
+
+/** Schema branches of a union call, including the `.or()` receiver. */
+function unionBranches(
+  object: Expression,
+  call: CallNode,
+  name: string,
+): Expression[] {
+  const branches: Expression[] = name === "or" ? [object] : [];
+  for (const argument of call.arguments) {
+    if (argument.type === "SpreadElement") continue;
+    if (argument.type === "ArrayExpression") {
+      for (const element of argument.elements) {
+        if (element !== null && element.type !== "SpreadElement") {
+          branches.push(element);
+        }
+      }
+      continue;
+    }
+    branches.push(argument);
+  }
+  return branches;
+}
 
 /**
  * A value derives from the database when its callee chain reaches a table
@@ -71,9 +98,13 @@ export function isDerivedExpression(expression: Expression | null): boolean {
           callee.computed !== true && callee.property.type === "Identifier"
             ? callee.property.name
             : undefined;
+        if (name !== undefined && unionFormingCombinators.has(name)) {
+          const branches = unionBranches(callee.object, current, name);
+          return branches.length > 0 && branches.every(isDerivedExpression);
+        }
         const delegates =
           name !== undefined &&
-          (derivedCombinators.has(name) ||
+          (anyBranchCombinators.has(name) ||
             (name === "enum" &&
               callee.object.type === "Identifier" &&
               callee.object.name === "z"));
@@ -139,6 +170,7 @@ export function scanSource(
     throw new Error(`${file}: ${errors[0].message}`);
   }
   if (!importsZodSchema(program)) return [];
+  const namespaces = zodNamespaceNames(program);
 
   const starts = lineStarts(source);
   const violations: SchemaViolation[] = [];
@@ -146,10 +178,10 @@ export function scanSource(
   walk(program as unknown as Node, (node) => {
     if (node.type !== "VariableDeclarator") return;
     if (node.id.type !== "Identifier") return;
-    const init = node.init;
-    if (!isZodObjectCall(init)) return;
+    const objectCall = getZodObjectCall(node.init, namespaces);
+    if (!objectCall) return;
 
-    const literal = init.arguments[0];
+    const literal = objectCall.arguments[0];
     if (!literal || literal.type !== "ObjectExpression") return;
 
     const entries = literal.properties

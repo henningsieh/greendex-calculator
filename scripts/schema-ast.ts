@@ -25,34 +25,91 @@ export function propertyName(property: ObjectProperty): string | undefined {
   return undefined;
 }
 
+const zodModules = new Set(["zod", "zod/mini", "zod/v4"]);
+const defaultZodNamespaces: ReadonlySet<string> = new Set(["z"]);
+const zodObjectBuilders = new Set(["looseObject", "object", "strictObject"]);
+
+function isZodModule(source: string): boolean {
+  return zodModules.has(source);
+}
+
 export function importsZodSchema(program: Program): boolean {
-  return program.body.some((statement) => {
-    if (statement.type !== "ImportDeclaration") return false;
-    if (statement.source.value !== "zod") return false;
-    return statement.specifiers.some((specifier) => {
-      if (specifier.type === "ImportSpecifier") {
-        return specifier.imported.type === "Identifier"
-          ? specifier.imported.name === "z"
-          : false;
+  return program.body.some(
+    (statement) =>
+      statement.type === "ImportDeclaration" &&
+      isZodModule(statement.source.value) &&
+      statement.specifiers.length > 0,
+  );
+}
+
+/** Locals that hold the zod module: namespace, default and `{ z }` imports. */
+export function zodNamespaceNames(program: Program): Set<string> {
+  const names = new Set<string>();
+  for (const statement of program.body) {
+    if (statement.type !== "ImportDeclaration") continue;
+    if (!isZodModule(statement.source.value)) continue;
+    for (const specifier of statement.specifiers) {
+      if (
+        specifier.type === "ImportNamespaceSpecifier" ||
+        specifier.type === "ImportDefaultSpecifier"
+      ) {
+        names.add(specifier.local.name);
+        continue;
       }
-      return specifier.local.name === "z";
-    });
-  });
+      if (
+        specifier.type === "ImportSpecifier" &&
+        specifier.imported.type === "Identifier" &&
+        specifier.imported.name === "z"
+      ) {
+        names.add(specifier.local.name);
+      }
+    }
+  }
+  return names;
+}
+
+/**
+ * Base object call of a schema expression, unwrapping modifiers such as
+ * `z.object({…}).partial()` to the `z.object({…})` they refine.
+ */
+export function getZodObjectCall(
+  expression: Expression | null,
+  namespaces: ReadonlySet<string> = defaultZodNamespaces,
+): ZodObjectCall | undefined {
+  let current = expression;
+  while (
+    current !== null &&
+    current.type === "CallExpression" &&
+    current.callee.type === "MemberExpression" &&
+    current.callee.object.type === "CallExpression"
+  ) {
+    current = current.callee.object;
+  }
+  if (current === null || current.type !== "CallExpression") return undefined;
+  const { callee } = current;
+  if (callee.type !== "MemberExpression" || callee.computed === true) {
+    return undefined;
+  }
+  if (
+    callee.object.type !== "Identifier" ||
+    !namespaces.has(callee.object.name)
+  ) {
+    return undefined;
+  }
+  if (
+    callee.property.type !== "Identifier" ||
+    !zodObjectBuilders.has(callee.property.name)
+  ) {
+    return undefined;
+  }
+  return current;
 }
 
 export function isZodObjectCall(
   expression: Expression | null,
+  namespaces: ReadonlySet<string> = defaultZodNamespaces,
 ): expression is ZodObjectCall {
-  if (!expression || expression.type !== "CallExpression") return false;
-  const { callee } = expression;
-  return (
-    callee.type === "MemberExpression" &&
-    callee.computed !== true &&
-    callee.object.type === "Identifier" &&
-    callee.object.name === "z" &&
-    callee.property.type === "Identifier" &&
-    callee.property.name === "object"
-  );
+  return getZodObjectCall(expression, namespaces) !== undefined;
 }
 
 export function lineStarts(source: string): readonly number[] {

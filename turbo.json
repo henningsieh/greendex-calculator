@@ -22,6 +22,7 @@
         "$TURBO_ROOT$/.oxlintrc.json",
         "$TURBO_ROOT$/package.json",
         "$TURBO_ROOT$/pnpm-lock.yaml",
+        "$TURBO_ROOT$/scripts/oxlint-domain.mjs",
         "$TURBO_ROOT$/scripts/oxlint-i18n.mjs"
       ]
     },

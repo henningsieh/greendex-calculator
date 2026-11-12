@@ -132,6 +132,37 @@ describe("scanSource", () => {
     expect(violations).toHaveLength(0);
   });
 
+  it("reports a union mixing a hand-written and a derived branch", () => {
+    const violations = scan(
+      [
+        'import { z } from "zod";',
+        "export const DraftSchema = z.object({",
+        "  id: claimsTable.shape.id,",
+        "  partnershipId: claimsTable.shape.partnershipId,",
+        "  status: z.string().or(claimsTable.shape.status),",
+        "});",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].attributes).toEqual(["status"]);
+  });
+
+  it("accepts a union whose branches all derive", () => {
+    const violations = scan(
+      [
+        'import { z } from "zod";',
+        "export const DraftSchema = z.object({",
+        "  id: claimsTable.shape.id,",
+        "  partnershipId: claimsTable.shape.partnershipId,",
+        "  status: claimsTable.shape.status",
+        "    .or(claimsTable.shape.status)",
+        "    .or(claimsTable.shape.status),",
+        "});",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(0);
+  });
+
   it("still reports a hand-written enum list", () => {
     const violations = scan(
       [
@@ -188,6 +219,21 @@ describe("scanSource", () => {
       ].join("\n"),
     );
     expect(violations).toHaveLength(0);
+  });
+
+  it("recognizes a namespaced import of another zod module", () => {
+    const violations = scan(
+      [
+        'import * as zod from "zod/v4";',
+        "export const ClaimDraftSchema = zod.object({",
+        "  id: zod.string(),",
+        "  partnershipId: zod.string(),",
+        "  status: zod.string(),",
+        "});",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].attributes).toEqual(["id", "partnershipId", "status"]);
   });
 
   it("ignores files that do not import zod", () => {
