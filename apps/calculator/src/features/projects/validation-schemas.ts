@@ -67,6 +67,40 @@ export const ProjectUpdateFormSchema = createUpdateSchema(projectsTable)
     country: projectFormExtensions.country.optional(),
   });
 
+const projectSelectShape = createSelectSchema(projectsTable).shape;
+const projectId = projectSelectShape.id;
+
+export const ListProjectsInputSchema = z
+  .object({
+    sort_by: ProjectSortFieldSchema.default("startDate").optional(),
+    archived: projectSelectShape.archived.optional(),
+  })
+  .optional();
+
+export const ProjectIdInputSchema = z.object({
+  id: projectId.describe("Project ID"),
+});
+
+export const UpdateProjectInputSchema = ProjectIdInputSchema.extend({
+  data: ProjectUpdateFormSchema,
+});
+
+export const ArchiveProjectInputSchema = ProjectIdInputSchema.extend({
+  archived: projectSelectShape.archived.describe("Archive status"),
+});
+
+export const SetActiveProjectInputSchema = z.object({
+  projectId: projectId.optional(),
+});
+
+export const ProjectParticipantsInputSchema = z.object({
+  projectId: projectId.describe("Project ID"),
+});
+
+export const BatchDeleteProjectsInputSchema = z.object({
+  projectIds: z.array(projectId).min(1),
+});
+
 // ============================================================================
 // PROJECT SHARED TRAVEL LEG FORM SCHEMAS
 // ============================================================================

@@ -24,8 +24,13 @@ import { authorized, requireProjectPermissions } from "@/lib/orpc/middleware";
 
 import {
   ProjectCreateFormSchema,
-  ProjectSortFieldSchema,
-  ProjectUpdateFormSchema,
+  ListProjectsInputSchema,
+  ProjectIdInputSchema,
+  UpdateProjectInputSchema,
+  ArchiveProjectInputSchema,
+  SetActiveProjectInputSchema,
+  ProjectParticipantsInputSchema,
+  BatchDeleteProjectsInputSchema,
   ProjectForParticipationSchema,
   ProjectWithRelationsSchema,
 } from "./validation-schemas";
@@ -134,14 +139,7 @@ export const listProjects = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z
-      .object({
-        sort_by: ProjectSortFieldSchema.default("startDate").optional(),
-        archived: z.boolean().optional(),
-      })
-      .optional(),
-  )
+  .input(ListProjectsInputSchema)
   .output(z.array(ProjectWithRelationsSchema))
   .handler(async ({ input, context, errors }) => {
     if (!context.session.activeOrganizationId) {
@@ -192,11 +190,7 @@ export const getProjectById = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z.object({
-      id: z.string().describe("Project ID"),
-    }),
-  )
+  .input(ProjectIdInputSchema)
   .output(ProjectWithRelationsSchema)
   .handler(async ({ input, context, errors }) => {
     if (!context.session.activeOrganizationId) {
@@ -255,12 +249,7 @@ export const updateProject = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z.object({
-      id: z.string().describe("Project ID"),
-      data: ProjectUpdateFormSchema,
-    }),
-  )
+  .input(UpdateProjectInputSchema)
   .output(
     z.object({
       success: z.boolean(),
@@ -343,11 +332,7 @@ export const deleteProject = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z.object({
-      id: z.string().describe("Project ID"),
-    }),
-  )
+  .input(ProjectIdInputSchema)
   .output(
     z.object({
       success: z.boolean(),
@@ -426,12 +411,7 @@ export const archiveProject = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z.object({
-      id: z.string().describe("Project ID"),
-      archived: z.boolean().describe("Archive status"),
-    }),
-  )
+  .input(ArchiveProjectInputSchema)
   .output(
     z.object({
       success: z.boolean(),
@@ -529,11 +509,7 @@ export const setActiveProject = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z.object({
-      projectId: z.string().optional(),
-    }),
-  )
+  .input(SetActiveProjectInputSchema)
   .handler(async ({ input, context, errors }) => {
     // If projectId is provided, verify user has access to it
     if (input.projectId) {
@@ -618,11 +594,7 @@ export const getProjectParticipants = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z.object({
-      projectId: z.string().describe("Project ID"),
-    }),
-  )
+  .input(ProjectParticipantsInputSchema)
   .output(z.array(ProjectParticipantWithUserSchema))
   .handler(async ({ input, context, errors }) => {
     if (!context.session.activeOrganizationId) {
@@ -707,11 +679,7 @@ export const batchDeleteProjects = authorized
       tags: ["project"],
     }),
   )
-  .input(
-    z.object({
-      projectIds: z.array(z.string()).min(1),
-    }),
-  )
+  .input(BatchDeleteProjectsInputSchema)
   .output(
     z.object({
       success: z.boolean(),
@@ -802,11 +770,7 @@ export const getProjectForParticipation = base
       tags: ["project", "public"],
     }),
   )
-  .input(
-    z.object({
-      id: z.string().describe("Project ID"),
-    }),
-  )
+  .input(ProjectIdInputSchema)
   .output(ProjectForParticipationSchema)
   .handler(async ({ input, errors }) => {
     // Fetch project (no organization check needed for public participation)

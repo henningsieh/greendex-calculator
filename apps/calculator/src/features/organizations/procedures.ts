@@ -12,13 +12,14 @@ import { z } from "zod";
 
 import {
   canonicalCalculatorRole,
-  USERS_SORT_FIELDS,
   type MemberRole,
   type MemberSortField,
 } from "@/features/organizations/types";
 import {
   MemberRoleSchema,
   MemberWithUserSchema,
+  SearchMembersInputSchema,
+  OrganizationStatsInputSchema,
 } from "@/features/organizations/validation-schemas";
 import { auth } from "@/lib/better-auth";
 import { base } from "@/lib/orpc/context";
@@ -186,24 +187,7 @@ export const searchMembers = authorized
       tags: ["Organizations"],
     }),
   )
-  .input(
-    z.object({
-      organizationId: z.string(),
-      filters: z
-        .object({
-          roles: z.array(MemberRoleSchema).optional(),
-          // Simple search string to match against user name or email
-          search: z.string().optional(),
-          // Sorting: a field name (e.g. "createdAt" | "user.name" | "email")
-          sortBy: z.enum(USERS_SORT_FIELDS).optional(),
-          sortDirection: z.enum(["asc", "desc"]).optional(),
-          // limit/offset for pagination
-          limit: z.number().optional(),
-          offset: z.number().optional(),
-        })
-        .optional(),
-    }),
-  )
+  .input(SearchMembersInputSchema)
   .output(
     z.object({
       members: z.array(MemberWithUserSchema),
@@ -299,11 +283,7 @@ export const getOrganizationStats = authorized
       tags: ["Organizations"],
     }),
   )
-  .input(
-    z.object({
-      organizationId: z.string(),
-    }),
-  )
+  .input(OrganizationStatsInputSchema)
   .output(
     z.object({
       totalProjects: z.number(),
