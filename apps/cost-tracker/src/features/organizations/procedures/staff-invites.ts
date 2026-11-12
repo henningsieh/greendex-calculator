@@ -21,7 +21,7 @@ import {
   AcceptOrganizationInvitationInputSchema,
   OptionalEmptyInputSchema,
 } from "@/features/organizations/validation-schemas";
-import { normalizedEmail } from "@/features/participant-onboarding/procedures/shared";
+import { NormalizedEmailSchema } from "@/features/participant-onboarding/validation-schemas";
 import { auth } from "@/lib/auth";
 import {
   normalizeBetterAuthError,
@@ -65,7 +65,7 @@ const PendingInvitationSchema = z.object({
 });
 
 const InviteInputSchema = z.object({
-  email: normalizedEmail,
+  email: NormalizedEmailSchema,
   role: StaffRoleSchema,
 });
 

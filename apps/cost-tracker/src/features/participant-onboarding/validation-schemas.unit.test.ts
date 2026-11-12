@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import {
+  NormalizedEmailSchema,
   ParticipantInvitationEmailInputSchema,
   SetParticipantInvitationOpenInputSchema,
   CreateParticipantRegistrationLinkInputSchema,
@@ -15,6 +16,15 @@ function issues(schema: z.ZodType, value: unknown) {
     ? []
     : result.error.issues.map(({ path, message }) => ({ path, message }));
 }
+
+describe("normalized email", () => {
+  it("trims and lowercases valid emails and rejects invalid emails", () => {
+    expect(NormalizedEmailSchema.parse(" A@EXAMPLE.COM ")).toBe("a@example.com");
+    expect(issues(NormalizedEmailSchema, "bad")).toEqual([
+      { path: [], message: "Invalid email address" },
+    ]);
+  });
+});
 
 describe("onboarding inputs", () => {
   it("normalizes email but preserves raw partnership IDs and strips unknown keys", () => {

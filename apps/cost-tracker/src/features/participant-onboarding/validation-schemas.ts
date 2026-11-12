@@ -12,11 +12,15 @@ const partnershipId = tokenColumns.shape.partnershipId
   .min(1)
   .max(IDENTIFIER_MAX_LENGTH);
 const invitationId = tokenColumns.shape.id.min(1).max(IDENTIFIER_MAX_LENGTH);
-const normalizedEmail = z.string().trim().toLowerCase().pipe(z.email());
+export const NormalizedEmailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email());
 
 export const ParticipantInvitationEmailInputSchema = z.object({
   partnershipId,
-  email: normalizedEmail,
+  email: NormalizedEmailSchema,
 });
 export const SetParticipantInvitationOpenInputSchema = z.object({
   invitationId,

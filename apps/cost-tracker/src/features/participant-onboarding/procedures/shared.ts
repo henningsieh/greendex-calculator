@@ -21,7 +21,6 @@ const MAX_ID_LENGTH = 128;
 const MAX_FULL_NAME_LENGTH = 200;
 
 export const id = z.string().min(MIN_REQUIRED_LENGTH).max(MAX_ID_LENGTH);
-export const normalizedEmail = z.string().trim().toLowerCase().pipe(z.email());
 export const secretHash = (secret: string) =>
   createHash("sha256").update(secret).digest("hex");
 export const success = z.object({ success: z.literal(true) });
