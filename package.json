@@ -9,7 +9,7 @@
     "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
     "check:schema-derivation": "tsx scripts/check-schema-derivation.ts --gate",
-    "check:schema-duplication": "tsx scripts/check-schema-duplication.ts",
+    "check:schema-duplication": "tsx scripts/check-schema-duplication.ts --gate",
     "check:schema-types": "tsx scripts/check-schema-types.ts",
     "check:tailwind": "oxlint -c oxlint.tailwind.json apps packages",
     "clean": "turbo run clean && rm -rf node_modules",
