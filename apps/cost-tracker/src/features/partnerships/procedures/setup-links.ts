@@ -16,6 +16,7 @@ import { OrganizationIdSchema } from "@/features/organizations/validation-schema
 import {
   SetupLinkIdSchema,
   CreateSetupLinkInputSchema,
+  DisableSetupLinkInputSchema,
 } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
@@ -112,7 +113,7 @@ export const listSetupLinks = authorized
 
 export const disableSetupLink = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
-  .input(z.object({ id: SetupLinkIdSchema }))
+  .input(DisableSetupLinkInputSchema)
   .output(z.object({ disabled: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
     const [link] = await db

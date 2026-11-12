@@ -8,6 +8,7 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { ProjectIdSchema } from "@/features/projects/validation-schemas";
+import { UserIdSchema } from "@/features/user-settings/validation-schemas";
 
 const ProjectPartnershipSelectSchema = createSelectSchema(
   projectPartnerOrganizationsTable,
@@ -71,3 +72,10 @@ export const SetupLinkIdSchema = createSelectSchema(
   .shape.id.trim()
   .min(1)
   .max(IDENTIFIER_MAX_LENGTH);
+
+export const PartnerCoordinatorInputSchema = z.object({
+  partnershipId: ProjectPartnershipIdSchema,
+  userId: UserIdSchema,
+});
+
+export const DisableSetupLinkInputSchema = z.object({ id: SetupLinkIdSchema });

@@ -17,6 +17,10 @@ import {
   hasInvalidOrganizationRole,
   requireCostTrackerRole,
 } from "@/features/organizations/roles";
+import {
+  AcceptOrganizationInvitationInputSchema,
+  OptionalEmptyInputSchema,
+} from "@/features/organizations/validation-schemas";
 import { normalizedEmail } from "@/features/participant-onboarding/procedures/shared";
 import { auth } from "@/lib/auth";
 import {
@@ -118,7 +122,7 @@ async function requireOrganizationManager(
 }
 
 export const listMembers = authorized
-  .input(z.object({}).optional())
+  .input(OptionalEmptyInputSchema)
   .output(z.object({ members: z.array(MemberSchema) }))
   .handler(async ({ context, errors }) => {
     const organizationId = requireActiveOrganization(
@@ -150,7 +154,7 @@ export const listMembers = authorized
   });
 
 export const listPendingInvitations = authorized
-  .input(z.object({}).optional())
+  .input(OptionalEmptyInputSchema)
   .output(z.object({ invitations: z.array(PendingInvitationSchema) }))
   .handler(async ({ context, errors }) => {
     const organizationId = requireActiveOrganization(
@@ -319,7 +323,7 @@ export async function readStaffInvitation(
 }
 
 export const acceptInvitation = authorized
-  .input(z.object({ invitationId: z.string().min(1).max(128) }))
+  .input(AcceptOrganizationInvitationInputSchema)
   .output(z.object({ organizationId: z.string() }))
   .handler(async ({ context, errors, input }) => {
     if (!context.user.emailVerified)
