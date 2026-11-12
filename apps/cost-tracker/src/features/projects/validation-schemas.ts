@@ -2,6 +2,7 @@ import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import {
   IDENTIFIER_MAX_LENGTH,
   claimsTable,
+  organization,
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -9,6 +10,7 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 const projectColumns = createSelectSchema(projectsTable);
+const organizationColumns = createSelectSchema(organization);
 
 export const HostedProjectOptionSchema = projectColumns.pick({
   id: true,
@@ -116,7 +118,9 @@ export const HostedProjectListSchema = z.object({
       partnerOrganizationCount: z.number().int().nonnegative(),
     }),
   }),
-  partnerOptions: z.array(z.object({ id: z.string(), name: z.string() })),
+  partnerOptions: z.array(
+    z.object({ id: organizationColumns.shape.id, name: z.string() }),
+  ),
 });
 
 export const PartnerProjectListSchema = z.object({
@@ -180,10 +184,13 @@ export const ProjectDetailSchema = z.discriminatedUnion("relationship", [
   }),
   ProjectDetailBaseSchema.extend({
     relationship: z.literal("partner"),
-    hostingOrganization: z.object({ id: z.string(), name: z.string() }),
+    hostingOrganization: z.object({
+      id: organizationColumns.shape.id,
+      name: z.string(),
+    }),
     partnership: z.object({
       claimStatus: ProjectClaimStatusSchema.nullable(),
-      id: z.string(),
+      id: ProjectPartnershipColumns.shape.id,
       assignedAt: z.date(),
       updatedAt: z.date(),
     }),

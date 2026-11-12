@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   HostedProjectListInputSchema,
+  HostedProjectListSchema,
+  ProjectDetailSchema,
   PartnerProjectListInputSchema,
   ProjectCreateInputSchema,
   ProjectDetailInputSchema,
@@ -121,6 +123,44 @@ describe("Project list input", () => {
       }).partnerOrganizationIds,
     ).toEqual(["org-a", "org-b"]);
   });
+});
+
+describe("Project outputs", () => {
+  it.each(["  id  ", "", "   ", "a".repeat(129)])(
+    "preserves organization and partnership identifiers %s",
+    (id) => {
+      const metrics = {
+        projectCount: 0,
+        openWindowCount: 0,
+        partnerOrganizationCount: 0,
+      };
+      expect(
+        HostedProjectListSchema.parse({
+          scope: "hosted",
+          rows: [],
+          metrics: { whole: metrics, filtered: metrics },
+          partnerOptions: [{ id, name: "Partner" }],
+        }).partnerOptions,
+      ).toEqual([{ id, name: "Partner" }]);
+
+      const date = new Date("2026-01-01");
+      const detail = ProjectDetailSchema.parse({
+        ...validCreateInput(),
+        id: "project",
+        archived: false,
+        costSubmissionWindowOpen: false,
+        completedAt: null,
+        completedByUserId: null,
+        relationship: "partner",
+        hostingOrganization: { id, name: "Host" },
+        partnership: { id, claimStatus: null, assignedAt: date, updatedAt: date },
+      });
+      expect(detail).toMatchObject({
+        hostingOrganization: { id, name: "Host" },
+        partnership: { id, claimStatus: null, assignedAt: date, updatedAt: date },
+      });
+    },
+  );
 });
 
 describe("Project detail input", () => {

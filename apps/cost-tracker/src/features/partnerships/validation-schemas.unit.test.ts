@@ -10,6 +10,7 @@ import {
   CreateSetupLinkInputSchema,
   SetupLinkEmailSchema,
   RemoveProjectPartnershipInputSchema,
+  RemoveProjectPartnershipResultSchema,
 } from "@/features/partnerships/validation-schemas";
 import { ProjectDetailInputSchema } from "@/features/projects/validation-schemas";
 
@@ -157,6 +158,20 @@ describe("Project Partnership persisted form schemas", () => {
         .success,
     ).toBe(false);
   });
+});
+
+describe("Project Partnership removal output", () => {
+  it.each(["  id  ", "", "   ", "a".repeat(129)])(
+    "preserves the returned identifier %s",
+    (id) => {
+      expect(
+        RemoveProjectPartnershipResultSchema.parse({ id, removed: true }),
+      ).toEqual({
+        id,
+        removed: true,
+      });
+    },
+  );
 });
 
 describe("ProjectPartnershipIdSchema", () => {
