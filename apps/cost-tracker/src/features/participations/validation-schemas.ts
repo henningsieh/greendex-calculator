@@ -1,4 +1,8 @@
-import { participantJourneysTable } from "@greendex/database/schema";
+import {
+  IDENTIFIER_MAX_LENGTH,
+  participantJourneysTable,
+  projectParticipantsTable,
+} from "@greendex/database/schema";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -27,3 +31,10 @@ export const JourneyInputSchema = z.object({
     .regex(/^\d{1,10}(?:\.\d{1,2})?$/, "journeyDistanceRequired")
     .refine((value) => Number(value) > 0, "journeyDistanceRequired"),
 });
+
+export const ProjectParticipationIdSchema = createSelectSchema(
+  projectParticipantsTable,
+)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);

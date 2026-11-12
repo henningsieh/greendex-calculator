@@ -1,4 +1,8 @@
-import { projectPartnerOrganizationsTable } from "@greendex/database/schema";
+import {
+  IDENTIFIER_MAX_LENGTH,
+  partnerOrganizationSetupLinksTable,
+  projectPartnerOrganizationsTable,
+} from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,7 +13,11 @@ import { ProjectIdSchema } from "@/features/projects/validation-schemas";
  * Partnership, Participant, Entry). Declared here so identifier policy has one
  * owning module instead of a separate helper file.
  */
-export const CoordinationIdSchema = z.string().trim().min(1).max(128);
+export const CoordinationIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);
 
 export const SetupLinkEmailSchema = z
   .email({
@@ -40,8 +48,6 @@ export const ProjectPartnershipSchema = z.object({
   updatedAt: ProjectPartnershipSelectSchema.shape.updatedAt,
 });
 
-const PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH = 128;
-
 export const AssignProjectPartnershipInputSchema =
   ProjectPartnershipInsertSchema.pick({
     projectId: true,
@@ -52,15 +58,29 @@ export const AssignProjectPartnershipInputSchema =
       .string()
       .trim()
       .min(1, "organizationIdRequired")
-      .max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH, "organizationIdTooLong"),
+      .max(IDENTIFIER_MAX_LENGTH, "organizationIdTooLong"),
   });
 
 export const RemoveProjectPartnershipInputSchema =
   ProjectPartnershipSelectSchema.pick({ id: true }).safeExtend({
-    id: z.string().trim().min(1).max(PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH),
+    id: z.string().trim().min(1).max(IDENTIFIER_MAX_LENGTH),
   });
 
 export const RemoveProjectPartnershipResultSchema = z.object({
   id: z.string(),
   removed: z.literal(true),
 });
+
+export const ProjectPartnershipIdSchema = createSelectSchema(
+  projectPartnerOrganizationsTable,
+)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);
+
+export const SetupLinkIdSchema = createSelectSchema(
+  partnerOrganizationSetupLinksTable,
+)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);

@@ -1,4 +1,8 @@
-import { claimsTable } from "@greendex/database/schema";
+import {
+  IDENTIFIER_MAX_LENGTH,
+  claimsTable,
+  travelCostEntriesTable,
+} from "@greendex/database/schema";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -21,3 +25,8 @@ export const ClaimDraftSchema = ClaimSelectSchema.pick({
 }).extend({
   status: ClaimStatusSchema.extract(["editable", "correction_requested"]),
 });
+
+export const TravelCostEntryIdSchema = createSelectSchema(travelCostEntriesTable)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);

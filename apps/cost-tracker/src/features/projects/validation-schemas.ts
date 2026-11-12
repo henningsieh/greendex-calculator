@@ -1,5 +1,6 @@
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
 import {
+  IDENTIFIER_MAX_LENGTH,
   claimsTable,
   projectPartnerOrganizationsTable,
   projectsTable,
@@ -78,7 +79,7 @@ const ProjectListInputBaseSchema = z
 export const HostedProjectListInputSchema = ProjectListInputBaseSchema.safeExtend(
   {
     partnerOrganizationIds: z
-      .array(z.string().trim().min(1).max(128))
+      .array(z.string().trim().min(1).max(IDENTIFIER_MAX_LENGTH))
       .max(20)
       .default([])
       .transform((ids) => [...new Set(ids)].sort()),
@@ -135,11 +136,10 @@ export const ProjectListScopeAvailabilitySchema = z.object({
   canCreate: z.boolean(),
 });
 
-export const PROJECT_ID_MAX_LENGTH = 128;
 export const ProjectIdSchema = createSelectSchema(projectsTable)
   .shape.id.trim()
   .min(1, "projectIdRequired")
-  .max(PROJECT_ID_MAX_LENGTH, "projectIdTooLong");
+  .max(IDENTIFIER_MAX_LENGTH, "projectIdTooLong");
 
 export const ProjectDetailInputSchema = z.object({
   projectId: ProjectIdSchema,

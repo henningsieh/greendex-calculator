@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { JourneyInputSchema } from "@/features/participations/validation-schemas";
+import {
+  JourneyInputSchema,
+  ProjectParticipationIdSchema,
+} from "@/features/participations/validation-schemas";
 
 const valid = {
   partnershipId: " partnership ",
@@ -59,6 +62,25 @@ describe("Journey input", () => {
         JourneyInputSchema.safeParse({ ...valid, erasmusDistanceKm: distance })
           .success,
       ).toBe(true);
+    },
+  );
+});
+
+describe("ProjectParticipationIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(ProjectParticipationIdSchema.parse("  id  ")).toBe("id");
+    expect(ProjectParticipationIdSchema.parse("a".repeat(128))).toBe(
+      "a".repeat(128),
+    );
+    expect(
+      ProjectParticipationIdSchema.parse("  " + "a".repeat(128) + "  "),
+    ).toBe("a".repeat(128));
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(ProjectParticipationIdSchema.safeParse(value).success).toBe(false);
     },
   );
 });

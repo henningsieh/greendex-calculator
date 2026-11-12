@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { EditNameSchema } from "@/features/user-settings/validation-schemas";
+import {
+  EditNameSchema,
+  UserIdSchema,
+} from "@/features/user-settings/validation-schemas";
 
 describe("EditNameSchema", () => {
   it("accepts and trims a valid name", () => {
@@ -38,4 +41,21 @@ describe("EditNameSchema", () => {
   it("requires the name field", () => {
     expect(EditNameSchema.safeParse({}).success).toBe(false);
   });
+});
+
+describe("UserIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(UserIdSchema.parse("  id  ")).toBe("id");
+    expect(UserIdSchema.parse("a".repeat(128))).toBe("a".repeat(128));
+    expect(UserIdSchema.parse("  " + "a".repeat(128) + "  ")).toBe(
+      "a".repeat(128),
+    );
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(UserIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
 });

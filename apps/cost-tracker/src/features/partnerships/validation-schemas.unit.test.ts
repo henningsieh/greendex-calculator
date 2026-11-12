@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import {
   AssignProjectPartnershipInputSchema,
+  ProjectPartnershipIdSchema,
+  SetupLinkIdSchema,
   CoordinationIdSchema,
   CreateSetupLinkInputSchema,
   SetupLinkEmailSchema,
@@ -155,4 +157,40 @@ describe("Project Partnership persisted form schemas", () => {
         .success,
     ).toBe(false);
   });
+});
+
+describe("ProjectPartnershipIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(ProjectPartnershipIdSchema.parse("  id  ")).toBe("id");
+    expect(ProjectPartnershipIdSchema.parse("a".repeat(128))).toBe(
+      "a".repeat(128),
+    );
+    expect(ProjectPartnershipIdSchema.parse("  " + "a".repeat(128) + "  ")).toBe(
+      "a".repeat(128),
+    );
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(ProjectPartnershipIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
+});
+
+describe("SetupLinkIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(SetupLinkIdSchema.parse("  id  ")).toBe("id");
+    expect(SetupLinkIdSchema.parse("a".repeat(128))).toBe("a".repeat(128));
+    expect(SetupLinkIdSchema.parse("  " + "a".repeat(128) + "  ")).toBe(
+      "a".repeat(128),
+    );
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(SetupLinkIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
 });

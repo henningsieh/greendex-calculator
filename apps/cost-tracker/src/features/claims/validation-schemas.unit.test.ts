@@ -9,6 +9,7 @@ import {
   ClaimPartnershipInputSchema,
   ClaimScopeInputSchema,
   ClaimStatusSchema,
+  TravelCostEntryIdSchema,
 } from "@/features/claims/validation-schemas";
 
 describe("Claim validation schemas", () => {
@@ -56,4 +57,21 @@ describe("Claim validation schemas", () => {
       }).success,
     ).toBe(false);
   });
+});
+
+describe("TravelCostEntryIdSchema", () => {
+  it("trims identifiers before validating their length", () => {
+    expect(TravelCostEntryIdSchema.parse("  id  ")).toBe("id");
+    expect(TravelCostEntryIdSchema.parse("a".repeat(128))).toBe("a".repeat(128));
+    expect(TravelCostEntryIdSchema.parse("  " + "a".repeat(128) + "  ")).toBe(
+      "a".repeat(128),
+    );
+  });
+
+  it.each(["", "   ", "a".repeat(129), "  " + "a".repeat(129) + "  "])(
+    "rejects invalid identifier %s",
+    (value) => {
+      expect(TravelCostEntryIdSchema.safeParse(value).success).toBe(false);
+    },
+  );
 });
