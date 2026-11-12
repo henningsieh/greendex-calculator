@@ -16,10 +16,8 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/features/projects/procedures/coordination", () => ({
   requireHostCoordination: mocks.scope,
 }));
-vi.mock("@/features/partnerships/procedures/coordination", async () => {
-  const { z } = await import("zod");
+vi.mock("@/features/partnerships/procedures/coordination", () => {
   return {
-    coordinationId: z.string().min(1),
     requirePartnerCoordination: mocks.scope,
   };
 });
@@ -114,4 +112,19 @@ describe("Participation constraint recovery", () => {
     });
     expect(mocks.reviewInsert).toHaveBeenCalledTimes(1);
   });
+});
+
+describe("Project identifier input", () => {
+  it.each([
+    [" ", "projectIdRequired"],
+    ["x".repeat(129), "projectIdTooLong"],
+  ])(
+    "reports the semantic issue for invalid project IDs",
+    async (projectId, id) => {
+      await expect(client.listHosted({ projectId })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        data: { reason: "INVALID_INPUT", issues: [{ path: ["projectId"], id }] },
+      });
+    },
+  );
 });

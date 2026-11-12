@@ -13,10 +13,8 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({
   auth: { api: { getSession: mocks.getSession } },
 }));
-vi.mock("@/features/partnerships/procedures/coordination", async () => {
-  const { z } = await import("zod");
+vi.mock("@/features/partnerships/procedures/coordination", () => {
   return {
-    coordinationId: z.string().min(1),
     requirePartnerCoordination: mocks.scope,
   };
 });

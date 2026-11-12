@@ -6,7 +6,6 @@ import {
   AssignProjectPartnershipInputSchema,
   ProjectPartnershipIdSchema,
   SetupLinkIdSchema,
-  CoordinationIdSchema,
   CreateSetupLinkInputSchema,
   SetupLinkEmailSchema,
   RemoveProjectPartnershipInputSchema,
@@ -26,10 +25,7 @@ type RemoveProjectPartnershipInput = z.infer<
 >;
 
 describe("Project Partnership persisted form schemas", () => {
-  it("validates shared coordination IDs and setup-link emails without trimming emails", () => {
-    expect(CoordinationIdSchema.parse("  id  ")).toBe("id");
-    expect(CoordinationIdSchema.safeParse(" ").success).toBe(false);
-    expect(CoordinationIdSchema.safeParse("a".repeat(129)).success).toBe(false);
+  it("validates setup-link emails without trimming emails", () => {
     expect(SetupLinkEmailSchema.parse("User@Example.com")).toBe(
       "user@example.com",
     );

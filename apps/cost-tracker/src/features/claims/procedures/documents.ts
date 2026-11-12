@@ -11,11 +11,11 @@ import { z } from "zod";
 
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
-import { ClaimScopeInputSchema } from "@/features/claims/validation-schemas";
 import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+  ClaimScopeInputSchema,
+  ProofDocumentIdSchema,
+} from "@/features/claims/validation-schemas";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 import { getProofFile, putProofFile } from "@/lib/proof-storage";
@@ -84,7 +84,7 @@ export async function downloadProofDocument(input: {
   if (
     !ClaimScopeInputSchema.safeParse({ partnershipId: input.partnershipId })
       .success ||
-    !coordinationId.safeParse(input.documentId).success
+    !ProofDocumentIdSchema.safeParse(input.documentId).success
   ) {
     throw proofErrors.proofNotFound();
   }

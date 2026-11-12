@@ -11,15 +11,14 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireCostTrackerRole } from "@/features/organizations/roles";
-import { CoordinationIdSchema } from "@/features/partnerships/validation-schemas";
+import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
+import { UserIdSchema } from "@/features/user-settings/validation-schemas";
 import {
   createSituationErrors,
   type ScopeErrorConstructors,
 } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
-
-export const coordinationId = CoordinationIdSchema;
 
 type Denial = ScopeErrorConstructors;
 
@@ -94,7 +93,9 @@ export async function requirePartnerCoordination(
 
 /** Organization owners/admins appoint and revoke Partner coordinators without altering roles. */
 export const assignPartnerCoordinator = authorized
-  .input(z.object({ partnershipId: coordinationId, userId: coordinationId }))
+  .input(
+    z.object({ partnershipId: ProjectPartnershipIdSchema, userId: UserIdSchema }),
+  )
   .output(z.object({ assigned: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
     const situation = createSituationErrors(errors);
@@ -158,7 +159,9 @@ export const assignPartnerCoordinator = authorized
   });
 
 export const removePartnerCoordinator = authorized
-  .input(z.object({ partnershipId: coordinationId, userId: coordinationId }))
+  .input(
+    z.object({ partnershipId: ProjectPartnershipIdSchema, userId: UserIdSchema }),
+  )
   .output(z.object({ removed: z.literal(true) }))
   .handler(async ({ input, context, errors }) => {
     const situation = createSituationErrors(errors);

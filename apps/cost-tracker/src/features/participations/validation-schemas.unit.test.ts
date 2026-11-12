@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   JourneyInputSchema,
   ProjectParticipationIdSchema,
+  ReviewTaskIdSchema,
 } from "@/features/participations/validation-schemas";
 
 const valid = {
@@ -83,4 +84,13 @@ describe("ProjectParticipationIdSchema", () => {
       expect(ProjectParticipationIdSchema.safeParse(value).success).toBe(false);
     },
   );
+});
+
+describe("ReviewTaskIdSchema", () => {
+  it("trims and enforces the identifier boundaries", () => {
+    expect(ReviewTaskIdSchema.parse("  id  ")).toBe("id");
+    expect(ReviewTaskIdSchema.parse("x".repeat(128))).toBe("x".repeat(128));
+    expect(ReviewTaskIdSchema.safeParse(" ").success).toBe(false);
+    expect(ReviewTaskIdSchema.safeParse("x".repeat(129)).success).toBe(false);
+  });
 });

@@ -15,11 +15,12 @@ import { isPartnerEditLocked } from "@/features/claims/claim-lifecycle";
 import { CostSaveInputSchema } from "@/features/claims/cost-validation";
 import { decimalUnits, euros } from "@/features/claims/payable";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
-import { ClaimScopeInputSchema } from "@/features/claims/validation-schemas";
 import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+  ClaimScopeInputSchema,
+  ProofDocumentIdSchema,
+  TravelCostEntryIdSchema,
+} from "@/features/claims/validation-schemas";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -243,8 +244,8 @@ export const save = authorized
 export const linkDocument = authorized
   .input(
     ClaimScopeInputSchema.extend({
-      entryId: coordinationId,
-      proofDocumentId: coordinationId,
+      entryId: TravelCostEntryIdSchema,
+      proofDocumentId: ProofDocumentIdSchema,
     }),
   )
   .output(z.object({ linked: z.literal(true) }))

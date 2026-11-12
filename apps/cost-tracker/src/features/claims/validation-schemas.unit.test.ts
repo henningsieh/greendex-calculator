@@ -10,6 +10,8 @@ import {
   ClaimScopeInputSchema,
   ClaimStatusSchema,
   TravelCostEntryIdSchema,
+  PayoutAccountIdSchema,
+  ProofDocumentIdSchema,
 } from "@/features/claims/validation-schemas";
 
 describe("Claim validation schemas", () => {
@@ -75,3 +77,15 @@ describe("TravelCostEntryIdSchema", () => {
     },
   );
 });
+
+describe.each([PayoutAccountIdSchema, ProofDocumentIdSchema])(
+  "entity identifier",
+  (schema) => {
+    it("trims and enforces the identifier boundaries", () => {
+      expect(schema.parse("  id  ")).toBe("id");
+      expect(schema.parse("x".repeat(128))).toBe("x".repeat(128));
+      expect(schema.safeParse(" ").success).toBe(false);
+      expect(schema.safeParse("x".repeat(129)).success).toBe(false);
+    });
+  },
+);

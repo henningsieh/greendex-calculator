@@ -14,14 +14,12 @@ import { z } from "zod";
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
 import { JourneyInputSchema } from "@/features/participations/validation-schemas";
-import {
-  coordinationId,
-  requirePartnerCoordination,
-} from "@/features/partnerships/procedures/coordination";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
+import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
-const scopeInput = z.object({ partnershipId: coordinationId });
+const scopeInput = z.object({ partnershipId: ProjectPartnershipIdSchema });
 const journeyOutput = JourneyInputSchema.omit({ partnershipId: true }).extend({
   id: z.string(),
 });

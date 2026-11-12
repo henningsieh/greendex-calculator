@@ -1,18 +1,20 @@
 import {
   IDENTIFIER_MAX_LENGTH,
   claimsTable,
+  payoutAccountsTable,
+  proofDocumentsTable,
   travelCostEntriesTable,
 } from "@greendex/database/schema";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { CoordinationIdSchema } from "@/features/partnerships/validation-schemas";
+import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 
 const ClaimSelectSchema = createSelectSchema(claimsTable);
 
 export const ClaimStatusSchema = ClaimSelectSchema.shape.status;
 const ClaimPartnershipIdSchema = z.object({
-  partnershipId: CoordinationIdSchema,
+  partnershipId: ProjectPartnershipIdSchema,
 });
 export const ClaimPartnershipInputSchema = ClaimPartnershipIdSchema;
 export const ClaimScopeInputSchema = ClaimPartnershipIdSchema;
@@ -27,6 +29,16 @@ export const ClaimDraftSchema = ClaimSelectSchema.pick({
 });
 
 export const TravelCostEntryIdSchema = createSelectSchema(travelCostEntriesTable)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);
+
+export const PayoutAccountIdSchema = createSelectSchema(payoutAccountsTable)
+  .shape.id.trim()
+  .min(1)
+  .max(IDENTIFIER_MAX_LENGTH);
+
+export const ProofDocumentIdSchema = createSelectSchema(proofDocumentsTable)
   .shape.id.trim()
   .min(1)
   .max(IDENTIFIER_MAX_LENGTH);

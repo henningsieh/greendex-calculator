@@ -13,16 +13,6 @@ const ProjectPartnershipSelectSchema = createSelectSchema(
   projectPartnerOrganizationsTable,
 );
 
-/**
- * Opaque identifier shared by coordination-scoped records (Project,
- * Partnership, Participant, Entry). Declared here so identifier policy has one
- * owning module instead of a separate helper file.
- */
-export const CoordinationIdSchema = ProjectPartnershipSelectSchema.shape.id
-  .trim()
-  .min(1)
-  .max(IDENTIFIER_MAX_LENGTH);
-
 export const SetupLinkEmailSchema = z
   .email({
     error: (issue) => (issue.input === "" ? "emailRequired" : "emailInvalid"),

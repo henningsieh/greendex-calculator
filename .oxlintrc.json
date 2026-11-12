@@ -355,6 +355,12 @@
       }
     },
     {
+      "files": ["apps/cost-tracker/src/**/validation-schemas.ts"],
+      "rules": {
+        "greendex-domain/schema-derived-identifier": "error"
+      }
+    },
+    {
       "files": [
         "apps/*/src/features/**/procedures.ts",
         "apps/*/src/features/**/procedures/**/*.ts"
