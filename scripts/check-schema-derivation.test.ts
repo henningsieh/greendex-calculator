@@ -236,6 +236,21 @@ describe("scanSource", () => {
     expect(violations[0].attributes).toEqual(["id", "partnershipId", "status"]);
   });
 
+  it("resolves an aliased zod import binding", () => {
+    const violations = scan(
+      [
+        'import { z as validator } from "zod";',
+        "export const ClaimDraftSchema = validator.object({",
+        "  id: validator.string(),",
+        "  partnershipId: validator.string(),",
+        "  status: validator.string(),",
+        "});",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].attributes).toEqual(["id", "partnershipId", "status"]);
+  });
+
   it("ignores files that do not import zod", () => {
     const violations = scan(
       [
