@@ -95,10 +95,56 @@ describe("scanSource", () => {
         "  id: PartnershipIdSchema,",
         "  projectId: ProjectIdSchema,",
         "  organizationId: createSelectSchema(organization).shape.id,",
+        "  updatedAt: persistedSelectSchema.shape.updatedAt.nullable(),",
         "});",
       ].join("\n"),
     );
     expect(violations).toHaveLength(0);
+  });
+
+  it("accepts enum options taken from the derived column", () => {
+    const violations = scan(
+      [
+        'import { z } from "zod";',
+        "export const DraftSchema = z.object({",
+        "  id: claimsTable.shape.id,",
+        "  partnershipId: claimsTable.shape.partnershipId,",
+        '  status: z.enum(claimsTable.shape.status.options, { error: "draftStatus" }),',
+        "});",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(0);
+  });
+
+  it("accepts a pipe that validates through the derived column", () => {
+    const violations = scan(
+      [
+        'import { z } from "zod";',
+        "export const JourneySchema = z.object({",
+        '  origin: z.string({ error: "origin" }).pipe(',
+        '    journeysTable.shape.origin.trim().min(1, "origin"),',
+        "  ),",
+        "  destination: journeysTable.shape.destination,",
+        '  tripType: z.enum(journeysTable.shape.tripType.options, { error: "trip" }),',
+        "});",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(0);
+  });
+
+  it("still reports a hand-written enum list", () => {
+    const violations = scan(
+      [
+        'import { z } from "zod";',
+        "export const DraftSchema = z.object({",
+        "  id: claimsTable.shape.id,",
+        "  partnershipId: claimsTable.shape.partnershipId,",
+        '  status: z.enum(["editable", "correction_requested"]),',
+        "});",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].attributes).toEqual(["status"]);
   });
 
   it("ignores literals below the overlap threshold", () => {

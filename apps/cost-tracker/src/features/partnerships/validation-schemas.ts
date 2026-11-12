@@ -22,24 +22,25 @@ export const CreateSetupLinkInputSchema = z.object({
   recipientEmail: SetupLinkEmailSchema,
 });
 
-export const ProjectPartnershipSchema = z.object({
-  id: z.string(),
-  projectId: z.string(),
-  projectName: z.string(),
-  organizationId: z.string(),
-  organizationName: z.string(),
-  assignedAt: z.date(),
-  updatedAt: z.date(),
-});
-
-const PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH = 128;
-
 const ProjectPartnershipInsertSchema = createInsertSchema(
   projectPartnerOrganizationsTable,
 );
 const ProjectPartnershipSelectSchema = createSelectSchema(
   projectPartnerOrganizationsTable,
 );
+
+export const ProjectPartnershipSchema = z.object({
+  id: ProjectPartnershipSelectSchema.shape.id,
+  projectId: ProjectPartnershipSelectSchema.shape.projectId,
+  projectName: z.string(),
+  organizationId: ProjectPartnershipSelectSchema.shape.organizationId,
+  organizationName: z.string(),
+  // The assignment time is the partnership row's creation time.
+  assignedAt: ProjectPartnershipSelectSchema.shape.createdAt,
+  updatedAt: ProjectPartnershipSelectSchema.shape.updatedAt,
+});
+
+const PROJECT_PARTNERSHIP_IDENTIFIER_MAX_LENGTH = 128;
 
 export const AssignProjectPartnershipInputSchema =
   ProjectPartnershipInsertSchema.pick({

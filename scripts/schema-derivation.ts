@@ -31,17 +31,8 @@ const MIN_OVERLAP = 3;
 /** Most of the literal's keys must belong to the matched table. */
 const MIN_SHARE = 0.5;
 
-const derivedChainCalls = new Set([
-  "deepPartial",
-  "extend",
-  "merge",
-  "omit",
-  "optional",
-  "partial",
-  "pick",
-  "required",
-  "safeExtend",
-]);
+/** Combinators that delegate validation to another schema. */
+const derivedCombinators = new Set(["and", "or", "pipe"]);
 
 function propertyName(property: ObjectProperty): string | undefined {
   if (property.computed) return undefined;
@@ -51,50 +42,69 @@ function propertyName(property: ObjectProperty): string | undefined {
   return undefined;
 }
 
-function memberIsDerived(node: MemberExpression): boolean {
-  let current: Node = node;
-  while (current.type === "MemberExpression") {
-    if (
-      current.computed !== true &&
-      current.property.type === "Identifier" &&
-      current.property.name === "shape"
-    ) {
-      return true;
-    }
-    current = current.object;
-  }
-  return current.type === "Identifier" && current.name.endsWith("Schema");
-}
-
-/** A value derives from the database when it references a table column shape. */
+/**
+ * A value derives from the database when its callee chain reaches a table
+ * column shape (`table.shape.column`) or a schema factory/reference, however
+ * many refinements are chained on top (`…shape.name.trim().min(1)`).
+ *
+ * Two compositions keep deriving while carrying a local message:
+ * `z.enum(derivedSchema.options, { error })` takes the value set from the
+ * column, and `base.pipe(derivedSchema)` hands validation to the column.
+ */
 export function isDerivedExpression(expression: Expression | null): boolean {
   if (!expression) return false;
-  switch (expression.type) {
-    case "Identifier":
-      return expression.name.endsWith("Schema");
-    case "MemberExpression":
-      return memberIsDerived(expression);
-    case "CallExpression": {
-      const { callee } = expression;
+  let current: Node = expression;
+  for (;;) {
+    if (current.type === "MemberExpression") {
+      if (
+        current.computed !== true &&
+        current.property.type === "Identifier" &&
+        current.property.name === "shape"
+      ) {
+        return true;
+      }
+      current = current.object;
+      continue;
+    }
+    if (current.type === "CallExpression") {
+      const { callee } = current;
       if (callee.type === "Identifier") {
         return /^create\w*Schema$/u.test(callee.name);
       }
+      const name =
+        callee.computed !== true && callee.property.type === "Identifier"
+          ? callee.property.name
+          : undefined;
+      const delegates =
+        name !== undefined &&
+        (derivedCombinators.has(name) ||
+          (name === "enum" &&
+            callee.object.type === "Identifier" &&
+            callee.object.name === "z"));
       if (
-        callee.type === "MemberExpression" &&
-        callee.computed !== true &&
-        callee.property.type === "Identifier" &&
-        derivedChainCalls.has(callee.property.name)
+        delegates &&
+        current.arguments.some(
+          (argument) =>
+            argument.type !== "SpreadElement" && isDerivedExpression(argument),
+        )
       ) {
-        return isDerivedExpression(callee.object as Expression);
+        return true;
       }
-      return false;
+      current = callee;
+      continue;
     }
-    case "TSAsExpression":
-    case "TSNonNullExpression":
-    case "ParenthesizedExpression":
-      return isDerivedExpression(expression.expression as Expression);
-    default:
-      return false;
+    if (current.type === "Identifier") {
+      return current.name.endsWith("Schema");
+    }
+    if (
+      current.type === "TSAsExpression" ||
+      current.type === "TSNonNullExpression" ||
+      current.type === "ParenthesizedExpression"
+    ) {
+      current = current.expression;
+      continue;
+    }
+    return false;
   }
 }
 

@@ -1,9 +1,15 @@
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
-import { claimsTable, projectsTable } from "@greendex/database/schema";
+import {
+  claimsTable,
+  projectPartnerOrganizationsTable,
+  projectsTable,
+} from "@greendex/database/schema";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const HostedProjectOptionSchema = createSelectSchema(projectsTable).pick({
+const projectColumns = createSelectSchema(projectsTable);
+
+export const HostedProjectOptionSchema = projectColumns.pick({
   id: true,
   name: true,
 });
@@ -81,14 +87,14 @@ export const HostedProjectListInputSchema = ProjectListInputBaseSchema.safeExten
 
 export const PartnerProjectListInputSchema = ProjectListInputBaseSchema;
 
-export const ProjectListRowSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  startDate: z.date(),
-  endDate: z.date(),
-  location: z.string(),
-  country: z.string(),
-  costSubmissionWindowOpen: z.boolean(),
+export const ProjectListRowSchema = projectColumns.pick({
+  id: true,
+  name: true,
+  startDate: true,
+  endDate: true,
+  location: true,
+  country: true,
+  costSubmissionWindowOpen: true,
 });
 
 const ProjectListMetricsSchema = z.object({
@@ -139,28 +145,32 @@ export const ProjectDetailInputSchema = z.object({
   projectId: ProjectIdSchema,
 });
 
-const ProjectDetailBaseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  startDate: z.date(),
-  endDate: z.date(),
-  location: z.string(),
-  country: z.string(),
-  archived: z.boolean(),
-  costSubmissionWindowOpen: z.boolean(),
-  completedAt: z.date().nullable(),
-  completedByUserId: z.string().nullable(),
+const ProjectDetailBaseSchema = projectColumns.pick({
+  id: true,
+  name: true,
+  startDate: true,
+  endDate: true,
+  location: true,
+  country: true,
+  archived: true,
+  costSubmissionWindowOpen: true,
+  completedAt: true,
+  completedByUserId: true,
 });
 
 const ProjectClaimStatusSchema = createSelectSchema(claimsTable).shape.status;
 
+const ProjectPartnershipColumns = createSelectSchema(
+  projectPartnerOrganizationsTable,
+);
+
 const ProjectPartnershipSummarySchema = z.object({
   claimStatus: ProjectClaimStatusSchema.nullable(),
-  id: z.string(),
-  organizationId: z.string(),
+  id: ProjectPartnershipColumns.shape.id,
+  organizationId: ProjectPartnershipColumns.shape.organizationId,
   organizationName: z.string(),
-  assignedAt: z.date(),
-  updatedAt: z.date(),
+  assignedAt: ProjectPartnershipColumns.shape.createdAt,
+  updatedAt: ProjectPartnershipColumns.shape.updatedAt,
 });
 
 export const ProjectDetailSchema = z.discriminatedUnion("relationship", [

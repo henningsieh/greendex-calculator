@@ -8,7 +8,7 @@
     "check:agent-instructions": "tsx scripts/check-agent-instructions.ts && vitest run scripts/check-agent-instructions.policy.test.ts",
     "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
-    "check:schema-derivation": "tsx scripts/check-schema-derivation.ts",
+    "check:schema-derivation": "tsx scripts/check-schema-derivation.ts --gate",
     "check:tailwind": "oxlint -c oxlint.tailwind.json apps packages",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "turbo run db:generate",
