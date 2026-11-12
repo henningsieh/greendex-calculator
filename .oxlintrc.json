@@ -342,7 +342,7 @@
         "**/*.stories.*"
       ],
       "rules": {
-        "greendex-domain/validation-schema-location": "warn"
+        "greendex-domain/validation-schema-location": "error"
       }
     },
     {

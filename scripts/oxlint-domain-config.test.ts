@@ -13,10 +13,10 @@ import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = resolve(import.meta.dirname, "..");
-function lint(app: string, source: string) {
+function lint(app: string, source: string, component = false) {
   const fixture = mkdtempSync(join(tmpdir(), "oxlint-domain-config-"));
   try {
-    const file = `apps/${app}/src/features/example/validation-schemas.ts`;
+    const file = `apps/${app}/src/features/example/${component ? "components/example-form.tsx" : "validation-schemas.ts"}`;
     mkdirSync(dirname(join(fixture, file)), { recursive: true });
     mkdirSync(join(fixture, "scripts"));
     symlinkSync(join(root, "node_modules"), join(fixture, "node_modules"), "dir");
@@ -59,6 +59,38 @@ describe("repository identifier rule configuration", () => {
       expect(result.status, result.output).toBe(0);
       expect(result.output).not.toContain(
         "greendex-domain(schema-derived-identifier)",
+      );
+    },
+  );
+});
+
+describe("repository component schema location rule", () => {
+  it.each(["calculator", "cost-tracker"])(
+    "rejects an inline schema in %s",
+    (app) => {
+      const result = lint(
+        app,
+        'import { z } from "zod";\n\nexport const schema = z.object({ email: z.email() });',
+        true,
+      );
+      expect(result.status, result.output).toBe(1);
+      expect(result.output).toContain(
+        "error greendex-domain(validation-schema-location)",
+      );
+    },
+  );
+
+  it.each(["calculator", "cost-tracker"])(
+    "accepts an imported factory in %s",
+    (app) => {
+      const result = lint(
+        app,
+        'import { createSchema } from "@/features/example/validation-schemas";\n\nexport const schema = createSchema();',
+        true,
+      );
+      expect(result.status, result.output).toBe(0);
+      expect(result.output).not.toContain(
+        "greendex-domain(validation-schema-location)",
       );
     },
   );
