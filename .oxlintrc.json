@@ -356,6 +356,22 @@
     },
     {
       "files": [
+        "apps/*/src/features/**/procedures.ts",
+        "apps/*/src/features/**/procedures/**/*.ts"
+      ],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.unit.*",
+        "**/*.integration.*"
+      ],
+      "rules": {
+        "greendex-domain/procedure-input-schema": "warn"
+      }
+    },
+    {
+      "files": [
         "apps/cost-tracker/src/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
         "packages/**/src/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
       ],

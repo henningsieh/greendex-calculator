@@ -16,8 +16,11 @@ const root = resolve(import.meta.dirname, "..");
 const scopedFile =
   "apps/cost-tracker/src/features/example/components/example-form.tsx";
 const schemaFile = "apps/cost-tracker/src/features/example/validation-schemas.ts";
+const procedureFile =
+  "apps/cost-tracker/src/features/example/procedures/example.ts";
 const rule = "greendex-domain(validation-schema-location)";
 const identifierRule = "greendex-domain(schema-derived-identifier)";
+const inputRule = "greendex-domain(procedure-input-schema)";
 
 function lint(source: string, file = scopedFile) {
   const fixture = mkdtempSync(join(tmpdir(), "oxlint-domain-"));
@@ -41,6 +44,13 @@ function lint(source: string, file = scopedFile) {
           {
             files: ["apps/*/src/**/validation-schemas.ts"],
             rules: { "greendex-domain/schema-derived-identifier": "warn" },
+          },
+          {
+            files: [
+              "apps/*/src/features/**/procedures.ts",
+              "apps/*/src/features/**/procedures/**/*.ts",
+            ],
+            rules: { "greendex-domain/procedure-input-schema": "warn" },
           },
         ],
       }),
@@ -253,5 +263,75 @@ describe("greendex-domain/schema-derived-identifier", () => {
       scopedFile,
     );
     expect(findings(result.output, identifierRule)).toHaveLength(0);
+  });
+});
+
+describe("greendex-domain/procedure-input-schema", () => {
+  it("reports an input schema declared inline", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const procedure = authorized",
+        "  .input(z.object({ partnershipId: z.string() }))",
+        "  .handler(async () => undefined);",
+      ].join("\n"),
+      procedureFile,
+    );
+    expect(result.status).toBe(0);
+    const reported = findings(result.output, inputRule);
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toContain(`${procedureFile}:3:`);
+  });
+
+  it("reports a chained builder passed to input", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const procedure = authorized",
+        "  .input(z.object({ id: z.string() }).extend({ note: z.string() }))",
+        "  .handler(async () => undefined);",
+      ].join("\n"),
+      procedureFile,
+    );
+    expect(findings(result.output, inputRule)).toHaveLength(1);
+  });
+
+  it("accepts shared and derived input schemas", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const a = authorized.input(CreateSetupLinkInputSchema);",
+        "export const b = authorized.input(claimColumns.pick({ id: true }));",
+        "export const c = authorized.input(",
+        "  createSelectSchema(claimsTable).pick({ id: true }),",
+        ");",
+      ].join("\n"),
+      procedureFile,
+    );
+    expect(findings(result.output, inputRule)).toHaveLength(0);
+  });
+
+  it("does not report output schemas", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const procedure = authorized",
+        "  .input(ClaimInputSchema)",
+        "  .output(z.object({ id: z.string() }));",
+      ].join("\n"),
+      procedureFile,
+    );
+    expect(findings(result.output, inputRule)).toHaveLength(0);
+  });
+
+  it("matches only procedure modules", () => {
+    const result = lint(
+      [
+        'import { z } from "zod";',
+        "export const procedure = authorized.input(z.object({ id: z.string() }));",
+      ].join("\n"),
+      scopedFile,
+    );
+    expect(findings(result.output, inputRule)).toHaveLength(0);
   });
 });

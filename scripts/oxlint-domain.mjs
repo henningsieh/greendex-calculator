@@ -233,5 +233,32 @@ export default {
         };
       },
     },
+    "procedure-input-schema": {
+      meta: {
+        type: "suggestion",
+        messages: {
+          inline:
+            "Declare this input schema in the feature's validation-schemas module and pass it to .input().",
+        },
+      },
+      create(context) {
+        return {
+          CallExpression(node) {
+            const { callee } = node;
+            if (callee.type !== "MemberExpression" || callee.computed) return;
+            if (
+              callee.property.type !== "Identifier" ||
+              callee.property.name !== "input"
+            ) {
+              return;
+            }
+            const argument = node.arguments[0];
+            if (!argument || argument.type === "SpreadElement") return;
+            if (!builderInChain(context, argument)) return;
+            context.report({ node: argument, messageId: "inline" });
+          },
+        };
+      },
+    },
   },
 };
