@@ -331,6 +331,22 @@
     },
     {
       "files": [
+        "apps/*/src/features/**/components/**/*.{ts,tsx}",
+        "apps/*/src/components/**/*.{ts,tsx}"
+      ],
+      "excludeFiles": [
+        "**/components/ui/**",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.stories.*"
+      ],
+      "rules": {
+        "greendex-domain/validation-schema-location": "warn"
+      }
+    },
+    {
+      "files": [
         "apps/cost-tracker/src/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
         "packages/**/src/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
       ],
@@ -349,5 +365,9 @@
       }
     }
   ],
-  "jsPlugins": ["@shadcn/lint", "./scripts/oxlint-i18n.mjs"]
+  "jsPlugins": [
+    "@shadcn/lint",
+    "./scripts/oxlint-i18n.mjs",
+    "./scripts/oxlint-domain.mjs"
+  ]
 }
