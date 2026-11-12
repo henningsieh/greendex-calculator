@@ -21,6 +21,9 @@ export type TypeViolation = {
   attributes: readonly string[];
 };
 
+/** A view model sharing only these labels does not restate the table's data. */
+const labelOnlyMembers = new Set(["id", "name", "country", "email", "slug"]);
+
 /** Reference types that already derive from a table are out of scope. */
 const derivedTypeNames = new Set([
   "InferInsertModel",
@@ -92,6 +95,7 @@ export function scanTypes(
 
     const match = matchTable(keys, tables);
     if (!match) return;
+    if (match.shared.every((key) => labelOnlyMembers.has(key))) return;
 
     violations.push({
       file,

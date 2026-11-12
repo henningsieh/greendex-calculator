@@ -10,7 +10,7 @@
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
     "check:schema-derivation": "tsx scripts/check-schema-derivation.ts --gate",
     "check:schema-duplication": "tsx scripts/check-schema-duplication.ts --gate",
-    "check:schema-types": "tsx scripts/check-schema-types.ts",
+    "check:schema-types": "tsx scripts/check-schema-types.ts --gate",
     "check:tailwind": "oxlint -c oxlint.tailwind.json apps packages",
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "turbo run db:generate",

@@ -9,6 +9,7 @@ const tables: TableIndex = new Map([
     new Set([
       "id",
       "name",
+      "country",
       "location",
       "archived",
       "startDate",
@@ -91,6 +92,39 @@ describe("scanTypes", () => {
       ].join("\n"),
     );
     expect(violations).toHaveLength(0);
+  });
+
+  it("ignores a type that shares only label columns", () => {
+    const violations = scan(
+      [
+        "export type OrganizationView = {",
+        "  id: string;",
+        "  name: string;",
+        "  country: string;",
+        "};",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(0);
+  });
+
+  it("reports labels alongside a domain column", () => {
+    const violations = scan(
+      [
+        "export type ProjectRow = {",
+        "  id: string;",
+        "  name: string;",
+        "  country: string;",
+        "  location: string;",
+        "};",
+      ].join("\n"),
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].attributes).toEqual([
+      "country",
+      "id",
+      "location",
+      "name",
+    ]);
   });
 
   it("ignores types below the overlap threshold", () => {
