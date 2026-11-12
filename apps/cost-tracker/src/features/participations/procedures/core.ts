@@ -37,7 +37,7 @@ import { ProjectParticipationIdSchema } from "@/features/participations/validati
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
-import { ProjectIdSchema } from "@/features/projects/validation-schemas";
+import { ProjectDetailInputSchema } from "@/features/projects/validation-schemas";
 import { UserIdSchema } from "@/features/user-settings/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
@@ -597,7 +597,7 @@ export function createParticipationProcedures(
     });
 
   const listHosted = authorized
-    .input(z.object({ projectId: ProjectIdSchema }))
+    .input(ProjectDetailInputSchema)
     .output(z.array(participation))
     .handler(async ({ input, context, errors }) => {
       await requireHostCoordination(
@@ -624,7 +624,7 @@ export function createParticipationProcedures(
    * refused here too.
    */
   const listHostedReport = authorized
-    .input(z.object({ projectId: ProjectIdSchema }))
+    .input(ProjectDetailInputSchema)
     .output(hostedReport)
     .handler(async ({ input, context, errors }) => {
       await requireHostCoordination(
@@ -686,7 +686,7 @@ export function createParticipationProcedures(
     });
 
   const listMine = authorized
-    .input(z.object({ projectId: ProjectIdSchema }))
+    .input(ProjectDetailInputSchema)
     .output(z.array(participation))
     .handler(async ({ input, context, errors }) => {
       const agreement = currentAgreement();

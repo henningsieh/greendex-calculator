@@ -17,8 +17,8 @@ import {
   isPublishedAgreement,
   type ParticipantAgreementVersion,
 } from "@/features/participant-onboarding/participant-agreement";
+import { OnboardingProgressInputSchema } from "@/features/participant-onboarding/validation-schemas";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
-import { ProjectPartnershipIdSchema } from "@/features/partnerships/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -96,7 +96,7 @@ export function createOnboardingProgressProcedure(
     CURRENT_PARTICIPANT_AGREEMENT_VERSION,
 ) {
   return authorized
-    .input(z.object({ partnershipId: ProjectPartnershipIdSchema }))
+    .input(OnboardingProgressInputSchema)
     .output(z.array(progress))
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(

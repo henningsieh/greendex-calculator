@@ -19,19 +19,21 @@ import {
 } from "@/features/participant-onboarding/procedures/entry-tokens";
 import { requirePartnerScopeAuthority } from "@/features/participant-onboarding/procedures/participant-entry";
 import {
-  id,
   invitationResult,
   INVITATION_TTL_MS,
-  normalizedEmail,
   secretHash,
 } from "@/features/participant-onboarding/procedures/shared";
+import {
+  ParticipantInvitationEmailInputSchema,
+  SetParticipantInvitationOpenInputSchema,
+} from "@/features/participant-onboarding/validation-schemas";
 import { sendParticipantInvitation } from "@/lib/email";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
 export function buildIssueInvitation() {
   return authorized
-    .input(z.object({ partnershipId: id, email: normalizedEmail }))
+    .input(ParticipantInvitationEmailInputSchema)
     .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
       const partnership = await requirePartnerScopeAuthority(
@@ -107,7 +109,7 @@ export function buildIssueInvitation() {
 
 export function buildReissueInvitation() {
   return authorized
-    .input(z.object({ partnershipId: id, email: normalizedEmail }))
+    .input(ParticipantInvitationEmailInputSchema)
     .output(invitationResult)
     .handler(async ({ input, context, errors }) => {
       const target = await requirePartnerScopeAuthority(
@@ -185,7 +187,7 @@ export function buildReissueInvitation() {
 
 export function buildSetInvitationOpen() {
   return authorized
-    .input(z.object({ invitationId: id, open: z.boolean() }))
+    .input(SetParticipantInvitationOpenInputSchema)
     .output(z.object({ open: z.boolean() }))
     .handler(async ({ input, context, errors }) => {
       const [token] = await db

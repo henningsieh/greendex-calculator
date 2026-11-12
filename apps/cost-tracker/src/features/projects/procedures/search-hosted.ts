@@ -10,7 +10,10 @@ import {
 import { and, asc, desc, eq, exists, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { HostedProjectOptionSchema } from "@/features/projects/validation-schemas";
+import {
+  HostedProjectOptionSchema,
+  HostedProjectSearchInputSchema,
+} from "@/features/projects/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -86,15 +89,7 @@ export const listHostedOptions = authorized
  * runs before the limit); it only bounds the browse view.
  */
 export const searchHosted = authorized
-  .input(
-    z.object({
-      search: z
-        .string()
-        .trim()
-        .max(128)
-        .refine((value) => value.length !== 1),
-    }),
-  )
+  .input(HostedProjectSearchInputSchema)
   .output(z.array(HostedProjectOptionSchema).max(20))
   .handler(async ({ context, errors, input }) => {
     const scope = await hostedScope(

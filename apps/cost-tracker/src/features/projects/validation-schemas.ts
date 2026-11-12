@@ -12,6 +12,14 @@ import { z } from "zod";
 const projectColumns = createSelectSchema(projectsTable);
 const organizationColumns = createSelectSchema(organization);
 
+export const HostedProjectSearchInputSchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(128)
+    .refine((value) => value.length !== 1),
+});
+
 export const HostedProjectOptionSchema = projectColumns.pick({
   id: true,
   name: true,
