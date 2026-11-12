@@ -7,14 +7,17 @@
  * reference such as `table.shape.column`, `createSelectSchema(table)` or a
  * shared `<X>Schema`.
  */
-import type {
-  Expression,
-  MemberExpression,
-  Node,
-  ObjectProperty,
-  Program,
-} from "oxc-parser";
+import type { Expression, Node } from "oxc-parser";
 import { parseSync } from "oxc-parser";
+
+import {
+  importsZodSchema,
+  isZodObjectCall,
+  lineAt,
+  lineStarts,
+  propertyName,
+  walk,
+} from "./schema-ast";
 
 export type TableIndex = ReadonlyMap<string, ReadonlySet<string>>;
 
@@ -33,14 +36,6 @@ const MIN_SHARE = 0.5;
 
 /** Combinators that delegate validation to another schema. */
 const derivedCombinators = new Set(["and", "or", "pipe"]);
-
-function propertyName(property: ObjectProperty): string | undefined {
-  if (property.computed) return undefined;
-  const { key } = property;
-  if (key.type === "Identifier") return key.name;
-  if (key.type === "Literal" && typeof key.value === "string") return key.value;
-  return undefined;
-}
 
 /**
  * A value derives from the database when its callee chain reaches a table
@@ -67,28 +62,30 @@ export function isDerivedExpression(expression: Expression | null): boolean {
       continue;
     }
     if (current.type === "CallExpression") {
-      const { callee } = current;
+      const callee: Expression = current.callee;
       if (callee.type === "Identifier") {
         return /^create\w*Schema$/u.test(callee.name);
       }
-      const name =
-        callee.computed !== true && callee.property.type === "Identifier"
-          ? callee.property.name
-          : undefined;
-      const delegates =
-        name !== undefined &&
-        (derivedCombinators.has(name) ||
-          (name === "enum" &&
-            callee.object.type === "Identifier" &&
-            callee.object.name === "z"));
-      if (
-        delegates &&
-        current.arguments.some(
-          (argument) =>
-            argument.type !== "SpreadElement" && isDerivedExpression(argument),
-        )
-      ) {
-        return true;
+      if (callee.type === "MemberExpression") {
+        const name =
+          callee.computed !== true && callee.property.type === "Identifier"
+            ? callee.property.name
+            : undefined;
+        const delegates =
+          name !== undefined &&
+          (derivedCombinators.has(name) ||
+            (name === "enum" &&
+              callee.object.type === "Identifier" &&
+              callee.object.name === "z"));
+        if (
+          delegates &&
+          current.arguments.some(
+            (argument) =>
+              argument.type !== "SpreadElement" && isDerivedExpression(argument),
+          )
+        ) {
+          return true;
+        }
       }
       current = callee;
       continue;
@@ -105,50 +102,6 @@ export function isDerivedExpression(expression: Expression | null): boolean {
       continue;
     }
     return false;
-  }
-}
-
-function importsZodSchema(program: Program): boolean {
-  return program.body.some((statement) => {
-    if (statement.type !== "ImportDeclaration") return false;
-    if (statement.source.value !== "zod") return false;
-    return statement.specifiers.some((specifier) => {
-      if (specifier.type === "ImportSpecifier") {
-        return specifier.imported.type === "Identifier"
-          ? specifier.imported.name === "z"
-          : false;
-      }
-      return specifier.local.name === "z";
-    });
-  });
-}
-
-function isZodObjectCall(
-  expression: Expression | null,
-): expression is Extract<Expression, { type: "CallExpression" }> {
-  if (!expression || expression.type !== "CallExpression") return false;
-  const { callee } = expression;
-  return (
-    callee.type === "MemberExpression" &&
-    callee.computed !== true &&
-    callee.object.type === "Identifier" &&
-    callee.object.name === "z" &&
-    callee.property.type === "Identifier" &&
-    callee.property.name === "object"
-  );
-}
-
-function walk(value: unknown, visit: (node: Node) => void): void {
-  if (!value || typeof value !== "object") return;
-  if (Array.isArray(value)) {
-    for (const child of value) walk(child, visit);
-    return;
-  }
-  const record = value as Record<string, unknown>;
-  if (typeof record.type === "string") visit(value as Node);
-  for (const [key, child] of Object.entries(record)) {
-    if (key === "parent") continue;
-    walk(child, visit);
   }
 }
 
@@ -174,25 +127,6 @@ function tableMatch(
     tables: finalists.map((finalist) => finalist.table),
     shared: leaders[0].shared,
   };
-}
-
-function lineStarts(source: string): readonly number[] {
-  const starts = [0];
-  for (let index = 0; index < source.length; index += 1) {
-    if (source[index] === "\n") starts.push(index + 1);
-  }
-  return starts;
-}
-
-function lineAt(starts: readonly number[], offset: number): number {
-  let low = 0;
-  let high = starts.length - 1;
-  while (low < high) {
-    const middle = Math.ceil((low + high) / 2);
-    if (starts[middle] <= offset) low = middle;
-    else high = middle - 1;
-  }
-  return low + 1;
 }
 
 export function scanSource(

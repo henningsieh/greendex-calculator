@@ -4,7 +4,7 @@
  *
  * Report-only by default; pass `--gate` to fail on violations.
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import * as schemaModule from "@greendex/database/schema";
@@ -16,6 +16,7 @@ import {
   type TableIndex,
   scanSource,
 } from "./schema-derivation";
+import { findSchemaModules } from "./schema-files";
 
 const root = resolve(import.meta.dirname, "..");
 const gate = process.argv.includes("--gate");
@@ -27,29 +28,6 @@ function collectTables(): TableIndex {
     index.set(exportName, new Set(Object.keys(getTableColumns(value))));
   }
   return index;
-}
-
-function findSchemaModules(): string[] {
-  const files: string[] = [];
-  for (const workspace of ["apps", "packages"]) {
-    const workspaceDirectory = join(root, workspace);
-    if (!existsSync(workspaceDirectory)) continue;
-    for (const entry of readdirSync(workspaceDirectory, {
-      withFileTypes: true,
-    })) {
-      if (!entry.isDirectory()) continue;
-      const sourceDirectory = join(workspaceDirectory, entry.name, "src");
-      if (!existsSync(sourceDirectory)) continue;
-      for (const file of readdirSync(sourceDirectory, {
-        recursive: true,
-        withFileTypes: true,
-      })) {
-        if (!file.isFile() || file.name !== "validation-schemas.ts") continue;
-        files.push(join(file.parentPath, file.name));
-      }
-    }
-  }
-  return files.sort();
 }
 
 function report(violations: readonly SchemaViolation[]): void {
@@ -65,7 +43,7 @@ function report(violations: readonly SchemaViolation[]): void {
 }
 
 const tables = collectTables();
-const modules = findSchemaModules();
+const modules = findSchemaModules(root);
 const violations = modules.flatMap((file) =>
   scanSource(relative(root, file), readFileSync(file, "utf8"), tables),
 );

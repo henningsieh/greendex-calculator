@@ -4,17 +4,22 @@
     "types": ["node", "vitest/globals"]
   },
   "include": [
+    "check-agent-instructions.policy.test.ts",
+    "check-agent-instructions.policy.ts",
     "check-agent-instructions.ts",
     "check-agent-instructions.utils.ts",
-    "check-agent-instructions.policy.ts",
-    "check-agent-instructions.policy.test.ts",
+    "check-cost-tracker-persistence-seam.test.ts",
+    "check-cost-tracker-persistence-seam.ts",
+    "check-schema-derivation.test.ts",
+    "check-schema-derivation.ts",
+    "check-schema-duplication.test.ts",
+    "check-schema-duplication.ts",
+    "oxlint-domain.test.ts",
     "oxlint-i18n.test.ts",
     "oxlint-tailwind-scope.test.ts",
-    "check-cost-tracker-persistence-seam.ts",
-    "check-cost-tracker-persistence-seam.test.ts",
-    "check-schema-derivation.ts",
-    "check-schema-derivation.test.ts",
-    "oxlint-domain.test.ts",
-    "schema-derivation.ts"
+    "schema-ast.ts",
+    "schema-derivation.ts",
+    "schema-duplication.ts",
+    "schema-files.ts"
   ]
 }
