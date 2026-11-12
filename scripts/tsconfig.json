@@ -14,12 +14,15 @@
     "check-schema-derivation.ts",
     "check-schema-duplication.test.ts",
     "check-schema-duplication.ts",
+    "check-schema-types.test.ts",
+    "check-schema-types.ts",
     "oxlint-domain.test.ts",
     "oxlint-i18n.test.ts",
     "oxlint-tailwind-scope.test.ts",
     "schema-ast.ts",
     "schema-derivation.ts",
     "schema-duplication.ts",
-    "schema-files.ts"
+    "schema-files.ts",
+    "schema-types.ts"
   ]
 }

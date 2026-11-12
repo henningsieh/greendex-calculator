@@ -105,7 +105,7 @@ export function isDerivedExpression(expression: Expression | null): boolean {
   }
 }
 
-function tableMatch(
+export function matchTable(
   keys: readonly string[],
   tables: TableIndex,
 ): { tables: string[]; shared: string[] } | undefined {
@@ -163,7 +163,7 @@ export function scanSource(
       );
     if (entries.length === 0) return;
 
-    const match = tableMatch(
+    const match = matchTable(
       entries.map((entry) => entry.key),
       tables,
     );
