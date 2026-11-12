@@ -373,7 +373,7 @@
         "**/*.integration.*"
       ],
       "rules": {
-        "greendex-domain/procedure-input-schema": "warn"
+        "greendex-domain/procedure-input-schema": "error"
       }
     },
     {
