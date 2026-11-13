@@ -1,6 +1,10 @@
 import { createServerAuth } from "@greendex/auth";
 import { localE2EAuthEnabled } from "@greendex/auth/local-e2e-auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import type { db } from "@greendex/database";
+import * as schema from "@greendex/database/schema";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import { env } from "@/env";
 import { participantMembershipGrantPlugin } from "@/features/organizations/participant-membership-grant";
@@ -48,3 +52,17 @@ export const auth = createServerAuth({
     },
   },
 });
+
+/** Keep Better Auth's APIs and hooks, but bind every join write to its transaction.
+ * Do not enable adapter-owned transactions: the caller owns commit/rollback.
+ * Regression coverage exercises this boundary with the installed real adapter.
+ */
+export function createJoinTransactionAuth(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+) {
+  // compatibility risk: Keep the real-adapter rollback regression tests when upgrading Better Auth; transaction binding is not explicitly documented upstream.
+  return betterAuth({
+    ...auth.options,
+    database: drizzleAdapter(tx, { provider: "pg", schema }),
+  });
+}

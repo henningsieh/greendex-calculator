@@ -615,6 +615,17 @@ export const situationCatalog = {
     reason: "CLAIM_REQUIRED_FOR_PROOF",
     message: "Save an editable Claim before uploading a Proof Document.",
   },
+  proofQuotaExceeded: {
+    code: "TOO_MANY_REQUESTS",
+    reason: "PROOF_QUOTA_EXCEEDED",
+    message: "This Claim already holds the maximum Proof Document volume.",
+  },
+  proofDailyQuotaExceeded: {
+    code: "TOO_MANY_REQUESTS",
+    reason: "PROOF_DAILY_QUOTA_EXCEEDED",
+    message:
+      "The daily Proof Document upload allowance is exhausted. It resets at 00:00 UTC.",
+  },
   proofOriginDenied: {
     code: "FORBIDDEN",
     reason: "PROOF_ORIGIN_DENIED",

@@ -3,9 +3,13 @@
 import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
-import { claimsTable, projectsTable } from "@greendex/database/schema";
-import { createRouterClient } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import {
+  claimsTable,
+  principalQuotaCounters as counters,
+  projectsTable,
+} from "@greendex/database/schema";
+import { createRouterClient, ORPCError } from "@orpc/server";
+import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
@@ -13,12 +17,19 @@ const authMocks = vi.hoisted(() => ({
   hasPermission: vi.fn(),
 }));
 
+const quotaMocks = vi.hoisted(() => ({
+  enforceListingLimit: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  enforceListingLimit: quotaMocks.enforceListingLimit,
+}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
 import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
 import { PROJECT_SORT_MODES } from "@/features/projects/list-query-options";
 import { resolveRelationship } from "@/features/projects/procedures/core";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerProjects.
@@ -399,6 +410,18 @@ describe("projects procedures", () => {
       useActiveOrganization(hostId);
     });
     it("returns a bounded Hosted page with whole-scope metrics", async () => {
+      expect(vi.isMockFunction(enforceListingLimit)).toBe(true);
+      const quotaRows = () =>
+        db
+          .select()
+          .from(counters)
+          .where(
+            and(
+              eq(counters.kind, "listing_calls"),
+              eq(counters.organizationId, hostId),
+            ),
+          );
+      const quotaBefore = await quotaRows();
       const result = await client.projects.listHosted({ pageSize: 25 });
 
       expect(result.scope).toBe("hosted");
@@ -419,6 +442,11 @@ describe("projects procedures", () => {
 
       const largerPage = await client.projects.listHosted({ pageSize: 50 });
       expect(largerPage.metrics).toEqual(result.metrics);
+      expect(quotaMocks.enforceListingLimit).toHaveBeenCalledWith(
+        { userId: userId, organizationId: hostId },
+        expect.any(Object),
+      );
+      expect(await quotaRows()).toEqual(quotaBefore);
     });
 
     it.each(PROJECT_SORT_MODES)(
@@ -608,6 +636,60 @@ describe("projects procedures", () => {
       }
     });
 
+    it("returns the same empty shape for invisible projects as for gibberish (no search oracle)", async () => {
+      // #377: the response must not reveal whether a searched name exists
+      // outside the caller's scope. "Foreign Partner Project" belongs to
+      // another Hosting Organization, with list-partner as its only Partner
+      // Organization. "Archived Project" is archived out of every list scope.
+      // Both must read exactly like a search matching nothing at all.
+      const gibberish = "zzz-no-such-project-zzz";
+      useActiveOrganization(hostId);
+      const hostedForeign = await client.projects.listHosted({
+        pageSize: 25,
+        search: "Foreign Partner Project",
+      });
+      const hostedArchived = await client.projects.listHosted({
+        pageSize: 25,
+        search: "Archived Project",
+      });
+      const hostedGibberish = await client.projects.listHosted({
+        pageSize: 25,
+        search: gibberish,
+      });
+      expect(hostedForeign.rows).toEqual([]);
+      expect(hostedForeign).toEqual(hostedGibberish);
+      expect(hostedArchived).toEqual(hostedGibberish);
+
+      // Positive control: the Partner Organization that may see the foreign
+      // Project finds it, so the empty shape above is scope enforcement,
+      // not a broken search.
+      useActiveOrganization(partnerId);
+      const partnerForeign = await client.projects.listPartner({
+        pageSize: 25,
+        search: "Foreign Partner Project",
+      });
+      expect(partnerForeign.rows.map((row) => row.id)).toEqual([foreignId]);
+      const partnerArchived = await client.projects.listPartner({
+        pageSize: 25,
+        search: "Archived Project",
+      });
+      const partnerGibberish = await client.projects.listPartner({
+        pageSize: 25,
+        search: gibberish,
+      });
+      expect(partnerArchived.rows).toEqual([]);
+      expect(partnerArchived).toEqual(partnerGibberish);
+
+      // partnerOptions stay need-to-know: Partner Organizations are listed (the
+      // Hosting Organization manages those partnerships), unrelated
+      // Organizations never are.
+      useActiveOrganization(hostId);
+      const options = await client.projects.listHosted({ pageSize: 25 });
+      const optionIds = options.partnerOptions.map((option) => option.id);
+      expect(optionIds).toContain(partnerId);
+      expect(optionIds).not.toContain(unrelatedId);
+    });
+
     it.each([
       SEED_IDS.user.projectsUser12,
       SEED_IDS.user.projectsUser12,
@@ -763,6 +845,71 @@ describe("projects procedures", () => {
       expect(result.scope).toBe("partner");
       expect(result.rows.map((row) => row.id)).toEqual([assignedProject]);
       expect(result.metrics.whole.projectCount).toBe(1);
+    });
+
+    it("exposes no search oracle to denied or assignment-limited principals", async () => {
+      const gibberish = "zzz-no-such-project-zzz";
+      const searchPartner = (search: string) =>
+        client.projects.listPartner({ pageSize: 25, search });
+      const observeDenial = async (request: Promise<unknown>) => {
+        try {
+          await request;
+        } catch (error) {
+          expect(error).toBeInstanceOf(ORPCError);
+          if (!(error instanceof ORPCError)) throw error;
+          // Compare the complete serialized error surface, excluding server-only stacks.
+          return error.toJSON();
+        }
+        throw new Error("Expected search to be denied.");
+      };
+
+      // These two canonical principals share the same Partner Organization,
+      // but only coord is assigned a Project Partnership. Neither has
+      // Organization-wide read permission (see beforeEach).
+      const assigned = await searchPartner(assignedProject);
+      expect(assigned.rows.map((row) => row.id)).toEqual([assignedProject]);
+      const noMatch = await searchPartner(gibberish);
+      expect(noMatch.rows).toEqual([]);
+      expect(noMatch.metrics).toEqual({
+        whole: { projectCount: 1, openWindowCount: 0 },
+        filtered: { projectCount: 0, openWindowCount: 0 },
+      });
+      expect(noMatch).not.toHaveProperty("partnerOptions");
+      expect(await searchPartner(foreignProject)).toEqual(noMatch);
+
+      // Positive control: the invisible search names a real, unassigned Project,
+      // rather than comparing two nonexistent names.
+      expect(
+        await db.query.projectsTable.findFirst({
+          where: eq(projectsTable.id, foreignProject),
+          columns: { name: true },
+        }),
+      ).toEqual({ name: foreignProject });
+
+      useCoordinator(stranger);
+      const deniedNoMatch = await observeDenial(searchPartner(gibberish));
+      expect(deniedNoMatch).toMatchObject({
+        code: "FORBIDDEN",
+        data: { reason: "ACCESS_DENIED" },
+      });
+      for (const search of [assignedProject, foreignProject]) {
+        expect(await observeDenial(searchPartner(search))).toEqual(deniedNoMatch);
+      }
+
+      // Hosted reads are denied for both restricted principals, regardless of
+      // whether the input names a known Project or matches nothing.
+      for (const principal of [coord, stranger]) {
+        useCoordinator(principal);
+        const searchHosted = (search: string) =>
+          client.projects.listHosted({ pageSize: 25, search });
+        const hostedNoMatch = await observeDenial(searchHosted(gibberish));
+        expect(hostedNoMatch).toEqual(deniedNoMatch);
+        for (const search of [assignedProject, foreignProject]) {
+          expect(await observeDenial(searchHosted(search))).toEqual(
+            hostedNoMatch,
+          );
+        }
+      }
     });
 
     it("opens the assigned Project detail", async () => {

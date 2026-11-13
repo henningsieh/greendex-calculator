@@ -9,7 +9,6 @@ Both services belong to Greendex on the Coolify host (`ssh coolify`). Production
 | Setting            | Development                                | Staging                                |
 | ------------------ | ------------------------------------------ | -------------------------------------- |
 | Service            | `greendex-development-s3`                  | `greendex-staging-s3`                  |
-| UUID               | `qvnaqod5vknlufojogo13l1j`                 | `ckhy5vfyielgwo87ha4zaksd`             |
 | S3 API             | `https://s3-dev.greendex.apps.sieh.org`    | `https://s3.greendex.apps.sieh.org`    |
 | Bucket websites    | `https://web-dev.greendex.apps.sieh.org`   | `https://web.greendex.apps.sieh.org`   |
 | Admin API          | `https://admin-dev.greendex.apps.sieh.org` | `https://admin.greendex.apps.sieh.org` |
@@ -35,16 +34,35 @@ Run `pnpm run test:integration` from the repository root using the local develop
 
 For staging, use its application key and configured bucket with a unique temporary object. Verify downloaded bytes and delete only that object. Confirm existing aliases and permissions remain intact.
 
-Coolify's `/garage stats -a` health check proves process and cluster-statistics access, not authenticated storage behavior. Inspect the current container before running operational commands:
-
-```bash
-ssh coolify 'docker exec garage-qvnaqod5vknlufojogo13l1j /garage status'
-ssh coolify 'docker exec garage-qvnaqod5vknlufojogo13l1j /garage layout show'
-ssh coolify 'docker exec garage-qvnaqod5vknlufojogo13l1j /garage bucket list'
-```
+Garage process health does not prove authenticated storage access. Resolve the target service and container through Coolify before inspecting cluster status, layout, or buckets.
 
 ## Proof Document policy
 
 - Keep Claim Proof Documents in the private bucket while their Project is active. No automatic expiry is implemented.
 - Treat uploads as untrusted. Malware scanning is best effort, not an enforced upload or download gate. Acceptance does not mean a file is clean.
 - Project archival should delete its Proof Document objects and references. No automatic archive hook implements this policy yet. Arrange and verify scoped deletion operationally, without deleting unrelated objects or the bucket.
+
+## Application upload and listing limits
+
+Application procedures enforce these source-defined limits independently of the gateway.
+
+| Control                               | Limit                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| Multipart transport                   | 11 MiB per upload request                                                |
+| Proof Document                        | 10 MiB per file                                                          |
+| Claim                                 | 25 Proof Documents and 100 MiB                                           |
+| Partner Organization uploads          | `DAILY_UPLOAD_BYTES`, 500 MiB per UTC calendar day                       |
+| User and active Organization listings | `LISTING_CALLS_PER_MINUTE`, 120 calls per epoch-aligned 60-second window |
+
+The daily upload allowance counts successfully persisted bytes across all Claims
+of the Partner Organization. Deletion does not refund consumption. The listing
+allowance is shared by `projects.listHosted`, `projects.listPartner`,
+`projects.searchHosted`, and `projectPartnerships.list`, including direct server
+calls. Calls that fail existing input or access checks do not consume allowance.
+Exhausted allowances return safe HTTP 429 errors. Fixed-window boundary bursts
+are permitted.
+
+[Quota procedures](../../src/features/quotas/procedures/counters.ts) own the named
+constants and PostgreSQL counters. Bounded best-effort expiry cleanup runs after
+quota decisions, outside their transactions, with `QUOTA_CLEANUP_BATCH_SIZE` set
+to 500 rows per call.

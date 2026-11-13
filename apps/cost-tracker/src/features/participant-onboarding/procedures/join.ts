@@ -4,12 +4,14 @@ import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { db } from "@greendex/database";
 import {
   member,
+  user,
   participantAgreementAcceptancesTable as acceptances,
   participantProfilesTable as profiles,
   projectPartnerOrganizationsTable as partnerships,
   projectParticipantsTable as participants,
   projectsTable as projects,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -29,7 +31,7 @@ import {
   joinInput,
   type RequirePublishedAgreement,
 } from "@/features/participant-onboarding/procedures/shared";
-import { auth } from "@/lib/auth";
+import { createJoinTransactionAuth } from "@/lib/auth";
 import {
   normalizeParticipantMembershipError,
   normalizeParticipantMembershipResponse,
@@ -54,6 +56,12 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
   const join = authorized
     .input(joinInput)
     .output(z.object({ participationId: z.string() }))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Join a partnership via invitation or registration link",
+      }),
+    )
     .handler(async ({ context, input, errors }) => {
       const version = requirePublishedAgreement(errors);
       if (!context.user.emailVerified)
@@ -88,113 +96,101 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         .limit(1);
       if (!partnership || partnership.archived)
         throw createSituationErrors(errors).partnershipNotFound();
-      const [previous] = await db
-        .select({
-          id: participants.id,
-          partnerId: participants.representedOrganizationId,
-          country: participants.country,
-        })
-        .from(participants)
-        .where(
-          and(
-            eq(participants.projectId, partnership.projectId),
-            eq(participants.userId, context.user.id),
-          ),
-        )
-        .limit(1);
-      if (previous && previous.partnerId !== partnership.partnerId)
-        throw createSituationErrors(errors).joinedOtherPartner();
-      // Both entry flavours complete Membership through the same supported
-      // server calls (ADR-0013): no Better Auth invitation is ever accepted
-      // for participant entry, so there is no branch-specific write here.
-      const [membership] = await db
-        .select({ id: member.id, role: member.role })
-        .from(member)
-        .where(
-          and(
-            eq(member.organizationId, partnership.hostId),
-            eq(member.userId, context.user.id),
-          ),
-        )
-        .limit(1);
-      if (membership)
-        requireCostTrackerRole(membership.role, () =>
-          createSituationErrors(errors).invalidOrganizationRole(),
-        );
-      if (!membership) {
-        const response = await auth.api
-          .addMember({
-            asResponse: true,
-            body: {
-              userId: context.user.id,
-              organizationId: partnership.hostId,
-              role: ORGANIZATION_ROLES.Participant,
-            },
-          })
-          .catch((error: unknown) => {
-            throw normalizeParticipantMembershipError(
-              error,
-              createSituationErrors(errors),
-              context.resHeaders,
-            );
-          });
-        if (!response.ok)
-          throw await normalizeParticipantMembershipResponse(
-            response,
-            createSituationErrors(errors),
-            context.resHeaders,
-          );
-        console.info("Participant membership created", {
-          actor: context.user.id,
-          linkId: input.source.kind === "link" ? input.source.id : invitationId,
-          previousRole: null,
-          newRole: ORGANIZATION_ROLES.Participant,
-          at: new Date().toISOString(),
-        });
-      } else if (shouldGrantParticipantRole(membership.role)) {
-        // #183 appends coordinator to assigned members; joining must retain every existing role.
-        // The grant runs through the server-only participant-membership endpoint (ADR-0013):
-        // this procedure authorized the join, Better Auth owns the write and its role hooks.
-        const response = await auth.api
-          .grantParticipantMembership({
-            asResponse: true,
-            body: {
-              userId: context.user.id,
-              organizationId: partnership.hostId,
-              expectedRole: membership.role,
-            },
-          })
-          .catch((error: unknown) => {
-            throw normalizeParticipantMembershipError(
-              error,
-              createSituationErrors(errors),
-              context.resHeaders,
-            );
-          });
-        if (!response.ok) {
-          if (await isGrantRoleStale(response))
-            throw createSituationErrors(errors).membershipChanged();
-          throw await normalizeParticipantMembershipResponse(
-            response,
-            createSituationErrors(errors),
-            context.resHeaders,
-          );
-        }
-        console.info("Participant membership updated", {
-          actor: context.user.id,
-          linkId: input.source.kind === "link" ? input.source.id : invitationId,
-          previousRole: membership.role,
-          newRole: addOrganizationRole(
-            membership.role,
-            ORGANIZATION_ROLES.Participant,
-          ),
-          at: new Date().toISOString(),
-        });
-      }
-      return db.transaction(async (tx) => {
-        // One shared row-locked recheck for both flavours: a link revoked
-        // mid-join refuses, an invitation consumed mid-join stays redeemable.
+      let membershipChange:
+        | { previousRole: string | null; newRole: string }
+        | undefined;
+      const result = await db.transaction(async (tx) => {
+        // The auth schema has no unique (user, organization) constraint. Lock
+        // the stable User row before reading Membership so joins through
+        // different tokens cannot both create it or race their role grants.
+        // Keep FK key-share compatible: closing a token can reference this
+        // same User while holding the token row that the join rechecks next.
+        await tx
+          .select({ id: user.id })
+          .from(user)
+          .where(eq(user.id, context.user.id))
+          .for("no key update");
         await recheckEntryToken(tx, errors, token);
+        const transactionAuth = createJoinTransactionAuth(tx);
+        const [membership] = await tx
+          .select({ id: member.id, role: member.role })
+          .from(member)
+          .where(
+            and(
+              eq(member.organizationId, partnership.hostId),
+              eq(member.userId, context.user.id),
+            ),
+          )
+          .for("update")
+          .limit(1);
+        if (membership)
+          requireCostTrackerRole(membership.role, () =>
+            createSituationErrors(errors).invalidOrganizationRole(),
+          );
+        if (!membership) {
+          const response = await transactionAuth.api
+            .addMember({
+              asResponse: true,
+              body: {
+                userId: context.user.id,
+                organizationId: partnership.hostId,
+                role: ORGANIZATION_ROLES.Participant,
+              },
+            })
+            .catch((error: unknown) => {
+              throw normalizeParticipantMembershipError(
+                error,
+                createSituationErrors(errors),
+                context.resHeaders,
+              );
+            });
+          if (!response.ok)
+            throw await normalizeParticipantMembershipResponse(
+              response,
+              createSituationErrors(errors),
+              context.resHeaders,
+            );
+          membershipChange = {
+            previousRole: null,
+            newRole: ORGANIZATION_ROLES.Participant,
+          };
+        } else if (shouldGrantParticipantRole(membership.role)) {
+          // #183 appends coordinator to assigned members; joining must retain every existing role.
+          // The grant runs through the server-only participant-membership endpoint (ADR-0013):
+          // this procedure authorized the join, Better Auth owns the write and its role hooks.
+          const response = await transactionAuth.api
+            .grantParticipantMembership({
+              asResponse: true,
+              body: {
+                userId: context.user.id,
+                organizationId: partnership.hostId,
+                expectedRole: membership.role,
+              },
+            })
+            .catch((error: unknown) => {
+              throw normalizeParticipantMembershipError(
+                error,
+                createSituationErrors(errors),
+                context.resHeaders,
+              );
+            });
+          if (!response.ok) {
+            if (await isGrantRoleStale(response))
+              throw createSituationErrors(errors).membershipChanged();
+            throw await normalizeParticipantMembershipResponse(
+              response,
+              createSituationErrors(errors),
+              context.resHeaders,
+            );
+          }
+          membershipChange = {
+            previousRole: membership.role,
+            newRole: addOrganizationRole(
+              membership.role,
+              ORGANIZATION_ROLES.Participant,
+            ),
+          };
+        }
         const [existing] = await tx
           .select({
             id: participants.id,
@@ -261,6 +257,15 @@ export function buildJoin(requirePublishedAgreement: RequirePublishedAgreement) 
         }
         return { participationId };
       });
+      if (membershipChange) {
+        console.info("Participant membership committed", {
+          actor: context.user.id,
+          linkId: input.source.kind === "link" ? input.source.id : invitationId,
+          ...membershipChange,
+          at: new Date().toISOString(),
+        });
+      }
+      return result;
     });
   return join;
 }
@@ -269,6 +274,12 @@ export function buildSaveProfile() {
   const saveProfile = authorized
     .input(profileInput)
     .output(success)
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Save the participant profile",
+      }),
+    )
     .handler(async ({ context, input }) => {
       await db
         .insert(profiles)
@@ -288,6 +299,12 @@ export function buildAcceptAgreement(
   const acceptAgreement = authorized
     .input(agreementInput)
     .output(z.object({ version: z.string() }))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Accept the current participant agreement",
+      }),
+    )
     .handler(async ({ context, errors }) => {
       const version = requirePublishedAgreement(errors);
       await db

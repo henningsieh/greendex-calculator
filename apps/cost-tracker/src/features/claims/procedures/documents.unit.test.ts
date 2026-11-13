@@ -6,11 +6,17 @@ import { getErrorStatus } from "@/lib/orpc/error-status";
 
 const mocks = vi.hoisted(() => ({
   scope: vi.fn(),
+  consume: vi.fn(),
+  cleanup: vi.fn(),
   limit: vi.fn(),
   returning: vi.fn(),
   put: vi.fn(),
   get: vi.fn(),
   session: vi.fn(),
+}));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  consumeUploadBytes: mocks.consume,
+  cleanupQuotasBestEffort: mocks.cleanup,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
@@ -56,12 +62,18 @@ const input = {
   activeOrganizationId: "partner",
 };
 const file = () =>
-  new File([new Uint8Array([1, 2, 3])], "receipt.pdf", {
-    type: "application/pdf",
-  });
+  new File(
+    [new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x0a])],
+    "receipt.pdf",
+    {
+      type: "application/pdf",
+    },
+  );
 const errors = createSituationErrors();
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.consume.mockResolvedValue("allowed");
+  mocks.cleanup.mockResolvedValue(undefined);
   mocks.scope.mockResolvedValue({ partnerId: "partner", hostId: "host" });
   mocks.session.mockResolvedValue({
     user: { id: "actor" },
@@ -191,11 +203,15 @@ describe("Proof Document upload outcomes", () => {
     );
     expect(mocks.put).not.toHaveBeenCalled();
   });
-  it.each(["application/pdf", "image/jpeg", "image/png"])(
+  it.each([
+    ["application/pdf", [0x25, 0x50, 0x44, 0x46, 0x2d, 0x0a]],
+    ["image/jpeg", [0xff, 0xd8, 0xff, 0xe0]],
+    ["image/png", [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+  ] as const)(
     "preserves %s bytes and accepts the exact 10 MB boundary",
-    async (type) => {
+    async (type, magic) => {
       const bytes = new Uint8Array(10 * 1024 * 1024);
-      bytes[0] = 7;
+      bytes.set(magic);
       expect(
         await uploadProofDocument({
           ...input,
@@ -211,6 +227,132 @@ describe("Proof Document upload outcomes", () => {
       expect(storedBytes.equals(Buffer.from(bytes))).toBe(true);
     },
   );
+  it.each([
+    [
+      "document count quota",
+      [{ documentCount: 25, totalBytes: 25 * 1024 }],
+      new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x0a]),
+    ],
+    [
+      "byte volume quota",
+      [{ documentCount: 3, totalBytes: 100 * 1024 * 1024 }],
+      new Uint8Array(10 * 1024 * 1024)
+        .fill(0x25)
+        .fill(0x50, 1, 2)
+        .fill(0x44, 2, 3)
+        .fill(0x46, 3, 4)
+        .fill(0x2d, 4, 5),
+    ],
+  ])(
+    "rejects an upload past the per-claim %s with 429",
+    async (_name, usage, content) => {
+      mocks.limit
+        .mockResolvedValueOnce([{ id: "claim", status: "editable" }])
+        .mockResolvedValueOnce(usage);
+      await expect(
+        uploadProofDocument({
+          ...input,
+          file: new File([content], "extra.pdf", {
+            type: "application/pdf",
+          }),
+        }),
+      ).rejects.toMatchObject({
+        code: "TOO_MANY_REQUESTS",
+        message: "This Claim already holds the maximum Proof Document volume.",
+        data: { reason: "PROOF_QUOTA_EXCEEDED" },
+      });
+      expect(mocks.put).not.toHaveBeenCalled();
+    },
+  );
+  it("accepts an upload just under the per-claim quota", async () => {
+    mocks.limit
+      .mockResolvedValueOnce([{ id: "claim", status: "editable" }])
+      .mockResolvedValueOnce([
+        { documentCount: 24, totalBytes: 90 * 1024 * 1024 },
+      ]);
+    const bytes = new Uint8Array(1024);
+    bytes.set([0x25, 0x50, 0x44, 0x46, 0x2d, 0x0a]);
+    await expect(
+      uploadProofDocument({
+        ...input,
+        file: new File([bytes], "extra.pdf", { type: "application/pdf" }),
+      }),
+    ).resolves.toEqual({ status: 201, document: { id: "proof" } });
+    expect(mocks.put).toHaveBeenCalledTimes(1);
+  });
+  it("denies daily exhaustion without storage or document insertion", async () => {
+    mocks.consume.mockResolvedValue("exhausted");
+    await expect(
+      uploadProofDocument({ ...input, file: file() }),
+    ).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+      data: { reason: "PROOF_DAILY_QUOTA_EXCEEDED" },
+    });
+    expect(mocks.consume).toHaveBeenCalledWith(expect.anything(), {
+      partnerOrganizationId: "partner",
+      bytes: 6,
+    });
+    expect(mocks.put).not.toHaveBeenCalled();
+    expect(mocks.returning).not.toHaveBeenCalled();
+    expect(mocks.cleanup).toHaveBeenCalledOnce();
+  });
+  it.each([
+    [
+      "html labeled as pdf",
+      "<html><body>not a pdf</body></html>",
+      "spoof.pdf",
+      "application/pdf",
+    ],
+    [
+      "png bytes labeled as pdf",
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      "spoof.pdf",
+      "application/pdf",
+    ],
+    ["text labeled as png", "plain text, not an image", "spoof.png", "image/png"],
+    [
+      "truncated jpeg header",
+      new Uint8Array([0xff, 0xd8]),
+      "short.jpg",
+      "image/jpeg",
+    ],
+  ])(
+    "rejects spoofed File.type without storing: %s",
+    async (_name, content, name, type) => {
+      await expect(
+        uploadProofDocument({
+          ...input,
+          file: new File([content], name, { type }),
+        }),
+      ).rejects.toMatchObject({
+        code: "UNSUPPORTED_MEDIA_TYPE",
+        message: "Choose a PDF, JPEG, or PNG Proof Document.",
+        data: { reason: "PROOF_MEDIA_UNSUPPORTED" },
+      });
+      expect(mocks.put).not.toHaveBeenCalled();
+    },
+  );
+});
+describe("sniffProofMediaType", () => {
+  it.each([
+    ["pdf", [0x25, 0x50, 0x44, 0x46, 0x2d], "application/pdf"],
+    ["jpeg", [0xff, 0xd8, 0xff, 0xe0], "image/jpeg"],
+    ["png", [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "image/png"],
+  ] as const)("recognizes %s magic bytes", async (_name, magic, expected) => {
+    const { sniffProofMediaType } =
+      await import("@/features/claims/procedures/documents");
+    expect(sniffProofMediaType(new Uint8Array(magic))).toBe(expected);
+  });
+  it.each([
+    ["empty", []],
+    ["text", [...Buffer.from("hello", "utf8")]],
+    ["truncated png", [0x89, 0x50, 0x4e]],
+    ["gif", [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]],
+  ])("sniffs no allowlisted type from %s", async (_name, magic) => {
+    const { sniffProofMediaType } =
+      await import("@/features/claims/procedures/documents");
+    expect(sniffProofMediaType(new Uint8Array(magic))).toBeNull();
+  });
 });
 describe("Proof Document download scope", () => {
   it.each(["", "x".repeat(129)])(

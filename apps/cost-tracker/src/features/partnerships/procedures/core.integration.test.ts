@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { db } from "@greendex/database";
 import {
+  principalQuotaCounters as counters,
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
@@ -22,10 +23,17 @@ const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   hasPermission: vi.fn(),
 }));
+const quotaMocks = vi.hoisted(() => ({
+  enforceListingLimit: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  enforceListingLimit: quotaMocks.enforceListingLimit,
+}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
 import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { router } from "@/lib/orpc/router";
 
 // Stable identities registered in SEED_SCENARIOS.costTrackerPartnerships.
@@ -108,6 +116,18 @@ afterEach(async () => {
 
 describe("Project Partnership procedures", () => {
   it("lists only Partnerships on Projects hosted by the active Organization", async () => {
+    expect(vi.isMockFunction(enforceListingLimit)).toBe(true);
+    const quotaRows = () =>
+      db
+        .select()
+        .from(counters)
+        .where(
+          and(
+            eq(counters.kind, "listing_calls"),
+            eq(counters.organizationId, hostId),
+          ),
+        );
+    const quotaBefore = await quotaRows();
     const partnerships = await client.projectPartnerships.list();
 
     expect(partnerships.map((partnership) => partnership.id)).toEqual([
@@ -120,6 +140,11 @@ describe("Project Partnership procedures", () => {
       organizationId: assignedOrganizationId,
       organizationName: "Assigned Organization",
     });
+    expect(quotaMocks.enforceListingLimit).toHaveBeenCalledWith(
+      { userId: userId, organizationId: hostId },
+      expect.any(Object),
+    );
+    expect(await quotaRows()).toEqual(quotaBefore);
   });
 
   it("assigns an existing Organization once to a hosted Project", async () => {

@@ -5,19 +5,29 @@ import { hasOrganizationRole } from "@greendex/auth";
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { db } from "@greendex/database";
-import { projectsTable as projects } from "@greendex/database/schema";
+import {
+  principalQuotaCounters as counters,
+  projectsTable as projects,
+} from "@greendex/database/schema";
 import { createRouterClient } from "@orpc/server";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   hasPermission: vi.fn(),
 }));
+const quotaMocks = vi.hoisted(() => ({
+  enforceListingLimit: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/features/quotas/procedures/counters", () => ({
+  enforceListingLimit: quotaMocks.enforceListingLimit,
+}));
 vi.mock("@/lib/auth", () => ({ auth: { api: authMocks } }));
 vi.mock("server-only", () => ({}));
 
 import { SEED_IDS } from "#repo/apps/calculator/scripts/seed-ids";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { router } from "@/lib/orpc/router";
 
 import { SEED_ENTITY_SEARCH } from "../../../../../calculator/scripts/seed-scenarios";
@@ -235,6 +245,18 @@ describe("entity picker procedures", () => {
   });
 
   it("scopes hosted search by active host membership and coordinator assignment", async () => {
+    expect(vi.isMockFunction(enforceListingLimit)).toBe(true);
+    const quotaRows = () =>
+      db
+        .select()
+        .from(counters)
+        .where(
+          and(
+            eq(counters.kind, "listing_calls"),
+            eq(counters.organizationId, host),
+          ),
+        );
+    const quotaBefore = await quotaRows();
     // Pin distinct creation times so the empty-query ordering (newest first)
     // is proven, not inherited from alphabetical coincidence.
     await db
@@ -271,5 +293,10 @@ describe("entity picker procedures", () => {
     await expect(
       client.projects.searchHosted({ search: "Picker " }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(quotaMocks.enforceListingLimit).toHaveBeenCalledWith(
+      { userId: actor, organizationId: host },
+      expect.any(Object),
+    );
+    expect(await quotaRows()).toEqual(quotaBefore);
   });
 });

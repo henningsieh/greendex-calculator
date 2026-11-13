@@ -7,6 +7,7 @@ import {
   member,
   projectsTable as projects,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, desc, eq, exists, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -14,6 +15,7 @@ import {
   HostedProjectOptionSchema,
   HostedProjectSearchInputSchema,
 } from "@/features/projects/validation-schemas";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 
@@ -45,27 +47,31 @@ async function hostedScope(
   )
     throw createSituationErrors(errors).hostingStaffRequired();
 
-  return and(
-    eq(projects.organizationId, activeOrganizationId),
-    eq(projects.archived, false),
-    isManager
-      ? undefined
-      : exists(
-          db
-            .select({ userId: assignments.userId })
-            .from(assignments)
-            .where(
-              and(
-                eq(assignments.projectId, projects.id),
-                eq(assignments.userId, userId),
+  return {
+    activeOrganizationId,
+    filter: and(
+      eq(projects.organizationId, activeOrganizationId),
+      eq(projects.archived, false),
+      isManager
+        ? undefined
+        : exists(
+            db
+              .select({ userId: assignments.userId })
+              .from(assignments)
+              .where(
+                and(
+                  eq(assignments.projectId, projects.id),
+                  eq(assignments.userId, userId),
+                ),
               ),
-            ),
-        ),
-  );
+          ),
+    ),
+  };
 }
 
 export const listHostedOptions = authorized
   .output(z.array(HostedProjectOptionSchema))
+  .meta(openapi({ tags: ["Projects"], summary: "List hosted project options" }))
   .handler(async ({ context, errors }) => {
     const scope = await hostedScope(
       context.session.activeOrganizationId,
@@ -75,7 +81,7 @@ export const listHostedOptions = authorized
     return db
       .select({ id: projects.id, name: projects.name })
       .from(projects)
-      .where(scope)
+      .where(scope.filter)
       .orderBy(asc(projects.name), asc(projects.id));
   });
 
@@ -91,10 +97,15 @@ export const listHostedOptions = authorized
 export const searchHosted = authorized
   .input(HostedProjectSearchInputSchema)
   .output(z.array(HostedProjectOptionSchema).max(20))
+  .meta(openapi({ tags: ["Projects"], summary: "Search hosted projects" }))
   .handler(async ({ context, errors, input }) => {
     const scope = await hostedScope(
       context.session.activeOrganizationId,
       context.user.id,
+      errors,
+    );
+    await enforceListingLimit(
+      { userId: context.user.id, organizationId: scope.activeOrganizationId },
       errors,
     );
     const escaped = input.search.replace(/[\\%_]/g, "\\$&");
@@ -105,7 +116,7 @@ export const searchHosted = authorized
         .from(projects)
         .where(
           and(
-            scope,
+            scope.filter,
             input.search
               ? or(
                   sql`lower(${projects.name}) like lower(${pattern}) escape '\\'`,

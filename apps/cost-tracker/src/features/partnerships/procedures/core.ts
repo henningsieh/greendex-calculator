@@ -5,6 +5,7 @@ import {
   projectPartnerOrganizationsTable,
   projectsTable,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { and, asc, eq, exists, inArray, notExists } from "drizzle-orm";
 import { z } from "zod";
@@ -17,6 +18,7 @@ import {
   RemoveProjectPartnershipResultSchema,
 } from "@/features/partnerships/validation-schemas";
 import { resolveRelationship } from "@/features/projects/procedures/core";
+import { enforceListingLimit } from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import {
   authorized,
@@ -38,6 +40,12 @@ function isExpectedORPCError(error: unknown): boolean {
 
 export const listPartnerships = authorized
   .output(z.array(ProjectPartnershipSchema))
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "List project partnerships",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     const activeOrganizationId = context.session.activeOrganizationId;
     if (!activeOrganizationId) {
@@ -55,6 +63,10 @@ export const listPartnerships = authorized
     if (!canRead && assignedIds.length === 0) {
       throw createSituationErrors(errors).accessDenied();
     }
+    await enforceListingLimit(
+      { userId: context.user.id, organizationId: activeOrganizationId },
+      errors,
+    );
     const scopeFilter = assignedIds.length
       ? and(
           inArray(projectPartnerOrganizationsTable.id, assignedIds),
@@ -101,6 +113,12 @@ export const assignPartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
   .input(AssignProjectPartnershipInputSchema)
   .output(ProjectPartnershipSchema)
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "Assign a partner organization to a project",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
     const relationship = await resolveRelationship({
@@ -191,6 +209,12 @@ export const removePartnership = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["delete"] }))
   .input(RemoveProjectPartnershipInputSchema)
   .output(RemoveProjectPartnershipResultSchema)
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "Remove a partnership",
+    }),
+  )
   .handler(async ({ context, errors, input }) => {
     const activeOrganizationId = context.session.activeOrganizationId!;
 

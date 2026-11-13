@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@greendex/database";
 import { duplicateReviewTasksTable as tasks } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -49,6 +50,12 @@ async function requirePartnerSide(
 const list = authorized
   .input(input)
   .output(z.array(reviewTask))
+  .meta(
+    openapi({
+      tags: ["Reviews"],
+      summary: "List duplicate-participation review tasks",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     await requirePartnerSide(
       input.partnershipId,
@@ -65,6 +72,12 @@ const list = authorized
 const assign = authorized
   .input(rowInput)
   .output(reviewTask)
+  .meta(
+    openapi({
+      tags: ["Reviews"],
+      summary: "Assign a duplicate review task to self",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     await requirePartnerSide(
       input.partnershipId,
@@ -113,6 +126,12 @@ const resolve = authorized
     }),
   )
   .output(reviewTask)
+  .meta(
+    openapi({
+      tags: ["Reviews"],
+      summary: "Resolve a duplicate participation review",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     await requirePartnerSide(
       input.partnershipId,

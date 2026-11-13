@@ -16,7 +16,7 @@ import { createSituationErrors } from "@/lib/orpc/errors";
 // Private invariant exceptions remain raw. Pin exact expressions, not entire
 // files; the procedure boundary sanitizes exceptions raised by procedures.
 const privateInvariantThrows: Record<string, string[]> = {
-  "features/projects/procedures/core.ts": [
+  "features/projects/procedures/list.ts": [
     'new Error("Expected at least one SQL condition.")',
     'new Error("Expected at least one SQL condition.")',
   ],
@@ -28,12 +28,16 @@ const privateInvariantThrows: Record<string, string[]> = {
     'new Error("Unsupported decimal precision")',
     "new Error( `No frozen funding band for Participation ${journey.participantId}.`, )",
   ],
+  "features/quotas/procedures/counters.ts": [
+    'new Error("Quota principal lock unavailable after cleanup races")',
+  ],
   "lib/orpc/orpc.ts": ['new Error("RPCLink is not allowed on the server side.")'],
   "components/ui/sidebar.tsx": [
     'new Error("useSidebar must be used within a SidebarProvider.")',
   ],
   "messages/merge.ts": ["new Error(`Duplicate message namespace: ${namespace}`)"],
   "lib/proof-storage.ts": ['new Error("Proof file has no body.")'],
+  "lib/scalar-version.ts": ['new Error("Scalar package not found")'],
 };
 function directErrorSites(source: string) {
   const aliases = [...source.matchAll(/\bORPCError\s+as\s+(\w+)/g)].map(

@@ -14,6 +14,7 @@ import {
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, asc, eq, exists, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -132,6 +133,13 @@ export function createParticipationProcedures(
         entryContext: scopeContext,
       }),
     )
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary:
+          "List participations, invitations and entry links of a partnership",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(
         input.partnershipId,
@@ -214,6 +222,12 @@ export function createParticipationProcedures(
         correctionContext: scopeContext,
       }),
     )
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "Get a single participation with correction context",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(
         input.partnershipId,
@@ -254,6 +268,12 @@ export function createParticipationProcedures(
   const searchOnboarded = authorized
     .input(scopeInput.extend({ search: z.string().trim().min(2).max(128) }))
     .output(z.array(z.object({ id: z.string(), name: z.string() })).max(20))
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "Search onboarded participants by name",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(
         input.partnershipId,
@@ -305,6 +325,12 @@ export function createParticipationProcedures(
   const create = authorized
     .input(scopeInput.extend({ userId: UserIdSchema }))
     .output(participation)
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "Register a participation for a user",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(
         input.partnershipId,
@@ -468,6 +494,12 @@ export function createParticipationProcedures(
   const update = authorized
     .input(rowInput.extend({ country: z.enum(EU_COUNTRY_CODES).nullable() }))
     .output(participation)
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "Correct a participation's country",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       // The Partner Organization alone corrects `country`, through the shared
       // policy the browser also evaluates; the server never trusts that decision.
@@ -519,6 +551,12 @@ export function createParticipationProcedures(
   const remove = authorized
     .input(rowInput)
     .output(z.object({ removed: z.literal(true) }))
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "Remove a participation",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(
         input.partnershipId,
@@ -599,6 +637,12 @@ export function createParticipationProcedures(
   const listHosted = authorized
     .input(ProjectDetailInputSchema)
     .output(z.array(participation))
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "List participations of a hosted project",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       await requireHostCoordination(
         input.projectId,
@@ -626,6 +670,12 @@ export function createParticipationProcedures(
   const listHostedReport = authorized
     .input(ProjectDetailInputSchema)
     .output(hostedReport)
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "Get the hosting report of a project",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       await requireHostCoordination(
         input.projectId,
@@ -688,6 +738,12 @@ export function createParticipationProcedures(
   const listMine = authorized
     .input(ProjectDetailInputSchema)
     .output(z.array(participation))
+    .meta(
+      openapi({
+        tags: ["Participations"],
+        summary: "List the own participations in a project",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const agreement = currentAgreement();
       if (!isPublishedAgreement(agreement))

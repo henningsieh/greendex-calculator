@@ -14,6 +14,7 @@ import {
   travelCostEntriesTable as entries,
   travelCostEntryDocumentsTable as links,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -367,6 +368,12 @@ export const previewSubmission = authorized
       })
       .nullable(),
   )
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Preview the claim submission",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const scope = await requirePartnerCoordination(
       input.partnershipId,
@@ -404,6 +411,12 @@ export const submit = authorized
       id: z.string(),
       status: z.literal("submitted"),
       approvedAmountEur: z.string(),
+    }),
+  )
+  .meta(
+    openapi({
+      tags: ["Claims"],
+      summary: "Submit the claim for review",
     }),
   )
   .handler(async ({ input, context, errors }) => {

@@ -7,6 +7,7 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -94,6 +95,12 @@ export async function requirePartnerCoordination(
 export const assignPartnerCoordinator = authorized
   .input(PartnerCoordinatorInputSchema)
   .output(z.object({ assigned: z.literal(true) }))
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "Assign a coordinator to a partnership",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const situation = createSituationErrors(errors);
     const orgId = context.session.activeOrganizationId;
@@ -158,6 +165,12 @@ export const assignPartnerCoordinator = authorized
 export const removePartnerCoordinator = authorized
   .input(PartnerCoordinatorInputSchema)
   .output(z.object({ removed: z.literal(true) }))
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "Remove a coordinator assignment",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const situation = createSituationErrors(errors);
     const orgId = context.session.activeOrganizationId;

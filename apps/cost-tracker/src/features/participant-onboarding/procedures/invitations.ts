@@ -8,6 +8,7 @@ import {
   projectsTable as projects,
   user,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -35,6 +36,12 @@ export function buildIssueInvitation() {
   return authorized
     .input(ParticipantInvitationEmailInputSchema)
     .output(invitationResult)
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Invite a participant by email",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const partnership = await requirePartnerScopeAuthority(
         context.headers,
@@ -111,6 +118,12 @@ export function buildReissueInvitation() {
   return authorized
     .input(ParticipantInvitationEmailInputSchema)
     .output(invitationResult)
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Reissue a participant invitation",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const target = await requirePartnerScopeAuthority(
         context.headers,
@@ -189,6 +202,12 @@ export function buildSetInvitationOpen() {
   return authorized
     .input(SetParticipantInvitationOpenInputSchema)
     .output(z.object({ open: z.boolean() }))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Enable or disable a participant invitation",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const [token] = await db
         .select({

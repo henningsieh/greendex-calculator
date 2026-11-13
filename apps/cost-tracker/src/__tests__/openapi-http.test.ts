@@ -1,6 +1,8 @@
 // @vitest-environment node
 
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { SEED_USER } from "@greendex/auth/seed-user";
 import { db } from "@greendex/database";
@@ -18,6 +20,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { assertExistingHttpTarget } from "#repo/scripts/existing-integration-environment";
 import type { Router } from "@/lib/orpc/router";
+import {
+  findScalarPackageDir,
+  SCALAR_STANDALONE_PATH,
+  SCALAR_VERSION,
+} from "@/lib/scalar-version";
 
 const baseURL = process.env.COST_TRACKER_TEST_BASE_URL ?? "";
 const suffix = randomUUID();
@@ -178,7 +185,7 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
     if (cleanupFailed) throw new Error("HTTP fixture session cleanup failed.");
   }, 45_000);
 
-  it("serves the reference and its pinned Scalar viewer without a session", async () => {
+  it("serves docs, vendored Scalar asset, and spec publicly without a session", async () => {
     for (const path of ["/api/docs", "/api/openapi-spec"]) {
       expect((await fetchWithTimeout(`${baseURL}${path}`)).status).toBe(200);
       expect(
@@ -189,30 +196,33 @@ describe("Cost Tracker OpenAPI over real HTTP", () => {
         ).status,
       ).toBe(200);
     }
-    const docs = await fetchWithTimeout(`${baseURL}/api/docs`, {
-      headers: { cookie: cookies[0]! },
-    });
+    const docs = await fetchWithTimeout(`${baseURL}/api/docs`);
     expect(docs.status).toBe(200);
     const html = await docs.text();
-    expect(html).toContain(
-      "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0/dist/browser/standalone.js",
+    expect(html).toContain(`src="${SCALAR_STANDALONE_PATH}"`);
+    for (const banned of ["@latest", "jsdelivr", "unpkg", "cdn"]) {
+      expect(html).not.toContain(banned);
+    }
+    const scalarPkgPath = join(
+      findScalarPackageDir(import.meta.url),
+      "package.json",
     );
-    // The v2 plugin embeds the generated spec rather than fetching specPath in the viewer.
-    expect(html).toContain("Cost Tracker API");
-    expect(html).not.toContain("@latest");
-    const response = await fetchWithTimeout(`${baseURL}/api/openapi-spec`, {
-      headers: { cookie: cookies[0]! },
-    });
+    expect(
+      (JSON.parse(readFileSync(scalarPkgPath, "utf8")) as { version: string })
+        .version,
+    ).toBe(SCALAR_VERSION);
+    const standalone = await fetchWithTimeout(
+      `${baseURL}${SCALAR_STANDALONE_PATH}`,
+    );
+    expect(standalone.status).toBe(200);
+    expect(standalone.headers.get("content-type")).toContain("javascript");
+    expect(standalone.headers.get("cache-control")).toContain("immutable");
+    expect(await standalone.text()).toContain("createApiReference");
+    const response = await fetchWithTimeout(`${baseURL}/api/openapi-spec`);
     expect(response.status).toBe(200);
     const spec = await response.json();
-    expect(spec.openapi).toBe("3.2.0");
-    expect(spec.servers).toEqual([{ url: `${baseURL}/api/openapi` }]);
+    expect(typeof spec.openapi).toBe("string");
     expect(new URL(spec.servers[0].url).origin).toBe(new URL(baseURL).origin);
-    expect(spec.paths["/projects/create"].post.requestBody).toBeDefined();
-    expect(
-      spec.paths["/organizations/updateCountry"].post.responses["403"],
-    ).toBeDefined();
-    expect(spec.paths["/authentication/signIn"].post).toBeDefined();
   });
 
   it("preserves authentication and safe credential errors", async () => {

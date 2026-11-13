@@ -117,6 +117,8 @@
     "PROOF_FILE_TOO_LARGE": "Elige un documento justificativo de un máximo de 10 MB.",
     "PROOF_FILE_EMPTY": "Elige un documento justificativo que no esté vacío.",
     "PROOF_FILE_NAME_REQUIRED": "Elige un documento justificativo con nombre de archivo.",
+    "PROOF_QUOTA_EXCEEDED": "Esta solicitud ya contiene el volumen máximo de documentos justificativos.",
+    "PROOF_DAILY_QUOTA_EXCEEDED": "El cupo diario de subida de documentos justificativos está agotado. Se restablece a las 00:00 UTC.",
     "CLAIM_REQUIRED_FOR_PROOF": "Guarda una solicitud de financiación editable antes de subir un documento justificativo.",
     "PROOF_ORIGIN_DENIED": "El origen de la carga no es válido.",
     "PROOF_TRANSPORT_TOO_LARGE": "La solicitud de carga es demasiado grande.",

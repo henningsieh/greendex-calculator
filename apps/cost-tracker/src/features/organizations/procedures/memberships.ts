@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@greendex/database";
 import { member, organization } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -16,6 +17,12 @@ import { authorized } from "@/lib/orpc/middleware";
 export const listMemberships = authorized
   .output(
     z.array(z.object({ id: z.string(), name: z.string(), role: z.string() })),
+  )
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "List the own organization memberships",
+    }),
   )
   .handler(async ({ context }) => {
     return readOrganizationMemberships(context.user.id);

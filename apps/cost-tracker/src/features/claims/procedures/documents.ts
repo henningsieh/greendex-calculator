@@ -6,7 +6,8 @@ import {
   claimsTable as claims,
   proofDocumentsTable as documents,
 } from "@greendex/database/schema";
-import { and, eq } from "drizzle-orm";
+import { openapi } from "@orpc/openapi";
+import { and, count, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { canPartnerEditClaim } from "@/features/claims/claim-lifecycle";
@@ -16,6 +17,10 @@ import {
   ProofDocumentIdSchema,
 } from "@/features/claims/validation-schemas";
 import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
+import {
+  cleanupQuotasBestEffort,
+  consumeUploadBytes,
+} from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
 import { getProofFile, putProofFile } from "@/lib/proof-storage";
@@ -53,6 +58,12 @@ async function requirePartner(
 export const list = authorized
   .input(ClaimScopeInputSchema)
   .output(z.array(documentOutput))
+  .meta(
+    openapi({
+      tags: ["Documents"],
+      summary: "List proof documents of a claim",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     await requirePartner(
       input.partnershipId,
@@ -122,6 +133,55 @@ export async function downloadProofDocument(input: {
 
 const allowedMediaTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 const maximumBytes = 10 * 1024 * 1024;
+const maximumDocumentsPerClaim = 25;
+const maximumBytesPerClaim = 100 * 1024 * 1024;
+
+/**
+ * #374: server-side magic-byte sniffing for the proof allowlist. The
+ * multipart `File.type` is client-supplied and untrusted, so only the
+ * sniffed type decides what is stored and served. Dependency-free on
+ * purpose: exactly three allowlisted types with crisp magic numbers.
+ */
+const proofMagicTypes = [
+  {
+    mediaType: "application/pdf",
+    match: (bytes: Uint8Array) =>
+      bytes.length >= 5 &&
+      bytes[0] === 0x25 && // %
+      bytes[1] === 0x50 && // P
+      bytes[2] === 0x44 && // D
+      bytes[3] === 0x46 && // F
+      bytes[4] === 0x2d, // -
+  },
+  {
+    mediaType: "image/jpeg",
+    match: (bytes: Uint8Array) =>
+      bytes.length >= 3 &&
+      bytes[0] === 0xff &&
+      bytes[1] === 0xd8 &&
+      bytes[2] === 0xff,
+  },
+  {
+    mediaType: "image/png",
+    match: (bytes: Uint8Array) =>
+      bytes.length >= 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 && // P
+      bytes[2] === 0x4e && // N
+      bytes[3] === 0x47 && // G
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a,
+  },
+] as const;
+
+export function sniffProofMediaType(bytes: Uint8Array): string | null {
+  for (const candidate of proofMagicTypes) {
+    if (candidate.match(bytes)) return candidate.mediaType;
+  }
+  return null;
+}
 
 /** Called by the multipart route only; the Claim lock protects editable status across the upload. */
 export async function uploadProofDocument(input: {
@@ -147,7 +207,7 @@ export async function uploadProofDocument(input: {
     {},
   );
   // Never materialize an empty Claim from a file upload. First save is explicit.
-  return db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx) => {
     // Shared lock order: the Claim lock keeps editable status across the upload.
     const { claim } = await lockClaimScope(
       tx,
@@ -162,15 +222,43 @@ export async function uploadProofDocument(input: {
     if (!claim) throw proofErrors.claimRequiredForProof();
     if (!canPartnerEditClaim(claim.status)) throw proofErrors.claimNotEditable();
     const bytes = Buffer.from(await input.file.arrayBuffer());
+    // #374: File.type is client-supplied. Only the sniffed magic-byte type
+    // is authoritative: a spoofed label is rejected even when it names an
+    // allowlisted type, and the stored/served ContentType always matches
+    // the verified bytes.
+    const sniffedMediaType = sniffProofMediaType(bytes);
+    if (sniffedMediaType === null || sniffedMediaType !== input.file.type)
+      throw proofErrors.proofMediaUnsupported();
+    const [usage] = await tx
+      .select({
+        documentCount: count(documents.id),
+        totalBytes: sql<number>`coalesce(sum(${documents.byteSize}), 0)`.mapWith(
+          Number,
+        ),
+      })
+      .from(documents)
+      .where(eq(documents.claimId, claim.id))
+      .limit(1);
+    const existingCount = Number(usage?.documentCount ?? 0);
+    const existingBytes = Number(usage?.totalBytes ?? 0);
+    if (
+      existingCount >= maximumDocumentsPerClaim ||
+      existingBytes + bytes.length > maximumBytesPerClaim
+    )
+      throw proofErrors.proofQuotaExceeded();
+    const allowance = await consumeUploadBytes(tx, {
+      partnerOrganizationId: scope.partnerId,
+      bytes: bytes.length,
+    });
+    if (allowance === "exhausted") return { kind: "exhausted" as const };
     const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
-    await putProofFile(reference, bytes, input.file.type);
     const [saved] = await tx
       .insert(documents)
       .values({
         claimId: claim.id,
         fileReference: reference,
         originalFileName: input.file.name.slice(0, 255),
-        mediaType: input.file.type,
+        mediaType: sniffedMediaType,
         byteSize: bytes.length,
         checksum: createHash("sha256").update(bytes).digest("hex"),
       })
@@ -179,6 +267,27 @@ export async function uploadProofDocument(input: {
       console.error("[Proof upload] Insert returned no document");
       throw proofErrors.proofUploadFailed();
     }
-    return { status: 201 as const, document: saved };
+    return {
+      kind: "saved" as const,
+      document: saved,
+      reference,
+      bytes,
+      mediaType: sniffedMediaType,
+    };
   });
+  await cleanupQuotasBestEffort();
+  if (outcome.kind === "exhausted") throw proofErrors.proofDailyQuotaExceeded();
+  // Storage writes stay outside the transaction: a slow upload must not hold
+  // the quota row lock, and a rollback can no longer orphan an object.
+  try {
+    await putProofFile(outcome.reference, outcome.bytes, outcome.mediaType);
+  } catch {
+    try {
+      await db.delete(documents).where(eq(documents.id, outcome.document.id));
+    } catch {
+      console.error("[Proof upload] Compensating document delete failed");
+    }
+    throw proofErrors.proofUploadFailed();
+  }
+  return { status: 201 as const, document: outcome.document };
 }

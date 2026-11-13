@@ -9,6 +9,7 @@ import {
   projectParticipantsTable as participants,
   user,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -98,6 +99,12 @@ export function createOnboardingProgressProcedure(
   return authorized
     .input(OnboardingProgressInputSchema)
     .output(z.array(progress))
+    .meta(
+      openapi({
+        tags: ["Access"],
+        summary: "Show participant onboarding progress for a partnership",
+      }),
+    )
     .handler(async ({ input, context, errors }) => {
       const scope = await requirePartnerCoordination(
         input.partnershipId,

@@ -1,4 +1,5 @@
 import { EU_COUNTRY_CODES } from "@greendex/config/eu-countries";
+import { openapi } from "@orpc/openapi";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth";
@@ -14,6 +15,12 @@ const OrganizationSettingsSchema = z.object({
 
 export const getSettings = authorized
   .output(OrganizationSettingsSchema)
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "Get organization settings",
+    }),
+  )
   .handler(async ({ context, errors }) => {
     if (!context.session.activeOrganizationId)
       throw createSituationErrors(errors).selectOrganization();
@@ -31,6 +38,12 @@ export const getSettings = authorized
 export const updateCountry = authorized
   .input(OrganizationSettingsSchema.pick({ country: true }))
   .output(z.object({ success: z.literal(true) }))
+  .meta(
+    openapi({
+      tags: ["Organizations"],
+      summary: "Update the organization country",
+    }),
+  )
   .handler(async ({ context, input, errors }) => {
     if (!context.session.activeOrganizationId)
       throw createSituationErrors(errors).selectOrganization();

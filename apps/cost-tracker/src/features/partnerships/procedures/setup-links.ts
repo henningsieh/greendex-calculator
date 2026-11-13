@@ -9,6 +9,7 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable,
 } from "@greendex/database/schema";
+import { openapi } from "@orpc/openapi";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -31,6 +32,12 @@ const hash = (secret: string) =>
 export const createSetupLink = authorized
   .input(CreateSetupLinkInputSchema)
   .output(z.object({ id: z.string(), secret: z.string(), expiresAt: z.date() }))
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Create a partnership setup link",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const secret = randomBytes(32).toString("base64url");
     if (!context.session.activeOrganizationId)
@@ -92,6 +99,12 @@ export const listSetupLinks = authorized
       }),
     ),
   )
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "List partnership setup links",
+    }),
+  )
   .handler(async ({ context }) =>
     db
       .select({
@@ -115,6 +128,12 @@ export const disableSetupLink = authorized
   .use(requireCostTrackerPermissions({ projectPartnership: ["create"] }))
   .input(DisableSetupLinkInputSchema)
   .output(z.object({ disabled: z.literal(true) }))
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Disable a setup link",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     const [link] = await db
       .update(links)
@@ -249,6 +268,12 @@ export const getSetupLinkEligibility = authorized
       }),
     ]),
   )
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Check setup-link eligibility",
+    }),
+  )
   .handler(async ({ input, context, errors }) =>
     readSetupLinkEligibility(input, context.user, createSituationErrors(errors)),
   );
@@ -299,6 +324,12 @@ export async function readSetupBindingEligibility(
 export const consumeSetupLink = authorized
   .input(setupLinkInput.extend({ organizationId: OrganizationIdSchema }))
   .output(redemptionResult)
+  .meta(
+    openapi({
+      tags: ["Access"],
+      summary: "Redeem a setup link to create a partnership",
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     return db.transaction(async (tx) => {
       const situations = createSituationErrors(errors);

@@ -60,7 +60,7 @@ This section owns test selection and final verification policy. Follow it during
 - Keep pure unit/component checks server-free. Use focused `pnpm --dir <workspace> exec vitest run <file>` or `pnpm --dir <app> exec playwright test --config=<config> <file> --workers=1 --retries=0` when narrowing a suite.
 - Runtime-dependent checks use existing loopback applications and the shared development database. Inspect Next MCP routes, errors, and compilation diagnostics when using an existing dev server, plus real browser observations before and after app changes.
 - Existing-server checks accept dev or production servers without an attestation flag. They do not establish production provenance. Dev results do not prove production behavior. The operator owns build/start and final production verification against the reviewed candidate.
-- Test runners never build, start servers, migrate, provision databases or stop existing processes. A run may seed the shared development database, because tests need canonical data. It may not delete rows outside the seed while running. Production and staging are excluded. Missing servers or credentials fail rather than skip. The only database target is `greendex_development` at `188.245.144.137:5489`, loaded from shared `packages/database/.env`; each app loads its own configuration automatically. Injected values retain precedence but must satisfy the same target restriction.
+- Test runners never build, start servers, migrate, provision databases or stop existing processes. A run may seed the shared development database, because tests need canonical data. Cleanup follows [fixture ownership and quota expiry](#fixture-ownership-and-quota-expiry). Production and staging are excluded. Missing servers or credentials fail rather than skip. The only database target is `greendex_development` at `188.245.144.137:5489`, loaded from shared `packages/database/.env`; each app loads its own configuration automatically. Injected values retain precedence but must satisfy the same target restriction.
 
 Representative focused selections:
 
@@ -69,6 +69,14 @@ Representative focused selections:
 | Pure organization role rule | `pnpm --dir packages/auth exec vitest run src/organization-roles.test.ts`. No server is needed. |
 | Browser/session setup | Against existing apps, use `pnpm --dir apps/cost-tracker exec playwright test --config=playwright.config.ts hosting-setup.spec.ts --workers=1 --retries=0`. Verify original-session success before reload or reauthentication. |
 | Shared auth/schema/router | Expand to affected role/permission units, both apps' auth/procedure integrations, SSR routing, persistence, and cross-app session journeys. |
+
+### Fixture ownership and quota expiry
+
+Test-authored cleanup removes only run-owned rows, sessions, and storage objects. Preserve shared fixtures and mailboxes.
+
+Real HTTP and browser checks against loopback applications may trigger the application's normal bounded cleanup of expired `principal_quota_counters` rows in the approved shared development database. Expired counters from other development fixtures may be removed by this maintenance. This exception covers application-triggered quota expiry only, not unrestricted cleanup called directly by tests. Active counters, business records, storage objects, and mail are outside the exception. Production and staging remain excluded.
+
+Direct database integration tests isolate quota side effects to owned fixtures, or mock them when quota behavior is not under test. Tests of unrestricted quota cleanup use isolated temporary tables. Live HTTP and browser checks retain the application's normal quota behavior.
 
 ### Centrally owned final acceptance
 
@@ -108,7 +116,7 @@ One coordinator owns final acceptance after all writers finish. Reviewers and im
 
 For final verification:
 
-1. Preserve dedicated-mailbox/current-run correlation, default mail retention, development Garage isolation, owned-object cleanup, and sanitized evidence. Missing services or credentials are blockers. Remove only run-owned rows, sessions and storage objects; never clear shared fixtures or mailboxes. Browser artifacts remain private, with trace, video and automatic screenshots off.
+1. Preserve dedicated-mailbox/current-run correlation, default mail retention, development Garage isolation, owned-object cleanup, and sanitized evidence. Missing services or credentials are blockers. Apply [fixture ownership and quota expiry](#fixture-ownership-and-quota-expiry) to cleanup. Browser artifacts remain private, with trace, video and automatic screenshots off.
 2. Require independent Standards and Spec reviews of the same integration candidate. Resolve findings with bounded focused repairs and review the changed final diff again.
 3. Require zero flaky final acceptance. Use zero retries for final acceptance, including any CLI override. Report failures, blocks, skips and cleanup failures honestly; none prove a passed gate. A nonzero subprocess or real-workflow failure fails its mode; full still attempts the remaining modes.
 4. Record the exact candidate, runtime targets, selected suites, results, timings, and blockers without secrets. Source/build-affecting changes invalidate relevant evidence. No fixed count of repeated green full runs is required.
