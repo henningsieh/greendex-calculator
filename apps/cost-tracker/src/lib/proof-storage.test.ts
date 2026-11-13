@@ -9,7 +9,7 @@ import { vi } from "vitest";
 import { env } from "@/env";
 
 vi.mock("server-only", () => ({}));
-import { getProofFile, putProofFile } from "@/lib/proof-storage";
+import { deleteProofFile, getProofFile, putProofFile } from "@/lib/proof-storage";
 
 describe("Proof storage dev Garage round trip", () => {
   it("returns the exact bytes and cleans up its unique test object", async () => {
@@ -27,6 +27,8 @@ describe("Proof storage dev Garage round trip", () => {
     try {
       await putProofFile(key, bytes, "application/pdf");
       assert.deepEqual(Buffer.from(await getProofFile(key)), bytes);
+      await deleteProofFile(key);
+      await assert.rejects(getProofFile(key), { name: "NoSuchKey" });
     } finally {
       try {
         await client.send(

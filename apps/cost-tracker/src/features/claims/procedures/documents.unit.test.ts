@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   limit: vi.fn(),
   returning: vi.fn(),
   put: vi.fn(),
+  delete: vi.fn(),
   get: vi.fn(),
   session: vi.fn(),
 }));
@@ -22,6 +23,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
 vi.mock("@/lib/proof-storage", () => ({
   putProofFile: mocks.put,
+  deleteProofFile: mocks.delete,
   getProofFile: mocks.get,
 }));
 vi.mock("@/features/partnerships/procedures/coordination", () => {
@@ -294,6 +296,7 @@ describe("Proof Document upload outcomes", () => {
     });
     expect(mocks.put).not.toHaveBeenCalled();
     expect(mocks.returning).not.toHaveBeenCalled();
+    expect(mocks.delete).not.toHaveBeenCalled();
     expect(mocks.cleanup).toHaveBeenCalledOnce();
   });
   it.each([

@@ -10,8 +10,11 @@ import {
   projectPartnerOrganizationsTable as partnerships,
   projectsTable as projects,
   proofDocumentsTable as documents,
+  travelCostEntriesTable as entries,
+  travelCostEntryDocumentsTable as links,
   user,
 } from "@greendex/database/schema";
+import { createRouterClient } from "@orpc/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   afterAll,
@@ -27,14 +30,17 @@ import { ownedCleanup } from "@/__tests__/owned-cleanup.test-helper";
 
 const mocks = vi.hoisted(() => ({
   put: vi.fn(),
+  delete: vi.fn(),
   cleanupExecutor: undefined as Pick<typeof db, "execute"> | undefined,
   session: vi.fn(),
   failInsert: false,
+  failAfterPut: false,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
 vi.mock("@/lib/proof-storage", () => ({
   putProofFile: mocks.put,
+  deleteProofFile: mocks.delete,
   getProofFile: vi.fn(),
 }));
 vi.mock("@greendex/database", async (original) => {
@@ -45,8 +51,8 @@ vi.mock("@greendex/database", async (original) => {
       get(target, key) {
         if (key === "transaction")
           return (callback: Parameters<typeof actual.db.transaction>[0]) =>
-            target.transaction((tx) =>
-              callback(
+            target.transaction(async (tx) => {
+              const result = await callback(
                 new Proxy(tx, {
                   get(transaction, property) {
                     if (property === "insert" && mocks.failInsert)
@@ -65,8 +71,11 @@ vi.mock("@greendex/database", async (original) => {
                       : value;
                   },
                 }),
-              ),
-            );
+              );
+              if (mocks.failAfterPut && mocks.put.mock.calls.length > 0)
+                await tx.execute(sql`select 1 / 0`);
+              return result;
+            });
         if (key === "execute")
           return ownedCleanup(mocks.cleanupExecutor ?? target, [partner, other])
             .execute;
@@ -77,7 +86,10 @@ vi.mock("@greendex/database", async (original) => {
 });
 import { POST } from "@/app/api/proof-documents/route";
 import { env } from "@/env";
+import { linkDocument } from "@/features/claims/procedures/costs";
 import { uploadProofDocument } from "@/features/claims/procedures/documents";
+import { list } from "@/features/claims/procedures/documents";
+import { submit } from "@/features/claims/procedures/submission";
 import { DAILY_UPLOAD_BYTES } from "@/features/quotas/procedures/counters";
 
 const prefix = `upload-quota-${randomUUID()}`;
@@ -167,12 +179,19 @@ beforeAll(async () => {
 });
 beforeEach(async () => {
   mocks.failInsert = false;
+  mocks.failAfterPut = false;
+  mocks.delete.mockReset().mockResolvedValue(undefined);
   mocks.put.mockReset().mockResolvedValue(undefined);
   mocks.session.mockResolvedValue({
     user: { id: actorId },
     session: { activeOrganizationId: partner },
   });
   await db.delete(documents).where(inArray(documents.claimId, claimIds));
+  await db.delete(entries).where(inArray(entries.claimId, claimIds));
+  await db
+    .update(claims)
+    .set({ status: "editable" })
+    .where(inArray(claims.id, claimIds));
   await db
     .delete(counters)
     .where(inArray(counters.organizationId, [partner, other]));
@@ -282,19 +301,203 @@ describe("Proof upload Organization daily consumption", () => {
         .from(documents)
         .where(inArray(documents.claimId, claimIds)),
     ).toEqual([]);
+    expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
   });
-  it("never reaches storage when the document insert fails", async () => {
+  it("removes the stored object if database finalization rolls back after PUT", async () => {
+    mocks.failAfterPut = true;
+    await expect(upload()).rejects.toMatchObject({ cause: { code: "22012" } });
+    expect(mocks.put).toHaveBeenCalledOnce();
+    expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
+    expect((await quotaRows())[0].used).toBe(6n);
+    expect(
+      await db.select().from(documents).where(eq(documents.claimId, claimIds[0])),
+    ).toEqual([]);
+  });
+  it("does not hold the shared Organization quota lock while storage is pending", async () => {
+    const started = Promise.withResolvers<void>();
+    const storage = Promise.withResolvers<void>();
+    mocks.put.mockImplementationOnce(() => {
+      started.resolve();
+      return storage.promise;
+    });
+    const first = upload(0);
+    const firstResult = Promise.allSettled([first]);
+    await started.promise;
+    const second = upload(1);
+    const secondResult = Promise.allSettled([second]);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        second,
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(new Error("A pending upload blocked another Claim's quota")),
+            3_000,
+          );
+        }),
+      ]);
+      expect((await quotaRows())[0].used).toBe(12n);
+    } finally {
+      clearTimeout(timer);
+      storage.resolve();
+      await Promise.all([firstResult, secondResult]);
+    }
+    expect(await firstResult).toMatchObject([{ status: "fulfilled" }]);
+  });
+  it("refuses publication if the Claim was submitted while storage was pending", async () => {
+    const started = Promise.withResolvers<void>();
+    const storage = Promise.withResolvers<void>();
+    mocks.put.mockImplementationOnce(() => {
+      started.resolve();
+      return storage.promise;
+    });
+    const result = Promise.allSettled([upload()]);
+    await started.promise;
+    try {
+      await db
+        .update(claims)
+        .set({ status: "submitted" })
+        .where(eq(claims.id, claimIds[0]));
+    } finally {
+      storage.resolve();
+      await result;
+    }
+    expect(await result).toMatchObject([
+      {
+        status: "rejected",
+        reason: { data: { reason: "CLAIM_NOT_EDITABLE" } },
+      },
+    ]);
+    expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
+    expect(
+      await db.select().from(documents).where(eq(documents.claimId, claimIds[0])),
+    ).toEqual([]);
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimIds[0])))[0]
+        .status,
+    ).toBe("submitted");
+  });
+  it("rechecks the per-Claim quota when two pending uploads compete for the last document slot", async () => {
+    await db.insert(documents).values(
+      Array.from({ length: 24 }, (_, i) => ({
+        claimId: claimIds[0],
+        fileReference: `${prefix}/existing-${i}`,
+        originalFileName: `existing-${i}.pdf`,
+        mediaType: "application/pdf",
+        byteSize: 6,
+        checksum: "fixture",
+      })),
+    );
+    const started = Promise.withResolvers<void>();
+    const storage = Promise.withResolvers<void>();
+    let pending = 0;
+    mocks.put.mockImplementation(() => {
+      if (++pending === 2) started.resolve();
+      return storage.promise;
+    });
+    const results = Promise.allSettled([upload(), upload()]);
+    try {
+      await started.promise;
+    } finally {
+      storage.resolve();
+      await results;
+    }
+    const outcomes = await results;
+    expect(
+      outcomes.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      outcomes.filter((result) => result.status === "rejected"),
+    ).toMatchObject([
+      {
+        reason: { data: { reason: "PROOF_QUOTA_EXCEEDED" } },
+      },
+    ]);
+    expect(
+      await db.select().from(documents).where(eq(documents.claimId, claimIds[0])),
+    ).toHaveLength(25);
+    expect(mocks.delete).toHaveBeenCalledOnce();
+    expect((await quotaRows())[0].used).toBe(12n);
+  });
+  it("never exposes a pending proof to concurrent linking and submission when storage fails", async () => {
+    const client = createRouterClient(
+      { list, linkDocument, submit },
+      { context: { headers: new Headers() } },
+    );
+    const [entry] = await db
+      .insert(entries)
+      .values({
+        claimId: claimIds[0],
+        transportProfile: "train",
+        amountEur: "10.00",
+        allocationMethod: "equal",
+      })
+      .returning({ id: entries.id });
+    const started = Promise.withResolvers<void>();
+    const storage = Promise.withResolvers<void>();
+    mocks.put.mockImplementationOnce(() => {
+      started.resolve();
+      return storage.promise;
+    });
+    const uploading = upload();
+    const uploadResult = Promise.allSettled([uploading]);
+    await started.promise;
+    let concurrent;
+    try {
+      const visible = await client.list({ partnershipId: partnershipIds[0] });
+      concurrent = Promise.allSettled([
+        client.linkDocument({
+          partnershipId: partnershipIds[0],
+          entryId: entry.id,
+          proofDocumentId: visible[0]?.id ?? "unpublished-proof",
+        }),
+        client.submit({ partnershipId: partnershipIds[0] }),
+      ]);
+      expect(visible).toEqual([]);
+    } finally {
+      storage.reject(new Error("storage unavailable"));
+      await uploadResult;
+      if (concurrent) await concurrent;
+    }
+    expect(await uploadResult).toMatchObject([
+      {
+        status: "rejected",
+        reason: { data: { reason: "PROOF_UPLOAD_FAILED" } },
+      },
+    ]);
+    expect(await concurrent).toMatchObject([
+      {
+        status: "rejected",
+        reason: { data: { reason: "CLAIM_DOCUMENT_REFERENCES_REQUIRED" } },
+      },
+      {
+        status: "rejected",
+        reason: { data: { reason: "CLAIM_SUBMISSION_INCOMPLETE" } },
+      },
+    ]);
+    expect(await client.list({ partnershipId: partnershipIds[0] })).toEqual([]);
+    expect(
+      await db.select().from(links).where(eq(links.travelCostEntryId, entry.id)),
+    ).toEqual([]);
+    expect(
+      (await db.select().from(claims).where(eq(claims.id, claimIds[0])))[0]
+        .status,
+    ).toBe("editable");
+  });
+  it("removes the stored file and retains attempted bytes when document insertion fails", async () => {
     await seed(0);
     mocks.failInsert = true;
     await expect(upload()).rejects.toMatchObject({ cause: { code: "22012" } });
-    expect((await quotaRows())[0].used).toBe(0n);
+    expect((await quotaRows())[0].used).toBe(6n);
     expect(
       await db
         .select()
         .from(documents)
         .where(inArray(documents.claimId, claimIds)),
     ).toEqual([]);
-    expect(mocks.put).not.toHaveBeenCalled();
+    expect(mocks.put).toHaveBeenCalledOnce();
+    expect(mocks.delete).toHaveBeenCalledWith(mocks.put.mock.calls[0][0]);
   });
   it("returns a safe HTTP 429 body with no usage or principal identifiers", async () => {
     await seed(DAILY_UPLOAD_BYTES);

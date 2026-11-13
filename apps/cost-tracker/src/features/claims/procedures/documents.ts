@@ -23,7 +23,7 @@ import {
 } from "@/features/quotas/procedures/counters";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized } from "@/lib/orpc/middleware";
-import { getProofFile, putProofFile } from "@/lib/proof-storage";
+import { deleteProofFile, getProofFile, putProofFile } from "@/lib/proof-storage";
 
 const documentOutput = z.object({
   id: z.string(),
@@ -183,7 +183,33 @@ export function sniffProofMediaType(bytes: Uint8Array): string | null {
   return null;
 }
 
-/** Called by the multipart route only; the Claim lock protects editable status across the upload. */
+async function lockUploadClaim(
+  tx: Parameters<typeof lockClaimScope>[0],
+  scope: Parameters<typeof lockClaimScope>[1],
+  byteSize: number,
+) {
+  const { claim } = await lockClaimScope(tx, scope, {}, "claim");
+  if (!claim) throw proofErrors.claimRequiredForProof();
+  if (!canPartnerEditClaim(claim.status)) throw proofErrors.claimNotEditable();
+  const [usage] = await tx
+    .select({
+      documentCount: count(documents.id),
+      totalBytes: sql<number>`coalesce(sum(${documents.byteSize}), 0)`.mapWith(
+        Number,
+      ),
+    })
+    .from(documents)
+    .where(eq(documents.claimId, claim.id))
+    .limit(1);
+  if (
+    Number(usage?.documentCount ?? 0) >= maximumDocumentsPerClaim ||
+    Number(usage?.totalBytes ?? 0) + byteSize > maximumBytesPerClaim
+  )
+    throw proofErrors.proofQuotaExceeded();
+  return claim;
+}
+
+/** Called by the multipart route only; Claim state and capacity are rechecked before publication. */
 export async function uploadProofDocument(input: {
   partnershipId: string;
   file: File;
@@ -207,87 +233,78 @@ export async function uploadProofDocument(input: {
     {},
   );
   // Never materialize an empty Claim from a file upload. First save is explicit.
-  const outcome = await db.transaction(async (tx) => {
-    // Shared lock order: the Claim lock keeps editable status across the upload.
-    const { claim } = await lockClaimScope(
-      tx,
-      {
-        projectId: scope.projectId,
-        partnershipId: parsed.data.partnershipId,
+  const claimScope = {
+    projectId: scope.projectId,
+    partnershipId: parsed.data.partnershipId,
+    partnerOrganizationId: scope.partnerId,
+  };
+  let attemptedReference: string | undefined;
+  try {
+    const reserved = await db.transaction(async (tx) => {
+      const claim = await lockUploadClaim(tx, claimScope, input.file.size);
+      const bytes = Buffer.from(await input.file.arrayBuffer());
+      // #374: File.type is client-supplied. Only the sniffed magic-byte type
+      // is authoritative: a spoofed label is rejected even when it names an
+      // allowlisted type, and the stored/served ContentType always matches
+      // the verified bytes.
+      const sniffedMediaType = sniffProofMediaType(bytes);
+      if (sniffedMediaType === null || sniffedMediaType !== input.file.type)
+        throw proofErrors.proofMediaUnsupported();
+      const allowance = await consumeUploadBytes(tx, {
         partnerOrganizationId: scope.partnerId,
-      },
-      {},
-      "claim",
-    );
-    if (!claim) throw proofErrors.claimRequiredForProof();
-    if (!canPartnerEditClaim(claim.status)) throw proofErrors.claimNotEditable();
-    const bytes = Buffer.from(await input.file.arrayBuffer());
-    // #374: File.type is client-supplied. Only the sniffed magic-byte type
-    // is authoritative: a spoofed label is rejected even when it names an
-    // allowlisted type, and the stored/served ContentType always matches
-    // the verified bytes.
-    const sniffedMediaType = sniffProofMediaType(bytes);
-    if (sniffedMediaType === null || sniffedMediaType !== input.file.type)
-      throw proofErrors.proofMediaUnsupported();
-    const [usage] = await tx
-      .select({
-        documentCount: count(documents.id),
-        totalBytes: sql<number>`coalesce(sum(${documents.byteSize}), 0)`.mapWith(
-          Number,
-        ),
-      })
-      .from(documents)
-      .where(eq(documents.claimId, claim.id))
-      .limit(1);
-    const existingCount = Number(usage?.documentCount ?? 0);
-    const existingBytes = Number(usage?.totalBytes ?? 0);
-    if (
-      existingCount >= maximumDocumentsPerClaim ||
-      existingBytes + bytes.length > maximumBytesPerClaim
-    )
-      throw proofErrors.proofQuotaExceeded();
-    const allowance = await consumeUploadBytes(tx, {
-      partnerOrganizationId: scope.partnerId,
-      bytes: bytes.length,
-    });
-    if (allowance === "exhausted") return { kind: "exhausted" as const };
-    const reference = `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`;
-    const [saved] = await tx
-      .insert(documents)
-      .values({
+        bytes: bytes.length,
+      });
+      if (allowance === "exhausted") return { kind: "exhausted" as const };
+      return {
+        kind: "reserved" as const,
         claimId: claim.id,
-        fileReference: reference,
-        originalFileName: input.file.name.slice(0, 255),
+        reference: `claims/${scope.partnerId}/${claim.id}/${randomUUID()}`,
+        bytes,
         mediaType: sniffedMediaType,
-        byteSize: bytes.length,
-        checksum: createHash("sha256").update(bytes).digest("hex"),
-      })
-      .returning(projection);
-    if (!saved) {
-      console.error("[Proof upload] Insert returned no document");
+      };
+    });
+    if (reserved.kind === "exhausted")
+      throw proofErrors.proofDailyQuotaExceeded();
+    // No Claim or Organization quota lock is held during storage. Pending files
+    // have no document row, so they cannot be listed, linked or used for submission.
+    attemptedReference = reserved.reference;
+    try {
+      await putProofFile(reserved.reference, reserved.bytes, reserved.mediaType);
+    } catch {
       throw proofErrors.proofUploadFailed();
     }
-    return {
-      kind: "saved" as const,
-      document: saved,
-      reference,
-      bytes,
-      mediaType: sniffedMediaType,
-    };
-  });
-  await cleanupQuotasBestEffort();
-  if (outcome.kind === "exhausted") throw proofErrors.proofDailyQuotaExceeded();
-  // Storage writes stay outside the transaction: a slow upload must not hold
-  // the quota row lock, and a rollback can no longer orphan an object.
-  try {
-    await putProofFile(outcome.reference, outcome.bytes, outcome.mediaType);
-  } catch {
-    try {
-      await db.delete(documents).where(eq(documents.id, outcome.document.id));
-    } catch {
-      console.error("[Proof upload] Compensating document delete failed");
+    return await db.transaction(async (tx) => {
+      const claim = await lockUploadClaim(tx, claimScope, reserved.bytes.length);
+      if (claim.id !== reserved.claimId) throw proofErrors.claimNotEditable();
+      const [saved] = await tx
+        .insert(documents)
+        .values({
+          claimId: claim.id,
+          fileReference: reserved.reference,
+          originalFileName: input.file.name.slice(0, 255),
+          mediaType: reserved.mediaType,
+          byteSize: reserved.bytes.length,
+          checksum: createHash("sha256").update(reserved.bytes).digest("hex"),
+        })
+        .returning(projection);
+      if (!saved) {
+        console.error("[Proof upload] Insert returned no document");
+        throw proofErrors.proofUploadFailed();
+      }
+      return { status: 201 as const, document: saved };
+    });
+  } catch (error) {
+    // A failed PUT can have reached storage; a failed database commit can too.
+    // Delete only this upload's unique object after its Claim transaction rolls back.
+    if (attemptedReference) {
+      try {
+        await deleteProofFile(attemptedReference);
+      } catch {
+        console.error("[Proof upload] Compensating storage delete failed");
+      }
     }
-    throw proofErrors.proofUploadFailed();
+    throw error;
+  } finally {
+    await cleanupQuotasBestEffort();
   }
-  return { status: 201 as const, document: outcome.document };
 }

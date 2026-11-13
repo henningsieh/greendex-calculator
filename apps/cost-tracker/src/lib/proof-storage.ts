@@ -1,5 +1,10 @@
 import "server-only";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
 import { env } from "@/env";
 
@@ -43,6 +48,17 @@ export async function getProofFile(reference: string) {
     );
     if (!result.Body) throw new Error("Proof file has no body.");
     return result.Body.transformToByteArray();
+  } finally {
+    client.destroy();
+  }
+}
+
+export async function deleteProofFile(reference: string) {
+  const client = storage();
+  try {
+    await client.send(
+      new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: reference }),
+    );
   } finally {
     client.destroy();
   }

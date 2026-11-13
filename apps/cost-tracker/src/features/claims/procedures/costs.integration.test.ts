@@ -35,6 +35,7 @@ vi.mock("@/features/quotas/procedures/counters", () => ({
 }));
 vi.mock("@/lib/proof-storage", () => ({
   putProofFile: authMocks.put,
+  deleteProofFile: vi.fn(),
   getProofFile: authMocks.get,
 }));
 vi.mock("server-only", () => ({}));
