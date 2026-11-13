@@ -295,12 +295,30 @@ export async function uploadProofDocument(input: {
     });
   } catch (error) {
     // A failed PUT can have reached storage; a failed database commit can too.
-    // Delete only this upload's unique object after its Claim transaction rolls back.
+    // Only delete when no document row exists: after an ambiguous commit
+    // the row can be live while the error surfaces. Never delete the row here.
     if (attemptedReference) {
       try {
-        await deleteProofFile(attemptedReference);
+        const [existing] = await db
+          .select({ id: documents.id })
+          .from(documents)
+          .where(eq(documents.fileReference, attemptedReference))
+          .limit(1);
+        if (!existing) {
+          try {
+            await deleteProofFile(attemptedReference);
+          } catch {
+            console.error(
+              "[Proof upload] Compensating storage delete failed",
+              attemptedReference,
+            );
+          }
+        }
       } catch {
-        console.error("[Proof upload] Compensating storage delete failed");
+        console.error(
+          "[Proof upload] Skipped compensating delete after existence check failed",
+          attemptedReference,
+        );
       }
     }
     throw error;
