@@ -23,6 +23,15 @@ export const ReviewTaskIdSchema = createSelectSchema(duplicateReviewTasksTable)
 
 const journeyColumns = createSelectSchema(participantJourneysTable);
 
+// numeric(12, 2) stores at most ten integer digits plus two decimals.
+export const ErasmusDistanceKmSchema = z
+  .string({ error: "journeyDistanceRequired" })
+  .pipe(
+    journeyColumns.shape.erasmusDistanceKm
+      .regex(/^\d{1,10}(?:\.\d{1,2})?$/, "journeyDistanceRequired")
+      .refine((value) => Number(value) > 0, "journeyDistanceRequired"),
+  );
+
 export const JourneyInputSchema = z.object({
   partnershipId: ProjectPartnershipIdSchema,
   projectParticipantId: ProjectParticipationIdSchema,
@@ -39,8 +48,5 @@ export const JourneyInputSchema = z.object({
   tripType: z.enum(journeyColumns.shape.tripType.options, {
     error: "journeyTripTypeRequired",
   }),
-  // numeric(12, 2) stores at most ten integer digits plus two decimals.
-  erasmusDistanceKm: journeyColumns.shape.erasmusDistanceKm
-    .regex(/^\d{1,10}(?:\.\d{1,2})?$/, "journeyDistanceRequired")
-    .refine((value) => Number(value) > 0, "journeyDistanceRequired"),
+  erasmusDistanceKm: ErasmusDistanceKmSchema,
 });

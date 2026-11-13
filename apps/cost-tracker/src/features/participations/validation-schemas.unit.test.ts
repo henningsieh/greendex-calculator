@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ErasmusDistanceKmSchema,
   JourneyInputSchema,
   ProjectParticipationIdSchema,
   ReviewTaskIdSchema,
@@ -31,6 +32,7 @@ describe("Journey input", () => {
     ["origin", "", "journeyOriginRequired"],
     ["destination", undefined, "journeyDestinationRequired"],
     ["tripType", "invalid", "journeyTripTypeRequired"],
+    ["erasmusDistanceKm", undefined, "journeyDistanceRequired"],
     ["erasmusDistanceKm", "0", "journeyDistanceRequired"],
     ["erasmusDistanceKm", "1.234", "journeyDistanceRequired"],
   ])("returns a semantic message for %s", (field, value, id) => {
@@ -65,6 +67,39 @@ describe("Journey input", () => {
       ).toBe(true);
     },
   );
+});
+
+describe("ErasmusDistanceKmSchema", () => {
+  it.each(["0.01", "9999999999.99", "1", "1.2", "850.25", "1.00"])(
+    "preserves exact positive distance %s as a string",
+    (distance) => {
+      expect(ErasmusDistanceKmSchema.parse(distance)).toBe(distance);
+    },
+  );
+
+  it.each([
+    undefined,
+    null,
+    1,
+    "",
+    " ",
+    "0",
+    "0.00",
+    "-1",
+    "1.234",
+    "10000000000",
+    " 1",
+    "1 ",
+    "1,2",
+    "1e2",
+  ])("returns the semantic distance error for %j", (distance) => {
+    const result = ErasmusDistanceKmSchema.safeParse(distance);
+    expect(result.success).toBe(false);
+    if (!result.success)
+      expect([
+        ...new Set(result.error.issues.map((issue) => issue.message)),
+      ]).toEqual(["journeyDistanceRequired"]);
+  });
 });
 
 describe("ProjectParticipationIdSchema", () => {
