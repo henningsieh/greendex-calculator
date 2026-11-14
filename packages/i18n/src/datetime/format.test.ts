@@ -21,13 +21,13 @@ const slovenian = createDateFormatter({ locale: "sl", timeZone });
  * `sl` is Slovenian. It used to be `si`, which CLDR resolves to Sinhala, so these
  * rows also guard the locale code itself.
  */
-const trio = {
+const formatters = {
   "en-GB": enGb,
   de: german,
   sl: slovenian,
 } as const;
 
-type ReviewLocale = keyof typeof trio;
+type ReviewedLocale = keyof typeof formatters;
 
 const conventions = {
   "en-GB": {
@@ -69,16 +69,17 @@ const conventions = {
     "time.short": "14:30",
     "time.seconds": "14:30:05",
   },
-} satisfies Record<ReviewLocale, Record<DateFormatName, string>>;
+} satisfies Record<ReviewedLocale, Record<DateFormatName, string>>;
 
 describe("named formats", () => {
   it.each(Object.keys(dateFormats) as DateFormatName[])(
     "renders %s in every reviewed locale",
     (name) => {
-      for (const locale of Object.keys(trio) as ReviewLocale[]) {
-        expect(trio[locale].format(instant, name), `${locale} ${name}`).toBe(
-          conventions[locale][name],
-        );
+      for (const locale of Object.keys(formatters) as ReviewedLocale[]) {
+        expect(
+          formatters[locale].format(instant, name),
+          `${locale} ${name}`,
+        ).toBe(conventions[locale][name]);
       }
     },
   );

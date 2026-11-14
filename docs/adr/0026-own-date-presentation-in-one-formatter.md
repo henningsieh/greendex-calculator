@@ -23,7 +23,7 @@ Every formatter requires an explicit IANA time zone. A result must not depend on
 
 Locale codes are full BCP-47 tags. The configured set is `en-GB`, `de`, `es`, `fr`, `it`, `nl`, `sl`. The code reaches `Intl` unchanged, so no alias layer exists anywhere, and the switcher's flag follows the language entry's `countryCode`.
 
-`greendex/no-raw-date-formatting` rejects `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat`, `Intl.DurationFormat`, and `Date.prototype.toLocaleString`/`toLocaleDateString`/`toLocaleTimeString` outside the module. `check:date-formatting` runs the guard's own tests as part of `pnpm run lint`.
+`greendex/no-raw-date-formatting` rejects `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat`, `Intl.DurationFormat`, and `Date.prototype.toLocaleString`/`toLocaleDateString`/`toLocaleTimeString` outside the module. The guard's own tests live in `scripts/oxlint-datetime.test.ts` and run with the other tooling suites in `test:unit`; they are not part of `pnpm run lint` (corrected before landing: an earlier draft of this record wired them into the lint chain).
 
 ## Considered Options
 

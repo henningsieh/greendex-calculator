@@ -84,6 +84,7 @@ describe("Cost Tracker request catalogue", () => {
       requestLocale: Promise.resolve(locale),
     });
     expect(config.locale).toBe(locale);
+    expect(config.timeZone).toBe("UTC");
     expect(config.messages).toEqual(await readMerged(locale));
   });
 
@@ -95,6 +96,7 @@ describe("Cost Tracker request catalogue", () => {
         requestLocale: Promise.resolve(locale),
       });
       expect(config.locale).toBe(DEFAULT_LANGUAGE);
+      expect(config.timeZone).toBe("UTC");
       expect(config.messages).toEqual(await readMerged(DEFAULT_LANGUAGE));
     },
   );

@@ -11,7 +11,7 @@
  * numeric field that has to round-trip, a month label, a clock that shows seconds.
  */
 export const dateFormats = {
-  /** `28/12/25` — compact, only where space is tight. */
+  /** `28/12/2025` in en-GB, `28.12.25` in de — compact, only where space is tight. */
   "date.short": { dateStyle: "short" },
   /** `28 Dec 2025` — tables, lists, cards. */
   "date.medium": { dateStyle: "medium" },

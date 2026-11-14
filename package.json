@@ -7,7 +7,6 @@
     "build": "turbo run build --concurrency=1",
     "check:agent-instructions": "tsx scripts/check-agent-instructions.ts && vitest run scripts/check-agent-instructions.policy.test.ts",
     "check:cost-tracker-persistence-seam": "tsx scripts/check-cost-tracker-persistence-seam.ts",
-    "check:date-formatting": "vitest run scripts/oxlint-datetime.test.ts",
     "check:no-copy-assertions": "tsx scripts/check-no-copy-assertions.ts",
     "check:schema-derivation": "tsx scripts/check-schema-derivation.ts --gate",
     "check:schema-duplication": "tsx scripts/check-schema-duplication.ts --gate",

@@ -27,6 +27,9 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale: supportedLocale,
+    // An explicit zone keeps every formatter off the deployment host's own zone.
+    // Dates here are calendar dates and audit instants, and UTC matches Calculator.
+    timeZone: "UTC",
     messages,
   };
 });
