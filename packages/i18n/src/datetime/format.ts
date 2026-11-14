@@ -1,9 +1,9 @@
 import { dateFormats, type DateFormatName } from "./formats";
 
 /**
- * A value the formatter accepts: a `Date`, an epoch-millisecond timestamp, or a
- * date string. Serialized procedure values arrive as strings, Drizzle `timestamp`
- * columns arrive as `Date`, and both mean the same instant.
+ * What the formatter accepts: a `Date`, an epoch-millisecond timestamp, or a date
+ * string. Drizzle `timestamp` columns arrive as `Date`, serialized procedure
+ * values as strings.
  */
 export type DateInput = Date | number | string;
 
@@ -17,16 +17,11 @@ export type RelativeTimeUnit =
   | "second";
 
 export type DateFormatterConfig = {
-  /**
-   * BCP-47 tag of the active locale, e.g. `en-GB`. It is passed to `Intl`
-   * unchanged; the locale codes in `@greendex/config/languages` are full tags for
-   * exactly this reason.
-   */
+  /** BCP-47 tag of the active locale, e.g. `en-GB`, passed to `Intl` unchanged. */
   locale: string;
   /**
-   * IANA time zone every value is projected into. Required, because a formatting
-   * result must not depend on the server's or the browser's own zone: the same
-   * row would otherwise render two different strings either side of hydration.
+   * IANA time zone every value is projected into. Required: the same row must not
+   * render differently on the server and in the browser.
    */
   timeZone: string;
 };
@@ -50,11 +45,7 @@ export type DateFormatter = {
   range(start: DateInput, end: DateInput, name?: DateFormatName): string;
   /** Format a value relative to `now`, e.g. `3 days ago`. Returns `""` if unusable. */
   relative(value: DateInput, options?: RelativeTimeOptions): string;
-  /**
-   * Placeholder for an empty date entry field in the locale's own part order,
-   * e.g. `DD/MM/YYYY` for `en-GB`. A hardcoded hint contradicts the value it sits
-   * next to in every other locale.
-   */
+  /** Placeholder for an empty date field in the locale's own order, e.g. `DD/MM/YYYY`. */
   pattern(): string;
 };
 
@@ -93,28 +84,16 @@ const warnedTimeZones = new Set<string>();
 const relativeTimeFormats = new Map<string, Intl.RelativeTimeFormat>();
 
 /**
- * Space characters CLDR uses inside a formatted pattern.
- *
- * Node and browsers ship different ICU/CLDR versions, and CLDR 49 replaced the
- * typographic spaces around a date range's en dash with a plain space: Node 24
- * (CLDR 48) renders `01.01.\u2009–\u200931.12.2025`, while current Chrome
- * (CLDR 49) renders `01.01. – 31.12.2025`. The two renders differ by one invisible
- * character, which React reports as a hydration mismatch.
+ * Space characters CLDR puts inside a pattern. CLDR 49 replaced the typographic
+ * spaces around a range's en dash with a plain space, so Node (CLDR 48) and the
+ * browser (CLDR 49) differ by one invisible character and React reports a
+ * hydration mismatch. Every separator becomes U+0020 — the direction CLDR is
+ * moving — so no invisible character can differ across runtimes again. The en dash
+ * and the surrounding text stay untouched. A range that must not wrap belongs in
+ * `whitespace-nowrap`, not in a no-break character that differs per runtime.
  */
 const SPACE_SEPARATORS = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g;
 
-/**
- * Canonicalise formatter output so it cannot vary between ICU versions.
- *
- * Every space separator becomes U+0020. That is the direction CLDR is moving, so
- * the output matches the newer runtime rather than fighting it, and no invisible
- * character can differ across server and browser again. Surface text is the only
- * thing normalised; the surrounding markup and the en dash are untouched.
- *
- * The no-break intent of the original characters is a layout concern: a range in a
- * narrow column is kept on one line with `whitespace-nowrap`, not by an invisible
- * character that differs per runtime.
- */
 function canonicalize(text: string): string {
   return text.replace(SPACE_SEPARATORS, " ");
 }
@@ -184,10 +163,8 @@ function resolveRelativeUnit(seconds: number): RelativeTimeUnit {
 /**
  * Build the localized formatter for one locale and time zone.
  *
- * This module is the repository's only `Intl` date call site. Everything else
- * asks for a named format, which keeps locale conventions in CLDR rather than in
- * components, and keeps one `Intl.DateTimeFormat` per locale, zone, and name
- * instead of one per render.
+ * The repository's only `Intl` date call site, so conventions stay in CLDR instead
+ * of in components and each locale/zone/name keeps one `Intl.DateTimeFormat`.
  */
 export function createDateFormatter({
   locale,

@@ -11,7 +11,7 @@ Sixteen surfaces formatted dates and times, three different ways. Cost Tracker p
 
 Two locale codes were also wrong for what the application means. `en` is not a neutral international tag; CLDR resolves it to US English, which is why somebody had already hard-coded `en-GB` in Cost Tracker. `si` is Sinhala in ISO 639-1, so the Slovenian catalogue rendered dates as `2025 උඳුවප් 28`, numbers as `1,234,567.89`, and country names in Sinhala script. `apps/cost-tracker/src/components/eu-country-names.ts` already contained a private `locale === "si" ? "sl" : locale` alias as a local workaround for it.
 
-Temporal was considered as the replacement. Temporal is Stage 4 and native in Chrome 144, Edge 144, Firefox 139, and Node 26, but not in Safari stable, and not in the Node 24 runtime this repository pins. Temporal also does not format: `Temporal.PlainDate.prototype.toLocaleString` delegates to `Intl.DateTimeFormat`, because localized month names exist only in ICU/CLDR. Adopting Temporal today would add a polyfill on both server and client without removing a single `Intl` call.
+Temporal was considered as the replacement. Temporal is Stage 4 and native in Chrome 144, Edge 144, Firefox 139, and Node 26, but not in Safari stable, and not in the Node 22 baseline this repository pins (Node 24 needs `--harmony-temporal`). Temporal also does not format: `Temporal.PlainDate.prototype.toLocaleString` delegates to `Intl.DateTimeFormat`, because localized month names exist only in ICU/CLDR. Adopting Temporal today would add a polyfill on both server and client without removing a single `Intl` call.
 
 ## Decision
 
@@ -23,7 +23,7 @@ Every formatter requires an explicit IANA time zone. A result must not depend on
 
 Locale codes are full BCP-47 tags. The configured set is `en-GB`, `de`, `es`, `fr`, `it`, `nl`, `sl`. The code reaches `Intl` unchanged, so no alias layer exists anywhere, and the switcher's flag follows the language entry's `countryCode`.
 
-`greendex/no-raw-date-formatting` rejects `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat`, `Intl.DurationFormat`, and `Date.prototype.toLocaleString`/`toLocaleDateString`/`toLocaleTimeString` outside the module. The guard's own tests live in `scripts/oxlint-datetime.test.ts` and run with the other tooling suites in `test:unit`; they are not part of `pnpm run lint` (corrected before landing: an earlier draft of this record wired them into the lint chain).
+`greendex/no-raw-date-formatting` rejects `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat`, `Intl.DurationFormat`, and `Date.prototype.toLocaleString`/`toLocaleDateString`/`toLocaleTimeString` outside the module. Its tests live in `scripts/oxlint-datetime.test.ts` and run with the other tooling suites in `test:unit`.
 
 ## Considered Options
 

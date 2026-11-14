@@ -1,14 +1,9 @@
 /**
- * Named date and time formats.
+ * Named date and time formats — the only place that decides how a date looks.
  *
- * The names are the only place that decides how a date looks. Screens pick a name
- * instead of passing `Intl` options, so the same concept renders identically
- * everywhere and a change lands in one file.
- *
- * `dateStyle`/`timeStyle` are the CLDR styles (`full`, `long`, `medium`, `short`)
- * and are the preferred controls: they encode a locale's own conventions instead
- * of imposing an order. Component options exist only where no style fits — a
- * numeric field that has to round-trip, a month label, a clock that shows seconds.
+ * `dateStyle`/`timeStyle` are the CLDR styles and the preferred controls: they
+ * encode a locale's own conventions instead of imposing an order. Component
+ * options exist only where no style fits.
  */
 export const dateFormats = {
   /** `28/12/2025` in en-GB, `28.12.25` in de — compact, only where space is tight. */
@@ -23,6 +18,8 @@ export const dateFormats = {
   "date.numeric": { day: "2-digit", month: "2-digit", year: "numeric" },
   /** `Dec` — month name without a day. */
   "date.monthShort": { month: "short" },
+  /** `Sun` — weekday label in a calendar header. */
+  "date.weekdayShort": { weekday: "short" },
   /** `December` — month name without a day. */
   "date.monthLong": { month: "long" },
   /** `28 Dec 2025, 14:30` — audit trails and "last changed" stamps. */

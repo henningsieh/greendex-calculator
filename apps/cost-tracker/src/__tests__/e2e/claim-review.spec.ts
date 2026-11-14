@@ -567,7 +567,7 @@ test.describe.serial("Claim review journey 25–26", () => {
       if (pathname.startsWith("/api/rpc/claims/") && response.status() === 400)
         badRequests.push(pathname);
     });
-    for (const prefix of ["", "/en", "/de"]) {
+    for (const prefix of ["", "/en-GB", "/de"]) {
       await host.goto(
         `${prefix}/partnerships/${ids.partnerships[0]}/claim/review`,
       );

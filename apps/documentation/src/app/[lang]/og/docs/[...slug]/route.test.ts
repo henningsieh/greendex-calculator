@@ -36,9 +36,9 @@ beforeEach(() => {
   });
 });
 
-const request = new Request("http://localhost/en/og/docs/image.png");
+const request = new Request("http://localhost/en-GB/og/docs/image.png");
 const context = (slug: string[]) => ({
-  params: Promise.resolve({ lang: "en", slug }),
+  params: Promise.resolve({ lang: "en-GB", slug }),
 });
 
 describe("documentation Open Graph route", () => {

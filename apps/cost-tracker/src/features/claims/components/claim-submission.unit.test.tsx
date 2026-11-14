@@ -12,7 +12,7 @@ vi.mock("@/lib/orpc/orpc", () => ({ orpc: { claims: { submit: vi.fn() } } }));
 
 it.each([
   [
-    "en",
+    "en-GB",
     english,
     "Select a Partner Payout Account.",
     "Link a Proof Document belonging to this Claim.",

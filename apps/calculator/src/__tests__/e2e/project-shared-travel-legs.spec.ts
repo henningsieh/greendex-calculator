@@ -334,7 +334,7 @@ test.describe("Project Shared Travel Legs", () => {
     page,
   }) => {
     for (const [locale, messages] of [
-      ["en", en],
+      ["en-GB", en],
       ["de", de],
     ] as const) {
       await page.goto(`/${locale}/org/projects/${projectId}`);

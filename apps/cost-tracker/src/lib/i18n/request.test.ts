@@ -164,7 +164,9 @@ describe("API error catalogue coverage", () => {
   });
 
   it("preserves safe English internal and network presentation overrides", async () => {
-    const config = await requestConfig({ requestLocale: Promise.resolve("en") });
+    const config = await requestConfig({
+      requestLocale: Promise.resolve("en-GB"),
+    });
     const t = createTranslator({
       locale: "en-GB",
       messages: config.messages ?? undefined,

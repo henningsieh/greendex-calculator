@@ -322,15 +322,17 @@ The seed uses normal configuration; this does not reset external services or gua
 
 ### Internationalization
 
-Translations live in `packages/i18n/src/locales/` for:
+Translations live beside the app that owns them, in
+`apps/calculator/src/messages/<locale>.json` and
+`apps/cost-tracker/src/messages/<locale>/` (ADR 0024). Supported locales:
 
-- English (`en`)
+- English (`en-GB`)
 - German (`de`)
 - Spanish (`es`)
 - Italian (`it`)
 - French (`fr`)
 - Dutch (`nl`)
-- Slovenian (`si`)
+- Slovenian (`sl`)
 
 The UI language menu is searchable by English language name, native label, and
 locale code.

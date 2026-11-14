@@ -3,11 +3,9 @@ import { getLocale, getTimeZone } from "next-intl/server";
 import { createDateFormatter, type DateFormatter } from "./format";
 
 /**
- * Localized date and time formatter for Server Components and route handlers.
- *
- * Callers outside a request — scripts, and email rendered from a background job —
- * pass an explicit locale and time zone to `createDateFormatter` instead, because
- * there is no request configuration to read.
+ * Localized formatter for Server Components and route handlers. Code without a
+ * request (scripts, background email) calls `createDateFormatter` with an explicit
+ * locale and time zone.
  */
 export async function getDateFormat(): Promise<DateFormatter> {
   const [locale, timeZone] = await Promise.all([getLocale(), getTimeZone()]);
