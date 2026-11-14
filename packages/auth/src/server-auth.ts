@@ -210,6 +210,21 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
     appName: config.appName,
     baseURL: config.baseURL,
     secret: config.secret,
+    // #373: explicit origin trust instead of the implicit baseURL default.
+    trustedOrigins: trustedOriginsFor(config.baseURL),
+    // #373: explicit account-linking policy, pinned to the verified
+    // Better Auth 1.7 behavior (empty trustedProviders + verified local
+    // mail required). A social login links to an existing account only
+    // when the provider mail is verified there and the local account mail
+    // is verified here; nothing links on unverified mail alone.
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: [],
+        requireLocalEmailVerified: true,
+        allowDifferentEmails: false,
+      },
+    },
     rateLimit: config.localE2EAuth
       ? {
           enabled: true,
@@ -225,6 +240,8 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
+      // #373: pin the verified 1h library default instead of relying on it silently.
+      resetPasswordTokenExpiresIn: 3600,
       sendResetPassword: ({ user, url }) =>
         config.emailSender.sendPasswordResetEmail({ user, url }),
     },
@@ -240,6 +257,11 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
         enabled: false,
       },
       additionalFields: {
+        // activeOrganizationId is intentionally NOT declared here: it is
+        // owned by the organization plugin schema (session.fields), which
+        // persists it. Declaring it twice would split ownership of the
+        // tenant key. #373 verified this against Better Auth 1.7 instead
+        // of assuming it.
         activeProjectId: {
           type: "string",
           required: false,
@@ -256,6 +278,10 @@ export function createServerAuth<const P extends BetterAuthPlugin[]>(
             ? costTrackerOrganizationRoles
             : calculatorOrganizationRoles,
         creatorRole: ORGANIZATION_ROLES.OrganizationOwner,
+        // #373: invitations require a verified mailbox unless a caller
+        // explicitly opts out. Cost Tracker already passes this; the
+        // Calculator now inherits it instead of the silent library default.
+        requireEmailVerificationOnInvitation: true,
         ...config.organization,
         schema: {
           organization: { additionalFields: organizationCountryFields },
