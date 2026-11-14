@@ -15,6 +15,7 @@ export {
   type OrganizationCreationEligibility,
   createServerAuth,
   type ServerAuthConfig,
+  trustedOriginsFor,
 } from "./server-auth";
 
 export {

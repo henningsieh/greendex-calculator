@@ -1,15 +1,16 @@
 # oRPC Implementation Map
 
-Greendex exposes one router through two protocol surfaces and two documentation endpoints.
+Greendex exposes one router through two protocol surfaces, two documentation endpoints, and the vendored Scalar asset.
 
 ## Endpoints
 
-| Endpoint            | Owner                                  | Purpose                                       |
-| ------------------- | -------------------------------------- | --------------------------------------------- |
-| `/api/rpc`          | `app/api/rpc/[[...rest]]/route.ts`     | Internal JSON-over-HTTP RPC used by `RPCLink` |
-| `/api/openapi`      | `app/api/openapi/[[...rest]]/route.ts` | External REST/OpenAPI requests                |
-| `/api/docs`         | `app/api/docs/route.ts`                | Scalar API reference                          |
-| `/api/openapi-spec` | `app/api/openapi-spec/route.ts`        | Generated OpenAPI JSON                        |
+| Endpoint            | Owner                                          | Purpose                                       |
+| ------------------- | ---------------------------------------------- | --------------------------------------------- |
+| `/api/rpc`          | `app/api/rpc/[[...rest]]/route.ts`             | Internal JSON-over-HTTP RPC used by `RPCLink` |
+| `/api/openapi`      | `app/api/openapi/[[...rest]]/route.ts`         | External REST/OpenAPI requests                |
+| `/api/docs`         | `app/api/docs/route.ts`                        | Scalar API reference (vendored bundle)        |
+| `/api/openapi-spec` | `app/api/openapi-spec/route.ts`                | Generated OpenAPI JSON                        |
+| `/api/scalar/*.js`  | `app/api/scalar/standalone-1.76.4.js/route.ts` | Vendored Scalar standalone bundle             |
 
 ## Source ownership
 

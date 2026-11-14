@@ -1,11 +1,14 @@
+import { trustedOriginsFor } from "@greendex/auth";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferenceHandlerPlugin } from "@orpc/openapi/plugins";
 import { ORPCError, onError } from "@orpc/server";
 import { CORSHandlerPlugin } from "@orpc/server/plugins";
 
+import { env } from "@/env";
 import { ERROR_STATUS_MAP, getErrorStatus } from "@/lib/orpc/error-status";
 import { generateOpenAPISpec } from "@/lib/orpc/openapi-generator";
 import { router } from "@/lib/orpc/router";
+import { SCALAR_STANDALONE_PATH } from "@/lib/scalar-version";
 
 /**
  * Centralized OpenAPI handler used by both `/api/openapi` and `/api/docs`.
@@ -16,8 +19,10 @@ import { router } from "@/lib/orpc/router";
 export const openapiHandler = new OpenAPIHandler(router, {
   errorStatusMap: ERROR_STATUS_MAP,
   plugins: [
+    // #371: closed allowlist derived from the deployment base URL. Anything
+    // off-list gets no ACAO header, so credentials:true stays inert.
     new CORSHandlerPlugin({
-      origin: (origin) => origin,
+      origin: trustedOriginsFor(env.NEXT_PUBLIC_BASE_URL),
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization"],
       exposeHeaders: ["Content-Disposition"],
@@ -25,8 +30,7 @@ export const openapiHandler = new OpenAPIHandler(router, {
     }),
     new OpenAPIReferenceHandlerPlugin({
       provider: "scalar",
-      providerScriptUrl:
-        "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0",
+      providerScriptUrl: SCALAR_STANDALONE_PATH,
       docsPath: "/api/docs",
       specPath: "/api/openapi-spec",
       spec: () =>

@@ -1,8 +1,16 @@
 // @vitest-environment node
 /** HTTP routing regression coverage; auth API responses are fixtures, not live auth. */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { env } from "@/env";
+import {
+  findScalarPackageDir,
+  SCALAR_STANDALONE_PATH,
+  SCALAR_VERSION,
+} from "@/lib/scalar-version";
 
 const authFixture = vi.hoisted(() => ({
   user: {
@@ -519,13 +527,26 @@ describe("OpenAPI REST Endpoint", () => {
         "Content-Disposition",
       );
     });
+
+    it("does not reflect off-list origins", async () => {
+      const response = await routeFetch(`${baseUrl}/health`, {
+        method: "GET",
+        headers: { Origin: "https://evil.example" },
+      });
+
+      expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
+      expect(response.headers.get("Access-Control-Allow-Credentials")).toBe(
+        "true",
+      );
+      expect(response.headers.get("Vary")).toMatch(/Origin/i);
+    });
   });
 });
 
 describe("API Documentation UI", () => {
   const docsUrl = `${env.NEXT_PUBLIC_BASE_URL}/api/docs`;
 
-  it("should serve HTML with Scalar API reference script", async () => {
+  it("should serve HTML with the vendored Scalar API reference script", async () => {
     const response = await routeFetch(docsUrl);
     expect(response.status).toBe(200);
 
@@ -536,12 +557,28 @@ describe("API Documentation UI", () => {
 
     // Embedded configuration script should exist
     expect(html).toContain('id="app"');
-    // Should reference Scalar script
-    expect(html).toContain(
-      "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0",
-    );
-    expect(html).not.toContain("@latest");
-    expect(html).not.toContain('@scalar/api-reference"');
+    expect(html).toContain(`src="${SCALAR_STANDALONE_PATH}"`);
+    for (const banned of ["@latest", "jsdelivr", "unpkg", "cdn"]) {
+      expect(html).not.toContain(banned);
+    }
+  });
+
+  it("should serve the pinned Scalar bundle from the app origin", async () => {
+    const { GET } = await import("@/app/api/scalar/standalone-1.76.4.js/route");
+    const response = await GET();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("javascript");
+    expect(response.headers.get("cache-control")).toContain("immutable");
+    expect(await response.text()).toContain("createApiReference");
+
+    const packageJson = JSON.parse(
+      readFileSync(
+        join(findScalarPackageDir(import.meta.url), "package.json"),
+        "utf8",
+      ),
+    ) as { version: string };
+    expect(packageJson.version).toBe(SCALAR_VERSION);
   });
 });
 

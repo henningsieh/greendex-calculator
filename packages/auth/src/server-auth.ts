@@ -112,6 +112,30 @@ type SessionDatabaseHooks = NonNullable<
   NonNullable<BetterAuthOptions["databaseHooks"]>["session"]
 >;
 
+/**
+ * Closed origin allowlist derived from the deployment base URL.
+ * Only the app's own origin (plus its www alias, which serves the same
+ * deployment) is trusted. Preview deployments bake their own origin into
+ * the base URL, so no wildcard or runtime discovery is needed. Exported
+ * for the calculator OpenAPI CORS allowlist (#371).
+ */
+export function trustedOriginsFor(baseURL: string): string[] {
+  const origins = [baseURL];
+  try {
+    const url = new URL(baseURL);
+    const host = url.hostname;
+    const isLoopback =
+      host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+    if (!isLoopback && !host.startsWith("www.")) {
+      const wwwOrigin = url.protocol + "//www." + host;
+      origins.push(url.port ? wwwOrigin + ":" + url.port : wwwOrigin);
+    }
+  } catch {
+    // Callers validate the base URL (t3-env at startup); keep the raw value only.
+  }
+  return origins;
+}
+
 // P preserves each passed plugin's endpoint types into auth.api. A wide
 // BetterAuthPlugin[] would erase custom server-only endpoints from the
 // inferred API surface.

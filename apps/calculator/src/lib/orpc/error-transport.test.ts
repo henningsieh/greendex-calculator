@@ -59,23 +59,31 @@ it.each(ERROR_CODES)(
     expect(rpcBody.json).not.toHaveProperty("status");
   },
 );
-it("echoes credentialed REST origins on failure and preflight", async () => {
+it("restricts credentialed REST origins to the allowlist on failure and preflight", async () => {
+  // #371: the closed allowlist (own origin plus www alias) replaces the
+  // previous reflection. Anything off-list gets no ACAO header, so the
+  // static credentials flag stays inert. Same-origin requests
+  // (http://localhost:3000 in this environment) keep working.
   for (const method of ["GET", "OPTIONS"]) {
-    const { response } = await openapiHandler.handle(
-      new Request("http://localhost/api/openapi/BAD_REQUEST", {
-        method,
-        headers: {
-          origin: "https://consumer.example",
-          "access-control-request-method": "GET",
-        },
-      }),
-      { prefix: "/api/openapi", context: { headers: new Headers() } },
+    const handle = (origin: string) =>
+      openapiHandler.handle(
+        new Request("http://localhost/api/openapi/BAD_REQUEST", {
+          method,
+          headers: {
+            origin,
+            "access-control-request-method": "GET",
+          },
+        }),
+        { prefix: "/api/openapi", context: { headers: new Headers() } },
+      );
+    const { response: denied } = await handle("https://consumer.example");
+    expect(denied?.headers.get("access-control-allow-origin")).toBeNull();
+    expect(denied?.headers.get("access-control-allow-credentials")).toBe("true");
+    expect(denied?.headers.get("vary")).toMatch(/origin/i);
+    const { response: allowed } = await handle("http://localhost:3000");
+    expect(allowed?.headers.get("access-control-allow-origin")).toBe(
+      "http://localhost:3000",
     );
-    expect(response?.headers.get("access-control-allow-origin")).toBe(
-      "https://consumer.example",
-    );
-    expect(response?.headers.get("access-control-allow-credentials")).toBe(
-      "true",
-    );
+    expect(allowed?.headers.get("access-control-allow-credentials")).toBe("true");
   }
 });

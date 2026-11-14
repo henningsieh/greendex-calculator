@@ -1,6 +1,3 @@
-# Generated SRI for Scalar API Reference (do not commit)
-src/lib/orpc/scalar-sri.ts
-
 # Playwright artifacts (generated during tests)
 src/__tests__/e2e/.auth/
 src/__tests__/e2e/.playwright/

@@ -34,6 +34,7 @@ No official oRPC project skill is adopted. Use the versioned official pages and 
 | RPC route | Owning app's `src/app/api/rpc/[[...rest]]/route.ts` |
 | REST/OpenAPI route | `apps/calculator/src/app/api/openapi/[[...rest]]/route.ts` |
 | Scalar route | `apps/calculator/src/app/api/docs/route.ts` |
+| Scalar asset | `apps/calculator/src/app/api/scalar/standalone-1.76.4.js/route.ts` |
 | OpenAPI specification | `apps/calculator/src/app/api/openapi-spec/route.ts` |
 
 ## Critical SSR invariant
@@ -67,7 +68,7 @@ Cost Tracker only. `lib/orpc/error-contract.ts` owns the field-issue catalogue: 
 - Keep route metadata, schemas, handler prefixes, and the generated specification aligned. Metadata prefixes apply to every procedure; preserve the request-time `/api/rpc` and `/api/openapi` prefixes without doubling them.
 - Internal traffic uses the oRPC wire protocol at `/api/rpc`; external REST/OpenAPI traffic uses `/api/openapi`.
 - `OpenAPIReferenceHandlerPlugin` serves Scalar at `/api/docs`; `/api/openapi-spec` generates the JSON specification.
-- Keep Scalar's `providerScriptUrl` pinned in the handler plugin. Generate specifications with `converters` and `base` options; import `ZodToJsonSchemaConverter` from `@orpc/zod`.
+- Scalar's `providerScriptUrl` is the vendored same-origin bundle (`/api/scalar/standalone-<version>.js`), so the docs UI makes no CDN request. `src/lib/scalar-version.ts` is the single version source; keep it aligned with the `@scalar/api-reference` catalog pin. Generate specifications with `converters` and `base` options; import `ZodToJsonSchemaConverter` from `@orpc/zod`.
 - Public route changes require OpenAPI tests and generated specification/Scalar checks.
 
 ## RPC and client compatibility

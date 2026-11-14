@@ -153,10 +153,9 @@ describe("environment entrypoints", () => {
     expect(calculatorPackage.scripts.dev).toContain(
       "dotenv -v NODE_ENV=development -e ../../packages/database/.env -e .env --",
     );
-    expect(calculatorPackage.scripts.prebuild).not.toContain("dotenv");
-    expect(calculatorPackage.scripts.prebuild).toContain("pnpm run generate:sri");
-    expect(calculatorPackage.scripts.prebuild).toContain("pnpm run check:sri");
-    expect(calculatorPackage.scripts.prebuild).not.toContain("db:migrate");
+    expect(calculatorPackage.scripts.prebuild).toBeUndefined();
+    expect(calculatorPackage.scripts["generate:sri"]).toBeUndefined();
+    expect(calculatorPackage.scripts["check:sri"]).toBeUndefined();
     expect(calculatorPackage.scripts.build).toBe("next build");
     expect(calculatorPackage.scripts.prestart).toContain(
       "dotenv -e ../../packages/database/.env -e .env --",
