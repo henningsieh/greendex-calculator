@@ -4,7 +4,7 @@ import { DEFAULT_LANGUAGE, LANGUAGE_CODES } from "@greendex/config/languages";
 import { describe, expect, it, vi } from "vitest";
 
 import { createDateFormatter } from "./format";
-import { dateFormats } from "./formats";
+import { dateFormats, type DateFormatName } from "./formats";
 
 const timeZone = "UTC";
 const instant = "2025-12-28T14:30:05Z";
@@ -13,32 +13,75 @@ const enGb = createDateFormatter({ locale: "en-GB", timeZone });
 const german = createDateFormatter({ locale: "de", timeZone });
 const slovenian = createDateFormatter({ locale: "sl", timeZone });
 
-describe("named formats", () => {
-  it.each([
-    ["date.short", "28/12/2025"],
-    ["date.medium", "28 Dec 2025"],
-    ["date.long", "28 December 2025"],
-    ["date.full", "Sunday, 28 December 2025"],
-    ["date.numeric", "28/12/2025"],
-    ["date.monthShort", "Dec"],
-    ["date.monthLong", "December"],
-    ["dateTime.short", "28 Dec 2025, 14:30"],
-    ["dateTime.medium", "28 Dec 2025, 14:30:05"],
-    ["time.short", "14:30"],
-    ["time.seconds", "14:30:05"],
-  ] as const)("renders %s in English", (name, expected) => {
-    expect(enGb.format(instant, name)).toBe(expected);
-  });
+/**
+ * Every named format in the three locales the project writes itself: British
+ * English, German, and Slovenian. `satisfies` makes this table a compile-time
+ * check, so adding a name to `dateFormats` without a row here is a type error.
+ *
+ * `sl` is Slovenian. It used to be `si`, which CLDR resolves to Sinhala, so these
+ * rows also guard the locale code itself.
+ */
+const trio = {
+  "en-GB": enGb,
+  de: german,
+  sl: slovenian,
+} as const;
 
-  it("keeps each locale on its own conventions", () => {
-    expect(german.format(instant)).toBe("28.12.2025");
-    expect(german.format(instant, "dateTime.short")).toBe("28.12.2025, 14:30");
-    // `sl` used to be `si`, which CLDR resolves to Sinhala.
-    expect(slovenian.format(instant)).toBe("28. dec. 2025");
-    expect(slovenian.format(instant, "date.full")).toBe(
-      "nedelja, 28. december 2025",
-    );
-  });
+type ReviewLocale = keyof typeof trio;
+
+const conventions = {
+  "en-GB": {
+    "date.short": "28/12/2025",
+    "date.medium": "28 Dec 2025",
+    "date.long": "28 December 2025",
+    "date.full": "Sunday, 28 December 2025",
+    "date.numeric": "28/12/2025",
+    "date.monthShort": "Dec",
+    "date.monthLong": "December",
+    "dateTime.short": "28 Dec 2025, 14:30",
+    "dateTime.medium": "28 Dec 2025, 14:30:05",
+    "time.short": "14:30",
+    "time.seconds": "14:30:05",
+  },
+  de: {
+    "date.short": "28.12.25",
+    "date.medium": "28.12.2025",
+    "date.long": "28. Dezember 2025",
+    "date.full": "Sonntag, 28. Dezember 2025",
+    "date.numeric": "28.12.2025",
+    "date.monthShort": "Dez",
+    "date.monthLong": "Dezember",
+    "dateTime.short": "28.12.2025, 14:30",
+    "dateTime.medium": "28.12.2025, 14:30:05",
+    "time.short": "14:30",
+    "time.seconds": "14:30:05",
+  },
+  sl: {
+    "date.short": "28. 12. 2025",
+    "date.medium": "28. dec. 2025",
+    "date.long": "28. december 2025",
+    "date.full": "nedelja, 28. december 2025",
+    "date.numeric": "28. 12. 2025",
+    "date.monthShort": "dec.",
+    "date.monthLong": "december",
+    "dateTime.short": "28. dec. 2025, 14:30",
+    "dateTime.medium": "28. dec. 2025, 14:30:05",
+    "time.short": "14:30",
+    "time.seconds": "14:30:05",
+  },
+} satisfies Record<ReviewLocale, Record<DateFormatName, string>>;
+
+describe("named formats", () => {
+  it.each(Object.keys(dateFormats) as DateFormatName[])(
+    "renders %s in every reviewed locale",
+    (name) => {
+      for (const locale of Object.keys(trio) as ReviewLocale[]) {
+        expect(trio[locale].format(instant, name), `${locale} ${name}`).toBe(
+          conventions[locale][name],
+        );
+      }
+    },
+  );
 
   it("defaults to the medium date", () => {
     expect(enGb.format(instant)).toBe("28 Dec 2025");
@@ -189,9 +232,16 @@ describe("time zone", () => {
     expect(enGb.format(instant, "time.short")).toBe("14:30");
   });
 
-  it("renders in UTC rather than the host zone when the zone is unknown", () => {
+  it("renders in UTC and names the setting when the zone is unknown", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const unknown = createDateFormatter({ locale: "en-GB", timeZone: "Nowhere" });
     expect(unknown.format(instant, "time.short")).toBe("14:30");
+    expect(unknown.format(instant, "date.medium")).toBe("28 Dec 2025");
+    // One warning per unknown zone, not one per formatted row.
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      'Unknown time zone "Nowhere"; rendering dates in UTC.',
+    );
+    warn.mockRestore();
   });
 });
 

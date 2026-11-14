@@ -334,11 +334,7 @@
         "apps/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
         "packages/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
       ],
-      "excludeFiles": [
-        "packages/i18n/src/datetime/**",
-        "**/components/ui/**",
-        "docs/**"
-      ],
+      "excludeFiles": ["packages/i18n/src/datetime/**"],
       "rules": {
         "greendex/no-raw-date-formatting": "error"
       }

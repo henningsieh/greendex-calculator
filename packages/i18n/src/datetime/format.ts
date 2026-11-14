@@ -88,6 +88,8 @@ const PLACEHOLDER_SEGMENTS: Partial<
 > = { day: "DD", month: "MM", year: "YYYY" };
 
 const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
+/** Zone keys already reported, so a bad configuration warns once and not per row. */
+const warnedTimeZones = new Set<string>();
 const relativeTimeFormats = new Map<string, Intl.RelativeTimeFormat>();
 
 /**
@@ -139,8 +141,14 @@ function dateTimeFormatFor(
     });
   } catch {
     // An unknown zone comes from configuration, not from data. Rendering in UTC
-    // keeps the surface usable; an unsupported locale is a programming error and
-    // is allowed to throw on the retry.
+    // keeps the surface usable, and the warning names the setting to correct. An
+    // unsupported locale is a programming error and is allowed to throw on the retry.
+    if (!warnedTimeZones.has(timeZone)) {
+      warnedTimeZones.add(timeZone);
+      console.warn(
+        `Unknown time zone "${timeZone}"; rendering dates in ${FALLBACK_TIME_ZONE}.`,
+      );
+    }
     formatter = new Intl.DateTimeFormat(locale, {
       ...dateFormats[name],
       timeZone: FALLBACK_TIME_ZONE,
@@ -220,10 +228,12 @@ export function createDateFormatter({
     },
     pattern() {
       const sample = new Date(PATTERN_SAMPLE);
-      return dateTimeFormatFor(locale, timeZone, "date.numeric")
-        .formatToParts(sample)
-        .map((part) => PLACEHOLDER_SEGMENTS[part.type] ?? part.value)
-        .join("");
+      return canonicalize(
+        dateTimeFormatFor(locale, timeZone, "date.numeric")
+          .formatToParts(sample)
+          .map((part) => PLACEHOLDER_SEGMENTS[part.type] ?? part.value)
+          .join(""),
+      );
     },
   };
 }

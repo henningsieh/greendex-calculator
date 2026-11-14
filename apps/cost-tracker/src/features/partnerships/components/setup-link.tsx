@@ -2,6 +2,7 @@
 
 import { type EUCountryCode } from "@greendex/config/eu-countries";
 import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -240,6 +241,7 @@ export function SetupLinkForm({
 
 export function SetupLinkList() {
   const t = useTranslations("partnerships.setup");
+  const dateFormat = useDateFormat();
   const refreshLinks = useRefreshSetupLinks();
   const existingLinks = useQuery(
     orpcQuery.projectPartnerships.listSetupLinks.queryOptions({
@@ -325,7 +327,7 @@ export function SetupLinkList() {
                         : t("open")}
                 </TableCell>
                 <TableCell>
-                  {existing.expiresAt.toISOString().slice(0, 10)}
+                  {dateFormat.format(existing.expiresAt, "date.medium")}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button

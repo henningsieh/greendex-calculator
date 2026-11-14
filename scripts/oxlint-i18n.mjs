@@ -194,7 +194,7 @@ export default {
           formatter:
             'Do not build "{{name}}" here: use the named formats in @greendex/i18n/datetime so locale conventions and the request time zone stay in one place.',
           localeMethod:
-            'Do not call "{{name}}": it formats in the host locale and zone. Use useDateFormat() or getDateFormat() from @greendex/i18n/datetime instead.',
+            'Do not call "{{name}}": it formats in the host locale and zone. Dates go through useDateFormat() or getDateFormat(), numbers through format.number().',
         },
       },
       create(context) {

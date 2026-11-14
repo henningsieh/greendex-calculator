@@ -15,8 +15,9 @@ import { createDateFormatter, type DateFormatter } from "./format";
  */
 export function useDateFormat(): DateFormatter {
   const locale = useLocale();
-  // Both apps configure the provider's zone explicitly. Falling back to UTC keeps
-  // an unconfigured provider deterministic instead of inheriting the render host.
+  // `useTimeZone` is declared optional even though both apps configure the
+  // provider explicitly. The fallback satisfies that declaration; it is never the
+  // render host's zone.
   const timeZone = useTimeZone() ?? "UTC";
   return useMemo(
     () => createDateFormatter({ locale, timeZone }),
