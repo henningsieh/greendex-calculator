@@ -30,7 +30,7 @@ export function ProjectScopeTabs({
           updateListState({ scope: value });
       }}
     >
-      <TabsList aria-label={t("relationship")}>
+      <TabsList aria-label={t("relationship")} variant="line">
         <Tooltip>
           <TooltipTrigger
             render={
@@ -44,9 +44,8 @@ export function ProjectScopeTabs({
             }
           >
             <TabsTrigger
-              className="min-w-40"
               data-testid="project-scope-hosted"
-              variant="brand"
+              variant="line"
               disabled={!availableScopes.hosted && availableScopes.partner}
               value="hosted"
             >
@@ -70,9 +69,8 @@ export function ProjectScopeTabs({
             }
           >
             <TabsTrigger
-              className="min-w-40"
               data-testid="project-scope-partner"
-              variant="brand"
+              variant="line"
               disabled={!availableScopes.partner}
               value="partner"
             >

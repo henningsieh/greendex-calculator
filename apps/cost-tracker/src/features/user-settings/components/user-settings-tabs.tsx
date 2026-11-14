@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable shadcn/no-restyle -- Settings section tabs intentionally own the line-tab rhythm and trigger treatment. */
 
 import { useTranslations } from "@greendex/i18n/client";
 
@@ -16,35 +15,31 @@ export function UserSettingsTabs({ email, name }: UserSettingsTabsProps) {
   const t = useTranslations("settings.tabs");
 
   return (
-    <Tabs className="mt-10 gap-0" defaultValue="account">
-      <TabsList
-        aria-label={t("sections")}
-        className="grid h-auto w-full grid-cols-2 justify-start gap-0 border-b p-0 sm:flex sm:gap-8"
-        variant="line"
-      >
+    <Tabs className="mt-10" defaultValue="account">
+      <TabsList aria-label={t("sections")} variant="line">
         <TabsTrigger
-          className="py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0"
           value="account"
+          variant="line"
           data-testid="settings-tab-account"
         >
           {t("account")}
         </TabsTrigger>
         <TabsTrigger
-          className="py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0"
           value="appearance"
+          variant="line"
           data-testid="settings-tab-appearance"
         >
           {t("appearance")}
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent className="pt-10" value="account">
+      <TabsContent className="mt-8" value="account">
         <SettingsPanel description={t("accountDescription")} title={t("account")}>
           <EditNameForm email={email} name={name} />
         </SettingsPanel>
       </TabsContent>
 
-      <TabsContent className="pt-10" value="appearance">
+      <TabsContent className="mt-8" value="appearance">
         <SettingsPanel
           description={t("appearanceDescription")}
           title={t("appearance")}

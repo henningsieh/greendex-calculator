@@ -28,7 +28,8 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         default: "bg-muted",
-        line: "gap-1 bg-transparent",
+        line:
+          "relative grid h-auto w-full grid-cols-2 justify-start gap-0 border-b bg-transparent p-0 sm:flex sm:gap-8",
       },
     },
     defaultVariants: {
@@ -40,6 +41,7 @@ const tabsListVariants = cva(
 function TabsList({
   className,
   variant = "default",
+  children,
   ...props
 }: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
   return (
@@ -47,6 +49,25 @@ function TabsList({
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(tabsListVariants({ variant }), className)}
+      {...props}
+    >
+      {children}
+      {variant === "line" && <TabsIndicator />}
+    </TabsPrimitive.List>
+  )
+}
+
+function TabsIndicator({
+  className,
+  ...props
+}: TabsPrimitive.Indicator.Props) {
+  return (
+    <TabsPrimitive.Indicator
+      data-slot="tabs-indicator"
+      className={cn(
+        "absolute -bottom-px left-(--active-tab-left) h-0.5 w-(--active-tab-width) bg-brand transition-all",
+        className
+      )}
       {...props}
     />
   )
@@ -58,6 +79,7 @@ const tabsTriggerVariants = cva(
     variants: {
       variant: {
         default: "",
+        line: "py-4 text-sm tracking-normal normal-case sm:flex-none sm:px-0",
         // Stronger than the base dark:data-active:border-input rule by
         // construction (extra attribute): wins regardless of file order.
         brand: "[&[data-variant='brand']]:aria-selected:border-brand",
@@ -82,7 +104,6 @@ function TabsTrigger({
         tabsTriggerVariants({ variant }),
         "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
         "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
-        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
         className
       )}
       {...props}
@@ -103,6 +124,7 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
 export {
   Tabs,
   TabsContent,
+  TabsIndicator,
   TabsList,
   TabsTrigger,
   tabsListVariants,

@@ -42,6 +42,14 @@ describe("UserSettingsTabs", () => {
     expect(screen.queryByTestId("theme-controls")).toBeNull();
   });
 
+  it("renders the shared active indicator inside the tab list", () => {
+    const { container } = render(
+      <UserSettingsTabs email="alex@example.org" name="Alex Morgan" />,
+    );
+
+    expect(container.querySelector('[data-slot="tabs-indicator"]')).toBeTruthy();
+  });
+
   it("switches to Appearance without mixing in account controls", async () => {
     const user = userEvent.setup();
     render(<UserSettingsTabs email="alex@example.org" name="Alex Morgan" />);
