@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/*",
     "./client": "./src/client.ts",
     "./datetime": "./src/datetime/index.ts",
     "./datetime/client": "./src/datetime/client.ts",
