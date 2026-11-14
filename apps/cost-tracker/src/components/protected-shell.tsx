@@ -102,7 +102,7 @@ export async function ProtectedShell({
           </div>
           <Suspense fallback={<BreadcrumbTrailFallback />}>{breadcrumb}</Suspense>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+        <main className="mx-auto w-full max-w-7xl px-5 py-6 sm:px-8.5 lg:px-10 lg:py-8">
           <Suspense fallback={<ProtectedPageSkeleton />}>{children}</Suspense>
         </main>
       </div>
