@@ -17,6 +17,24 @@ vi.mock("@/lib/better-auth/auth-client", () => ({
   },
 }));
 
+// Server date formatting reads next-intl's request locale and zone, which a unit
+// test has no request for. Pin both; formatting itself stays real.
+vi.mock("@greendex/i18n/datetime/server", async () => {
+  const { createDateFormatter } = await import("@greendex/i18n/datetime");
+  return {
+    getDateFormat: (
+      overrides: Partial<{ locale: string; timeZone: string }> = {},
+    ) =>
+      Promise.resolve(
+        createDateFormatter({
+          locale: "en-GB",
+          timeZone: "UTC",
+          ...overrides,
+        }),
+      ),
+  };
+});
+
 // Mock the env module to avoid environment variable validation
 // Use getters to ensure environment variables are read AFTER dotenv loads them
 vi.mock("@/env", () => ({
