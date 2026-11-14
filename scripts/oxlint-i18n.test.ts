@@ -1,57 +1,45 @@
-import { spawnSync } from "node:child_process";
-import {
-  copyFileSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { lint as lintFixture } from "./oxlint-fixture";
 
 const root = resolve(import.meta.dirname, "..");
 const scopedFile = "apps/cost-tracker/src/features/example.tsx";
 
-function lint(source: string, file = scopedFile) {
-  const fixture = mkdtempSync(join(tmpdir(), "oxlint-i18n-"));
-  try {
-    mkdirSync(join(fixture, "scripts"));
-    mkdirSync(dirname(join(fixture, file)), { recursive: true });
-    symlinkSync(join(root, "node_modules"), join(fixture, "node_modules"), "dir");
-    const config = JSON.parse(readFileSync(join(root, ".oxlintrc.json"), "utf8"));
-    writeFileSync(
-      join(fixture, ".oxlintrc.json"),
-      JSON.stringify({
-        ignorePatterns: config.ignorePatterns,
-        jsPlugins: ["./scripts/oxlint-i18n.mjs"],
-        overrides: config.overrides.filter(
-          (override: { rules?: Record<string, unknown> }) =>
-            override.rules?.["greendex/no-hardcoded-ui-copy"] !== undefined,
-        ),
-      }),
-    );
-    copyFileSync(
-      join(root, "scripts/oxlint-i18n.mjs"),
-      join(fixture, "scripts/oxlint-i18n.mjs"),
-    );
-    writeFileSync(join(fixture, file), source);
-    const result = spawnSync(
-      join(root, "node_modules/.bin/oxlint"),
-      ["--config", ".oxlintrc.json", file],
-      {
-        cwd: fixture,
-        encoding: "utf8",
-      },
-    );
-    if (result.error) throw result.error;
-    return { status: result.status, output: result.stdout + result.stderr };
-  } finally {
-    rmSync(fixture, { recursive: true, force: true });
-  }
+// Only the i18n plugin and the override that carries these two rules, so a
+// finding below is about this plugin and not about any other repository rule.
+const repositoryConfig = JSON.parse(
+  readFileSync(join(root, ".oxlintrc.json"), "utf8"),
+) as {
+  ignorePatterns: string[];
+  overrides: { rules?: Record<string, unknown> }[];
+};
+const config = {
+  ignorePatterns: repositoryConfig.ignorePatterns,
+  jsPlugins: ["./scripts/oxlint-i18n.mjs"],
+  overrides: repositoryConfig.overrides.filter(
+    (override) => override.rules?.["greendex/no-hardcoded-ui-copy"] !== undefined,
+  ),
+};
+
+/**
+ * The fixture reports structured diagnostics. The tests below read them as one
+ * stable line per finding, so they never depend on oxlint's human-readable
+ * reporter, which changes shape with the terminal and the reporter version.
+ */
+function lint(source: string, path = scopedFile) {
+  const result = lintFixture({ source, path, config });
+  return {
+    ...result,
+    output: result.diagnostics
+      .map(
+        (diagnostic) =>
+          `${diagnostic.filename}:${diagnostic.line}:${diagnostic.column}: ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`,
+      )
+      .join("\n\n"),
+  };
 }
 
 function copies(output: string) {
@@ -161,12 +149,10 @@ describe("greendex/no-hardcoded-ui-copy", () => {
     "apps/cost-tracker/example.tsx",
   ])("excludes %s", (file) => {
     const result = lint("const view = <p>Excluded copy</p>;", file);
-    if (file === "apps/cost-tracker/src/components/ui/example.tsx") {
-      expect(result.status).toBe(1);
-      expect(result.output).toContain("No files found to lint");
-    } else {
-      expect(result.status).toBe(0);
-    }
+    // The vendored UI directory is ignore-listed, so oxlint reports nothing at all.
+    expect(result.status).toBe(
+      file === "apps/cost-tracker/src/components/ui/example.tsx" ? 1 : 0,
+    );
     expect(copies(result.output)).toEqual([]);
   });
 });

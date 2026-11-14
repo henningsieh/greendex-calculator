@@ -42,35 +42,44 @@ export function lint({
   source,
   app = "cost-tracker",
   file = "validation-schemas.ts",
+  path,
   config,
 }: {
   source: string;
   app?: string;
   file?: string;
+  /** Exact repo-relative path, for a case outside the app feature shape. */
+  path?: string;
   config?: unknown;
 }): { status: number | null; diagnostics: Diagnostic[] } {
   const fixture = mkdtempSync(join(tmpdir(), "oxlint-fixture-"));
   try {
-    const path = `apps/${app}/src/features/example/${file}`;
-    mkdirSync(dirname(join(fixture, path)), { recursive: true });
+    const target = path ?? `apps/${app}/src/features/example/${file}`;
+    mkdirSync(dirname(join(fixture, target)), { recursive: true });
     mkdirSync(join(fixture, "scripts"));
     symlinkSync(join(root, "node_modules"), join(fixture, "node_modules"), "dir");
     for (const name of ["oxlint-domain.mjs", "oxlint-i18n.mjs"])
       copyFileSync(join(root, "scripts", name), join(fixture, "scripts", name));
     if (config) writeFileSync(join(fixture, configFile), JSON.stringify(config));
     else copyFileSync(join(root, configFile), join(fixture, configFile));
-    writeFileSync(join(fixture, path), source);
+    writeFileSync(join(fixture, target), source);
 
     const result = spawnSync(
       join(root, "node_modules/.bin/oxlint"),
-      ["--format", "json", "--config", configFile, path],
+      ["--format", "json", "--config", configFile, target],
       { cwd: fixture, encoding: "utf8" },
     );
     if (result.error) throw result.error;
 
-    const report = JSON.parse(result.stdout) as {
-      diagnostics?: JsonDiagnostic[];
-    };
+    // An ignored path prints a plain "No files found to lint" notice before the
+    // report, so read from the first brace instead of assuming a pure JSON body.
+    const body = result.stdout.slice(result.stdout.indexOf("{"));
+    let report: { diagnostics?: JsonDiagnostic[] } = {};
+    try {
+      report = JSON.parse(body) as { diagnostics?: JsonDiagnostic[] };
+    } catch {
+      // Nothing to report.
+    }
     return {
       status: result.status,
       diagnostics: (report.diagnostics ?? []).map((diagnostic) => ({
