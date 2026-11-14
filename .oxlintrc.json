@@ -331,6 +331,20 @@
     },
     {
       "files": [
+        "apps/**/*.{js,jsx,mjs,ts,tsx,mts,cts}",
+        "packages/**/*.{js,jsx,mjs,ts,tsx,mts,cts}"
+      ],
+      "excludeFiles": [
+        "packages/i18n/src/datetime/**",
+        "**/components/ui/**",
+        "docs/**"
+      ],
+      "rules": {
+        "greendex/no-raw-date-formatting": "error"
+      }
+    },
+    {
+      "files": [
         "apps/*/src/features/**/components/**/*.{ts,tsx}",
         "apps/*/src/components/**/*.{ts,tsx}"
       ],

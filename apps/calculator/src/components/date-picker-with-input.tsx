@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormatter } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -20,11 +20,11 @@ function DatePickerWithInput({
   id,
   value,
   onChange,
-  placeholder = "DD.MM.YYYY",
+  placeholder,
 }: DatePickerWithInputProps) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState<Date | undefined>(value);
-  const format = useFormatter();
+  const format = useDateFormat();
 
   return (
     <div className="relative flex gap-2">
@@ -39,18 +39,10 @@ function DatePickerWithInput({
             setOpen(true);
           }
         }}
-        placeholder={placeholder}
+        placeholder={placeholder ?? format.pattern()}
         readOnly
         type="text"
-        value={
-          value
-            ? format.dateTime(value, {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-              })
-            : ""
-        }
+        value={value ? format.format(value, "date.numeric") : ""}
       />
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger asChild>
@@ -71,6 +63,12 @@ function DatePickerWithInput({
         >
           <Calendar
             captionLayout="dropdown"
+            formatters={{
+              // The vendored calendar abbreviates months with the host locale;
+              // the popover must follow the active request locale instead.
+              formatMonthDropdown: (date) =>
+                format.format(date, "date.monthShort"),
+            }}
             mode="single"
             month={month}
             onMonthChange={setMonth}

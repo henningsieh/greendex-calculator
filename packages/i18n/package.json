@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/*",
     "./client": "./src/client.ts",
+    "./datetime": "./src/datetime/index.ts",
+    "./datetime/client": "./src/datetime/client.ts",
+    "./datetime/server": "./src/datetime/server.ts",
     "./server": "./src/server.ts"
   },
   "scripts": {
@@ -18,6 +21,7 @@
     "@greendex/config": "workspace:*"
   },
   "devDependencies": {
+    "@types/react": "catalog:",
     "next": "catalog:",
     "next-intl": "catalog:",
     "oxfmt": "catalog:",
@@ -27,6 +31,7 @@
   },
   "peerDependencies": {
     "next": "catalog:",
-    "next-intl": "catalog:"
+    "next-intl": "catalog:",
+    "react": "^19.0.0"
   }
 }

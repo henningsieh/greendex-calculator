@@ -1,7 +1,8 @@
 /* eslint-disable shadcn/no-restyle -- This card intentionally owns its selectable and interactive presentation. */
 "use client";
 
-import { useFormatter, useLocale } from "@greendex/i18n/client";
+import { useLocale } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarIcon,
@@ -62,7 +63,7 @@ export function ProjectCard({
   onSelectChange,
 }: ProjectDetailCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const format = useFormatter();
+  const format = useDateFormat();
   const locale = useLocale();
   const queryClient = useQueryClient();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
@@ -240,9 +241,7 @@ export function ProjectCard({
                     <span>Start Date</span>
                   </div>
                   <p className="font-medium">
-                    {format.dateTime(startDate, {
-                      dateStyle: "medium",
-                    })}
+                    {format.format(startDate, "date.medium")}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -251,9 +250,7 @@ export function ProjectCard({
                     <span>End Date</span>
                   </div>
                   <p className="font-medium">
-                    {format.dateTime(endDate, {
-                      dateStyle: "medium",
-                    })}
+                    {format.format(endDate, "date.medium")}
                   </p>
                 </div>
               </div>
@@ -278,8 +275,7 @@ export function ProjectCard({
                   {status === "upcoming" && "Upcoming"}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  Created{" "}
-                  {format.relativeTime(new Date(project.createdAt), { now })}
+                  Created {format.relative(new Date(project.createdAt), { now })}
                 </span>
               </div>
             </CardFooter>

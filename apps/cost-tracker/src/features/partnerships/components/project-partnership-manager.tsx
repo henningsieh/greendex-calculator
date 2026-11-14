@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import {
   useMutation,
   useQueryClient,
@@ -22,12 +23,6 @@ export type PartnershipFeedback = {
   status: "success" | "error";
 };
 
-const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
-
 function mutationMessage(error: unknown) {
   return <ErrorPresentation error={error} />;
 }
@@ -44,6 +39,7 @@ export function ProjectPartnershipManager({
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("partnerships");
+  const dateFormat = useDateFormat();
   const { confirm, dialog } = useConfirmDialog();
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
@@ -108,9 +104,12 @@ export function ProjectPartnershipManager({
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {t("manager.assigned")}{" "}
-                      {dateTimeFormatter.format(partnership.assignedAt)}{" "}
+                      {dateFormat.format(
+                        partnership.assignedAt,
+                        "dateTime.short",
+                      )}{" "}
                       {t("manager.updated")}{" "}
-                      {dateTimeFormatter.format(partnership.updatedAt)}
+                      {dateFormat.format(partnership.updatedAt, "dateTime.short")}
                     </p>
                   </div>
                 </div>

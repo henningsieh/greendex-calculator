@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormatter, useLocale, useTranslations } from "@greendex/i18n/client";
+import { useLocale, useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import {
   useMutation,
   useQueryClient,
@@ -68,7 +69,7 @@ export function ProjectDetailsHeader({ id }: ProjectDetailsProps) {
     canArchive,
     isPending: permissionsPending,
   } = useProjectPermissions();
-  const format = useFormatter();
+  const format = useDateFormat();
   const locale = useLocale();
   const queryClient = useQueryClient();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
@@ -142,17 +143,7 @@ export function ProjectDetailsHeader({ id }: ProjectDetailsProps) {
   const description: React.ReactNode = (
     <div className="items-centergap-y-1 flex flex-wrap">
       <span>
-        {format.dateTime(project.startDate, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}
-        {"\u00A0\u2013\u00A0"}
-        {format.dateTime(project.endDate, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}
+        {format.range(project.startDate, project.endDate, "date.medium")}
       </span>
       <span className="text-muted-foreground">{"\u00A0\u007C\u00A0"}</span>
 

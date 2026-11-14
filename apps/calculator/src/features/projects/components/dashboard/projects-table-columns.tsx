@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormatter, useTranslations } from "@greendex/i18n/client";
+import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
@@ -50,22 +51,14 @@ import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
 /**
- * Renders a date using localized short month, numeric day, and year format.
+ * Renders a date in the locale's medium date format.
  *
  * @param date - The date to format and display
  * @returns The formatted date as a JSX element
  */
 function DateCell({ date }: { date: Date }) {
-  const format = useFormatter();
-  return (
-    <div>
-      {format.dateTime(date, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })}
-    </div>
-  );
+  const format = useDateFormat();
+  return <div>{format.format(date, "date.medium")}</div>;
 }
 
 /**

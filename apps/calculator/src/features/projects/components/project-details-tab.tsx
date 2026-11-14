@@ -1,4 +1,5 @@
-import { useFormatter, useTranslations } from "@greendex/i18n/client";
+import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { Calendar1Icon, CalendarXIcon, MessageSquareIcon } from "lucide-react";
 
 import { Blockquote, BlockquoteAuthor } from "@/components/block-quote";
@@ -18,7 +19,7 @@ interface ProjectDetailsProps {
  */
 export function ProjectDetailsTab({ project }: ProjectDetailsProps) {
   const t = useTranslations("project.details");
-  const format = useFormatter();
+  const format = useDateFormat();
 
   return (
     <Card>
@@ -36,11 +37,7 @@ export function ProjectDetailsTab({ project }: ProjectDetailsProps) {
               {t("start-date")}
             </p>
             <p className="font-mono text-base font-semibold">
-              {format.dateTime(project.startDate, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+              {format.format(project.startDate, "date.long")}
             </p>
           </div>
           <div className="space-y-1">
@@ -49,11 +46,7 @@ export function ProjectDetailsTab({ project }: ProjectDetailsProps) {
               {t("end-date")}
             </p>
             <p className="font-mono text-base font-semibold">
-              {format.dateTime(project.endDate, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+              {format.format(project.endDate, "date.long")}
             </p>
           </div>
         </div>

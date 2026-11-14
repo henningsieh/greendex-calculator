@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormatter, useTranslations } from "@greendex/i18n/client";
+import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import {
   useMutation,
   useQueryClient,
@@ -63,7 +64,7 @@ export function ProjectSharedTravelLegsTable({
   canEdit = false,
 }: ProjectSharedTravelLegsTableProps) {
   const t = useTranslations("project.shared-travel");
-  const format = useFormatter();
+  const format = useDateFormat();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingSharedTravelLeg, setEditingSharedTravelLeg] = useState<
@@ -164,11 +165,7 @@ export function ProjectSharedTravelLegsTable({
                     </TableCell>
                     <TableCell>
                       {sharedTravelLeg.travelDate
-                        ? format.dateTime(new Date(sharedTravelLeg.travelDate), {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
+                        ? format.format(sharedTravelLeg.travelDate, "date.medium")
                         : "-"}
                     </TableCell>
                     {canEdit && (

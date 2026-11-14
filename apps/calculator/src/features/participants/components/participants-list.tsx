@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormatter, useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Users2Icon } from "lucide-react";
 
@@ -34,6 +35,7 @@ interface ParticipantsListProps {
  */
 export function ParticipantsList({ activeProjectId }: ParticipantsListProps) {
   const format = useFormatter();
+  const dateFormat = useDateFormat();
   const t = useTranslations("project.details");
 
   const { data: participants } = useSuspenseQuery(
@@ -101,11 +103,7 @@ export function ParticipantsList({ activeProjectId }: ParticipantsListProps) {
               </div>
               <div className="text-sm text-muted-foreground">
                 {t("joined-on")}{" "}
-                {format.dateTime(participant.createdAt, {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
+                {dateFormat.format(participant.createdAt, "date.medium")}
               </div>
             </div>
           ))}
