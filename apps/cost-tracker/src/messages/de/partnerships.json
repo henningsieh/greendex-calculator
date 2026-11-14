@@ -11,26 +11,32 @@
       "assignExisting": "Bestehende Organisation zuweisen",
       "hostedProject": "Gehostetes Projekt",
       "partnerOrganization": "Partnerorganisation",
-      "current": "Aktuelle Projektpartnerschaften",
-      "none": "Keine Partnerorganisationen sind gehosteten Projekten zugewiesen.",
-      "assigned": "Zugewiesen",
-      "updated": "· Aktualisiert",
+      "current": "Partnerschaften nach Projekt",
+      "none": "Noch sind keine Partnerorganisationen zugewiesen. Lade einen Partner ein oder weise eine bestehende Organisation zu.",
       "assigning": "Wird zugewiesen…",
       "assign": "Zuweisen",
       "cancel": "Abbrechen",
-      "remove": "Entfernen"
+      "remove": "Entfernen",
+      "summary": "{partnershipCount, plural, one {# Partnerschaft} other {# Partnerschaften}}, {projectCount, plural, one {# Projekt} other {# Projekte}}",
+      "since": "Partner seit {date}",
+      "partnersCount": "{count, plural, one {# Partner} other {# Partner}}",
+      "searchLabel": "Partnerschaften filtern",
+      "searchPlaceholder": "Nach Organisation oder Projekt filtern…",
+      "emptySearch": "Keine Partnerschaft passt zu diesem Filter.",
+      "viewDetails": "Details ansehen",
+      "removed": "Projektpartnerschaft entfernt."
     },
     "setup": {
       "title": "Setup-Link für Partnerorganisation",
       "description": "Teile diesen empfängergebundenen Link privat. Er gewährt keinen Zugriff auf die Hosting-Organisation.",
       "hostedProject": "Gehostetes Projekt",
       "recipientEmail": "E-Mail der empfangenden Person",
-      "existingLinks": "Bestehende Setup-Links für Partnerorganisationen",
-      "existingLinksHint": "Nur der neu erstellte Link kann kopiert werden. Bestehende Link-Geheimnisse werden nicht gespeichert.",
+      "existingLinks": "Ausstehende Einladungen",
+      "existingLinksHint": "Ein Link gilt für eine E-Mail-Adresse und läuft nach 7 Tagen ab. Nur ein frisch erstellter Link kann kopiert werden — Geheimnisse werden nie gespeichert.",
       "loading": "Setup-Links für Partnerorganisationen werden geladen…",
       "loadError": "Setup-Links für Partnerorganisationen konnten nicht geladen werden",
       "retry": "Erneut versuchen",
-      "empty": "Noch keine Setup-Links für Partnerorganisationen.",
+      "empty": "Noch keine Einladungen. Lade eine Partnerorganisation ein, um zu beginnen.",
       "status": "Status",
       "expires": "Läuft ab",
       "action": "Aktion",
@@ -68,13 +74,25 @@
       "closeLink": "Einrichtungslink schließen",
       "completing": "Wird abgeschlossen…",
       "complete": "Einrichtung abschließen",
-      "invitationRejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten."
+      "invitationRejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten.",
+      "invite": "Partner einladen",
+      "invitationColumn": "Einladung",
+      "openSummary": "{count, plural, one {# offene Einladung} other {# offene Einladungen}}"
     },
     "partnerOrganizations": {
       "page": {
         "eyebrow": "Projektnetzwerk",
         "title": "Partnerorganisationen",
-        "description": "Erstelle Setup-Links für gehostete Projekte oder weise bestehende Partnerorganisationen zu, wenn deine Rolle es erlaubt."
+        "description": "Lade neue Partner über einen Setup-Link ein oder weise eine Organisation zu, mit der du bereits arbeitest. Jede Partnerschaft verbindet ein gehostetes Projekt mit einer Partnerorganisation."
+      },
+      "guide": {
+        "title": "So funktioniert die Partnerschaft",
+        "inviteTitle": "Einladen",
+        "inviteText": "Sende einen Setup-Link an einen neuen Partner oder weise eine Organisation zu, mit der du bereits arbeitest.",
+        "joinTitle": "Partner tritt bei",
+        "joinText": "Der Partner bestätigt mit der eingeladenen E-Mail-Adresse. Jeder Link ist einmal verwendbar und läuft nach 7 Tagen ab.",
+        "collaborateTitle": "Zusammenarbeiten",
+        "collaborateText": "Die Partnerschaft erscheint unten bei ihrem gehosteten Projekt — bereit für Teilnahmen und Abrechnungen."
       }
     },
     "confirmations": {

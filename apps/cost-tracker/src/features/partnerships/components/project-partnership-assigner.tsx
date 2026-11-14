@@ -74,8 +74,9 @@ export function AssignOrganizationDialog({
     >
       <DialogTrigger
         data-testid="assign-organization"
-        render={<Button type="button" />}
+        render={<Button type="button" variant="outline" />}
       >
+        <LinkIcon aria-hidden="true" />
         {t("manager.assignExisting")}
       </DialogTrigger>
       <DialogContent

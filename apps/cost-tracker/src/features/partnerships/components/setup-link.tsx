@@ -6,7 +6,7 @@ import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, MailPlusIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { type z } from "zod";
@@ -20,8 +20,16 @@ import {
 } from "@/components/error-presentation/error-presentation";
 import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -264,87 +272,126 @@ export function SetupLinkList() {
     }
   }
 
+  const links = existingLinks.data ?? [];
+  const openCount = links.filter(
+    (link) => link.enabled && !link.consumedAt && !link.expired,
+  ).length;
+
+  function linkStatus(link: (typeof links)[number]) {
+    if (!link.enabled) return t("closed");
+    if (link.consumedAt) return t("used");
+    if (link.expired) return t("expired");
+    return t("open");
+  }
+
+  function linkStatusKey(link: (typeof links)[number]) {
+    if (!link.enabled) return "closed" as const;
+    if (link.consumedAt) return "used" as const;
+    if (link.expired) return "expired" as const;
+    return "open" as const;
+  }
+
   return (
     <section
       data-testid="setup-links"
       aria-label={t("existingLinks")}
-      className="space-y-3"
+      className="mt-10 space-y-4"
     >
-      <h2 className="text-2xl">{t("existingLinks")}</h2>
-      <p>{t("existingLinksHint")}</p>
-      {error && <div role="alert">{error}</div>}
-      {existingLinks.isPending ? (
-        <output>{t("loading")}</output>
-      ) : existingLinks.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>{t("loadError")}</AlertTitle>
-          <AlertDescription>
-            {<ErrorPresentation error={existingLinks.error} />}
-          </AlertDescription>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void existingLinks.refetch()}
-          >
-            {t("retry")}
-          </Button>
-        </Alert>
-      ) : existingLinks.data.length === 0 ? (
-        <p>{t("empty")}</p>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("hostedProject")}</TableHead>
-              <TableHead>{t("recipientEmail")}</TableHead>
-              <TableHead>{t("status")}</TableHead>
-              <TableHead>{t("expires")}</TableHead>
-              <TableHead className="text-right">{t("action")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {existingLinks.data.map((existing) => (
-              <TableRow key={existing.id} data-setup-link-id={existing.id}>
-                <TableCell>{existing.projectName}</TableCell>
-                <TableCell>{existing.recipientEmail}</TableCell>
-                <TableCell
-                  data-link-status={
-                    !existing.enabled
-                      ? "closed"
-                      : existing.consumedAt
-                        ? "used"
-                        : existing.expired
-                          ? "expired"
-                          : "open"
-                  }
-                >
-                  {!existing.enabled
-                    ? t("closed")
-                    : existing.consumedAt
-                      ? t("used")
-                      : existing.expired
-                        ? t("expired")
-                        : t("open")}
-                </TableCell>
-                <TableCell>
-                  {dateFormat.format(existing.expiresAt, "date.medium")}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    data-testid="close-setup-link"
-                    type="button"
-                    variant="outline"
-                    disabled={!existing.enabled || !!closingId}
-                    onClick={() => void closeLink(existing.id)}
-                  >
-                    {closingId === existing.id ? t("closing") : t("closeLink")}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle as="h2">{t("existingLinks")}</CardTitle>
+            <CardDescription className="mt-1">
+              {t("existingLinksHint")}
+            </CardDescription>
+          </div>
+          <CardAction>
+            <Badge variant="ember-pill">
+              {t("openSummary", { count: openCount })}
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          {error && <div role="alert">{error}</div>}
+          {existingLinks.isPending ? (
+            <output>{t("loading")}</output>
+          ) : existingLinks.isError ? (
+            <Alert variant="destructive">
+              <AlertTitle>{t("loadError")}</AlertTitle>
+              <AlertDescription>
+                {<ErrorPresentation error={existingLinks.error} />}
+              </AlertDescription>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void existingLinks.refetch()}
+              >
+                {t("retry")}
+              </Button>
+            </Alert>
+          ) : links.length === 0 ? (
+            <p className="rounded-2xl border p-8 text-center text-muted-foreground">
+              {t("empty")}
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("invitationColumn")}</TableHead>
+                  <TableHead>{t("status")}</TableHead>
+                  <TableHead>{t("expires")}</TableHead>
+                  <TableHead className="text-right">{t("action")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {links.map((existing) => {
+                  const status = linkStatusKey(existing);
+                  return (
+                    <TableRow key={existing.id} data-setup-link-id={existing.id}>
+                      <TableCell>
+                        <p className="font-medium">{existing.projectName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {existing.recipientEmail}
+                        </p>
+                      </TableCell>
+                      <TableCell data-link-status={status}>
+                        <Badge
+                          variant={
+                            status === "open"
+                              ? "status-pass"
+                              : status === "expired"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                        >
+                          {linkStatus(existing)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {dateFormat.format(existing.expiresAt, "date.medium")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          data-testid="close-setup-link"
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!existing.enabled || !!closingId}
+                          onClick={() => void closeLink(existing.id)}
+                        >
+                          {closingId === existing.id
+                            ? t("closing")
+                            : t("closeLink")}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }
@@ -363,7 +410,8 @@ export function CreateSetupLinkDialog({
         data-testid="new-setup-link"
         render={<Button type="button" />}
       >
-        {t("createLink")}
+        <MailPlusIcon aria-hidden="true" />
+        {t("invite")}
       </DialogTrigger>
       <DialogContent data-testid="setup-link-creator" className="sm:max-w-lg">
         <DialogHeader>

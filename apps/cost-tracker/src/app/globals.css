@@ -27,6 +27,7 @@
   --accent: #e8f0ff;
   --accent-foreground: #003399;
   --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: #ffffff;
   --border: #cdd5e0;
   --input: #b2cdff;
   --ring: #003399;
@@ -83,7 +84,7 @@
 .theme-erasmus-midnight {
   --background: #0a1230;
   --foreground: #f7f2e9;
-  --card: rgb(255 255 255 / 0.02);
+  --card: rgb(255 255 255 / 0.05);
   --card-foreground: #f7f2e9;
   --popover: #0a1230;
   --popover-foreground: #f7f2e9;
@@ -95,7 +96,8 @@
   --muted-foreground: #9dacc9;
   --accent: rgb(255 255 255 / 0.06);
   --accent-foreground: #f7f2e9;
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: oklch(0.5942 0.2394 22.22);
+  --destructive-foreground: #0a1230;
   --border: rgb(147 180 255 / 0.13);
   --input: rgb(147 180 255 / 0.13);
   --ring: #ffb800;
@@ -134,7 +136,7 @@
 .theme-erasmus-violet {
   --background: #130b26;
   --foreground: #f7f2e9;
-  --card: rgb(255 255 255 / 0.02);
+  --card: rgb(255 255 255 / 0.05);
   --card-foreground: #f7f2e9;
   --popover: #130b26;
   --popover-foreground: #f7f2e9;
@@ -146,7 +148,8 @@
   --muted-foreground: #b8a9d4;
   --accent: rgb(255 255 255 / 0.06);
   --accent-foreground: #f7f2e9;
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: oklch(0.5942 0.2394 22.22);
+  --destructive-foreground: #130b26;
   --border: rgb(200 170 255 / 0.12);
   --input: rgb(200 170 255 / 0.12);
   --ring: #ffb800;
@@ -185,7 +188,7 @@
 .theme-erasmus-dark {
   --background: #070a16;
   --foreground: #f7f2e9;
-  --card: rgb(255 255 255 / 0.02);
+  --card: rgb(255 255 255 / 0.05);
   --card-foreground: #f7f2e9;
   --popover: #070a16;
   --popover-foreground: #f7f2e9;
@@ -197,7 +200,8 @@
   --muted-foreground: #98a0b8;
   --accent: rgb(255 255 255 / 0.06);
   --accent-foreground: #f7f2e9;
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: oklch(0.5942 0.2394 22.22 / 70%);
+  --destructive-foreground: #070a16;
   --border: rgb(255 255 255 / 0.09);
   --input: rgb(255 255 255 / 0.09);
   --ring: #ffb800;
@@ -402,6 +406,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);

@@ -8,29 +8,35 @@
       "loading": "Selectieopties laden…"
     },
     "manager": {
-      "assignExisting": "Assign an existing Organization",
+      "assignExisting": "Assign existing organization",
       "hostedProject": "Hosted Project",
       "partnerOrganization": "Partner Organization",
-      "current": "Current Project Partnerships",
-      "none": "No Partner Organizations are assigned to hosted Projects.",
-      "assigned": "Assigned",
-      "updated": "· Updated",
+      "current": "Partnerships by project",
+      "none": "No partner organizations are assigned yet. Invite a partner or assign an existing organization to get started.",
       "assigning": "Toewijzen…",
       "assign": "Toewijzen",
       "cancel": "Cancel",
-      "remove": "Verwijderen"
+      "remove": "Verwijderen",
+      "summary": "{partnershipCount, plural, one {# partnership} other {# partnerships}}, {projectCount, plural, one {# project} other {# projects}}",
+      "since": "Partner since {date}",
+      "partnersCount": "{count, plural, one {# Partner} other {# Partners}}",
+      "searchLabel": "Filter partnerships",
+      "searchPlaceholder": "Filter by organization or project…",
+      "emptySearch": "No partnerships match this filter.",
+      "viewDetails": "View details",
+      "removed": "Project partnership removed."
     },
     "setup": {
       "title": "Partner Organization Setup Link",
       "description": "Share this recipient-bound link privately. It does not grant Hosting Organization access.",
       "hostedProject": "Hosted Project",
       "recipientEmail": "Recipient email",
-      "existingLinks": "Existing Partner Organization Setup Links",
-      "existingLinksHint": "Only the newly created link can be copied. Existing link secrets are not stored.",
+      "existingLinks": "Pending invitations",
+      "existingLinksHint": "A link works for one email address and expires after 7 days. Only a freshly created link can be copied — secrets are never stored.",
       "loading": "Loading Partner Organization Setup Links…",
       "loadError": "Unable to load Partner Organization Setup Links",
       "retry": "Retry",
-      "empty": "No Partner Organization Setup Links yet.",
+      "empty": "No invitations yet. Invite a partner organization to start collaborating.",
       "status": "Status",
       "expires": "Expires",
       "action": "Action",
@@ -68,13 +74,25 @@
       "closeLink": "Link naar inrichting sluiten",
       "completing": "Voltooien…",
       "complete": "Instelling voltooien",
-      "invitationRejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder."
+      "invitationRejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder.",
+      "invite": "Invite partner",
+      "invitationColumn": "Invitation",
+      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}"
     },
     "partnerOrganizations": {
       "page": {
         "eyebrow": "Project network",
         "title": "Partner Organizations",
-        "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
+        "description": "Invite a new partner with a setup link, or assign an organization you already work with. Each partnership connects one hosted project with one partner organization."
+      },
+      "guide": {
+        "title": "How partnering works",
+        "inviteTitle": "Invite",
+        "inviteText": "Send a setup link to a new partner, or assign an organization you already work with.",
+        "joinTitle": "Partner joins",
+        "joinText": "They confirm with the invited email address. Each link is single-use and expires after 7 days.",
+        "collaborateTitle": "Collaborate",
+        "collaborateText": "The partnership appears under its hosted project below, ready for participants and claims."
       }
     },
     "confirmations": {
