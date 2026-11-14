@@ -114,12 +114,24 @@
   // ============================================================================
   // EXTENSION — I18N ALLY
   // ============================================================================
-  "i18n-ally.sourceLanguage": "en",
-  "i18n-ally.displayLanguage": "de",
+  "i18n-ally.sourceLanguage": "en-GB",
   "i18n-ally.keystyle": "nested",
   "i18n-ally.enabledFrameworks": ["next-intl"],
   "i18n-ally.namespace": false,
   "i18n-ally.pathMatcher": "{locale}(/[^/]+)?.json",
+  // Translation engine: default is Google's free web endpoint, which
+  // rate-limits (HTTP 429 "sending automated queries") — especially from
+  // datacenter/remote-SSH IPs. If you hit 429, wait a while and translate
+  // single keys, not bulk. For reliable machine translation, use DeepL:
+  // 1. Get a free API key at https://www.deepl.com/pro-api (500k chars/mo).
+  // 2. Put it in your *personal* VS Code settings (NOT this repo file —
+  //    never commit secrets):
+  //      "i18n-ally.translate.engines": ["deepl", "google"],
+  //      "i18n-ally.translate.deepl.apiKey": "<your-key>",
+  //      "i18n-ally.translate.deepl.useFreeApiEntry": true
+  // 3. Reload the window. DeepL covers all our locales (EN-GB, DE, ES, FR,
+  //    IT, NL; Slovenian included in DeepL's supported list).
+  "i18n-ally.translate.engines": ["google"],
   "i18n-ally.localesPaths": [
     "apps/calculator/src/messages",
     "apps/cost-tracker/src/messages"
