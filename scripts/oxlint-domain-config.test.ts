@@ -1,146 +1,91 @@
-import { spawnSync } from "node:child_process";
-import {
-  copyFileSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
-const root = resolve(import.meta.dirname, "..");
-function lint(
-  app: string,
-  source: string,
-  path:
-    | "validation-schemas.ts"
-    | "components/example-form.tsx"
-    | "procedures.ts"
-    | "procedures/example.ts" = "validation-schemas.ts",
-) {
-  const fixture = mkdtempSync(join(tmpdir(), "oxlint-domain-config-"));
-  try {
-    const file = `apps/${app}/src/features/example/${path}`;
-    mkdirSync(dirname(join(fixture, file)), { recursive: true });
-    mkdirSync(join(fixture, "scripts"));
-    symlinkSync(join(root, "node_modules"), join(fixture, "node_modules"), "dir");
-    for (const name of ["oxlint-domain.mjs", "oxlint-i18n.mjs"])
-      copyFileSync(join(root, "scripts", name), join(fixture, "scripts", name));
-    copyFileSync(join(root, ".oxlintrc.json"), join(fixture, ".oxlintrc.json"));
-    writeFileSync(join(fixture, file), source);
-    const result = spawnSync(
-      join(root, "node_modules/.bin/oxlint"),
-      ["--config", ".oxlintrc.json", file],
-      { cwd: fixture, encoding: "utf8" },
-    );
-    if (result.error) throw result.error;
-    return { status: result.status, output: result.stdout + result.stderr };
-  } finally {
-    rmSync(fixture, { recursive: true, force: true });
-  }
-}
+import { byCode, lint, severities } from "./oxlint-fixture";
 
-describe("repository identifier rule configuration", () => {
-  const invalid =
-    'import { z } from "zod";\n\nexport const schema = z.object({ projectId: z.string() });';
-  const derived =
-    'import { z } from "zod";\nimport { ProjectIdSchema } from "./other";\n\nexport const schema = z.object({ projectId: ProjectIdSchema });';
+const identifier = "greendex-domain(schema-derived-identifier)";
+const location = "greendex-domain(validation-schema-location)";
+const input = "greendex-domain(procedure-input-schema)";
+const apps = ["calculator", "cost-tracker"] as const;
+const procedurePaths = ["procedures.ts", "procedures/example.ts"] as const;
+
+/**
+ * Severity wiring from the repository config: the same violation is an error in
+ * Cost Tracker and a warning in Calculator. The exit status carries that
+ * severity, so it is the assertion — not a word in a reporter's output.
+ */
+describe("repository lint configuration", () => {
   it.each([
     ["cost-tracker", 1, "error"],
-    ["calculator", 0, "warn"],
-  ])("reports an identifier %s as %s", (app, status, severity) => {
-    const result = lint(app, invalid);
-    expect(result.status, result.output).toBe(status);
-    expect(result.output).toContain("greendex-domain(schema-derived-identifier)");
-    expect(result.output).toContain(
-      `${severity === "warn" ? "warning" : "error"} greendex-domain(schema-derived-identifier)`,
-    );
+    ["calculator", 0, "warning"],
+  ] as const)(
+    "scores an inline identifier in %s as %s",
+    (app, status, severity) => {
+      const result = lint({
+        app,
+        source:
+          'import { z } from "zod";\n\nexport const schema = z.object({ projectId: z.string() });',
+      });
+      expect(result.status).toBe(status);
+      expect(severities(result.diagnostics, identifier)).toEqual([severity]);
+    },
+  );
+
+  it.each(apps)("accepts a derived identifier in %s", (app) => {
+    const result = lint({
+      app,
+      source:
+        'import { z } from "zod";\nimport { ProjectIdSchema } from "./other";\n\nexport const schema = z.object({ projectId: ProjectIdSchema });',
+    });
+    expect(byCode(result.diagnostics, identifier)).toEqual([]);
   });
-  it.each(["cost-tracker", "calculator"])(
-    "accepts a derived identifier in %s",
-    (app) => {
-      const result = lint(app, derived);
-      expect(result.status, result.output).toBe(0);
-      expect(result.output).not.toContain(
-        "greendex-domain(schema-derived-identifier)",
-      );
-    },
-  );
-});
 
-describe("repository component schema location rule", () => {
-  it.each(["calculator", "cost-tracker"])(
-    "rejects an inline schema in %s",
-    (app) => {
-      const result = lint(
-        app,
+  it.each(apps)("rejects an inline component schema in %s", (app) => {
+    const result = lint({
+      app,
+      file: "components/example-form.tsx",
+      source:
         'import { z } from "zod";\n\nexport const schema = z.object({ email: z.email() });',
-        "components/example-form.tsx",
-      );
-      expect(result.status, result.output).toBe(1);
-      expect(result.output).toContain(
-        "error greendex-domain(validation-schema-location)",
-      );
-    },
-  );
+    });
+    expect(result.status).toBe(1);
+    expect(severities(result.diagnostics, location)).toEqual(["error"]);
+  });
 
-  it.each(["calculator", "cost-tracker"])(
-    "accepts an imported factory in %s",
-    (app) => {
-      const result = lint(
-        app,
+  it.each(apps)("accepts an imported component factory in %s", (app) => {
+    const result = lint({
+      app,
+      file: "components/example-form.tsx",
+      source:
         'import { createSchema } from "@/features/example/validation-schemas";\n\nexport const schema = createSchema();',
-        "components/example-form.tsx",
-      );
-      expect(result.status, result.output).toBe(0);
-      expect(result.output).not.toContain(
-        "greendex-domain(validation-schema-location)",
-      );
-    },
-  );
-});
+    });
+    expect(byCode(result.diagnostics, location)).toEqual([]);
+  });
 
-describe("repository procedure input schema rule", () => {
-  const cases = [
-    ["calculator", "procedures.ts"],
-    ["calculator", "procedures/example.ts"],
-    ["cost-tracker", "procedures.ts"],
-    ["cost-tracker", "procedures/example.ts"],
-  ] as const;
-
-  it.each(cases)("rejects inline inputs in %s %s", (app, path) => {
-    for (const input of [
+  it.each(
+    apps.flatMap((app) => procedurePaths.map((file) => [app, file] as const)),
+  )("rejects inline procedure input in %s %s", (app, file) => {
+    for (const inline of [
       "z.object({ id: z.string() })",
       "z.object({ id: z.string() }).optional()",
     ]) {
-      const result = lint(
+      const result = lint({
         app,
-        `import { z } from "zod";\n\nexport const procedure = authorized.input(${input});`,
-        path,
-      );
-      expect(result.status, result.output).toBe(1);
-      expect(result.output).toContain(
-        "error greendex-domain(procedure-input-schema)",
-      );
+        file,
+        source: `import { z } from "zod";\n\nexport const procedure = authorized.input(${inline});`,
+      });
+      expect(result.status).toBe(1);
+      expect(severities(result.diagnostics, input)).toEqual(["error"]);
     }
   });
 
-  it.each(cases)(
-    "accepts imported input and inline output in %s %s",
-    (app, path) => {
-      const result = lint(
-        app,
+  it.each(
+    apps.flatMap((app) => procedurePaths.map((file) => [app, file] as const)),
+  )("accepts imported procedure input in %s %s", (app, file) => {
+    const result = lint({
+      app,
+      file,
+      source:
         'import { z } from "zod";\nimport { InputSchema } from "@/features/example/validation-schemas";\n\nexport const procedure = authorized.input(InputSchema).output(z.object({ id: z.string() }));',
-        path,
-      );
-      expect(result.status, result.output).toBe(0);
-      expect(result.output).not.toContain(
-        "greendex-domain(procedure-input-schema)",
-      );
-    },
-  );
+    });
+    expect(byCode(result.diagnostics, input)).toEqual([]);
+  });
 });
