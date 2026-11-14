@@ -56,6 +56,14 @@ export const ProjectPartnershipIdSchema = ProjectPartnershipSelectSchema.shape.i
   .min(1)
   .max(IDENTIFIER_MAX_LENGTH);
 
+export const PartnershipScopeInputSchema = z.object({
+  partnershipId: ProjectPartnershipIdSchema,
+});
+
+export const PartnershipScopeSchema = z.object({
+  projectId: ProjectPartnershipSchema.shape.projectId,
+});
+
 export const RemoveProjectPartnershipInputSchema =
   ProjectPartnershipSelectSchema.pick({ id: true }).safeExtend({
     id: ProjectPartnershipIdSchema,

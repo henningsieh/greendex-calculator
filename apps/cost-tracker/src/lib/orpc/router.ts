@@ -69,6 +69,7 @@ import {
 } from "@/features/partnerships/procedures/coordination";
 import {
   assignPartnership,
+  getPartnershipScope,
   listPartnerships,
   removePartnership,
 } from "@/features/partnerships/procedures/core";
@@ -153,6 +154,7 @@ export const router = {
     assign: assignPartnership,
     list: listPartnerships,
     remove: removePartnership,
+    getScope: getPartnershipScope,
     createSetupLink,
     listSetupLinks,
     disableSetupLink,

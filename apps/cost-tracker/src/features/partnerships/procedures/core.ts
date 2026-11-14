@@ -11,8 +11,11 @@ import { and, asc, eq, exists, inArray, notExists } from "drizzle-orm";
 import { z } from "zod";
 
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
+import { requirePartnerCoordination } from "@/features/partnerships/procedures/coordination";
 import {
   AssignProjectPartnershipInputSchema,
+  PartnershipScopeInputSchema,
+  PartnershipScopeSchema,
   ProjectPartnershipSchema,
   RemoveProjectPartnershipInputSchema,
   RemoveProjectPartnershipResultSchema,
@@ -101,6 +104,32 @@ export const listPartnerships = authorized
         asc(projectsTable.name),
         asc(projectPartnerOrganizationsTable.id),
       );
+  });
+
+/**
+ * Resolves the Project that owns a Project Partnership.
+ *
+ * Partner Participants and Claim pages hang under the Partner Project page in
+ * the navigation hierarchy, so their breadcrumbs link there instead of to the
+ * Partnership page. Authorization matches the pages themselves.
+ */
+export const getPartnershipScope = authorized
+  .input(PartnershipScopeInputSchema)
+  .output(PartnershipScopeSchema)
+  .meta(
+    openapi({
+      tags: ["Partnerships"],
+      summary: "Get the project scope of a partnership",
+    }),
+  )
+  .handler(async ({ context, errors, input }) => {
+    const scope = await requirePartnerCoordination(
+      input.partnershipId,
+      context.user.id,
+      context.session.activeOrganizationId,
+      errors,
+    );
+    return { projectId: scope.projectId };
   });
 
 /**
