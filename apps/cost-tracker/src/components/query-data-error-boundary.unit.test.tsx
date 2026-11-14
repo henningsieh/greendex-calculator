@@ -67,7 +67,7 @@ describe("ProjectDataErrorBoundary", () => {
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByTestId("project-data-sign-in").getAttribute("href")).toBe(
-      "/en/login",
+      "/en-GB/login",
     );
   });
 
@@ -112,19 +112,24 @@ it.each([
   vi.restoreAllMocks();
 });
 
-it.each(["en", "de"] as const)("preserves session recovery in %s", (locale) => {
-  shouldThrow = true;
-  vi.spyOn(console, "error").mockImplementation(() => undefined);
-  render(
-    <ProjectDataErrorBoundary resource="Projects">
-      <FailingProjectDataView error={createSituationErrors().unauthenticated()} />
-    </ProjectDataErrorBoundary>,
-    { locale },
-  );
-  expect(screen.getByTestId("project-data-sign-in")).toHaveAttribute(
-    "href",
-    `/${locale}/login`,
-  );
-  expect(screen.queryByTestId("retry-project-data")).toBeNull();
-  vi.restoreAllMocks();
-});
+it.each(["en-GB", "de"] as const)(
+  "preserves session recovery in %s",
+  (locale) => {
+    shouldThrow = true;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    render(
+      <ProjectDataErrorBoundary resource="Projects">
+        <FailingProjectDataView
+          error={createSituationErrors().unauthenticated()}
+        />
+      </ProjectDataErrorBoundary>,
+      { locale },
+    );
+    expect(screen.getByTestId("project-data-sign-in")).toHaveAttribute(
+      "href",
+      `/${locale}/login`,
+    );
+    expect(screen.queryByTestId("retry-project-data")).toBeNull();
+    vi.restoreAllMocks();
+  },
+);

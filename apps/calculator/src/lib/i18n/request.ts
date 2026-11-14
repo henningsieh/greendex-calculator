@@ -14,6 +14,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
+    // An explicit zone keeps every formatter off the deployment host's own zone.
+    // Dates in this app are calendar dates, so UTC is the stable choice and it
+    // matches Cost Tracker.
+    timeZone: "UTC",
     messages: (await import(`@/messages/${locale}.json`)).default,
   };
 });

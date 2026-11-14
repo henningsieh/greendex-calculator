@@ -81,7 +81,7 @@ describe("prerenderable footer", () => {
     [new Date(2027, 0, 1, 0, 0, 0), 2027],
   ])("renders the year at %s with the days cache lifetime", async (now, year) => {
     vi.setSystemTime(now);
-    const html = renderToStaticMarkup(await FooterSection({ locale: "en" }));
+    const html = renderToStaticMarkup(await FooterSection({ locale: "en-GB" }));
     expect(html).toContain(`© ${year} Greendex`);
     expect(cacheLife).toHaveBeenCalledExactlyOnceWith("days");
   });

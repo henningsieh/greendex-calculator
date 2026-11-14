@@ -84,10 +84,10 @@ describe("Cost Tracker locale proxy", () => {
     expect(response.status).toBe(200);
     expect(response.headers.has("location")).toBe(false);
     expect(response.headers.get("x-middleware-request-x-next-intl-locale")).toBe(
-      "en",
+      "en-GB",
     );
     expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe(
-      `/en${path}`,
+      `/en-GB${path}`,
     );
   });
 
@@ -120,9 +120,9 @@ describe("Cost Tracker locale proxy", () => {
     "/_next/static/chunk.js",
     "/favicon.ico",
     "/projects/report.csv",
-    "/en/projects/report.csv",
+    "/en-GB/projects/report.csv",
     "/accept-invitation.png",
-    "/en/accept-invitation.png",
+    "/en-GB/accept-invitation.png",
     "/api/accept-invitation/bad.token",
     "/_next/accept-invitation/bad.token",
   ])("excludes %s from the proxy", (url) => {

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const mocks = vi.hoisted(() => ({
   onboardingNextStep: vi.fn(),
@@ -135,7 +135,7 @@ describe("Organization Invitation acceptance", () => {
     mocks.onboardingNextStep.mockResolvedValue(complete);
     fireEvent.click(button);
     await waitFor(() =>
-      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en/projects"),
+      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en-GB/projects"),
     );
     expect(mocks.acceptInvitation).toHaveBeenCalledExactlyOnceWith({
       invitationId: "invite-1",
@@ -156,7 +156,7 @@ describe("Organization Invitation acceptance", () => {
     render(<InvitationAcceptance returnTo={returnTo} />);
     await waitFor(() =>
       expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
-        "/en/register?next=%2Faccept-invitation%2Finvite-1",
+        "/en-GB/register?next=%2Faccept-invitation%2Finvite-1",
       ),
     );
   });
@@ -276,7 +276,7 @@ describe("Organization Invitation acceptance", () => {
     mocks.onboardingNextStep.mockResolvedValue(complete);
     fireEvent.click(screen.getByTestId("select-organization-org-1"));
     await waitFor(() =>
-      expect(mocks.replace).toHaveBeenCalledWith("/en/projects"),
+      expect(mocks.replace).toHaveBeenCalledWith("/en-GB/projects"),
     );
     expect(mocks.setActive).toHaveBeenCalledExactlyOnceWith({
       organizationId: "org-1",
@@ -321,7 +321,7 @@ it("rejects the named invitation and shows the refreshed creation next step", as
   expect(await screen.findByTestId("invitation-rejected")).toBeVisible();
   expect(screen.getByTestId("invitation-next-step")).toHaveAttribute(
     "href",
-    "/en/projects",
+    "/en-GB/projects",
   );
   expect(screen.queryByTestId("accept-organization-invitation")).toBeNull();
 });
@@ -411,7 +411,7 @@ it("applies changed initial decisions without fetching and preserves callbacks a
   await screen.findByTestId("accept-organization-invitation");
   expect(onDecision).toHaveBeenLastCalledWith(ready);
   view.rerender(
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <NextIntlClientProvider locale="en-GB" messages={messages}>
       <InvitationAcceptance
         returnTo={returnTo}
         initialDecision={complete}
@@ -420,7 +420,7 @@ it("applies changed initial decisions without fetching and preserves callbacks a
     </NextIntlClientProvider>,
   );
   await waitFor(() =>
-    expect(mocks.replace).toHaveBeenLastCalledWith("/en/projects"),
+    expect(mocks.replace).toHaveBeenLastCalledWith("/en-GB/projects"),
   );
   expect(onDecision).toHaveBeenLastCalledWith(complete);
   const signedOut: OnboardingDecision = {
@@ -434,7 +434,7 @@ it("applies changed initial decisions without fetching and preserves callbacks a
     ],
   };
   view.rerender(
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <NextIntlClientProvider locale="en-GB" messages={messages}>
       <InvitationAcceptance
         returnTo={returnTo}
         initialDecision={signedOut}
@@ -445,7 +445,7 @@ it("applies changed initial decisions without fetching and preserves callbacks a
   );
   await waitFor(() =>
     expect(mocks.replace).toHaveBeenLastCalledWith(
-      "/en/register?next=%2Faccept-invitation%2Finvite-1",
+      "/en-GB/register?next=%2Faccept-invitation%2Finvite-1",
     ),
   );
   expect(onAuthenticate).toHaveBeenCalledTimes(1);
@@ -466,7 +466,7 @@ it("ignores an old fetched decision when an initial decision replaces it", async
     <InvitationAcceptance returnTo={returnTo} onDecision={onDecision} />,
   );
   view.rerender(
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <NextIntlClientProvider locale="en-GB" messages={messages}>
       <InvitationAcceptance
         returnTo={returnTo}
         initialDecision={ready}

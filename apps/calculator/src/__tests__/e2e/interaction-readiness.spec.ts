@@ -33,7 +33,7 @@ test("Project tabs accept the first available click after a slow script load", a
 
   const release = await holdClientScripts(page);
   try {
-    await page.goto(`/en/org/projects/${project.id}`, { waitUntil: "commit" });
+    await page.goto(`/en-GB/org/projects/${project.id}`, { waitUntil: "commit" });
     const participants = page.getByTestId("project-participants-tab");
     await expect(participants).toBeVisible();
     await expect(participants).toBeDisabled();
@@ -65,7 +65,7 @@ test("Participation starts with one click after a slow script load", async ({
 
   const release = await holdClientScripts(page);
   try {
-    await page.goto(`/en/project/${project.id}/participate`, {
+    await page.goto(`/en-GB/project/${project.id}/participate`, {
       waitUntil: "commit",
     });
     const start = page.getByTestId("participate-start");
@@ -92,7 +92,7 @@ test.describe("Login readiness", () => {
   }) => {
     const release = await holdClientScripts(page);
     try {
-      await page.goto("/en/login", { waitUntil: "commit" });
+      await page.goto("/en-GB/login", { waitUntil: "commit" });
       const email = page.locator('input[name="email"]');
       const password = page.locator('input[name="password"]');
       const submit = page.locator('button[type="submit"]');

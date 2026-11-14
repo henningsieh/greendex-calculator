@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarDaysIcon, MapPinIcon } from "lucide-react";
 import { useState } from "react";
@@ -23,16 +24,6 @@ import {
 import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
 
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "long",
-  timeZone: "UTC",
-});
-const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
-
 const readinessLabels: Record<ClaimStatus, string> = {
   editable: "Active Claim · editable",
   submitted: "Submitted",
@@ -54,6 +45,7 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
 export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
+  const dateFormat = useDateFormat();
   const [completing, setCompleting] = useState(false);
   const [feedback, setFeedback] = useState<React.ReactNode>("");
   const { data: project } = useSuspenseQuery(
@@ -137,8 +129,9 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
             data-completed-at={project.completedAt.toISOString()}
             data-completed-by-user-id={project.completedByUserId}
           >
-            {t("completed")} {dateTimeFormatter.format(project.completedAt)}{" "}
-            {t("by")} {project.completedByUserId}
+            {t("completed")}{" "}
+            {dateFormat.format(project.completedAt, "dateTime.short")} {t("by")}{" "}
+            {project.completedByUserId}
           </p>
         )}
         {feedback && (
@@ -164,8 +157,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
               className="size-5 text-muted-foreground"
             />
             <span className="text-sm">
-              {dateFormatter.format(project.startDate)} –{" "}
-              {dateFormatter.format(project.endDate)}
+              {dateFormat.range(project.startDate, project.endDate, "date.long")}
             </span>
           </CardContent>
         </Card>
@@ -218,7 +210,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                       <ClaimReadiness status={partner.claimStatus} />
                       <span className="text-sm text-muted-foreground">
                         {t("assigned")}{" "}
-                        {dateTimeFormatter.format(partner.assignedAt)}
+                        {dateFormat.format(partner.assignedAt, "dateTime.short")}
                       </span>
                     </span>
                   </li>
@@ -271,13 +263,16 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
             </p>
             <p className="text-sm">
               <span className="text-muted-foreground">{t("assignedLabel")}</span>{" "}
-              {dateTimeFormatter.format(project.partnership.assignedAt)}
+              {dateFormat.format(
+                project.partnership.assignedAt,
+                "dateTime.short",
+              )}
             </p>
             <p className="text-sm">
               <span className="text-muted-foreground">
                 {t("assignmentUpdated")}
               </span>{" "}
-              {dateTimeFormatter.format(project.partnership.updatedAt)}
+              {dateFormat.format(project.partnership.updatedAt, "dateTime.short")}
             </p>
             <Link
               className={buttonVariants({ variant: "outline" })}

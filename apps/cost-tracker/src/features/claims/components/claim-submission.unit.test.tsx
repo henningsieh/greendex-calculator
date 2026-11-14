@@ -6,13 +6,13 @@ import { expect, it, vi } from "vitest";
 import { ClaimSubmission } from "@/features/claims/components/claim-submission";
 import { createSafeFieldIssue } from "@/lib/orpc/error-contract";
 import german from "@/messages/de";
-import english from "@/messages/en";
+import english from "@/messages/en-GB";
 
 vi.mock("@/lib/orpc/orpc", () => ({ orpc: { claims: { submit: vi.fn() } } }));
 
 it.each([
   [
-    "en",
+    "en-GB",
     english,
     "Select a Partner Payout Account.",
     "Link a Proof Document belonging to this Claim.",

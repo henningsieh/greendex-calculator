@@ -26,12 +26,12 @@ it("renders public actions with a custom brand destination and no account contro
   renderWithMessages(
     <AppNavigation brandHref="/" actions={<Link href="/login">Sign in</Link>} />,
   );
-  expect(screen.getByTestId("site-brand")).toHaveAttribute("href", "/en");
+  expect(screen.getByTestId("site-brand")).toHaveAttribute("href", "/en-GB");
   const navigations = screen.getAllByRole("navigation");
   expect(navigations).toHaveLength(1);
   expect(within(navigations[0]!).getByRole("link")).toHaveAttribute(
     "href",
-    "/en/login",
+    "/en-GB/login",
   );
   expect(screen.queryByTestId("account-menu-trigger")).not.toBeInTheDocument();
 });

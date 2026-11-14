@@ -15,7 +15,7 @@ describe("LLM documentation index", () => {
   it("renders ordered page links and descriptions in a cached text response", async () => {
     mocks.getPages.mockReturnValue([
       {
-        url: "/en/docs/start",
+        url: "/en-GB/docs/start",
         data: { title: "Start", description: "Getting started" },
       },
       {
@@ -26,7 +26,7 @@ describe("LLM documentation index", () => {
     const response = await GET();
     expect(response.status).toBe(200);
     expect(await response.text()).toBe(
-      "# Documentation\n\n- [Start](/en/docs/start): Getting started\n- [Einführung](/de/docs/intro): Über Greendex",
+      "# Documentation\n\n- [Start](/en-GB/docs/start): Getting started\n- [Einführung](/de/docs/intro): Über Greendex",
     );
     expect(mocks.cacheLife).toHaveBeenCalledExactlyOnceWith("max");
   });

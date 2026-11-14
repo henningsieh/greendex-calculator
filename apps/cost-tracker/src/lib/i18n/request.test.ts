@@ -20,7 +20,7 @@ import {
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { messageDomains } from "@/messages/domains";
-import englishErrors from "@/messages/en/apiErrors.json";
+import englishErrors from "@/messages/en-GB/apiErrors.json";
 
 const messagesDirectory = new URL("../../messages/", import.meta.url);
 
@@ -84,6 +84,7 @@ describe("Cost Tracker request catalogue", () => {
       requestLocale: Promise.resolve(locale),
     });
     expect(config.locale).toBe(locale);
+    expect(config.timeZone).toBe("UTC");
     expect(config.messages).toEqual(await readMerged(locale));
   });
 
@@ -95,6 +96,7 @@ describe("Cost Tracker request catalogue", () => {
         requestLocale: Promise.resolve(locale),
       });
       expect(config.locale).toBe(DEFAULT_LANGUAGE);
+      expect(config.timeZone).toBe("UTC");
       expect(config.messages).toEqual(await readMerged(DEFAULT_LANGUAGE));
     },
   );
@@ -162,9 +164,11 @@ describe("API error catalogue coverage", () => {
   });
 
   it("preserves safe English internal and network presentation overrides", async () => {
-    const config = await requestConfig({ requestLocale: Promise.resolve("en") });
+    const config = await requestConfig({
+      requestLocale: Promise.resolve("en-GB"),
+    });
     const t = createTranslator({
-      locale: "en",
+      locale: "en-GB",
       messages: config.messages ?? undefined,
       namespace: "apiErrors",
     });

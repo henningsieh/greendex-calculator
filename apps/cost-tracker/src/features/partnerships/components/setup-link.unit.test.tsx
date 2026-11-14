@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 import german from "@/messages/de/apiErrors.json";
-import english from "@/messages/en/apiErrors.json";
+import english from "@/messages/en-GB/apiErrors.json";
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -148,7 +148,7 @@ afterEach(() => {
 });
 
 function page(
-  locale: "en" | "de" = "en",
+  locale: "en-GB" | "de" = "en-GB",
   projects = [{ id: "project-1", name: "Hosted Example" }],
 ) {
   const client = createQueryClient();
@@ -162,7 +162,7 @@ function page(
   );
 }
 
-function listOnly(locale: "en" | "de" = "en") {
+function listOnly(locale: "en-GB" | "de" = "en-GB") {
   const client = createQueryClient();
   client.setDefaultOptions({ queries: { retry: false } });
   return render(
@@ -221,7 +221,7 @@ describe("Setup Link UI", () => {
     mocks.searchHosted.mockResolvedValue([
       { id: " project-1 ", name: "Hosted Example" },
     ]);
-    page("en", [{ id: " project-1 ", name: "Hosted Example" }]);
+    page("en-GB", [{ id: " project-1 ", name: "Hosted Example" }]);
     const dialog = await openDialog(user);
     await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole("alert")).toBeNull();
@@ -250,7 +250,7 @@ describe("Setup Link UI", () => {
     );
   });
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "translates invalid setup fields in %s",
     async (locale) => {
       const user = userEvent.setup();
@@ -286,7 +286,7 @@ describe("Setup Link UI", () => {
     },
   );
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "shows a translated Project field error and refuses an overlong ID in %s",
     async (locale) => {
       const user = userEvent.setup();
@@ -315,14 +315,14 @@ describe("Setup Link UI", () => {
     },
   );
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "shows the copy fallback alert in %s when the clipboard write fails",
     async (locale) => {
       const user = userEvent.setup();
       vi.spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(
         new Error("denied"),
       );
-      page(locale as "en" | "de");
+      page(locale as "en-GB" | "de");
       const dialog = await openDialog(user);
       await waitFor(() => expect(mocks.listSetupLinks).toHaveBeenCalledTimes(1));
       await user.click(dialog.getByTestId("entity-combobox-trigger"));

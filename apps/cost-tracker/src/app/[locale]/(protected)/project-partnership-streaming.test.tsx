@@ -267,7 +267,7 @@ it("prefetches the authorized Claim review snapshot", async () => {
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const errors: unknown[] = [];
   const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
       <LocalizedClaimReviewPage
         params={Promise.resolve({ partnershipId: "requested-partnership" })}
       />
@@ -303,7 +303,7 @@ it("renders the authorized review context in the page header", async () => {
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const errors: unknown[] = [];
   const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
       <LocalizedClaimReviewPage
         params={Promise.resolve({ partnershipId: "requested-partnership" })}
       />
@@ -327,7 +327,7 @@ it("degrades the review context instead of failing the page when refused", async
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const errors: unknown[] = [];
   const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
       <LocalizedClaimReviewPage
         params={Promise.resolve({ partnershipId: "requested-partnership" })}
       />
@@ -365,7 +365,7 @@ it.each(routes)(
     );
     const errors: unknown[] = [];
     const { pipe } = renderToPipeableStream(
-      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
         <div>
           <Page
             params={Promise.resolve({
@@ -424,7 +424,7 @@ it("does not load project options for viewers without assignment permission", as
   destination.resume();
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
       <LocalizedPartnerOrganizationsPage />
     </NextIntlClientProvider>,
     { onShellReady: () => pipe(destination) },
@@ -466,7 +466,7 @@ it("starts both optional selection queries before either resolves and streams th
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const errors: unknown[] = [];
   const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
       <LocalizedPartnerOrganizationsPage />
     </NextIntlClientProvider>,
     {
@@ -519,7 +519,7 @@ it("continues to the consumer when either optional prefetch fails", async () => 
   });
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
       <LocalizedPartnerOrganizationsPage />
     </NextIntlClientProvider>,
     { onShellReady: () => pipe(destination) },
@@ -567,7 +567,7 @@ it.each(
       destination.on("end", resolve),
     );
     const { pipe } = renderToPipeableStream(
-      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
         <div>
           <Page params={params} />
         </div>

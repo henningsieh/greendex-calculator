@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { SEED_USER } from "@greendex/auth/seed-user";
 import { chromium, expect, type FullConfig } from "@playwright/test";
 
-import en from "@/messages/en.json" with { type: "json" };
+import en from "@/messages/en-GB.json" with { type: "json" };
 
 /**
  * Global setup for Playwright tests
@@ -35,7 +35,7 @@ async function globalSetup(config: FullConfig) {
     }
 
     // Navigate to sign in page
-    const loginUrl = new URL("/en/login", baseURL).toString();
+    const loginUrl = new URL("/en-GB/login", baseURL).toString();
     await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
     // The sign-in heading and form controls below prove the page rendered.

@@ -1,7 +1,8 @@
 "use client";
 
 import { DEFAULT_PAGE_SIZE } from "@greendex/config/pagination";
-import { useLocale, useTranslations } from "@greendex/i18n/client";
+import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import { flexRender, type SortingState, useTable } from "@tanstack/react-table";
 import { FilterXIcon } from "lucide-react";
@@ -53,7 +54,7 @@ export function UsersTable({
 }: TeamTableProps) {
   const tRoles = useTranslations("organization.roles");
   const t = useTranslations("organization.userstable");
-  const locale = useLocale();
+  const dateFormat = useDateFormat();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState("");
@@ -103,8 +104,8 @@ export function UsersTable({
   const total = membersResult?.total ?? 0;
 
   const columns = useMemo(
-    () => UserTableColumns(t, tRoles, locale),
-    [t, tRoles, locale],
+    () => UserTableColumns(t, tRoles, dateFormat),
+    [t, tRoles, dateFormat],
   );
 
   const table = useTable({

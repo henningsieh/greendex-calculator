@@ -42,7 +42,7 @@ test.describe("project routing", () => {
   test("shows an authenticated user an existing project", async ({ page }) => {
     const project = await getSeedProject();
 
-    const response = await page.goto(`/en/org/projects/${project.id}`);
+    const response = await page.goto(`/en-GB/org/projects/${project.id}`);
     expect(response?.status()).toBe(200);
 
     await expect(page.getByRole("heading", { name: project.name })).toBeVisible();
@@ -52,7 +52,7 @@ test.describe("project routing", () => {
     page,
   }) => {
     const response = await page.goto(
-      `/en/project/${publicProjectId}/participate`,
+      `/en-GB/project/${publicProjectId}/participate`,
     );
     expect(response?.status()).toBe(200);
 

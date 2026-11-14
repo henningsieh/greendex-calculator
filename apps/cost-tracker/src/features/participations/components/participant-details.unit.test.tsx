@@ -8,7 +8,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { ParticipantDetails } from "@/features/participations/components/participant-details";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const countryLabel = `${messages.participations.details.countryFor} Alex`;
 const countryName = (code: string) =>

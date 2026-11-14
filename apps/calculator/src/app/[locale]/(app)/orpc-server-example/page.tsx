@@ -1,3 +1,4 @@
+import { getDateFormat } from "@greendex/i18n/datetime/server";
 import { createRouterClient } from "@orpc/server";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -20,6 +21,7 @@ export const instant = false;
  * This uses the optimized server-side client (no HTTP overhead)
  */
 export default async function ORPCServerExample() {
+  const dateFormat = await getDateFormat();
   // These calls happen on the server during SSR. The caller is constructed
   // at render time (same shape as `@/lib/orpc/client.server`) because the
   // shared `orpc` singleton resolves its transport at module-evaluation
@@ -65,7 +67,7 @@ export default async function ORPCServerExample() {
 
               <div className="text-muted-foreground">Timestamp:</div>
               <div className="text-xs font-medium">
-                {new Date(health.timestamp).toLocaleTimeString()}
+                {dateFormat.format(health.timestamp, "time.short")}
               </div>
             </div>
           </CardContent>
@@ -83,7 +85,7 @@ export default async function ORPCServerExample() {
 
               <div className="text-muted-foreground">Timestamp:</div>
               <div className="text-xs font-medium">
-                {new Date(hello.timestamp).toLocaleTimeString()}
+                {dateFormat.format(hello.timestamp, "time.short")}
               </div>
             </div>
           </CardContent>

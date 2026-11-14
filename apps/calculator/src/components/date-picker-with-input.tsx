@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormatter } from "@greendex/i18n/client";
+import { useLocale } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -8,6 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+/** `weekStartsOn` is 0-based; `Intl.Locale` reports 1-7 with Monday as 1. */
+function firstDayOfWeek(locale: string): 0 | 1 | 2 | 3 | 4 | 5 | 6 {
+  try {
+    const { firstDay } = new Intl.Locale(locale).getWeekInfo();
+    return (firstDay % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  } catch {
+    // Older engines lack week info; Sunday is the previous behaviour.
+    return 0;
+  }
+}
 
 interface DatePickerWithInputProps {
   id: string;
@@ -20,11 +32,12 @@ function DatePickerWithInput({
   id,
   value,
   onChange,
-  placeholder = "DD.MM.YYYY",
+  placeholder,
 }: DatePickerWithInputProps) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState<Date | undefined>(value);
-  const format = useFormatter();
+  const locale = useLocale();
+  const format = useDateFormat();
 
   return (
     <div className="relative flex gap-2">
@@ -39,18 +52,10 @@ function DatePickerWithInput({
             setOpen(true);
           }
         }}
-        placeholder={placeholder}
+        placeholder={placeholder ?? format.pattern()}
         readOnly
         type="text"
-        value={
-          value
-            ? format.dateTime(value, {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-              })
-            : ""
-        }
+        value={value ? format.format(value, "date.numeric") : ""}
       />
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger asChild>
@@ -71,6 +76,13 @@ function DatePickerWithInput({
         >
           <Calendar
             captionLayout="dropdown"
+            formatters={{
+              // The vendored calendar defaults to en-US labels; follow the request locale.
+              formatMonthDropdown: (date) =>
+                format.format(date, "date.monthShort"),
+              formatWeekdayName: (date) =>
+                format.format(date, "date.weekdayShort"),
+            }}
             mode="single"
             month={month}
             onMonthChange={setMonth}
@@ -79,6 +91,7 @@ function DatePickerWithInput({
               setOpen(false);
             }}
             selected={value}
+            weekStartsOn={firstDayOfWeek(locale)}
           />
         </PopoverContent>
       </Popover>

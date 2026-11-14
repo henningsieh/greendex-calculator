@@ -1,6 +1,7 @@
 "use client";
 
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
+import type { DateFormatter } from "@greendex/i18n/datetime";
 import type { ColumnDef } from "@tanstack/react-table";
 import type z from "zod";
 
@@ -18,13 +19,13 @@ type MemberWithUser = z.infer<typeof MemberWithUserSchema>;
  *
  * @param t - Translation function scoped to user-table labels
  * @param tRoles - Translation function scoped to organization roles
- * @param locale - Locale used to format membership dates
+ * @param dateFormat - Localized formatter for membership dates
  * @returns Typed TanStack Table V9 column definitions for member rows
  */
 export function UserTableColumns(
   t: (key: string) => string,
   tRoles: (key: string) => string,
-  locale: string,
+  dateFormat: DateFormatter,
 ): ColumnDef<typeof usersTableFeatures, MemberWithUser>[] {
   return [
     {
@@ -125,12 +126,7 @@ export function UserTableColumns(
         if (!value) {
           return "";
         }
-        const date = typeof value === "string" ? new Date(value) : value;
-        return new Intl.DateTimeFormat(locale, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        }).format(date);
+        return dateFormat.format(value, "date.medium");
       },
       sortFn: (rowA, rowB, columnId) => {
         const dateA = new Date(rowA.getValue(columnId));

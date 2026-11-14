@@ -22,9 +22,9 @@ beforeEach(() => {
   });
 });
 
-const request = new Request("http://localhost/en/llms.mdx/docs");
+const request = new Request("http://localhost/en-GB/llms.mdx/docs");
 const context = (slug?: string[]) => ({
-  params: Promise.resolve({ lang: "en", slug }),
+  params: Promise.resolve({ lang: "en-GB", slug }),
 });
 
 describe("page markdown route", () => {
@@ -74,7 +74,7 @@ describe("page markdown route", () => {
 
   it("preserves the source's localized static parameters", () => {
     const params = [
-      { lang: "en", slug: [] },
+      { lang: "en-GB", slug: [] },
       { lang: "de", slug: ["guide"] },
     ];
     mocks.generateParams.mockReturnValue(params);

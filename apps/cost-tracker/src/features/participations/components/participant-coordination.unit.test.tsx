@@ -584,7 +584,7 @@ describe("ParticipantCoordination", () => {
     await renderCoordination();
     expect(
       screen.getByTestId("participant-details-person-1").getAttribute("href"),
-    ).toBe("/en/partnerships/own-partnership/participants/person-1");
+    ).toBe("/en-GB/partnerships/own-partnership/participants/person-1");
     // ADR-0016: editing lives on the details page, never in a list row.
     expect(screen.queryByTestId("participant-country-person-1")).toBeNull();
     expect(screen.queryByTestId("save-participant-country-person-1")).toBeNull();

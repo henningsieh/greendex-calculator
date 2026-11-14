@@ -66,7 +66,7 @@ it("links to the Projects table and marks the current crumb", async () => {
 
   expect(screen.getByTestId("back-to-projects")).toHaveAttribute(
     "href",
-    "/en/projects",
+    "/en-GB/projects",
   );
   expect(screen.getAllByRole("link", { current: "page" })).toHaveLength(1);
 });

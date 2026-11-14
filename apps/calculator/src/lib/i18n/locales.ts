@@ -18,7 +18,6 @@ const flagRegistry = Flags as Record<
 
 export const getLocaleData = (): LocaleData[] => {
   return SUPPORTED_LANGUAGES.map((locale) => {
-    // Handle locales without a specific country code (e.g., International English)
     const countryCode = "countryCode" in locale ? locale.countryCode : undefined;
 
     let nativeName: string;
@@ -39,14 +38,14 @@ export const getLocaleData = (): LocaleData[] => {
 
       Flag = flagRegistry[countryCode];
     } else {
-      // Locale without country code (International) - use display region or label
+      // Locale without country code - use display region or label
       nativeName =
         (locale as { displayRegion?: string; label: string }).displayRegion ??
         locale.label;
       englishName =
         (locale as { displayRegion?: string; label: string }).displayRegion ??
         locale.label;
-      Flag = undefined; // No flag for international locales
+      Flag = undefined; // No flag for regionless locales
     }
 
     return {
@@ -55,12 +54,6 @@ export const getLocaleData = (): LocaleData[] => {
       englishName,
       Flag,
     };
-  }).map((entry) => {
-    // Special case: Use UK flag for International English to indicate default fallback
-    if (entry.code === "en") {
-      entry.Flag = flagRegistry.GB;
-    }
-    return entry;
   });
 };
 

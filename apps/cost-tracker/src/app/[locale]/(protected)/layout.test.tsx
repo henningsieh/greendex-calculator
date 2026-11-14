@@ -211,7 +211,7 @@ it("streams neutral chrome before the session gate resolves", async () => {
   });
   const complete = new Promise<void>((resolve) => destination.on("end", resolve));
   const { pipe } = renderToPipeableStream(
-    <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+    <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
       <div>
         <ProtectedLayout>
           <p>Private child</p>

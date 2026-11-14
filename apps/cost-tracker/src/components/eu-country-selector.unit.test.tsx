@@ -9,10 +9,10 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { EUCountrySelector } from "@/components/eu-country-selector";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const fieldLabel = "Country";
-const countryName = (code: EUCountryCode, locale = "en") =>
+const countryName = (code: EUCountryCode, locale = "en-GB") =>
   new Intl.DisplayNames([locale], { type: "region" }).of(code)!;
 
 beforeEach(() => {

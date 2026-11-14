@@ -21,7 +21,7 @@ describe("full LLM documentation", () => {
   it("waits for all pages and preserves source order when conversion finishes out of order", async () => {
     const first = Promise.withResolvers<string>();
     const second = Promise.withResolvers<string>();
-    const pages = [{ url: "/en/docs/first" }, { url: "/de/docs/second" }];
+    const pages = [{ url: "/en-GB/docs/first" }, { url: "/de/docs/second" }];
     mocks.getPages.mockReturnValue(pages);
     mocks.getLLMText
       .mockReturnValueOnce(first.promise)
@@ -43,7 +43,7 @@ describe("full LLM documentation", () => {
   });
 
   it("does not add separators around a single page", async () => {
-    mocks.getPages.mockReturnValue([{ url: "/en/docs" }]);
+    mocks.getPages.mockReturnValue([{ url: "/en-GB/docs" }]);
     mocks.getLLMText.mockResolvedValue("# Only page\n");
     expect(await (await GET()).text()).toBe("# Only page\n");
   });

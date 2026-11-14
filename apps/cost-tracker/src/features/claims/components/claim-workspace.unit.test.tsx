@@ -245,7 +245,7 @@ vi.mock("@/lib/orpc/orpc", async (importOriginal) => {
 
 import { ClaimWorkspace } from "@/features/claims/components/claim-workspace";
 
-function mount(client = createQueryClient(), locale: "en" | "de" = "en") {
+function mount(client = createQueryClient(), locale: "en-GB" | "de" = "en-GB") {
   render(
     <QueryClientProvider client={client}>
       <ClaimWorkspace partnershipId="own" />
@@ -589,7 +589,7 @@ describe("Claim workspace", () => {
     expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" });
   });
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "validates and resets Journey correction in %s",
     async (locale) => {
       mocks.journeys = [
@@ -705,7 +705,7 @@ describe("Claim workspace", () => {
     ).toHaveAttribute("aria-invalid", "false");
   });
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "validates Journey locally in %s",
     async (locale) => {
       mount(createQueryClient(), locale);
@@ -721,7 +721,7 @@ describe("Claim workspace", () => {
     },
   );
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "shows actionable missing Participation in %s",
     async (locale) => {
       mount(createQueryClient(), locale);
@@ -816,7 +816,7 @@ describe("Claim workspace", () => {
     expect(screen.getByTestId("journey-origin")).toHaveValue("Mars");
   });
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "associates validated distance corrections with their field in %s",
     async (locale) => {
       mocks.saveJourney.mockRejectedValue(
@@ -912,7 +912,7 @@ describe("Claim workspace", () => {
 
   it.each([
     [
-      "en",
+      "en-GB",
       "Use positive exact shares of the chosen method that total the entry amount (or 100%).",
     ],
     [

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import {
   columnFilteringFeature,
@@ -48,18 +49,6 @@ const projectListTableFeatures = tableFeatures({
   rowPaginationFeature,
   rowSortingFeature,
   filterFns: { includesString: filterFn_includesString },
-});
-
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeZone: "UTC",
-});
-const updatedAtFormatter = new Intl.DateTimeFormat("en-GB", {
-  hour: "2-digit",
-  hourCycle: "h23",
-  minute: "2-digit",
-  second: "2-digit",
-  timeZone: "UTC",
 });
 
 function MetricCard({ label, value }: { label: string; value: number }) {
@@ -144,6 +133,7 @@ export function ResolvedProjectListResults({
   setUrlState: ProjectListQueryState[1];
 }) {
   const t = useTranslations("projects.list");
+  const dateFormat = useDateFormat();
 
   // Single-element suspense list (not a singular query): the hosted and
   // partner query functions carry incompatible scope-specific tagged key
@@ -197,7 +187,11 @@ export function ResolvedProjectListResults({
           );
         },
         cell: ({ row }) =>
-          `${dateFormatter.format(row.original.startDate)} – ${dateFormatter.format(row.original.endDate)}`,
+          dateFormat.range(
+            row.original.startDate,
+            row.original.endDate,
+            "date.medium",
+          ),
       },
       {
         id: "location",
@@ -248,7 +242,7 @@ export function ResolvedProjectListResults({
         ),
       },
     ],
-    [scope, t],
+    [scope, t, dateFormat],
   );
   const table = useTable({
     columns,
@@ -351,7 +345,9 @@ export function ResolvedProjectListResults({
         <span aria-live="polite">
           {isFetching
             ? t("refreshing")
-            : t("updatedAt", { time: updatedAtFormatter.format(dataUpdatedAt) })}
+            : t("updatedAt", {
+                time: dateFormat.format(dataUpdatedAt, "time.seconds"),
+              })}
         </span>
         <Button
           disabled={isFetching}

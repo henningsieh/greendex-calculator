@@ -18,10 +18,12 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@greendex/i18n/client", () => ({
   useFormatter: () => ({
-    dateTime: () => "Oct 8, 2026",
     number: (value: number) => String(value),
   }),
   useTranslations: () => (key: string) => labels[key] ?? key,
+}));
+vi.mock("@greendex/i18n/datetime/client", () => ({
+  useDateFormat: () => ({ format: () => "8 Oct 2026" }),
 }));
 vi.mock("@tanstack/react-query", () => ({
   useSuspenseQuery: () => ({

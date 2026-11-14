@@ -81,7 +81,7 @@ describe("AuthForm", () => {
     await user.click(screen.getByTestId("auth-submit"));
 
     await waitFor(() =>
-      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en/projects"),
+      expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en-GB/projects"),
     );
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
@@ -187,7 +187,7 @@ it("renders the server receipt with named progress and destination-preserving si
   expect(screen.getByTestId("email")).not.toHaveAttribute("readonly");
   expect(screen.getByTestId("auth-account-navigation")).toHaveAttribute(
     "href",
-    "/en/login?next=%2Faccept-invitation%2Finvite-1",
+    "/en-GB/login?next=%2Faccept-invitation%2Finvite-1",
   );
   await userEvent.type(screen.getByTestId("name"), "Alex Morgan");
   await userEvent.type(screen.getByTestId("email"), "submitted@example.org");
@@ -206,7 +206,7 @@ it("renders the server receipt with named progress and destination-preserving si
   expect(screen.getByTestId("verification-address")).toBeVisible();
   expect(screen.getByTestId("inbox-sign-in")).toHaveAttribute(
     "href",
-    "/en/login?next=%2Faccept-invitation%2Finvite-1",
+    "/en-GB/login?next=%2Faccept-invitation%2Finvite-1",
   );
   expect(screen.queryByTestId("create-organization")).toBeNull();
 });
@@ -240,7 +240,7 @@ it("shows wrong-address signup recovery before inbox instructions and rechecks w
   expect(screen.queryByTestId("accept-organization-invitation")).toBeNull();
   expect(screen.getByTestId("invitation-recovery-sign-in")).toHaveAttribute(
     "href",
-    `/en/login?next=${encodeURIComponent(returnTo)}`,
+    `/en-GB/login?next=${encodeURIComponent(returnTo)}`,
   );
   mocks.onboardingNextStep.mockResolvedValue({
     entryContext: "organization-invitation",

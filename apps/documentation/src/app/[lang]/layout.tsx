@@ -51,7 +51,7 @@ export function generateStaticParams() {
 
 export default function RootLayout({ params, children }: LayoutProps<"/[lang]">) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
+    <html lang="en-GB" className={inter.className} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <Suspense fallback={<DocsRootSkeleton />}>
           <LocalizedRootProvider params={params}>

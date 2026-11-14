@@ -13,7 +13,7 @@ import {
   getHTTPErrorPresentation,
   getORPCErrorPresentation,
 } from "@/lib/orpc/error-message";
-import english from "@/messages/en/apiErrors.json";
+import english from "@/messages/en-GB/apiErrors.json";
 
 type Translator = ReturnType<typeof useTranslations<"apiErrors">>;
 

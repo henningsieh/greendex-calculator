@@ -34,7 +34,7 @@ import { and, count, eq, inArray } from "drizzle-orm";
 // Case 15 reopens in-browser; a setup-seeded non-editable Claim proves visible refusal.
 // Case 203 assigns/revokes Group Organizer scope in-browser without changing roles.
 // UI GAP (14): reissue is visible, but cannot be clicked against real SMTP.
-import participationMessages from "@/messages/en/participations.json" with { type: "json" };
+import participationMessages from "@/messages/en-GB/participations.json" with { type: "json" };
 
 import {
   expectPrivateURL,

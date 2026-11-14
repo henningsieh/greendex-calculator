@@ -80,7 +80,7 @@ it.each([LocalizedProjectsPage])(
       destination.on("end", resolve),
     );
     const { pipe } = renderToPipeableStream(
-      <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+      <NextIntlClientProvider locale="en-GB" messages={messages} timeZone="UTC">
         <div>
           <ProjectsPage searchParams={Promise.resolve({})} />
         </div>

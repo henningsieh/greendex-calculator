@@ -18,7 +18,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
 }));
 
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const countryName = new Intl.DisplayNames(["en"], { type: "region" }).of("DE")!;
 
@@ -90,7 +90,7 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     });
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(mocks.push).toHaveBeenCalledWith("/en/projects/created-project"),
+      expect(mocks.push).toHaveBeenCalledWith("/en-GB/projects/created-project"),
     );
     await user.click(screen.getByTestId("new-project"));
     await user.click(
@@ -160,7 +160,7 @@ describe("New project dialog", { timeout: 60_000 }, () => {
     mocks.create.mockResolvedValueOnce({ id: "created-project" });
     await user.click(screen.getByTestId("create-project"));
     await waitFor(() =>
-      expect(mocks.push).toHaveBeenCalledWith("/en/projects/created-project"),
+      expect(mocks.push).toHaveBeenCalledWith("/en-GB/projects/created-project"),
     );
     expect(mocks.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ country: "DE" }),

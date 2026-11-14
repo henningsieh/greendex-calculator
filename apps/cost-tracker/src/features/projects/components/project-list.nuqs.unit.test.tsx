@@ -7,8 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import messagesDe from "@/messages/de";
-import messagesEn from "@/messages/en";
-import messagesSi from "@/messages/si";
+import messagesEn from "@/messages/en-GB";
+import messagesSi from "@/messages/sl";
 
 const mocks = vi.hoisted(() => ({
   availableScopes: { hosted: true, partner: false },
@@ -61,7 +61,7 @@ function renderList(
     onUrlUpdate: (event: UrlUpdateEvent) => void;
     searchParams?: string;
   },
-  locale: "en" | "de" | "si" = "en",
+  locale: "en-GB" | "de" | "sl" = "en-GB",
 ) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -167,9 +167,9 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
   );
 
   it.each([
-    { locale: "en", messages: messagesEn },
+    { locale: "en-GB", messages: messagesEn },
     { locale: "de", messages: messagesDe },
-    { locale: "si", messages: messagesSi },
+    { locale: "sl", messages: messagesSi },
   ] as const)(
     "commits the selected sort option to the URL (%s)",
     async ({ locale, messages }) => {

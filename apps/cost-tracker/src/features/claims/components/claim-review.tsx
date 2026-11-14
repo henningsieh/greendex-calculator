@@ -3,6 +3,7 @@
 import { ORGANIZATION_ROLES } from "@greendex/auth/permissions";
 import { PROJECT_PARTICIPATION_CREATE } from "@greendex/auth/project-authorization";
 import { useTranslations } from "@greendex/i18n/client";
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -79,6 +80,7 @@ const historyLabels: Record<History[number]["eventType"], string> = {
 
 export function ClaimHistory({ events }: { events: History }) {
   const t = useTranslations("claims.review");
+  const dateFormat = useDateFormat();
 
   return (
     <section
@@ -106,7 +108,7 @@ export function ClaimHistory({ events }: { events: History }) {
                 dateTime={event.occurredAt.toISOString()}
                 className="font-mono text-xs text-muted-foreground"
               >
-                {event.occurredAt.toLocaleString()}
+                {dateFormat.format(event.occurredAt, "dateTime.short")}
               </time>
               <span className="min-w-0 wrap-anywhere">
                 {t("actor")}{" "}

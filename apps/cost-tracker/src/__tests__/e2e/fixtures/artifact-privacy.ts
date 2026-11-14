@@ -185,7 +185,7 @@ export const test = base.extend({});
 
 // The proxy *rewrites* an unprefixed request, so a direct goto keeps `/projects`
 // in the address bar, while a next-intl Link or server redirect produces
-// `/en/projects`. Both address the same route, so compare without the prefix.
+// `/en-GB/projects`. Both address the same route, so compare without the prefix.
 const localePrefix = new RegExp(`^/(?:${LANGUAGE_CODES.join("|")})(?=/|$)`);
 
 function comparableURL(href: string, baseURL: string | undefined) {

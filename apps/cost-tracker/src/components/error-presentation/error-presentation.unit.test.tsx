@@ -19,12 +19,12 @@ import {
 } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import german from "@/messages/de/apiErrors.json";
-import english from "@/messages/en/apiErrors.json";
+import english from "@/messages/en-GB/apiErrors.json";
 
 const errors = createSituationErrors();
 function present(
   content: ReactNode,
-  locale = "en",
+  locale = "en-GB",
   messages: Record<string, unknown> = locale === "de" ? german : english,
 ) {
   return renderToStaticMarkup(

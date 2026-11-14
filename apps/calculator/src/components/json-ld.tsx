@@ -15,7 +15,7 @@ const jsonLd = {
       url: BASE_URL,
       name: APP_NAME,
       description: DESCRIPTION,
-      inLanguage: ["en", "de"],
+      inLanguage: ["en-GB", "de"],
     },
     {
       "@type": "Organization",

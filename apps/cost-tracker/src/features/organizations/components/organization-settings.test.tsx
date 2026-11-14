@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import german from "@/messages/de";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const countryLabel = messages.organizations.settings.country;
 const countryName = (code: string) =>

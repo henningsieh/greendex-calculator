@@ -1,5 +1,6 @@
 "use client";
 
+import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function SocketClient({ socketUrl }: Props) {
+  const dateFormat = useDateFormat();
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -124,7 +126,7 @@ export default function SocketClient({ socketUrl }: Props) {
                 >
                   <p className="text-sm">{msg.text}</p>
                   <p className="mt-1 text-xs text-gray-500">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
+                    {dateFormat.format(msg.timestamp, "time.short")}
                   </p>
                 </div>
               ))}

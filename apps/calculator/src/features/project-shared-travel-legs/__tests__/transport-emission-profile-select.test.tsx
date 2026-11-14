@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TransportEmissionProfileSelect } from "@/features/project-shared-travel-legs/components/transport-emission-profile-select";
-import messages from "@/messages/en.json";
+import messages from "@/messages/en-GB.json";
 
 let root: Root | undefined;
 let container: HTMLDivElement | undefined;
@@ -21,7 +21,7 @@ function ProfileSelectionProbe() {
   const [value, setValue] = useState<ProjectSharedTransportEmissionProfile>();
 
   return (
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <NextIntlClientProvider locale="en-GB" messages={messages}>
       <TransportEmissionProfileSelect
         id="transport-emission-profile"
         onValueChange={setValue}

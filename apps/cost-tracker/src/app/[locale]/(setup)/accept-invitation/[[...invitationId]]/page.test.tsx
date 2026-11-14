@@ -46,7 +46,10 @@ describe.each([["localized", LocalizedOrganizationInvitationPage]])(
       });
       await expect(
         OrganizationInvitationPage({
-          params: Promise.resolve({ locale: "en", invitationId: ["invite-1"] }),
+          params: Promise.resolve({
+            locale: "en-GB",
+            invitationId: ["invite-1"],
+          }),
         }),
       ).rejects.toThrow("/register?next=%2Faccept-invitation%2Finvite-1");
     });
@@ -60,7 +63,7 @@ describe.each([["localized", LocalizedOrganizationInvitationPage]])(
         });
         render(
           await OrganizationInvitationPage({
-            params: Promise.resolve({ locale: "en", invitationId }),
+            params: Promise.resolve({ locale: "en-GB", invitationId }),
           }),
         );
         expect(screen.getByTestId("invitation-acceptance")).toHaveAttribute(
@@ -81,7 +84,10 @@ describe.each([["localized", LocalizedOrganizationInvitationPage]])(
       });
       await expect(
         OrganizationInvitationPage({
-          params: Promise.resolve({ locale: "en", invitationId: ["invite-1"] }),
+          params: Promise.resolve({
+            locale: "en-GB",
+            invitationId: ["invite-1"],
+          }),
         }),
       ).rejects.toThrow("/projects");
     });
