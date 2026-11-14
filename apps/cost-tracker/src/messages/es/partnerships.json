@@ -74,7 +74,6 @@
       "page": {
         "eyebrow": "Project network",
         "title": "Partner Organizations",
-        "restricted": "Partner Organization management is available to Hosting Organization staff. Coordinators work from their assigned Projects.",
         "description": "Create setup links for hosted Projects, or assign existing Partner Organizations if your role permits."
       }
     },
