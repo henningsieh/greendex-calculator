@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const countryLabel = messages.onboarding.createOrganization.countryLabel;
 const countryName = (code: string) =>
@@ -75,7 +75,7 @@ describe("NoOrganizationAccess", () => {
     expect(screen.getByTestId("no-organization-access")).toHaveRole("main");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mocks.refresh).toHaveBeenCalledExactlyOnceWith();
-    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en/projects");
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en-GB/projects");
   });
 
   it("clears pending state and gives safe feedback when Organization creation rejects", async () => {

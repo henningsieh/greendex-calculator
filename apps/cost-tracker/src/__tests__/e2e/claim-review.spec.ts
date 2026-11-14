@@ -637,7 +637,7 @@ test.describe.serial("Claim review journey 25–26", () => {
     ).not.toHaveAttribute("href");
     await expect(breadcrumb.locator("a").first()).toHaveAttribute(
       "href",
-      "/en/claims/review",
+      "/en-GB/claims/review",
     );
     await expect(breadcrumb.getByRole("listitem")).toHaveCount(3);
     await host.setViewportSize({ width: 375, height: 812 });

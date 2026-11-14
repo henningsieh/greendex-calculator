@@ -44,10 +44,10 @@ it("links earlier crumbs to their destinations and leaves the current page unlin
     within(navigation)
       .getAllByRole("link")
       .map((link) => link.getAttribute("href")),
-  ).toEqual(["/en/projects", "/en/partnerships/partnership-1", null]);
+  ).toEqual(["/en-GB/projects", "/en-GB/partnerships/partnership-1", null]);
   expect(within(navigation).getByTestId("back-to-projects")).toHaveAttribute(
     "href",
-    "/en/projects",
+    "/en-GB/projects",
   );
   expect(within(navigation).getAllByRole("listitem")).toHaveLength(3);
   expect(

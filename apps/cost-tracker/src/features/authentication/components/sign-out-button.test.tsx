@@ -72,7 +72,7 @@ describe("SignOutButton", () => {
       within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
     );
 
-    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en");
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/en-GB");
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
@@ -105,6 +105,6 @@ it("returns invitation sign-out to the retained journey", async () => {
     within(screen.getByRole("dialog")).getByTestId("confirm-dialog-execute"),
   );
   expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
-    "/en/register?next=%2Faccept-invitation%2Finvite-1",
+    "/en-GB/register?next=%2Faccept-invitation%2Finvite-1",
   );
 });

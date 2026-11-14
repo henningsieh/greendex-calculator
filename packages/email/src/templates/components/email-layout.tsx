@@ -28,7 +28,7 @@ export function EmailLayout({
   websiteUrl,
 }: EmailLayoutProps) {
   return (
-    <Html dir="ltr" lang="en">
+    <Html dir="ltr" lang="en-GB">
       <Tailwind config={getTailwindConfig()}>
         <Head>
           <meta content="light dark" name="color-scheme" />

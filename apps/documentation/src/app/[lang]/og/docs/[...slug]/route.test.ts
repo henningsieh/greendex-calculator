@@ -86,13 +86,13 @@ describe("documentation Open Graph route", () => {
   });
 
   it("preserves each page's locale and generated image segments in static params", () => {
-    const pages = [{ locale: "en" }, { locale: "de" }];
+    const pages = [{ locale: "en-GB" }, { locale: "de" }];
     mocks.getPages.mockReturnValue(pages);
     mocks.getPageImage
       .mockReturnValueOnce({ segments: ["image.png"] })
       .mockReturnValueOnce({ segments: ["guide", "image.png"] });
     expect(generateStaticParams()).toEqual([
-      { lang: "en", slug: ["image.png"] },
+      { lang: "en-GB", slug: ["image.png"] },
       { lang: "de", slug: ["guide", "image.png"] },
     ]);
     expect(mocks.getPageImage.mock.calls.map(([page]) => page)).toEqual(pages);

@@ -15,7 +15,7 @@ import {
 } from "@/features/project-shared-travel-legs/distance-validation";
 import { ProjectSharedTravelLegFormSchema } from "@/features/project-shared-travel-legs/validation-schemas";
 import deMessages from "@/messages/de.json";
-import enMessages from "@/messages/en.json";
+import enMessages from "@/messages/en-GB.json";
 
 /**
  * Create real next-intl translators for both English and German
@@ -23,7 +23,7 @@ import enMessages from "@/messages/en.json";
  * "project.shared-travel.form.validation.distanceKm.min"
  */
 const tEn = createTranslator({
-  locale: "en",
+  locale: "en-GB",
   messages: enMessages,
 });
 

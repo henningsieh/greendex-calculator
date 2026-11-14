@@ -10,7 +10,7 @@ import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import shellMessages from "@/messages/en/shell.json";
+import shellMessages from "@/messages/en-GB/shell.json";
 
 import "./globals.css";
 

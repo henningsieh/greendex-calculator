@@ -1,7 +1,7 @@
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import type { Locator } from "@playwright/test";
 
-import shellMessages from "@/messages/en/shell.json" with { type: "json" };
+import shellMessages from "@/messages/en-GB/shell.json" with { type: "json" };
 
 import { expect } from "./artifact-privacy";
 

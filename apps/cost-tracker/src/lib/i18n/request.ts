@@ -3,17 +3,17 @@ import { getRequestConfig } from "@greendex/i18n/server";
 
 import { isSupportedLocale } from "@/lib/i18n/locales";
 import type { LanguageCode } from "@/lib/i18n/types";
-import type { Messages } from "@/messages/en";
+import type { Messages } from "@/messages/en-GB";
 
 const messageLoaders: Record<LanguageCode, () => Promise<{ default: Messages }>> =
   {
+    "en-GB": () => import("@/messages/en-GB"),
     de: () => import("@/messages/de"),
-    en: () => import("@/messages/en"),
     es: () => import("@/messages/es"),
     fr: () => import("@/messages/fr"),
     it: () => import("@/messages/it"),
     nl: () => import("@/messages/nl"),
-    si: () => import("@/messages/si"),
+    sl: () => import("@/messages/sl"),
   };
 
 export default getRequestConfig(async ({ requestLocale }) => {

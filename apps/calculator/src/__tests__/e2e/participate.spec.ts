@@ -52,7 +52,7 @@ test.describe("Questionnaire Form E2E Tests", () => {
 
   test.beforeEach(async ({ page }) => {
     // Navigate to the test project participation page
-    await page.goto(`/en/project/${projectId}/participate`);
+    await page.goto(`/en-GB/project/${projectId}/participate`);
 
     // Wait for the form start action to be visible
     await expect(page.getByTestId("participate-start")).toBeVisible();

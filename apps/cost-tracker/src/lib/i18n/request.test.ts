@@ -20,7 +20,7 @@ import {
 import { getORPCRequestErrorMessage } from "@/lib/orpc/error-message";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { messageDomains } from "@/messages/domains";
-import englishErrors from "@/messages/en/apiErrors.json";
+import englishErrors from "@/messages/en-GB/apiErrors.json";
 
 const messagesDirectory = new URL("../../messages/", import.meta.url);
 
@@ -164,7 +164,7 @@ describe("API error catalogue coverage", () => {
   it("preserves safe English internal and network presentation overrides", async () => {
     const config = await requestConfig({ requestLocale: Promise.resolve("en") });
     const t = createTranslator({
-      locale: "en",
+      locale: "en-GB",
       messages: config.messages ?? undefined,
       namespace: "apiErrors",
     });

@@ -6,15 +6,21 @@
 /**
  * Supported languages configuration
  *
- * Note: "en" represents International English and is NOT tied to a specific EU country.
- * The countryCode is optional and only used when a language directly represents an EU member state.
+ * Every `code` is a full BCP-47 tag, because it is passed unchanged to `Intl` for
+ * dates, numbers, and country names. A subtag-less code is not a neutral "international"
+ * variant: `Intl` resolves bare `en` to US English, so the United Kingdom tag is required
+ * for the British English this project writes. Slovenian likewise needs `sl`; `si` is
+ * Sinhala in ISO 639-1.
+ *
+ * `countryCode` is the country whose variant and flag represent the language. It is not
+ * an EU-membership claim.
  */
 export const SUPPORTED_LANGUAGES = [
   {
-    code: "en",
+    code: "en-GB",
     label: "English",
-    displayRegion: "International",
-    // No countryCode - International English is not tied to UK/GB (non-EU)
+    displayRegion: "United Kingdom",
+    countryCode: "GB",
   },
   {
     code: "de",
@@ -47,7 +53,7 @@ export const SUPPORTED_LANGUAGES = [
     countryCode: "NL", // Netherlands is an EU member
   },
   {
-    code: "si",
+    code: "sl",
     label: "Slovenian",
     displayRegion: "Slovenia",
     countryCode: "SI", // Slovenia is an EU member

@@ -167,7 +167,7 @@ describe("Project list", { timeout: 20_000 }, () => {
           },
         )
       ).getAttribute("href"),
-    ).toBe("/en/projects/project-1/participants");
+    ).toBe("/en-GB/projects/project-1/participants");
   });
 
   it("links to the Project without carrying list state", async () => {
@@ -181,7 +181,7 @@ describe("Project list", { timeout: 20_000 }, () => {
           { timeout: 10_000 },
         )
       ).getAttribute("href"),
-    ).toBe("/en/projects/project-1");
+    ).toBe("/en-GB/projects/project-1");
   });
 
   it("clears the cursor when scope or filters change", async () => {

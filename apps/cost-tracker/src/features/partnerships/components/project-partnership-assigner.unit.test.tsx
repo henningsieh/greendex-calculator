@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 import german from "@/messages/de/apiErrors.json";
-import english from "@/messages/en/apiErrors.json";
+import english from "@/messages/en-GB/apiErrors.json";
 
 const mocks = vi.hoisted(() => ({
   assign: vi.fn(),
@@ -66,7 +66,7 @@ import { CreateSetupLinkDialog } from "@/features/partnerships/components/setup-
 import { orpcQuery } from "@/lib/orpc/orpc";
 
 async function renderDialog(
-  locale: "en" | "de" = "en",
+  locale: "en-GB" | "de" = "en-GB",
   projects = [{ id: "project-new", name: "New Project" }],
   organizations = [{ id: "organization-new", name: "New Partner" }],
 ) {
@@ -146,7 +146,7 @@ describe("AssignOrganizationDialog", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "translates required fields in %s and blocks assignment",
     async (locale) => {
       const user = userEvent.setup();
@@ -170,7 +170,7 @@ describe("AssignOrganizationDialog", () => {
     },
   );
 
-  it.each(["en", "de"] as const)(
+  it.each(["en-GB", "de"] as const)(
     "blocks overlong identifiers in %s",
     async (locale) => {
       const user = userEvent.setup();
@@ -217,7 +217,7 @@ describe("AssignOrganizationDialog", () => {
       name: `Partner ${i}`,
     }));
     organizations.push({ id: "zebra-id", name: "Distinct" });
-    await renderDialog("en", undefined, organizations);
+    await renderDialog("en-GB", undefined, organizations);
     const picker = within(screen.getByTestId("partner-organization-picker"));
     await user.click(picker.getByTestId("entity-combobox-trigger"));
     expect(screen.getAllByRole("option")).toHaveLength(26);
@@ -328,7 +328,7 @@ describe("AssignOrganizationDialog", () => {
   it("trims selected identifiers and resets after a successful assignment", async () => {
     const user = userEvent.setup();
     await renderDialog(
-      "en",
+      "en-GB",
       [{ id: " project-new ", name: "New Project" }],
       [{ id: " organization-new ", name: "New Partner" }],
     );

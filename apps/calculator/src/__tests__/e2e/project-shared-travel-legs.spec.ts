@@ -10,7 +10,7 @@ import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
 
 import de from "@/messages/de.json" with { type: "json" };
-import en from "@/messages/en.json" with { type: "json" };
+import en from "@/messages/en-GB.json" with { type: "json" };
 
 const SEED_ORGANIZATION_SLUG = "seed-org";
 const sharedTravelLegDescription = `Shared travel E2E ${randomUUID()}`;
@@ -79,7 +79,7 @@ test.describe("Project Shared Travel Legs", () => {
     const projectName = `Created shared travel ${randomUUID()}`;
     const description = `Electric transfer ${randomUUID()}`;
 
-    await page.goto("/en/org/create-project");
+    await page.goto("/en-GB/org/create-project");
     await page
       .getByLabel(en.organization.projects.form.new.name)
       .fill(projectName);
@@ -184,7 +184,7 @@ test.describe("Project Shared Travel Legs", () => {
   test("switches project-detail tabs and renders their content", async ({
     page,
   }) => {
-    await page.goto(`/en/org/projects/${projectId}`);
+    await page.goto(`/en-GB/org/projects/${projectId}`);
 
     const detailsTab = page.getByRole("tab", {
       name: en.project.details.tabs.details,
@@ -221,7 +221,7 @@ test.describe("Project Shared Travel Legs", () => {
   test("allows an Organization Administrator to manage electric-car shared travel", async ({
     page,
   }) => {
-    await page.goto(`/en/org/projects/${projectId}`);
+    await page.goto(`/en-GB/org/projects/${projectId}`);
     const sharedTravelTab = page.getByRole("tab", {
       name: en.project.details.tabs["shared-travel"],
     });

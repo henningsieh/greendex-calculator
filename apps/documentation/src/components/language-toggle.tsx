@@ -22,7 +22,7 @@ export function LanguageToggleInline() {
   const params = useParams();
   const pathname = usePathname();
 
-  const currentLang = (params?.lang as LanguageCode) || "en";
+  const currentLang = (params?.lang as LanguageCode) || "en-GB";
   const currentLocale = SUPPORTED_LANGUAGES.find((l) => l.code === currentLang);
 
   const CurrentFlag = currentLocale ? getFlagComponent(currentLocale) : GlobeIcon;

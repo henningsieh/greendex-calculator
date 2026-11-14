@@ -15,13 +15,11 @@ function regionNames(locale: string): Intl.DisplayNames | undefined {
 }
 
 export function getEUCountryOptions(locale: string): EUCountryOption[] {
-  // `si` remains the product route locale, not the Sinhala presentation locale.
-  const presentationLocale = locale === "si" ? "sl" : locale;
   const english = regionNames("en");
-  const localized = regionNames(presentationLocale);
+  const localized = regionNames(locale);
   let collator: Intl.Collator;
   try {
-    collator = new Intl.Collator(presentationLocale);
+    collator = new Intl.Collator(locale);
   } catch {
     collator = new Intl.Collator("en");
   }

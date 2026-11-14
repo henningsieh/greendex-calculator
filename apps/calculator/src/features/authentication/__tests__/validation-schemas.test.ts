@@ -9,7 +9,7 @@ import {
   createSignupSchema,
 } from "@/features/authentication/validation-schemas";
 import de from "@/messages/de.json";
-import en from "@/messages/en.json";
+import en from "@/messages/en-GB.json";
 
 const key = (value: string) => value;
 
@@ -107,7 +107,7 @@ describe("authentication validation factories", () => {
   it("uses fresh English and German translators", () => {
     const english = createCredentialsSchema(
       createTranslator({
-        locale: "en",
+        locale: "en-GB",
         messages: en,
         namespace: "authentication",
       }),

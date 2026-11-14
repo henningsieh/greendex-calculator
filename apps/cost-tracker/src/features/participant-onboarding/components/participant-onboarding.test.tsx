@@ -5,7 +5,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import { createSituationErrors } from "@/lib/orpc/errors";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const countryName = (code: string) =>
   new Intl.DisplayNames(["en"], { type: "region" }).of(code)!;
@@ -108,7 +108,7 @@ describe("ParticipantJoin", () => {
         agreement: { accepted: true },
       }),
     );
-    expect(mocks.replace).toHaveBeenCalledWith("/en/participant");
+    expect(mocks.replace).toHaveBeenCalledWith("/en-GB/participant");
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 

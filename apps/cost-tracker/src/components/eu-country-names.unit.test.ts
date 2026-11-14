@@ -5,10 +5,9 @@ import { getEUCountryOptions } from "@/components/eu-country-names";
 afterEach(() => vi.restoreAllMocks());
 
 describe("getEUCountryOptions", () => {
-  it("maps the product si locale to Slovenian presentation", () => {
-    expect(getEUCountryOptions("si")).toEqual(getEUCountryOptions("sl"));
+  it("presents country names in Slovenian for the sl locale", () => {
     expect(
-      getEUCountryOptions("si").find((item) => item.code === "DE")?.label,
+      getEUCountryOptions("sl").find((item) => item.code === "DE")?.label,
     ).toBe("Nemčija");
   });
   it("falls back to English for an invalid locale", () => {

@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { LoginForm } from "@/features/authentication/components/login-form";
 import de from "@/messages/de.json";
-import en from "@/messages/en.json";
+import en from "@/messages/en-GB.json";
 
 const signIn = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/better-auth/auth-client", () => ({
@@ -35,7 +35,7 @@ describe("LoginForm", () => {
     try {
       await act(async () =>
         root.render(
-          <NextIntlClientProvider locale="en" messages={en}>
+          <NextIntlClientProvider locale="en-GB" messages={en}>
             <LoginForm />
           </NextIntlClientProvider>,
         ),

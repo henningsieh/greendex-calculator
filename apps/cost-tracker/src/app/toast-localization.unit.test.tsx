@@ -10,21 +10,21 @@ import { OrganizationSettings } from "@/features/organizations/components/organi
 import { createSafeFieldIssue } from "@/lib/orpc/error-contract";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import german from "@/messages/de";
-import english from "@/messages/en";
+import english from "@/messages/en-GB";
 import spanish from "@/messages/es";
 import french from "@/messages/fr";
 import italian from "@/messages/it";
 import dutch from "@/messages/nl";
-import slovenian from "@/messages/si";
+import slovenian from "@/messages/sl";
 
 const localeMessages: Record<string, typeof english> = {
-  en: english,
+  "en-GB": english,
   de: german,
   es: spanish,
   fr: french,
   it: italian,
   nl: dutch,
-  si: slovenian,
+  sl: slovenian,
 };
 
 vi.mock("@/lib/orpc/client.server", () => ({}));
@@ -109,7 +109,7 @@ vi.mock("@/lib/orpc/orpc", () => ({
   },
 }));
 
-async function renderLocalizedRoute(children: ReactNode, locale = "en") {
+async function renderLocalizedRoute(children: ReactNode, locale = "en-GB") {
   const boundary = LocaleLayout({
     children,
     params: Promise.resolve({ locale }),
@@ -202,7 +202,10 @@ it("renders a mutation failure through the actual layouts and Toaster", async ()
       document.querySelector('[data-slot="toast-description"]'),
     ).not.toBeNull();
   });
-  expect(screen.getByTestId("toast-locale")).toHaveAttribute("data-locale", "en");
+  expect(screen.getByTestId("toast-locale")).toHaveAttribute(
+    "data-locale",
+    "en-GB",
+  );
   expect(screen.getByTestId("toast-locale")).toHaveAttribute(
     "data-catalogue-matches",
     "true",

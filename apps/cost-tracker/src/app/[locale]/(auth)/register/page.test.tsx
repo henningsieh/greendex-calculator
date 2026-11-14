@@ -58,7 +58,7 @@ describe.each([
         nextStep: "authenticate",
       });
       await RegisterPage({
-        params: Promise.resolve({ locale: "en" }),
+        params: Promise.resolve({ locale: "en-GB" }),
         searchParams: Promise.resolve({ next }),
       });
       expect(mocks.next).toHaveBeenCalledExactlyOnceWith({
@@ -88,7 +88,7 @@ describe.each([
       });
       render(
         await RegisterPage({
-          params: Promise.resolve({ locale: "en" }),
+          params: Promise.resolve({ locale: "en-GB" }),
           searchParams: Promise.resolve({ next: "/accept-invitation/bad!" }),
         }),
       );

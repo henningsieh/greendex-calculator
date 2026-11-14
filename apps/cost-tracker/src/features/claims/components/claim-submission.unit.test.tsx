@@ -6,7 +6,7 @@ import { expect, it, vi } from "vitest";
 import { ClaimSubmission } from "@/features/claims/components/claim-submission";
 import { createSafeFieldIssue } from "@/lib/orpc/error-contract";
 import german from "@/messages/de";
-import english from "@/messages/en";
+import english from "@/messages/en-GB";
 
 vi.mock("@/lib/orpc/orpc", () => ({ orpc: { claims: { submit: vi.fn() } } }));
 

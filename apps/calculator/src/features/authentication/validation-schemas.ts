@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type messages from "@/messages/en.json";
+import type messages from "@/messages/en-GB.json";
 
 type ValidationKey =
   `validation.${keyof typeof messages.authentication.validation}`;

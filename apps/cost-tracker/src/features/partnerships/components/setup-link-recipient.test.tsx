@@ -6,7 +6,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
 import type { OnboardingDecision } from "@/features/authentication/onboarding-decision";
-import messages from "@/messages/en";
+import messages from "@/messages/en-GB";
 
 const countryLabel = messages.partnerships.setup.organizationCountry;
 const countryName = (code: string) =>
@@ -105,7 +105,7 @@ beforeEach(() => {
 function recipient(
   userId = "user-1",
   secret: string | undefined = "private-secret",
-  locale: "en" | "de" = "en",
+  locale: "en-GB" | "de" = "en-GB",
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -196,7 +196,7 @@ it("re-resolves after creation and binding, then selects explicitly before Proje
   await userEvent.click(action);
   expect(await screen.findByTestId("open-partner-project")).toHaveAttribute(
     "href",
-    "/en/projects/partner-project",
+    "/en-GB/projects/partner-project",
   );
   expect(mocks.select).toHaveBeenCalledExactlyOnceWith({
     organizationId: "retained",
@@ -415,7 +415,7 @@ it.each([
 it.each(["SETUP_LINK_EXPIRED", "SETUP_LINK_USED", "SETUP_LINK_DISABLED"])(
   "renders server recovery %s in English and German with no creation action",
   async (reason) => {
-    for (const locale of ["en", "de"] as const) {
+    for (const locale of ["en-GB", "de"] as const) {
       mocks.next.mockResolvedValue({
         nextStep: "setup-recovery",
         entryContext: "partner-setup",
@@ -443,7 +443,7 @@ it.each(["SETUP_LINK_EXPIRED", "SETUP_LINK_USED", "SETUP_LINK_DISABLED"])(
 );
 
 it("falls back to a safe alert for malformed recovery reasons in English and German", async () => {
-  for (const locale of ["en", "de"] as const) {
+  for (const locale of ["en-GB", "de"] as const) {
     mocks.next.mockResolvedValue({
       nextStep: "setup-recovery",
       entryContext: "partner-setup",

@@ -97,7 +97,7 @@ test("both apps expose the same seeded Project and Journey, and Cost Tracker ope
     .where(eq(organization.id, seed.partnerId));
   expect(partner).toBeDefined();
 
-  await page.goto(`${calculatorOrigin}/en/login`);
+  await page.goto(`${calculatorOrigin}/en-GB/login`);
   await page.locator('input[name="email"]').fill(SEED_USER.email);
   await page.locator('input[name="password"]').fill(SEED_USER.password);
   await page.locator('button[type="submit"]').click();
@@ -112,7 +112,7 @@ test("both apps expose the same seeded Project and Journey, and Cost Tracker ope
     "data-organization-id",
     seed.hostingId,
   );
-  await page.goto(`${calculatorOrigin}/en/org/projects/${seed.projectId}`);
+  await page.goto(`${calculatorOrigin}/en-GB/org/projects/${seed.projectId}`);
   await expect(
     page.getByRole("heading", { name: seed.projectName }),
   ).toBeVisible();

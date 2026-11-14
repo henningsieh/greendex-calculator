@@ -148,7 +148,7 @@ describe("Claim document presentation", () => {
     expect(within(row).getAllByRole("listitem")).toHaveLength(2);
     expect(within(row).getByRole("link")).toHaveAttribute(
       "href",
-      "/en/proof-documents/receipt.pdf",
+      "/en-GB/proof-documents/receipt.pdf",
     );
     fireEvent.click(within(row).getByTestId("fixture-edit-cost"));
     expect(edit).toHaveBeenCalledOnce();
