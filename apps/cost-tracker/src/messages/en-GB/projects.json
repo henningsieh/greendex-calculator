@@ -115,7 +115,8 @@
       "statPartnersDetail": "assigned organizations",
       "statParticipantsDetail": "have joined so far",
       "claimsInReviewDetail": "need a decision",
-      "daysUntil": "until {date}"
+      "daysUntil": "until {date}",
+      "claimReview": "Claim review"
     }
   }
 }

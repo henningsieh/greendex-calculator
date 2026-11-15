@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import {
   partnershipClaimPath,
+  partnershipClaimReviewPath,
   partnershipParticipantsPath,
   projectParticipantsPath,
 } from "@/app/paths";
@@ -361,7 +362,23 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                         {dateFormat.format(partner.assignedAt, "date.medium")}
                       </p>
                     </div>
-                    <ClaimReadiness status={partner.claimStatus} />
+                    <span className="flex flex-wrap items-center gap-3">
+                      <ClaimReadiness status={partner.claimStatus} />
+                      {/* The review page hangs under this Hosted Project, so
+                          the row is its way in: the global queue also lists
+                          every submitted Claim, this links one Partnership. */}
+                      <Link
+                        className={buttonVariants({
+                          variant: "link",
+                          size: "sm",
+                        })}
+                        href={partnershipClaimReviewPath(partner.id)}
+                        data-testid={`review-claim-${partner.id}`}
+                      >
+                        <EntityIcon entity="claim" className="size-3.5" />
+                        {t("claimReview")}
+                      </Link>
+                    </span>
                   </li>
                 ))}
               </ul>

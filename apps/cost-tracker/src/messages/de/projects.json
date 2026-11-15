@@ -115,7 +115,8 @@
       "statPartnersDetail": "zugeordnete Organisationen",
       "statParticipantsDetail": "bisher dabei",
       "claimsInReviewDetail": "warten auf Entscheidung",
-      "daysUntil": "bis {date}"
+      "daysUntil": "bis {date}",
+      "claimReview": "Claim-Prüfung"
     }
   }
 }

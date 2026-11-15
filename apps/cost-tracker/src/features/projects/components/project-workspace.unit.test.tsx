@@ -94,6 +94,11 @@ describe("Project workspace", () => {
     expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
     expect(screen.getByTestId("stat-partners")).toBeInTheDocument();
     expect(screen.getByTestId("stat-participants")).toBeInTheDocument();
+    // Each Partnership row is the way into its Claim review page, which now
+    // hangs under this Hosted Project in the breadcrumb.
+    expect(
+      screen.getByTestId("review-claim-partnership-1").getAttribute("href"),
+    ).toBe("/en-GB/partnerships/partnership-1/claim/review");
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
     expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
       "/en-GB/projects/project-1/participants",

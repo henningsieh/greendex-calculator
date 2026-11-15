@@ -35,6 +35,8 @@ vi.mock("@/lib/tanstack-react-query/hydration", () => ({
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 import { ClaimWorkspaceBreadcrumbContent } from "./claim/page";
+import { ClaimReviewBreadcrumbContent } from "./claim/review/page";
+import { ParticipantDetailsBreadcrumbContent } from "./participants/[participationId]/page";
 import { PartnershipParticipantsBreadcrumbContent } from "./participants/page";
 
 // jsdom has no matchMedia; the shell's sidebar trigger reads it on mount.
@@ -97,6 +99,54 @@ it("links the Claim workspace through the Partner Project", async () => {
   expect(hrefs()).toEqual(["/en-GB/projects", "/en-GB/projects/project-1", null]);
   expect(crumbCount()).toBe(3);
   expect(currentCount(container)).toBe(1);
+});
+
+it("links Participant details through the Partner Project", async () => {
+  const { container } = render(
+    <SidebarProvider>
+      {await ParticipantDetailsBreadcrumbContent({
+        params: Promise.resolve({
+          partnershipId: "partnership-1",
+          participationId: "participation-1",
+        }),
+      })}
+    </SidebarProvider>,
+  );
+
+  expect(hrefs()).toEqual([
+    "/en-GB/projects",
+    "/en-GB/projects/project-1",
+    "/en-GB/partnerships/partnership-1/participants",
+    null,
+  ]);
+  expect(crumbCount()).toBe(4);
+  expect(currentCount(container)).toBe(1);
+});
+
+it("links Claim review through the Hosted Project", async () => {
+  const { container } = render(
+    <SidebarProvider>
+      {await ClaimReviewBreadcrumbContent({ params })}
+    </SidebarProvider>,
+  );
+
+  // Review is Hosting-only, so the middle crumb is the Hosted Project.
+  expect(hrefs()).toEqual(["/en-GB/projects", "/en-GB/projects/project-1", null]);
+  expect(crumbCount()).toBe(3);
+  expect(currentCount(container)).toBe(1);
+});
+
+it("degrades Claim review to the Projects crumb when the scope is refused", async () => {
+  mocks.query.mockRejectedValue(new Error("refused"));
+
+  render(
+    <SidebarProvider>
+      {await ClaimReviewBreadcrumbContent({ params })}
+    </SidebarProvider>,
+  );
+
+  expect(hrefs()).toEqual(["/en-GB/projects", null]);
+  expect(crumbCount()).toBe(2);
 });
 
 it("degrades to the Projects crumb when the scope is refused", async () => {
