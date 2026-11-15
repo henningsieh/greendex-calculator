@@ -6,8 +6,8 @@ import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ORPCError } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CopyIcon, MailPlusIcon } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { CopyIcon, MailPlusIcon, SearchIcon } from "lucide-react";
+import { useDeferredValue, useEffect, useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { type z } from "zod";
 
@@ -22,14 +22,7 @@ import { EUCountrySelector } from "@/components/eu-country-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -258,6 +251,8 @@ export function SetupLinkList() {
   );
   const [closingId, setClosingId] = useState<string>();
   const [error, setError] = useState<React.ReactNode>("");
+  const [filter, setFilter] = useState("");
+  const deferredFilter = useDeferredValue(filter.trim().toLowerCase());
 
   async function closeLink(id: string) {
     setError("");
@@ -276,6 +271,13 @@ export function SetupLinkList() {
   const openCount = links.filter(
     (link) => link.enabled && !link.consumedAt && !link.expired,
   ).length;
+  const visible = deferredFilter
+    ? links.filter(
+        (link) =>
+          link.projectName.toLowerCase().includes(deferredFilter) ||
+          link.recipientEmail.toLowerCase().includes(deferredFilter),
+      )
+    : links;
 
   function linkStatus(link: (typeof links)[number]) {
     if (!link.enabled) return t("closed");
@@ -297,43 +299,71 @@ export function SetupLinkList() {
       aria-label={t("existingLinks")}
       className="mt-10 space-y-4"
     >
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle as="h2">{t("existingLinks")}</CardTitle>
-            <CardDescription className="mt-1">
-              {t("existingLinksHint")}
-            </CardDescription>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl">{t("existingLinks")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("existingLinksHint")}
+          </p>
+        </div>
+        {links.length > 0 && (
+          <div className="grid gap-2">
+            <Label className="sr-only" htmlFor="invitation-filter">
+              {t("searchLabel")}
+            </Label>
+            <div className="relative">
+              <SearchIcon
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                /* eslint-disable-next-line shadcn/no-restyle -- Search icon overlay requires matching input inset. */
+                className="w-full pl-9 sm:w-64"
+                id="invitation-filter"
+                onChange={(event) => setFilter(event.target.value)}
+                placeholder={t("searchPlaceholder")}
+                type="search"
+                value={filter}
+              />
+            </div>
           </div>
-          <CardAction>
-            <Badge variant="ember-pill">
-              {t("openSummary", { count: openCount })}
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardContent>
-          {error && <div role="alert">{error}</div>}
-          {existingLinks.isPending ? (
-            <output>{t("loading")}</output>
-          ) : existingLinks.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>{t("loadError")}</AlertTitle>
-              <AlertDescription>
-                {<ErrorPresentation error={existingLinks.error} />}
-              </AlertDescription>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void existingLinks.refetch()}
-              >
-                {t("retry")}
-              </Button>
-            </Alert>
-          ) : links.length === 0 ? (
-            <p className="rounded-2xl border p-8 text-center text-muted-foreground">
-              {t("empty")}
-            </p>
-          ) : (
+        )}
+      </div>
+      {error && <div role="alert">{error}</div>}
+      {existingLinks.isPending ? (
+        <output>{t("loading")}</output>
+      ) : existingLinks.isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>{t("loadError")}</AlertTitle>
+          <AlertDescription>
+            {<ErrorPresentation error={existingLinks.error} />}
+          </AlertDescription>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void existingLinks.refetch()}
+          >
+            {t("retry")}
+          </Button>
+        </Alert>
+      ) : links.length === 0 ? (
+        <p className="rounded-2xl border p-8 text-center text-muted-foreground">
+          {t("empty")}
+        </p>
+      ) : visible.length === 0 ? (
+        <p className="rounded-2xl border p-8 text-center text-muted-foreground">
+          {t("emptySearch")}
+        </p>
+      ) : (
+        <Card>
+          <CardHeader>
+            <div className="flex justify-end">
+              <Badge variant="ember-pill">
+                {t("openSummary", { count: openCount })}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="px-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -344,7 +374,7 @@ export function SetupLinkList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {links.map((existing) => {
+                {visible.map((existing) => {
                   const status = linkStatusKey(existing);
                   return (
                     <TableRow key={existing.id} data-setup-link-id={existing.id}>
@@ -389,9 +419,9 @@ export function SetupLinkList() {
                 })}
               </TableBody>
             </Table>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }

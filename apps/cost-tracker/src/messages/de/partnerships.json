@@ -77,7 +77,10 @@
       "invitationRejected": "Du hast die Einladung zu {organization} abgelehnt. Dein aktueller Zugriff wurde erneut geprüft. Folge dem nächsten Schritt unten.",
       "invite": "Partner einladen",
       "invitationColumn": "Einladung",
-      "openSummary": "{count, plural, one {# offene Einladung} other {# offene Einladungen}}"
+      "openSummary": "{count, plural, one {# offene Einladung} other {# offene Einladungen}}",
+      "searchLabel": "Einladungen filtern",
+      "searchPlaceholder": "Nach Projekt oder E-Mail filtern…",
+      "emptySearch": "Keine Einladung passt zu diesem Filter."
     },
     "partnerOrganizations": {
       "page": {
@@ -92,7 +95,12 @@
         "joinTitle": "Partner tritt bei",
         "joinText": "Der Partner bestätigt mit der eingeladenen E-Mail-Adresse. Jeder Link ist einmal verwendbar und läuft nach 7 Tagen ab.",
         "collaborateTitle": "Zusammenarbeiten",
-        "collaborateText": "Die Partnerschaft erscheint unten bei ihrem gehosteten Projekt — bereit für Teilnahmen und Abrechnungen."
+        "collaborateText": "Die Partnerschaft erscheint im Tab „Partnerschaften“ — bereit für Teilnahmen und Abrechnungen."
+      },
+      "tabs": {
+        "label": "Bereiche der Partnerorganisationen",
+        "partnerships": "Partnerschaften",
+        "invitations": "Ausstehende Einladungen"
       }
     },
     "confirmations": {

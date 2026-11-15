@@ -77,7 +77,10 @@
       "invitationRejected": "You rejected the invitation to {organization}. Your current access has been checked again. Follow the next step below.",
       "invite": "Invite partner",
       "invitationColumn": "Invitation",
-      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}"
+      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}",
+      "searchLabel": "Filter invitations",
+      "searchPlaceholder": "Filter by project or email…",
+      "emptySearch": "No invitations match this filter."
     },
     "partnerOrganizations": {
       "page": {
@@ -92,7 +95,12 @@
         "joinTitle": "Partner joins",
         "joinText": "They confirm with the invited email address. Each link is single-use and expires after 7 days.",
         "collaborateTitle": "Collaborate",
-        "collaborateText": "The partnership appears under its hosted project below, ready for participants and claims."
+        "collaborateText": "The partnership appears under the Partnerships tab, ready for participants and claims."
+      },
+      "tabs": {
+        "label": "Partner Organizations sections",
+        "partnerships": "Partnerships",
+        "invitations": "Pending invitations"
       }
     },
     "confirmations": {
