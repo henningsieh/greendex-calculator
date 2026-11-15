@@ -35,15 +35,11 @@ import {
 import {
   type ClaimStatus,
   canCompleteProject,
+  isClaimAwaitingReview,
 } from "@/features/claims/claim-lifecycle";
 import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
 import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
-
-const REVIEW_STATUSES: readonly ClaimStatus[] = [
-  "submitted",
-  "correction_requested",
-];
 
 function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   const t = useTranslations("projects.workspace");
@@ -143,10 +139,12 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const statsReady =
     typeof project.participantCount === "number" &&
     typeof project.daysLeft === "number";
+  // Only submitted Claims await a Hosting decision. A correction request
+  // reopens Partner editing, so counting it would overstate the work queue.
   const openClaims =
     project.relationship === "hosted"
       ? project.partnerOrganizations.filter(({ claimStatus }) =>
-          claimStatus ? REVIEW_STATUSES.includes(claimStatus) : false,
+          isClaimAwaitingReview(claimStatus),
         ).length
       : 0;
 
@@ -213,7 +211,11 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
         >
           {project.relationship === "hosted" ? (
             <>
-              <StatCell hero data-testid="stat-open-claims">
+              <StatCell
+                hero
+                data-testid="stat-open-claims"
+                data-value={openClaims}
+              >
                 <StatNumber>{openClaims}</StatNumber>
                 <StatLabel>{t("claimsInReview")}</StatLabel>
                 <StatDetail>{t("claimsInReviewDetail")}</StatDetail>

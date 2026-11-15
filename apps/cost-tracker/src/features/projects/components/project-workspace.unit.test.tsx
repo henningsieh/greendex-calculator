@@ -171,6 +171,12 @@ describe("Project workspace", () => {
         status,
       );
     }
+    // Only `submitted` awaits a Hosting decision: a correction request reopens
+    // Partner editing, and every other status is decided or unsubmitted.
+    expect(screen.getByTestId("stat-open-claims")).toHaveAttribute(
+      "data-value",
+      "1",
+    );
   });
 
   it("completes an eligible Hosted Project and refreshes its workspace", async () => {
