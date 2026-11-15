@@ -3,14 +3,12 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import * as Flags from "country-flag-icons/react/3x2";
 import { CalendarDaysIcon, CheckIcon, MapPinIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 
 import {
   partnershipClaimPath,
   partnershipParticipantsPath,
-  partnershipPath,
   projectParticipantsPath,
 } from "@/app/paths";
 import {
@@ -20,6 +18,7 @@ import {
   StatLabel,
   StatNumber,
 } from "@/components/brand/stat-grid";
+import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import ProtectedPageHeader from "@/components/protected-page-header";
@@ -32,18 +31,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
 import {
   type ClaimStatus,
   canCompleteProject,
+  isClaimAwaitingReview,
 } from "@/features/claims/claim-lifecycle";
 import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
 import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
-
-const REVIEW_STATUSES: readonly ClaimStatus[] = [
-  "submitted",
-  "correction_requested",
-];
 
 function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   const t = useTranslations("projects.workspace");
@@ -80,18 +76,6 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {labels[status]}
     </Badge>
-  );
-}
-
-function CountryFlag({ country }: { country: string }) {
-  const Flag = Flags[country as keyof typeof Flags] as
-    | React.ComponentType<{ className?: string }>
-    | undefined;
-  if (!Flag) return null;
-  return (
-    <span className="inline-flex h-4 w-6 shrink-0 overflow-hidden rounded-sm border border-border">
-      <Flag aria-hidden={true} className="size-full" />
-    </span>
   );
 }
 
@@ -143,10 +127,12 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const statsReady =
     typeof project.participantCount === "number" &&
     typeof project.daysLeft === "number";
+  // Only submitted Claims await a Hosting decision. A correction request
+  // reopens Partner editing, so counting it would overstate the work queue.
   const openClaims =
     project.relationship === "hosted"
       ? project.partnerOrganizations.filter(({ claimStatus }) =>
-          claimStatus ? REVIEW_STATUSES.includes(claimStatus) : false,
+          isClaimAwaitingReview(claimStatus),
         ).length
       : 0;
 
@@ -213,7 +199,11 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
         >
           {project.relationship === "hosted" ? (
             <>
-              <StatCell hero data-testid="stat-open-claims">
+              <StatCell
+                hero
+                data-testid="stat-open-claims"
+                data-value={openClaims}
+              >
                 <StatNumber>{openClaims}</StatNumber>
                 <StatLabel>{t("claimsInReview")}</StatLabel>
                 <StatDetail>{t("claimsInReviewDetail")}</StatDetail>
@@ -284,7 +274,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           <div className="min-w-0 space-y-0.5">
             <p className="text-xs text-muted-foreground">{t("location")}</p>
             <p className="flex items-center gap-2 text-sm font-medium">
-              <CountryFlag country={project.country} />
+              <CountryFlag code={project.country} />
               <span className="truncate">
                 {[project.location, project.country].filter(Boolean).join(", ")}
               </span>
@@ -333,18 +323,19 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           </CardHeader>
           <CardContent className="space-y-5">
             {project.partnerOrganizations.length === 0 ? (
-              <p
-                data-testid="assigned-partnerships-empty"
-                className="space-y-2 rounded-2xl border p-8 text-center text-sm text-muted-foreground"
-              >
-                {t("noPartners")}{" "}
-                <Link
-                  className={buttonVariants({ variant: "link" })}
-                  href="/partner-organizations"
-                >
-                  {t("invitePartners")}
-                </Link>
-              </p>
+              <Empty data-testid="assigned-partnerships-empty" variant="outlined">
+                <EmptyHeader>
+                  <EmptyDescription>
+                    {t("noPartners")}{" "}
+                    <Link
+                      className={buttonVariants({ variant: "link" })}
+                      href="/partner-organizations"
+                    >
+                      {t("invitePartners")}
+                    </Link>
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               <ul className="divide-y divide-border">
                 {project.partnerOrganizations.map((partner) => (
@@ -355,9 +346,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                     key={partner.id}
                   >
                     <div className="min-w-0 space-y-0.5">
+                      {/* The Partnership detail route is deliberately
+                          header-only this release, so the row links to that
+                          Partner's Participants instead — the actionable
+                          destination for this Partnership. */}
                       <Link
                         className="block truncate font-medium hover:underline"
-                        href={partnershipPath(partner.id)}
+                        href={partnershipParticipantsPath(partner.id)}
                       >
                         {partner.organizationName}
                       </Link>

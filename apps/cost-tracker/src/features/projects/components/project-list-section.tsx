@@ -1,4 +1,6 @@
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { resolveActiveMembershipRole } from "@/features/organizations/access";
+import { isStaffOrganizationRole } from "@/features/organizations/staff-eligibility";
 import { ProjectList } from "@/features/projects/components/project-list";
 import {
   getProjectAvailableScopesQueryOptions,
@@ -7,7 +9,6 @@ import {
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
-import { orpcQuery } from "@/lib/orpc/orpc";
 import {
   getQueryClient,
   HydrateClient,
@@ -19,6 +20,17 @@ type ProjectListSectionProps = {
 };
 
 /**
+ * Presentation-only staff check for the scope-less Empty: members with staff
+ * standing (owner/admin/coordinator) in the active Organization see the
+ * guidance Empty, everyone else keeps the unavailable Empty. Pure
+ * participants are not staff (spec #407 story 9). Shares the single
+ * active-role lookup with the other presentation gates.
+ */
+async function resolveStaffMembership(): Promise<boolean> {
+  return isStaffOrganizationRole(await resolveActiveMembershipRole());
+}
+
+/**
  * Suspends below the Projects page shell while the scope and selected list
  * prefetch resolve. The header and list skeleton can stream first; navigating
  * away can still cancel the underlying RSC response.
@@ -27,11 +39,16 @@ export async function ProjectListSection({
   searchParams,
 }: ProjectListSectionProps) {
   const queryClient = getQueryClient();
-  const [urlState, availableScopes] = await Promise.all([
+  const [urlState, availableScopes, hasStaffMembership] = await Promise.all([
     loadProjectListSearchParams(searchParams),
     queryClient
       .query(getProjectAvailableScopesQueryOptions())
       .catch(swallowPrefetchError),
+    // The scopes signal carries no standing info (it reports {false,false}
+    // for participants and staff alike), so the scope-less Empty branches on
+    // staff standing resolved above. getSession is cached, so this shares
+    // the shell's lookup.
+    resolveStaffMembership(),
   ]);
 
   if (availableScopes) {
@@ -49,22 +66,13 @@ export async function ProjectListSection({
               getProjectListQueryOptions("partner", resolution.state),
             )
       ).catch(swallowPrefetchError);
-    } else if (availableScopes.canCreate) {
-      await queryClient
-        .query(
-          orpcQuery.projects.searchHosted.queryOptions({
-            input: { search: "" },
-            meta: { costTrackerORPC: true },
-          }),
-        )
-        .catch(swallowPrefetchError);
     }
   }
 
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Projects">
-        <ProjectList />
+        <ProjectList hasStaffMembership={hasStaffMembership} />
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );

@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "@greendex/database";
 import {
   claimsTable,
+  hostProjectAssignmentsTable as hostAssignments,
   principalQuotaCounters as counters,
   projectsTable,
   user,
@@ -225,11 +226,16 @@ describe("projects procedures", () => {
       expect(detail).toMatchObject({
         completedAt: result.completedAt,
         completedByUserId: actor,
-        completedByUserName: stored?.completedByUserName ?? expect.any(String),
-        daysLeft: Math.ceil(
-          (stored!.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
-        ),
+        completedByUserName: stored!.completedByUserName,
       });
+      // `daysLeft` is whole days from the procedure's own clock read. Compare
+      // against a stable interval: an exact recomputation can differ by one
+      // when the two Date.now() calls straddle a day boundary.
+      const expectedDaysLeft = Math.ceil(
+        (stored!.endDate.getTime() - Date.now()) / 86_400_000,
+      );
+      expect(detail.daysLeft).toBeGreaterThanOrEqual(expectedDaysLeft - 1);
+      expect(detail.daysLeft).toBeLessThanOrEqual(expectedDaysLeft + 1);
       useSession(partnerIds[0]!);
       expect(await client.projects.get({ projectId })).toMatchObject({
         relationship: "partner",
@@ -344,6 +350,36 @@ describe("projects procedures", () => {
         ],
       });
       expect(detail).not.toHaveProperty("hostAssignments");
+    });
+
+    it("keeps an expired Project's daysLeft negative inside the final 24 hours", async () => {
+      // Math.ceil collapses (-1h / 24h) to -0, which reads as "0 days left"
+      // instead of "Ended". Restore the seeded dates afterwards.
+      const [original] = await db
+        .select({
+          startDate: projectsTable.startDate,
+          endDate: projectsTable.endDate,
+        })
+        .from(projectsTable)
+        .where(eq(projectsTable.id, projectId));
+      const endedAt = new Date(Date.now() - 60 * 60 * 1000);
+      await db
+        .update(projectsTable)
+        .set({
+          startDate: new Date(endedAt.getTime() - 86_400_000),
+          endDate: endedAt,
+        })
+        .where(eq(projectsTable.id, projectId));
+      try {
+        const detail = await client.projects.get({ projectId });
+        expect(detail.daysLeft).toBe(-1);
+        expect(Object.is(detail.daysLeft, -0)).toBe(false);
+      } finally {
+        await db
+          .update(projectsTable)
+          .set(original!)
+          .where(eq(projectsTable.id, projectId));
+      }
     });
 
     it("returns only the active Partner assignment and Hosting identity", async () => {
@@ -719,7 +755,6 @@ describe("projects procedures", () => {
         expect(await client.projects.scopes()).toEqual({
           hosted: false,
           partner: false,
-          canCreate: userIdValue !== SEED_IDS.user.projectsUser12,
         });
       },
     );
@@ -728,21 +763,18 @@ describe("projects procedures", () => {
       expect(await client.projects.scopes()).toEqual({
         hosted: true,
         partner: false,
-        canCreate: true,
       });
 
       useActiveOrganization(partnerId);
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: true,
-        canCreate: false,
       });
 
       useActiveOrganization(unrelatedId);
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: false,
-        canCreate: false,
       });
     });
   });
@@ -849,7 +881,6 @@ describe("projects procedures", () => {
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: true,
-        canCreate: true,
       });
     });
 
@@ -910,13 +941,18 @@ describe("projects procedures", () => {
       }
 
       // Hosted reads are denied for both restricted principals, regardless of
-      // whether the input names a known Project or matches nothing.
+      // whether the input names a known Project or matches nothing. #408
+      // consolidates the old middleware denial on the handler's
+      // Organization-management-required reason; both render the same fallback.
       for (const principal of [coord, stranger]) {
         useCoordinator(principal);
         const searchHosted = (search: string) =>
           client.projects.listHosted({ pageSize: 25, search });
         const hostedNoMatch = await observeDenial(searchHosted(gibberish));
-        expect(hostedNoMatch).toEqual(deniedNoMatch);
+        expect(hostedNoMatch).toMatchObject({
+          code: "FORBIDDEN",
+          data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+        });
         for (const search of [assignedProject, foreignProject]) {
           expect(await observeDenial(searchHosted(search))).toEqual(
             hostedNoMatch,
@@ -945,7 +981,6 @@ describe("projects procedures", () => {
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: false,
-        canCreate: true,
       });
       await expect(
         client.projects.listPartner({ pageSize: 25 }),
@@ -953,6 +988,193 @@ describe("projects procedures", () => {
       await expect(
         client.projects.get({ projectId: assignedProject }),
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
+  });
+
+  describe("assigned coordinator Hosted discovery", () => {
+    const host = SEED_IDS.organization.entitySearchHost;
+    const coord = SEED_IDS.user.entitySearchCoordinator;
+    const unassignedCoord = SEED_IDS.user.entitySearchUnassignedCoordinator;
+    const participant = SEED_IDS.user.entitySearchParticipant;
+    const owner = SEED_IDS.user.entitySearchActor;
+    const assignedProject = SEED_IDS.project.entitySearchAssigned;
+    const unassignedProject = SEED_IDS.project.entitySearchUnassigned;
+    const client = createRouterClient(router, {
+      context: async () => ({ headers: new Headers() }),
+    });
+    const usePrincipal = (userId: string) => {
+      authMocks.getSession.mockResolvedValue({
+        session: {
+          id: randomUUID(),
+          userId,
+          activeOrganizationId: host,
+        },
+        user: {
+          id: userId,
+          name: "Hosted discovery",
+          email: `${userId}@example.com`,
+        },
+      });
+    };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Deny every Organization-wide permission so only the Host assignment
+      // scope can grant access.
+      authMocks.hasPermission.mockResolvedValue({ success: false });
+      usePrincipal(coord);
+    });
+
+    it("lists exactly the assigned Hosted Project", async () => {
+      const result = await client.projects.listHosted({ pageSize: 25 });
+
+      expect(result.scope).toBe("hosted");
+      expect(result.rows.map((row) => row.id)).toEqual([assignedProject]);
+      expect(result.rows[0]).not.toHaveProperty("organizationId");
+      expect(result.metrics.whole.projectCount).toBe(1);
+      expect(result.metrics.filtered).toEqual(result.metrics.whole);
+      expect(result.partnerOptions).toEqual([]);
+    });
+
+    it("composes search on top of the assignment filter without a search oracle", async () => {
+      const gibberish = "zzz-no-such-project-zzz";
+      const noMatch = await client.projects.listHosted({
+        pageSize: 25,
+        search: gibberish,
+      });
+
+      expect(noMatch.rows).toEqual([]);
+      // Metrics still describe the assigned whole set, never hidden Projects.
+      expect(noMatch.metrics.whole.projectCount).toBe(1);
+      expect(noMatch.metrics.filtered.projectCount).toBe(0);
+      // The unassigned Project name reads exactly like gibberish: assignment
+      // to one Project never leaks access to another.
+      expect(
+        await client.projects.listHosted({
+          pageSize: 25,
+          search: "Picker Unassigned Project",
+        }),
+      ).toEqual(noMatch);
+      // Positive control: the assigned Project stays searchable.
+      const assigned = await client.projects.listHosted({
+        pageSize: 25,
+        search: "Picker Assigned Project",
+      });
+      expect(assigned.rows.map((row) => row.id)).toEqual([assignedProject]);
+    });
+
+    it("lists every assigned Hosted Project and nothing else", async () => {
+      // Story 4: assignment to one Project must not hide another assigned one.
+      const outsiderProject = randomUUID();
+      // Fixtures are created inside `try` so a failure before the assertions
+      // cannot leak rows into later tests.
+      try {
+        await db.insert(projectsTable).values({
+          id: outsiderProject,
+          name: "Hosted discovery outsider",
+          startDate: new Date("2027-04-01"),
+          endDate: new Date("2027-04-03"),
+          location: "Berlin",
+          country: "DE",
+          organizationId: host,
+        });
+        await db
+          .insert(hostAssignments)
+          .values({ projectId: unassignedProject, userId: coord });
+        const result = await client.projects.listHosted({ pageSize: 25 });
+        // Both assigned Projects, and neither the unassigned sibling nor the
+        // unrelated third Project of the same Organization.
+        expect(result.rows.map((row) => row.id).sort()).toEqual(
+          [assignedProject, unassignedProject].sort(),
+        );
+        expect(result.metrics.whole.projectCount).toBe(2);
+      } finally {
+        await db
+          .delete(hostAssignments)
+          .where(
+            and(
+              eq(hostAssignments.projectId, unassignedProject),
+              eq(hostAssignments.userId, coord),
+            ),
+          );
+        await db
+          .delete(projectsTable)
+          .where(eq(projectsTable.id, outsiderProject));
+      }
+    });
+
+    it("announces the Hosted scope exactly for coordinators with assignment", async () => {
+      expect(await client.projects.scopes()).toEqual({
+        hosted: true,
+        partner: false,
+      });
+    });
+
+    it("denies coordinators without assignment with the management reason", async () => {
+      // Pins the consolidated denial: dropping the unreadable-permission
+      // middleware moves permission-less coordinators to the handler's
+      // Organization-management-required reason. Both render the same fallback.
+      usePrincipal(unassignedCoord);
+      await expect(
+        client.projects.listHosted({ pageSize: 25 }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+      });
+      expect(await client.projects.scopes()).toEqual({
+        hosted: false,
+        partner: false,
+      });
+    });
+
+    it("denies Participant-role members without taking the assignment path", async () => {
+      usePrincipal(participant);
+      await expect(
+        client.projects.listHosted({ pageSize: 25 }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+      });
+    });
+
+    it("reports no Hosted scope when the only assigned Project is archived", async () => {
+      // Archived Projects satisfy no visibility predicate in listHosted,
+      // so the availability flag must not promise them either.
+      await db
+        .update(projectsTable)
+        .set({ archived: true })
+        .where(eq(projectsTable.id, assignedProject));
+      try {
+        expect(await client.projects.scopes()).toEqual({
+          hosted: false,
+          partner: false,
+        });
+        await expect(
+          client.projects.listHosted({ pageSize: 25 }),
+        ).rejects.toMatchObject({
+          code: "FORBIDDEN",
+          data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+        });
+      } finally {
+        await db
+          .update(projectsTable)
+          .set({ archived: false })
+          .where(eq(projectsTable.id, assignedProject));
+      }
+    });
+
+    it("keeps Owner Hosted results identical with full read permission", async () => {
+      authMocks.hasPermission.mockResolvedValue({ success: true });
+      usePrincipal(owner);
+      const result = await client.projects.listHosted({ pageSize: 25 });
+
+      expect(result.scope).toBe("hosted");
+      expect(result.rows.map((row) => row.id).sort()).toEqual(
+        [assignedProject, unassignedProject].sort(),
+      );
+      expect(result.metrics.whole.projectCount).toBe(2);
+      expect(result.metrics.filtered).toEqual(result.metrics.whole);
+      expect(result.partnerOptions).toEqual([]);
     });
   });
 });

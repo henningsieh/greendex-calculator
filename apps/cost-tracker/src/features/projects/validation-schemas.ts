@@ -145,7 +145,6 @@ export const PartnerProjectListSchema = z.object({
 export const ProjectListScopeAvailabilitySchema = z.object({
   hosted: z.boolean(),
   partner: z.boolean(),
-  canCreate: z.boolean(),
 });
 
 export const ProjectIdSchema = createSelectSchema(projectsTable)

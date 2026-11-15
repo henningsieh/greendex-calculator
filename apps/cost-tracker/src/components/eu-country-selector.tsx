@@ -2,9 +2,9 @@
 
 import type { EUCountryCode } from "@greendex/config/eu-countries";
 import { useLocale, useTranslations } from "@greendex/i18n/client";
-import * as Flags from "country-flag-icons/react/3x2";
 import { useMemo, type ComponentProps } from "react";
 
+import { CountryFlag } from "@/components/country-flag";
 import {
   getEUCountryOptions,
   type EUCountryOption,
@@ -42,14 +42,9 @@ export type EUCountrySelectorProps = Pick<
 };
 
 function CountryPresentation({ country }: { country: EUCountryOption }) {
-  const Flag = country.code ? Flags[country.code] : null;
   return (
     <>
-      {Flag && (
-        <span className="inline-flex h-4 w-6 shrink-0 overflow-hidden rounded-sm border border-border">
-          <Flag aria-hidden="true" focusable="false" className="size-full" />
-        </span>
-      )}
+      {country.code && <CountryFlag code={country.code} />}
       {country.label}
     </>
   );

@@ -19,8 +19,8 @@ import {
   canCompleteProject,
   isSettledClaimStatus,
 } from "@/features/claims/claim-lifecycle";
-import { isStaffOrganizationRole } from "@/features/organizations/staff-eligibility";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
+import { assignedHostProjectIds } from "@/features/projects/procedures/assigned-host-projects";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import {
   getHostedProjectScopeFilters,
@@ -33,6 +33,8 @@ import {
 } from "@/features/projects/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
 import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type ProjectRelationship =
   | { kind: "inaccessible" }
@@ -233,6 +235,15 @@ export const availableScopes = authorized
       ? []
       : await assignedPartnershipIds(context.user.id, activeOrganizationId);
     const canReadPartner = canReadPartnerPermission || assignedIds.length > 0;
+    // The assignment path is Project Coordinator-only, mirroring listHosted:
+    // Participant and other roles never take the assignment path, so the
+    // signal can never announce a tab the list procedure would deny.
+    const assignedHostIds =
+      !canReadHosted &&
+      !!membership &&
+      hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
+        ? await assignedHostProjectIds(context.user.id, activeOrganizationId)
+        : [];
     const [hostedRows, partnerRows] = await Promise.all([
       canReadHosted
         ? db
@@ -255,9 +266,8 @@ export const availableScopes = authorized
     ]);
 
     return {
-      hosted: hostedRows.length > 0,
+      hosted: hostedRows.length > 0 || assignedHostIds.length > 0,
       partner: partnerRows.length > 0,
-      canCreate: !!membership && isStaffOrganizationRole(membership.role),
     };
   });
 
@@ -328,6 +338,13 @@ export const getProject = authorized
       throw createSituationErrors(errors).projectNotFound();
     }
 
+    // Whole days until endDate, never -0: inside the final 24 hours after
+    // expiry Math.ceil collapses to -0, which the workspace reads as
+    // "0 days left" instead of "Ended". Every other past date keeps its
+    // negative magnitude.
+    const msLeft = relationship.endDate.getTime() - Date.now();
+    const roundedDays = Math.ceil(msLeft / MS_PER_DAY);
+    const daysLeft = roundedDays === 0 && msLeft < 0 ? -1 : roundedDays;
     const project = {
       id: relationship.projectId,
       name: relationship.name,
@@ -341,9 +358,7 @@ export const getProject = authorized
       completedByUserId: relationship.completedByUserId,
       completedByUserName: relationship.completedByUserName,
       participantCount: relationship.participantCount,
-      daysLeft: Math.ceil(
-        (relationship.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
-      ),
+      daysLeft,
     };
 
     if (relationship.kind === "partner") {
