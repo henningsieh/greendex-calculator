@@ -5,12 +5,6 @@
       "title": "Projects",
       "description": "Review Projects hosted by or assigned to your active Organization."
     },
-    "assigned": {
-      "label": "Assigned Projects",
-      "title": "Your Projects",
-      "empty": "No Projects assigned yet.",
-      "viewParticipants": "View Participants"
-    },
     "create": {
       "title": "New project",
       "description": "Add the Project details. Travel can be added later with Claims.",

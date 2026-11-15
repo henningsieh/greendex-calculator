@@ -5,12 +5,6 @@
       "title": "Projekte",
       "description": "Prüfe Projekte, die von deiner aktiven Organisation gehostet oder ihr zugewiesen sind."
     },
-    "assigned": {
-      "label": "Zugewiesene Projekte",
-      "title": "Deine Projekte",
-      "empty": "Noch keine Projekte zugewiesen.",
-      "viewParticipants": "Teilnehmende ansehen"
-    },
     "create": {
       "title": "Neues Projekt",
       "description": "Füge die Projektdetails hinzu. Reisekosten können später über Claims ergänzt werden.",
