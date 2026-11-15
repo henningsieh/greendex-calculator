@@ -1061,6 +1061,32 @@ describe("projects procedures", () => {
       });
     });
 
+    it("reports no Hosted scope when the only assigned Project is archived", async () => {
+      // Archived Projects satisfy no visibility predicate in listHosted,
+      // so the availability flag must not promise them either.
+      await db
+        .update(projectsTable)
+        .set({ archived: true })
+        .where(eq(projectsTable.id, assignedProject));
+      try {
+        expect(await client.projects.scopes()).toEqual({
+          hosted: false,
+          partner: false,
+        });
+        await expect(
+          client.projects.listHosted({ pageSize: 25 }),
+        ).rejects.toMatchObject({
+          code: "FORBIDDEN",
+          data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+        });
+      } finally {
+        await db
+          .update(projectsTable)
+          .set({ archived: false })
+          .where(eq(projectsTable.id, assignedProject));
+      }
+    });
+
     it("keeps Owner Hosted results identical with full read permission", async () => {
       authMocks.hasPermission.mockResolvedValue({ success: true });
       usePrincipal(owner);
