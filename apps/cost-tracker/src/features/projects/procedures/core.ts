@@ -32,9 +32,9 @@ import {
   ProjectListScopeAvailabilitySchema,
 } from "@/features/projects/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
+import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 export type ProjectRelationship =
   | { kind: "inaccessible" }

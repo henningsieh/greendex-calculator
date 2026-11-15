@@ -128,22 +128,27 @@ describe("Organization presentation access failures", () => {
     },
   );
   it.each([
-    ["management", canManageOrganization, () => mocks.getFullOrganization],
-    ["Partner network", canViewPartnerNetwork, () => mocks.assigned],
+    [
+      "management",
+      canManageOrganization,
+      () => mocks.getFullOrganization,
+      "Active Organization role lookup failed",
+    ],
+    [
+      "Partner network",
+      canViewPartnerNetwork,
+      () => mocks.assigned,
+      "Partner network access lookup failed",
+    ],
   ] as const)(
     "logs unexpected %s lookup failures while staying closed",
-    async (_name, check, failureMock) => {
+    async (_name, check, failureMock, expectedLog) => {
       const error = new Error("lookup unavailable");
       failureMock().mockRejectedValue(error);
       const log = vi.spyOn(console, "error").mockImplementation(() => {});
       try {
         expect(await check()).toBe(false);
-        expect(log).toHaveBeenCalledWith(
-          expect.stringMatching(
-            /role lookup failed|network lookup failed|lookup failed/,
-          ),
-          { error },
-        );
+        expect(log).toHaveBeenCalledWith(expectedLog, { error });
       } finally {
         log.mockRestore();
       }

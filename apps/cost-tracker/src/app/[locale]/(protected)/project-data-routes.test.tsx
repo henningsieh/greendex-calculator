@@ -30,6 +30,9 @@ const mocks = vi.hoisted(() => ({
 
 const queryClient = { query: mocks.query };
 
+vi.mock("@/features/organizations/access", () => ({
+  resolveActiveMembershipRole: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/features/projects/components/project-list", () => ({
   ProjectList: () => <p data-testid="project-list">Project list</p>,
 }));

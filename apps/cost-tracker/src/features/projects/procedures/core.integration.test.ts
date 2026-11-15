@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "@greendex/database";
 import {
   claimsTable,
+  hostProjectAssignmentsTable as hostAssignments,
   principalQuotaCounters as counters,
   projectsTable,
   user,
@@ -225,7 +226,7 @@ describe("projects procedures", () => {
       expect(detail).toMatchObject({
         completedAt: result.completedAt,
         completedByUserId: actor,
-        completedByUserName: stored?.completedByUserName,
+        completedByUserName: stored!.completedByUserName,
       });
       // `daysLeft` is whole days from the procedure's own clock read. Compare
       // against a stable interval: an exact recomputation can differ by one
@@ -1060,6 +1061,29 @@ describe("projects procedures", () => {
         search: "Picker Assigned Project",
       });
       expect(assigned.rows.map((row) => row.id)).toEqual([assignedProject]);
+    });
+
+    it("lists every assigned Hosted Project and nothing else", async () => {
+      // Story 4: assignment to one Project must not hide another assigned one.
+      await db
+        .insert(hostAssignments)
+        .values({ projectId: unassignedProject, userId: coord });
+      try {
+        const result = await client.projects.listHosted({ pageSize: 25 });
+        expect(result.rows.map((row) => row.id).sort()).toEqual(
+          [assignedProject, unassignedProject].sort(),
+        );
+        expect(result.metrics.whole.projectCount).toBe(2);
+      } finally {
+        await db
+          .delete(hostAssignments)
+          .where(
+            and(
+              eq(hostAssignments.projectId, unassignedProject),
+              eq(hostAssignments.userId, coord),
+            ),
+          );
+      }
     });
 
     it("announces the Hosted scope exactly for coordinators with assignment", async () => {
