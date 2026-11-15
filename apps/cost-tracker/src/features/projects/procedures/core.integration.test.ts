@@ -351,6 +351,36 @@ describe("projects procedures", () => {
       expect(detail).not.toHaveProperty("hostAssignments");
     });
 
+    it("keeps an expired Project's daysLeft negative inside the final 24 hours", async () => {
+      // Math.ceil collapses (-1h / 24h) to -0, which reads as "0 days left"
+      // instead of "Ended". Restore the seeded dates afterwards.
+      const [original] = await db
+        .select({
+          startDate: projectsTable.startDate,
+          endDate: projectsTable.endDate,
+        })
+        .from(projectsTable)
+        .where(eq(projectsTable.id, projectId));
+      const endedAt = new Date(Date.now() - 60 * 60 * 1000);
+      await db
+        .update(projectsTable)
+        .set({
+          startDate: new Date(endedAt.getTime() - 86_400_000),
+          endDate: endedAt,
+        })
+        .where(eq(projectsTable.id, projectId));
+      try {
+        const detail = await client.projects.get({ projectId });
+        expect(detail.daysLeft).toBe(-1);
+        expect(Object.is(detail.daysLeft, -0)).toBe(false);
+      } finally {
+        await db
+          .update(projectsTable)
+          .set(original!)
+          .where(eq(projectsTable.id, projectId));
+      }
+    });
+
     it("returns only the active Partner assignment and Hosting identity", async () => {
       useSession(partnerId);
 

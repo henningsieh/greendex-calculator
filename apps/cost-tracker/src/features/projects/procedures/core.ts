@@ -336,6 +336,13 @@ export const getProject = authorized
       throw createSituationErrors(errors).projectNotFound();
     }
 
+    // Whole days until endDate, never -0: inside the final 24 hours after
+    // expiry Math.ceil collapses to -0, which the workspace reads as
+    // "0 days left" instead of "Ended". Every other past date keeps its
+    // negative magnitude.
+    const msLeft = relationship.endDate.getTime() - Date.now();
+    const roundedDays = Math.ceil(msLeft / 86_400_000);
+    const daysLeft = roundedDays === 0 && msLeft < 0 ? -1 : roundedDays;
     const project = {
       id: relationship.projectId,
       name: relationship.name,
@@ -349,9 +356,7 @@ export const getProject = authorized
       completedByUserId: relationship.completedByUserId,
       completedByUserName: relationship.completedByUserName,
       participantCount: relationship.participantCount,
-      daysLeft: Math.ceil(
-        (relationship.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
-      ),
+      daysLeft,
     };
 
     if (relationship.kind === "partner") {
