@@ -30,7 +30,7 @@ type ProjectListSectionProps = {
  * fails closed. Procedures enforce authoritatively; this only decides what
  * to render.
  */
-async function hasStaffMembership(): Promise<boolean> {
+async function resolveStaffMembership(): Promise<boolean> {
   try {
     // Lazy so light rendering or test environments never load the
     // auth/email/env chain unless this gate runs.
@@ -64,7 +64,7 @@ export async function ProjectListSection({
   searchParams,
 }: ProjectListSectionProps) {
   const queryClient = getQueryClient();
-  const [urlState, availableScopes, hasStaffStanding] = await Promise.all([
+  const [urlState, availableScopes, hasStaffMembership] = await Promise.all([
     loadProjectListSearchParams(searchParams),
     queryClient
       .query(getProjectAvailableScopesQueryOptions())
@@ -73,7 +73,7 @@ export async function ProjectListSection({
     // for participants and staff alike), so the scope-less Empty branches on
     // staff standing resolved above. getSession is cached, so this shares
     // the shell's lookup.
-    hasStaffMembership(),
+    resolveStaffMembership(),
   ]);
 
   if (availableScopes) {
@@ -97,7 +97,7 @@ export async function ProjectListSection({
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Projects">
-        <ProjectList hasStaffMembership={hasStaffStanding} />
+        <ProjectList hasStaffMembership={hasStaffMembership} />
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );
