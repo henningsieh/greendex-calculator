@@ -225,7 +225,7 @@ describe("projects procedures", () => {
       expect(detail).toMatchObject({
         completedAt: result.completedAt,
         completedByUserId: actor,
-        completedByUserName: stored?.completedByUserName ?? expect.any(String),
+        completedByUserName: stored?.completedByUserName,
       });
       // `daysLeft` is whole days from the procedure's own clock read. Compare
       // against a stable interval: an exact recomputation can differ by one

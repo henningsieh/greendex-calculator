@@ -9,11 +9,11 @@ import { hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 import { getSession } from "@/lib/session";
 
 /**
- * Presentation-only owner/admin check for the Organization page and nav entry.
- * Procedures enforce the same rule authoritatively; this helper only decides
- * what to render. Fail-closed: any lookup failure hides management UI.
+ * Resolves the caller's role in the active Organization for presentation-only
+ * gates. Fail-closed: any lookup failure yields `undefined`, so callers hide
+ * UI they cannot justify. Procedures enforce authoritatively regardless.
  */
-export async function canManageOrganization(): Promise<boolean> {
+export async function resolveActiveMembershipRole(): Promise<string | undefined> {
   try {
     // Lazy so pages that only need the assignment gate below never load the
     // auth/email/env chain in light rendering or test environments.
@@ -29,17 +29,26 @@ export async function canManageOrganization(): Promise<boolean> {
     const membership = organization?.members.find(
       (entry) => entry.userId === session?.user.id,
     );
-    const role = membership?.role ?? "";
-    return (
-      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) ||
-      hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
-    );
+    return membership?.role ?? undefined;
   } catch (error) {
     // Prerender interruptions are framework control flow, not access denials.
     unstable_rethrow(error);
-    console.error("Organization management access lookup failed", { error });
-    return false;
+    console.error("Active Organization role lookup failed", { error });
+    return undefined;
   }
+}
+
+/**
+ * Presentation-only owner/admin check for the Organization page and nav entry.
+ * Procedures enforce the same rule authoritatively; this helper only decides
+ * what to render.
+ */
+export async function canManageOrganization(): Promise<boolean> {
+  const role = (await resolveActiveMembershipRole()) ?? "";
+  return (
+    hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationOwner) ||
+    hasOrganizationRole(role, ORGANIZATION_ROLES.OrganizationAdmin)
+  );
 }
 
 /**

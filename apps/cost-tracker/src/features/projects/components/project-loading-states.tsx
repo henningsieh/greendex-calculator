@@ -99,8 +99,8 @@ export function ProjectWorkspaceSkeleton() {
         <StatsSkeletonGrid />
         <div className="grid items-start gap-4 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
-            {Array.from({ length: 3 }, (_, index) => (
-              <div className="flex items-center gap-3" key={index}>
+            {["a", "b", "c"].map((slot) => (
+              <div className="flex items-center gap-3" key={slot}>
                 <Skeleton
                   className="size-5 shrink-0"
                   data-testid="loading-skeleton"

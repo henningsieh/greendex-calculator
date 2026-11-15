@@ -1,7 +1,5 @@
-import { headers } from "next/headers";
-import { unstable_rethrow } from "next/navigation";
-
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
+import { resolveActiveMembershipRole } from "@/features/organizations/access";
 import { isStaffOrganizationRole } from "@/features/organizations/staff-eligibility";
 import { ProjectList } from "@/features/projects/components/project-list";
 import {
@@ -11,7 +9,6 @@ import {
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
-import { getSession } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -26,33 +23,11 @@ type ProjectListSectionProps = {
  * Presentation-only staff check for the scope-less Empty: members with staff
  * standing (owner/admin/coordinator) in the active Organization see the
  * guidance Empty, everyone else keeps the unavailable Empty. Pure
- * participants are not staff (spec #407 story 9), and any lookup failure
- * fails closed. Procedures enforce authoritatively; this only decides what
- * to render.
+ * participants are not staff (spec #407 story 9). Shares the single
+ * active-role lookup with the other presentation gates.
  */
 async function resolveStaffMembership(): Promise<boolean> {
-  try {
-    // Lazy so light rendering or test environments never load the
-    // auth/email/env chain unless this gate runs.
-    const { auth } = await import("@/lib/auth");
-    const requestHeaders = await headers();
-    // Sequential on purpose: `getSession()` suspends the render before Better
-    // Auth validates the session against the clock, so `getFullOrganization`
-    // must not start reading the clock concurrently in a `Promise.all`.
-    const session = await getSession();
-    const organization = await auth.api.getFullOrganization({
-      headers: requestHeaders,
-    });
-    const membership = organization?.members.find(
-      (entry) => entry.userId === session?.user.id,
-    );
-    return isStaffOrganizationRole(membership?.role);
-  } catch (error) {
-    // Prerender interruptions are framework control flow, not access denials.
-    unstable_rethrow(error);
-    console.error("Staff project access lookup failed", { error });
-    return false;
-  }
+  return isStaffOrganizationRole(await resolveActiveMembershipRole());
 }
 
 /**

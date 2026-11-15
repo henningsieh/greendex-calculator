@@ -3,7 +3,6 @@
 import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import * as Flags from "country-flag-icons/react/3x2";
 import { CalendarDaysIcon, CheckIcon, MapPinIcon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -19,6 +18,7 @@ import {
   StatLabel,
   StatNumber,
 } from "@/components/brand/stat-grid";
+import { CountryFlag } from "@/components/country-flag";
 import { EntityIcon } from "@/components/entity-icon";
 import { ErrorPresentation } from "@/components/error-presentation/error-presentation";
 import ProtectedPageHeader from "@/components/protected-page-header";
@@ -31,6 +31,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
 import {
   type ClaimStatus,
   canCompleteProject,
@@ -75,18 +76,6 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {labels[status]}
     </Badge>
-  );
-}
-
-function CountryFlag({ country }: { country: string }) {
-  const Flag = Flags[country as keyof typeof Flags] as
-    | React.ComponentType<{ className?: string }>
-    | undefined;
-  if (!Flag) return null;
-  return (
-    <span className="inline-flex h-4 w-6 shrink-0 overflow-hidden rounded-sm border border-border">
-      <Flag aria-hidden={true} className="size-full" />
-    </span>
   );
 }
 
@@ -285,7 +274,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           <div className="min-w-0 space-y-0.5">
             <p className="text-xs text-muted-foreground">{t("location")}</p>
             <p className="flex items-center gap-2 text-sm font-medium">
-              <CountryFlag country={project.country} />
+              <CountryFlag code={project.country} />
               <span className="truncate">
                 {[project.location, project.country].filter(Boolean).join(", ")}
               </span>
@@ -334,18 +323,19 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           </CardHeader>
           <CardContent className="space-y-5">
             {project.partnerOrganizations.length === 0 ? (
-              <p
-                data-testid="assigned-partnerships-empty"
-                className="space-y-2 rounded-2xl border p-8 text-center text-sm text-muted-foreground"
-              >
-                {t("noPartners")}{" "}
-                <Link
-                  className={buttonVariants({ variant: "link" })}
-                  href="/partner-organizations"
-                >
-                  {t("invitePartners")}
-                </Link>
-              </p>
+              <Empty data-testid="assigned-partnerships-empty" variant="outlined">
+                <EmptyHeader>
+                  <EmptyDescription>
+                    {t("noPartners")}{" "}
+                    <Link
+                      className={buttonVariants({ variant: "link" })}
+                      href="/partner-organizations"
+                    >
+                      {t("invitePartners")}
+                    </Link>
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               <ul className="divide-y divide-border">
                 {project.partnerOrganizations.map((partner) => (

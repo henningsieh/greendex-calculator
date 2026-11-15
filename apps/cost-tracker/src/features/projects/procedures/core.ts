@@ -32,6 +32,8 @@ import {
   ProjectListScopeAvailabilitySchema,
 } from "@/features/projects/validation-schemas";
 import { createSituationErrors } from "@/lib/orpc/errors";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 export type ProjectRelationship =
@@ -341,7 +343,7 @@ export const getProject = authorized
     // "0 days left" instead of "Ended". Every other past date keeps its
     // negative magnitude.
     const msLeft = relationship.endDate.getTime() - Date.now();
-    const roundedDays = Math.ceil(msLeft / 86_400_000);
+    const roundedDays = Math.ceil(msLeft / MS_PER_DAY);
     const daysLeft = roundedDays === 0 && msLeft < 0 ? -1 : roundedDays;
     const project = {
       id: relationship.projectId,

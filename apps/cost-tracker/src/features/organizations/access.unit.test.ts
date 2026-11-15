@@ -24,6 +24,7 @@ vi.mock("@/features/partnerships/procedures/assigned-partnerships", () => ({
 import {
   canManageOrganization,
   canViewPartnerNetwork,
+  resolveActiveMembershipRole,
 } from "@/features/organizations/access";
 
 beforeEach(() => {
@@ -37,6 +38,35 @@ beforeEach(() => {
   });
   mocks.hasPermissions.mockResolvedValue(false);
   mocks.assigned.mockResolvedValue([]);
+});
+
+describe("Active Organization role resolution", () => {
+  it("returns the caller's role in the active Organization", async () => {
+    mocks.getFullOrganization.mockResolvedValue({
+      members: [
+        { userId: "someone-else", role: "owner" },
+        { userId: "user", role: "project-coordinator" },
+      ],
+    });
+    expect(await resolveActiveMembershipRole()).toBe("project-coordinator");
+  });
+
+  it("returns undefined when the caller has no membership", async () => {
+    mocks.getFullOrganization.mockResolvedValue({
+      members: [{ userId: "someone-else", role: "owner" }],
+    });
+    expect(await resolveActiveMembershipRole()).toBeUndefined();
+  });
+
+  it("fails closed when the lookup rejects", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.getFullOrganization.mockRejectedValue(new Error("unavailable"));
+    try {
+      expect(await resolveActiveMembershipRole()).toBeUndefined();
+    } finally {
+      log.mockRestore();
+    }
+  });
 });
 
 describe("Organization presentation access failures", () => {
@@ -109,7 +139,9 @@ describe("Organization presentation access failures", () => {
       try {
         expect(await check()).toBe(false);
         expect(log).toHaveBeenCalledWith(
-          expect.stringContaining("access lookup failed"),
+          expect.stringMatching(
+            /role lookup failed|network lookup failed|lookup failed/,
+          ),
           { error },
         );
       } finally {
