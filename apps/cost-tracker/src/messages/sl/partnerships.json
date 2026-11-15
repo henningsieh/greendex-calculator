@@ -77,7 +77,10 @@
       "invitationRejected": "Zavrnili ste vabilo v {organization}. Vaš trenutni dostop je bil znova preverjen. Sledite naslednjemu koraku spodaj.",
       "invite": "Invite partner",
       "invitationColumn": "Invitation",
-      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}"
+      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}",
+      "searchLabel": "Filter invitations",
+      "searchPlaceholder": "Filter by project or email…",
+      "emptySearch": "No invitations match this filter."
     },
     "partnerOrganizations": {
       "page": {

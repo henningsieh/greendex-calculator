@@ -77,7 +77,10 @@
       "invitationRejected": "Je hebt de uitnodiging voor {organization} afgewezen. Je huidige toegang is opnieuw gecontroleerd. Volg de volgende stap hieronder.",
       "invite": "Invite partner",
       "invitationColumn": "Invitation",
-      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}"
+      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}",
+      "searchLabel": "Filter invitations",
+      "searchPlaceholder": "Filter by project or email…",
+      "emptySearch": "No invitations match this filter."
     },
     "partnerOrganizations": {
       "page": {

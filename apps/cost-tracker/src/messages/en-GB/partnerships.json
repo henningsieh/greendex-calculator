@@ -77,7 +77,10 @@
       "invitationRejected": "You rejected the invitation to {organization}. Your current access has been checked again. Follow the next step below.",
       "invite": "Invite partner",
       "invitationColumn": "Invitation",
-      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}"
+      "openSummary": "{count, plural, one {# open invitation} other {# open invitations}}",
+      "searchLabel": "Filter invitations",
+      "searchPlaceholder": "Filter by project or email…",
+      "emptySearch": "No invitations match this filter."
     },
     "partnerOrganizations": {
       "page": {
