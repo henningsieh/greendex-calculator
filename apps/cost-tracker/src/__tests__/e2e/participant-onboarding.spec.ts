@@ -832,9 +832,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     const c = await pageFor(browser, "C", baseURL!);
     await c.goto("/projects");
     // Text-free: empty-state hook instead of visible copy.
-    await expect(
-      c.locator('[data-testid="assigned-projects-empty"]'),
-    ).toBeVisible();
+    await expect(c.locator('[data-testid="projects-empty"]')).toBeVisible();
     await expect(c.locator(`a[href$="/projects/${ids.main}"]`)).toHaveCount(0);
     await p.getByTestId("assign-group-organizer").click();
     await expect(
@@ -892,9 +890,7 @@ test.describe.serial("Participant onboarding journey G2 and 14–19", () => {
     ]);
     await c.goto("/projects");
     // Text-free: empty-state hook instead of visible copy.
-    await expect(
-      c.locator('[data-testid="assigned-projects-empty"]'),
-    ).toBeVisible();
+    await expect(c.locator('[data-testid="projects-empty"]')).toBeVisible();
     await expect(c.locator(`a[href$="/projects/${ids.main}"]`)).toHaveCount(0);
     await c.goto(participantsURL);
     await expect(
