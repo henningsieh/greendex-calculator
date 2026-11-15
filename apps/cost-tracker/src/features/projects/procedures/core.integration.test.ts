@@ -719,7 +719,6 @@ describe("projects procedures", () => {
         expect(await client.projects.scopes()).toEqual({
           hosted: false,
           partner: false,
-          canCreate: userIdValue !== SEED_IDS.user.projectsUser12,
         });
       },
     );
@@ -728,21 +727,18 @@ describe("projects procedures", () => {
       expect(await client.projects.scopes()).toEqual({
         hosted: true,
         partner: false,
-        canCreate: true,
       });
 
       useActiveOrganization(partnerId);
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: true,
-        canCreate: false,
       });
 
       useActiveOrganization(unrelatedId);
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: false,
-        canCreate: false,
       });
     });
   });
@@ -849,7 +845,6 @@ describe("projects procedures", () => {
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: true,
-        canCreate: true,
       });
     });
 
@@ -950,7 +945,6 @@ describe("projects procedures", () => {
       expect(await client.projects.scopes()).toEqual({
         hosted: false,
         partner: false,
-        canCreate: true,
       });
       await expect(
         client.projects.listPartner({ pageSize: 25 }),
@@ -1033,6 +1027,13 @@ describe("projects procedures", () => {
       expect(assigned.rows.map((row) => row.id)).toEqual([assignedProject]);
     });
 
+    it("announces the Hosted scope exactly for coordinators with assignment", async () => {
+      expect(await client.projects.scopes()).toEqual({
+        hosted: true,
+        partner: false,
+      });
+    });
+
     it("denies coordinators without assignment with the management reason", async () => {
       // Pins the consolidated denial: dropping the unreadable-permission
       // middleware moves permission-less coordinators to the handler's
@@ -1043,6 +1044,10 @@ describe("projects procedures", () => {
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
         data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+      });
+      expect(await client.projects.scopes()).toEqual({
+        hosted: false,
+        partner: false,
       });
     });
 

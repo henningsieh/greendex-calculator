@@ -7,7 +7,6 @@ import {
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
-import { orpcQuery } from "@/lib/orpc/orpc";
 import {
   getQueryClient,
   HydrateClient,
@@ -49,15 +48,6 @@ export async function ProjectListSection({
               getProjectListQueryOptions("partner", resolution.state),
             )
       ).catch(swallowPrefetchError);
-    } else if (availableScopes.canCreate) {
-      await queryClient
-        .query(
-          orpcQuery.projects.searchHosted.queryOptions({
-            input: { search: "" },
-            meta: { costTrackerORPC: true },
-          }),
-        )
-        .catch(swallowPrefetchError);
     }
   }
 

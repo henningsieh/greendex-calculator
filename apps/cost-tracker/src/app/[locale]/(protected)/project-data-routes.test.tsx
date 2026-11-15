@@ -353,21 +353,6 @@ describe("Cost Tracker Project data routes", () => {
     expect(screen.getByTestId("project-list")).toBeInTheDocument();
   });
 
-  it("prefetches the assigned-project branch when creation is allowed without a list scope", async () => {
-    mocks.availableScopes.mockResolvedValue({
-      hosted: false,
-      partner: false,
-      canCreate: true,
-    });
-
-    render(await RealProjectListSection({ searchParams: Promise.resolve({}) }));
-
-    expect(mocks.getListOptions).not.toHaveBeenCalled();
-    expect(mocks.query).toHaveBeenNthCalledWith(2, {
-      queryKey: ["projects", "search-hosted"],
-    });
-  });
-
   it("prefetches Hosted Projects without a stale Partner cursor", async () => {
     mocks.availableScopes.mockResolvedValue({ hosted: true, partner: false });
 

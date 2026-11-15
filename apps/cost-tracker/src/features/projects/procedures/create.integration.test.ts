@@ -154,7 +154,10 @@ describe("projects.create", () => {
       code: "FORBIDDEN",
       data: { reason: "HOSTING_STAFF_REQUIRED" },
     });
-    expect((await client.projects.scopes()).canCreate).toBe(false);
+    expect(await client.projects.scopes()).toEqual({
+      hosted: false,
+      partner: false,
+    });
     expect(await role()).toBe(ORGANIZATION_ROLES.Participant);
     expect(await assignments()).toEqual([]);
     expect(

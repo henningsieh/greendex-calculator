@@ -43,7 +43,6 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
     queryFn: async () => ({
       hosted: true,
       partner: true,
-      canCreate: mocks.canCreate,
     }),
   }),
   getProjectListQueryOptions: (
