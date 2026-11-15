@@ -232,7 +232,7 @@ describe("projects procedures", () => {
       // against a stable interval: an exact recomputation can differ by one
       // when the two Date.now() calls straddle a day boundary.
       const expectedDaysLeft = Math.ceil(
-        (stored!.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+        (stored!.endDate.getTime() - Date.now()) / 86_400_000,
       );
       expect(detail.daysLeft).toBeGreaterThanOrEqual(expectedDaysLeft - 1);
       expect(detail.daysLeft).toBeLessThanOrEqual(expectedDaysLeft + 1);
@@ -1065,16 +1065,31 @@ describe("projects procedures", () => {
 
     it("lists every assigned Hosted Project and nothing else", async () => {
       // Story 4: assignment to one Project must not hide another assigned one.
+      const outsiderProject = randomUUID();
+      await db.insert(projectsTable).values({
+        id: outsiderProject,
+        name: "Hosted discovery outsider",
+        startDate: new Date("2027-04-01"),
+        endDate: new Date("2027-04-03"),
+        location: "Berlin",
+        country: "DE",
+        organizationId: host,
+      });
       await db
         .insert(hostAssignments)
         .values({ projectId: unassignedProject, userId: coord });
       try {
         const result = await client.projects.listHosted({ pageSize: 25 });
+        // Both assigned Projects, and neither the unassigned sibling nor the
+        // unrelated third Project of the same Organization.
         expect(result.rows.map((row) => row.id).sort()).toEqual(
           [assignedProject, unassignedProject].sort(),
         );
         expect(result.metrics.whole.projectCount).toBe(2);
       } finally {
+        await db
+          .delete(projectsTable)
+          .where(eq(projectsTable.id, outsiderProject));
         await db
           .delete(hostAssignments)
           .where(
