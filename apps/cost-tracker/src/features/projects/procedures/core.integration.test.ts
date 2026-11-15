@@ -1066,19 +1066,21 @@ describe("projects procedures", () => {
     it("lists every assigned Hosted Project and nothing else", async () => {
       // Story 4: assignment to one Project must not hide another assigned one.
       const outsiderProject = randomUUID();
-      await db.insert(projectsTable).values({
-        id: outsiderProject,
-        name: "Hosted discovery outsider",
-        startDate: new Date("2027-04-01"),
-        endDate: new Date("2027-04-03"),
-        location: "Berlin",
-        country: "DE",
-        organizationId: host,
-      });
-      await db
-        .insert(hostAssignments)
-        .values({ projectId: unassignedProject, userId: coord });
+      // Fixtures are created inside `try` so a failure before the assertions
+      // cannot leak rows into later tests.
       try {
+        await db.insert(projectsTable).values({
+          id: outsiderProject,
+          name: "Hosted discovery outsider",
+          startDate: new Date("2027-04-01"),
+          endDate: new Date("2027-04-03"),
+          location: "Berlin",
+          country: "DE",
+          organizationId: host,
+        });
+        await db
+          .insert(hostAssignments)
+          .values({ projectId: unassignedProject, userId: coord });
         const result = await client.projects.listHosted({ pageSize: 25 });
         // Both assigned Projects, and neither the unassigned sibling nor the
         // unrelated third Project of the same Organization.
@@ -1088,9 +1090,6 @@ describe("projects procedures", () => {
         expect(result.metrics.whole.projectCount).toBe(2);
       } finally {
         await db
-          .delete(projectsTable)
-          .where(eq(projectsTable.id, outsiderProject));
-        await db
           .delete(hostAssignments)
           .where(
             and(
@@ -1098,6 +1097,9 @@ describe("projects procedures", () => {
               eq(hostAssignments.userId, coord),
             ),
           );
+        await db
+          .delete(projectsTable)
+          .where(eq(projectsTable.id, outsiderProject));
       }
     });
 
