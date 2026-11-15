@@ -38,6 +38,9 @@ vi.mock("@/features/projects/components/project-list-section", () => ({
     <p data-testid="project-list-section">Project list section</p>
   ),
 }));
+vi.mock("@/features/partnerships/components/partner-network-guide", () => ({
+  PartnerNetworkGuide: () => <p data-testid="partner-network-guide" />,
+}));
 vi.mock("@/features/partnerships/components/project-partnership-section", () => ({
   ProjectPartnershipSection: ({ canAssign }: { canAssign: boolean }) => (
     <p data-can-assign={canAssign} data-testid="project-partnership-section">
