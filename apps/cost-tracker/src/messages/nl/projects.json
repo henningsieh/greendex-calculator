@@ -101,7 +101,6 @@
         "rejected": "Rejected",
         "paid": "Paid"
       },
-      "participantsReport": "Participants report",
       "projectParticipations": "Project Participations",
       "statPartners": "Partners",
       "statParticipants": "Participants",
@@ -115,7 +114,8 @@
       "statParticipantsDetail": "have joined so far",
       "claimsInReviewDetail": "need a decision",
       "daysUntil": "until {date}",
-      "claimReview": "Claim review"
+      "claimReview": "Claim review",
+      "participants": "Participants"
     }
   }
 }

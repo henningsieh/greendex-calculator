@@ -101,7 +101,6 @@
         "rejected": "Abgelehnt",
         "paid": "Ausgezahlt"
       },
-      "participantsReport": "Teilnehmendenbericht",
       "projectParticipations": "Project Participations",
       "statPartners": "Partner",
       "statParticipants": "Teilnehmende",
@@ -115,7 +114,8 @@
       "statParticipantsDetail": "bisher dabei",
       "claimsInReviewDetail": "warten auf Entscheidung",
       "daysUntil": "bis {date}",
-      "claimReview": "Claim-Prüfung"
+      "claimReview": "Claim-Prüfung",
+      "participants": "Teilnehmende"
     }
   }
 }

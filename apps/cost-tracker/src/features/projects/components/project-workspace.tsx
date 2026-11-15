@@ -253,57 +253,77 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
 
       <section
         aria-label={t("details")}
-        className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+        className="flex items-start justify-between gap-6"
       >
-        <div className="flex gap-3">
-          <CalendarDaysIcon
-            aria-hidden="true"
-            className="size-5 shrink-0 text-muted-foreground"
-          />
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-xs text-muted-foreground">{t("schedule")}</p>
-            <p className="text-sm font-medium">
-              {dateFormat.range(project.startDate, project.endDate, "date.long")}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <MapPinIcon
-            aria-hidden="true"
-            className="size-5 shrink-0 text-muted-foreground"
-          />
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-xs text-muted-foreground">{t("location")}</p>
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <CountryFlag code={project.country} />
-              <span className="truncate">
-                {[project.location, project.country].filter(Boolean).join(", ")}
-              </span>
-            </p>
-          </div>
-        </div>
-        {project.completedAt && (
-          <div
-            className="flex gap-3"
-            data-completed-at={project.completedAt.toISOString()}
-            data-completed-by-user-id={project.completedByUserId}
-          >
-            <CheckIcon
+        {/* Facts stack on phones and share one row from sm; the Participants
+            entry always sits at the trailing edge, never inside the column. */}
+        <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row sm:flex-wrap sm:gap-x-8">
+          <div className="flex gap-3">
+            <CalendarDaysIcon
               aria-hidden="true"
               className="size-5 shrink-0 text-muted-foreground"
             />
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs text-muted-foreground">{t("completed")}</p>
+              <p className="text-xs text-muted-foreground">{t("schedule")}</p>
               <p className="text-sm font-medium">
-                {dateFormat.format(project.completedAt, "dateTime.short")}
-                {project.completedByUserName ? (
-                  <span className="font-normal text-muted-foreground">
-                    {" "}
-                    {t("by")} {project.completedByUserName}
-                  </span>
-                ) : null}
+                {dateFormat.range(
+                  project.startDate,
+                  project.endDate,
+                  "date.long",
+                )}
               </p>
             </div>
+          </div>
+          <div className="flex gap-3">
+            <MapPinIcon
+              aria-hidden="true"
+              className="size-5 shrink-0 text-muted-foreground"
+            />
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-xs text-muted-foreground">{t("location")}</p>
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <CountryFlag code={project.country} />
+                <span className="truncate">
+                  {[project.location, project.country].filter(Boolean).join(", ")}
+                </span>
+              </p>
+            </div>
+          </div>
+          {project.completedAt && (
+            <div
+              className="flex gap-3"
+              data-completed-at={project.completedAt.toISOString()}
+              data-completed-by-user-id={project.completedByUserId}
+            >
+              <CheckIcon
+                aria-hidden="true"
+                className="size-5 shrink-0 text-muted-foreground"
+              />
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-xs text-muted-foreground">{t("completed")}</p>
+                <p className="text-sm font-medium">
+                  {dateFormat.format(project.completedAt, "dateTime.short")}
+                  {project.completedByUserName ? (
+                    <span className="font-normal text-muted-foreground">
+                      {" "}
+                      {t("by")} {project.completedByUserName}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        {project.relationship === "hosted" && (
+          <div className="flex shrink-0 items-center">
+            <Link
+              className={buttonVariants({ variant: "link", size: "sm" })}
+              href={projectParticipantsPath(project.id)}
+              data-testid="hosted-participants"
+            >
+              <UsersIcon aria-hidden="true" />
+              {t("participants")}
+            </Link>
           </div>
         )}
       </section>
@@ -399,19 +419,6 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                 ))}
               </ul>
             )}
-            <div className="flex flex-wrap gap-2">
-              <Link
-                className={buttonVariants({
-                  variant: "outline",
-                  size: "sm",
-                })}
-                href={projectParticipantsPath(project.id)}
-                data-testid="hosted-participants"
-              >
-                <UsersIcon aria-hidden="true" />
-                {t("participantsReport")}
-              </Link>
-            </div>
           </CardContent>
         </Card>
       ) : (
