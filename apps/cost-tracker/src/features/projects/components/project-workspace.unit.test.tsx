@@ -94,11 +94,12 @@ describe("Project workspace", () => {
     expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
     expect(screen.getByTestId("stat-partners")).toBeInTheDocument();
     expect(screen.getByTestId("stat-participants")).toBeInTheDocument();
-    // Each Partnership row is the way into its Claim review page, which now
-    // hangs under this Hosted Project in the breadcrumb.
+    // Without a Claim the review affordance stays visible but inert: no dead
+    // end, and no link to a page that has nothing to review.
+    expect(screen.getByTestId("review-claim-partnership-1")).toBeDisabled();
     expect(
-      screen.getByTestId("review-claim-partnership-1").getAttribute("href"),
-    ).toBe("/en-GB/partnerships/partnership-1/claim/review");
+      screen.getByTestId("review-claim-partnership-1").closest("a"),
+    ).toBeNull();
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
     expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
       "/en-GB/projects/project-1/participants",
@@ -176,6 +177,11 @@ describe("Project workspace", () => {
         status,
       );
     }
+    // A Claim that exists links to its review page, which hangs under this
+    // Hosted Project in the breadcrumb.
+    expect(
+      screen.getByTestId("review-claim-partnership-4").getAttribute("href"),
+    ).toBe("/en-GB/partnerships/partnership-4/claim/review");
     // Only `submitted` awaits a Hosting decision: a correction request reopens
     // Partner editing, and every other status is decided or unsubmitted.
     expect(screen.getByTestId("stat-open-claims")).toHaveAttribute(

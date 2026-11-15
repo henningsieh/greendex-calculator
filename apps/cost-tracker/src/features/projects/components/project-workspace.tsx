@@ -367,17 +367,33 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                       {/* The review page hangs under this Hosted Project, so
                           the row is its way in: the global queue also lists
                           every submitted Claim, this links one Partnership. */}
-                      <Link
-                        className={buttonVariants({
-                          variant: "link",
-                          size: "sm",
-                        })}
-                        href={partnershipClaimReviewPath(partner.id)}
-                        data-testid={`review-claim-${partner.id}`}
-                      >
-                        <EntityIcon entity="claim" className="size-3.5" />
-                        {t("claimReview")}
-                      </Link>
+                      {partner.claimStatus ? (
+                        <Link
+                          className={buttonVariants({
+                            variant: "link",
+                            size: "sm",
+                          })}
+                          href={partnershipClaimReviewPath(partner.id)}
+                          data-testid={`review-claim-${partner.id}`}
+                        >
+                          <EntityIcon entity="claim" className="size-3.5" />
+                          {t("claimReview")}
+                        </Link>
+                      ) : (
+                        // No Claim exists for this Partnership yet: keep the
+                        // affordance visible but inert, so the row reads the
+                        // same for every Partner without offering a dead end.
+                        <Button
+                          data-testid={`review-claim-${partner.id}`}
+                          disabled
+                          size="sm"
+                          type="button"
+                          variant="link"
+                        >
+                          <EntityIcon entity="claim" className="size-3.5" />
+                          {t("claimReview")}
+                        </Button>
+                      )}
                     </span>
                   </li>
                 ))}
