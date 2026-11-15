@@ -74,7 +74,6 @@
       "page": {
         "eyebrow": "Projektnetzwerk",
         "title": "Partnerorganisationen",
-        "restricted": "Die Verwaltung von Partnerorganisationen ist für das Personal der Hosting-Organisation verfügbar. Koordinator:innen arbeiten aus ihren zugewiesenen Projekten.",
         "description": "Erstelle Setup-Links für gehostete Projekte oder weise bestehende Partnerorganisationen zu, wenn deine Rolle es erlaubt."
       }
     },

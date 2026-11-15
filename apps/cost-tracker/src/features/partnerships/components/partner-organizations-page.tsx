@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { Suspense } from "react";
 
 import ProtectedPageHeader from "@/components/protected-page-header";
-import { canViewPartnerNetwork } from "@/features/organizations/access";
+import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
 import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/partnership-loading-states";
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
@@ -19,20 +19,10 @@ export default async function PartnerOrganizationsPage() {
 
   const t = await getTranslations("partnerships.partnerOrganizations.page");
 
-  // Same gate as projectPartnerships.list: without it the section below
-  // would only render a denial. Assignment holders see their own rows.
-  if (!(await canViewPartnerNetwork())) {
-    return (
-      <div>
-        <ProtectedPageHeader
-          eyebrow={t("eyebrow")}
-          title={t("title")}
-          description={t("restricted")}
-        />
-      </div>
-    );
-  }
-
+  // No network gate here: viewers without access hit the page error boundary
+  // through the same denial projectPartnerships.list enforces. The boundary
+  // wraps header and sections too, so a denial replaces the whole page
+  // exactly like the Project workspace does.
   const canCreateProjectPartnership = await hasCostTrackerPermissions(
     await headers(),
     {
@@ -44,28 +34,30 @@ export default async function PartnerOrganizationsPage() {
   });
   return (
     <div>
-      <ProtectedPageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        description={t("description")}
-        rightButton={
-          canCreateProjectPartnership ? (
-            <Suspense fallback={<ProjectOptionsLoading />}>
-              <PartnershipActionsSection />
-            </Suspense>
-          ) : undefined
-        }
-      />
+      <ProjectDataErrorBoundary resource="Project Partnerships">
+        <ProtectedPageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          description={t("description")}
+          rightButton={
+            canCreateProjectPartnership ? (
+              <Suspense fallback={<ProjectOptionsLoading />}>
+                <PartnershipActionsSection />
+              </Suspense>
+            ) : undefined
+          }
+        />
 
-      {canCreateProjectPartnership && (
-        <section className="mt-10">
-          <SetupLinkList />
-        </section>
-      )}
+        {canCreateProjectPartnership && (
+          <section className="mt-10">
+            <SetupLinkList />
+          </section>
+        )}
 
-      <Suspense fallback={<ProjectPartnershipsSkeleton />}>
-        <ProjectPartnershipSection canAssign={canCreateProjectPartnership} />
-      </Suspense>
+        <Suspense fallback={<ProjectPartnershipsSkeleton />}>
+          <ProjectPartnershipSection canAssign={canCreateProjectPartnership} />
+        </Suspense>
+      </ProjectDataErrorBoundary>
     </div>
   );
 }

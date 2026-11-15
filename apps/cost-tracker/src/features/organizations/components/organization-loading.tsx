@@ -1,8 +1,5 @@
-import { getTranslations } from "@greendex/i18n/server";
+import { OrganizationPageSkeleton } from "@/features/organizations/components/organization-loading-states";
 
-import { PrefetchedPageSkeleton } from "@/components/prefetched-page-skeleton";
-
-export default async function Loading() {
-  const t = await getTranslations("organizations.loading");
-  return <PrefetchedPageSkeleton label={t("label")} />;
+export default function Loading() {
+  return <OrganizationPageSkeleton />;
 }

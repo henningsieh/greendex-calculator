@@ -1,4 +1,3 @@
-import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { ProjectPartnershipManager } from "@/features/partnerships/components/project-partnership-manager";
 import { orpcQuery } from "@/lib/orpc/orpc";
 import {
@@ -21,11 +20,12 @@ export async function ProjectPartnershipSection({
     )
     .catch(swallowPrefetchError);
 
+  // No local boundary: the page wraps everything (header included) in one
+  // ProjectDataErrorBoundary, so a denial replaces the whole page exactly
+  // like the Project workspace does.
   return (
     <HydrateClient client={queryClient}>
-      <ProjectDataErrorBoundary resource="Project Partnerships">
-        <ProjectPartnershipManager canAssign={canAssign} />
-      </ProjectDataErrorBoundary>
+      <ProjectPartnershipManager canAssign={canAssign} />
     </HydrateClient>
   );
 }

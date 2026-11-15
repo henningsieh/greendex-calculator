@@ -44,6 +44,10 @@ export function ProjectPartnershipManager({
   const { data: partnerships } = useSuspenseQuery(
     orpcQuery.projectPartnerships.list.queryOptions({
       meta: { costTrackerORPC: true },
+      // A failed refetch must reach the page boundary even when a list is
+      // cached: access can be revoked mid-session, and the denial fallback
+      // is the only wall this page has.
+      throwOnError: true,
     }),
   );
   const [feedback, setFeedback] = useState<PartnershipFeedback | undefined>();

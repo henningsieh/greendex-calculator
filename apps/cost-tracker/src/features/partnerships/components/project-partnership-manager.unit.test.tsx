@@ -1,10 +1,11 @@
 import { ORPCError } from "@orpc/client";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithMessages as render } from "@/__tests__/render-with-messages";
+import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { createQueryClient } from "@/lib/tanstack-react-query/client";
 
 const mocks = vi.hoisted(() => ({
@@ -230,5 +231,23 @@ describe("ProjectPartnershipManager", () => {
     });
     expect(trigger).toBeDisabled();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+  it("shows the denial fallback when the partnership list query fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mocks.list.mockRejectedValueOnce(
+      new ORPCError("FORBIDDEN", { message: "denied" }),
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ProjectDataErrorBoundary resource="Project Partnerships">
+          <ProjectPartnershipManager canAssign={false} />
+        </ProjectDataErrorBoundary>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByTestId("data-error-fallback")).toBeInTheDocument();
+    error.mockRestore();
   });
 });

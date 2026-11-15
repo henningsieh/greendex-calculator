@@ -203,9 +203,9 @@ describe("Cost Tracker Project data routes", () => {
       },
       user: { id: "user-1", name: "Viewer", email: "viewer@example.com" },
     });
-    mocks.hasCostTrackerPermissions
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false);
+    // The page performs a single create-permission check now; the removed
+    // network gate used to consume the first value of a true/false pair.
+    mocks.hasCostTrackerPermissions.mockResolvedValueOnce(false);
     render(<>{await PartnerOrganizationsPage()}</>);
     expect(
       screen
@@ -214,13 +214,15 @@ describe("Cost Tracker Project data routes", () => {
     ).toBe("false");
   });
 
-  it("shows a friendly note instead of a denial when nothing is viewable", async () => {
+  it("renders the section for viewers without assignment tools and leaves denial to the query boundary", async () => {
     mocks.hasCostTrackerPermissions.mockResolvedValue(false);
     render(<>{await PartnerOrganizationsPage()}</>);
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(
-      screen.queryByTestId("project-partnership-section"),
-    ).not.toBeInTheDocument();
+      screen
+        .getByTestId("project-partnership-section")
+        .getAttribute("data-can-assign"),
+    ).toBe("false");
   });
   beforeEach(() => {
     vi.clearAllMocks();
