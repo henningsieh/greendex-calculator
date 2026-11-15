@@ -411,16 +411,6 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                 <UsersIcon aria-hidden="true" />
                 {t("participantsReport")}
               </Link>
-              <Link
-                className={buttonVariants({
-                  variant: "link",
-                  size: "sm",
-                })}
-                href="/claims/review"
-              >
-                <EntityIcon entity="claim" className="size-3.5" />
-                {t("reviewClaims")}
-              </Link>
             </div>
           </CardContent>
         </Card>

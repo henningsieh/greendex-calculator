@@ -364,7 +364,7 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
     for (const page of [h, a]) {
       await page.goto(`/projects/${projectId}`);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(page.locator('main a[href$="/claims/review"]')).toBeVisible();
+      await expect(page.getByTestId("hosted-participants")).toBeVisible();
       await expect(page.getByTestId("organization-assignment")).toHaveCount(0);
     }
     const partner = await pageFor(browser, "P", baseURL!);

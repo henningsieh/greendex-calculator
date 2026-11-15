@@ -244,7 +244,7 @@ test.describe.serial("Hosting Organization journey section 1", () => {
       await page.goto(mainProjectURL);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
-      await expect(page.locator('main a[href$="/claims/review"]')).toBeVisible();
+      await expect(page.getByTestId("hosted-participants")).toBeVisible();
     }
   });
 });
