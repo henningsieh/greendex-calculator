@@ -1178,7 +1178,10 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       await issueThroughUI(page, fixture.projectNames[2]!, actors.F.email),
     ];
     const idFrom = (url: string) => new URL(url).pathname.split("/").at(-1)!;
+    const showInvitations = () =>
+      page.getByTestId("partner-organizations-tab-invitations").click();
     await page.reload();
+    await showInvitations();
     const list = page.getByTestId("setup-links");
     for (const id of issuedLinks)
       await expect(list.locator(`[data-setup-link-id="${id}"]`)).toHaveCount(1);
@@ -1196,6 +1199,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
           .locator('[data-link-status="open"]'),
       ).toBeVisible();
     await page.reload();
+    await showInvitations();
     await expect(closedRow.locator('[data-link-status="closed"]')).toBeVisible();
   });
 

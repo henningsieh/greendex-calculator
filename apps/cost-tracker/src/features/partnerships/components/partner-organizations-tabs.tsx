@@ -26,10 +26,18 @@ export function PartnerOrganizationsTabs({
       defaultValue="partnerships"
     >
       <TabsList aria-label={t("label")} variant="line">
-        <TabsTrigger value="partnerships" variant="line">
+        <TabsTrigger
+          data-testid="partner-organizations-tab-partnerships"
+          value="partnerships"
+          variant="line"
+        >
           {t("partnerships")}
         </TabsTrigger>
-        <TabsTrigger value="invitations" variant="line">
+        <TabsTrigger
+          data-testid="partner-organizations-tab-invitations"
+          value="invitations"
+          variant="line"
+        >
           {t("invitations")}
         </TabsTrigger>
       </TabsList>
