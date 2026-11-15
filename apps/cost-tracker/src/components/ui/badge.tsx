@@ -8,17 +8,37 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
+        // Semantic chips carry a fill and a hairline so state reads at a
+        // glance; ghost and link stay typographic on purpose.
         "claim-status": "border border-claim-band-foreground px-3 py-1 text-base tracking-normal whitespace-normal text-claim-band-foreground normal-case",
-        default: "text-foreground [a]:hover:text-foreground/70",
-        secondary: "text-muted-foreground [a]:hover:text-foreground",
+        default:
+          "border border-transparent bg-primary px-2.5 py-1 text-primary-foreground [a]:hover:bg-primary/80",
+        secondary:
+          "border border-border bg-muted px-2.5 py-1 text-muted-foreground [a]:hover:text-foreground",
         destructive:
-          "text-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:text-destructive/70",
-        outline: "text-foreground [a]:hover:text-foreground/70",
-        ghost: "text-muted-foreground hover:text-foreground",
+          "border border-destructive/40 bg-destructive/10 px-2.5 py-1 text-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+        outline:
+          "border border-border bg-transparent px-2.5 py-1 text-foreground [a]:hover:bg-accent",
+        // Same box as a chip, no fill or hairline: aligns with its neighbours.
+        ghost:
+          "border border-transparent px-2.5 py-1 text-muted-foreground [a]:hover:text-foreground",
         link: "text-foreground underline-offset-4 hover:underline",
+        // The name is the brief: the ember accent, not a neutral card chip.
         "ember-pill":
-          "rounded-full border border-border bg-card px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground normal-case shadow-[inset_0_1px_0_var(--glass-edge)]",
-        "status-pass": "text-primary",
+          "rounded-full border border-brand/45 bg-brand/15 px-4 py-1.5 text-[11px] tracking-[0.2em] text-foreground normal-case shadow-[inset_0_1px_0_var(--glass-edge)]",
+        "status-pass":
+          "border border-primary/40 bg-primary/10 px-2.5 py-1 text-primary",
+        // Amber attention: work waits on someone, but nothing is wrong.
+        "status-attention":
+          "border border-brand/45 bg-brand/15 px-2.5 py-1 text-foreground",
+        // Settled-positive tints; the solid forms mark terminal states.
+        "status-success":
+          "border border-success/40 bg-success/10 px-2.5 py-1 text-success",
+        "status-success-solid":
+          "border border-transparent bg-success px-2.5 py-1 text-success-foreground",
+        // Terminal-negative: the hairline tint is correction, this is final.
+        "status-destructive-solid":
+          "border border-transparent bg-destructive px-2.5 py-1 text-destructive-foreground",
       },
     },
     defaultVariants: {

@@ -220,6 +220,30 @@
         "buttons": "buttons rebuilt — spinner pending",
         "landing": "landing page — next section",
         "status": "ember-c · all systems nominal"
+      },
+      "badges": {
+        "eyebrow": "Badges · chips",
+        "title": "Status badges and chips",
+        "variantsTitle": "Badge variants",
+        "variantsDescription": "Every variant the shared Badge exposes. Small labels use the default; data chips pick a semantic.",
+        "badgeLabel": "Label",
+        "chipPartners": "2 Partners",
+        "chipsTitle": "Count and status chips",
+        "chipsDescription": "Pills carry counts; semantic chips carry state. Colour never travels alone — the word stays.",
+        "chipOpen": "Open",
+        "chipExpired": "Expired",
+        "chipUsed": "Used",
+        "claimTitle": "Claim states as rendered",
+        "claimDescription": "The hosted workspace mapping today. This is the reference to challenge.",
+        "claim": {
+          "none": "No claim",
+          "editable": "Editable draft",
+          "submitted": "Submitted",
+          "correction": "Correction requested",
+          "approved": "Approved",
+          "rejected": "Rejected",
+          "paid": "Paid"
+        }
       }
     },
     "countrySelector": {

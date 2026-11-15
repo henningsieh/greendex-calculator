@@ -220,6 +220,30 @@
         "buttons": "Buttons neu gebaut — Spinner ausstehend",
         "landing": "Landingpage — nächster Abschnitt",
         "status": "ember-c · alle Systeme nominal"
+      },
+      "badges": {
+        "eyebrow": "Badges · Chips",
+        "title": "Status-Badges und Chips",
+        "variantsTitle": "Badge-Varianten",
+        "variantsDescription": "Alle Varianten des gemeinsamen Badge. Kleine Labels nutzen default; Daten-Chips wählen eine Semantik.",
+        "badgeLabel": "Label",
+        "chipPartners": "2 Partner",
+        "chipsTitle": "Zähler- und Status-Chips",
+        "chipsDescription": "Pills tragen Zähler, semantische Chips tragen Zustand. Farbe reist nie allein — das Wort bleibt.",
+        "chipOpen": "Offen",
+        "chipExpired": "Abgelaufen",
+        "chipUsed": "Verwendet",
+        "claimTitle": "Claim-Zustände wie gerendert",
+        "claimDescription": "Das heutige Mapping im Hosted-Workspace. Diese Referenz darf hinterfragt werden.",
+        "claim": {
+          "none": "Kein Claim",
+          "editable": "Entwurf in Bearbeitung",
+          "submitted": "Eingereicht",
+          "correction": "Korrektur angefordert",
+          "approved": "Genehmigt",
+          "rejected": "Abgelehnt",
+          "paid": "Ausgezahlt"
+        }
       }
     },
     "countrySelector": {

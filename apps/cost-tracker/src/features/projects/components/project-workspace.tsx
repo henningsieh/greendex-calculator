@@ -67,11 +67,17 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
     <Badge
       data-claim-status={status}
       variant={
-        status === "correction_requested" || status === "rejected"
-          ? "destructive"
-          : status === "submitted" || status === "approved"
-            ? "status-pass"
-            : "secondary"
+        status === "submitted"
+          ? "status-attention"
+          : status === "correction_requested"
+            ? "destructive"
+            : status === "approved"
+              ? "status-success"
+              : status === "rejected"
+                ? "status-destructive-solid"
+                : status === "paid"
+                  ? "status-success-solid"
+                  : "secondary"
       }
     >
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
@@ -258,11 +264,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
         {/* Facts stack on phones and share one row from sm; the Participants
             entry always sits at the trailing edge, never inside the column. */}
         <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row sm:flex-wrap sm:gap-x-8">
-          <div className="flex gap-3">
-            <CalendarDaysIcon
-              aria-hidden="true"
-              className="size-5 shrink-0 text-muted-foreground"
-            />
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+              <CalendarDaysIcon
+                aria-hidden="true"
+                className="size-5 text-muted-foreground"
+              />
+            </span>
             <div className="min-w-0 space-y-0.5">
               <p className="text-xs text-muted-foreground">{t("schedule")}</p>
               <p className="text-sm font-medium">
@@ -274,11 +282,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <MapPinIcon
-              aria-hidden="true"
-              className="size-5 shrink-0 text-muted-foreground"
-            />
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+              <MapPinIcon
+                aria-hidden="true"
+                className="size-5 text-muted-foreground"
+              />
+            </span>
             <div className="min-w-0 space-y-0.5">
               <p className="text-xs text-muted-foreground">{t("location")}</p>
               <p className="flex items-center gap-2 text-sm font-medium">
@@ -291,14 +301,16 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           </div>
           {project.completedAt && (
             <div
-              className="flex gap-3"
+              className="flex items-center gap-3"
               data-completed-at={project.completedAt.toISOString()}
               data-completed-by-user-id={project.completedByUserId}
             >
-              <CheckIcon
-                aria-hidden="true"
-                className="size-5 shrink-0 text-muted-foreground"
-              />
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+                <CheckIcon
+                  aria-hidden="true"
+                  className="size-5 text-muted-foreground"
+                />
+              </span>
               <div className="min-w-0 space-y-0.5">
                 <p className="text-xs text-muted-foreground">{t("completed")}</p>
                 <p className="text-sm font-medium">
@@ -335,7 +347,8 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
               <CardTitle as="h2">{t("assignedPartners")}</CardTitle>
             </div>
             <CardAction>
-              <Badge variant="ember-pill">
+              <Badge variant="outline">
+                <EntityIcon entity="partnerOrganization" className="size-3" />
                 {t("partnersCount", {
                   count: project.partnerOrganizations.length,
                 })}

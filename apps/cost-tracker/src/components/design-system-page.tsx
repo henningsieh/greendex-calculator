@@ -102,6 +102,32 @@ const TOKEN_PAIRS: { bg: string; fg: string; label: string }[] = [
   },
 ];
 
+const BADGE_VARIANTS = [
+  "default",
+  "secondary",
+  "outline",
+  "ghost",
+  "destructive",
+  "status-pass",
+  "status-attention",
+  "status-success",
+  "status-success-solid",
+  "status-destructive-solid",
+  "ember-pill",
+  "claim-status",
+] as const;
+
+/** Mirrors the hosted workspace mapping so designers can compare states. */
+const CLAIM_STATE_EXAMPLES = [
+  { key: "none", variant: "secondary" },
+  { key: "editable", variant: "secondary" },
+  { key: "submitted", variant: "status-attention" },
+  { key: "correction", variant: "destructive" },
+  { key: "approved", variant: "status-success" },
+  { key: "rejected", variant: "status-destructive-solid" },
+  { key: "paid", variant: "status-success-solid" },
+] as const;
+
 export default function DesignSystemPage() {
   const t = useTranslations("shell");
   const { theme, setTheme } = useTheme();
@@ -266,6 +292,90 @@ export default function DesignSystemPage() {
               <PendingButton>
                 {t("designSystem.cards.exemptAction")}
               </PendingButton>
+            </CardContent>
+          </Card>
+        </div>
+      </Section>
+
+      <Section
+        eyebrow={t("designSystem.badges.eyebrow")}
+        title={t("designSystem.badges.title")}
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("designSystem.badges.variantsTitle")}</CardTitle>
+              <CardDescription>
+                {t("designSystem.badges.variantsDescription")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-start gap-x-6 gap-y-4">
+              {BADGE_VARIANTS.map((variant) => (
+                <div className="flex flex-col items-start gap-1.5" key={variant}>
+                  <div className="flex min-h-7 items-center">
+                    <Badge variant={variant}>
+                      {variant === "ember-pill"
+                        ? t("designSystem.badges.chipPartners")
+                        : variant === "claim-status"
+                          ? t("designSystem.badges.claim.submitted")
+                          : t("designSystem.badges.badgeLabel")}
+                    </Badge>
+                  </div>
+                  <span className="font-mono text-[11px] text-muted-foreground">
+                    {variant}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("designSystem.badges.chipsTitle")}</CardTitle>
+              <CardDescription>
+                {t("designSystem.badges.chipsDescription")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-3">
+              <Badge variant="ember-pill">
+                {t("designSystem.badges.chipPartners")}
+              </Badge>
+              <Badge variant="status-pass">
+                {t("designSystem.badges.chipOpen")}
+              </Badge>
+              <Badge variant="destructive">
+                {t("designSystem.badges.chipExpired")}
+              </Badge>
+              <Badge variant="secondary">
+                {t("designSystem.badges.chipUsed")}
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="lg:col-span-2"
+            data-testid="design-system-claim-states"
+          >
+            <CardHeader>
+              <CardTitle>{t("designSystem.badges.claimTitle")}</CardTitle>
+              <CardDescription>
+                {t("designSystem.badges.claimDescription")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-start gap-x-6 gap-y-4">
+              {CLAIM_STATE_EXAMPLES.map((example) => (
+                <div
+                  className="flex flex-col items-start gap-1.5"
+                  key={example.key}
+                >
+                  <Badge variant={example.variant}>
+                    {t(`designSystem.badges.claim.${example.key}`)}
+                  </Badge>
+                  <span className="font-mono text-[11px] text-muted-foreground">
+                    {example.variant}
+                  </span>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
