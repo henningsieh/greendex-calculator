@@ -226,10 +226,15 @@ describe("projects procedures", () => {
         completedAt: result.completedAt,
         completedByUserId: actor,
         completedByUserName: stored?.completedByUserName ?? expect.any(String),
-        daysLeft: Math.ceil(
-          (stored!.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
-        ),
       });
+      // `daysLeft` is whole days from the procedure's own clock read. Compare
+      // against a stable interval: an exact recomputation can differ by one
+      // when the two Date.now() calls straddle a day boundary.
+      const expectedDaysLeft = Math.ceil(
+        (stored!.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+      );
+      expect(detail.daysLeft).toBeGreaterThanOrEqual(expectedDaysLeft - 1);
+      expect(detail.daysLeft).toBeLessThanOrEqual(expectedDaysLeft + 1);
       useSession(partnerIds[0]!);
       expect(await client.projects.get({ projectId })).toMatchObject({
         relationship: "partner",

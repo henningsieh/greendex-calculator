@@ -10,7 +10,6 @@ import { useState } from "react";
 import {
   partnershipClaimPath,
   partnershipParticipantsPath,
-  partnershipPath,
   projectParticipantsPath,
 } from "@/app/paths";
 import {
@@ -357,9 +356,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                     key={partner.id}
                   >
                     <div className="min-w-0 space-y-0.5">
+                      {/* The Partnership detail route is deliberately
+                          header-only this release, so the row links to that
+                          Partner's Participants instead — the actionable
+                          destination for this Partnership. */}
                       <Link
                         className="block truncate font-medium hover:underline"
-                        href={partnershipPath(partner.id)}
+                        href={partnershipParticipantsPath(partner.id)}
                       >
                         {partner.organizationName}
                       </Link>
