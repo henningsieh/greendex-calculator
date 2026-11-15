@@ -7,6 +7,7 @@ import {
   normalizeProjectListState,
   resolveProjectListState,
 } from "@/features/projects/list-query-options";
+import { hasOrganizationMembership } from "@/lib/session";
 import {
   getQueryClient,
   HydrateClient,
@@ -26,11 +27,16 @@ export async function ProjectListSection({
   searchParams,
 }: ProjectListSectionProps) {
   const queryClient = getQueryClient();
-  const [urlState, availableScopes] = await Promise.all([
+  const [urlState, availableScopes, hasMembership] = await Promise.all([
     loadProjectListSearchParams(searchParams),
     queryClient
       .query(getProjectAvailableScopesQueryOptions())
       .catch(swallowPrefetchError),
+    // The scopes signal carries no membership info (it reports
+    // {false,false} with or without one), so the scope-less Empty branches
+    // on the same gate the page shell uses. hasOrganizationMembership is
+    // cached, so this shares the shell's lookup.
+    hasOrganizationMembership(),
   ]);
 
   if (availableScopes) {
@@ -54,7 +60,7 @@ export async function ProjectListSection({
   return (
     <HydrateClient client={queryClient}>
       <ProjectDataErrorBoundary resource="Projects">
-        <ProjectList />
+        <ProjectList hasMembership={hasMembership} />
       </ProjectDataErrorBoundary>
     </HydrateClient>
   );
