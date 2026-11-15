@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import ProtectedPageHeader from "@/components/protected-page-header";
 import { ProjectDataErrorBoundary } from "@/components/query-data-error-boundary";
 import { PartnerNetworkGuide } from "@/features/partnerships/components/partner-network-guide";
+import { PartnerOrganizationsTabs } from "@/features/partnerships/components/partner-organizations-tabs";
 import { PartnershipActionsSection } from "@/features/partnerships/components/partnership-actions-section";
 import { ProjectPartnershipsSkeleton } from "@/features/partnerships/components/partnership-loading-states";
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
@@ -51,11 +52,17 @@ export default async function PartnerOrganizationsPage() {
 
         <PartnerNetworkGuide />
 
-        <Suspense fallback={<ProjectPartnershipsSkeleton />}>
-          <ProjectPartnershipSection canAssign={canCreateProjectPartnership} />
-        </Suspense>
-
-        {canCreateProjectPartnership && <SetupLinkList />}
+        <PartnerOrganizationsTabs
+          showInvitations={canCreateProjectPartnership}
+          partnerships={
+            <Suspense fallback={<ProjectPartnershipsSkeleton />}>
+              <ProjectPartnershipSection
+                canAssign={canCreateProjectPartnership}
+              />
+            </Suspense>
+          }
+          invitations={canCreateProjectPartnership && <SetupLinkList />}
+        />
       </ProjectDataErrorBoundary>
     </div>
   );

@@ -93,6 +93,11 @@
         "joinText": "Der Partner bestätigt mit der eingeladenen E-Mail-Adresse. Jeder Link ist einmal verwendbar und läuft nach 7 Tagen ab.",
         "collaborateTitle": "Zusammenarbeiten",
         "collaborateText": "Die Partnerschaft erscheint unten bei ihrem gehosteten Projekt — bereit für Teilnahmen und Abrechnungen."
+      },
+      "tabs": {
+        "label": "Bereiche der Partnerorganisationen",
+        "partnerships": "Partnerschaften",
+        "invitations": "Ausstehende Einladungen"
       }
     },
     "confirmations": {

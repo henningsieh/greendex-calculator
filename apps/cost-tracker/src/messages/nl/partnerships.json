@@ -93,6 +93,11 @@
         "joinText": "They confirm with the invited email address. Each link is single-use and expires after 7 days.",
         "collaborateTitle": "Collaborate",
         "collaborateText": "The partnership appears under its hosted project below, ready for participants and claims."
+      },
+      "tabs": {
+        "label": "Partner Organizations sections",
+        "partnerships": "Partnerships",
+        "invitations": "Pending invitations"
       }
     },
     "confirmations": {
