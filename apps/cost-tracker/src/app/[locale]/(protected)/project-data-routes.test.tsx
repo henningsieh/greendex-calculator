@@ -30,6 +30,9 @@ const mocks = vi.hoisted(() => ({
 
 const queryClient = { query: mocks.query };
 
+vi.mock("@/features/organizations/access", () => ({
+  resolveActiveMembershipRole: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/features/projects/components/project-list", () => ({
   ProjectList: () => <p data-testid="project-list">Project list</p>,
 }));
@@ -351,21 +354,6 @@ describe("Cost Tracker Project data routes", () => {
     expect(mocks.getListOptions).not.toHaveBeenCalled();
     expect(mocks.query).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("project-list")).toBeInTheDocument();
-  });
-
-  it("prefetches the assigned-project branch when creation is allowed without a list scope", async () => {
-    mocks.availableScopes.mockResolvedValue({
-      hosted: false,
-      partner: false,
-      canCreate: true,
-    });
-
-    render(await RealProjectListSection({ searchParams: Promise.resolve({}) }));
-
-    expect(mocks.getListOptions).not.toHaveBeenCalled();
-    expect(mocks.query).toHaveBeenNthCalledWith(2, {
-      queryKey: ["projects", "search-hosted"],
-    });
   });
 
   it("prefetches Hosted Projects without a stale Partner cursor", async () => {

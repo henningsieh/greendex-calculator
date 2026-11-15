@@ -8,11 +8,8 @@ export async function expectFirstOrganizationProjects(
 ) {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByTestId("organization-switcher")).toBeVisible();
-  const assigned = page.getByTestId("assigned-projects");
   // Text-free: empty-state hook instead of visible copy.
-  await expect(
-    assigned.locator('[data-testid="assigned-projects-empty"]'),
-  ).toBeVisible();
+  await expect(page.getByTestId("projects-empty")).toBeVisible();
   const newProject = page.getByTestId("new-project");
   await expect(newProject).toBeEnabled();
   await newProject.click();

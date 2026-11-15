@@ -24,6 +24,7 @@ vi.mock("@/features/partnerships/procedures/assigned-partnerships", () => ({
 import {
   canManageOrganization,
   canViewPartnerNetwork,
+  resolveActiveMembershipRole,
 } from "@/features/organizations/access";
 
 beforeEach(() => {
@@ -37,6 +38,35 @@ beforeEach(() => {
   });
   mocks.hasPermissions.mockResolvedValue(false);
   mocks.assigned.mockResolvedValue([]);
+});
+
+describe("Active Organization role resolution", () => {
+  it("returns the caller's role in the active Organization", async () => {
+    mocks.getFullOrganization.mockResolvedValue({
+      members: [
+        { userId: "someone-else", role: "owner" },
+        { userId: "user", role: "project-coordinator" },
+      ],
+    });
+    expect(await resolveActiveMembershipRole()).toBe("project-coordinator");
+  });
+
+  it("returns undefined when the caller has no membership", async () => {
+    mocks.getFullOrganization.mockResolvedValue({
+      members: [{ userId: "someone-else", role: "owner" }],
+    });
+    expect(await resolveActiveMembershipRole()).toBeUndefined();
+  });
+
+  it("fails closed when the lookup rejects", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.getFullOrganization.mockRejectedValue(new Error("unavailable"));
+    try {
+      expect(await resolveActiveMembershipRole()).toBeUndefined();
+    } finally {
+      log.mockRestore();
+    }
+  });
 });
 
 describe("Organization presentation access failures", () => {
@@ -98,20 +128,27 @@ describe("Organization presentation access failures", () => {
     },
   );
   it.each([
-    ["management", canManageOrganization, () => mocks.getFullOrganization],
-    ["Partner network", canViewPartnerNetwork, () => mocks.assigned],
+    [
+      "management",
+      canManageOrganization,
+      () => mocks.getFullOrganization,
+      "Active Organization role lookup failed",
+    ],
+    [
+      "Partner network",
+      canViewPartnerNetwork,
+      () => mocks.assigned,
+      "Partner network access lookup failed",
+    ],
   ] as const)(
     "logs unexpected %s lookup failures while staying closed",
-    async (_name, check, failureMock) => {
+    async (_name, check, failureMock, expectedLog) => {
       const error = new Error("lookup unavailable");
       failureMock().mockRejectedValue(error);
       const log = vi.spyOn(console, "error").mockImplementation(() => {});
       try {
         expect(await check()).toBe(false);
-        expect(log).toHaveBeenCalledWith(
-          expect.stringContaining("access lookup failed"),
-          { error },
-        );
+        expect(log).toHaveBeenCalledWith(expectedLog, { error });
       } finally {
         log.mockRestore();
       }

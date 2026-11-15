@@ -196,7 +196,6 @@ export function ProjectPartnershipManager({
                       <Link
                         className="block truncate hover:underline"
                         href={projectPath(group.projectId)}
-                        prefetch={false}
                       >
                         {group.projectName}
                       </Link>
@@ -237,7 +236,6 @@ export function ProjectPartnershipManager({
                             size: "sm",
                           })}
                           href={partnershipPath(partnership.id)}
-                          prefetch={false}
                         >
                           <EyeIcon aria-hidden="true" />
                           {t("manager.viewDetails")}

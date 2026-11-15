@@ -57,9 +57,11 @@ function renderList(
   {
     onUrlUpdate,
     searchParams = "?scope=partner&cursor=partner-cursor",
+    hasStaffMembership = true,
   }: {
     onUrlUpdate: (event: UrlUpdateEvent) => void;
     searchParams?: string;
+    hasStaffMembership?: boolean;
   },
   locale: "en-GB" | "de" | "sl" = "en-GB",
 ) {
@@ -75,7 +77,7 @@ function renderList(
     >
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<p>Loading Projects</p>}>
-          <ProjectList />
+          <ProjectList hasStaffMembership={hasStaffMembership} />
         </Suspense>
       </QueryClientProvider>
     </NuqsTestingAdapter>,
@@ -109,13 +111,30 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     );
   });
 
-  it("renders an honest empty state without creating an list query when neither scope is available", async () => {
+  it("renders the guidance Empty without tabs when a staff member has no available scope", async () => {
     const onUrlUpdate = vi.fn();
     mocks.availableScopes = { hosted: false, partner: false };
 
-    renderList({ onUrlUpdate });
+    renderList({ onUrlUpdate, hasStaffMembership: true });
+
+    expect(await screen.findByTestId("projects-empty")).toBeTruthy();
+    expect(screen.queryByTestId("projects-unavailable")).toBeNull();
+    expect(screen.queryByTestId("project-scope-hosted")).toBeNull();
+    expect(screen.queryByTestId("project-scope-partner")).toBeNull();
+    expect(mocks.getListOptions).not.toHaveBeenCalled();
+    expect(onUrlUpdate).not.toHaveBeenCalled();
+  });
+
+  it("keeps the unavailable Empty without tabs for a participant without staff standing", async () => {
+    const onUrlUpdate = vi.fn();
+    mocks.availableScopes = { hosted: false, partner: false };
+
+    renderList({ onUrlUpdate, hasStaffMembership: false });
 
     expect(await screen.findByTestId("projects-unavailable")).toBeTruthy();
+    expect(screen.queryByTestId("projects-empty")).toBeNull();
+    expect(screen.queryByTestId("project-scope-hosted")).toBeNull();
+    expect(screen.queryByTestId("project-scope-partner")).toBeNull();
     expect(mocks.getListOptions).not.toHaveBeenCalled();
     expect(onUrlUpdate).not.toHaveBeenCalled();
   });

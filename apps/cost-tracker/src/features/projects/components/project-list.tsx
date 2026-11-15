@@ -14,7 +14,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { toast } from "@/components/ui/toast";
-import { AssignedProjectList } from "@/features/projects/components/assigned-project-list";
 import { ProjectListFilters } from "@/features/projects/components/project-list-filters";
 import { ProjectListMetrics } from "@/features/projects/components/project-list-results";
 import { ResolvedProjectListResults } from "@/features/projects/components/project-list-results";
@@ -29,25 +28,22 @@ import {
   type ProjectListState,
 } from "@/features/projects/list-query-options";
 
-export function ProjectList() {
+export function ProjectList({
+  hasStaffMembership,
+}: {
+  hasStaffMembership: boolean;
+}) {
   const t = useTranslations("projects.list");
   const { data: availableScopes } = useSuspenseQuery(
     getProjectAvailableScopesQueryOptions(),
   );
 
   if (!availableScopes.hosted && !availableScopes.partner) {
-    if (availableScopes.canCreate) {
-      return (
-        <>
-          <ProjectDataErrorBoundary resource="Assigned Projects">
-            <AssignedProjectList />
-          </ProjectDataErrorBoundary>
-        </>
-      );
-    }
     return (
       <Empty
-        data-testid="projects-unavailable"
+        data-testid={
+          hasStaffMembership ? "projects-empty" : "projects-unavailable"
+        }
         variant="outlined"
         aria-label={t("label")}
         className="mt-10"

@@ -33,6 +33,7 @@ import {
   getProjectListFingerprint,
   type ProjectListCursor,
 } from "@/features/projects/list-cursor.server";
+import { assignedHostProjectIds } from "@/features/projects/procedures/assigned-host-projects";
 import type {
   PartnerProjectList,
   ProjectListInput,
@@ -48,11 +49,7 @@ import {
   createSituationErrors,
   type SituationErrorConstructors,
 } from "@/lib/orpc/errors";
-import {
-  authorized,
-  hasCostTrackerPermissions,
-  requireCostTrackerPermissions,
-} from "@/lib/orpc/middleware";
+import { authorized, hasCostTrackerPermissions } from "@/lib/orpc/middleware";
 
 function getProjectFilters(input: ProjectListInput): SQL[] {
   const filters: SQL[] = [];
@@ -336,7 +333,6 @@ function finalizeProjectListPage<T extends ProjectListCursorRow>(
 }
 
 export const listHosted = authorized
-  .use(requireCostTrackerPermissions({ project: ["read"] }))
   .input(HostedProjectListInputSchema)
   .output(HostedProjectListSchema)
   .meta(
@@ -346,7 +342,16 @@ export const listHosted = authorized
     }),
   )
   .handler(async ({ context, errors, input }) => {
-    const activeOrganizationId = context.session.activeOrganizationId!;
+    const activeOrganizationId = context.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      throw createSituationErrors(errors).selectOrganization();
+    }
+    // Organization-wide readers see every hosted Project; assigned
+    // coordinators see exactly their assigned Projects and nothing else.
+    const canReadHostedPermission = await hasCostTrackerPermissions(
+      context.headers,
+      { project: ["read"] },
+    );
     const [membership] = await db
       .select({ role: member.role })
       .from(member)
@@ -358,15 +363,29 @@ export const listHosted = authorized
       )
       .limit(1);
     if (!membership) throw createSituationErrors(errors).notMember();
-    if (
-      !(
+    const canReadHosted =
+      canReadHostedPermission &&
+      (hasOrganizationRole(
+        membership.role,
+        ORGANIZATION_ROLES.OrganizationOwner,
+      ) ||
         hasOrganizationRole(
           membership.role,
-          ORGANIZATION_ROLES.OrganizationOwner,
-        ) ||
-        hasOrganizationRole(membership.role, ORGANIZATION_ROLES.OrganizationAdmin)
-      )
+          ORGANIZATION_ROLES.OrganizationAdmin,
+        ));
+    // The assignment path is Project Coordinator-only: Participant and other
+    // roles are denied exactly as before, never narrowed into scope.
+    let assignedIds: string[] = [];
+    if (
+      !canReadHosted &&
+      hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
     ) {
+      assignedIds = await assignedHostProjectIds(
+        context.user.id,
+        activeOrganizationId,
+      );
+    }
+    if (!canReadHosted && assignedIds.length === 0) {
       throw createSituationErrors(errors).organizationManagementRequired();
     }
     const fingerprint = getProjectListFingerprint({
@@ -379,6 +398,9 @@ export const listHosted = authorized
       errors,
     );
     const wholeFilters = getHostedProjectScopeFilters(activeOrganizationId);
+    if (assignedIds.length > 0) {
+      wholeFilters.push(inArray(projectsTable.id, assignedIds));
+    }
     const filteredScopeFilters = [...wholeFilters, ...getProjectFilters(input)];
 
     if (input.partnerOrganizationIds.length > 0) {

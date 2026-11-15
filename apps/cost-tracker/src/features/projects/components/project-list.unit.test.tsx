@@ -43,7 +43,6 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
     queryFn: async () => ({
       hosted: true,
       partner: true,
-      canCreate: mocks.canCreate,
     }),
   }),
   getProjectListQueryOptions: (
@@ -94,7 +93,7 @@ function renderList(withCreation = false) {
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading Projects</p>}>
         {withCreation && mocks.canCreate ? <CreateProjectDialog /> : null}
-        <ProjectList />
+        <ProjectList hasStaffMembership />
       </Suspense>
     </QueryClientProvider>,
   );
