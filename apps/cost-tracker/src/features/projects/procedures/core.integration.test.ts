@@ -910,13 +910,18 @@ describe("projects procedures", () => {
       }
 
       // Hosted reads are denied for both restricted principals, regardless of
-      // whether the input names a known Project or matches nothing.
+      // whether the input names a known Project or matches nothing. #408
+      // consolidates the old middleware denial on the handler's
+      // Organization-management-required reason; both render the same fallback.
       for (const principal of [coord, stranger]) {
         useCoordinator(principal);
         const searchHosted = (search: string) =>
           client.projects.listHosted({ pageSize: 25, search });
         const hostedNoMatch = await observeDenial(searchHosted(gibberish));
-        expect(hostedNoMatch).toEqual(deniedNoMatch);
+        expect(hostedNoMatch).toMatchObject({
+          code: "FORBIDDEN",
+          data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+        });
         for (const search of [assignedProject, foreignProject]) {
           expect(await observeDenial(searchHosted(search))).toEqual(
             hostedNoMatch,
@@ -953,6 +958,116 @@ describe("projects procedures", () => {
       await expect(
         client.projects.get({ projectId: assignedProject }),
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
+  });
+
+  describe("assigned coordinator Hosted discovery", () => {
+    const host = SEED_IDS.organization.entitySearchHost;
+    const coord = SEED_IDS.user.entitySearchCoordinator;
+    const unassignedCoord = SEED_IDS.user.entitySearchUnassignedCoordinator;
+    const participant = SEED_IDS.user.entitySearchParticipant;
+    const owner = SEED_IDS.user.entitySearchActor;
+    const assignedProject = SEED_IDS.project.entitySearchAssigned;
+    const unassignedProject = SEED_IDS.project.entitySearchUnassigned;
+    const client = createRouterClient(router, {
+      context: async () => ({ headers: new Headers() }),
+    });
+    const usePrincipal = (userId: string) => {
+      authMocks.getSession.mockResolvedValue({
+        session: {
+          id: randomUUID(),
+          userId,
+          activeOrganizationId: host,
+        },
+        user: {
+          id: userId,
+          name: "Hosted discovery",
+          email: `${userId}@example.com`,
+        },
+      });
+    };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Deny every Organization-wide permission so only the Host assignment
+      // scope can grant access.
+      authMocks.hasPermission.mockResolvedValue({ success: false });
+      usePrincipal(coord);
+    });
+
+    it("lists exactly the assigned Hosted Project", async () => {
+      const result = await client.projects.listHosted({ pageSize: 25 });
+
+      expect(result.scope).toBe("hosted");
+      expect(result.rows.map((row) => row.id)).toEqual([assignedProject]);
+      expect(result.rows[0]).not.toHaveProperty("organizationId");
+      expect(result.metrics.whole.projectCount).toBe(1);
+      expect(result.metrics.filtered).toEqual(result.metrics.whole);
+      expect(result.partnerOptions).toEqual([]);
+    });
+
+    it("composes search on top of the assignment filter without a search oracle", async () => {
+      const gibberish = "zzz-no-such-project-zzz";
+      const noMatch = await client.projects.listHosted({
+        pageSize: 25,
+        search: gibberish,
+      });
+
+      expect(noMatch.rows).toEqual([]);
+      // Metrics still describe the assigned whole set, never hidden Projects.
+      expect(noMatch.metrics.whole.projectCount).toBe(1);
+      expect(noMatch.metrics.filtered.projectCount).toBe(0);
+      // The unassigned Project name reads exactly like gibberish: assignment
+      // to one Project never leaks access to another.
+      expect(
+        await client.projects.listHosted({
+          pageSize: 25,
+          search: "Picker Unassigned Project",
+        }),
+      ).toEqual(noMatch);
+      // Positive control: the assigned Project stays searchable.
+      const assigned = await client.projects.listHosted({
+        pageSize: 25,
+        search: "Picker Assigned Project",
+      });
+      expect(assigned.rows.map((row) => row.id)).toEqual([assignedProject]);
+    });
+
+    it("denies coordinators without assignment with the management reason", async () => {
+      // Pins the consolidated denial: dropping the unreadable-permission
+      // middleware moves permission-less coordinators to the handler's
+      // Organization-management-required reason. Both render the same fallback.
+      usePrincipal(unassignedCoord);
+      await expect(
+        client.projects.listHosted({ pageSize: 25 }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+      });
+    });
+
+    it("denies Participant-role members without taking the assignment path", async () => {
+      usePrincipal(participant);
+      await expect(
+        client.projects.listHosted({ pageSize: 25 }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        data: { reason: "ORGANIZATION_MANAGEMENT_REQUIRED" },
+      });
+    });
+
+    it("keeps Owner Hosted results identical with full read permission", async () => {
+      authMocks.hasPermission.mockResolvedValue({ success: true });
+      usePrincipal(owner);
+      const result = await client.projects.listHosted({ pageSize: 25 });
+
+      expect(result.scope).toBe("hosted");
+      expect(result.rows.map((row) => row.id).sort()).toEqual(
+        [assignedProject, unassignedProject].sort(),
+      );
+      expect(result.metrics.whole.projectCount).toBe(2);
+      expect(result.metrics.filtered).toEqual(result.metrics.whole);
+      expect(result.partnerOptions).toEqual([]);
     });
   });
 });
