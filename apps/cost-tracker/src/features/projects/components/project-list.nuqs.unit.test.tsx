@@ -57,11 +57,11 @@ function renderList(
   {
     onUrlUpdate,
     searchParams = "?scope=partner&cursor=partner-cursor",
-    hasMembership = true,
+    hasStaffMembership = true,
   }: {
     onUrlUpdate: (event: UrlUpdateEvent) => void;
     searchParams?: string;
-    hasMembership?: boolean;
+    hasStaffMembership?: boolean;
   },
   locale: "en-GB" | "de" | "sl" = "en-GB",
 ) {
@@ -77,7 +77,7 @@ function renderList(
     >
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<p>Loading Projects</p>}>
-          <ProjectList hasMembership={hasMembership} />
+          <ProjectList hasStaffMembership={hasStaffMembership} />
         </Suspense>
       </QueryClientProvider>
     </NuqsTestingAdapter>,
@@ -111,11 +111,11 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     );
   });
 
-  it("renders the guidance Empty without tabs when a member has no available scope", async () => {
+  it("renders the guidance Empty without tabs when a staff member has no available scope", async () => {
     const onUrlUpdate = vi.fn();
     mocks.availableScopes = { hosted: false, partner: false };
 
-    renderList({ onUrlUpdate, hasMembership: true });
+    renderList({ onUrlUpdate, hasStaffMembership: true });
 
     expect(await screen.findByTestId("projects-empty")).toBeTruthy();
     expect(screen.queryByTestId("projects-unavailable")).toBeNull();
@@ -125,11 +125,11 @@ describe("Project list Nuqs URL state", { timeout: 10_000 }, () => {
     expect(onUrlUpdate).not.toHaveBeenCalled();
   });
 
-  it("keeps the unavailable Empty without tabs when the viewer has no membership", async () => {
+  it("keeps the unavailable Empty without tabs for a participant without staff standing", async () => {
     const onUrlUpdate = vi.fn();
     mocks.availableScopes = { hosted: false, partner: false };
 
-    renderList({ onUrlUpdate, hasMembership: false });
+    renderList({ onUrlUpdate, hasStaffMembership: false });
 
     expect(await screen.findByTestId("projects-unavailable")).toBeTruthy();
     expect(screen.queryByTestId("projects-empty")).toBeNull();

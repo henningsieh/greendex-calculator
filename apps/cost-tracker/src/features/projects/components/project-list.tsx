@@ -28,7 +28,11 @@ import {
   type ProjectListState,
 } from "@/features/projects/list-query-options";
 
-export function ProjectList({ hasMembership }: { hasMembership: boolean }) {
+export function ProjectList({
+  hasStaffMembership,
+}: {
+  hasStaffMembership: boolean;
+}) {
   const t = useTranslations("projects.list");
   const { data: availableScopes } = useSuspenseQuery(
     getProjectAvailableScopesQueryOptions(),
@@ -37,7 +41,9 @@ export function ProjectList({ hasMembership }: { hasMembership: boolean }) {
   if (!availableScopes.hosted && !availableScopes.partner) {
     return (
       <Empty
-        data-testid={hasMembership ? "projects-empty" : "projects-unavailable"}
+        data-testid={
+          hasStaffMembership ? "projects-empty" : "projects-unavailable"
+        }
         variant="outlined"
         aria-label={t("label")}
         className="mt-10"
