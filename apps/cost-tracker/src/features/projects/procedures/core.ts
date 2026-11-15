@@ -19,8 +19,8 @@ import {
   canCompleteProject,
   isSettledClaimStatus,
 } from "@/features/claims/claim-lifecycle";
-import { isStaffOrganizationRole } from "@/features/organizations/staff-eligibility";
 import { assignedPartnershipIds } from "@/features/partnerships/procedures/assigned-partnerships";
+import { assignedHostProjectIds } from "@/features/projects/procedures/assigned-host-projects";
 import { requireHostCoordination } from "@/features/projects/procedures/coordination";
 import {
   getHostedProjectScopeFilters,
@@ -233,6 +233,15 @@ export const availableScopes = authorized
       ? []
       : await assignedPartnershipIds(context.user.id, activeOrganizationId);
     const canReadPartner = canReadPartnerPermission || assignedIds.length > 0;
+    // The assignment path is Project Coordinator-only, mirroring listHosted:
+    // Participant and other roles never take the assignment path, so the
+    // signal can never announce a tab the list procedure would deny.
+    const assignedHostIds =
+      !canReadHosted &&
+      !!membership &&
+      hasOrganizationRole(membership.role, ORGANIZATION_ROLES.ProjectCoordinator)
+        ? await assignedHostProjectIds(context.user.id, activeOrganizationId)
+        : [];
     const [hostedRows, partnerRows] = await Promise.all([
       canReadHosted
         ? db
@@ -255,9 +264,8 @@ export const availableScopes = authorized
     ]);
 
     return {
-      hosted: hostedRows.length > 0,
+      hosted: hostedRows.length > 0 || assignedHostIds.length > 0,
       partner: partnerRows.length > 0,
-      canCreate: !!membership && isStaffOrganizationRole(membership.role),
     };
   });
 

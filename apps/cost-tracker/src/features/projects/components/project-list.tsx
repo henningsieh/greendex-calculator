@@ -14,7 +14,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { toast } from "@/components/ui/toast";
-import { AssignedProjectList } from "@/features/projects/components/assigned-project-list";
 import { ProjectListFilters } from "@/features/projects/components/project-list-filters";
 import { ProjectListMetrics } from "@/features/projects/components/project-list-results";
 import { ResolvedProjectListResults } from "@/features/projects/components/project-list-results";
@@ -36,15 +35,6 @@ export function ProjectList() {
   );
 
   if (!availableScopes.hosted && !availableScopes.partner) {
-    if (availableScopes.canCreate) {
-      return (
-        <>
-          <ProjectDataErrorBoundary resource="Assigned Projects">
-            <AssignedProjectList />
-          </ProjectDataErrorBoundary>
-        </>
-      );
-    }
     return (
       <Empty
         data-testid="projects-unavailable"

@@ -190,7 +190,6 @@ describe("Cost Tracker Better Auth", () => {
     await expect(client.projects.scopes()).resolves.toEqual({
       hosted: false,
       partner: false,
-      canCreate: true,
     });
     await expect(
       client.authentication.createOrganization({
@@ -229,7 +228,6 @@ describe("Cost Tracker Better Auth", () => {
     await expect(client.projects.scopes()).resolves.toEqual({
       hosted: false,
       partner: false,
-      canCreate: true,
     });
     await expect(
       auth.api.createOrganization({
