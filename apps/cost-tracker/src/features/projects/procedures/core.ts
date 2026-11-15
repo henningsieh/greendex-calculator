@@ -7,10 +7,12 @@ import {
   organization,
   partnerCoordinatorAssignmentsTable as partnerAssignments,
   projectPartnerOrganizationsTable,
+  projectParticipantsTable,
   projectsTable,
+  user,
 } from "@greendex/database/schema";
 import { openapi } from "@orpc/openapi";
-import { and, asc, eq, or } from "drizzle-orm";
+import { and, asc, count, eq, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -46,6 +48,8 @@ export type ProjectRelationship =
       costSubmissionWindowOpen: boolean;
       completedAt: Date | null;
       completedByUserId: string | null;
+      completedByUserName: string | null;
+      participantCount: number;
       hostingOrganization: { id: string; name: string };
     }
   | {
@@ -60,6 +64,8 @@ export type ProjectRelationship =
       costSubmissionWindowOpen: boolean;
       completedAt: Date | null;
       completedByUserId: string | null;
+      completedByUserName: string | null;
+      participantCount: number;
       hostingOrganization: { id: string; name: string };
       partnershipId: string;
       assignedAt: Date;
@@ -85,6 +91,7 @@ export async function resolveRelationship({
       costSubmissionWindowOpen: projectsTable.costSubmissionWindowOpen,
       completedAt: projectsTable.completedAt,
       completedByUserId: projectsTable.completedByUserId,
+      completedByUserName: user.name,
       hostingOrganizationId: organization.id,
       hostingOrganizationName: organization.name,
       partnershipId: projectPartnerOrganizationsTable.id,
@@ -93,6 +100,7 @@ export async function resolveRelationship({
     })
     .from(projectsTable)
     .innerJoin(organization, eq(organization.id, projectsTable.organizationId))
+    .leftJoin(user, eq(user.id, projectsTable.completedByUserId))
     .leftJoin(
       projectPartnerOrganizationsTable,
       and(
@@ -127,20 +135,45 @@ export async function resolveRelationship({
     costSubmissionWindowOpen: row.costSubmissionWindowOpen,
     completedAt: row.completedAt,
     completedByUserId: row.completedByUserId,
+    completedByUserName: row.completedByUserName,
     hostingOrganization: {
       id: row.hostingOrganizationId,
       name: row.hostingOrganizationName,
     },
   };
 
+  // Participant headcount for the workspace stats. Scoped exactly like the
+  // relationship itself: hosts see the whole Project, partners see only the
+  // Participants their Organization represents. Merged duplicates never count.
+  const participantFilters = [
+    eq(projectParticipantsTable.projectId, row.projectId),
+    isNull(projectParticipantsTable.mergedIntoParticipantId),
+  ];
+  if (row.hostingOrganizationId !== activeOrganizationId) {
+    participantFilters.push(
+      eq(
+        projectParticipantsTable.representedOrganizationId,
+        activeOrganizationId,
+      ),
+    );
+  }
+  const [participantCountRow] = await db
+    .select({ value: count() })
+    .from(projectParticipantsTable)
+    .where(and(...participantFilters));
+  const commonWithCount = {
+    ...common,
+    participantCount: participantCountRow?.value ?? 0,
+  };
+
   if (row.hostingOrganizationId === activeOrganizationId) {
-    return { kind: "hosted", ...common };
+    return { kind: "hosted", ...commonWithCount };
   }
 
   if (row.partnershipId && row.partnershipCreatedAt && row.partnershipUpdatedAt) {
     return {
       kind: "partner",
-      ...common,
+      ...commonWithCount,
       partnershipId: row.partnershipId,
       assignedAt: row.partnershipCreatedAt,
       assignmentUpdatedAt: row.partnershipUpdatedAt,
@@ -306,6 +339,11 @@ export const getProject = authorized
       costSubmissionWindowOpen: relationship.costSubmissionWindowOpen,
       completedAt: relationship.completedAt,
       completedByUserId: relationship.completedByUserId,
+      completedByUserName: relationship.completedByUserName,
+      participantCount: relationship.participantCount,
+      daysLeft: Math.ceil(
+        (relationship.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+      ),
     };
 
     if (relationship.kind === "partner") {

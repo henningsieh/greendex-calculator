@@ -36,6 +36,8 @@ const baseProject = {
   country: "DE",
   archived: false,
   costSubmissionWindowOpen: true,
+  participantCount: 3,
+  daysLeft: 5,
 };
 
 function renderWorkspace() {
@@ -88,14 +90,43 @@ describe("Project workspace", () => {
       "partnership-1",
     );
     expect(partnerships[0]).toHaveAttribute("data-organization-id", "partner-1");
-    expect(
-      screen.getByTestId("manage-project-partnerships").getAttribute("href"),
-    ).toBe("/en-GB/partner-organizations");
+    expect(screen.queryByTestId("manage-project-partnerships")).toBeNull();
+    expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
+    expect(screen.getByTestId("stat-partners")).toBeInTheDocument();
+    expect(screen.getByTestId("stat-participants")).toBeInTheDocument();
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
     expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
       "/en-GB/projects/project-1/participants",
     );
     expect(screen.queryByTestId("open-claim-workspace")).not.toBeInTheDocument();
+  });
+
+  it("holds all stats in loading until the complete shape arrives", async () => {
+    // A stale cached response can carry partnerOrganizations (long-standing)
+    // without the newer scalar fields. The strip must never render two
+    // numbers while the third is still missing.
+    const {
+      participantCount: _dropped,
+      daysLeft: _alsoDropped,
+      ...oldShape
+    } = baseProject;
+    mocks.detail = {
+      ...oldShape,
+      relationship: "hosted",
+      partnerOrganizations: [
+        {
+          id: "partnership-1",
+          organizationName: "Mobility Group",
+          claimStatus: null,
+          assignedAt: new Date("2026-05-01T10:00:00.000Z"),
+        },
+      ],
+    };
+    renderWorkspace();
+    await screen.findByTestId("stats-loading");
+    expect(screen.queryByTestId("stat-open-claims")).toBeNull();
+    expect(screen.queryByTestId("stat-partners")).toBeNull();
+    expect(screen.queryByTestId("stat-participants")).toBeNull();
   });
 
   it("renders each hosted Partnership's derived readiness independently", async () => {
@@ -163,6 +194,7 @@ describe("Project workspace", () => {
         ...mocks.detail,
         completedAt: new Date("2026-06-05T12:00:00.000Z"),
         completedByUserId: "staff-1",
+        completedByUserName: "Staff Member",
       };
       return { projectId: "project-1", completed: true };
     });
@@ -204,6 +236,7 @@ describe("Project workspace", () => {
       relationship: "hosted",
       completedAt,
       completedByUserId: "staff-1",
+      completedByUserName: "Staff Member",
       partnerOrganizations: [],
     };
     renderWorkspace();

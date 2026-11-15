@@ -7,6 +7,7 @@ import {
   claimsTable,
   principalQuotaCounters as counters,
   projectsTable,
+  user,
 } from "@greendex/database/schema";
 import { createRouterClient, ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
@@ -213,9 +214,21 @@ describe("projects procedures", () => {
         completedByUserId: actor,
       });
       const detail = await client.projects.get({ projectId });
+      const [stored] = await db
+        .select({
+          endDate: projectsTable.endDate,
+          completedByUserName: user.name,
+        })
+        .from(projectsTable)
+        .leftJoin(user, eq(user.id, projectsTable.completedByUserId))
+        .where(eq(projectsTable.id, projectId));
       expect(detail).toMatchObject({
         completedAt: result.completedAt,
         completedByUserId: actor,
+        completedByUserName: stored?.completedByUserName ?? expect.any(String),
+        daysLeft: Math.ceil(
+          (stored!.endDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+        ),
       });
       useSession(partnerIds[0]!);
       expect(await client.projects.get({ projectId })).toMatchObject({

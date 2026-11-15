@@ -157,18 +157,31 @@ export const ProjectDetailInputSchema = z.object({
   projectId: ProjectIdSchema,
 });
 
-const ProjectDetailBaseSchema = projectColumns.pick({
-  id: true,
-  name: true,
-  startDate: true,
-  endDate: true,
-  location: true,
-  country: true,
-  archived: true,
-  costSubmissionWindowOpen: true,
-  completedAt: true,
-  completedByUserId: true,
-});
+const ProjectDetailBaseSchema = projectColumns
+  .pick({
+    id: true,
+    name: true,
+    startDate: true,
+    endDate: true,
+    location: true,
+    country: true,
+    archived: true,
+    costSubmissionWindowOpen: true,
+    completedAt: true,
+    completedByUserId: true,
+  })
+  .extend({
+    // Resolved from the completing User; the raw id is useless on screen.
+    completedByUserName: z.string().nullable(),
+    // Headcount of active (non-merged) Project Participations, scoped to
+    // what the relationship may see: the whole Project for hosts, the own
+    // represented Participants for partners.
+    participantCount: z.number(),
+    // Whole days until endDate on the server clock. Computed in the
+    // procedure — never in render — so the value is identical in the server
+    // HTML and the hydrated tree, and no component reads a clock.
+    daysLeft: z.number(),
+  });
 
 const ProjectClaimStatusSchema = createSelectSchema(claimsTable).shape.status;
 

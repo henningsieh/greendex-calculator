@@ -2,6 +2,7 @@
 
 import { useTranslations } from "@greendex/i18n/client";
 
+import { StatCell, StatGrid } from "@/components/brand/stat-grid";
 import {
   CardSkeleton,
   HeaderSkeleton,
@@ -51,17 +52,68 @@ export function ProjectListSkeleton() {
   );
 }
 
+/**
+ * Skeleton twin of the workspace stats strip. Shared by the route loading
+ * state and the workspace itself, so numbers and placeholders occupy the
+ * same grid and resolving never shifts the layout.
+ */
+export function StatsSkeletonGrid({
+  columns = "three",
+  label,
+  testId,
+}: {
+  columns?: "two" | "three";
+  label?: string;
+  testId?: string;
+}) {
+  const slots = columns === "three" ? ["a", "b", "c"] : ["a", "b"];
+  return (
+    <StatGrid
+      aria-busy="true"
+      aria-label={label}
+      columns={columns}
+      data-testid={testId}
+    >
+      {slots.map((slot) => (
+        <StatCell key={slot}>
+          <Skeleton
+            className="h-12 w-16 max-w-full"
+            data-testid="loading-skeleton"
+          />
+          <Skeleton
+            className="mt-2 h-4 w-28 max-w-full"
+            data-testid="loading-skeleton"
+          />
+        </StatCell>
+      ))}
+    </StatGrid>
+  );
+}
+
 export function ProjectWorkspaceSkeleton() {
   const t = useTranslations("projects.loading");
   return (
     <LoadingRegion label={t("workspace")}>
       <div className="flex flex-col gap-8">
         <HeaderSkeleton />
-        <div className="grid gap-4 md:grid-cols-2">
-          <CardSkeleton rows={1} />
-          <CardSkeleton rows={1} />
+        <StatsSkeletonGrid />
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div className="flex items-center gap-3" key={index}>
+                <Skeleton
+                  className="size-5 shrink-0"
+                  data-testid="loading-skeleton"
+                />
+                <Skeleton
+                  className="h-5 w-56 max-w-full"
+                  data-testid="loading-skeleton"
+                />
+              </div>
+            ))}
+          </div>
+          <CardSkeleton />
         </div>
-        <CardSkeleton />
       </div>
     </LoadingRegion>
   );
