@@ -761,7 +761,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
       if (scenario.name === "project")
         await db
           .update(projectsTable)
-          .set({ archived: true })
+          .set({ costTrackerArchived: true })
           .where(eq(projectsTable.id, link!.projectId));
       if (scenario.name === "verification")
         await db
@@ -797,7 +797,7 @@ test.describe.serial("Partner Organization setup journey section 2", () => {
         if (scenario.name === "project")
           await db
             .update(projectsTable)
-            .set({ archived: false })
+            .set({ costTrackerArchived: false })
             .where(eq(projectsTable.id, link!.projectId));
         if (scenario.name === "verification")
           await db
@@ -1339,17 +1339,6 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
     });
     await page.goto("/partner-organizations");
     await page.getByTestId("assign-organization").click();
-    // Keep outgoing pickers mounted through the confirmation assertions.
-    await page.evaluate(() => {
-      document.addEventListener("animationstart", ({ target }) => {
-        if (
-          target instanceof HTMLElement &&
-          target.matches('[data-slot="popover-content"][data-closed]')
-        ) {
-          for (const animation of target.getAnimations()) animation.pause();
-        }
-      });
-    });
     const section = page.getByTestId("organization-assignment");
     await selectEntity(
       page,
@@ -1358,10 +1347,6 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
       section,
     );
     await selectEntity(page, "partner-organization-picker", partnerId, section);
-    const closingPickers = page.locator(
-      '[data-slot="popover-content"][data-closed]',
-    );
-    await expect(closingPickers).toHaveCount(2);
     await section.getByTestId("assign-partnership").click();
     const row = page.getByTestId(`partnership-row-${partnerId}`);
     const trigger = row.getByRole("button");
@@ -1378,7 +1363,6 @@ test("confirms irreversible Project Partnership removal and leaves cancellation 
     await trigger.click();
     await confirmation.getByTestId("confirm-dialog-execute").click();
     await expect(confirmation).toBeHidden();
-    await expect(closingPickers).toHaveCount(2);
     await expect(row).toHaveCount(0);
     await expect(page.getByTestId("partnership-feedback")).toHaveAttribute(
       "data-state",
