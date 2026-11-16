@@ -464,9 +464,7 @@ test.describe.serial("guided Organization Invitation", () => {
           const ready = await context.newPage();
           await ready.setViewportSize(viewport);
           await ready.goto(destination);
-          await expect(
-            ready.getByRole("heading", { level: 1 }),
-          ).not.toBeFocused();
+          await expect(ready.getByRole("heading", { level: 1 })).toBeFocused();
           await appearance(ready);
           await aboveFold(
             ready,
