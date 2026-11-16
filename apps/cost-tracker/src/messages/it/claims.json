@@ -101,7 +101,7 @@
       },
       "journey": {
         "distanceSuffix": "km (calculator distance)",
-        "correctFor": "Correct journey for {name}",
+        "correctFor": "Correct journey",
         "originFor": "Origin for {name}",
         "destinationFor": "Destination for {name}",
         "tripTypeFor": "Trip type for {name}",

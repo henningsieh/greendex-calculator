@@ -101,7 +101,7 @@
       },
       "journey": {
         "distanceSuffix": "km (Calculator-Distanz)",
-        "correctFor": "Journey für {name} korrigieren",
+        "correctFor": "Journey korrigieren",
         "originFor": "Abfahrt für {name}",
         "destinationFor": "Ziel für {name}",
         "tripTypeFor": "Reiseart für {name}",
