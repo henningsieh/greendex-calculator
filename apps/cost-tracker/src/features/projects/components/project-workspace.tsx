@@ -4,7 +4,7 @@ import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarDaysIcon, CheckIcon, MapPinIcon, UsersIcon } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import {
   partnershipClaimPath,
@@ -38,19 +38,56 @@ import {
   canCompleteProject,
   isClaimAwaitingReview,
 } from "@/features/claims/claim-lifecycle";
+import { PartnershipActions } from "@/features/partnerships/components/partnership-actions";
+import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
 import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
 import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+
+/** Header actions: completion plus the partnership dialogs, when permitted. */
+function ProjectHeaderActions({
+  canComplete,
+  completing,
+  onComplete,
+  projectId,
+  showPartnershipDialogs,
+}: {
+  canComplete: boolean;
+  completing: boolean;
+  onComplete: () => void;
+  projectId: string;
+  showPartnershipDialogs: boolean;
+}) {
+  const t = useTranslations("projects.workspace");
+  if (!canComplete && !showPartnershipDialogs) return null;
+  return (
+    // Stacked like the Partner Organizations header: the actions own the
+    // right edge, one per line, instead of competing for width.
+    <div className="flex flex-col gap-2">
+      {canComplete ? (
+        <Button
+          data-testid="complete-project"
+          disabled={completing}
+          onClick={onComplete}
+          type="button"
+        >
+          {completing ? t("completing") : t("complete")}
+        </Button>
+      ) : null}
+      {showPartnershipDialogs ? (
+        <Suspense fallback={<ProjectOptionsLoading />}>
+          <PartnershipActions projectId={projectId} />
+        </Suspense>
+      ) : null}
+    </div>
+  );
+}
 
 function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   const t = useTranslations("projects.workspace");
   if (!status) {
     return (
       <Badge data-claim-status="none" variant="secondary">
-        <span
-          aria-hidden="true"
-          className="size-1.5 rounded-full bg-current opacity-60"
-        />
         {t("noClaim")}
       </Badge>
     );
@@ -80,13 +117,19 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
                   : "secondary"
       }
     >
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {labels[status]}
     </Badge>
   );
 }
 
-export function ProjectWorkspace({ projectId }: { projectId: string }) {
+export function ProjectWorkspace({
+  projectId,
+  canManagePartnerships = false,
+}: {
+  projectId: string;
+  /** Presentation-only: the dialogs re-enforce on every call. */
+  canManagePartnerships?: boolean;
+}) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const dateFormat = useDateFormat();
@@ -99,6 +142,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     }),
   );
 
+  const isHosted = project.relationship === "hosted";
   const canComplete =
     project.relationship === "hosted" &&
     !project.archived &&
@@ -159,16 +203,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           }
           title={project.name}
           rightButton={
-            canComplete ? (
-              <Button
-                disabled={completing}
-                onClick={completeProject}
-                data-testid="complete-project"
-                type="button"
-              >
-                {completing ? t("completing") : t("complete")}
-              </Button>
-            ) : undefined
+            <ProjectHeaderActions
+              canComplete={canComplete}
+              completing={completing}
+              onComplete={completeProject}
+              projectId={project.id}
+              showPartnershipDialogs={canManagePartnerships && isHosted}
+            />
           }
         />
         <div className="flex flex-wrap items-center gap-2">

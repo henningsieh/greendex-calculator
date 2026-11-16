@@ -25,6 +25,12 @@ vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { complete: mocks.complete } },
 }));
 
+vi.mock("@/features/partnerships/components/partnership-actions", () => ({
+  PartnershipActions: ({ projectId }: { projectId?: string }) => (
+    <p data-project-id={projectId} data-testid="partnership-actions" />
+  ),
+}));
+
 import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
 
 const baseProject = {
@@ -40,14 +46,17 @@ const baseProject = {
   daysLeft: 5,
 };
 
-function renderWorkspace() {
+function renderWorkspace({ canManagePartnerships = false } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading workspace</p>}>
-        <ProjectWorkspace projectId="project-1" />
+        <ProjectWorkspace
+          canManagePartnerships={canManagePartnerships}
+          projectId="project-1"
+        />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -133,6 +142,30 @@ describe("Project workspace", () => {
     expect(screen.queryByTestId("stat-open-claims")).toBeNull();
     expect(screen.queryByTestId("stat-partners")).toBeNull();
     expect(screen.queryByTestId("stat-participants")).toBeNull();
+  });
+
+  it("offers the partnership dialogs with the Project locked to this page", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    };
+    renderWorkspace({ canManagePartnerships: true });
+    expect(await screen.findByTestId("partnership-actions")).toHaveAttribute(
+      "data-project-id",
+      "project-1",
+    );
+  });
+
+  it("hides the partnership dialogs without the management permission", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    };
+    renderWorkspace();
+    await screen.findByTestId("project-workspace");
+    expect(screen.queryByTestId("partnership-actions")).toBeNull();
   });
 
   it("renders each hosted Partnership's derived readiness independently", async () => {
