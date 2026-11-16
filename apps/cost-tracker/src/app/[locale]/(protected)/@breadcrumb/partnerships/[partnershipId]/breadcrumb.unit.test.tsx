@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/client";
 import { screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -24,9 +25,6 @@ vi.mock("@/lib/orpc/orpc", () => ({
       },
     },
   },
-}));
-vi.mock("@/lib/orpc/presentation-refusal", () => ({
-  isPresentationRefusal: () => true,
 }));
 vi.mock("@/lib/tanstack-react-query/hydration", () => ({
   getQueryClient: () => ({ query: mocks.query }),
@@ -136,8 +134,14 @@ it("links Claim review through the Hosted Project", async () => {
   expect(currentCount(container)).toBe(1);
 });
 
+it("rethrows ordinary scope failures instead of degrading", async () => {
+  mocks.query.mockRejectedValue(new Error("boom"));
+
+  await expect(ClaimReviewBreadcrumbContent({ params })).rejects.toThrow("boom");
+});
+
 it("degrades Claim review to the Projects crumb when the scope is refused", async () => {
-  mocks.query.mockRejectedValue(new Error("refused"));
+  mocks.query.mockRejectedValue(new ORPCError("FORBIDDEN"));
 
   render(
     <SidebarProvider>
@@ -150,7 +154,7 @@ it("degrades Claim review to the Projects crumb when the scope is refused", asyn
 });
 
 it("degrades to the Projects crumb when the scope is refused", async () => {
-  mocks.query.mockRejectedValue(new Error("refused"));
+  mocks.query.mockRejectedValue(new ORPCError("FORBIDDEN"));
 
   const { container } = render(
     <SidebarProvider>

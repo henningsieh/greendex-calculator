@@ -215,6 +215,8 @@ describe("Project workspace", () => {
     expect(
       screen.getByTestId("review-claim-partnership-4").getAttribute("href"),
     ).toBe("/en-GB/partnerships/partnership-4/claim/review");
+    // An unsubmitted draft has no review page: same row, inert control.
+    expect(screen.getByTestId("review-claim-partnership-6")).toBeDisabled();
     // Only `submitted` awaits a Hosting decision: a correction request reopens
     // Partner editing, and every other status is decided or unsubmitted.
     expect(screen.getByTestId("stat-open-claims")).toHaveAttribute(

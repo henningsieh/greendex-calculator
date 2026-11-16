@@ -122,6 +122,22 @@ export function isClaimAwaitingReview(
   return status === "submitted";
 }
 
+/**
+ * Whether the review page can render this Claim. An unsubmitted draft belongs
+ * to the Partner; every status from submission onwards is reviewable (terminal
+ * ones read-only). `claims.getReviewDetails` enforces the same rule.
+ */
+export function isClaimReviewable(
+  status: ClaimStatus | null | undefined,
+): boolean {
+  return status != null && status !== "editable";
+}
+
+/**
+ * The one settled-status rule (ADR-0011): a Claim is settled when it is either
+ * paid or rejected. A correction-requested Claim is still unsettled, as is an
+ * approved Claim awaiting payment.
+ */
 export function isSettledClaimStatus(
   status: ClaimStatus | null | undefined,
 ): boolean {

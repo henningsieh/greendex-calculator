@@ -22,6 +22,7 @@ import { z } from "zod";
 import {
   claimReviewTransition,
   type ClaimReviewDecision,
+  isClaimReviewable,
   MAX_CLAIM_REASON_LENGTH,
 } from "@/features/claims/claim-lifecycle";
 import { lockClaimScope } from "@/features/claims/procedures/claim-locks";
@@ -236,15 +237,7 @@ export const getReviewDetails = authorized
       .where(eq(claims.partnershipId, input.partnershipId))
       .limit(1);
     if (!claim) throw createSituationErrors(errors).claimNotFound();
-    if (
-      ![
-        "submitted",
-        "correction_requested",
-        "approved",
-        "rejected",
-        "paid",
-      ].includes(claim.status)
-    )
+    if (!isClaimReviewable(claim.status))
       throw createSituationErrors(errors).claimReviewUnavailable();
     const [payout, costRows, journeyRows] = await Promise.all([
       db

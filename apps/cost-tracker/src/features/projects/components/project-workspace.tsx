@@ -37,6 +37,7 @@ import {
   type ClaimStatus,
   canCompleteProject,
   isClaimAwaitingReview,
+  isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
 import { PartnershipActions } from "@/features/partnerships/components/partnership-actions";
 import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
@@ -441,7 +442,7 @@ export function ProjectWorkspace({
                       {/* The review page hangs under this Hosted Project, so
                           the row is its way in: the global queue also lists
                           every submitted Claim, this links one Partnership. */}
-                      {partner.claimStatus ? (
+                      {isClaimReviewable(partner.claimStatus) ? (
                         <Link
                           className={buttonVariants({
                             variant: "link",

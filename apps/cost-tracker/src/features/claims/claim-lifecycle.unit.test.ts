@@ -10,6 +10,7 @@ import {
   claimReviewActions,
   claimReviewTransition,
   isClaimAwaitingReview,
+  isClaimReviewable,
   isPartnerEditLocked,
   isSettledClaimStatus,
   type ClaimStatus,
@@ -131,6 +132,19 @@ describe("review surfaces", () => {
     expect(claimPanelActions("editable")).toEqual([]);
     expect(claimPanelActions("correction_requested")).toEqual([]);
     expect(claimPanelActions(null)).toEqual([]);
+  });
+
+  it("opens the review page for everything except an unsubmitted draft", () => {
+    expect(isClaimReviewable("editable")).toBe(false);
+    expect(isClaimReviewable(null)).toBe(false);
+    for (const status of [
+      "submitted",
+      "correction_requested",
+      "approved",
+      "rejected",
+      "paid",
+    ] as const)
+      expect(isClaimReviewable(status)).toBe(true);
   });
 
   it("queues submitted Claims for review and nothing else", () => {

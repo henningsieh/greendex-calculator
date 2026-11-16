@@ -312,7 +312,15 @@ export default function DesignSystemPage() {
             <CardContent className="flex flex-wrap items-start gap-x-6 gap-y-4">
               {BADGE_VARIANTS.map((variant) => (
                 <div className="flex flex-col items-start gap-1.5" key={variant}>
-                  <div className="flex min-h-7 items-center">
+                  {/* claim-status paints white on the Claim Band; show it on
+                      that surface instead of the default Card. */}
+                  <div
+                    className={cn(
+                      "flex min-h-7 items-center",
+                      variant === "claim-status" &&
+                        "rounded-xl border border-border bg-claim-band px-2",
+                    )}
+                  >
                     <Badge variant={variant}>
                       {variant === "ember-pill"
                         ? t("designSystem.badges.chipPartners")
