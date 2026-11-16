@@ -454,10 +454,9 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(
       readiness.locator('[data-claim-status="submitted"]'),
     ).toBeVisible();
-    await h
-      .getByTestId("project-workspace")
-      .locator('a[href$="/claims/review"]')
-      .click();
+    // Project rows now link to one Partnership's review page, so the queue is
+    // entered directly; the queue-to-review hop below stays under test.
+    await h.goto("/claims/review");
     await expect(h).toHaveURL(/\/claims\/review$/);
     const queued = h.locator(`a[href$="${reviewURL}"]`);
     await expect(queued).toBeVisible();

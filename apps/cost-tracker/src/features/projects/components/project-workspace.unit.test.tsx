@@ -25,6 +25,12 @@ vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { complete: mocks.complete } },
 }));
 
+vi.mock("@/features/partnerships/components/partnership-actions", () => ({
+  PartnershipActions: ({ projectId }: { projectId?: string }) => (
+    <p data-project-id={projectId} data-testid="partnership-actions" />
+  ),
+}));
+
 import { ProjectWorkspace } from "@/features/projects/components/project-workspace";
 
 const baseProject = {
@@ -40,14 +46,17 @@ const baseProject = {
   daysLeft: 5,
 };
 
-function renderWorkspace() {
+function renderWorkspace({ canManagePartnerships = false } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<p>Loading workspace</p>}>
-        <ProjectWorkspace projectId="project-1" />
+        <ProjectWorkspace
+          canManagePartnerships={canManagePartnerships}
+          projectId="project-1"
+        />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -94,6 +103,12 @@ describe("Project workspace", () => {
     expect(screen.getByTestId("stat-open-claims")).toBeInTheDocument();
     expect(screen.getByTestId("stat-partners")).toBeInTheDocument();
     expect(screen.getByTestId("stat-participants")).toBeInTheDocument();
+    // Without a Claim the review affordance stays visible but inert: no dead
+    // end, and no link to a page that has nothing to review.
+    expect(screen.getByTestId("review-claim-partnership-1")).toBeDisabled();
+    expect(
+      screen.getByTestId("review-claim-partnership-1").closest("a"),
+    ).toBeNull();
     expect(screen.queryByTestId("coordinate-participants")).toBeNull();
     expect(screen.getByTestId("hosted-participants").getAttribute("href")).toBe(
       "/en-GB/projects/project-1/participants",
@@ -127,6 +142,30 @@ describe("Project workspace", () => {
     expect(screen.queryByTestId("stat-open-claims")).toBeNull();
     expect(screen.queryByTestId("stat-partners")).toBeNull();
     expect(screen.queryByTestId("stat-participants")).toBeNull();
+  });
+
+  it("offers the partnership dialogs with the Project locked to this page", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    };
+    renderWorkspace({ canManagePartnerships: true });
+    expect(await screen.findByTestId("partnership-actions")).toHaveAttribute(
+      "data-project-id",
+      "project-1",
+    );
+  });
+
+  it("hides the partnership dialogs without the management permission", async () => {
+    mocks.detail = {
+      ...baseProject,
+      relationship: "hosted",
+      partnerOrganizations: [],
+    };
+    renderWorkspace();
+    await screen.findByTestId("project-workspace");
+    expect(screen.queryByTestId("partnership-actions")).toBeNull();
   });
 
   it("renders each hosted Partnership's derived readiness independently", async () => {
@@ -171,6 +210,13 @@ describe("Project workspace", () => {
         status,
       );
     }
+    // A Claim that exists links to its review page, which hangs under this
+    // Hosted Project in the breadcrumb.
+    expect(
+      screen.getByTestId("review-claim-partnership-4").getAttribute("href"),
+    ).toBe("/en-GB/partnerships/partnership-4/claim/review");
+    // An unsubmitted draft has no review page: same row, inert control.
+    expect(screen.getByTestId("review-claim-partnership-6")).toBeDisabled();
     // Only `submitted` awaits a Hosting decision: a correction request reopens
     // Partner editing, and every other status is decided or unsubmitted.
     expect(screen.getByTestId("stat-open-claims")).toHaveAttribute(

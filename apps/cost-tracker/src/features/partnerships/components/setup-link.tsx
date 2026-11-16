@@ -92,15 +92,23 @@ function useRefreshSetupLinks() {
 
 export function SetupLinkForm({
   projects,
+  initialProjectId,
 }: {
   projects: readonly HostedProjectOption[];
+  /**
+   * Preselects the Hosted Project when the dialog was opened in context.
+   * A preselected Project is the caller's context, not a choice, so the
+   * picker locks itself for as long as this value is supplied.
+   */
+  initialProjectId?: SetupLinkFormValues["projectId"];
 }) {
+  const projectLocked = initialProjectId !== undefined;
   const t = useTranslations("partnerships.setup");
   const refreshLinks = useRefreshSetupLinks();
   const formId = useId();
   const form = useForm<SetupLinkFormValues>({
     resolver: zodResolver(CreateSetupLinkInputSchema),
-    defaultValues: { projectId: "", recipientEmail: "" },
+    defaultValues: { projectId: initialProjectId ?? "", recipientEmail: "" },
     mode: "onTouched",
   });
   const pending = form.formState.isSubmitting;
@@ -153,7 +161,7 @@ export function SetupLinkForm({
                 value={field.value}
                 onChange={field.onChange}
                 preload={projects}
-                disabled={pending}
+                disabled={pending || projectLocked}
               />
               {fieldState.invalid && (
                 <FieldError id="setup-project-error">
@@ -428,8 +436,11 @@ export function SetupLinkList() {
 
 export function CreateSetupLinkDialog({
   projects,
+  projectId,
 }: {
   projects: readonly HostedProjectOption[];
+  /** Preselects the Hosted Project when the dialog was opened in context. */
+  projectId?: SetupLinkFormValues["projectId"];
 }) {
   const t = useTranslations("partnerships.setup");
   const [open, setOpen] = useState(false);
@@ -448,7 +459,9 @@ export function CreateSetupLinkDialog({
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
-        <SetupLinkForm projects={projects} />
+        {/* The dialog mounts its content per open, so the form seeds itself
+            from the caller's context without a remount key. */}
+        <SetupLinkForm initialProjectId={projectId} projects={projects} />
       </DialogContent>
     </Dialog>
   );

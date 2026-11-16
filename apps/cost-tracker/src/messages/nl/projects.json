@@ -77,7 +77,6 @@
       "assignedPartners": "Assigned Partner Organizations",
       "noPartners": "No Partner Organizations are assigned.",
       "assigned": "Assigned",
-      "reviewClaims": "Review submitted claims",
       "partnership": "Project Partnership",
       "claimReadiness": "Claim readiness:",
       "hostingOrganization": "Hosting Organization:",
@@ -102,7 +101,6 @@
         "rejected": "Rejected",
         "paid": "Paid"
       },
-      "participantsReport": "Participants report",
       "projectParticipations": "Project Participations",
       "statPartners": "Partners",
       "statParticipants": "Participants",
@@ -115,7 +113,9 @@
       "statPartnersDetail": "assigned organizations",
       "statParticipantsDetail": "have joined so far",
       "claimsInReviewDetail": "need a decision",
-      "daysUntil": "until {date}"
+      "daysUntil": "until {date}",
+      "claimReview": "Claim review",
+      "participants": "Participants"
     }
   }
 }

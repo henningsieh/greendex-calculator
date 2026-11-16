@@ -36,9 +36,15 @@ type Values = z.infer<typeof AssignProjectPartnershipInputSchema>;
 export function AssignOrganizationDialog({
   projects,
   organizations,
+  projectId,
+  organizationId,
 }: {
   projects: readonly HostedProjectOption[];
   organizations: readonly OrganizationOption[];
+  /** Preselect the Hosted Project when the dialog was opened in context. */
+  projectId?: Values["projectId"];
+  /** Preselect the Partner Organization when the dialog was opened in context. */
+  organizationId?: Values["organizationId"];
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations("partnerships");
@@ -46,10 +52,16 @@ export function AssignOrganizationDialog({
   const [error, setError] = useState<React.ReactNode>(null);
   const form = useForm<Values>({
     resolver: zodResolver(AssignProjectPartnershipInputSchema),
-    defaultValues: { projectId: "", organizationId: "" },
+    defaultValues: {
+      projectId: projectId ?? "",
+      organizationId: organizationId ?? "",
+    },
     mode: "onTouched",
   });
   const pending = form.formState.isSubmitting;
+  // A preselected identifier is the caller's context, not a choice.
+  const projectLocked = projectId !== undefined;
+  const organizationLocked = organizationId !== undefined;
 
   async function assign(values: Values) {
     setError(null);
@@ -57,7 +69,6 @@ export function AssignOrganizationDialog({
       await orpc.projectPartnerships.assign(values);
       await invalidatePartnershipProjectData(queryClient);
       setOpen(false);
-      form.reset();
     } catch (cause) {
       setError(<ErrorPresentation error={cause} />);
     }
@@ -69,6 +80,16 @@ export function AssignOrganizationDialog({
         if (pending) return;
         setOpen(next);
         if (next) setError(null);
+      }}
+      onOpenChangeComplete={(next) => {
+        if (next || pending) return;
+        // Reset only after the close transition finishes: doing it inside
+        // onOpenChange interrupts Base UI's dismissal. The form lives in this
+        // component, so a reopen must not inherit the last submission.
+        form.reset({
+          projectId: projectId ?? "",
+          organizationId: organizationId ?? "",
+        });
       }}
       open={open}
     >
@@ -108,7 +129,7 @@ export function AssignOrganizationDialog({
                   value={field.value}
                   onChange={field.onChange}
                   preload={projects}
-                  disabled={pending}
+                  disabled={pending || projectLocked}
                   aria-invalid={fieldState.invalid}
                   aria-describedby={
                     fieldState.invalid ? "assign-project-error" : undefined
@@ -139,7 +160,7 @@ export function AssignOrganizationDialog({
                   value={field.value}
                   onChange={field.onChange}
                   preload={organizations}
-                  disabled={pending}
+                  disabled={pending || organizationLocked}
                   aria-invalid={fieldState.invalid}
                   aria-describedby={
                     fieldState.invalid ? "assign-organization-error" : undefined

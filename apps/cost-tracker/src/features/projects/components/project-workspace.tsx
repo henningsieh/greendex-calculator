@@ -4,10 +4,11 @@ import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarDaysIcon, CheckIcon, MapPinIcon, UsersIcon } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import {
   partnershipClaimPath,
+  partnershipClaimReviewPath,
   partnershipParticipantsPath,
   projectParticipantsPath,
 } from "@/app/paths";
@@ -36,20 +37,58 @@ import {
   type ClaimStatus,
   canCompleteProject,
   isClaimAwaitingReview,
+  isClaimReviewable,
 } from "@/features/claims/claim-lifecycle";
+import { PartnershipActions } from "@/features/partnerships/components/partnership-actions";
+import { ProjectOptionsLoading } from "@/features/partnerships/components/project-options-loading";
 import { StatsSkeletonGrid } from "@/features/projects/components/project-loading-states";
 import { Link } from "@/lib/i18n/routing";
 import { orpc, orpcQuery } from "@/lib/orpc/orpc";
+
+/** Header actions: completion plus the partnership dialogs, when permitted. */
+function ProjectHeaderActions({
+  canComplete,
+  completing,
+  onComplete,
+  projectId,
+  showPartnershipDialogs,
+}: {
+  canComplete: boolean;
+  completing: boolean;
+  onComplete: () => void;
+  projectId: string;
+  showPartnershipDialogs: boolean;
+}) {
+  const t = useTranslations("projects.workspace");
+  if (!canComplete && !showPartnershipDialogs) return null;
+  return (
+    // Stacked like the Partner Organizations header: the actions own the
+    // right edge, one per line, instead of competing for width.
+    <div className="flex flex-col gap-2">
+      {canComplete ? (
+        <Button
+          data-testid="complete-project"
+          disabled={completing}
+          onClick={onComplete}
+          type="button"
+        >
+          {completing ? t("completing") : t("complete")}
+        </Button>
+      ) : null}
+      {showPartnershipDialogs ? (
+        <Suspense fallback={<ProjectOptionsLoading />}>
+          <PartnershipActions projectId={projectId} />
+        </Suspense>
+      ) : null}
+    </div>
+  );
+}
 
 function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
   const t = useTranslations("projects.workspace");
   if (!status) {
     return (
       <Badge data-claim-status="none" variant="secondary">
-        <span
-          aria-hidden="true"
-          className="size-1.5 rounded-full bg-current opacity-60"
-        />
         {t("noClaim")}
       </Badge>
     );
@@ -66,20 +105,32 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
     <Badge
       data-claim-status={status}
       variant={
-        status === "correction_requested" || status === "rejected"
-          ? "destructive"
-          : status === "submitted" || status === "approved"
-            ? "status-pass"
-            : "secondary"
+        status === "submitted"
+          ? "status-attention"
+          : status === "correction_requested"
+            ? "destructive"
+            : status === "approved"
+              ? "status-success"
+              : status === "rejected"
+                ? "status-destructive-solid"
+                : status === "paid"
+                  ? "status-success-solid"
+                  : "secondary"
       }
     >
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
       {labels[status]}
     </Badge>
   );
 }
 
-export function ProjectWorkspace({ projectId }: { projectId: string }) {
+export function ProjectWorkspace({
+  projectId,
+  canManagePartnerships = false,
+}: {
+  projectId: string;
+  /** Presentation-only: the dialogs re-enforce on every call. */
+  canManagePartnerships?: boolean;
+}) {
   const queryClient = useQueryClient();
   const t = useTranslations("projects.workspace");
   const dateFormat = useDateFormat();
@@ -92,6 +143,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     }),
   );
 
+  const isHosted = project.relationship === "hosted";
   const canComplete =
     project.relationship === "hosted" &&
     !project.archived &&
@@ -152,16 +204,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           }
           title={project.name}
           rightButton={
-            canComplete ? (
-              <Button
-                disabled={completing}
-                onClick={completeProject}
-                data-testid="complete-project"
-                type="button"
-              >
-                {completing ? t("completing") : t("complete")}
-              </Button>
-            ) : undefined
+            <ProjectHeaderActions
+              canComplete={canComplete}
+              completing={completing}
+              onComplete={completeProject}
+              projectId={project.id}
+              showPartnershipDialogs={canManagePartnerships && isHosted}
+            />
           }
         />
         <div className="flex flex-wrap items-center gap-2">
@@ -252,57 +301,83 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
 
       <section
         aria-label={t("details")}
-        className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+        className="flex items-start justify-between gap-6"
       >
-        <div className="flex gap-3">
-          <CalendarDaysIcon
-            aria-hidden="true"
-            className="size-5 shrink-0 text-muted-foreground"
-          />
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-xs text-muted-foreground">{t("schedule")}</p>
-            <p className="text-sm font-medium">
-              {dateFormat.range(project.startDate, project.endDate, "date.long")}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <MapPinIcon
-            aria-hidden="true"
-            className="size-5 shrink-0 text-muted-foreground"
-          />
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-xs text-muted-foreground">{t("location")}</p>
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <CountryFlag code={project.country} />
-              <span className="truncate">
-                {[project.location, project.country].filter(Boolean).join(", ")}
-              </span>
-            </p>
-          </div>
-        </div>
-        {project.completedAt && (
-          <div
-            className="flex gap-3"
-            data-completed-at={project.completedAt.toISOString()}
-            data-completed-by-user-id={project.completedByUserId}
-          >
-            <CheckIcon
-              aria-hidden="true"
-              className="size-5 shrink-0 text-muted-foreground"
-            />
+        {/* Facts stack on phones and share one row from sm; the Participants
+            entry always sits at the trailing edge, never inside the column. */}
+        <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row sm:flex-wrap sm:gap-x-8">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+              <CalendarDaysIcon
+                aria-hidden="true"
+                className="size-5 text-muted-foreground"
+              />
+            </span>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs text-muted-foreground">{t("completed")}</p>
+              <p className="text-xs text-muted-foreground">{t("schedule")}</p>
               <p className="text-sm font-medium">
-                {dateFormat.format(project.completedAt, "dateTime.short")}
-                {project.completedByUserName ? (
-                  <span className="font-normal text-muted-foreground">
-                    {" "}
-                    {t("by")} {project.completedByUserName}
-                  </span>
-                ) : null}
+                {dateFormat.range(
+                  project.startDate,
+                  project.endDate,
+                  "date.long",
+                )}
               </p>
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+              <MapPinIcon
+                aria-hidden="true"
+                className="size-5 text-muted-foreground"
+              />
+            </span>
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-xs text-muted-foreground">{t("location")}</p>
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <CountryFlag code={project.country} />
+                <span className="truncate">
+                  {[project.location, project.country].filter(Boolean).join(", ")}
+                </span>
+              </p>
+            </div>
+          </div>
+          {project.completedAt && (
+            <div
+              className="flex items-center gap-3"
+              data-completed-at={project.completedAt.toISOString()}
+              data-completed-by-user-id={project.completedByUserId}
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+                <CheckIcon
+                  aria-hidden="true"
+                  className="size-5 text-muted-foreground"
+                />
+              </span>
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-xs text-muted-foreground">{t("completed")}</p>
+                <p className="text-sm font-medium">
+                  {dateFormat.format(project.completedAt, "dateTime.short")}
+                  {project.completedByUserName ? (
+                    <span className="font-normal text-muted-foreground">
+                      {" "}
+                      {t("by")} {project.completedByUserName}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        {project.relationship === "hosted" && (
+          <div className="flex shrink-0 items-center">
+            <Link
+              className={buttonVariants({ variant: "link", size: "sm" })}
+              href={projectParticipantsPath(project.id)}
+              data-testid="hosted-participants"
+            >
+              <UsersIcon aria-hidden="true" />
+              {t("participants")}
+            </Link>
           </div>
         )}
       </section>
@@ -314,7 +389,8 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
               <CardTitle as="h2">{t("assignedPartners")}</CardTitle>
             </div>
             <CardAction>
-              <Badge variant="ember-pill">
+              <Badge variant="outline">
+                <EntityIcon entity="partnerOrganization" className="size-3" />
                 {t("partnersCount", {
                   count: project.partnerOrganizations.length,
                 })}
@@ -361,34 +437,43 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
                         {dateFormat.format(partner.assignedAt, "date.medium")}
                       </p>
                     </div>
-                    <ClaimReadiness status={partner.claimStatus} />
+                    <span className="flex flex-wrap items-center gap-3">
+                      <ClaimReadiness status={partner.claimStatus} />
+                      {/* The review page hangs under this Hosted Project, so
+                          the row is its way in: the global queue also lists
+                          every submitted Claim, this links one Partnership. */}
+                      {isClaimReviewable(partner.claimStatus) ? (
+                        <Link
+                          className={buttonVariants({
+                            variant: "link",
+                            size: "sm",
+                          })}
+                          href={partnershipClaimReviewPath(partner.id)}
+                          data-testid={`review-claim-${partner.id}`}
+                        >
+                          <EntityIcon entity="claim" className="size-3.5" />
+                          {t("claimReview")}
+                        </Link>
+                      ) : (
+                        // No Claim exists for this Partnership yet: keep the
+                        // affordance visible but inert, so the row reads the
+                        // same for every Partner without offering a dead end.
+                        <Button
+                          data-testid={`review-claim-${partner.id}`}
+                          disabled
+                          size="sm"
+                          type="button"
+                          variant="link"
+                        >
+                          <EntityIcon entity="claim" className="size-3.5" />
+                          {t("claimReview")}
+                        </Button>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
-            <div className="flex flex-wrap gap-2">
-              <Link
-                className={buttonVariants({
-                  variant: "outline",
-                  size: "sm",
-                })}
-                href={projectParticipantsPath(project.id)}
-                data-testid="hosted-participants"
-              >
-                <UsersIcon aria-hidden="true" />
-                {t("participantsReport")}
-              </Link>
-              <Link
-                className={buttonVariants({
-                  variant: "link",
-                  size: "sm",
-                })}
-                href="/claims/review"
-              >
-                <EntityIcon entity="claim" className="size-3.5" />
-                {t("reviewClaims")}
-              </Link>
-            </div>
           </CardContent>
         </Card>
       ) : (

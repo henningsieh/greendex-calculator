@@ -342,6 +342,32 @@ describe("Setup Link UI", () => {
     },
   );
 
+  it("preselects the caller's Hosted Project context", async () => {
+    const user = userEvent.setup();
+    const client = createQueryClient();
+    client.setDefaultOptions({ queries: { retry: false } });
+    render(
+      <QueryClientProvider client={client}>
+        <CreateSetupLinkDialog
+          projects={[{ id: "project-context", name: "Context Project" }]}
+          projectId="project-context"
+        />
+        <SetupLinkList />
+      </QueryClientProvider>,
+    );
+    const dialog = await openDialog(user);
+    // The caller's Project is context: the picker locks.
+    expect(dialog.getByTestId("entity-combobox-trigger")).toBeDisabled();
+    await user.type(dialog.getByTestId("setup-email"), "partner@example.com");
+    await user.click(dialog.getByTestId("create-setup-link"));
+    await waitFor(() =>
+      expect(mocks.create).toHaveBeenCalledWith({
+        projectId: "project-context",
+        recipientEmail: "partner@example.com",
+      }),
+    );
+  });
+
   it("prevents repeat issuance while the new link is pending", async () => {
     const user = userEvent.setup();
     mocks.create.mockReturnValue(new Promise(() => {}));

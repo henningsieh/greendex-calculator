@@ -146,6 +146,42 @@ describe("AssignOrganizationDialog", () => {
     vi.unstubAllGlobals();
   });
 
+  it("preselects the caller's Project and Organization context", async () => {
+    const user = userEvent.setup();
+    const queryClient = createQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AssignOrganizationDialog
+          projects={[{ id: "project-context", name: "Context Project" }]}
+          organizations={[
+            { id: "organization-context", name: "Context Partner" },
+          ]}
+          projectId="project-context"
+          organizationId="organization-context"
+        />
+      </QueryClientProvider>,
+    );
+    await user.click(screen.getByTestId("assign-organization"));
+    // Preselected identifiers are context, not a choice: both lock.
+    expect(
+      within(screen.getByTestId("hosted-project-picker")).getByTestId(
+        "entity-combobox-trigger",
+      ),
+    ).toBeDisabled();
+    expect(
+      within(screen.getByTestId("partner-organization-picker")).getByTestId(
+        "entity-combobox-trigger",
+      ),
+    ).toBeDisabled();
+    await user.click(screen.getByTestId("assign-partnership"));
+    await waitFor(() =>
+      expect(mocks.assign).toHaveBeenCalledWith({
+        projectId: "project-context",
+        organizationId: "organization-context",
+      }),
+    );
+  });
+
   it.each(["en-GB", "de"] as const)(
     "translates required fields in %s and blocks assignment",
     async (locale) => {
@@ -250,23 +286,12 @@ describe("AssignOrganizationDialog", () => {
     });
   });
 
-  it("keeps project selections independent when both dialogs share the same options", async () => {
+  it("clears the assign form after closing, so a reopen starts empty", async () => {
     const user = userEvent.setup();
-    const projects = [
+    await renderDialog("en-GB", [
       { id: "a", name: "Alpha" },
       { id: "b", name: "Beta" },
-    ];
-    mocks.create.mockResolvedValue({ id: "link-1", secret: "secret" });
-    render(
-      <QueryClientProvider client={createQueryClient()}>
-        <CreateSetupLinkDialog projects={projects} />
-        <AssignOrganizationDialog
-          projects={projects}
-          organizations={[{ id: "organization-new", name: "New Partner" }]}
-        />
-      </QueryClientProvider>,
-    );
-    await user.click(screen.getByTestId("assign-organization"));
+    ]);
     let dialog = within(screen.getByTestId("organization-assignment"));
     await user.click(
       within(dialog.getByTestId("hosted-project-picker")).getByTestId(
@@ -283,6 +308,39 @@ describe("AssignOrganizationDialog", () => {
             button.getAttribute("type") === "button",
         )!,
     );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("organization-assignment"),
+      ).not.toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByTestId("assign-organization"));
+    dialog = within(screen.getByTestId("organization-assignment"));
+    await user.click(screen.getByTestId("assign-partnership"));
+    // The close reset re-armed an empty form, so validation fires again.
+    await waitFor(() =>
+      expect(
+        within(dialog.getByTestId("hosted-project-picker")).getByTestId(
+          "entity-combobox-trigger",
+        ),
+      ).toHaveAccessibleDescription(english.apiErrors.details.projectIdRequired),
+    );
+    expect(mocks.assign).not.toHaveBeenCalled();
+  });
+
+  it("keeps the invite dialog's own selection", async () => {
+    const user = userEvent.setup();
+    mocks.create.mockResolvedValue({ id: "link-1", secret: "secret" });
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <CreateSetupLinkDialog
+          projects={[
+            { id: "a", name: "Alpha" },
+            { id: "b", name: "Beta" },
+          ]}
+        />
+      </QueryClientProvider>,
+    );
     await user.click(screen.getByTestId("new-setup-link"));
     const setup = within(screen.getByTestId("setup-link-creator"));
     await user.click(
@@ -297,30 +355,6 @@ describe("AssignOrganizationDialog", () => {
       expect(mocks.create).toHaveBeenCalledWith({
         projectId: "b",
         recipientEmail: "test@example.org",
-      }),
-    );
-    await user.click(
-      setup
-        .getAllByRole("button")
-        .find(
-          (button) =>
-            button.closest('[data-slot="dialog-footer"]') &&
-            button.getAttribute("type") === "button",
-        )!,
-    );
-    await user.click(screen.getByTestId("assign-organization"));
-    dialog = within(screen.getByTestId("organization-assignment"));
-    await user.click(
-      within(dialog.getByTestId("partner-organization-picker")).getByTestId(
-        "entity-combobox-trigger",
-      ),
-    );
-    await user.click(screen.getByTestId("entity-option-organization-new"));
-    await user.click(dialog.getByTestId("assign-partnership"));
-    await waitFor(() =>
-      expect(mocks.assign).toHaveBeenCalledWith({
-        projectId: "a",
-        organizationId: "organization-new",
       }),
     );
   });
