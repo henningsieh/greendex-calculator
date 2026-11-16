@@ -16,12 +16,7 @@ import { type Browser, type Page } from "@playwright/test";
 import { hashPassword } from "better-auth/crypto";
 import { count, inArray } from "drizzle-orm";
 
-import {
-  expectPrivateURL,
-  expect,
-  test,
-  registerPrivateValues,
-} from "./fixtures/artifact-privacy";
+import { expect, test, registerPrivateValues } from "./fixtures/artifact-privacy";
 import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 // MVP artifact privacy: trace/video/screenshots are off, excluding auth bodies
@@ -99,17 +94,15 @@ async function ownedCounts() {
 }
 
 async function openHostedProject(page: Page, url: string) {
-  await page.goto("/projects");
-  // ADR-0025: Project links carry identity only, so no query parameter follows.
-  await page.locator(`a[href$="${url}"]`).click();
-  // Preserve the original full-URL match; only the diagnostic receives a boolean.
-  await expectPrivateURL(page, new RegExp(`${url}(?:\\?.*)?$`));
+  await page.goto(url);
+  const workspace = page.getByTestId("project-workspace");
+  // The workspace is actionable only after React has taken over the streamed
+  // tree; its own marker is a real hydration condition, not a timing guess.
+  await expect(workspace).toHaveAttribute("data-hydrated", "true");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   // Text-free: relationship state hook instead of visible copy.
-  await expect(page.locator('[data-relationship="hosted"]')).toBeVisible();
-  await expect(
-    page.locator('[data-testid="assigned-partner-organizations"]'),
-  ).toBeVisible();
+  await expect(workspace).toHaveAttribute("data-relationship", "hosted");
+  await expect(page.getByTestId("assigned-partner-organizations")).toBeVisible();
 }
 
 function partnerRow(page: Page, organizationId: string) {

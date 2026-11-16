@@ -4,7 +4,7 @@ import { useTranslations } from "@greendex/i18n/client";
 import { useDateFormat } from "@greendex/i18n/datetime/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { CalendarDaysIcon, MapPinIcon, UsersIcon } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useSyncExternalStore } from "react";
 
 import {
   partnershipClaimPath,
@@ -173,6 +173,11 @@ export function ProjectWorkspace({
   const [reopenOpen, setReopenOpen] = useState(false);
   const [reason, setReason] = useState("");
   const { confirm, dialog } = useConfirmDialog();
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const { data: project } = useSuspenseQuery(
     orpcQuery.projects.get.queryOptions({
       input: { projectId },
@@ -266,6 +271,7 @@ export function ProjectWorkspace({
   return (
     <div
       className="space-y-8"
+      data-hydrated={isHydrated ? "true" : undefined}
       data-project-id={project.id}
       data-relationship={project.relationship}
       data-testid="project-workspace"
