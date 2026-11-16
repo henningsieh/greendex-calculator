@@ -63,7 +63,7 @@
         "rejected": "Zavrnjeno · neplačano",
         "correctionRequested": "Zahtevan popravek · potrebno dejanje partnerja",
         "submitted": "Oddano · čaka na pregled gostiteljske organizacije",
-        "draft": "Osnutek za urejanje"
+        "in_preparation": "In preparation"
       },
       "confirmTransfer": "Potrdite šele po dejanskem celotnem bančnem nakazilu {amount} EUR.",
       "confirmReopen": "Ponovno odpiranje vrne zahtevek v pregled; urejanje za partnerja ostane zaklenjeno. Po potrebi ločeno zahtevajte popravek.",
@@ -95,7 +95,15 @@
       "bandTitle": "Claim workspace",
       "submissionLabel": "Submission",
       "locked": "This Claim is locked for Partner editing. Only a Hosting-side correction request can reopen it.",
-      "noDraft": "Select a Payout Account and explicitly save a Claim draft to add costs or Proof Documents. Journeys can be prepared separately.",
+      "noDraft": "Select a Payout Account and create a Claim to add costs or Proof Documents. Journeys can be prepared separately.",
+      "status": {
+        "in_preparation": "In preparation",
+        "submitted": "Submitted",
+        "correction_requested": "Correction requested",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "paid": "Paid"
+      },
       "common": {
         "cancel": "Cancel"
       },
@@ -159,7 +167,7 @@
         "accountHolder": "Account holder",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "saveDraft": "Save Claim draft"
+        "createClaim": "Create claim"
       },
       "notice": {
         "correctionRequested": "Correction requested:",

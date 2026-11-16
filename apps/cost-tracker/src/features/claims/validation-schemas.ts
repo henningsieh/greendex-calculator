@@ -25,7 +25,7 @@ export const ClaimDraftSchema = ClaimSelectSchema.pick({
   id: true,
   partnershipId: true,
 }).extend({
-  status: ClaimStatusSchema.extract(["editable", "correction_requested"]),
+  status: ClaimStatusSchema.extract(["in_preparation", "correction_requested"]),
 });
 
 export const TravelCostEntryIdSchema = createSelectSchema(travelCostEntriesTable)

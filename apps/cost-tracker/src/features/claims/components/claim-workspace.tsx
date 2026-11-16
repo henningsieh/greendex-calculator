@@ -20,7 +20,6 @@ import { CostEditor } from "@/features/claims/components/claim-cost-editor";
 import {
   ClaimBand,
   PayoutAccountLines,
-  claimStatusLabel,
 } from "@/features/claims/components/claim-document";
 import { JourneyEditor } from "@/features/claims/components/claim-journey-editor";
 import { ClaimHistory } from "@/features/claims/components/claim-review";
@@ -405,7 +404,7 @@ function ClaimDraftEditor({
       <CardContent className="space-y-4">
         <p data-draft-status={draft?.status ?? "none"}>
           {draft
-            ? t("copy.savedClaim", { status: claimStatusLabel(draft.status) })
+            ? t("copy.savedClaim", { status: t(`status.${draft.status}`) })
             : t("copy.noClaim")}
         </p>
         <div id="claim-payout">
@@ -501,10 +500,10 @@ function ClaimDraftEditor({
             size="lg"
             type="button"
             disabled={pending || !payout.selectedPayoutAccountId}
-            data-testid="claim-draft-save"
+            data-testid="claim-create"
             onClick={() => void saveDraft()}
           >
-            {t("payout.saveDraft")}
+            {t("payout.createClaim")}
           </Button>
         )}
         {feedback && (

@@ -499,7 +499,7 @@ export const duplicateReviewTasksTable = pgTable(
 // Claim persistence. Monetary values stay strings at the driver boundary: never
 // round exact EUR or percentage values through JavaScript floating point.
 export const claimStatusEnum = pgEnum("claim_status", [
-  "editable",
+  "in_preparation",
   "submitted",
   "correction_requested",
   "approved",
@@ -655,7 +655,7 @@ export const claimsTable = pgTable(
         onDelete: "cascade",
       })
       .unique(),
-    status: claimStatusEnum("status").default("editable").notNull(),
+    status: claimStatusEnum("status").default("in_preparation").notNull(),
     approvedAmountEur: numeric("approved_amount_eur", {
       precision: 14,
       scale: 2,

@@ -142,7 +142,7 @@ async function submissionState(page: Page) {
   await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
   await expect(
     page.locator(
-      '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-draft-save"]',
+      '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-create"]',
     ),
   ).toHaveCount(0);
   const persisted = await db
@@ -307,11 +307,11 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     // Partnership ID, not a guessed Claim ID); the enabled save below confirms it.
     const accountPicker = p.locator("#claim-payout-select");
     await accountPicker.selectOption(ids.payout);
-    const save = p.getByTestId("claim-draft-save");
+    const save = p.getByTestId("claim-create");
     await expect(save).toBeEnabled();
     await save.dblclick();
     // Inspect persisted state before any retry: never issue a blind second mutation.
-    await expect(p.locator('[data-draft-status="editable"]')).toBeVisible();
+    await expect(p.locator('[data-draft-status="in_preparation"]')).toBeVisible();
     const [saved] = await db
       .select({ id: claims.id })
       .from(claims)
@@ -320,7 +320,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     claimId = saved!.id;
     await expect(save).toHaveCount(0);
     await p.reload();
-    await expect(p.locator('[data-draft-status="editable"]')).toBeVisible();
+    await expect(p.locator('[data-draft-status="in_preparation"]')).toBeVisible();
     expect((await counts())[4]).toBe(1);
   });
 
@@ -512,7 +512,7 @@ test.describe.serial("N5 Claim navigation and idempotence", () => {
     await expect(p.locator('[data-testid="claim-locked"]')).toBeVisible();
     await expect(
       p.locator(
-        '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-draft-save"]',
+        '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-create"]',
       ),
     ).toHaveCount(0);
   });

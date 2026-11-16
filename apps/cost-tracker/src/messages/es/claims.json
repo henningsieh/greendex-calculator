@@ -63,7 +63,7 @@
         "rejected": "Rechazada · sin pagar",
         "correctionRequested": "Corrección solicitada · acción de la organización socia necesaria",
         "submitted": "Enviada · pendiente de revisión de la organización anfitriona",
-        "draft": "Borrador editable"
+        "in_preparation": "In preparation"
       },
       "confirmTransfer": "Confirma solo después de realizar una transferencia completa de {amount} EUR.",
       "confirmReopen": "Reabrir devuelve la solicitud a revisión y mantiene bloqueada la edición del socio. Solicita una corrección por separado si hace falta editar.",
@@ -95,7 +95,15 @@
       "bandTitle": "Claim workspace",
       "submissionLabel": "Submission",
       "locked": "This Claim is locked for Partner editing. Only a Hosting-side correction request can reopen it.",
-      "noDraft": "Select a Payout Account and explicitly save a Claim draft to add costs or Proof Documents. Journeys can be prepared separately.",
+      "noDraft": "Select a Payout Account and create a Claim to add costs or Proof Documents. Journeys can be prepared separately.",
+      "status": {
+        "in_preparation": "In preparation",
+        "submitted": "Submitted",
+        "correction_requested": "Correction requested",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "paid": "Paid"
+      },
       "common": {
         "cancel": "Cancel"
       },
@@ -159,7 +167,7 @@
         "accountHolder": "Account holder",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "saveDraft": "Save Claim draft"
+        "createClaim": "Create claim"
       },
       "notice": {
         "correctionRequested": "Correction requested:",

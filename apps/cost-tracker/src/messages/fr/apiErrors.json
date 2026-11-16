@@ -168,7 +168,7 @@
       "summary": "Le projet ne peut pas encore être terminé. Examinez les partenariats de projet suivants.",
       "status": {
         "none": "Aucune demande de financement",
-        "editable": "Modifiable",
+        "in_preparation": "In preparation",
         "correction_requested": "Correction demandée",
         "submitted": "Soumise",
         "approved": "Approuvée",

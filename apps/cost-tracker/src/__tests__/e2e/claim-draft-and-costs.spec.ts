@@ -675,16 +675,20 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await page.getByTestId("payout-account-create").click();
       // Text-free: claimCount 0 + disabled Save below prove nothing was created (no toast copy).
       expect(await claimCount()).toBe(0);
-      await expect(page.getByTestId("claim-draft-save")).toBeDisabled();
+      await expect(page.getByTestId("claim-create")).toBeDisabled();
       await page.locator("#claim-payout-select").selectOption({ index: 1 });
       // Text-free: the succeeding Save click below proves the selection applied (no copy).
       expect(await claimCount()).toBe(0);
-      await page.getByTestId("claim-draft-save").click();
-      await expect(page.locator('[data-draft-status="editable"]')).toBeVisible();
+      await page.getByTestId("claim-create").click();
+      await expect(
+        page.locator('[data-draft-status="in_preparation"]'),
+      ).toBeVisible();
       expect(await claimCount()).toBe(1);
       await page.reload();
-      await expect(page.locator('[data-draft-status="editable"]')).toBeVisible();
-      await expect(page.getByTestId("claim-draft-save")).toHaveCount(0);
+      await expect(
+        page.locator('[data-draft-status="in_preparation"]'),
+      ).toBeVisible();
+      await expect(page.getByTestId("claim-create")).toHaveCount(0);
       expect(await claimCount()).toBe(1);
       // A second Save is unavailable after success; concurrent saves are tested in claims.integration.test.ts.
     } finally {
@@ -991,7 +995,7 @@ test.describe.serial("Claim draft and costs journey G1, 20–24", () => {
       await expect(page.locator('[data-testid="claim-locked"]')).toBeVisible();
       await expect(
         page.locator(
-          '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-draft-save"]',
+          '[data-testid="cost-save"], [data-testid="journey-save"], [data-testid="claim-submit"], [data-testid="claim-create"]',
         ),
       ).toHaveCount(0);
       expect(await claimCount()).toBe(1);

@@ -168,7 +168,7 @@
       "summary": "Het project kan nog niet worden afgerond. Controleer de volgende projectpartnerschappen.",
       "status": {
         "none": "Geen financieringsaanvraag",
-        "editable": "Bewerkbaar",
+        "in_preparation": "In preparation",
         "correction_requested": "Correctie gevraagd",
         "submitted": "Ingediend",
         "approved": "Goedgekeurd",

@@ -196,7 +196,7 @@ describe("Partner Organization setup links", () => {
   });
 
   it.each([
-    ["editable", false],
+    ["in_preparation", false],
     ["submitted", false],
     ["correction_requested", false],
     ["approved", false],

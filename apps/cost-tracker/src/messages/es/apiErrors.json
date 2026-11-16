@@ -168,7 +168,7 @@
       "summary": "Aún no se puede completar el proyecto. Revisa las siguientes colaboraciones del proyecto.",
       "status": {
         "none": "Sin solicitud de financiación",
-        "editable": "Editable",
+        "in_preparation": "In preparation",
         "correction_requested": "Corrección solicitada",
         "submitted": "Presentada",
         "approved": "Aprobada",

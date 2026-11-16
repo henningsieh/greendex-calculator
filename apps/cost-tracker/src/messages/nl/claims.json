@@ -63,7 +63,7 @@
         "rejected": "Afgewezen · onbetaald",
         "correctionRequested": "Correctie gevraagd · actie van partner nodig",
         "submitted": "Ingediend · wacht op beoordeling door gastorganisatie",
-        "draft": "Bewerkbaar concept"
+        "in_preparation": "In preparation"
       },
       "confirmTransfer": "Bevestig pas nadat één volledige bankoverschrijving van {amount} EUR is uitgevoerd.",
       "confirmReopen": "Heropenen stuurt de declaratie terug naar beoordeling en houdt bewerken door de partner geblokkeerd. Vraag apart een correctie aan indien nodig.",
@@ -95,7 +95,15 @@
       "bandTitle": "Claim workspace",
       "submissionLabel": "Submission",
       "locked": "This Claim is locked for Partner editing. Only a Hosting-side correction request can reopen it.",
-      "noDraft": "Select a Payout Account and explicitly save a Claim draft to add costs or Proof Documents. Journeys can be prepared separately.",
+      "noDraft": "Select a Payout Account and create a Claim to add costs or Proof Documents. Journeys can be prepared separately.",
+      "status": {
+        "in_preparation": "In preparation",
+        "submitted": "Submitted",
+        "correction_requested": "Correction requested",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "paid": "Paid"
+      },
       "common": {
         "cancel": "Cancel"
       },
@@ -159,7 +167,7 @@
         "accountHolder": "Account holder",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "saveDraft": "Save Claim draft"
+        "createClaim": "Create claim"
       },
       "notice": {
         "correctionRequested": "Correction requested:",

@@ -239,7 +239,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       client.claims.saveDraft({ partnershipId: own }),
       client.claims.saveDraft({ partnershipId: own }),
     ]);
-    expect(first).toMatchObject({ partnershipId: own, status: "editable" });
+    expect(first).toMatchObject({ partnershipId: own, status: "in_preparation" });
     expect(second.id).toBe(first.id);
     expect(await client.claims.getDraft({ partnershipId: own })).toMatchObject({
       id: first.id,
@@ -262,7 +262,7 @@ describe("Claim drafts and Partnership payout selection", () => {
     expect(
       await db.select().from(selections).where(eq(selections.partnershipId, own)),
     ).toMatchObject([{ payoutAccountId: secondAccount }]);
-    expect(draft.status).toBe("editable");
+    expect(draft.status).toBe("in_preparation");
     own = SEED_IDS.partnership.claimsSubmittedSelectedPartnership;
     await expect(
       client.claims.selectPayoutAccount({
@@ -336,7 +336,7 @@ describe("Claim drafts and Partnership payout selection", () => {
       payoutAccountId: account,
     });
     expect(await client.claims.saveDraft({ partnershipId: own })).toMatchObject({
-      status: "editable",
+      status: "in_preparation",
     });
   });
 

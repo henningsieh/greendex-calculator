@@ -521,14 +521,14 @@ test.describe.serial("N1 N3 N4 N6 access and links", () => {
       ).toHaveCount(0);
       await expect(
         t.locator(
-          '[data-testid="claim-draft-save"], [data-testid="cost-save"], [data-testid="claim-submit"]',
+          '[data-testid="claim-create"], [data-testid="cost-save"], [data-testid="claim-submit"]',
         ),
       ).toHaveCount(0);
       const h = await pageFor(browser, "H", baseURL!);
       await h.goto(`/partnerships/${ids.partnership}/claim`);
       await denied(h);
       await expect(
-        h.locator('[data-testid="cost-save"], [data-testid="claim-draft-save"]'),
+        h.locator('[data-testid="cost-save"], [data-testid="claim-create"]'),
       ).toHaveCount(0);
       expect(
         await db

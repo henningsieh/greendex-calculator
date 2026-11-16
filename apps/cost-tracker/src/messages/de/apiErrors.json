@@ -168,7 +168,7 @@
       "summary": "Das Projekt kann noch nicht abgeschlossen werden. Prüfe die folgenden Projektpartnerschaften.",
       "status": {
         "none": "Kein Claim",
-        "editable": "Bearbeitbar",
+        "in_preparation": "In Vorbereitung",
         "correction_requested": "Korrektur angefordert",
         "submitted": "Eingereicht",
         "approved": "Genehmigt",

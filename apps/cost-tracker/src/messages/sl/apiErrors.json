@@ -168,7 +168,7 @@
       "summary": "Projekta še ni mogoče zaključiti. Preglejte naslednja projektna partnerstva.",
       "status": {
         "none": "Brez zahtevka za financiranje",
-        "editable": "Uredljiv",
+        "in_preparation": "In preparation",
         "correction_requested": "Zahtevan popravek",
         "submitted": "Oddan",
         "approved": "Odobren",

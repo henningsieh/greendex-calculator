@@ -107,11 +107,11 @@ describe("Claim first-save conflict recovery", () => {
     });
   });
   it("preserves the raced editable Claim retry", async () => {
-    mocks.queues.set("claims", [[], [claim("editable")]]);
+    mocks.queues.set("claims", [[], [claim("in_preparation")]]);
     expect(await client.saveDraft({ partnershipId: "own" })).toEqual({
       id: "claim",
       partnershipId: "own",
-      status: "editable",
+      status: "in_preparation",
     });
   });
   it("refuses a Claim already locked when the lock is taken", async () => {

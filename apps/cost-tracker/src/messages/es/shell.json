@@ -236,7 +236,7 @@
         "claimDescription": "The hosted workspace mapping today. This is the reference to challenge.",
         "claim": {
           "none": "No claim",
-          "editable": "Editable draft",
+          "in_preparation": "In preparation",
           "submitted": "Submitted",
           "correction": "Correction requested",
           "approved": "Approved",

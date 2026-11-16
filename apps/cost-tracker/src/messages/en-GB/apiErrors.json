@@ -168,7 +168,7 @@
       "summary": "The Project cannot be completed yet. Review the following Project Partnerships.",
       "status": {
         "none": "No Claim",
-        "editable": "Editable",
+        "in_preparation": "In preparation",
         "correction_requested": "Correction requested",
         "submitted": "Submitted",
         "approved": "Approved",

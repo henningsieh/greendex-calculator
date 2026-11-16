@@ -423,7 +423,7 @@ export const SEED_SHOWCASE = {
     transportProfile: "train",
     amountEur: "120.00",
     allocationMethod: "amount",
-    status: "editable",
+    status: "in_preparation",
   },
 } as const;
 
@@ -510,7 +510,7 @@ export const SEED_SCENARIOS = {
       SEED_IDS.organization.submissionOther,
     ],
     projectNames: [
-      "editable",
+      "in_preparation",
       "submitted",
       "rejected",
       "approved",

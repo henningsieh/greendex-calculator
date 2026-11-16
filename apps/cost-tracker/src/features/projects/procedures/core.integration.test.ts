@@ -60,7 +60,7 @@ describe("projects procedures", () => {
       "mixed",
       "claimless-partial",
       "terminal",
-      "editable",
+      "in_preparation",
       "submitted",
       "correction_requested",
       "approved",
@@ -199,7 +199,7 @@ describe("projects procedures", () => {
     });
 
     it.each([
-      "editable",
+      "in_preparation",
       "submitted",
       "correction_requested",
       "approved",

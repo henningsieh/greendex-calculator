@@ -2,7 +2,7 @@
 
 Status: recommended MVP target derived from the clickdummy's use cases and the accepted Cost Tracker ADRs. This document intentionally replaces the clickdummy's manual Project phases and per-`Ticket` decisions with Claim-owned states and Cost Tracker's canonical terms.
 
-The `in_preparation` naming and Cost Tracker archive/reopen rules below are approved targets under [ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md), not implemented by the specification commit. The baseline still uses `editable` and a separate completion record. [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) includes the full transition table; [#418](https://github.com/henningsieh/greendex-calculator/issues/418) owns Claim naming/workflow and [#416](https://github.com/henningsieh/greendex-calculator/issues/416) owns archive availability.
+[ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md) records the archive decision. [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) includes the full Claim transition table; [#418](https://github.com/henningsieh/greendex-calculator/issues/418) covers Claim naming and [#416](https://github.com/henningsieh/greendex-calculator/issues/416) covers archive availability.
 
 ## Actors
 

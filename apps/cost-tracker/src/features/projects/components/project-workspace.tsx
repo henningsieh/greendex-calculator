@@ -126,7 +126,7 @@ function ClaimReadiness({ status }: { status: ClaimStatus | null }) {
     );
   }
   const labels: Record<ClaimStatus, string> = {
-    editable: t("claimStatus.editable"),
+    in_preparation: t("claimStatus.in_preparation"),
     submitted: t("claimStatus.submitted"),
     correction_requested: t("claimStatus.correctionRequested"),
     approved: t("claimStatus.approved"),

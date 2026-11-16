@@ -17,24 +17,6 @@ import {
 } from "@/components/ui/table";
 import type { Outputs } from "@/lib/orpc/router";
 
-const statusLabels: Record<
-  NonNullable<Outputs["claims"]["getDraft"]>["status"],
-  string
-> = {
-  editable: "Editable draft",
-  submitted: "Submitted",
-  correction_requested: "Correction requested",
-  approved: "Approved",
-  rejected: "Rejected",
-  paid: "Paid",
-};
-
-export function claimStatusLabel(
-  status: NonNullable<Outputs["claims"]["getDraft"]>["status"],
-): string {
-  return statusLabels[status];
-}
-
 export function ClaimBand({
   title,
   status,
@@ -55,7 +37,7 @@ export function ClaimBand({
             data-testid="claim-status"
             data-status={status}
           >
-            {claimStatusLabel(status)}
+            {t(`workspace.status.${status}`)}
           </Badge>
         )}
       </Card>

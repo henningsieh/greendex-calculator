@@ -66,7 +66,7 @@ describe("review predicate outcomes", () => {
   it.each([
     [undefined, "NOT_FOUND", 404, "CLAIM_NOT_FOUND"],
     [
-      { id: "claim", status: "editable", approvedAmountEur: null },
+      { id: "claim", status: "in_preparation", approvedAmountEur: null },
       "CONFLICT",
       409,
       "CLAIM_SUBMITTED_REQUIRED",
@@ -96,7 +96,7 @@ describe("review predicate outcomes", () => {
   );
   it("names the rejected prerequisite for reopen", async () => {
     mocks.lock.mockResolvedValue({
-      claim: { id: "claim", status: "editable", approvedAmountEur: null },
+      claim: { id: "claim", status: "in_preparation", approvedAmountEur: null },
     });
     await expect(client.reopen({ partnershipId: "own" })).rejects.toMatchObject({
       code: "CONFLICT",

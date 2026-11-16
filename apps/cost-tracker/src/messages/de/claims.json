@@ -63,7 +63,7 @@
         "rejected": "Abgelehnt · unbezahlt",
         "correctionRequested": "Korrektur angefordert · Partner muss handeln",
         "submitted": "Eingereicht · Prüfung durch Gastgeber ausstehend",
-        "draft": "Bearbeitbarer Entwurf"
+        "in_preparation": "In Vorbereitung"
       },
       "confirmTransfer": "Erst bestätigen, wenn die vollständige Überweisung über {amount} EUR tatsächlich ausgeführt wurde.",
       "confirmReopen": "Erneutes Öffnen gibt den Antrag zur Gastgeberprüfung zurück. Die Partnerbearbeitung bleibt gesperrt. Fordere bei Bedarf separat eine Korrektur an.",
@@ -95,7 +95,15 @@
       "bandTitle": "Claim-Arbeitsbereich",
       "submissionLabel": "Einreichung",
       "locked": "Dieser Claim ist für Partner-Bearbeitung gesperrt. Nur eine Korrekturanforderung der Hosting-Seite kann ihn wieder öffnen.",
-      "noDraft": "Wähle einen Payout Account und speichere ausdrücklich einen Claim-Entwurf, um Kosten oder Proof Documents hinzuzufügen. Journeys können separat vorbereitet werden.",
+      "noDraft": "Wähle einen Payout Account und erstelle einen Claim, um Kosten oder Proof Documents hinzuzufügen. Journeys können separat vorbereitet werden.",
+      "status": {
+        "in_preparation": "In Vorbereitung",
+        "submitted": "Eingereicht",
+        "correction_requested": "Korrektur angefordert",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt",
+        "paid": "Ausgezahlt"
+      },
       "common": {
         "cancel": "Abbrechen"
       },
@@ -159,7 +167,7 @@
         "accountHolder": "Kontoinhaber",
         "iban": "IBAN",
         "bic": "BIC (optional)",
-        "saveDraft": "Claim-Entwurf speichern"
+        "createClaim": "Claim erstellen"
       },
       "notice": {
         "correctionRequested": "Korrektur angefordert:",

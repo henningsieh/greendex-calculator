@@ -31,11 +31,17 @@ vi.mock("@/lib/orpc/orpc", () => ({
   orpc: { projects: { archive: mocks.archive, reopen: mocks.reopen } },
 }));
 
-vi.mock("@/features/partnerships/components/partnership-actions", () => ({
-  PartnershipActions: ({ projectId }: { projectId?: string }) => (
-    <p data-project-id={projectId} data-testid="partnership-actions" />
-  ),
-}));
+vi.mock(
+  "@/features/partnerships/components/partnership-actions",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/features/partnerships/components/partnership-actions")
+    >()),
+    PartnershipActions: ({ projectId }: { projectId?: string }) => (
+      <p data-project-id={projectId} data-testid="partnership-actions" />
+    ),
+  }),
+);
 vi.mock("@/features/partnerships/components/invalidate-partnership-data", () => ({
   invalidatePartnershipProjectData: (queryClient: QueryClient) =>
     queryClient.invalidateQueries({ queryKey: ["project"] }),
@@ -193,7 +199,7 @@ describe("Project workspace", () => {
         ["Arts Circle", "rejected"],
         ["Future Collective", "submitted"],
         ["Open Partnership", null],
-        ["New Claim", "editable"],
+        ["New Claim", "in_preparation"],
       ].map(([organizationName, claimStatus], index) => ({
         id: `partnership-${index}`,
         organizationName,
@@ -213,7 +219,7 @@ describe("Project workspace", () => {
       ["partnership-3", "rejected"],
       ["partnership-4", "submitted"],
       ["partnership-5", "none"],
-      ["partnership-6", "editable"],
+      ["partnership-6", "in_preparation"],
     ]) {
       const partnership = partnerships.find(
         (row) => row.getAttribute("data-partnership-id") === id,

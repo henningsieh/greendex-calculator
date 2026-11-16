@@ -95,7 +95,7 @@
       "partnersCount": "{count, plural, one {# Partner} other {# Partner}}",
       "completedFeedback": "Projekt abgeschlossen.",
       "claimStatus": {
-        "editable": "Entwurf in Bearbeitung",
+        "in_preparation": "In Vorbereitung",
         "submitted": "Eingereicht",
         "correctionRequested": "Korrektur angefordert",
         "approved": "Genehmigt",

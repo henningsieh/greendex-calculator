@@ -200,7 +200,7 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
     // These fixture Claim states are reachable without recording any payment.
     await db.insert(claimsTable).values([
       { partnershipId: ids.mainA, status: "rejected" },
-      { partnershipId: ids.otherB, status: "editable" },
+      { partnershipId: ids.otherB, status: "in_preparation" },
     ]);
     expect(await ownedCounts()).toEqual([2, 4, 4, 4, 2]);
   });
@@ -263,7 +263,9 @@ test.describe.serial("Project readiness journey 28 and N2", () => {
       partnerRow(page, ids.partnerB).locator('[data-claim-status="none"]'),
     ).toBeVisible();
     // Text-free: no partner row carries the editable-claim state.
-    await expect(page.locator('[data-claim-status="editable"]')).toHaveCount(0);
+    await expect(
+      page.locator('[data-claim-status="in_preparation"]'),
+    ).toHaveCount(0);
     await expect(page.getByTestId("archive-project")).toHaveCount(0);
   });
 

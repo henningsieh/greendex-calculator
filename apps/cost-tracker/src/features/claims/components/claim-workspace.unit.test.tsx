@@ -55,7 +55,7 @@ const mocks = vi.hoisted(() => ({
     id: string;
     partnershipId: string;
     status:
-      | "editable"
+      | "in_preparation"
       | "submitted"
       | "correction_requested"
       | "approved"
@@ -275,7 +275,7 @@ beforeEach(() => {
   mocks.secondParticipant = false;
   mocks.documents = [];
   mocks.saveDraft.mockReset().mockImplementation(async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     return mocks.draft;
   });
   mocks.select.mockReset().mockImplementation(async (input) => {
@@ -327,7 +327,7 @@ describe("Claim workspace", () => {
   );
   it("blocks a stale editable Claim when the Project is archived", async () => {
     mocks.projectArchived = true;
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mount();
     expect(await screen.findByTestId("claim-payout-select")).toBeDisabled();
     const trigger = screen.getByTestId("archive-explanation-trigger");
@@ -340,7 +340,7 @@ describe("Claim workspace", () => {
 
   it("hides editing controls when the client scope check refuses an editable Claim", async () => {
     mocks.permitted = false;
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mount();
     await screen.findByTestId("costs-empty");
     expect(screen.getByTestId("claim-payout-select")).toBeDisabled();
@@ -365,7 +365,7 @@ describe("Claim workspace", () => {
         erasmusDistanceKm: "800.00",
       },
     ];
-    for (const status of ["editable", "correction_requested"] as const) {
+    for (const status of ["in_preparation", "correction_requested"] as const) {
       mocks.draft = { id: "claim", partnershipId: "own", status };
       const { unmount } = render(
         <QueryClientProvider client={createQueryClient()}>
@@ -589,7 +589,7 @@ describe("Claim workspace", () => {
     expect(screen.queryByTestId("cost-save")).toBeNull();
   });
 
-  it("does not create on open, selects payout then explicitly saves, and shows saved state", async () => {
+  it("creates only after payout selection and removes the create action", async () => {
     mount();
     await waitFor(() =>
       expect(
@@ -601,7 +601,7 @@ describe("Claim workspace", () => {
       within(screen.getByTestId("submission-checklist")).getAllByRole("listitem"),
     ).toHaveLength(7);
     expect(screen.getByTestId("claim-submit")).toBeDisabled();
-    expect(screen.getByTestId("claim-draft-save")).toBeDisabled();
+    expect(screen.getByTestId("claim-create")).toBeDisabled();
     await userEvent.selectOptions(
       screen.getByTestId("claim-payout-select"),
       "account",
@@ -609,13 +609,14 @@ describe("Claim workspace", () => {
     await waitFor(() =>
       expect(screen.getByTestId("claim-payout-select")).toHaveValue("account"),
     );
-    await userEvent.click(screen.getByTestId("claim-draft-save"));
+    await userEvent.click(screen.getByTestId("claim-create"));
     await waitFor(() =>
       expect(
-        document.querySelector('[data-draft-status="editable"]'),
+        document.querySelector('[data-draft-status="in_preparation"]'),
       ).toBeInTheDocument(),
     );
     expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" });
+    expect(screen.queryByTestId("claim-create")).not.toBeInTheDocument();
   });
 
   it.each(["en-GB", "de"] as const)(
@@ -794,7 +795,7 @@ describe("Claim workspace", () => {
   });
 
   it("retains invalid journey fields and safely rejects unidentified field errors while costs are saved independently", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.saveJourney.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
         data: {
@@ -907,7 +908,7 @@ describe("Claim workspace", () => {
   });
 
   it("validates incomplete shares locally without clearing the cost", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.saveCost.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
         data: {
@@ -951,7 +952,11 @@ describe("Claim workspace", () => {
   ] as const)(
     "shows localized row and total errors and retains values in %s",
     async (locale, message) => {
-      mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+      mocks.draft = {
+        id: "claim",
+        partnershipId: "own",
+        status: "in_preparation",
+      };
       mount(createQueryClient(), locale);
       await screen.findByTestId("costs-empty");
       await userEvent.type(screen.getByTestId("cost-amount"), "10");
@@ -985,7 +990,7 @@ describe("Claim workspace", () => {
   );
 
   it("drops deselected shares and does not move row errors to another participant", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.secondParticipant = true;
     mount();
     await screen.findByTestId("costs-empty");
@@ -1021,7 +1026,7 @@ describe("Claim workspace", () => {
   });
 
   it("editing another entry resets the cost form", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.costs = ["first", "second"].map((id, index) => ({
       id,
       amountEur: index ? "20.00" : "10.00",
@@ -1053,7 +1058,7 @@ describe("Claim workspace", () => {
   });
 
   it("maps a server refusal to the share and keeps the submitted values", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.saveCost.mockRejectedValue(
       new ORPCError("BAD_REQUEST", {
         data: {
@@ -1086,7 +1091,7 @@ describe("Claim workspace", () => {
   });
 
   it("shows only Claim documents as picker options, linked state and upload progress", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.costs = [
       {
         id: "entry",
@@ -1178,7 +1183,7 @@ describe("Claim workspace", () => {
   });
 
   it("shows all seven server checklist results, links each gap, and blocks incomplete submission", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.preview = {
       items: [
         {
@@ -1219,7 +1224,7 @@ describe("Claim workspace", () => {
   });
 
   it("links entry proof and missing participant journey gaps to their owning rows", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.costs = [
       {
         id: "entry",
@@ -1290,7 +1295,7 @@ describe("Claim workspace", () => {
   });
 
   it("shows computed preview, confirms lock before mutation, then keeps workspace read-only", async () => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.selected = "account";
     mocks.preview = {
       items: [
@@ -1311,7 +1316,7 @@ describe("Claim workspace", () => {
       }),
       queryFn: async () => mocks.draft?.status,
     };
-    expect(await client.query(project)).toBe("editable");
+    expect(await client.query(project)).toBe("in_preparation");
     mount(client);
     expect(await screen.findByTestId("calculated-payable")).toHaveAttribute(
       "data-payable",
@@ -1361,7 +1366,7 @@ describe("Claim workspace", () => {
         proofDocumentIds: [],
       },
     ];
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     mocks.preview = {
       items: [
         "payoutAccount",
@@ -1426,7 +1431,7 @@ describe("Claim workspace", () => {
       await screen.findByTestId("payout-account-create"),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("claim-payout-select")).toBeNull();
-    expect(screen.getByTestId("claim-draft-save")).toBeDisabled();
+    expect(screen.getByTestId("claim-create")).toBeDisabled();
     await userEvent.type(screen.getByTestId("account-holder"), "Example");
     await userEvent.type(
       screen.getByTestId("account-iban"),
@@ -1459,17 +1464,15 @@ describe("Claim workspace", () => {
       iban: "DE89 3704 0044 0532 0130 00",
       bic: "",
     });
-    expect(screen.getByTestId("claim-draft-save")).toBeDisabled();
+    expect(screen.getByTestId("claim-create")).toBeDisabled();
     expect(mocks.select).not.toHaveBeenCalled();
     await userEvent.selectOptions(
       screen.getByTestId("claim-payout-select"),
       "new-account",
     );
-    await waitFor(() =>
-      expect(screen.getByTestId("claim-draft-save")).toBeEnabled(),
-    );
+    await waitFor(() => expect(screen.getByTestId("claim-create")).toBeEnabled());
     expect(mocks.saveDraft).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByTestId("claim-draft-save"));
+    await userEvent.click(screen.getByTestId("claim-create"));
     await waitFor(() =>
       expect(mocks.saveDraft).toHaveBeenCalledWith({ partnershipId: "own" }),
     );
@@ -1559,7 +1562,7 @@ it.each([
 ] as const)(
   "keeps failed %s uploads retryable without refreshing Claim data",
   async (_name, status, body) => {
-    mocks.draft = { id: "claim", partnershipId: "own", status: "editable" };
+    mocks.draft = { id: "claim", partnershipId: "own", status: "in_preparation" };
     const requests: FakeUploadRequest[] = [];
     class FakeUploadRequest {
       upload = { onprogress: null };

@@ -153,7 +153,7 @@ function ClaimDecisionSummary({
                 ? t("status.correctionRequested")
                 : status === "submitted"
                   ? t("status.submitted")
-                  : t("status.draft")}
+                  : t("status.in_preparation")}
       </p>
       {approvedAmountEur && (
         <p data-testid="approved-payable">
