@@ -26,7 +26,6 @@ import { selectCountry } from "./fixtures/country-selector";
 import { expectFirstOrganizationProjects } from "./fixtures/first-organization";
 import { HostingJourneyFixture } from "./fixtures/hosting-journey";
 import { staffRow } from "./fixtures/journey-locators";
-import { postSignInWithRateLimitRetry } from "./fixtures/rate-limit-retry";
 
 const fixture = new HostingJourneyFixture();
 const destination = `/accept-invitation/${fixture.invitationId}`;
@@ -617,14 +616,12 @@ test.describe.serial("guided Organization Invitation", () => {
           .getByTestId("auth-account-navigation")
           .filter({ visible: true })
           .click();
-        await context.clearCookies();
-        const response = await postSignInWithRateLimitRetry(
-          context.request,
-          fixture.actors.A.email,
-          fixture.actors.A.password,
+        await expectPrivateURL(
+          page,
+          `/login?next=${encodeURIComponent(destination)}`,
         );
-        expect(response.ok()).toBe(true);
-        await page.goto(destination);
+        await signIn(page, "A");
+        await expectPrivateURL(page, destination);
         await expect(
           page.getByTestId("accept-organization-invitation"),
         ).toBeEnabled();
