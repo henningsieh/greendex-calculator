@@ -7,7 +7,7 @@
 - Always start a dev server when needed (`pnpm run dev`, `npm run dev`, `yarn dev` — one often runs already on the respective app's port). Never run destructive git commands (`push --force`, `reset --hard`, …).
 - Also allowed: `pnpm run build` / `start` / `lint` / `format` / `test…`, read-only git plus `add` / `commit` / `checkout -b`, file reads and searches. Builds and deploys are Coolify-managed — see the [Coolify runbook](docs/agents/instructions/coolify.md) and never hand-edit generated compose output. Never commit credentials.
 
-- The approved development database contains disposable test data only. Perform operator-authorized resets without repeated data-loss warnings.
+- The project currently has no live system, users, or business data. Development data consists entirely of disposable canonical seeds and test fixtures. When schema or domain rules change, update seeds and fixtures to the target model. Agents may reset or reseed `greendex_development` at `188.245.144.137:5489` without further approval or warnings; coordinate with other writers and tests first. This authorization does not cover production, staging, or unknown targets. Do not build historical-data preservation, backfills, reconciliation, backward compatibility, or legacy-data test matrices unless the operator explicitly requests them. Applied migration history remains immutable.
 
 ## Contexts
 

@@ -37,7 +37,7 @@ Participant-only Memberships are read-only for Project management: neither the U
 - Approval confirms the payable amount; later payment recording confirms one full transfer. The MVP has a binary paid flag and no partial payments. See [Claim workflow](claim-workflow.md) for the complete state and access rules.
 - A Partner Organization may have zero or more reusable Payout Accounts. Each Project Partnership selects one by reference; a Claim cannot be created until that selection exists.
 - One allocation method applies to all Cost Allocations on a Travel Cost Entry.
-- There is no manual Project-wide Claim phase. The legacy Cost Submission Window is being removed under [ADR-0027](../../../docs/adr/0027-archive-settled-cost-tracker-projects.md); it is not a Claim-work gate.
+- There is no manual Project-wide Claim phase.
 
 ## Cost Tracker archive and reopening
 

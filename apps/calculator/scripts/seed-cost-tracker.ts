@@ -2181,7 +2181,7 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
     const rows = [
       {
         id: alphaId,
-        name: "Alpha Open Workshop",
+        name: "Alpha Workshop",
         startDate: new Date("2024-06-01T00:00:00.000Z"),
         endDate: new Date("2024-06-03T00:00:00.000Z"),
         location: "Berlin",
@@ -2190,7 +2190,7 @@ async function ensureProjectListScenarios(db: SeedDatabase): Promise<string[]> {
       },
       {
         id: betaId,
-        name: "Beta Closed Forum",
+        name: "Beta Forum",
         startDate: new Date("2024-06-03T00:00:00.000Z"),
         endDate: new Date("2024-06-05T00:00:00.000Z"),
         location: "Paris",

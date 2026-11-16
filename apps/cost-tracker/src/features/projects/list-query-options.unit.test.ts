@@ -20,6 +20,25 @@ describe("Project list URL state", () => {
     });
   });
 
+  it("ignores the removed window filter and falls back from the old sort", () => {
+    expect(
+      loadProjectListSearchParams({
+        scope: "partner",
+        window: "open",
+        sort: "operational",
+      }),
+    ).toEqual({
+      scope: "partner",
+      search: "",
+      dateFrom: null,
+      dateTo: null,
+      partnerOrganizationIds: [],
+      sort: "start-asc",
+      cursor: "",
+      pageSize: 25,
+    });
+  });
+
   it("normalizes search, Partner filters, and invalid date ranges safely", () => {
     expect(
       normalizeProjectListState({

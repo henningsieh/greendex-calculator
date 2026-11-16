@@ -39,6 +39,7 @@ Finished work. These files describe the codebase as it stood in September 2026. 
 
 - [Archived architecture reviews](archive/) — the completed Phase 0–8 migration review, its findings, its fix plan, and its final verdict. The architecture migration is accepted and closed.
 - [Archived design explorations](archive/design/) — mini-site, prototypes, and screenshots.
+- [Historical Project list query plans](archive/list-query-plan-validation.md) — measurements for the retired list contract. Current list guidance is in [Cost Tracker Projects](projects/README.md).
 - [Historical Cost Submission blueprint](archive/cost-submission-blueprint.md) — superseded aggregate, entry, and submission-window design; not implementation guidance.
 - [Project–Partner cardinality source review](archive/project-partner-cardinality-review.md) — pinned evidence for one-to-many Projects/Partners and at most one Claim per Project Partnership; not implementation guidance.
 

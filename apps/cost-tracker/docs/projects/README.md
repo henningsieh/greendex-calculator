@@ -2,7 +2,7 @@
 
 Cost Tracker extends the shared [Project model](../../../../docs/projects/model.md) with Project Partnerships and Claim workflows. Project identity, Project Participation identity, and shared permissions remain repository-level concerns.
 
-**Status:** archive/reopen, settlement filters, expanded table controls and Claim preparation naming are approved targets under [ADR-0027](../../../../docs/adr/0027-archive-settled-cost-tracker-projects.md), not yet implemented. At baseline `3863c601`, lists exclude shared-archived Projects, the window flag is still displayed, and completion only records actor/time. [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) owns one package with five subissues: [archive/reopen #416](https://github.com/henningsieh/greendex-calculator/issues/416), [window removal #417](https://github.com/henningsieh/greendex-calculator/issues/417), [Claim workflow/naming #418](https://github.com/henningsieh/greendex-calculator/issues/418), [filters/table #332](https://github.com/henningsieh/greendex-calculator/issues/332), and [UI cookies #415](https://github.com/henningsieh/greendex-calculator/issues/415).
+**Status:** [Master spec #414](https://github.com/henningsieh/greendex-calculator/issues/414) owns the delivery package. Archive/reopen acceptance remains under [#416](https://github.com/henningsieh/greendex-calculator/issues/416). Settlement filters and table controls are owned by [#332](https://github.com/henningsieh/greendex-calculator/issues/332), Claim naming by [#418](https://github.com/henningsieh/greendex-calculator/issues/418), and UI cookies by [#415](https://github.com/henningsieh/greendex-calculator/issues/415). The interim list order is start date ascending, not the approved settlement order described below.
 
 ## Project Partnerships
 
@@ -44,7 +44,7 @@ Use current TanStack Table v9 feature/state APIs for the result table; baseline 
 
 The shared nuqs URL contract owns scope, normalized name search, archive/settlement filters, overlap dates, Partner filters, ordered allowlisted sorts, cursor and page size. Shared links carry filters/sorts, not another User's column preferences. The procedures own filtering, sorting, exact metrics and cursor pagination across the entire authorized filtered result. TanStack renders the returned page with controlled state, not client row stages that reorder/filter just one page. Query keys/cursor fingerprints include the complete ordered state; changing filters/sorts resets the cursor.
 
-The former Cost Submission Window was a read-only legacy flag, not a Claim gate. Its column, controls, metric, badge, operational sort/index and fixture dependencies are removed by the package; immutable ADR/archive history remains historical evidence only.
+The former Cost Submission Window was a read-only legacy flag, not a Claim gate.
 
 ## Other work
 
@@ -52,7 +52,6 @@ Existing-Organization discovery requires a directory disclosure policy; the mana
 
 ## Related documentation
 
-- [Project list query-plan validation](list-query-plan-validation.md)
 - [Current Cost Tracker domain model sources](../domain-model.md)
 - [Shared Project permissions](../../../../docs/projects/permissions.md)
 - [ADR-0001](../../../../docs/adr/0001-model-project-organizations-and-participation.md)

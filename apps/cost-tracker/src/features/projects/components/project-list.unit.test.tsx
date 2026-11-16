@@ -13,11 +13,10 @@ const mocks = vi.hoisted(() => ({
   state: {
     scope: null as "hosted" | "partner" | null,
     search: "",
-    window: "all" as const,
     dateFrom: null as Date | null,
     dateTo: null as Date | null,
     partnerOrganizationIds: [] as string[],
-    sort: "operational" as const,
+    sort: "start-asc" as const,
     cursor: "",
     pageSize: 25 as const,
   },
@@ -60,7 +59,6 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
           endDate: new Date("2026-06-03T00:00:00.000Z"),
           location: "Berlin",
           country: "DE",
-          costSubmissionWindowOpen: true,
         },
       ],
       nextCursor: "next-page",
@@ -68,12 +66,10 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
       metrics: {
         whole: {
           projectCount: 3,
-          openWindowCount: 2,
           partnerOrganizationCount: 2,
         },
         filtered: {
           projectCount: 1,
-          openWindowCount: 1,
           partnerOrganizationCount: 1,
         },
       },
@@ -146,11 +142,8 @@ describe("Project list", { timeout: 20_000 }, () => {
     expect(counts).toBeTruthy();
     expect(counts).toHaveAttribute("data-project-count", "3");
     expect(counts).toHaveAttribute("data-filtered-project-count", "1");
-    expect(screen.getByTestId("project-window-project-1")).toHaveAttribute(
-      "data-state",
-      "open",
-    );
-    expect(screen.getAllByRole("columnheader")).toHaveLength(5);
+    expect(screen.queryByTestId("project-window-project-1")).toBeNull();
+    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
   });
 
   it("offers the Hosting Participant view beside the details destination", async () => {
@@ -200,7 +193,6 @@ describe("Project list", { timeout: 20_000 }, () => {
       dateTo: null,
       partnerOrganizationIds: ["partner-1"],
       search: "",
-      window: "all",
     });
   });
 
@@ -219,7 +211,6 @@ describe("Project list", { timeout: 20_000 }, () => {
       dateTo: mocks.state.dateTo,
       partnerOrganizationIds: [],
       search: "",
-      window: "all",
     });
 
     fireEvent.change(screen.getByTestId("project-date-to"), {
@@ -231,7 +222,6 @@ describe("Project list", { timeout: 20_000 }, () => {
       dateTo: null,
       partnerOrganizationIds: [],
       search: "",
-      window: "all",
     });
   });
 
@@ -295,7 +285,7 @@ describe("Project list", { timeout: 20_000 }, () => {
     fireEvent.click(screen.getByTestId("sort-project-start"));
     expect(mocks.setUrlState).toHaveBeenCalledWith({
       cursor: null,
-      sort: "start-asc",
+      sort: "start-desc",
     });
 
     fireEvent.change(screen.getByTestId("project-search"), {
@@ -308,12 +298,11 @@ describe("Project list", { timeout: 20_000 }, () => {
         dateTo: null,
         partnerOrganizationIds: [],
         search: "Travel",
-        window: "all",
       }),
     );
 
     const user = userEvent.setup();
-    expect(screen.getByTestId("project-submission-window")).toBeTruthy();
+    expect(screen.queryByTestId("project-submission-window")).toBeNull();
     expect(screen.getByTestId("project-sort")).toBeTruthy();
 
     const pageSizeSelect = screen.getByTestId("project-page-size");

@@ -36,12 +36,10 @@ vi.mock("@/features/projects/list-query-options", async (importOriginal) => ({
         metrics: {
           whole: {
             projectCount: 0,
-            openWindowCount: 0,
             partnerOrganizationCount: 0,
           },
           filtered: {
             projectCount: 0,
-            openWindowCount: 0,
             partnerOrganizationCount: 0,
           },
         },

@@ -80,8 +80,7 @@ describe("Project creation input", () => {
 describe("Project list input", () => {
   it("applies list defaults without requiring optional filters", () => {
     expect(PartnerProjectListInputSchema.parse({ pageSize: 25 })).toEqual({
-      window: "all",
-      sort: "operational",
+      sort: "start-asc",
       pageSize: 25,
     });
   });
@@ -131,7 +130,6 @@ describe("Project outputs", () => {
     (id) => {
       const metrics = {
         projectCount: 0,
-        openWindowCount: 0,
         partnerOrganizationCount: 0,
       };
       expect(
@@ -148,7 +146,6 @@ describe("Project outputs", () => {
         ...validCreateInput(),
         id: "project",
         archived: false,
-        costSubmissionWindowOpen: false,
         completedAt: null,
         completedByUserId: null,
         completedByUserName: null,

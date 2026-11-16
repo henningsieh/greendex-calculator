@@ -267,6 +267,13 @@
       "when": 1794821402727,
       "tag": "0037_mysterious_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794852094436,
+      "tag": "0038_wet_firedrake",
+      "breakpoints": true
     }
   ]
 }

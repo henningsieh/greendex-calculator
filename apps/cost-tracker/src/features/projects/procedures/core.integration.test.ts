@@ -463,8 +463,8 @@ describe("projects procedures", () => {
     const unrelatedId = SEED_IDS.organization.projectListUnrelatedId;
     const alphaId = SEED_IDS.project.projectListAlphaId;
     const betaId = SEED_IDS.project.projectListBetaId;
-    const climateId = SEED_IDS.project.projectListClimateId;
     const foreignId = SEED_IDS.project.projectListForeignId;
+    const calculatorArchivedId = SEED_IDS.project.projectListArchivedId;
     const headers = new Headers();
     const client = createRouterClient(router, {
       context: async () => ({ headers }),
@@ -503,14 +503,13 @@ describe("projects procedures", () => {
       expect(result.rows).toHaveLength(25);
       expect(result.nextCursor).toEqual(expect.any(String));
       expect(result.metrics.whole).toEqual({
-        projectCount: 29,
-        openWindowCount: 2,
+        projectCount: 30,
         partnerOrganizationCount: 2,
       });
       expect(result.metrics.filtered).toEqual(result.metrics.whole);
       expect(result.rows.slice(0, 3).map((project) => project.id)).toEqual([
+        calculatorArchivedId,
         alphaId,
-        climateId,
         betaId,
       ]);
       expect(result.rows[0]).not.toHaveProperty("organizationId");
@@ -541,14 +540,14 @@ describe("projects procedures", () => {
 
           expect(first.previousCursor).toBeUndefined();
           expect(first.nextCursor).toEqual(expect.any(String));
-          expect(second.rows).toHaveLength(4);
+          expect(second.rows).toHaveLength(scope === "hosted" ? 5 : 4);
           expect(second.previousCursor).toEqual(expect.any(String));
           expect(second.nextCursor).toBeUndefined();
           expect(second.metrics).toEqual(first.metrics);
           expect(
             new Set([...first.rows, ...second.rows].map((project) => project.id))
               .size,
-          ).toBe(29);
+          ).toBe(scope === "hosted" ? 30 : 29);
 
           const previous = await getListPage(second.previousCursor);
           expect(previous.rows.map((project) => project.id)).toEqual(
@@ -562,7 +561,7 @@ describe("projects procedures", () => {
 
     it("recovers at the first page when a cursor protocol version is unsupported", async () => {
       const first = await client.projects.listHosted({ pageSize: 25 });
-      const staleCursor = Buffer.from(JSON.stringify({ version: 1 })).toString(
+      const staleCursor = Buffer.from(JSON.stringify({ version: 2 })).toString(
         "base64url",
       );
 
@@ -587,12 +586,11 @@ describe("projects procedures", () => {
 
       const first = await client.projects.listHosted({ pageSize: 25 });
 
-      await expect(
-        client.projects.listHosted({
-          pageSize: 25,
-          cursor: first.nextCursor,
-        }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      const next = await client.projects.listHosted({
+        pageSize: 25,
+        cursor: first.nextCursor,
+      });
+      expect(next.previousCursor).toEqual(expect.any(String));
       await expect(
         client.projects.listHosted({
           pageSize: 25,
@@ -630,7 +628,7 @@ describe("projects procedures", () => {
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     });
 
-    it("applies normalized name, window, overlap-date, and match-any Partner filters", async () => {
+    it("applies normalized name, overlap-date, and match-any Partner filters", async () => {
       const literalWildcards = await client.projects.listHosted({
         pageSize: 25,
         search: "%__",
@@ -648,10 +646,9 @@ describe("projects procedures", () => {
       expect(result.rows.map((project) => project.id)).toEqual([alphaId]);
       expect(result.metrics.filtered).toEqual({
         projectCount: 1,
-        openWindowCount: 1,
         partnerOrganizationCount: 2,
       });
-      expect(result.metrics.whole.projectCount).toBe(29);
+      expect(result.metrics.whole.projectCount).toBe(30);
       expect(result.partnerOptions.map((partner) => partner.id)).toEqual([
         partnerId,
         secondPartnerId,
@@ -697,7 +694,6 @@ describe("projects procedures", () => {
       ]);
       expect(result.metrics.whole).toEqual({
         projectCount: 29,
-        openWindowCount: 2,
       });
       expect(result).not.toHaveProperty("partnerOptions");
       for (const row of result.rows) {
@@ -712,8 +708,7 @@ describe("projects procedures", () => {
       // #377: the response must not reveal whether a searched name exists
       // outside the caller's scope. "Foreign Partner Project" belongs to
       // another Hosting Organization, with list-partner as its only Partner
-      // Organization. "Archived Project" is archived out of every list scope.
-      // Both must read exactly like a search matching nothing at all.
+      // Organization. A Calculator-archived Project remains visible here.
       const gibberish = "zzz-no-such-project-zzz";
       useActiveOrganization(hostId);
       const hostedForeign = await client.projects.listHosted({
@@ -730,7 +725,9 @@ describe("projects procedures", () => {
       });
       expect(hostedForeign.rows).toEqual([]);
       expect(hostedForeign).toEqual(hostedGibberish);
-      expect(hostedArchived).toEqual(hostedGibberish);
+      expect(hostedArchived.rows.map((project) => project.id)).toEqual([
+        calculatorArchivedId,
+      ]);
 
       // Positive control: the Partner Organization that may see the foreign
       // Project finds it, so the empty shape above is scope enforcement,
@@ -949,8 +946,8 @@ describe("projects procedures", () => {
       const noMatch = await searchPartner(gibberish);
       expect(noMatch.rows).toEqual([]);
       expect(noMatch.metrics).toEqual({
-        whole: { projectCount: 1, openWindowCount: 0 },
-        filtered: { projectCount: 0, openWindowCount: 0 },
+        whole: { projectCount: 1 },
+        filtered: { projectCount: 0 },
       });
       expect(noMatch).not.toHaveProperty("partnerOptions");
       expect(await searchPartner(foreignProject)).toEqual(noMatch);
