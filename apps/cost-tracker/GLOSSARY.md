@@ -5,7 +5,7 @@ Cost Tracker records journey-ticket costs for Project Participants through Proje
 ## Language
 
 **Project Partnership**:
-The assignment of one Partner Organization to one Project, not a global relationship between Organizations.
+The assignment of one Partner Organization to one Project, not a global relationship between Organizations. A Project may have zero or more Project Partnerships with distinct Partner Organizations.
 _Avoid_: Organization Partnership, Organization role
 
 **Hosting Organization**:
@@ -48,13 +48,21 @@ _Avoid_: Participant Invitation, Participant Registration Link
 A review work item scoped to one Project Partnership concerning duplicate identity within a Project.
 _Avoid_: Claim review, inline notice (as storage)
 
-**Cost Submission Window**:
-A legacy Project-wide submission-phase concept, retained as read-only state rather than a gate on Claim work.
-_Avoid_: Claiming phase, Claim phase
-
 **Claim**:
-One Partner Organization's funding request for one Project Partnership, grouping travel costs, supporting documents, allocations, and payout details.
+One Partner Organization's funding request for one Project Partnership, grouping travel costs, supporting documents, allocations, and payout details. Each Project Partnership has at most one Claim, so a Project may have several Claims.
 _Avoid_: Cost Submission
+
+**Claim in preparation**:
+A Claim in its initial preparation state before its first submission. This describes the Claim, not a Project-wide preparation phase; a Claim returned for correction has a separate state.
+_Avoid_: Editable (as a status name), Project preparation phase
+
+**Settled Claim**:
+A Claim that is paid or rejected, with no payment remaining to be recorded under its current decision.
+_Avoid_: Approved Claim (when meaning settled)
+
+**Cost Tracker Project archive**:
+The confirmed closure of a Project's Claim administration, with a settled Claim for every Project Partnership or no Partnerships present. It is not the end of the real-world Project.
+_Avoid_: Project completion, Cost Submission Window
 
 **Payout Account**:
 A reusable bank account owned by one Partner Organization and selected by a Project Partnership for its Claim.

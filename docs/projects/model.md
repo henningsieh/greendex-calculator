@@ -78,7 +78,7 @@ Responsible staff see open tasks through a dedicated task list, badge, in-app no
 - **same person**: confirm the merge;
 - **different people**: retain both Project Participations and correct or remove any conflicting User or email link.
 
-Only records from the same Project and represented Organization may be merged. Authorized Hosting Organization staff may perform the merge even when the Cost Submission Window is closed.
+Only records from the same Project and represented Organization may be merged. There is no Cost Submission Window gate. Under the approved Cost Tracker archive target ([ADR-0027](../adr/0027-archive-settled-cost-tracker-projects.md)), Project-scoped mutations through Cost Tracker require its Project to be active.
 
 The merge transaction:
 
@@ -99,7 +99,7 @@ This is the approved migration blueprint, not current schema.
 
 Keep `organization_id` as the sole owning-Organization reference. Cost Tracker adds:
 
-- `cost_submission_window_open boolean not null default false`
+- Cost Tracker-owned archive/reopen state and actor/time history, independent of the shared Calculator archive flag; physical representation is owned by the implementation of ADR-0027, not this blueprint.
 
 ### `project_partner_organization`
 

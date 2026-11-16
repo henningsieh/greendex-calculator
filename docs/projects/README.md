@@ -25,7 +25,7 @@ Project is a shared Greendex feature used by Calculator and Cost Tracker. This d
 ## Application-specific Projects features
 
 - [Calculator Projects](../../apps/calculator/docs/projects/README.md): Project management UI, sorting, and current Calculator permission implementation
-- [Cost Tracker Projects](../../apps/cost-tracker/docs/projects/README.md): Project Partnerships and the Cost Submission Window
+- [Cost Tracker Projects](../../apps/cost-tracker/docs/projects/README.md): Project Partnerships, Claims and the approved Cost Tracker archive/readiness target
 
 ## Persistence
 
